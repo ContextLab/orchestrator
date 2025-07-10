@@ -7,7 +7,7 @@ Orchestrator is a convenient wrapper for LangGraph, MCP, model spec, and other A
  - Enforce requirements of model outputs, including simple checks (e.g., data formatting) and complex checks (e.g., high-level quality control checks).
  - Specify and enforce operating constraints (e.g., monetary cost, computing costs like time or memory, maximum total runtime, minimum time to first response, permissions, privacy, etc.)
 
-## How it works
+## How it works ⚙️
 
 Orchestrator is built around two core components:
   - YAML files for defining task control flows
@@ -118,8 +118,21 @@ Given the above YAML file, the user calls this pipeline as follows:
 import orchestrator as orc
 
 orc.init_models()  # initializes the pool of available models by reading models.yaml, along with examining environment variables or secrets (if running in Colab or a GitHub action) for relevant API keys
-report_writer = orc.pipeline('pipelines/write-research-report.yaml')  # parse the pipeline into a callable OrchestratorPipeline object
+report_writer = orc.compile('pipelines/write-research-report.yaml')  # parse the pipeline into a callable OrchestratorPipeline object
+# prints out:
+# >> keyword arguments:
+# >>   topic: a word or underscore-separated phrase specifying the to-be-researched topic (type: String)
+# >>   instructions: detailed instructions to help guide the report, specify areas of particular interest (or areas to stay away from), etc. (type: String)
 
 # generate the report by running the pipeline
-report = report_writer.run(topic='agents', instructions='Teach me everything about how AI agents work, how to create them, and how to use them. Be sure to include example use cases and cite specific studies and resources-- especially Python toolboxes and open source tools.")
+report = report_writer.run(topic='agents', instructions='Teach me everything about how AI agents work, how to create them, and how to use them. Be sure to include example use cases and cite specific studies and resources-- especially Python toolboxes and open source tools.')
 ```
+
+## Under the Hood 🛠️
+
+Calling the `orc.compile` function on a pipeline's YAML file automatically:
+ - Uses [LangGraph](https://langchain-ai.github.io/langgraph) to define a [StateGraph](https://langchain-ai.github.io/langgraph/tutorials/get-started/1-build-basic-chatbot/#2-create-a-stategraph) by parsing the file
+ - Compiles a set of "tools" that will be used in the pipeline, and exposes them (via LangGraph's [`bind_tools`](https://langchain-ai.github.io/langgraph/tutorials/get-started/2-add-tools/) method and `BasicToolNode` object, and through the [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)).
+ - Defines [structured outputs](https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#structured-output) for each type of output, based on the `-produces` attribute of the given task.
+ - Uses the best-available LLM (via API calls or running locally) to resolve ambiguities in nodes, tools, and/or structured outputs; also generates human-readable descriptions of each keyword argument that will be exposed to the user
+ - Returns a callable `OrchestratorPipeline` object that supports the given keyword arguments
