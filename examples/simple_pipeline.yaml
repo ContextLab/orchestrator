@@ -1,0 +1,70 @@
+# Simple example pipeline demonstrating basic orchestrator functionality
+
+id: simple_example
+name: Simple Text Processing Pipeline
+description: A basic pipeline that generates and processes text
+version: "1.0"
+
+context:
+  input_topic: "artificial intelligence"
+  output_format: "json"
+
+steps:
+  - id: generate_content
+    name: Generate Content
+    action: generate
+    parameters:
+      prompt: "Write a brief introduction about {{ input_topic }}"
+      max_tokens: 200
+      temperature: 0.7
+    metadata:
+      requires_model: true
+      priority: 1.0
+    
+  - id: analyze_sentiment
+    name: Analyze Sentiment
+    action: analyze
+    parameters:
+      text: "{{ results.generate_content }}"
+      analysis_type: <AUTO>What type of analysis is most appropriate for this text?</AUTO>
+      format: "{{ output_format }}"
+    dependencies:
+      - generate_content
+    metadata:
+      requires_model: true
+      priority: 0.8
+      
+  - id: extract_keywords
+    name: Extract Keywords
+    action: transform
+    parameters:
+      text: "{{ results.generate_content }}"
+      extraction_method: <AUTO>Choose the best keyword extraction method</AUTO>
+      max_keywords: 10
+    dependencies:
+      - generate_content
+    metadata:
+      requires_model: true
+      priority: 0.6
+      
+  - id: summarize_results
+    name: Summarize Results
+    action: generate
+    parameters:
+      prompt: |
+        Summarize the following analysis results:
+        
+        Original Content: {{ results.generate_content }}
+        Sentiment Analysis: {{ results.analyze_sentiment }}
+        Keywords: {{ results.extract_keywords }}
+        
+        Provide a concise summary in {{ output_format }} format.
+      max_tokens: 150
+      temperature: 0.3
+    dependencies:
+      - analyze_sentiment
+      - extract_keywords
+    metadata:
+      requires_model: true
+      priority: 1.0
+      on_failure: continue

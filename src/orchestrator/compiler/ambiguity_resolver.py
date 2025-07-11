@@ -30,17 +30,30 @@ class AmbiguityResolver:
     concrete values based on context and task requirements.
     """
     
-    def __init__(self, model: Optional[Model] = None) -> None:
+    def __init__(self, model: Optional[Model] = None, fallback_to_mock: bool = True) -> None:
         """
         Initialize ambiguity resolver.
         
         Args:
             model: Model to use for resolution (uses mock if None)
+            fallback_to_mock: Whether to fallback to mock model if real model unavailable
         """
         if model is None:
-            # Use mock model for testing
-            from ..core.model import MockModel
-            model = MockModel()
+            # Try to use a real model first
+            try:
+                from ..integrations.openai_model import OpenAIModel
+                model = OpenAIModel()
+            except Exception:
+                try:
+                    from ..integrations.anthropic_model import AnthropicModel
+                    model = AnthropicModel()
+                except Exception:
+                    if fallback_to_mock:
+                        # Fallback to mock model
+                        from ..core.model import MockModel
+                        model = MockModel()
+                    else:
+                        raise RuntimeError("No AI model available for ambiguity resolution")
         
         self.model = model
         self.resolution_cache: Dict[str, Any] = {}
@@ -211,20 +224,33 @@ class AmbiguityResolver:
     
     async def _resolve_generic(self, content: str, context_path: str) -> str:
         """Generic resolution using model."""
-        # Create a simple resolution prompt
-        prompt = f"""
-        Please resolve this ambiguous specification:
-        
-        Content: {content}
-        Context: {context_path}
-        
-        Provide a specific, concrete value that would be appropriate for this context.
-        Return only the value without explanation.
-        """
+        # Create a detailed resolution prompt
+        prompt = f"""You are an AI pipeline orchestration expert. Resolve this ambiguous specification to a specific, concrete value.
+
+CONTEXT:
+- Path: {context_path}
+- Ambiguous content: {content}
+
+RULES:
+1. Provide a specific, actionable value
+2. Consider the context path to understand the parameter's purpose
+3. Return only the resolved value without explanation
+4. If multiple options exist, choose the most common/standard option
+5. For parameters, prefer widely-supported values
+6. For actions, prefer standard operations
+7. For formats, prefer JSON unless context suggests otherwise
+
+EXAMPLES:
+- "Choose the best format" in data context → "json"
+- "Select appropriate method" in analysis context → "statistical"
+- "Determine timeout value" → "30"
+- "Pick suitable model" → "gpt-3.5-turbo"
+
+Resolved value:"""
         
         try:
-            result = await self.model.generate(prompt, temperature=0.3)
-            return result.strip()
+            result = await self.model.generate(prompt, temperature=0.1, max_tokens=50)
+            return result.strip().strip('"').strip("'")
         except Exception as e:
             # Fallback to simple heuristics
             return self._fallback_resolution(content, context_path)

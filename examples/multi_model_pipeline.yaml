@@ -1,0 +1,123 @@
+# Advanced example pipeline demonstrating multi-model capabilities
+
+id: multi_model_example
+name: Multi-Model Data Processing Pipeline
+description: A complex pipeline using different AI models for different tasks
+version: "1.0"
+
+context:
+  dataset_url: "https://example.com/data.csv"
+  analysis_depth: "comprehensive"
+  output_formats: ["json", "csv", "markdown"]
+
+steps:
+  - id: fetch_data
+    name: Fetch Dataset
+    action: fetch
+    parameters:
+      url: "{{ dataset_url }}"
+      format: <AUTO>Determine the best format for this data source</AUTO>
+      validation: true
+    metadata:
+      cpu_cores: 2
+      memory_mb: 1024
+      timeout: 120
+      priority: 1.0
+    
+  - id: data_validation
+    name: Validate Data Quality
+    action: analyze
+    parameters:
+      data: "{{ results.fetch_data }}"
+      validation_rules: <AUTO>Generate appropriate validation rules for this dataset</AUTO>
+      error_threshold: 0.05
+    dependencies:
+      - fetch_data
+    metadata:
+      requires_model: gpt-4
+      priority: 1.0
+      
+  - id: statistical_analysis
+    name: Statistical Analysis
+    action: analyze
+    parameters:
+      data: "{{ results.fetch_data }}"
+      analysis_type: "{{ analysis_depth }}"
+      methods: <AUTO>Choose the most appropriate statistical methods</AUTO>
+      confidence_level: 0.95
+    dependencies:
+      - data_validation
+    metadata:
+      requires_model: claude-3-5-sonnet
+      cpu_cores: 4
+      memory_mb: 2048
+      priority: 0.9
+      
+  - id: generate_insights
+    name: Generate Business Insights
+    action: generate
+    parameters:
+      prompt: |
+        Based on this statistical analysis, generate business insights:
+        
+        Data Summary: {{ results.data_validation }}
+        Analysis Results: {{ results.statistical_analysis }}
+        
+        Focus on:
+        1. Key trends and patterns
+        2. Actionable recommendations
+        3. Risk factors and opportunities
+      max_tokens: 500
+      temperature: 0.4
+    dependencies:
+      - statistical_analysis
+    metadata:
+      requires_model: gpt-4-turbo
+      priority: 0.8
+      
+  - id: create_visualizations
+    name: Create Data Visualizations
+    action: transform
+    parameters:
+      data: "{{ results.statistical_analysis }}"
+      chart_types: <AUTO>Recommend the best visualization types for this data</AUTO>
+      interactive: true
+    dependencies:
+      - statistical_analysis
+    metadata:
+      requires_model: gemini-1.5-pro
+      gpu_required: true
+      priority: 0.7
+      
+  - id: generate_reports
+    name: Generate Multi-Format Reports
+    action: generate
+    parameters:
+      content: |
+        Data Validation: {{ results.data_validation }}
+        Analysis: {{ results.statistical_analysis }}
+        Insights: {{ results.generate_insights }}
+        Visualizations: {{ results.create_visualizations }}
+      formats: "{{ output_formats }}"
+      templates: <AUTO>Choose appropriate report templates for each format</AUTO>
+    dependencies:
+      - generate_insights
+      - create_visualizations
+    metadata:
+      requires_model: claude-3-haiku
+      priority: 0.6
+      on_failure: continue
+      
+  - id: quality_check
+    name: Final Quality Check
+    action: analyze
+    parameters:
+      reports: "{{ results.generate_reports }}"
+      criteria: <AUTO>Define quality criteria for the generated reports</AUTO>
+      threshold: 0.85
+    dependencies:
+      - generate_reports
+    metadata:
+      requires_model: gpt-3.5-turbo
+      priority: 1.0
+      on_failure: skip

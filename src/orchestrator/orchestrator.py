@@ -10,8 +10,11 @@ from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem, MockControlSystem
 from .core.pipeline import Pipeline
 from .core.task import Task, TaskStatus
+from .core.error_handler import ErrorHandler
+from .core.resource_allocator import ResourceAllocator
 from .models.model_registry import ModelRegistry
 from .state.state_manager import StateManager
+from .executor.parallel_executor import ParallelExecutor
 
 
 class ExecutionError(Exception):
@@ -33,6 +36,9 @@ class Orchestrator:
         control_system: Optional[ControlSystem] = None,
         state_manager: Optional[StateManager] = None,
         yaml_compiler: Optional[YAMLCompiler] = None,
+        error_handler: Optional[ErrorHandler] = None,
+        resource_allocator: Optional[ResourceAllocator] = None,
+        parallel_executor: Optional[ParallelExecutor] = None,
         max_concurrent_tasks: int = 10,
     ) -> None:
         """
@@ -43,12 +49,18 @@ class Orchestrator:
             control_system: Control system for task execution
             state_manager: State manager for checkpointing
             yaml_compiler: YAML compiler for pipeline parsing
+            error_handler: Error handler for fault tolerance
+            resource_allocator: Resource allocator for task scheduling
+            parallel_executor: Parallel executor for concurrent execution
             max_concurrent_tasks: Maximum concurrent tasks
         """
         self.model_registry = model_registry or ModelRegistry()
         self.control_system = control_system or MockControlSystem()
         self.state_manager = state_manager or StateManager()
         self.yaml_compiler = yaml_compiler or YAMLCompiler()
+        self.error_handler = error_handler or ErrorHandler()
+        self.resource_allocator = resource_allocator or ResourceAllocator()
+        self.parallel_executor = parallel_executor or ParallelExecutor()
         self.max_concurrent_tasks = max_concurrent_tasks
         
         # Execution state
@@ -183,64 +195,112 @@ class Orchestrator:
         previous_results: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute tasks in a single level."""
-        # Create tasks for parallel execution
-        tasks = []
+        # Allocate resources for tasks
+        resource_allocations = {}
         for task_id in level_tasks:
             task = pipeline.get_task(task_id)
-            task_context = {
-                **context,
-                "task_id": task_id,
-                "previous_results": previous_results,
-            }
-            tasks.append(self._execute_task(task, task_context))
-        
-        # Execute tasks with concurrency control
-        results = {}
-        if tasks:
-            task_results = await asyncio.gather(*tasks, return_exceptions=True)
             
-            for task_id, result in zip(level_tasks, task_results):
-                if isinstance(result, Exception):
-                    # Task failed
-                    task = pipeline.get_task(task_id)
-                    task.fail(result)
-                    results[task_id] = {"error": str(result)}
-                else:
-                    # Task succeeded
-                    results[task_id] = result
+            # Determine resource requirements
+            resource_requirements = self._get_task_resource_requirements(task)
+            
+            # Create resource request
+            from .core.resource_allocator import ResourceRequest
+            request = ResourceRequest(
+                task_id=task_id,
+                resources=resource_requirements,
+                min_resources={k: v * 0.5 for k, v in resource_requirements.items()},
+                priority=task.metadata.get("priority", 1.0)
+            )
+            
+            # Request resources
+            allocation_success = await self.resource_allocator.request_resources(request)
+            resource_allocations[task_id] = allocation_success
+        
+        try:
+            # Execute tasks using parallel executor
+            execution_tasks = []
+            for task_id in level_tasks:
+                task = pipeline.get_task(task_id)
+                task_context = {
+                    **context,
+                    "task_id": task_id,
+                    "previous_results": previous_results,
+                    "resource_allocation": resource_allocations[task_id],
+                }
+                execution_tasks.append(self._execute_task_with_resources(task, task_context))
+            
+            # Execute tasks with proper error handling
+            results = {}
+            if execution_tasks:
+                # Execute tasks concurrently with semaphore control
+                task_results = await asyncio.gather(*execution_tasks, return_exceptions=True)
+                
+                for task_id, result in zip(level_tasks, task_results):
+                    if isinstance(result, Exception):
+                        # Task failed - use error handler
+                        task = pipeline.get_task(task_id)
+                        try:
+                            handled_error = await self.error_handler.handle_error(result, context)
+                        except Exception:
+                            # Fallback to original error
+                            handled_error = result
+                        task.fail(handled_error)
+                        results[task_id] = {"error": str(handled_error)}
+                    else:
+                        # Task succeeded
+                        results[task_id] = result
+        
+        finally:
+            # Release resources
+            for task_id, allocation_success in resource_allocations.items():
+                if allocation_success:
+                    await self.resource_allocator.release_resources(task_id)
         
         return results
+    
+    async def _execute_task_with_resources(
+        self,
+        task: Task,
+        context: Dict[str, Any],
+    ) -> Any:
+        """Execute a single task with resource management."""
+        # Mark task as running
+        task.start()
+        
+        try:
+            # Select appropriate model for the task
+            model = await self._select_model_for_task(task, context)
+            if model:
+                context["model"] = model
+            
+            # Execute task using control system
+            result = await self.control_system.execute_task(task, context)
+            
+            # Mark task as completed
+            task.complete(result)
+            
+            return result
+            
+        except Exception as e:
+            # Mark task as failed
+            task.fail(e)
+            
+            # Check if task can be retried
+            if task.can_retry():
+                # Reset task and retry
+                task.reset()
+                return await self._execute_task_with_resources(task, context)
+            else:
+                raise e
     
     async def _execute_task(
         self,
         task: Task,
         context: Dict[str, Any],
     ) -> Any:
-        """Execute a single task."""
+        """Execute a single task (legacy method)."""
         async with self.execution_semaphore:
-            # Mark task as running
-            task.start()
-            
-            try:
-                # Execute task using control system
-                result = await self.control_system.execute_task(task, context)
-                
-                # Mark task as completed
-                task.complete(result)
-                
-                return result
-                
-            except Exception as e:
-                # Mark task as failed
-                task.fail(e)
-                
-                # Check if task can be retried
-                if task.can_retry():
-                    # Reset task and retry
-                    task.reset()
-                    return await self._execute_task(task, context)
-                else:
-                    raise e
+            return await self._execute_task_with_resources(task, context)
     
     async def _handle_task_failures(
         self,
@@ -419,11 +479,141 @@ class Orchestrator:
         """Clear execution history."""
         self.execution_history.clear()
     
+    def _get_task_resource_requirements(self, task: Task) -> Dict[str, Any]:
+        """Get resource requirements for a task."""
+        # Extract resource requirements from task metadata
+        requirements = {
+            "cpu": task.metadata.get("cpu_cores", 1),
+            "memory": task.metadata.get("memory_mb", 512),
+            "gpu": task.metadata.get("gpu_required", False),
+            "gpu_memory": task.metadata.get("gpu_memory_mb", 0),
+            "timeout": task.timeout or 300,  # Default 5 minutes
+        }
+        
+        # Add model-specific requirements
+        if "requires_model" in task.metadata:
+            model_name = task.metadata["requires_model"]
+            model = self.model_registry.get_model(model_name)
+            if model:
+                requirements.update({
+                    "model_memory": model.requirements.memory_gb * 1024,
+                    "model_gpu": model.requirements.requires_gpu,
+                    "model_gpu_memory": (model.requirements.gpu_memory_gb or 0) * 1024,
+                })
+        
+        return requirements
+    
+    async def _select_model_for_task(self, task: Task, context: Dict[str, Any]) -> Optional[Any]:
+        """Select appropriate model for task execution."""
+        # Check if task specifies a model
+        if "requires_model" in task.metadata:
+            model_name = task.metadata["requires_model"]
+            return self.model_registry.get_model(model_name)
+        
+        # Check if task requires AI capabilities
+        if task.action in ["generate", "analyze", "transform", "chat"]:
+            # Select best model for the task
+            requirements = {
+                "tasks": [task.action],
+                "context_window": len(str(task.parameters).encode()) // 4,  # Rough token estimate
+            }
+            
+            return await self.model_registry.select_model(requirements)
+        
+        return None
+    
+    async def get_performance_metrics(self) -> Dict[str, Any]:
+        """Get performance metrics for the orchestrator."""
+        return {
+            "total_executions": len(self.execution_history),
+            "successful_executions": len([
+                record for record in self.execution_history
+                if record["status"] == "completed"
+            ]),
+            "failed_executions": len([
+                record for record in self.execution_history
+                if record["status"] == "failed"
+            ]),
+            "running_pipelines": len(self.running_pipelines),
+            "average_execution_time": sum(
+                record.get("execution_time", 0) for record in self.execution_history
+            ) / len(self.execution_history) if self.execution_history else 0,
+            "resource_utilization": await self.resource_allocator.get_utilization(),
+            "error_rate": len([
+                record for record in self.execution_history
+                if record["status"] == "failed"
+            ]) / len(self.execution_history) if self.execution_history else 0,
+        }
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """Perform health check on all components."""
+        health_status = {
+            "orchestrator": "healthy",
+            "model_registry": "healthy",
+            "control_system": "healthy",
+            "state_manager": "healthy",
+            "error_handler": "healthy",
+            "resource_allocator": "healthy",
+            "parallel_executor": "healthy",
+        }
+        
+        # Check each component
+        try:
+            # Check model registry
+            available_models = await self.model_registry.get_available_models()
+            if not available_models:
+                health_status["model_registry"] = "warning"
+        except Exception:
+            health_status["model_registry"] = "unhealthy"
+        
+        # Check control system
+        try:
+            capabilities = self.control_system.get_capabilities()
+            if not capabilities:
+                health_status["control_system"] = "warning"
+        except Exception:
+            health_status["control_system"] = "unhealthy"
+        
+        # Check state manager
+        try:
+            if not await self.state_manager.is_healthy():
+                health_status["state_manager"] = "unhealthy"
+        except Exception:
+            health_status["state_manager"] = "unhealthy"
+        
+        # Check resource allocator
+        try:
+            utilization = await self.resource_allocator.get_utilization()
+            if utilization.get("cpu_usage", 0) > 0.9:
+                health_status["resource_allocator"] = "warning"
+        except Exception:
+            health_status["resource_allocator"] = "unhealthy"
+        
+        # Overall health
+        unhealthy_components = [
+            comp for comp, status in health_status.items()
+            if status == "unhealthy"
+        ]
+        
+        if unhealthy_components:
+            health_status["overall"] = "unhealthy"
+        elif any(status == "warning" for status in health_status.values()):
+            health_status["overall"] = "warning"
+        else:
+            health_status["overall"] = "healthy"
+        
+        return health_status
+    
     async def shutdown(self) -> None:
         """Shutdown orchestrator and clean up resources."""
         # Wait for running pipelines to complete
         if self.running_pipelines:
             await asyncio.sleep(1)  # Give some time for cleanup
+        
+        # Shutdown components
+        await self.resource_allocator.shutdown()
+        await self.parallel_executor.shutdown()
+        await self.state_manager.shutdown()
         
         # Clear state
         self.running_pipelines.clear()
