@@ -1,0 +1,135 @@
+/* Custom CSS for Orchestrator Documentation */
+
+/* Brand colors */
+:root {
+    --primary-color: #2980B9;
+    --secondary-color: #3498DB;
+    --accent-color: #E74C3C;
+    --success-color: #27AE60;
+    --warning-color: #F39C12;
+}
+
+/* Code block styling */
+.highlight {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+/* Admonition styling */
+.admonition {
+    border-left: 4px solid var(--primary-color);
+    background-color: #f8f9fa;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.admonition.note {
+    border-left-color: var(--secondary-color);
+}
+
+.admonition.warning {
+    border-left-color: var(--warning-color);
+}
+
+.admonition.important {
+    border-left-color: var(--accent-color);
+}
+
+.admonition.tip {
+    border-left-color: var(--success-color);
+}
+
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+table th,
+table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* API documentation styling */
+.py.class > dt {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--primary-color);
+    padding: 0.5rem;
+    margin: 1rem 0;
+}
+
+.py.method > dt {
+    background-color: #f8f9fa;
+    border-left: 2px solid var(--secondary-color);
+    padding: 0.25rem 0.5rem;
+    margin: 0.5rem 0;
+}
+
+/* Navigation improvements */
+.wy-nav-side {
+    background-color: #f8f9fa;
+}
+
+.wy-nav-top {
+    background-color: var(--primary-color);
+}
+
+/* Footer styling */
+.rst-footer-buttons {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Custom grid for feature highlights */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.feature-card {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.feature-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+/* Badge styling */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    background-color: var(--primary-color);
+    border-radius: 0.25rem;
+    margin: 0.25rem;
+}
+
+.badge.beta {
+    background-color: var(--warning-color);
+}
+
+.badge.new {
+    background-color: var(--success-color);
+}
