@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 from src.orchestrator.state.state_manager import StateManager, StateManagerError
 from src.orchestrator.state.adaptive_checkpoint import AdaptiveStrategy, AdaptiveCheckpointStrategy
-from src.orchestrator.state.backends import PostgresBackend, RedisBackend
+from src.orchestrator.state.backends import MemoryBackend, FileBackend, PostgresBackend, RedisBackend
 
 
 class TestStateManager:
@@ -768,7 +768,7 @@ class TestPersistenceBackends:
     
     def test_memory_backend(self):
         """Test in-memory backend."""
-        backend = InMemoryBackend()
+        backend = MemoryBackend()
         
         assert backend.data == {}
         assert backend.name == "memory"
@@ -777,7 +777,7 @@ class TestPersistenceBackends:
     @pytest.mark.asyncio
     async def test_memory_backend_operations(self):
         """Test memory backend operations."""
-        backend = InMemoryBackend()
+        backend = MemoryBackend()
         
         # Save data
         key = "test_key"
@@ -799,7 +799,7 @@ class TestPersistenceBackends:
     def test_file_backend(self):
         """Test file backend."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            backend = FileBackend(path=temp_dir)
+            backend = FileBackend(storage_path=temp_dir)
             
             assert backend.path == temp_dir
             assert backend.name == "file"
@@ -810,7 +810,7 @@ class TestPersistenceBackends:
     async def test_file_backend_operations(self):
         """Test file backend operations."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            backend = FileBackend(path=temp_dir)
+            backend = FileBackend(storage_path=temp_dir)
             
             # Save data
             key = "test_key"

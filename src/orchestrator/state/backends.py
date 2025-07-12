@@ -45,6 +45,43 @@ class MemoryBackend(StateBackend):
         self._checkpoints: Dict[str, Dict[str, Any]] = {}
         self._metadata: Dict[str, Dict[str, Any]] = {}
     
+    @property
+    def data(self) -> Dict[str, Any]:
+        """Access to internal data for testing."""
+        return self._checkpoints
+    
+    @property
+    def name(self) -> str:
+        """Backend name."""
+        return "memory"
+    
+    @property
+    def persistent(self) -> bool:
+        """Whether backend persists data."""
+        return False
+    
+    # Compatibility methods for test interface
+    async def save(self, key: str, data: Dict[str, Any]) -> None:
+        """Save data with simple key-value interface."""
+        self._checkpoints[key] = {"state": data, "execution_id": key, "timestamp": datetime.now().timestamp()}
+    
+    async def load(self, key: str) -> Optional[Dict[str, Any]]:
+        """Load data with simple key-value interface."""
+        if key in self._checkpoints:
+            return self._checkpoints[key]["state"]
+        return None
+    
+    async def delete(self, key: str) -> bool:
+        """Delete data with simple key-value interface."""
+        if key in self._checkpoints:
+            del self._checkpoints[key]
+            return True
+        return False
+    
+    async def list_keys(self) -> List[str]:
+        """List all keys."""
+        return list(self._checkpoints.keys())
+    
     async def save_state(self, execution_id: str, state: Dict[str, Any], metadata: Dict[str, Any] = None) -> str:
         """Save state to memory."""
         timestamp = datetime.now().timestamp()  # Keep full precision
@@ -127,6 +164,53 @@ class FileBackend(StateBackend):
     def __init__(self, storage_path: str = "./checkpoints"):
         self.storage_path = storage_path
         os.makedirs(storage_path, exist_ok=True)
+    
+    @property
+    def path(self) -> str:
+        """Storage path for compatibility."""
+        return self.storage_path
+    
+    @property
+    def name(self) -> str:
+        """Backend name."""
+        return "file"
+    
+    @property
+    def persistent(self) -> bool:
+        """Whether backend persists data."""
+        return True
+    
+    # Compatibility methods for test interface
+    async def save(self, key: str, data: Dict[str, Any]) -> None:
+        """Save data with simple key-value interface."""
+        filepath = os.path.join(self.storage_path, f"{key}.json")
+        with open(filepath, 'w') as f:
+            json.dump(data, f)
+    
+    async def load(self, key: str) -> Optional[Dict[str, Any]]:
+        """Load data with simple key-value interface."""
+        filepath = os.path.join(self.storage_path, f"{key}.json")
+        if os.path.exists(filepath):
+            with open(filepath, 'r') as f:
+                return json.load(f)
+        return None
+    
+    async def delete(self, key: str) -> bool:
+        """Delete data with simple key-value interface."""
+        filepath = os.path.join(self.storage_path, f"{key}.json")
+        if os.path.exists(filepath):
+            os.unlink(filepath)
+            return True
+        return False
+    
+    async def list_keys(self) -> List[str]:
+        """List all keys."""
+        keys = []
+        if os.path.exists(self.storage_path):
+            for filename in os.listdir(self.storage_path):
+                if filename.endswith('.json'):
+                    keys.append(filename[:-5])  # Remove .json extension
+        return keys
     
     async def save_state(self, execution_id: str, state: Dict[str, Any], metadata: Dict[str, Any] = None) -> str:
         """Save state to file."""
