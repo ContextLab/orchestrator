@@ -115,18 +115,12 @@ class StateManager:
     
     def _serialize_state(self, state: Dict[str, Any]) -> bytes:
         """Serialize state to bytes."""
-        # First check if state contains non-serializable objects
+        # Use lenient serialization with default=str to handle non-serializable objects
         try:
-            # Try strict serialization first (no default handler)
-            json.dumps(state)
-        except TypeError as e:
-            if "not JSON serializable" in str(e):
-                raise StateManagerError(f"State contains non-serializable objects: {e}")
-            raise
-        
-        # If strict serialization passes, use lenient version for final output
-        json_str = json.dumps(state, default=str)
-        return json_str.encode('utf-8')
+            json_str = json.dumps(state, default=str)
+            return json_str.encode('utf-8')
+        except (TypeError, ValueError) as e:
+            raise StateManagerError(f"Failed to serialize state: {e}")
     
     def _deserialize_state(self, data: bytes) -> Dict[str, Any]:
         """Deserialize state from bytes."""
@@ -633,6 +627,19 @@ class StateManager:
             "backend_type": backend_type_name,
             **storage_info
         }
+    
+    async def shutdown(self) -> None:
+        """Shutdown state manager and clean up resources."""
+        # Clean up backend connections and resources
+        if hasattr(self.backend, 'shutdown'):
+            await self.backend.shutdown()
+        elif hasattr(self.backend, 'cleanup'):
+            await self.backend.cleanup()
+        elif hasattr(self.backend, 'close'):
+            if asyncio.iscoroutinefunction(self.backend.close):
+                await self.backend.close()
+            else:
+                self.backend.close()
 
 
 # For backward compatibility

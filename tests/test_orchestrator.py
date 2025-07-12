@@ -502,8 +502,8 @@ class TestOrchestrator:
         pipeline.add_task(task2)
         pipeline.add_task(task3)
         
-        # This should not raise an exception with continue policy (disable checkpointing to avoid serialization issues)
-        results = await orchestrator.execute_pipeline(pipeline, checkpoint_enabled=False)
+        # This should not raise an exception with continue policy
+        results = await orchestrator.execute_pipeline(pipeline, checkpoint_enabled=True)
         
         # Task 1 and 3 should complete, task 2 should fail
         assert task1.status == TaskStatus.COMPLETED
@@ -534,8 +534,8 @@ class TestOrchestrator:
         pipeline.add_task(task2)
         pipeline.add_task(task3)
         
-        # Execute pipeline (disable checkpointing to avoid serialization issues)
-        results = await orchestrator.execute_pipeline(pipeline, checkpoint_enabled=False)
+        # Execute pipeline
+        results = await orchestrator.execute_pipeline(pipeline, checkpoint_enabled=True)
         
         # Task 1 should fail, tasks 2 and 3 should be skipped
         assert task1.status == TaskStatus.FAILED
