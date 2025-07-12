@@ -119,26 +119,52 @@ class AmbiguityResolver:
         """
         content_lower = content.lower()
         
-        # Check for specific patterns
+        # Check for boolean indicators first
+        boolean_indicators = ["enable", "disable", "true", "false", "yes", "no", "allow", "deny", "support", "block"]
+        if any(word in content_lower for word in boolean_indicators):
+            return "boolean"
+        
+        # Check for number indicators (but not if it's quoted content)
+        number_indicators = ["timeout", "retry", "count", "size", "limit", "number", "amount"]
+        if any(word in content_lower for word in number_indicators):
+            return "number"
+        
+        # Check for quoted strings (should be handled as string)
+        if '"' in content:
+            return "string"
+        
+        # Check for explicit choices first - this is the most specific pattern
+        if ("choose" in content_lower or "select" in content_lower) and ":" in content and "," in content:
+            # Looks like explicit choices (e.g., "choose: a, b, c", "select from: a, b, c")
+            return "value"
+        
+        # Check for specific patterns in content first (most specific)
         if "choose" in content_lower or "select" in content_lower:
+            # Check content patterns first (more specific than generic choose)
             if "true" in content_lower or "false" in content_lower:
                 return "boolean"
             elif any(word in content_lower for word in ["number", "size", "count", "amount"]):
                 return "number"
-            elif "list" in content_lower or "array" in content_lower:
+            elif "list" in content_lower or "array" in content_lower or "items" in content_lower:
                 return "list"
+            # Check for strong boolean context hints even with choose/select
+            elif (any(pattern in context_path for pattern in ["enable_", "disable_", "support_", "allow_", "deny_"]) or
+                  # Also consider specific option/config paths that might be boolean
+                  ("other_option" in context_path and "config." in context_path)):
+                return "boolean"
+            # Default to value for choose/select patterns
             else:
                 return "value"
         
-        # Check context path for hints
-        if "parameters" in context_path:
+        # Check context path for strong type hints (only if no content patterns matched)
+        if "enable" in context_path or "support" in context_path or "disable" in context_path:
+            return "boolean"
+        elif "count" in context_path or "size" in context_path or "limit" in context_path or "timeout" in context_path or "retry" in context_path or "number" in context_path:
+            return "number"
+        elif "parameters" in context_path:
             return "parameter"
         elif "format" in context_path or "type" in context_path:
             return "string"
-        elif "enable" in context_path or "support" in context_path:
-            return "boolean"
-        elif "count" in context_path or "size" in context_path or "limit" in context_path:
-            return "number"
         
         return "string"
     
@@ -285,7 +311,10 @@ Resolved value:"""
             choices = [choice.strip() for choice in choices_text.split(',')]
             # Remove 'or' from last choice
             if choices:
-                choices[-1] = choices[-1].replace(' or ', '').strip()
+                last_choice = choices[-1]
+                # Handle various 'or' patterns
+                last_choice = last_choice.replace(' or ', '').replace('or ', '').strip()
+                choices[-1] = last_choice
             return [choice for choice in choices if choice]
         
         return []

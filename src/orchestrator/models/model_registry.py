@@ -33,7 +33,7 @@ class ModelRegistry:
         self.model_selector = UCBModelSelector()
         self._model_health_cache: Dict[str, bool] = {}
         self._cache_ttl = 300  # 5 minutes
-        self._last_health_check = 0
+        self._last_health_check = 0  # Will be set to current time on first use
     
     def register_model(self, model: Model) -> None:
         """
@@ -183,11 +183,25 @@ class ModelRegistry:
     
     async def _filter_by_health(self, models: List[Model]) -> List[Model]:
         """Filter models by health status."""
-        # Check if cache is stale
+        # Check if cache is stale or if any models don't have cached health status
         current_time = asyncio.get_event_loop().time()
-        if current_time - self._last_health_check > self._cache_ttl:
-            # Refresh health cache
-            await self._refresh_health_cache(models)
+        
+        # Only consider cache stale if we've checked before and enough time has passed
+        cache_is_stale = (self._last_health_check > 0 and 
+                         current_time - self._last_health_check > self._cache_ttl)
+        
+        # Check if any models are missing from cache
+        missing_models = []
+        for model in models:
+            model_key = self._get_model_key(model)
+            if model_key not in self._model_health_cache:
+                missing_models.append(model)
+        
+        # Only refresh if cache is stale OR if we have missing models
+        if cache_is_stale or missing_models:
+            # If cache is stale, refresh all models; otherwise just refresh missing ones
+            models_to_refresh = models if cache_is_stale else missing_models
+            await self._refresh_health_cache(models_to_refresh)
             self._last_health_check = current_time
         
         # Return healthy models
@@ -337,6 +351,7 @@ class UCBModelSelector:
         self.exploration_factor = exploration_factor
         self.model_stats: Dict[str, Dict[str, float]] = {}
         self.total_attempts = 0
+        self._pending_attempts: set = set()  # Track models with pending attempts
     
     def initialize_model(self, model_key: str, metrics: ModelMetrics) -> None:
         """
@@ -400,9 +415,12 @@ class UCBModelSelector:
         # Select model with highest score
         selected_key = max(scores, key=scores.get)
         
-        # Update attempt count
+        # Update attempt count immediately (as expected by tests)
         self.model_stats[selected_key]["attempts"] += 1
         self.total_attempts += 1
+        
+        # Mark as having a pending attempt (to avoid double counting in update_reward)
+        self._pending_attempts.add(selected_key)
         
         return selected_key
     
@@ -419,14 +437,21 @@ class UCBModelSelector:
         
         stats = self.model_stats[model_key]
         
+        # Only increment attempts if this wasn't already counted by select()
+        if model_key not in self._pending_attempts:
+            stats["attempts"] += 1
+            self.total_attempts += 1
+        else:
+            # Remove from pending attempts (already counted)
+            self._pending_attempts.remove(model_key)
+        
         # Update statistics
         stats["total_reward"] += reward
         if reward > 0:
             stats["successes"] += 1
         
         # Update average reward
-        if stats["attempts"] > 0:
-            stats["average_reward"] = stats["total_reward"] / stats["attempts"]
+        stats["average_reward"] = stats["total_reward"] / stats["attempts"]
     
     def remove_model(self, model_key: str) -> None:
         """
@@ -468,6 +493,7 @@ class UCBModelSelector:
             stats["average_reward"] = 0.5
         
         self.total_attempts = 0
+        self._pending_attempts.clear()
     
     def get_model_confidence(self, model_key: str) -> float:
         """

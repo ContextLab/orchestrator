@@ -6,9 +6,10 @@ import tempfile
 import os
 from unittest.mock import patch
 
-from orchestrator.sandbox.executor import SandboxedExecutor, SandboxError
-from orchestrator.sandbox.security import SecurityManager
-from orchestrator.sandbox.resource_manager import ResourceManager
+from src.orchestrator.executor.sandboxed_executor import (
+    SandboxExecutor, DockerSandboxExecutor, SandboxedExecutor,
+    SecurityManager, ResourceManager, ResourceError
+)
 
 
 class TestSandboxedExecutor:

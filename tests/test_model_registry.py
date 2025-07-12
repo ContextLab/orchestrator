@@ -415,14 +415,17 @@ class TestModelRegistry:
         registry.register_model(model)
         
         initial_success_rate = model.metrics.success_rate
+        initial_latency = model.metrics.latency_p50
+        initial_cost = model.metrics.cost_per_token
         
         # Update performance
         registry.update_model_performance(model, success=True, latency=1.5, cost=0.001)
         
-        # Check that metrics were updated
-        assert model.metrics.success_rate != initial_success_rate
-        assert model.metrics.latency_p50 > 0
-        assert model.metrics.cost_per_token > 0
+        # Check that metrics were updated appropriately
+        # Success rate should stay the same when starting at 1.0 and updating with success=True
+        assert model.metrics.success_rate == initial_success_rate  # Should remain 1.0
+        assert model.metrics.latency_p50 > initial_latency  # Should increase from 0
+        assert model.metrics.cost_per_token > initial_cost  # Should increase from 0
     
     def test_update_model_performance_failure(self):
         """Test updating model performance with failure."""
@@ -500,10 +503,11 @@ class TestModelRegistry:
         
         registry._update_model_metrics(model, success=True, latency=2.0, cost=0.002)
         
-        # Metrics should be updated
-        assert model.metrics.success_rate != initial_success_rate
-        assert model.metrics.latency_p50 != initial_latency
-        assert model.metrics.cost_per_token != initial_cost
+        # Metrics should be updated appropriately
+        # Success rate should stay the same when starting at 1.0 and updating with success=True  
+        assert model.metrics.success_rate == initial_success_rate  # Should remain 1.0
+        assert model.metrics.latency_p50 > initial_latency  # Should increase from 0
+        assert model.metrics.cost_per_token > initial_cost  # Should increase from 0
     
     def test_update_model_metrics_failure(self):
         """Test updating model metrics with failure."""

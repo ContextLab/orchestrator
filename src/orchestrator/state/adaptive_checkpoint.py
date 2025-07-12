@@ -9,7 +9,6 @@ from enum import Enum
 from typing import Dict, Any, Optional, List, Set, Callable
 from collections import deque
 
-from .state_manager import StateManager
 from ..core.task import Task, TaskStatus
 from ..core.pipeline import Pipeline
 
@@ -101,6 +100,14 @@ class TimeBasedStrategy(CheckpointStrategy):
 
 class AdaptiveStrategy(CheckpointStrategy):
     """Adaptive checkpointing strategy based on execution patterns."""
+    
+    def __init__(self, checkpoint_interval: float = 60.0):
+        """Initialize adaptive strategy.
+        
+        Args:
+            checkpoint_interval: Default checkpoint interval in seconds
+        """
+        self.checkpoint_interval = checkpoint_interval
     
     def should_checkpoint(self, 
                          metrics: CheckpointMetrics, 
@@ -233,7 +240,7 @@ class AdaptiveCheckpointManager:
     """Manages adaptive checkpointing for pipeline executions."""
     
     def __init__(self, 
-                 state_manager: StateManager,
+                 state_manager: "StateManager",
                  config: CheckpointConfig = None,
                  strategy: CheckpointStrategy = None):
         self.state_manager = state_manager
@@ -504,3 +511,7 @@ def create_production_config() -> CheckpointConfig:
         retention_days=7,
         error_rate_threshold=0.05  # Lower threshold for production
     )
+
+
+# Alias for backward compatibility
+AdaptiveCheckpointStrategy = AdaptiveStrategy

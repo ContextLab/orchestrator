@@ -1,0 +1,41 @@
+    async def execute_with_circuit_breaker(self,
+                                         func: Callable,
+                                         breaker_name: str,
+                                         *args,
+                                         config: CircuitBreakerConfig = None,
+                                         **kwargs) -> Any:
+        """Execute function with circuit breaker protection."""
+        breaker = self.get_circuit_breaker(breaker_name, config)
+        return await breaker.call(func, *args, **kwargs)
+    
+    async def _log_error_async(self, error: Exception, category: ErrorCategory, severity: ErrorSeverity, context: Dict[str, Any] = None):
+        """Log error information (async version for tests)."""
+        context = context or {}
+        
+        log_level = {
+            ErrorSeverity.LOW: logging.INFO,
+            ErrorSeverity.MEDIUM: logging.WARNING, 
+            ErrorSeverity.HIGH: logging.ERROR,
+            ErrorSeverity.CRITICAL: logging.CRITICAL
+        }.get(severity, logging.ERROR)
+        
+        self.logger.log(
+            log_level,
+            f"Error: {type(error).__name__} - {str(error)} "
+            f"(Category: {category.value}, Severity: {severity.value})"
+        )
+    
+    def _log_error(self, error_info: ErrorInfo):
+        """Log error information."""
+        log_level = {
+            ErrorSeverity.LOW: logging.INFO,
+            ErrorSeverity.MEDIUM: logging.WARNING,
+            ErrorSeverity.HIGH: logging.ERROR,
+            ErrorSeverity.CRITICAL: logging.CRITICAL
+        }.get(error_info.severity, logging.ERROR)
+        
+        self.logger.log(
+            log_level,
+            f"Error: {error_info.error_type} - {error_info.message} "
+            f"(Category: {error_info.category.value}, Severity: {error_info.severity.value})"
+        )

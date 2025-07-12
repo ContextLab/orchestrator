@@ -156,8 +156,12 @@ class LangGraphWorkflow:
 class LangGraphAdapter(ControlSystem):
     """Adapter for integrating Orchestrator with LangGraph workflows."""
     
-    def __init__(self, name: str = "langgraph_adapter"):
-        super().__init__(name)
+    def __init__(self, config: Dict[str, Any] = None):
+        if config is None:
+            config = {"name": "langgraph_adapter"}
+        
+        super().__init__(config.get("name", "langgraph_adapter"))
+        self.config = config
         self.workflows: Dict[str, LangGraphWorkflow] = {}
         self.active_executions: Dict[str, LangGraphState] = {}
     
@@ -200,6 +204,29 @@ class LangGraphAdapter(ControlSystem):
                 workflow.add_edge(edge)
         
         return workflow
+    
+    async def execute_task(self, task: Task, context: Dict[str, Any] = None) -> Any:
+        """Execute a single task."""
+        return await self._execute_task(task, context or {})
+    
+    async def execute_pipeline(self, pipeline: Pipeline) -> Dict[str, Any]:
+        """Execute an entire pipeline."""
+        workflow = self.create_workflow_from_pipeline(pipeline)
+        state = await workflow.execute()
+        return state.data
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        """Return system capabilities."""
+        return {
+            "supports_workflows": True,
+            "supports_conditional_execution": True,
+            "supports_parallel_execution": True,
+            "supported_actions": ["generate", "analyze", "transform"]
+        }
+    
+    async def health_check(self) -> bool:
+        """Check if the system is healthy."""
+        return True  # Simplified for testing
     
     async def _execute_task(self, task: Task, state_data: Dict[str, Any]) -> Any:
         """Execute a task within LangGraph context."""

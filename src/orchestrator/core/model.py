@@ -362,11 +362,24 @@ class MockModel(Model):
         **kwargs: Any,
     ) -> str:
         """Generate mock response."""
+        # First try exact match
         if prompt in self._responses:
             response = self._responses[prompt]
             if isinstance(response, str):
                 return response
+            elif isinstance(response, Exception):
+                raise response
             return str(response)
+        
+        # Then try partial match (useful for ambiguity resolution)
+        for key, response in self._responses.items():
+            if key in prompt:
+                if isinstance(response, str):
+                    return response
+                elif isinstance(response, Exception):
+                    raise response
+                return str(response)
+        
         return f"Mock response for: {prompt[:50]}..."
     
     async def generate_structured(

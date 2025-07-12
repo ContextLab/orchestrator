@@ -79,7 +79,7 @@ class CacheBackend(ABC):
         pass
     
     @abstractmethod
-    async def set(self, key: str, entry: CacheEntry) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in cache."""
         pass
     
@@ -120,6 +120,23 @@ class MemoryCache(CacheBackend):
         self._lock = threading.RLock()
         self._current_memory = 0
     
+    @property
+    def maxsize(self) -> int:
+        """Alias for max_size for compatibility."""
+        return self.max_size
+    
+# Removed sync set method - use async version
+    
+    def get_sync(self, key: str) -> Optional[Any]:
+        """Synchronous wrapper for get method."""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            entry = loop.run_until_complete(self.get(key))
+        except RuntimeError:
+            entry = asyncio.run(self.get(key))
+        return entry.value if entry else None
+    
     async def get(self, key: str) -> Optional[CacheEntry]:
         """Get value from memory cache."""
         with self._lock:
@@ -143,8 +160,9 @@ class MemoryCache(CacheBackend):
             
             return entry
     
-    async def set(self, key: str, entry: CacheEntry) -> bool:
+    async def set_entry(self, entry: CacheEntry) -> bool:
         """Set value in memory cache."""
+        key = entry.key
         with self._lock:
             # Set default TTL if not specified
             if entry.ttl is None and self.default_ttl:
@@ -169,6 +187,11 @@ class MemoryCache(CacheBackend):
             self._current_memory += entry.size
             
             return True
+    
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        """Async set method for CacheBackend compatibility."""
+        entry = CacheEntry(key=key, value=value, ttl=ttl)
+        return await self.set_entry(entry)
     
     async def delete(self, key: str) -> bool:
         """Delete value from memory cache."""
@@ -327,8 +350,14 @@ class DiskCache(CacheBackend):
                     self._save_index()
                 return None
     
-    async def set(self, key: str, entry: CacheEntry) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in disk cache."""
+        entry = CacheEntry(key=key, value=value, ttl=ttl)
+        return await self.set_entry(entry)
+    
+    async def set_entry(self, entry: CacheEntry) -> bool:
+        """Set CacheEntry in disk cache."""
+        key = entry.key
         with self._lock:
             # Check size limit
             if len(self._index) >= self.max_size:
@@ -411,18 +440,182 @@ class DiskCache(CacheBackend):
         )
         
         await self.delete(oldest_key)
+    
+    async def cleanup_expired(self):
+        """Remove expired entries from cache."""
+        with self._lock:
+            current_time = time.time()
+            expired_keys = []
+            
+            for key, entry_meta in self._index.items():
+                file_path = self._get_file_path(key)
+                try:
+                    with open(file_path, 'rb') as f:
+                        entry = pickle.load(f)
+                    
+                    if entry.is_expired():
+                        expired_keys.append(key)
+                except:
+                    # File corruption or missing, mark for removal
+                    expired_keys.append(key)
+            
+            # Remove expired entries
+            for key in expired_keys:
+                await self.delete(key)
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        return {
+            "cache_dir": self.cache_dir,
+            "total_files": len(self._index),
+            "total_size_mb": sum(entry.get("size", 0) for entry in self._index.values()) / (1024 * 1024),
+            "oldest_entry": min(self._index.values(), key=lambda x: x.get("created_at", 0), default=None),
+            "newest_entry": max(self._index.values(), key=lambda x: x.get("created_at", 0), default=None)
+        }
+
+
+class RedisCache(CacheBackend):
+    """Redis-based cache backend."""
+    
+    def __init__(self, redis_url: str = "redis://localhost:6379"):
+        self.redis_url = redis_url
+        self._redis = None
+        try:
+            import redis
+            self._redis = redis.from_url(redis_url, decode_responses=True)
+            # Test connection
+            self._redis.ping()
+        except Exception:
+            # Redis not available, will raise exception
+            raise ConnectionError(f"Could not connect to Redis at {redis_url}")
+    
+    async def get(self, key: str) -> Optional[CacheEntry]:
+        """Get entry from Redis cache."""
+        if not self._redis:
+            return None
+        
+        try:
+            data = self._redis.get(key)
+            if data:
+                import json
+                entry_data = json.loads(data)
+                return CacheEntry(
+                    key=entry_data["key"],
+                    value=entry_data["value"],
+                    created_at=entry_data["created_at"],
+                    ttl=entry_data.get("ttl"),
+                    access_count=entry_data.get("access_count", 0)
+                )
+        except Exception:
+            pass
+        return None
+    
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        """Set entry in Redis cache."""
+        if not self._redis:
+            return False
+        
+        try:
+            entry = CacheEntry(key=key, value=value, ttl=ttl)
+            import json
+            data = json.dumps({
+                "key": entry.key,
+                "value": entry.value,
+                "created_at": entry.created_at,
+                "ttl": entry.ttl,
+                "access_count": entry.access_count
+            })
+            
+            if ttl:
+                self._redis.setex(key, ttl, data)
+            else:
+                self._redis.set(key, data)
+            return True
+        except Exception:
+            return False
+    
+    async def delete(self, key: str) -> bool:
+        """Delete entry from Redis cache."""
+        if not self._redis:
+            return False
+        
+        try:
+            result = self._redis.delete(key)
+            return result > 0
+        except Exception:
+            return False
+    
+    async def clear(self) -> None:
+        """Clear all entries from Redis cache."""
+        if self._redis:
+            try:
+                self._redis.flushdb()
+            except Exception:
+                pass
+    
+    async def size(self) -> int:
+        """Get cache size."""
+        if not self._redis:
+            return 0
+        
+        try:
+            return self._redis.dbsize()
+        except Exception:
+            return 0
+    
+    async def keys(self) -> List[str]:
+        """Get all cache keys."""
+        if not self._redis:
+            return []
+        
+        try:
+            return self._redis.keys("*")
+        except Exception:
+            return []
 
 
 class MultiLevelCache:
     """Multi-level cache with automatic promotion/demotion."""
     
-    def __init__(self):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        config = config or {}
+        
+        # Initialize cache backends
+        self.memory_cache = MemoryCache(
+            max_size=config.get("memory_cache_size", 1000),
+            eviction_policy=EvictionPolicy.LRU
+        )
+        
+        self.disk_cache = DiskCache(
+            cache_dir=config.get("disk_cache_dir", "./cache"),
+            max_size=config.get("disk_cache_size", 1000)
+        )
+        
+        # Redis cache (mock for now since Redis may not be available)
+        try:
+            self.redis_cache = RedisCache(config.get("redis_url", "redis://localhost:6379"))
+        except Exception:
+            # Fallback to memory cache if Redis not available
+            self.redis_cache = MemoryCache(max_size=1000, eviction_policy=EvictionPolicy.LRU)
+        
+        # Cache strategy (placeholder)
+        self.cache_strategy = "multi_level"
+        
+        # Default TTL
+        self.default_ttl = config.get("default_ttl", 3600)
+        
+        # Internal state
         self.levels = {}
         self.level_order = []
         self.hit_stats = {level: 0 for level in CacheLevel}
         self.miss_stats = 0
         self.promotion_threshold = 3  # Promote after 3 hits
         self._lock = asyncio.Lock()
+        
+        # Add default levels
+        self.add_level(CacheLevel.MEMORY, self.memory_cache)
+        self.add_level(CacheLevel.DISK, self.disk_cache)
+        self.add_level(CacheLevel.DISTRIBUTED, self.redis_cache)
     
     def add_level(self, level: CacheLevel, backend: CacheBackend):
         """Add a cache level."""
@@ -440,6 +633,9 @@ class MultiLevelCache:
                     continue
                 
                 backend = self.levels[level]
+                if backend is None:
+                    continue
+                    
                 entry = await backend.get(key)
                 
                 if entry is not None:
@@ -470,7 +666,8 @@ class MultiLevelCache:
                 continue
             
             backend = self.levels[level]
-            success = await backend.set(key, entry)
+            ttl_int = int(ttl) if ttl is not None else None
+            success = await backend.set(key, value, ttl_int)
             
             if success:
                 return True
@@ -512,7 +709,8 @@ class MultiLevelCache:
             higher_level = self.level_order[i]
             if higher_level in self.levels:
                 backend = self.levels[higher_level]
-                await backend.set(key, entry)
+                ttl_int = int(entry.ttl) if entry.ttl is not None else None
+                await backend.set(key, entry.value, ttl_int)
     
     def get_statistics(self) -> Dict[str, Any]:
         """Get cache statistics."""
@@ -540,6 +738,167 @@ class MultiLevelCache:
         """Reset cache statistics."""
         self.hit_stats = {level: 0 for level in CacheLevel}
         self.miss_stats = 0
+    
+    async def invalidate_pattern(self, pattern: str):
+        """Invalidate cache entries matching pattern."""
+        # For memory cache, manually filter keys
+        if hasattr(self.memory_cache, '_storage'):
+            keys_to_remove = []
+            for key in self.memory_cache._storage:
+                if pattern.replace("*", "") in key:
+                    keys_to_remove.append(key)
+            for key in keys_to_remove:
+                await self.memory_cache.delete(key)
+        
+        # For redis and disk cache, use their invalidate methods if available
+        if hasattr(self.redis_cache, 'invalidate_pattern'):
+            await self.redis_cache.invalidate_pattern(pattern)
+        if hasattr(self.disk_cache, 'invalidate_pattern'):
+            await self.disk_cache.invalidate_pattern(pattern)
+    
+    async def warmup(self, keys: List[str], data_loader: Callable):
+        """Warm up cache with specified keys."""
+        for key in keys:
+            try:
+                value = await data_loader(key)
+                await self.set(key, value)
+            except Exception:
+                # Skip failed loads
+                pass
+    
+    async def get_or_refresh(self, key: str, refresh_func: Callable) -> Any:
+        """Get value from cache or refresh if expired."""
+        value = await self.get(key)
+        if value is None:
+            # Cache miss or expired, refresh
+            value = await refresh_func(key)
+            await self.set(key, value)
+        return value
+
+
+# Additional cache implementations for testing
+
+class LRUCache:
+    """Simple LRU cache implementation."""
+    
+    def __init__(self, maxsize: int = 100):
+        self.maxsize = maxsize
+        self.data = OrderedDict()
+        self.hits = 0
+        self.misses = 0
+    
+    def get(self, key: str) -> Optional[Any]:
+        """Get value from cache."""
+        if key in self.data:
+            # Move to end (most recently used)
+            value = self.data[key]
+            self.data.move_to_end(key)
+            self.hits += 1
+            return value
+        else:
+            self.misses += 1
+            return None
+    
+    def set(self, key: str, value: Any):
+        """Set value in cache."""
+        if key in self.data:
+            # Update existing
+            self.data[key] = value
+            self.data.move_to_end(key)
+        else:
+            # Add new
+            if len(self.data) >= self.maxsize:
+                # Remove least recently used
+                self.data.popitem(last=False)
+            self.data[key] = value
+    
+    def clear(self):
+        """Clear all cache entries."""
+        self.data.clear()
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        total_requests = self.hits + self.misses
+        return {
+            "size": len(self.data),
+            "maxsize": self.maxsize,
+            "hits": self.hits,
+            "misses": self.misses,
+            "hit_rate": self.hits / total_requests if total_requests > 0 else 0
+        }
+
+
+class CacheStrategy:
+    """Cache strategy management."""
+    
+    def __init__(self):
+        self.policies = {}
+        self.default_ttl = 3600
+    
+    def select_policy(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Select cache policy based on data."""
+        data_type = data.get("type", "default")
+        
+        if data_type == "user":
+            return {"ttl": 7200, "cache_level": "memory"}
+        elif data_type == "session":
+            return {"ttl": 1800, "cache_level": "memory"}
+        elif data_type == "temp":
+            return {"ttl": 300, "cache_level": "memory"}
+        else:
+            return {"ttl": self.default_ttl, "cache_level": "multi"}
+    
+    def generate_key(self, prefix: str, data: Dict[str, Any]) -> str:
+        """Generate cache key."""
+        data_str = json.dumps(data, sort_keys=True)
+        data_hash = hashlib.md5(data_str.encode()).hexdigest()
+        return f"{prefix}:{data_hash}"
+    
+    def get_invalidation_keys(self, event: Dict[str, Any]) -> List[str]:
+        """Get keys to invalidate based on event."""
+        event_type = event.get("type", "")
+        
+        if event_type == "user_update":
+            return [f"user:{event.get('user_id')}"]
+        elif event_type == "session_logout":
+            return [f"session:{event.get('session_id')}"]
+        elif event_type == "config_change" and event.get("scope") == "global":
+            return ["*"]  # Invalidate all
+        else:
+            return []
+    
+    def optimize_cache_placement(self, access_patterns: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        """Optimize cache placement based on access patterns."""
+        optimizations = {}
+        
+        for pattern in access_patterns:
+            key = pattern["key"]
+            frequency = pattern["frequency"]
+            recency = pattern["recency"]
+            
+            if frequency >= 50 and recency <= 0.2:
+                level = "memory"
+            elif frequency >= 10:
+                level = "disk"
+            else:
+                level = "disk"
+            
+            optimizations[key] = {"level": level}
+        
+        return optimizations
+    
+    def select_warmup_keys(self, available_keys: List[str], max_keys: int = 10) -> List[str]:
+        """Select keys for cache warmup."""
+        priority_keys = []
+        
+        # High priority patterns
+        for key in available_keys:
+            if "config:global" in key:
+                priority_keys.append(key)
+            elif "user:" in key:
+                priority_keys.append(key)
+        
+        return priority_keys[:max_keys]
 
 
 # Convenience function for creating cache key from task parameters
