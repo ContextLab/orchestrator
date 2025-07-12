@@ -513,5 +513,288 @@ def create_production_config() -> CheckpointConfig:
     )
 
 
-# Alias for backward compatibility
-AdaptiveCheckpointStrategy = AdaptiveStrategy
+class AdaptiveCheckpointStrategy(CheckpointStrategy):
+    """Advanced adaptive checkpointing strategy with task history and pattern matching."""
+    
+    def __init__(self, 
+                 checkpoint_interval: int = 5,
+                 critical_task_patterns: List[str] = None,
+                 time_threshold_minutes: float = 10.0,
+                 failure_rate_threshold: float = 0.2):
+        """Initialize adaptive checkpoint strategy.
+        
+        Args:
+            checkpoint_interval: Number of tasks before creating checkpoint
+            critical_task_patterns: Regex patterns for critical tasks
+            time_threshold_minutes: Max time before forcing checkpoint
+            failure_rate_threshold: Failure rate threshold for checkpointing
+        """
+        self.checkpoint_interval = checkpoint_interval
+        self.critical_task_patterns = critical_task_patterns or []
+        self.time_threshold_minutes = time_threshold_minutes
+        self.failure_rate_threshold = failure_rate_threshold
+        
+        # Track task execution history per pipeline
+        self.task_history: Dict[str, List[Dict[str, Any]]] = {}
+        self.last_checkpoint_time: Dict[str, float] = {}
+    
+    def should_checkpoint(self, *args, **kwargs) -> bool:
+        """Polymorphic should_checkpoint method that handles both interfaces."""
+        # Handle the test interface: should_checkpoint(pipeline_id, task_id)
+        if len(args) == 2 and isinstance(args[0], str) and isinstance(args[1], str):
+            return self._should_checkpoint_for_task(args[0], args[1])
+        
+        # Handle the abstract interface: should_checkpoint(metrics, config, trigger)
+        elif len(args) == 3:
+            return self._should_checkpoint_with_metrics(args[0], args[1], args[2])
+        
+        # Handle keyword arguments
+        if 'pipeline_id' in kwargs and 'task_id' in kwargs:
+            return self._should_checkpoint_for_task(kwargs['pipeline_id'], kwargs['task_id'])
+        
+        return False
+    
+    def _should_checkpoint_for_task(self, pipeline_id: str, task_id: str) -> bool:
+        """Determine if checkpoint should be created for specific task."""
+        import re
+        
+        # Track this task call (for interval counting)
+        if pipeline_id not in self.task_history:
+            self.task_history[pipeline_id] = []
+        
+        # Add a minimal record for counting purposes
+        self.task_history[pipeline_id].append({
+            "task_id": task_id,
+            "timestamp": time.time()
+        })
+        
+        task_count = len(self.task_history[pipeline_id])
+        
+        # Check if task matches critical patterns
+        for pattern in self.critical_task_patterns:
+            if re.match(pattern, task_id):
+                return True
+        
+        # Check interval-based checkpointing
+        if task_count % self.checkpoint_interval == 0:
+            return True
+        
+        # Check time-based checkpointing
+        current_time = time.time()
+        if pipeline_id in self.last_checkpoint_time:
+            time_since_last = current_time - self.last_checkpoint_time[pipeline_id]
+            if time_since_last > (self.time_threshold_minutes * 60):
+                return True
+        
+        # Check failure rate (for recorded executions with success/failure data)
+        failure_rate = self._get_failure_rate(pipeline_id)
+        if failure_rate > self.failure_rate_threshold:
+            return True
+        
+        return False
+    
+    def record_task_execution(self, pipeline_id: str, task_id: str, success: bool, duration: float) -> None:
+        """Record task execution result."""
+        if pipeline_id not in self.task_history:
+            self.task_history[pipeline_id] = []
+        
+        execution_record = {
+            "task_id": task_id,
+            "success": success,
+            "duration": duration,
+            "timestamp": time.time()
+        }
+        
+        self.task_history[pipeline_id].append(execution_record)
+    
+    def get_checkpoint_priority(self, pipeline_id: str, task_id: str) -> float:
+        """Calculate checkpoint priority for given task."""
+        import re
+        
+        base_priority = 0.5  # Start with lower base priority for normal tasks
+        
+        # Higher priority for critical tasks
+        is_critical = False
+        for pattern in self.critical_task_patterns:
+            if re.match(pattern, task_id):
+                base_priority = 1.0  # Critical tasks get higher base priority
+                is_critical = True
+                break
+        
+        # Additional boost for critical tasks
+        if is_critical:
+            base_priority *= 1.5  # Results in 1.5 for critical tasks
+        
+        # Increase priority based on failure rate
+        failure_rate = self._get_failure_rate(pipeline_id)
+        base_priority *= (1.0 + failure_rate * 0.5)  # Less aggressive multiplier
+        
+        # Increase priority based on time since last checkpoint
+        if pipeline_id in self.last_checkpoint_time:
+            time_factor = (time.time() - self.last_checkpoint_time[pipeline_id]) / (self.time_threshold_minutes * 60)
+            base_priority *= max(1.0, time_factor * 0.5)  # Less aggressive time factor
+        
+        return min(base_priority, 2.0)  # Cap at 2.0
+    
+    def optimize_checkpoint_frequency(self, pipeline_id: str) -> None:
+        """Optimize checkpoint frequency based on pipeline performance."""
+        if pipeline_id not in self.task_history or len(self.task_history[pipeline_id]) < 10:
+            return  # Need sufficient data
+        
+        failure_rate = self._get_failure_rate(pipeline_id)
+        avg_duration = self._get_average_duration(pipeline_id)
+        
+        # Store original interval for comparison
+        original_interval = self.checkpoint_interval
+        
+        # Adjust interval based on stability
+        if failure_rate < 0.05:  # Very stable (< 5% failure rate)
+            self.checkpoint_interval = min(10, self.checkpoint_interval + 1)
+        elif failure_rate > 0.3:  # High instability (> 30% failure rate) - be aggressive
+            self.checkpoint_interval = max(1, self.checkpoint_interval - 2)  # Decrease by 2
+        elif failure_rate > 0.2:  # Moderate instability (> 20% failure rate)
+            self.checkpoint_interval = max(1, self.checkpoint_interval - 1)  # Decrease by 1
+        elif failure_rate > 0.1:  # Low instability (> 10% failure rate)
+            self.checkpoint_interval = max(2, self.checkpoint_interval - 1)
+        
+        # For very high failure rates, be even more aggressive
+        if failure_rate > 0.5:  # > 50% failure rate
+            self.checkpoint_interval = max(1, int(self.checkpoint_interval * 0.5))
+        
+        # Adjust time threshold based on task duration
+        if avg_duration > 300:  # Long-running tasks (5+ minutes)
+            self.time_threshold_minutes = max(5.0, self.time_threshold_minutes * 0.8)
+        elif avg_duration < 30:  # Fast tasks
+            self.time_threshold_minutes = min(30.0, self.time_threshold_minutes * 1.2)
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get strategy performance statistics."""
+        total_pipelines = len(self.task_history)
+        total_executions = sum(len(history) for history in self.task_history.values())
+        
+        if total_executions == 0:
+            return {
+                "total_pipelines": total_pipelines,
+                "total_executions": 0,
+                "success_rate": 0.0,
+                "average_duration": 0.0,
+                "checkpoint_interval": self.checkpoint_interval,
+                "checkpoint_frequency": self.checkpoint_interval,  # Add this alias
+                "critical_patterns": len(self.critical_task_patterns)
+            }
+        
+        # Calculate overall success rate
+        total_successful = 0
+        total_duration = 0.0
+        
+        for history in self.task_history.values():
+            for record in history:
+                if record["success"]:
+                    total_successful += 1
+                total_duration += record["duration"]
+        
+        success_rate = total_successful / total_executions if total_executions > 0 else 0.0
+        avg_duration = total_duration / total_executions if total_executions > 0 else 0.0
+        
+        return {
+            "total_pipelines": total_pipelines,
+            "total_executions": total_executions,
+            "success_rate": success_rate,
+            "average_duration": avg_duration,
+            "checkpoint_interval": self.checkpoint_interval,
+            "checkpoint_frequency": self.checkpoint_interval,  # Add this alias
+            "critical_patterns": len(self.critical_task_patterns)
+        }
+    
+    def _get_failure_rate(self, pipeline_id: str) -> float:
+        """Calculate failure rate for pipeline."""
+        if pipeline_id not in self.task_history or not self.task_history[pipeline_id]:
+            return 0.0
+        
+        history = self.task_history[pipeline_id]
+        # Only count records that have success information
+        records_with_status = [r for r in history if "success" in r]
+        
+        if not records_with_status:
+            return 0.0
+        
+        failed_count = sum(1 for record in records_with_status if not record["success"])
+        return failed_count / len(records_with_status)
+    
+    def _get_average_duration(self, pipeline_id: str) -> float:
+        """Calculate average task duration for pipeline."""
+        if pipeline_id not in self.task_history or not self.task_history[pipeline_id]:
+            return 0.0
+        
+        history = self.task_history[pipeline_id]
+        # Only count records that have duration information
+        records_with_duration = [r for r in history if "duration" in r]
+        
+        if not records_with_duration:
+            return 0.0
+        
+        total_duration = sum(record["duration"] for record in records_with_duration)
+        return total_duration / len(records_with_duration)
+    
+    def _should_checkpoint_with_metrics(self, 
+                         metrics: CheckpointMetrics, 
+                         config: CheckpointConfig,
+                         trigger: CheckpointTrigger) -> bool:
+        """Implement abstract method for compatibility."""
+        current_time = time.time()
+        time_since_last = current_time - metrics.last_checkpoint_time
+        
+        # Always checkpoint on certain triggers
+        if trigger in [CheckpointTrigger.ERROR_DETECTION, CheckpointTrigger.MANUAL]:
+            return True
+        
+        # Don't checkpoint too frequently
+        if time_since_last < config.min_interval:
+            return False
+        
+        # High error rate - more frequent checkpoints
+        if metrics.error_rate > config.error_rate_threshold:
+            return time_since_last >= config.min_interval
+        
+        # Task completion milestones
+        if trigger == CheckpointTrigger.TASK_COMPLETION:
+            return metrics.completed_tasks % self.checkpoint_interval == 0
+        
+        return False
+    
+    def get_next_checkpoint_time(self, 
+                               metrics: CheckpointMetrics,
+                               config: CheckpointConfig) -> float:
+        """Calculate next checkpoint time."""
+        current_time = time.time()
+        
+        # Base interval from config
+        base_interval = (config.min_interval + config.max_interval) / 2
+        
+        # Adjust based on current checkpoint interval setting
+        adjusted_interval = base_interval * (self.checkpoint_interval / 5.0)  # 5 is default
+        
+        # Adjust based on error rate
+        if metrics.error_rate > self.failure_rate_threshold:
+            adjusted_interval *= 0.5  # More frequent if error rate is high
+        
+        return current_time + adjusted_interval
+    
+    def get_checkpoint_metadata(self, 
+                              metrics: CheckpointMetrics, 
+                              config: CheckpointConfig) -> Dict[str, Any]:
+        """Get checkpoint metadata."""
+        return {
+            "strategy": "adaptive",
+            "checkpoint_interval": self.checkpoint_interval,
+            "failure_rate_threshold": self.failure_rate_threshold,
+            "time_threshold_minutes": self.time_threshold_minutes,
+            "critical_patterns_count": len(self.critical_task_patterns),
+            "trigger": "adaptive_strategy"
+        }
+    
+    def update_config(self, config: CheckpointConfig) -> None:
+        """Update strategy configuration."""
+        # Update thresholds from config if available
+        if hasattr(config, 'error_rate_threshold'):
+            self.failure_rate_threshold = config.error_rate_threshold

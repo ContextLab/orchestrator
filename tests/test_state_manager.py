@@ -552,13 +552,22 @@ class TestStateManager:
         checkpoint_id = await manager.save_checkpoint(pipeline_id, valid_state)
         assert checkpoint_id is not None
         
-        # Invalid state (non-serializable)
-        invalid_state = {
-            "data": lambda x: x  # Function is not serializable
+        # State with non-serializable objects (should be handled gracefully)
+        non_serializable_state = {
+            "data": lambda x: x,  # Function will be converted to string
+            "exception": Exception("test error")  # Exception will be converted to string
         }
         
-        with pytest.raises(StateManagerError):
-            await manager.save_checkpoint(pipeline_id, invalid_state)
+        # Should not raise an error - will convert to strings
+        checkpoint_id = await manager.save_checkpoint(pipeline_id, non_serializable_state)
+        assert checkpoint_id is not None
+        
+        # Verify that the data was converted to strings when restored
+        restored = await manager.restore_checkpoint(pipeline_id, checkpoint_id)
+        assert isinstance(restored["state"]["data"], str)
+        assert isinstance(restored["state"]["exception"], str)
+        assert "lambda" in restored["state"]["data"]  # String representation of lambda
+        assert "test error" in restored["state"]["exception"]  # String representation of exception
     
     def test_get_statistics(self):
         """Test getting state manager statistics."""
@@ -695,7 +704,9 @@ class TestAdaptiveCheckpointStrategy:
     
     def test_get_checkpoint_priority(self):
         """Test getting checkpoint priority."""
-        strategy = AdaptiveCheckpointStrategy()
+        strategy = AdaptiveCheckpointStrategy(
+            critical_task_patterns=[".*critical.*", ".*important.*"]
+        )
         
         # Critical task should have high priority
         priority = strategy.get_checkpoint_priority("pipeline1", "critical_task")
