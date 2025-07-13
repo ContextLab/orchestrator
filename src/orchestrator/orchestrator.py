@@ -265,11 +265,8 @@ class Orchestrator:
                         # Task succeeded
                         results[task_id] = result
             
-            # Handle skipped tasks in results
-            for task_id in level_tasks:
-                task = pipeline.get_task(task_id)
-                if task.status == TaskStatus.SKIPPED and task_id not in results:
-                    results[task_id] = {"status": "skipped"}
+            # Note: Skipped tasks are already handled above at line 236
+            # This loop was redundant and has been removed
         
         finally:
             # Release resources

@@ -13,6 +13,13 @@ from ..core.task import Task, TaskStatus
 from ..core.pipeline import Pipeline
 
 
+# Module-level function for picklability in process pools
+def _process_pool_executor_wrapper(executor_func_and_task):
+    """Wrapper function that can be pickled for process pool execution."""
+    executor_func, task = executor_func_and_task
+    return executor_func(task)
+
+
 class ExecutionMode(Enum):
     """Execution mode for parallel processing."""
     ASYNC = "async"
@@ -204,8 +211,13 @@ class WorkerPool:
         
         loop = asyncio.get_event_loop()
         try:
+            # Use the module-level wrapper function that can be pickled
             return await asyncio.wait_for(
-                loop.run_in_executor(self.process_pool, lambda: executor_func(task)),
+                loop.run_in_executor(
+                    self.process_pool, 
+                    _process_pool_executor_wrapper, 
+                    (executor_func, task)
+                ),
                 timeout=self.config.timeout
             )
         except asyncio.TimeoutError:
