@@ -5,8 +5,8 @@ import tempfile
 import os
 import json
 import asyncio
-from datetime import datetime, timezone
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from datetime import datetime
+from unittest.mock import patch, AsyncMock
 
 from src.orchestrator.state.backends import (
     StateBackend,

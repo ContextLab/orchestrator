@@ -6,11 +6,10 @@ import threading
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Any, Optional, List, Set, Callable
+from typing import Dict, Any, Optional
 from collections import defaultdict, deque
 
-from .task import Task, TaskStatus
-from .pipeline import Pipeline
+from .task import Task
 
 
 class ResourceType(Enum):

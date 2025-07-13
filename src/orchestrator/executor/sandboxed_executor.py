@@ -3,14 +3,11 @@
 import asyncio
 import tempfile
 import os
-import shutil
-import subprocess
 import time
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, Any, Optional, List
-from pathlib import Path
 
 from ..core.task import Task
 
@@ -138,7 +135,7 @@ class DockerSandboxExecutor(SandboxExecutor):
                 try:
                     result = container.wait(timeout=self.config.time_limit)
                     exit_code = result['StatusCode']
-                except Exception as timeout_error:
+                except Exception:
                     # Container timed out
                     container.stop()
                     container.remove()

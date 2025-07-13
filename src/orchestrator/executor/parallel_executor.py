@@ -2,14 +2,13 @@
 
 import asyncio
 import time
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Optional, Set, Callable, Awaitable
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from collections import defaultdict
 
-from ..core.task import Task, TaskStatus
+from ..core.task import Task
 from ..core.pipeline import Pipeline
 
 

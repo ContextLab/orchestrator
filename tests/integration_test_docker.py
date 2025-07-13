@@ -16,7 +16,7 @@ import asyncio
 import os
 import tempfile
 import time
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 
 # Check Docker availability
 def check_docker_available():

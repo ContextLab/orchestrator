@@ -1,8 +1,6 @@
 """Tests to cover specific missing lines in Sandboxed Executor."""
 
 import pytest
-import tempfile
-import os
 from unittest.mock import patch, Mock, AsyncMock
 
 from src.orchestrator.executor.sandboxed_executor import (
@@ -12,7 +10,6 @@ from src.orchestrator.executor.sandboxed_executor import (
     ResourceManager,
     SandboxConfig
 )
-from src.orchestrator.core.task import Task
 
 
 class TestSandboxedExecutorMissingLines:

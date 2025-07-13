@@ -1,12 +1,11 @@
 """Tests for control system adapters."""
 
 import pytest
-import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
 from src.orchestrator.adapters.langgraph_adapter import LangGraphAdapter
 from src.orchestrator.adapters.mcp_adapter import MCPAdapter
-from src.orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task
 from src.orchestrator.core.pipeline import Pipeline
 
 

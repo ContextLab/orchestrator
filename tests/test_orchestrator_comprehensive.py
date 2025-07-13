@@ -1,10 +1,9 @@
 """Comprehensive tests for Orchestrator to achieve 100% coverage."""
 
 import pytest
-import asyncio
 import tempfile
 import os
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import Mock, AsyncMock
 
 from src.orchestrator.orchestrator import Orchestrator, ExecutionError
 from src.orchestrator.core.pipeline import Pipeline
@@ -13,7 +12,6 @@ from src.orchestrator.core.control_system import MockControlSystem
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.core.model import MockModel
 from src.orchestrator.state.state_manager import StateManager
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from src.orchestrator.core.error_handler import ErrorHandler
 from src.orchestrator.core.resource_allocator import ResourceAllocator
 from src.orchestrator.executor.parallel_executor import ParallelExecutor

@@ -1,11 +1,7 @@
 """Comprehensive tests for sandboxed execution functionality."""
 
 import pytest
-import asyncio
-import tempfile
-import os
-import time
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock
 
 from src.orchestrator.executor.sandboxed_executor import (
     ExecutionResult,

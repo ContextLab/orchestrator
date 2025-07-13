@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
@@ -284,7 +283,7 @@ Resolved value:"""
         try:
             result = await self.model.generate(prompt, temperature=0.1, max_tokens=50)
             return result.strip().strip('"').strip("'")
-        except Exception as e:
+        except Exception:
             # Fallback to simple heuristics
             return self._fallback_resolution(content, context_path)
     

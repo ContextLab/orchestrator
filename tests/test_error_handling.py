@@ -1,16 +1,12 @@
 """Tests for error handling and recovery functionality."""
 
 import pytest
-import asyncio
 import time
-from unittest.mock import patch, MagicMock
 
 from src.orchestrator.core.error_handler import (
     ErrorHandler, 
     ErrorSeverity, 
     ErrorCategory,
-    CircuitBreakerOpenError,
-    SystemUnavailableError,
     CircuitBreaker,
     RetryStrategy,
     RecoveryManager

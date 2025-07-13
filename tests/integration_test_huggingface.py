@@ -39,8 +39,6 @@ class HuggingFaceModelManager:
         if not HAS_HUGGINGFACE:
             pytest.skip("HuggingFace libraries not available")
         
-        import transformers
-        import torch
         
         self.cache_dir = cache_dir or tempfile.mkdtemp(prefix="hf_test_cache_")
         self.models = {}
@@ -53,7 +51,6 @@ class HuggingFaceModelManager:
     def download_model(self, model_name: str, model_type: str = "text-generation") -> bool:
         """Download and cache a model from HuggingFace Hub."""
         try:
-            import transformers
             
             if model_type == "text-generation":
                 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -143,7 +140,6 @@ class HuggingFaceModelManager:
         if model_name not in self.models:
             raise ValueError(f"Model {model_name} not loaded")
         
-        import torch
         from transformers import pipeline
         
         # Create classification pipeline

@@ -4,10 +4,7 @@ import pytest
 import asyncio
 import tempfile
 import os
-import json
-import pickle
 from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock, AsyncMock
 
 from src.orchestrator.state.state_manager import StateManager, StateManagerError
 from src.orchestrator.state.adaptive_checkpoint import AdaptiveStrategy, AdaptiveCheckpointStrategy
@@ -1181,7 +1178,6 @@ class TestStateManagerAdvanced:
     @pytest.mark.asyncio
     async def test_cleanup_operations_comprehensive(self):
         """Test comprehensive cleanup operations."""
-        import time
         with tempfile.TemporaryDirectory() as temp_dir:
             manager = StateManager(temp_dir)
             
@@ -1265,7 +1261,6 @@ class TestStateManagerAdvanced:
     @pytest.mark.asyncio
     async def test_checkpoint_strategy_integration(self):
         """Test checkpoint strategy integration."""
-        from src.orchestrator.state.adaptive_checkpoint import AdaptiveStrategy
         
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create custom strategy

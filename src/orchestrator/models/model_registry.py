@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import math
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 from ..core.model import Model, ModelMetrics
 

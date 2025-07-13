@@ -1,7 +1,6 @@
 """Comprehensive tests for control system functionality."""
 
 import pytest
-import asyncio
 
 from orchestrator.core.control_system import ControlSystem, MockControlSystem
 from orchestrator.core.task import Task, TaskStatus

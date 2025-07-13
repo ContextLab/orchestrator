@@ -1,6 +1,5 @@
 """Simple file-based state manager for basic use cases."""
 
-import asyncio
 import json
 import os
 import time

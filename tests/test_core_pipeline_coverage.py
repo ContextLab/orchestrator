@@ -2,7 +2,6 @@
 
 import pytest
 import time
-from unittest.mock import Mock, patch
 
 # Direct import to ensure coverage measurement
 from src.orchestrator.core.pipeline import (
@@ -10,7 +9,7 @@ from src.orchestrator.core.pipeline import (
     CircularDependencyError,
     InvalidDependencyError
 )
-from src.orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task
 
 
 class TestCircularDependencyError:

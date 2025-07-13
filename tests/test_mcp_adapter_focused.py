@@ -12,7 +12,7 @@ from src.orchestrator.adapters.mcp_adapter import (
     MCPClient,
     MCPAdapter
 )
-from src.orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task
 
 
 class TestMCPResource:

@@ -3,7 +3,7 @@
 import pytest
 import asyncio
 import time
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch
 from collections import defaultdict
 
 from src.orchestrator.executor.parallel_executor import (
@@ -14,7 +14,7 @@ from src.orchestrator.executor.parallel_executor import (
     WorkerPool,
     ParallelExecutor
 )
-from src.orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task
 from src.orchestrator.core.pipeline import Pipeline
 
 

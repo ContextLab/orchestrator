@@ -3,7 +3,7 @@
 import pytest
 import time
 
-from orchestrator.core.pipeline import Pipeline, CircularDependencyError, InvalidDependencyError
+from orchestrator.core.pipeline import Pipeline, CircularDependencyError
 from orchestrator.core.task import Task, TaskStatus
 
 

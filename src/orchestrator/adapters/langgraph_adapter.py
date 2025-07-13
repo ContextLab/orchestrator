@@ -3,10 +3,9 @@
 import asyncio
 from typing import Dict, Any, Optional, List, Callable
 from dataclasses import dataclass
-from abc import ABC, abstractmethod
 
 from ..core.control_system import ControlSystem, ControlAction
-from ..core.task import Task, TaskStatus
+from ..core.task import Task
 from ..core.pipeline import Pipeline
 
 

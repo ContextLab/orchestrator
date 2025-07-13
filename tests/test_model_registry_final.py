@@ -2,8 +2,7 @@
 
 import pytest
 import asyncio
-import time
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.core.model import MockModel

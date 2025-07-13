@@ -2,14 +2,13 @@
 
 import asyncio
 import time
-import math
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Any, Optional, List, Set, Callable
+from typing import Dict, Any, Optional, List, Set
 from collections import deque
 
-from ..core.task import Task, TaskStatus
+from ..core.task import Task
 from ..core.pipeline import Pipeline
 
 
@@ -397,7 +396,7 @@ class AdaptiveCheckpointManager:
                 
             except asyncio.CancelledError:
                 break
-            except Exception as e:
+            except Exception:
                 # Log error and continue
                 await asyncio.sleep(60)  # Wait before retrying
     

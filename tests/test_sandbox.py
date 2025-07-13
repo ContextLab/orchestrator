@@ -2,13 +2,10 @@
 
 import pytest
 import asyncio
-import tempfile
-import os
-from unittest.mock import patch
 
 from src.orchestrator.executor.sandboxed_executor import (
-    SandboxExecutor, DockerSandboxExecutor, SandboxedExecutor,
-    SecurityManager, ResourceManager, ResourceError
+    SandboxedExecutor,
+    SecurityManager, ResourceManager
 )
 
 

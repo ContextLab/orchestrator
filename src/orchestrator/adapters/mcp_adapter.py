@@ -1,14 +1,12 @@
 """MCP (Model Context Protocol) adapter for integrating with MCP servers."""
 
-import asyncio
 import json
-from typing import Dict, Any, Optional, List, Union, Callable
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-from abc import ABC, abstractmethod
 import logging
 
 from ..core.control_system import ControlSystem, ControlAction
-from ..core.task import Task, TaskStatus
+from ..core.task import Task
 from ..core.model import Model
 from ..core.pipeline import Pipeline
 
@@ -310,7 +308,7 @@ class MCPModel(Model):
                 tool_suggestions.append(f"- {tool.name}: {tool.description}")
         
         if tool_suggestions:
-            enhanced_prompt += f"\n\nAvailable tools:\n" + "\n".join(tool_suggestions)
+            enhanced_prompt += "\n\nAvailable tools:\n" + "\n".join(tool_suggestions)
         
         return enhanced_prompt
     

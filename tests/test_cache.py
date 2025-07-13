@@ -67,7 +67,6 @@ class TestMultiLevelCache:
     @pytest.mark.asyncio
     async def test_cache_get_hit_disk(self):
         """Test cache get with disk cache hit."""
-        from src.orchestrator.core.cache import CacheEntry
         
         cache = MultiLevelCache()
         
@@ -557,7 +556,6 @@ class TestRedisAdvanced:
     async def test_redis_cache_connection_error_handling(self):
         """Test Redis cache connection error handling."""
         from src.orchestrator.core.cache import RedisCache
-        from unittest.mock import MagicMock
         
         cache = RedisCache(mock_mode=True)
         cache.mock_mode = False
@@ -573,7 +571,6 @@ class TestRedisAdvanced:
     async def test_redis_cache_json_decode_error(self):
         """Test Redis cache JSON decode error handling."""
         from src.orchestrator.core.cache import RedisCache
-        from unittest.mock import MagicMock
         
         cache = RedisCache(mock_mode=True)
         cache.mock_mode = False
@@ -731,7 +728,6 @@ class TestCacheEntryAdvanced:
     
     def test_cache_entry_size_calculation_numeric(self):
         """Test cache entry size calculation for numeric types."""
-        from src.orchestrator.core.cache import CacheEntry
         
         # Test int and float size calculation
         int_entry = CacheEntry("test_key", 42)
@@ -742,7 +738,6 @@ class TestCacheEntryAdvanced:
     
     def test_cache_entry_size_calculation_complex(self):
         """Test cache entry size calculation for complex objects."""
-        from src.orchestrator.core.cache import CacheEntry
         
         # Test with complex object - use a picklable object
         complex_data = {"nested": {"data": [1, 2, 3]}, "value": "test"}
@@ -754,7 +749,6 @@ class TestCacheEntryAdvanced:
     
     def test_cache_entry_size_calculation_exception(self):
         """Test cache entry size calculation with exception."""
-        from src.orchestrator.core.cache import CacheEntry
         
         # Mock an object that raises exception during pickle
         class UnpicklableObject:
@@ -772,7 +766,7 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_default_ttl(self):
         """Test default TTL setting."""
-        from src.orchestrator.core.cache import MemoryCache, CacheEntry
+        from src.orchestrator.core.cache import CacheEntry
         
         cache = MemoryCache(max_size=100, default_ttl=300)
         
@@ -789,7 +783,7 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_memory_eviction_lru(self):
         """Test memory-based eviction with LRU policy."""
-        from src.orchestrator.core.cache import MemoryCache, EvictionPolicy, CacheEntry
+        from src.orchestrator.core.cache import CacheEntry
         
         # Small memory limit to trigger eviction
         cache = MemoryCache(max_size=100, max_memory=100, eviction_policy=EvictionPolicy.LRU)
@@ -813,7 +807,7 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_memory_eviction_lfu(self):
         """Test memory-based eviction with LFU policy."""
-        from src.orchestrator.core.cache import MemoryCache, EvictionPolicy, CacheEntry
+        from src.orchestrator.core.cache import CacheEntry
         
         # Small memory limit to trigger eviction
         cache = MemoryCache(max_size=100, max_memory=120, eviction_policy=EvictionPolicy.LFU)
@@ -844,7 +838,7 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_memory_eviction_ttl(self):
         """Test memory-based eviction with TTL policy."""
-        from src.orchestrator.core.cache import MemoryCache, EvictionPolicy, CacheEntry
+        from src.orchestrator.core.cache import CacheEntry
         import asyncio
         
         # Small memory limit to trigger eviction
@@ -874,7 +868,6 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_count_eviction_lfu(self):
         """Test count-based eviction with LFU policy."""
-        from src.orchestrator.core.cache import MemoryCache, EvictionPolicy
         
         cache = MemoryCache(max_size=2, eviction_policy=EvictionPolicy.LFU)
         
@@ -897,7 +890,7 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_replace_existing_entry(self):
         """Test replacing existing entry in cache."""
-        from src.orchestrator.core.cache import MemoryCache, CacheEntry
+        from src.orchestrator.core.cache import CacheEntry
         
         cache = MemoryCache(max_size=100)
         
@@ -918,7 +911,6 @@ class TestMemoryCacheAdvanced:
     
     def test_memory_cache_sync_wrapper(self):
         """Test synchronous wrapper methods."""
-        from src.orchestrator.core.cache import MemoryCache
         
         cache = MemoryCache(max_size=100)
         
@@ -938,7 +930,6 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_sync_wrapper_with_running_loop(self):
         """Test sync wrapper when event loop is already running."""
-        from src.orchestrator.core.cache import MemoryCache
         
         cache = MemoryCache(max_size=100)
         
@@ -956,7 +947,6 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_statistics(self):
         """Test cache statistics retrieval."""
-        from src.orchestrator.core.cache import MemoryCache
         
         cache = MemoryCache(max_size=100)
         
@@ -974,7 +964,6 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_eviction_lru(self):
         """Test LRU eviction policy."""
-        from src.orchestrator.core.cache import MemoryCache, EvictionPolicy
         
         cache = MemoryCache(max_size=2, eviction_policy=EvictionPolicy.LRU)
         
@@ -995,7 +984,6 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_eviction_lfu(self):
         """Test LFU eviction policy."""
-        from src.orchestrator.core.cache import MemoryCache, EvictionPolicy
         
         cache = MemoryCache(max_size=2, eviction_policy=EvictionPolicy.LFU)
         
@@ -1019,7 +1007,6 @@ class TestMemoryCacheAdvanced:
     @pytest.mark.asyncio
     async def test_memory_cache_ttl_expiration(self):
         """Test TTL expiration handling."""
-        from src.orchestrator.core.cache import MemoryCache
         import asyncio
         
         cache = MemoryCache(max_size=100)
@@ -1047,7 +1034,6 @@ class TestDiskCacheAdvanced:
     async def test_disk_cache_file_corruption_handling(self):
         """Test handling of corrupted cache files."""
         import tempfile
-        import os
         from src.orchestrator.core.cache import DiskCache
         
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1072,7 +1058,6 @@ class TestDiskCacheAdvanced:
     async def test_disk_cache_missing_file_handling(self):
         """Test handling of missing cache files."""
         import tempfile
-        import os
         from src.orchestrator.core.cache import DiskCache
         
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1097,7 +1082,7 @@ class TestDiskCacheAdvanced:
     async def test_disk_cache_set_entry_failure(self):
         """Test handling of set_entry failure."""
         import tempfile
-        from src.orchestrator.core.cache import DiskCache, CacheEntry
+        from src.orchestrator.core.cache import DiskCache
         
         with tempfile.TemporaryDirectory() as temp_dir:
             cache = DiskCache(cache_dir=temp_dir, max_size=1)
@@ -1135,7 +1120,6 @@ class TestDiskCacheAdvanced:
         """Test handling of clear failure."""
         import tempfile
         from src.orchestrator.core.cache import DiskCache
-        from unittest.mock import patch
         
         with tempfile.TemporaryDirectory() as temp_dir:
             cache = DiskCache(cache_dir=temp_dir)
@@ -1209,7 +1193,7 @@ class TestMultiLevelCacheAdvanced:
     
     def test_multi_level_cache_add_level(self):
         """Test adding custom cache level."""
-        from src.orchestrator.core.cache import MultiLevelCache, CacheLevel, MemoryCache
+        from src.orchestrator.core.cache import MultiLevelCache, CacheLevel
         
         cache = MultiLevelCache()
         custom_cache = MemoryCache(max_size=50)
@@ -1239,7 +1223,7 @@ class TestMultiLevelCacheAdvanced:
     @pytest.mark.asyncio
     async def test_multi_level_cache_missing_level(self):
         """Test handling of missing cache level."""
-        from src.orchestrator.core.cache import MultiLevelCache, CacheLevel
+        from src.orchestrator.core.cache import MultiLevelCache
         
         cache = MultiLevelCache()
         
@@ -1255,7 +1239,7 @@ class TestMultiLevelCacheAdvanced:
     @pytest.mark.asyncio
     async def test_multi_level_cache_none_backend(self):
         """Test handling of None backend."""
-        from src.orchestrator.core.cache import MultiLevelCache, CacheLevel
+        from src.orchestrator.core.cache import MultiLevelCache
         
         cache = MultiLevelCache()
         
@@ -1293,7 +1277,6 @@ class TestCacheEntryAdvanced:
     
     def test_cache_entry_size_calculation(self):
         """Test comprehensive size calculation for different data types."""
-        from src.orchestrator.core.cache import CacheEntry
         
         # Test string
         entry_str = CacheEntry("key1", "hello world")
@@ -1321,7 +1304,6 @@ class TestCacheEntryAdvanced:
     
     def test_cache_entry_size_calculation_exception(self):
         """Test size calculation with objects that can't be pickled."""
-        from src.orchestrator.core.cache import CacheEntry
         
         # Create an object that might cause issues
         class UnpicklableObject:
@@ -1335,7 +1317,6 @@ class TestCacheEntryAdvanced:
     def test_cache_entry_expiration(self):
         """Test TTL expiration logic."""
         from src.orchestrator.core.cache import CacheEntry
-        import time
         
         # Test non-expiring entry
         entry_no_ttl = CacheEntry("key1", "value1")
@@ -1353,7 +1334,6 @@ class TestCacheEntryAdvanced:
     def test_cache_entry_touch(self):
         """Test touch functionality."""
         from src.orchestrator.core.cache import CacheEntry
-        import time
         
         entry = CacheEntry("key", "value")
         initial_accessed = entry.accessed_at

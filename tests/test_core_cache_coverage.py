@@ -4,7 +4,7 @@ import pytest
 import time
 import tempfile
 import os
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, AsyncMock
 
 # Direct import to ensure coverage measurement
 from src.orchestrator.core.cache import (

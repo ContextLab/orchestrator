@@ -264,7 +264,7 @@ class CircuitBreaker:
             self._record_success()
             return result
             
-        except Exception as e:
+        except Exception:
             self._record_failure()
             raise
     

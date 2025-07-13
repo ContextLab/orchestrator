@@ -7,7 +7,7 @@ import os
 import json
 import time
 from datetime import datetime
-from unittest.mock import patch, mock_open
+from unittest.mock import patch
 
 from orchestrator.state.simple_state_manager import StateManager
 

@@ -8,10 +8,9 @@ Targeting:
 """
 
 import pytest
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock
 
-from orchestrator.executor.parallel_executor import ParallelExecutor, ExecutionConfig, ResourceMonitor, ExecutionResult
+from orchestrator.executor.parallel_executor import ParallelExecutor, ResourceMonitor
 from orchestrator.core.pipeline import Pipeline
 from orchestrator.core.task import Task, TaskStatus
 
@@ -19,13 +18,23 @@ from orchestrator.core.task import Task, TaskStatus
 class TestParallelExecutorFinalLines:
     """Test cases for final missing lines in parallel executor."""
     
+    def test_resource_monitor_empty_usage_stats_line_111(self):
+        """Test line 111: return {} when usage_stats is empty."""
+        monitor = ResourceMonitor()
+        monitor.usage_stats.clear()
+        stats = monitor.get_statistics()
+        assert stats == {}
+    
     def test_resource_monitor_no_stats_line_118(self):
-        """Test line 118: return {} when usage_stats is empty."""
+        """Test line 118: return {} when all_stats is empty but usage_stats is not."""
         monitor = ResourceMonitor()
         
-        # Clear stats to ensure empty
-        monitor.usage_stats.clear()
+        # usage_stats with empty lists (line 118)
+        monitor.usage_stats['task1'] = []
+        monitor.usage_stats['task2'] = []
+        monitor.usage_stats['task3'] = []
         
+        # This should trigger line 118 - usage_stats is not empty but all_stats is
         stats = monitor.get_statistics()
         assert stats == {}
         

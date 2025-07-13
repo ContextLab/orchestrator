@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import yaml
 from jinja2 import Environment, StrictUndefined
 
-from ..core.model import Model
 from ..core.pipeline import Pipeline
 from ..core.task import Task
 from .ambiguity_resolver import AmbiguityResolver

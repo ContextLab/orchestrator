@@ -14,7 +14,6 @@ import pytest
 import os
 import asyncio
 import time
-from typing import Dict, Any, Optional
 
 # Test if API keys are available
 HAS_OPENAI_KEY = bool(os.getenv("OPENAI_API_KEY"))

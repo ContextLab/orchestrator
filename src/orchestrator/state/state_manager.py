@@ -7,11 +7,11 @@ import json
 import os
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union, ContextManager
+from typing import Any, Dict, List, Optional
 from contextlib import asynccontextmanager
 
-from .backends import StateBackend, create_backend
-from .adaptive_checkpoint import AdaptiveStrategy, CheckpointConfig
+from .backends import create_backend
+from .adaptive_checkpoint import AdaptiveStrategy
 
 
 class StateManagerError(Exception):

@@ -1,7 +1,6 @@
 """Test process pool execution with real picklable functions."""
 
 import pytest
-import asyncio
 from concurrent.futures import ProcessPoolExecutor
 
 from orchestrator.executor.parallel_executor import WorkerPool, ExecutionConfig, ExecutionMode

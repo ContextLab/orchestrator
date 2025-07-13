@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem, MockControlSystem

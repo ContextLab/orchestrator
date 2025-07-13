@@ -2,7 +2,7 @@
 
 import pytest
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 
 from src.orchestrator.adapters.langgraph_adapter import (
     LangGraphNode,
@@ -11,7 +11,7 @@ from src.orchestrator.adapters.langgraph_adapter import (
     LangGraphWorkflow,
     LangGraphAdapter
 )
-from src.orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task
 from src.orchestrator.core.pipeline import Pipeline
 from src.orchestrator.core.control_system import ControlAction
 

@@ -3,7 +3,6 @@
 import pytest
 
 from orchestrator.core.model import (
-    Model,
     ModelCapabilities,
     ModelRequirements,
     ModelMetrics,

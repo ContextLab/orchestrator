@@ -16,7 +16,6 @@ import asyncio
 import os
 import time
 import json
-import tempfile
 from typing import Dict, Any, Optional, List
 
 # Check for database connectivity

@@ -3,15 +3,14 @@
 import pytest
 import asyncio
 import time
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock
 
 from orchestrator.models.model_registry import (
     ModelRegistry,
     UCBModelSelector,
-    ModelNotFoundError,
     NoEligibleModelsError,
 )
-from orchestrator.core.model import MockModel, ModelCapabilities, ModelMetrics
+from orchestrator.core.model import MockModel, ModelMetrics
 
 
 class TestModelRegistryComprehensiveCoverage:

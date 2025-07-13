@@ -1,14 +1,11 @@
 """Final tests for Orchestrator to achieve 100% coverage."""
 
 import pytest
-import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 
 from src.orchestrator.orchestrator import Orchestrator
 from src.orchestrator.core.pipeline import Pipeline
 from src.orchestrator.core.task import Task, TaskStatus
-from src.orchestrator.core.resource_allocator import ResourceAllocator
-from src.orchestrator.executor.parallel_executor import ParallelExecutor
 
 
 class TestOrchestratorFinalCoverage:

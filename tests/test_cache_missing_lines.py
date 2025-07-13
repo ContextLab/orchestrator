@@ -1,21 +1,13 @@
 """Tests for missing lines in cache module to achieve 100% coverage."""
 
 import pytest
-import asyncio
 import time
-import json
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from redis.exceptions import ConnectionError as RedisConnectionError
+from unittest.mock import Mock, AsyncMock
 
 from src.orchestrator.core.cache import (
     MemoryCache,
     DistributedCache,
-    RedisCache,  # Backward compatibility alias
-    MultiLevelCache,
     EvictionPolicy,
-    CacheEntry,
-    create_cache_key,
-    # These should be implemented based on the tests:
     HybridCache,
     CacheStats,
     sync_cache_wrapper,

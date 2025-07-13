@@ -9,7 +9,6 @@ from orchestrator.core.pipeline import Pipeline
 from orchestrator.core.task import Task, TaskStatus
 from orchestrator.core.control_system import MockControlSystem
 from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.core.model import MockModel
 from orchestrator.state.state_manager import StateManager
 from orchestrator.compiler.yaml_compiler import YAMLCompiler
 
@@ -724,7 +723,7 @@ class TestOrchestratorAdvanced:
         """Test task retry mechanism when task can be retried."""
         from src.orchestrator.orchestrator import Orchestrator
         from src.orchestrator.core.pipeline import Pipeline
-        from src.orchestrator.core.task import Task, TaskStatus
+        from src.orchestrator.core.task import Task
         from unittest.mock import Mock, AsyncMock
         
         orchestrator = Orchestrator()
@@ -769,7 +768,6 @@ class TestOrchestratorAdvanced:
         from src.orchestrator.orchestrator import Orchestrator
         from src.orchestrator.core.pipeline import Pipeline
         from src.orchestrator.core.task import Task, TaskStatus
-        from unittest.mock import Mock
         
         orchestrator = Orchestrator()
         
@@ -796,7 +794,6 @@ class TestOrchestratorAdvanced:
     async def test_health_check_functionality(self):
         """Test health check functionality."""
         from src.orchestrator.orchestrator import Orchestrator
-        from unittest.mock import AsyncMock
         
         orchestrator = Orchestrator()
         

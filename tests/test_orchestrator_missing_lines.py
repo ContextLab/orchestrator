@@ -1,7 +1,6 @@
 """Tests to cover specific missing lines in Orchestrator."""
 
 import pytest
-import asyncio
 from unittest.mock import Mock, AsyncMock
 
 from src.orchestrator.orchestrator import Orchestrator
@@ -35,7 +34,6 @@ class TestOrchestratorMissingLines:
     @pytest.mark.asyncio
     async def test_skipped_task_not_in_results_line_272(self):
         """Test line 272: results[task_id] = {"status": "skipped"}."""
-        from unittest.mock import patch
         
         orchestrator = Orchestrator()
         

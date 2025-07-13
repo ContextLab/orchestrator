@@ -1,7 +1,6 @@
 """Direct import tests for model module to achieve coverage measurement."""
 
 import pytest
-from unittest.mock import Mock, AsyncMock
 
 # Direct import to ensure coverage measurement
 from src.orchestrator.core.model import (

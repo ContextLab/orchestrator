@@ -1,7 +1,6 @@
 """Comprehensive tests for ambiguity resolver functionality."""
 
 import pytest
-import asyncio
 from unittest.mock import AsyncMock
 
 from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver, AmbiguityResolutionError
