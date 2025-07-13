@@ -202,11 +202,11 @@ class MockControlSystem(ControlSystem):
         """Execute a mock pipeline."""
         results = {}
         
-        # Get execution order
-        execution_order = pipeline.get_execution_order()
+        # Get execution levels (groups of tasks that can run in parallel)
+        execution_levels = pipeline.get_execution_levels()
         
         # Execute tasks level by level
-        for level in execution_order:
+        for level in execution_levels:
             level_results = {}
             
             for task_id in level:

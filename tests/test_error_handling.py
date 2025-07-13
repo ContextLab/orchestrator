@@ -584,3 +584,210 @@ class TestRecoveryManager:
         assert metrics["average_duration"] == (1.5 + 2.0 + 0.5) / 3
         assert metrics["strategy_success_rates"]["retry"] == 0.5
         assert metrics["strategy_success_rates"]["rollback"] == 1.0
+
+
+class TestRetryStrategyAdvanced:
+    """Advanced test cases for RetryStrategy."""
+    
+    def test_should_retry_with_error_info_object(self):
+        """Test should_retry with ErrorInfo object."""
+        from src.orchestrator.core.error_handler import RetryStrategy, ErrorInfo, ErrorSeverity, ErrorCategory
+        
+        strategy = RetryStrategy(max_retries=3)
+        
+        # Test with recoverable error
+        recoverable_error = ErrorInfo(
+            error_type="TestError",
+            message="Test message",
+            severity=ErrorSeverity.MEDIUM,
+            category=ErrorCategory.NETWORK,
+            recoverable=True
+        )
+        
+        assert strategy.should_retry(recoverable_error, 1) is True
+        assert strategy.should_retry(recoverable_error, 3) is False
+        
+        # Test with non-recoverable error
+        non_recoverable_error = ErrorInfo(
+            error_type="TestError",
+            message="Test message", 
+            severity=ErrorSeverity.MEDIUM,
+            category=ErrorCategory.NETWORK,
+            recoverable=False
+        )
+        
+        assert strategy.should_retry(non_recoverable_error, 1) is False
+    
+    def test_should_retry_with_attempt_only(self):
+        """Test should_retry with attempt number only."""
+        from src.orchestrator.core.error_handler import RetryStrategy
+        
+        strategy = RetryStrategy(max_retries=3)
+        
+        # When called with just attempt number
+        assert strategy.should_retry(1) is True
+        assert strategy.should_retry(3) is False
+        assert strategy.should_retry(5) is False
+    
+    def test_should_retry_error_method(self):
+        """Test should_retry_error method."""
+        from src.orchestrator.core.error_handler import RetryStrategy
+        
+        # Test with no specific retryable errors (should retry all)
+        strategy = RetryStrategy(max_retries=3)
+        assert strategy.should_retry_error(Exception("test")) is True
+        assert strategy.should_retry_error(ValueError("test")) is True
+        
+        # Test with specific retryable errors
+        strategy_specific = RetryStrategy(max_retries=3, retryable_errors=[ValueError, TypeError])
+        assert strategy_specific.should_retry_error(ValueError("test")) is True
+        assert strategy_specific.should_retry_error(TypeError("test")) is True
+        assert strategy_specific.should_retry_error(RuntimeError("test")) is False
+
+
+class TestExponentialBackoffRetry:
+    """Test cases for ExponentialBackoffRetry class."""
+    
+    def test_should_retry_validation_errors(self):
+        """Test should_retry with validation errors."""
+        from src.orchestrator.core.error_handler import ExponentialBackoffRetry, ErrorInfo, ErrorSeverity, ErrorCategory
+        
+        strategy = ExponentialBackoffRetry(max_retries=3)
+        
+        validation_error = ErrorInfo(
+            error_type="ValidationError",
+            message="Invalid input",
+            severity=ErrorSeverity.MEDIUM,
+            category=ErrorCategory.VALIDATION,
+            recoverable=True
+        )
+        
+        # Validation errors should not be retried even if recoverable
+        assert strategy.should_retry(validation_error, 1) is False
+    
+    def test_should_retry_permission_errors(self):
+        """Test should_retry with permission errors."""
+        from src.orchestrator.core.error_handler import ExponentialBackoffRetry, ErrorInfo, ErrorSeverity, ErrorCategory
+        
+        strategy = ExponentialBackoffRetry(max_retries=3)
+        
+        permission_error = ErrorInfo(
+            error_type="PermissionError",
+            message="Access denied",
+            severity=ErrorSeverity.HIGH,
+            category=ErrorCategory.PERMISSION,
+            recoverable=True
+        )
+        
+        # Permission errors should not be retried
+        assert strategy.should_retry(permission_error, 1) is False
+    
+    def test_should_retry_configuration_errors(self):
+        """Test should_retry with configuration errors."""
+        from src.orchestrator.core.error_handler import ExponentialBackoffRetry, ErrorInfo, ErrorSeverity, ErrorCategory
+        
+        strategy = ExponentialBackoffRetry(max_retries=3)
+        
+        config_error = ErrorInfo(
+            error_type="ConfigError",
+            message="Invalid configuration",
+            severity=ErrorSeverity.HIGH,
+            category=ErrorCategory.CONFIGURATION,
+            recoverable=True
+        )
+        
+        # Configuration errors should not be retried
+        assert strategy.should_retry(config_error, 1) is False
+    
+    def test_should_retry_max_retries_exceeded(self):
+        """Test should_retry when max retries exceeded."""
+        from src.orchestrator.core.error_handler import ExponentialBackoffRetry, ErrorInfo, ErrorSeverity, ErrorCategory
+        
+        strategy = ExponentialBackoffRetry(max_retries=2)
+        
+        error = ErrorInfo(
+            error_type="NetworkError",
+            message="Connection failed",
+            severity=ErrorSeverity.MEDIUM,
+            category=ErrorCategory.NETWORK,
+            recoverable=True
+        )
+        
+        # Should not retry when max retries exceeded
+        assert strategy.should_retry(error, 2) is False
+        assert strategy.should_retry(error, 3) is False
+    
+    def test_should_retry_critical_non_recoverable(self):
+        """Test should_retry with critical non-recoverable errors."""
+        from src.orchestrator.core.error_handler import RetryStrategy, ErrorInfo, ErrorSeverity, ErrorCategory
+        
+        strategy = RetryStrategy(max_retries=3)
+        
+        critical_error = ErrorInfo(
+            error_type="CriticalError",
+            message="System failure",
+            severity=ErrorSeverity.CRITICAL,
+            category=ErrorCategory.SYSTEM,
+            recoverable=False
+        )
+        
+        # Critical non-recoverable errors should not be retried
+        assert strategy.should_retry(critical_error, 1) is False
+    
+    def test_should_retry_critical_recoverable(self):
+        """Test should_retry with critical recoverable errors."""
+        from src.orchestrator.core.error_handler import RetryStrategy, ErrorInfo, ErrorSeverity, ErrorCategory
+        
+        strategy = RetryStrategy(max_retries=3)
+        
+        critical_recoverable_error = ErrorInfo(
+            error_type="CriticalError",
+            message="System failure",
+            severity=ErrorSeverity.CRITICAL,
+            category=ErrorCategory.SYSTEM,
+            recoverable=True
+        )
+        
+        # Critical recoverable errors should be retried
+        assert strategy.should_retry(critical_recoverable_error, 1) is True
+        assert strategy.should_retry(critical_recoverable_error, 3) is False
+
+
+class TestErrorHandlerAdvanced:
+    """Advanced test cases for ErrorHandler."""
+    
+    @pytest.mark.asyncio
+    async def test_error_handler_circuit_breaker_integration(self):
+        """Test error handler integration with circuit breaker."""
+        from src.orchestrator.core.error_handler import ErrorHandler
+        
+        handler = ErrorHandler()
+        
+        # Test that circuit breaker is used
+        assert handler.circuit_breaker is not None
+        
+        # Simulate multiple failures to trigger circuit breaker
+        error = Exception("Test error")
+        context = {"retry_count": 5}  # High retry count
+        
+        result = await handler.handle_error(error, context)
+        
+        # Should have some recovery action
+        assert "action" in result
+    
+    @pytest.mark.asyncio
+    async def test_error_handler_fallback_strategies(self):
+        """Test error handler fallback strategies."""
+        from src.orchestrator.core.error_handler import ErrorHandler
+        
+        handler = ErrorHandler()
+        
+        # Test with unknown error category
+        unknown_error = Exception("Unknown error type")
+        context = {"error_category": "unknown", "retry_count": 0}
+        
+        result = await handler.handle_error(unknown_error, context)
+        
+        # Should have fallback handling
+        assert "action" in result
+        assert result["action"] in ["retry", "fail", "switch_system"]

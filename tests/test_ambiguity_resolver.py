@@ -326,8 +326,8 @@ class TestAmbiguityResolver:
         """Test classifying ambiguity with parameter context."""
         resolver = AmbiguityResolver()
         
-        # "Choose" triggers value classification first
-        assert resolver._classify_ambiguity("Choose option", "parameters.option") == "value"
+        # "Choose" with parameters context should be classified as parameter (precedence)
+        assert resolver._classify_ambiguity("Choose option", "parameters.option") == "parameter"
         # Without "choose" keyword, should classify as parameter
         assert resolver._classify_ambiguity("option", "parameters.option") == "parameter"
     
@@ -561,3 +561,33 @@ class TestAmbiguityResolver:
         
         # Restore original method
         resolver._classify_ambiguity = original_classify
+    
+    def test_resolver_creation_no_model_available(self):
+        """Test resolver creation when no model is available."""
+        with pytest.raises(RuntimeError, match="No AI model available"):
+            AmbiguityResolver(model=None, fallback_to_mock=False)
+    
+    def test_classify_ambiguity_choose_with_true_false(self):
+        """Test classification of choose with true/false."""
+        resolver = AmbiguityResolver()
+        
+        assert resolver._classify_ambiguity("Choose true or false", "config.option") == "boolean"
+        assert resolver._classify_ambiguity("Select false value", "config.option") == "boolean"
+    
+    def test_classify_ambiguity_choose_with_number_keywords(self):
+        """Test classification of choose with number keywords."""
+        resolver = AmbiguityResolver()
+        
+        assert resolver._classify_ambiguity("Choose number of items", "config.option") == "number"
+        assert resolver._classify_ambiguity("Select count value", "config.option") == "number"
+        assert resolver._classify_ambiguity("Choose amount needed", "config.option") == "number"
+        assert resolver._classify_ambiguity("Select size option", "config.option") == "number"
+    
+    def test_classify_ambiguity_choose_with_list_keywords(self):
+        """Test classification of choose with list keywords."""
+        resolver = AmbiguityResolver()
+        
+        assert resolver._classify_ambiguity("Choose list of items", "config.option") == "list"
+        assert resolver._classify_ambiguity("Select array values", "config.option") == "list"
+        assert resolver._classify_ambiguity("Choose items to include", "config.option") == "list"
+        assert resolver._classify_ambiguity("Select languages available", "config.option") == "list"

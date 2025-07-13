@@ -330,10 +330,21 @@ class FileBackend(StateBackend):
 class PostgresBackend(StateBackend):
     """PostgreSQL state backend."""
     
-    def __init__(self, connection_string: str, pool_size: int = 10):
+    def __init__(self, connection_string: str, pool_size: int = 10, table_name: str = "checkpoints"):
         self.connection_string = connection_string
         self.pool_size = pool_size
+        self.table_name = table_name
         self._pool = None
+    
+    @property
+    def name(self) -> str:
+        """Backend name."""
+        return "postgres"
+    
+    @property 
+    def persistent(self) -> bool:
+        """Whether backend persists data."""
+        return True
     
     async def _get_pool(self):
         """Get or create database connection pool."""
@@ -459,10 +470,21 @@ class PostgresBackend(StateBackend):
 class RedisBackend(StateBackend):
     """Redis state backend."""
     
-    def __init__(self, url: str = "redis://localhost:6379", db: int = 0):
+    def __init__(self, url: str = "redis://localhost:6379", db: int = 0, key_prefix: str = "orchestrator:"):
         self.url = url
         self.db = db
+        self.key_prefix = key_prefix
         self._redis = None
+    
+    @property
+    def name(self) -> str:
+        """Backend name."""
+        return "redis"
+    
+    @property
+    def persistent(self) -> bool:
+        """Whether backend persists data."""
+        return True
     
     async def _get_redis(self):
         """Get or create Redis connection."""

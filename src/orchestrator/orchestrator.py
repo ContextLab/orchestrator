@@ -158,11 +158,11 @@ class Orchestrator:
         """Internal pipeline execution logic."""
         results = {}
         
-        # Get execution order
-        execution_order = pipeline.get_execution_order()
+        # Get execution levels (groups of tasks that can run in parallel)
+        execution_levels = pipeline.get_execution_levels()
         
         # Execute tasks level by level
-        for level_index, level in enumerate(execution_order):
+        for level_index, level in enumerate(execution_levels):
             context["current_level"] = level_index
             
             # Execute tasks in parallel within the level
@@ -171,7 +171,7 @@ class Orchestrator:
             # Check for failures
             failed_tasks = [
                 task_id for task_id in level
-                if pipeline.get_task(task_id).status == TaskStatus.FAILED
+                if pipeline.get_task(task_id) and pipeline.get_task(task_id).status == TaskStatus.FAILED
             ]
             
             if failed_tasks:
@@ -203,6 +203,8 @@ class Orchestrator:
         resource_allocations = {}
         for task_id in level_tasks:
             task = pipeline.get_task(task_id)
+            if task is None:
+                raise ValueError(f"Task '{task_id}' not found in pipeline")
             
             # Determine resource requirements
             resource_requirements = self._get_task_resource_requirements(task)

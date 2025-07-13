@@ -250,11 +250,11 @@ class ParallelExecutor:
         self.execution_graph = self._build_execution_graph(pipeline)
         self.task_results = {}
         
-        # Get execution order (parallel groups)
-        execution_order = pipeline.get_execution_order()
+        # Get execution levels (parallel groups)
+        execution_levels = pipeline.get_execution_levels()
         
         # Execute each level in parallel
-        for level_index, task_ids in enumerate(execution_order):
+        for level_index, task_ids in enumerate(execution_levels):
             level_results = await self._execute_level(
                 task_ids, pipeline, executor_func, level_index
             )
@@ -283,6 +283,8 @@ class ParallelExecutor:
         
         for task_id in task_ids:
             task = pipeline.get_task(task_id)
+            if task is None:
+                raise ValueError(f"Task '{task_id}' not found in pipeline")
             
             # Check if dependencies are satisfied
             if self._are_dependencies_satisfied(task, pipeline):

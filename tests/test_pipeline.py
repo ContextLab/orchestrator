@@ -78,7 +78,7 @@ class TestPipeline:
         pipeline = Pipeline(id="test", name="Test Pipeline")
         
         with pytest.raises(ValueError, match="does not exist"):
-            pipeline.remove_task("nonexistent")
+            pipeline.remove_task_strict("nonexistent")
     
     def test_remove_task_with_dependents(self):
         """Test removing task that other tasks depend on."""
@@ -90,7 +90,7 @@ class TestPipeline:
         pipeline.add_task(task2)
         
         with pytest.raises(ValueError, match="tasks .* depend on it"):
-            pipeline.remove_task("task1")
+            pipeline.remove_task_strict("task1")
     
     def test_get_task(self):
         """Test getting a task by ID."""
@@ -107,7 +107,7 @@ class TestPipeline:
         pipeline = Pipeline(id="test", name="Test Pipeline")
         
         with pytest.raises(ValueError, match="does not exist"):
-            pipeline.get_task("nonexistent")
+            pipeline.get_task_strict("nonexistent")
     
     def test_invalid_dependency(self):
         """Test validation of invalid dependencies."""
@@ -167,7 +167,7 @@ class TestPipeline:
         pipeline.add_task(task2)
         pipeline.add_task(task3)
         
-        execution_order = pipeline.get_execution_order()
+        execution_order = pipeline.get_execution_levels()
         
         assert len(execution_order) == 2
         assert execution_order[0] == ["task1"]
@@ -186,7 +186,7 @@ class TestPipeline:
         pipeline.add_task(task3)
         pipeline.add_task(task4)
         
-        execution_order = pipeline.get_execution_order()
+        execution_order = pipeline.get_execution_levels()
         
         assert len(execution_order) == 3
         assert execution_order[0] == ["task1"]
@@ -205,7 +205,7 @@ class TestPipeline:
         pipeline.add_task(task3)
         
         # Initially, tasks with no dependencies are ready
-        ready_tasks = pipeline.get_ready_tasks(set())
+        ready_tasks = pipeline.get_ready_task_ids(set())
         assert set(ready_tasks) == {"task1", "task3"}
         
         # Complete task1 and mark task3 as running to test different statuses
@@ -213,7 +213,7 @@ class TestPipeline:
         task3.start()
         
         # After task1 completes, task2 becomes ready (task3 is running, so not returned)
-        ready_tasks = pipeline.get_ready_tasks({"task1"})
+        ready_tasks = pipeline.get_ready_task_ids({"task1"})
         assert set(ready_tasks) == {"task2"}
     
     def test_get_failed_tasks(self):
@@ -494,7 +494,7 @@ class TestPipeline:
         task = Task(id="task1", name="Task 1", action="action1")
         pipeline.add_task(task)
         
-        execution_order = pipeline.get_execution_order()
+        execution_order = pipeline.get_execution_levels()
         assert execution_order == [["task1"]]
     
     def test_no_dependencies_execution_order(self):
@@ -508,6 +508,6 @@ class TestPipeline:
         pipeline.add_task(task2)
         pipeline.add_task(task3)
         
-        execution_order = pipeline.get_execution_order()
+        execution_order = pipeline.get_execution_levels()
         assert len(execution_order) == 1
         assert set(execution_order[0]) == {"task1", "task2", "task3"}

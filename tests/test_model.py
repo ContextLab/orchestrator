@@ -628,3 +628,35 @@ class TestMockModel:
         
         assert model._responses["prompt1"] == "response1"
         assert model._responses["prompt2"] == {"key": "value"}
+    
+    @pytest.mark.asyncio
+    async def test_mock_model_generate_with_exception_response(self):
+        """Test MockModel generate with exception response."""
+        model = MockModel()
+        test_exception = ValueError("Test error")
+        model.set_response("Error prompt", test_exception)
+        
+        with pytest.raises(ValueError, match="Test error"):
+            await model.generate("Error prompt")
+    
+    @pytest.mark.asyncio
+    async def test_mock_model_generate_with_partial_match_exception(self):
+        """Test MockModel generate with partial match exception."""
+        model = MockModel()
+        test_exception = RuntimeError("Partial match error")
+        model.set_response("error", test_exception)
+        
+        with pytest.raises(RuntimeError, match="Partial match error"):
+            await model.generate("This contains error in the prompt")
+    
+    @pytest.mark.asyncio
+    async def test_mock_model_generate_with_partial_match_non_string(self):
+        """Test MockModel generate with partial match non-string response."""
+        model = MockModel()
+        model.set_response("test", {"result": "partial match object"})
+        
+        result = await model.generate("This prompt contains test keyword")
+        
+        # Should convert non-string to string for partial match
+        assert isinstance(result, str)
+        assert "result" in result

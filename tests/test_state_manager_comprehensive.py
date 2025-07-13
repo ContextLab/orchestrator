@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 from unittest.mock import patch, mock_open
 
-from orchestrator.state.state_manager import StateManager
+from orchestrator.state.simple_state_manager import StateManager
 
 
 class TestStateManager:

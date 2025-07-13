@@ -138,6 +138,17 @@ class ModelRegistry:
                 providers.add(key.split(":")[0])
         return sorted(list(providers))
     
+    async def get_available_models(self) -> List[str]:
+        """
+        Get list of available (healthy) models.
+        
+        Returns:
+            List of available model keys
+        """
+        all_models = list(self.models.values())
+        healthy_models = await self._filter_by_health(all_models)
+        return [self._get_model_key(model) for model in healthy_models]
+    
     async def select_model(self, requirements: Dict[str, Any]) -> Model:
         """
         Select best model for given requirements.

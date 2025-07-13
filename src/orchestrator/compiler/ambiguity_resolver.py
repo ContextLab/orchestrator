@@ -119,10 +119,13 @@ class AmbiguityResolver:
         """
         content_lower = content.lower()
         
-        # Check for boolean indicators first
+        # Check for boolean indicators first (use word boundaries for more precision)
+        import re
         boolean_indicators = ["enable", "disable", "true", "false", "yes", "no", "allow", "deny", "support", "block"]
-        if any(word in content_lower for word in boolean_indicators):
-            return "boolean"
+        for indicator in boolean_indicators:
+            # Use word boundaries to avoid matching partial words like "supported" matching "support"
+            if re.search(r'\b' + re.escape(indicator) + r'\b', content_lower):
+                return "boolean"
         
         # Check for number indicators (but not if it's quoted content)
         number_indicators = ["timeout", "retry", "count", "size", "limit", "number", "amount"]
@@ -145,13 +148,16 @@ class AmbiguityResolver:
                 return "boolean"
             elif any(word in content_lower for word in ["number", "size", "count", "amount"]):
                 return "number"
-            elif "list" in content_lower or "array" in content_lower or "items" in content_lower:
+            elif "list" in content_lower or "array" in content_lower or "items" in content_lower or "languages" in content_lower:
                 return "list"
             # Check for strong boolean context hints even with choose/select
             elif (any(pattern in context_path for pattern in ["enable_", "disable_", "support_", "allow_", "deny_"]) or
                   # Also consider specific option/config paths that might be boolean
                   ("other_option" in context_path and "config." in context_path)):
                 return "boolean"
+            # Check for parameter context (should take precedence over generic "value")
+            elif "parameters" in context_path:
+                return "parameter"
             # Default to value for choose/select patterns
             else:
                 return "value"
@@ -161,6 +167,8 @@ class AmbiguityResolver:
             return "boolean"
         elif "count" in context_path or "size" in context_path or "limit" in context_path or "timeout" in context_path or "retry" in context_path or "number" in context_path:
             return "number"
+        elif "languages" in context_path or "items" in context_path or "list" in context_path or "tags" in context_path or "options" in context_path:
+            return "list"
         elif "parameters" in context_path:
             return "parameter"
         elif "format" in context_path or "type" in context_path:
@@ -192,11 +200,12 @@ class AmbiguityResolver:
     async def _resolve_list(self, content: str, context_path: str) -> List[Any]:
         """Resolve list ambiguity."""
         # Return a default list based on context
-        if "source" in content.lower():
+        content_lower = content.lower()
+        if "source" in content_lower:
             return ["web", "documents", "database"]
-        elif "format" in content.lower():
+        elif "format" in content_lower:
             return ["json", "csv", "xml"]
-        elif "language" in content.lower():
+        elif "language" in content_lower or "languages" in content_lower:
             return ["en", "es", "fr"]
         
         return ["item1", "item2", "item3"]

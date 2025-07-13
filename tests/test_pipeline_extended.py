@@ -98,7 +98,7 @@ class TestPipelineExtended:
         # task2 and task4 should be ready now that task1 is complete
         # task3 is running so not ready
         
-        ready_tasks = pipeline.get_ready_tasks({"task1"})
+        ready_tasks = pipeline.get_ready_task_ids({"task1"})
         # Only task2 and task4 should be ready (pending tasks with satisfied dependencies)
         expected_ready = {"task2", "task4"}
         assert set(ready_tasks) == expected_ready
@@ -272,7 +272,7 @@ class TestPipelineExtended:
         for task in [task1, task2, task3, task4, task5]:
             pipeline.add_task(task)
         
-        execution_order = pipeline.get_execution_order()
+        execution_order = pipeline.get_execution_levels()
         
         assert len(execution_order) == 3
         assert set(execution_order[0]) == {"task1", "task2"}
@@ -283,7 +283,7 @@ class TestPipelineExtended:
         """Test various methods on empty pipeline."""
         pipeline = Pipeline(id="test", name="Test Pipeline")
         
-        assert pipeline.get_ready_tasks(set()) == []
+        assert pipeline.get_ready_task_ids(set()) == []
         assert pipeline.get_failed_tasks() == []
         assert pipeline.get_completed_tasks() == []
         assert pipeline.get_running_tasks() == []
