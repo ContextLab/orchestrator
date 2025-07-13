@@ -143,12 +143,10 @@ class AmbiguityResolver:
         
         # Check for specific patterns in content first (most specific)
         if "choose" in content_lower or "select" in content_lower:
-            # Check content patterns first (more specific than generic choose)
-            if "true" in content_lower or "false" in content_lower:
-                return "boolean"
-            elif any(word in content_lower for word in ["number", "size", "count", "amount"]):
-                return "number"
-            elif "list" in content_lower or "array" in content_lower or "items" in content_lower or "languages" in content_lower:
+            # Note: Boolean and number checks are already handled above (lines 127-128, 132-133)
+            # so we don't need to check for them again here
+            
+            if "list" in content_lower or "array" in content_lower or "items" in content_lower or "languages" in content_lower:
                 return "list"
             # Check for strong boolean context hints even with choose/select
             elif (any(pattern in context_path for pattern in ["enable_", "disable_", "support_", "allow_", "deny_"]) or

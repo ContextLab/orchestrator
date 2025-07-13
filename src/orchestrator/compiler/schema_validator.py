@@ -195,25 +195,9 @@ class SchemaValidator:
             }
         }
     
-    def add_custom_validator(self, property_name: str, validator_func) -> None:
-        """
-        Add custom validator for a property.
-        
-        Args:
-            property_name: Name of the property to validate
-            validator_func: Validation function
-        """
-        # Create a new validator class with custom validation
-        all_validators = dict(jsonschema.Draft7Validator.TYPE_CHECKER.checkers)
-        all_validators[property_name] = validator_func
-        
-        CustomValidator = jsonschema.validators.create(
-            meta_schema=jsonschema.Draft7Validator.META_SCHEMA,
-            validators=jsonschema.Draft7Validator.VALIDATORS,
-            type_checker=jsonschema.Draft7Validator.TYPE_CHECKER.redefine_many(all_validators)
-        )
-        
-        self.validator = CustomValidator(self.schema)
+    # Note: add_custom_validator method was removed as it used an outdated jsonschema API
+    # and was not used in production code. Custom validation should be done through
+    # schema definitions or external validation functions.
     
     def validate_task_dependencies(self, pipeline_def: Dict[str, Any]) -> List[str]:
         """
