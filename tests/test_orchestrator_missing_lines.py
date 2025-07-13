@@ -13,34 +13,60 @@ class TestOrchestratorMissingLines:
     """Tests to cover specific missing lines in orchestrator."""
     
     @pytest.mark.asyncio
-    async def test_skipped_task_not_in_results_line_270(self):
-        """Test line 270: results[task_id] = {"status": "skipped"}."""
+    async def test_task_not_found_in_pipeline_line_207(self):
+        """Test line 207: raise ValueError(f"Task '{task_id}' not found in pipeline")."""
         orchestrator = Orchestrator()
         
-        # Create a task and mark it as skipped
-        task = Task(id="skipped_task", name="Skipped Task", action="generate")
-        task.skip("Skipped for testing")
+        # Create pipeline with no tasks
+        pipeline = Pipeline(id="test", name="Test")
+        
+        # Try to execute level with non-existent task ID
+        context = {"execution_id": "test_123", "current_level": 0}
+        
+        # This should trigger line 207 - task not found error
+        with pytest.raises(ValueError, match="Task 'nonexistent_task' not found in pipeline"):
+            await orchestrator._execute_level(
+                pipeline, 
+                ["nonexistent_task"], 
+                context, 
+                {}
+            )
+    
+    @pytest.mark.asyncio
+    async def test_skipped_task_not_in_results_line_272(self):
+        """Test line 272: results[task_id] = {"status": "skipped"}."""
+        from unittest.mock import patch
+        
+        orchestrator = Orchestrator()
+        
+        # Create a task
+        task = Task(id="test_task", name="Test Task", action="generate")
         
         # Create pipeline
         pipeline = Pipeline(id="test", name="Test")
         pipeline.add_task(task)
         
-        # Mock resource allocation
-        orchestrator.resource_allocator.request_resources = AsyncMock(return_value=True)
+        # Mock resource allocation to fail so task won't be scheduled for execution
+        orchestrator.resource_allocator.request_resources = AsyncMock(return_value=False)
         orchestrator.resource_allocator.release_resources = AsyncMock()
         
-        # Execute level with the skipped task
         context = {"execution_id": "test_123", "current_level": 0}
+        
+        # Manually skip the task after it doesn't get scheduled
+        task.skip("Resource allocation failed")
+        
+        # Execute the level - task won't be in main execution due to resource failure
+        # but will be caught in the cleanup loop (line 272)
         results = await orchestrator._execute_level(
             pipeline, 
-            ["skipped_task"], 
+            ["test_task"], 
             context, 
             {}
         )
         
-        # Should have the skipped task in results (line 270)
-        assert "skipped_task" in results
-        assert results["skipped_task"]["status"] == "skipped"
+        # Task should be in results via line 272 cleanup
+        assert "test_task" in results
+        assert results["test_task"]["status"] == "skipped"
         assert task.status == TaskStatus.SKIPPED
     
     @pytest.mark.asyncio

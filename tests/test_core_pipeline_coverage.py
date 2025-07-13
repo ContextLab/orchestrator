@@ -582,3 +582,82 @@ class TestPipeline:
         
         assert task1_index < task3_index
         assert task2_index < task3_index
+    
+    def test_pipeline_remove_task_strict_lines_117_119(self):
+        """Test remove_task_strict method (lines 117-119)."""
+        task = Task("task1", "Task 1", "action1")
+        
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            tasks={"task1": task}
+        )
+        
+        # Test successful removal using strict method
+        removed_task = pipeline.remove_task_strict("task1")
+        
+        assert removed_task == task
+        assert "task1" not in pipeline.tasks
+        assert len(pipeline.tasks) == 0
+    
+    def test_pipeline_get_task_safe_line_143(self):
+        """Test get_task_safe method (line 143)."""
+        task = Task("task1", "Task 1", "action1")
+        
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            tasks={"task1": task}
+        )
+        
+        # Test getting existing task safely
+        retrieved_task = pipeline.get_task_safe("task1")
+        assert retrieved_task == task
+        
+        # Test getting non-existent task safely 
+        missing_task = pipeline.get_task_safe("nonexistent")
+        assert missing_task is None
+    
+    def test_pipeline_get_task_strict_line_160(self):
+        """Test get_task_strict method (line 160)."""
+        task = Task("task1", "Task 1", "action1")
+        
+        pipeline = Pipeline(
+            id="test", 
+            name="Test",
+            tasks={"task1": task}
+        )
+        
+        # Test getting existing task with strict method
+        retrieved_task = pipeline.get_task_strict("task1")
+        assert retrieved_task == task
+    
+    def test_pipeline_get_execution_order_flat_lines_412_413(self):
+        """Test get_execution_order_flat method (lines 412-413)."""
+        task1 = Task("task1", "Task 1", "action1")
+        task2 = Task("task2", "Task 2", "action2", dependencies=["task1"])
+        task3 = Task("task3", "Task 3", "action3", dependencies=["task1"])
+        
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            tasks={"task1": task1, "task2": task2, "task3": task3}
+        )
+        
+        # Test flat execution order
+        flat_order = pipeline.get_execution_order_flat()
+        
+        # Should be a flat list, not nested
+        assert isinstance(flat_order, list)
+        assert len(flat_order) == 3
+        assert "task1" in flat_order
+        assert "task2" in flat_order  
+        assert "task3" in flat_order
+        
+        # task1 should come before task2 and task3
+        task1_index = flat_order.index("task1")
+        task2_index = flat_order.index("task2")
+        task3_index = flat_order.index("task3")
+        
+        assert task1_index < task2_index
+        assert task1_index < task3_index

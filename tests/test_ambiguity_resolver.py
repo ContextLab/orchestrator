@@ -591,3 +591,34 @@ class TestAmbiguityResolver:
         assert resolver._classify_ambiguity("Select array values", "config.option") == "list"
         assert resolver._classify_ambiguity("Choose items to include", "config.option") == "list"
         assert resolver._classify_ambiguity("Select languages available", "config.option") == "list"
+    
+    def test_classify_ambiguity_missing_line_148_boolean_choose(self):
+        """Test line 148: return 'boolean' for true/false in choose context."""
+        resolver = AmbiguityResolver()
+        
+        # Test exact condition: choose/select + "true" or "false" content
+        assert resolver._classify_ambiguity("Choose true", "config.setting") == "boolean"
+        assert resolver._classify_ambiguity("Select false", "config.option") == "boolean"
+        assert resolver._classify_ambiguity("Choose true option", "config.flag") == "boolean"
+        assert resolver._classify_ambiguity("Select false value", "config.toggle") == "boolean"
+    
+    def test_classify_ambiguity_missing_line_150_number_choose(self):
+        """Test line 150: return 'number' for number words in choose context."""
+        resolver = AmbiguityResolver()
+        
+        # Test exact condition: choose/select + number words
+        assert resolver._classify_ambiguity("Choose number", "config.setting") == "number"
+        assert resolver._classify_ambiguity("Select size", "config.option") == "number"
+        assert resolver._classify_ambiguity("Choose count", "config.flag") == "number"
+        assert resolver._classify_ambiguity("Select amount", "config.data") == "number"
+    
+    def test_classify_ambiguity_missing_line_171_list_context(self):
+        """Test line 171: return 'list' for list-related context paths."""
+        resolver = AmbiguityResolver()
+        
+        # Test exact condition: list-related context path words (line 171)
+        assert resolver._classify_ambiguity("Process data", "step.languages") == "list"
+        assert resolver._classify_ambiguity("Handle content", "config.items") == "list"
+        assert resolver._classify_ambiguity("Process info", "config.tags") == "list"
+        assert resolver._classify_ambiguity("Manage data", "step.options") == "list"
+        assert resolver._classify_ambiguity("Transform content", "config.list") == "list"
