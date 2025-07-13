@@ -1,0 +1,36 @@
+{
+  "data": {
+    "records": [
+      {
+        "id": "1",
+        "name": "Alice",
+        "value": "100",
+        "status": "ACTIVE",
+        "value_category": "low"
+      },
+      {
+        "id": "2",
+        "name": "Bob",
+        "value": "200",
+        "status": "ACTIVE",
+        "value_category": "high"
+      },
+      {
+        "id": "3",
+        "name": "Charlie",
+        "value": "150",
+        "status": "INACTIVE",
+        "value_category": "medium"
+      }
+    ],
+    "total": 3
+  },
+  "metrics": {
+    "records_transformed": 3,
+    "transformations_applied": [
+      "value_categorization",
+      "status_normalization"
+    ],
+    "success_rate": 1.0
+  }
+}

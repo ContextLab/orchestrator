@@ -1,0 +1,13 @@
+id,name,age,salary,department,status
+1,John Doe,30,50000,Engineering,active
+2,Jane Smith,25,45000,Marketing,active
+3,,28,52000,Engineering,inactive
+1,John Doe,30,50000,Engineering,active
+4,Bob Johnson,35,,Sales,active
+5,Alice Brown,22,38000,Marketing,pending
+6,Charlie Wilson,40,-60000,Engineering,active
+7,Diana Lee,33,55000,Marketing,active
+8,Eve Davis,29,48000,Sales,inactive
+,Unknown Person,0,0,Unknown,unknown
+9,Frank Miller,45,75000,Engineering,active
+10,Grace Taylor,27,42000,Marketing,active

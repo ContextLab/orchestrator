@@ -1,0 +1,16 @@
+{
+  "records": [
+    {"id": 1, "value": 100, "timestamp": "2024-01-01"},
+    {"id": 2, "value": null, "timestamp": "2024-01-02"},
+    {"id": "invalid", "value": "not_a_number", "timestamp": "invalid_date"},
+    {"id": 3, "value": 150},
+    {"missing_id": true, "value": 200, "timestamp": "2024-01-04"},
+    {"id": 4, "value": -50, "timestamp": "2024-01-05", "extra_field": "unexpected"},
+    {"id": 5, "value": 999999999999999, "timestamp": "2024-01-06"}
+  ],
+  "metadata": {
+    "source": "test_system",
+    "version": "1.0",
+    "corrupt_field": {"nested": {"deeply": null}}
+  }
+}

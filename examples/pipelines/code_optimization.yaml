@@ -1,0 +1,79 @@
+name: "Code Optimization Pipeline"
+description: "Automated code analysis and optimization workflow"
+version: "1.0.0"
+
+context:
+  timeout: 600
+  max_retries: 2
+  checkpoint_strategy: "adaptive"
+
+inputs:
+  code_path:
+    type: string
+    description: "Path to code file or directory"
+  optimization_level:
+    type: string
+    default: "balanced"
+    enum: ["performance", "readability", "balanced"]
+  language:
+    type: string
+    default: "python"
+
+steps:
+  - id: code_analysis
+    name: "Analyze Code"
+    action: analyze_code
+    parameters:
+      path: "{{ code_path }}"
+      language: "{{ language }}"
+      metrics: ["complexity", "performance", "maintainability"]
+      
+  - id: identify_issues
+    name: "Identify Issues" 
+    action: find_issues
+    dependencies: [code_analysis]
+    parameters:
+      analysis: "$results.code_analysis"
+      threshold: <AUTO>Set appropriate threshold for {{ optimization_level }} optimization</AUTO>
+      focus_areas: <AUTO>Determine focus areas based on {{ optimization_level }}</AUTO>
+      
+  - id: generate_fixes
+    name: "Generate Optimizations"
+    action: optimize
+    dependencies: [identify_issues]
+    parameters:
+      issues: "$results.identify_issues"
+      optimization_level: "{{ optimization_level }}"
+      preserve_functionality: true
+      
+  - id: validate_changes
+    name: "Validate Changes"
+    action: validate
+    dependencies: [generate_fixes]
+    parameters:
+      original_code: "$results.code_analysis.code"
+      optimized_code: "$results.generate_fixes.code"
+      run_tests: true
+    on_failure: "retry"
+      
+  - id: create_report
+    name: "Create Report"
+    action: report
+    dependencies: [validate_changes]
+    parameters:
+      analysis: "$results.code_analysis"
+      issues: "$results.identify_issues"
+      fixes: "$results.generate_fixes"
+      validation: "$results.validate_changes"
+      format: "markdown"
+
+outputs:
+  optimized_code:
+    type: code
+    value: "$results.generate_fixes.code"
+  report:
+    type: document
+    value: "$results.create_report.document"
+  metrics_improvement:
+    type: object
+    value: "$results.validate_changes.improvements"

@@ -1,0 +1,41 @@
+name: "Simple Research Pipeline"
+description: "Basic research workflow for testing"
+version: "1.0.0"
+
+context:
+  timeout: 300
+  max_retries: 2
+
+inputs:
+  topic:
+    type: string
+    description: "Research topic"
+
+steps:
+  - id: search
+    name: "Search"
+    action: search
+    parameters:
+      query: "{{ topic }}"
+      max_results: 5
+      
+  - id: analyze
+    name: "Analyze"
+    action: analyze
+    dependencies: [search]
+    parameters:
+      data: "$results.search"
+      depth: "basic"
+      
+  - id: summarize
+    name: "Summarize"
+    action: summarize
+    dependencies: [analyze]
+    parameters:
+      content: "$results.analyze"
+      format: "markdown"
+
+outputs:
+  summary:
+    type: string
+    value: "$results.summarize"

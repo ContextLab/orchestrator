@@ -1,0 +1,86 @@
+name: "Research Assistant Pipeline"
+description: "Automated research workflow with web search, analysis, and report generation"
+version: "1.0.0"
+
+context:
+  timeout: 1800  # 30 minutes
+  max_retries: 3
+  checkpoint_strategy: "adaptive"
+
+inputs:
+  topic:
+    type: string
+    description: "Research topic to investigate"
+  depth:
+    type: string
+    default: "comprehensive"
+    enum: ["quick", "standard", "comprehensive"]
+
+steps:
+  - id: web_search
+    name: "Web Search"
+    action: search
+    parameters:
+      query: "{{ topic }}"
+      sources: <AUTO>Select best sources for research on {{ topic }}</AUTO>
+      num_results: <AUTO>Determine number based on {{ depth }} analysis</AUTO>
+    requires_model:
+      capabilities: ["web_search", "information_retrieval"]
+      
+  - id: content_extraction
+    name: "Extract Content"
+    action: extract
+    dependencies: [web_search]
+    parameters:
+      urls: "$results.web_search"
+      extraction_type: <AUTO>Choose extraction method for academic research</AUTO>
+    requires_model:
+      capabilities: ["text_extraction", "document_parsing"]
+      
+  - id: analysis
+    name: "Analyze Information"
+    action: analyze
+    dependencies: [content_extraction]
+    parameters:
+      content: "$results.content_extraction"
+      analysis_depth: "{{ depth }}"
+      focus_areas: <AUTO>Identify key areas to analyze for {{ topic }}</AUTO>
+    requires_model:
+      min_size: "7B"
+      capabilities: ["reasoning", "analysis"]
+      
+  - id: fact_check
+    name: "Fact Checking"
+    action: verify
+    dependencies: [analysis]
+    parameters:
+      claims: "$results.analysis.key_points"
+      cross_reference: true
+    on_failure: "continue"
+    requires_model:
+      capabilities: ["fact_checking", "verification"]
+      
+  - id: report_generation
+    name: "Generate Report"
+    action: generate
+    dependencies: [analysis, fact_check]
+    parameters:
+      format: <AUTO>Choose best format for {{ topic }} research report</AUTO>
+      sections: "$results.analysis.outline"
+      citations: "$results.content_extraction.sources"
+      verified_facts: "$results.fact_check.verified"
+    requires_model:
+      min_size: "13B"
+      expertise: "high"
+      capabilities: ["writing", "formatting"]
+
+outputs:
+  report:
+    type: document
+    value: "$results.report_generation.document"
+  summary:
+    type: string
+    value: "$results.report_generation.summary"
+  sources:
+    type: array
+    value: "$results.content_extraction.sources"
