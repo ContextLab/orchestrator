@@ -1,0 +1,110 @@
+name: Model Integration Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-huggingface-models:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.11]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install transformers torch requests
+    
+    - name: Test HuggingFace model integration
+      env:
+        CI: true
+      run: |
+        cd examples
+        python test_models_comprehensive.py
+    
+    - name: Test pipeline with real models
+      env:
+        CI: true
+      run: |
+        cd examples
+        timeout 300 python -c "
+        import asyncio
+        import sys
+        import os
+        sys.path.insert(0, os.path.join('.', '..', 'src'))
+        
+        from orchestrator.integrations.huggingface_model import HuggingFaceModel
+        from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        
+        async def test():
+            try:
+                model = HuggingFaceModel('TinyLlama/TinyLlama-1.1B-Chat-v1.0')
+                resolver = AmbiguityResolver(model=model)
+                result = await resolver.resolve('Choose format: json or csv', 'test.format')
+                print(f'✅ Resolved: {result}')
+                return True
+            except Exception as e:
+                print(f'❌ Failed: {e}')
+                return False
+        
+        success = asyncio.run(test())
+        sys.exit(0 if success else 1)
+        "
+
+  test-model-fallbacks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        # Intentionally don't install transformers to test fallback
+    
+    - name: Test model fallback behavior
+      env:
+        CI: true
+      run: |
+        cd examples
+        python -c "
+        import asyncio
+        import sys
+        import os
+        sys.path.insert(0, os.path.join('.', '..', 'src'))
+        
+        from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        
+        async def test():
+            try:
+                # Should fallback to mock model
+                resolver = AmbiguityResolver()
+                print(f'Using fallback model: {resolver.model.name}')
+                result = await resolver.resolve('Choose format', 'test.format')
+                print(f'✅ Fallback resolved: {result}')
+                return True
+            except Exception as e:
+                print(f'❌ Fallback failed: {e}')
+                return False
+        
+        success = asyncio.run(test())
+        sys.exit(0 if success else 1)
+        "

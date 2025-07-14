@@ -143,6 +143,35 @@ class HuggingFaceModel(Model):
                 success_rate=0.95,
             ),
         },
+        "TinyLlama/TinyLlama-1.1B-Chat-v1.0": {
+            "capabilities": ModelCapabilities(
+                supported_tasks=["generate", "chat", "reasoning"],
+                context_window=2048,
+                supports_function_calling=False,
+                supports_structured_output=True,
+                supports_streaming=False,
+                languages=["en"],
+                max_tokens=512,
+                temperature_range=(0.0, 2.0),
+            ),
+            "requirements": ModelRequirements(
+                memory_gb=1.5,
+                gpu_memory_gb=1.0,
+                cpu_cores=2,
+                supports_quantization=["8bit", "4bit"],
+                min_python_version="3.8",
+                requires_gpu=False,
+                disk_space_gb=1.2,
+            ),
+            "metrics": ModelMetrics(
+                latency_p50=0.8,
+                latency_p95=2.0,
+                throughput=40.0,
+                accuracy=0.82,
+                cost_per_token=0.0,
+                success_rate=0.92,
+            ),
+        },
     }
     
     def __init__(

@@ -1,0 +1,3 @@
+environment: local_ollama
+models_tested: 3
+models_passed: 2

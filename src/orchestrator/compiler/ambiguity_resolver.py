@@ -38,21 +38,8 @@ class AmbiguityResolver:
             fallback_to_mock: Whether to fallback to mock model if real model unavailable
         """
         if model is None:
-            # Try to use a real model first
-            try:
-                from ..integrations.openai_model import OpenAIModel
-                model = OpenAIModel()
-            except Exception:
-                try:
-                    from ..integrations.anthropic_model import AnthropicModel
-                    model = AnthropicModel()
-                except Exception:
-                    if fallback_to_mock:
-                        # Fallback to mock model
-                        from ..core.model import MockModel
-                        model = MockModel()
-                    else:
-                        raise RuntimeError("No AI model available for ambiguity resolution")
+            # Try to use available models in order of preference
+            model = self._get_best_available_model(fallback_to_mock)
         
         self.model = model
         self.resolution_cache: Dict[str, Any] = {}
@@ -64,6 +51,59 @@ class AmbiguityResolver:
             "number": self._resolve_number,
             "string": self._resolve_string,
         }
+    
+    def _get_best_available_model(self, fallback_to_mock: bool = True) -> Model:
+        """Get the best available model for ambiguity resolution."""
+        # Model preference order: Ollama (local) > HuggingFace (local) > OpenAI/Anthropic (API) > Mock
+        
+        # 1. Try Ollama models (best for local development)
+        try:
+            from ..integrations.ollama_model import OllamaModel
+            # Try gemma2:27b first (best quality), then fallback options
+            for model_name in ["gemma2:27b", "gemma2:9b", "llama3.2:3b", "llama3.2:1b"]:
+                try:
+                    model = OllamaModel(model_name=model_name)
+                    if model._is_available:
+                        return model
+                except Exception:
+                    continue
+        except ImportError:
+            pass
+        
+        # 2. Try HuggingFace models (for CI/testing)
+        try:
+            from ..integrations.huggingface_model import HuggingFaceModel
+            # Try TinyLlama first (good for CI), then other small models
+            for model_name in ["TinyLlama/TinyLlama-1.1B-Chat-v1.0", "distilgpt2", "gpt2"]:
+                try:
+                    model = HuggingFaceModel(model_name=model_name)
+                    return model
+                except Exception:
+                    continue
+        except ImportError:
+            pass
+        
+        # 3. Try API models (if keys available)
+        try:
+            from ..integrations.openai_model import OpenAIModel
+            model = OpenAIModel()
+            return model
+        except Exception:
+            pass
+        
+        try:
+            from ..integrations.anthropic_model import AnthropicModel
+            model = AnthropicModel()
+            return model
+        except Exception:
+            pass
+        
+        # 4. Fallback to mock model
+        if fallback_to_mock:
+            from ..core.model import MockModel
+            return MockModel()
+        else:
+            raise RuntimeError("No AI model available for ambiguity resolution")
     
     async def resolve(self, content: str, context_path: str) -> Any:
         """
@@ -173,7 +213,7 @@ class AmbiguityResolver:
         
         return "string"
     
-    async def _resolve_parameter(self, content: str, context_path: str) -> Any:
+    async def _resolve_parameter(self, content: str, context_path: str) -> str:
         """Resolve parameter ambiguity."""
         # Common parameter patterns
         if "format" in content.lower():
@@ -194,7 +234,7 @@ class AmbiguityResolver:
         
         return await self._resolve_generic(content, context_path)
     
-    async def _resolve_list(self, content: str, context_path: str) -> List[Any]:
+    async def _resolve_list(self, content: str, context_path: str) -> List[str]:
         """Resolve list ambiguity."""
         # Return a default list based on context
         content_lower = content.lower()
@@ -229,7 +269,7 @@ class AmbiguityResolver:
         
         return False
     
-    async def _resolve_number(self, content: str, context_path: str) -> Union[int, float]:
+    async def _resolve_number(self, content: str, context_path: str) -> int:
         """Resolve number ambiguity."""
         # Look for number hints in content
         if "batch" in content.lower():
@@ -256,33 +296,23 @@ class AmbiguityResolver:
     
     async def _resolve_generic(self, content: str, context_path: str) -> str:
         """Generic resolution using model."""
-        # Create a detailed resolution prompt
-        prompt = f"""You are an AI pipeline orchestration expert. Resolve this ambiguous specification to a specific, concrete value.
+        # Create a simple, direct prompt
+        prompt = f"""Resolve this to a single word or short value:
 
-CONTEXT:
-- Path: {context_path}
-- Ambiguous content: {content}
+{content}
 
-RULES:
-1. Provide a specific, actionable value
-2. Consider the context path to understand the parameter's purpose
-3. Return only the resolved value without explanation
-4. If multiple options exist, choose the most common/standard option
-5. For parameters, prefer widely-supported values
-6. For actions, prefer standard operations
-7. For formats, prefer JSON unless context suggests otherwise
-
-EXAMPLES:
-- "Choose the best format" in data context → "json"
-- "Select appropriate method" in analysis context → "statistical"
-- "Determine timeout value" → "30"
-- "Pick suitable model" → "gpt-3.5-turbo"
-
-Resolved value:"""
+Answer with only the value, no explanation:"""
         
         try:
-            result = await self.model.generate(prompt, temperature=0.1, max_tokens=50)
-            return result.strip().strip('"').strip("'")
+            result = await self.model.generate(prompt, temperature=0.1, max_tokens=10)
+            # Ensure result is a string
+            if not isinstance(result, str):
+                result = str(result)
+            # Clean up and extract just the first word/value
+            result = result.strip().strip('"').strip("'")
+            # Take only the first word/token
+            first_word = result.split()[0] if result.split() else result
+            return first_word.lower()
         except Exception:
             # Fallback to simple heuristics
             return self._fallback_resolution(content, context_path)

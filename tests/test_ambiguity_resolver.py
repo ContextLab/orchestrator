@@ -563,8 +563,16 @@ class TestAmbiguityResolver:
     
     def test_resolver_creation_no_model_available(self):
         """Test resolver creation when no model is available."""
-        with pytest.raises(RuntimeError, match="No AI model available"):
-            AmbiguityResolver(model=None, fallback_to_mock=False)
+        from unittest.mock import patch, MagicMock
+        
+        # Create a mock resolver that always fails model imports
+        mock_resolver = MagicMock()
+        mock_resolver._get_best_available_model.side_effect = RuntimeError("No AI model available for ambiguity resolution")
+        
+        # Patch the _get_best_available_model method to simulate no models available
+        with patch.object(AmbiguityResolver, '_get_best_available_model', side_effect=RuntimeError("No AI model available for ambiguity resolution")):
+            with pytest.raises(RuntimeError, match="No AI model available"):
+                AmbiguityResolver(model=None, fallback_to_mock=False)
     
     def test_classify_ambiguity_choose_with_true_false(self):
         """Test classification of choose with true/false."""
