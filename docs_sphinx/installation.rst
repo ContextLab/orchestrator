@@ -2,7 +2,7 @@
 Installation
 ============
 
-This guide covers the installation of Orchestrator and its dependencies.
+This guide covers the installation of py-orc and its dependencies.
 
 Requirements
 ============
@@ -32,10 +32,10 @@ Using pip (Recommended)
 .. code-block:: bash
 
    # Install from PyPI (when available)
-   pip install orchestrator-ai
+   pip install py-orc
    
    # Or install from source
-   git clone https://github.com/contextualdynamics/orchestrator.git
+   git clone https://github.com/ContextLab/orchestrator.git
    cd orchestrator
    pip install -e .
 
@@ -45,11 +45,11 @@ Using conda
 .. code-block:: bash
 
    # Create conda environment
-   conda create -n orchestrator python=3.11
-   conda activate orchestrator
+   conda create -n py-orc python=3.11
+   conda activate py-orc
    
    # Install orchestrator
-   pip install orchestrator-ai
+   pip install py-orc
 
 Using Docker
 ------------
@@ -57,10 +57,10 @@ Using Docker
 .. code-block:: bash
 
    # Pull the official image
-   docker pull contextualdynamics/orchestrator:latest
+   docker pull contextlab/py-orc:latest
    
    # Run with volume mount
-   docker run -v $(pwd):/workspace contextualdynamics/orchestrator
+   docker run -v $(pwd):/workspace contextlab/py-orc
 
 Development Installation
 ------------------------
@@ -70,7 +70,7 @@ For contributors and developers:
 .. code-block:: bash
 
    # Clone the repository
-   git clone https://github.com/contextualdynamics/orchestrator.git
+   git clone https://github.com/ContextLab/orchestrator.git
    cd orchestrator
    
    # Create virtual environment

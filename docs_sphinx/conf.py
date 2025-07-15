@@ -10,7 +10,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.abspath('../src'))
 
 # -- Project information -----------------------------------------------------
-project = 'Orchestrator'
+project = 'py-orc'
 copyright = f'{datetime.now().year}, Contextual Dynamics Lab'
 author = 'Contextual Dynamics Lab'  
 release = '0.1.0'
@@ -19,7 +19,7 @@ version = '0.1.0'
 # HTML context variables to customize theme
 html_context = {
     'display_github': True,
-    'github_user': 'contextualdynamics',
+    'github_user': 'ContextLab',
     'github_repo': 'orchestrator',
     'github_version': 'main',
     'conf_py_path': '/docs_sphinx/',

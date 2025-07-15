@@ -1,6 +1,6 @@
-# Orchestrator 🧟
+# py-orc 🧟
 
-Orchestrator is a convenient wrapper for LangGraph, MCP, model spec, and other AI (LLM) agent control systems. It provides a way to:
+py-orc is a convenient wrapper for LangGraph, MCP, model spec, and other AI (LLM) agent control systems. It provides a way to:
  - Specify task-based control flows, dependencies (including conditional dependencies), and completion criteria
  - Use external tools (through MCP and custom scripts or command line calls)
  - Run sandboxed code (using Docker, conda, uv, and/or pyenv)
@@ -9,7 +9,7 @@ Orchestrator is a convenient wrapper for LangGraph, MCP, model spec, and other A
 
 ## How it works ⚙️
 
-Orchestrator is built around two core components:
+py-orc is built around two core components:
   - YAML files for defining task control flows
   - A Python library for compiling and executing control flows
 

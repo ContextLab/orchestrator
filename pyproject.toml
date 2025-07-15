@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "orchestrator"
+name = "py-orc"
 version = "0.1.0"
 description = "AI pipeline orchestration framework with intelligent ambiguity resolution"
 authors = [
@@ -70,13 +70,13 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/orchestrator/orchestrator"
-Repository = "https://github.com/orchestrator/orchestrator"
-Documentation = "https://orchestrator.readthedocs.io"
-Changelog = "https://github.com/orchestrator/orchestrator/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/ContextLab/orchestrator"
+Repository = "https://github.com/ContextLab/orchestrator"
+Documentation = "https://orc.readthedocs.io"
+Changelog = "https://github.com/ContextLab/orchestrator/blob/main/CHANGELOG.md"
 
 [project.scripts]
-orchestrator = "orchestrator.cli:main"
+py-orc = "orchestrator.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
