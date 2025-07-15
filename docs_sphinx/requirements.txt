@@ -1,0 +1,7 @@
+sphinx>=5.0.0
+sphinx-autodoc-typehints
+sphinx-copybutton
+sphinx-tabs
+myst-parser
+nbsphinx
+xanadu-sphinx-theme @ git+https://github.com/XanaduAI/xanadu-sphinx-theme.git

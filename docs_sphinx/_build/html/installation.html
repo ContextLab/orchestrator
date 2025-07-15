@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+  <meta property="og:title" content="Installation &#8212; PennyLane">
+  <meta property="og:url" content="None">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Serif">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500&display=swap">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+  <!-- Box Icons -->
+  <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+  <!-- Material Design Bootstrap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.5.14/css/mdb.min.css">
+  <!-- Overlay Scrollbars -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.11.4/styles/overlayscrollbars.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/tomorrow-night.min.css">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+       "HTML-CSS": { scale: 90, linebreaks: { automatic: true } },
+       TeX: {
+         Macros: {
+           pr : ['|\#1\\rangle\\langle\#1|',1],
+           ket: ['\\left| \#1\\right\\rangle',1],
+           bra: ['\\left\\langle \#1\\right|',1],
+           xket: ['\\left| \#1\\right\\rangle_x',1],
+           xbra: ['\\left\\langle \#1\\right|_x',1],
+           braket: ['\\langle \#1 \\rangle',1],
+           braketD: ['\\langle \#1 \\mid \#2 \\rangle',2],
+           braketT: ['\\langle \#1 \\mid \#2 \\mid \#3 \\rangle',3],
+           ketbra: ['| #1 \\rangle \\langle #2 |',2],
+           hc: ['\\text{h.c.}',0],
+           cc: ['\\text{c.c.}',0],
+           h: ['\\hat',0],
+           nn: ['\\nonumber',0],
+           di: ['\\frac{d}{d \#1}',1],
+           uu: ['\\mathcal{U}',0],
+           inn: ['\\text{in}',0],
+           out: ['\\text{out}',0],
+           vac: ['\\text{vac}',0],
+           I: ['\\hat{\\mathbf{1}}',0],
+           x: ['\\hat{x}',0],
+           p: ['\\hat{p}',0],
+           a: ['\\hat{a}',0],
+           ad: ['\\hat{a}^\\dagger',0],
+           n: ['\\hat{n}',0],
+           nbar: ['\\overline{n}',0],
+           sech: ['\\mathrm{sech~}',0],
+           tanh: ['\\mathrm{tanh~}',0],
+           re: ['\\text{Re}',0],
+           im: ['\\text{Im}',0],
+           tr: ['\\mathrm{Tr} #1',1],
+           sign: ['\\text{sign}',0],
+           overlr: ['\\overset\\leftrightarrow{\#1}',1],
+           overl: ['\\overset\leftarrow{\#1}',1],
+           overr: ['\\overset\rightarrow{\#1}',1],
+           avg: ['\\left< \#1 \\right>',1],
+           slashed: ['\\cancel{\#1}',1],
+           bold: ['\\boldsymbol{\#1}',1],
+           d: ['\\mathrm d',0],
+           expect: ["\\langle #1 \\rangle",1],
+           pde: ["\\frac{\\partial}{\\partial \#1}",1],
+           R: ["\\mathbb{R}",0],
+           C: ["\\mathbb{C}",0],
+           Ad: ["\\text{Ad}",0],
+           Var: ["\\text{Var}",0],
+           bx: ["\\mathbf{x}", 0],
+           bm: ["\\boldsymbol{\#1}",1],
+           haf: ["\\mathrm{haf}",0],
+           lhaf: ["\\mathrm{lhaf}",0]
+         }
+       }
+     });
+     </script>
+
+  <!-- Google Analytics -->
+  
+    <title>Installation &#8212; Orchestrator 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b20cc3f5" />
+    <link rel="stylesheet" type="text/css" href="_static/xanadu.css?v=95dfc2d3" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <script src="_static/documentation_options.js?v=01f34227"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=fd10adb8"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quickstart" href="quickstart.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
+  </head><body><nav>
+  <!-- Logo and Title -->
+
+  <a class="navbar-logo-title-container" href="https://github.com/contextualdynamics/orchestrator" aria-label="home">
+    
+    
+      <img class="navbar-logo-title-logo" src=" _static/xanadu_logo.svg" alt="Orchestrator" height="24px"></img>
+      <div class="navbar-logo-title-title">Orchestrator</div>
+    
+  </a>
+
+  <!-- Desktop Links -->
+
+  
+
+  
+
+  <div class="navbar-links desktop">
+    <ul class="navbar-left-links desktop">
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="getting_started" >
+          <span>Getting Started</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="tutorials/index" >
+          <span>Tutorials</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="api/index" >
+          <span>API</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="examples/index" >
+          <span>Examples</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+    </ul>
+    <ul class="navbar-right-links desktop">
+      
+      
+        
+    <li class="navbar-right-link desktop">
+      
+        <a href="https://github.com/contextualdynamics/orchestrator" target="_blank" aria-label="GitHub">
+          <i class="fab fa-github"></i>
+        </a>
+      
+    </li>
+  
+      
+    </ul>
+  </div>
+
+  <!-- Mobile Links -->
+
+  
+
+  
+
+  <div class="navbar-menu mobile">
+    <button onclick="toggleMobileNavbar(this)" aria-label="open menu" aria-expanded="false">
+      <i class="bx bx-menu"></i>
+      <i class="bx bx-x"></i>
+    </button>
+  </div>
+</nav>
+
+<div class="navbar-links mobile">
+  <ul>
+    
+
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="getting_started" >
+            <span>Getting Started</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="tutorials/index" >
+            <span>Tutorials</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="api/index" >
+            <span>API</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="examples/index" >
+            <span>Examples</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="https://github.com/contextualdynamics/orchestrator"  target="_blank" >
+            <span>GitHub</span>
+            
+              <i class="bx bx-link-external"></i>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+
+    
+  </ul>
+</div>
+
+
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="quickstart.html" title="Quickstart"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="getting_started.html" title="Getting Started"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Orchestrator 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Installation</a></li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+        <div class="toc-heading mobile">
+          <button onclick="toggleMobileToC(this)">
+            <span>Table of contents</span>
+            <i class="bx bx-chevron-down"></i>
+          </button>
+        </div>
+  <div id="left-column" class="nano css-transitions-only-after-page-load">
+    <div class="sphinxsidebar nano-content"><div class="sidebar-block search-block">
+  <div id="main-search">
+    <form action="search.html" method="GET" role="form">
+      <div class="md-input">
+        <input name="q" type="text" required>
+        <span class="bar"></span>
+        <label>Search</label>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes"/>
+      <input type="hidden" name="area" value="default"/>
+    </form>
+  </div>
+</div>
+<div class="sidebar-block">
+  <div class="sidebar-toc">
+    
+    <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Key Concepts</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+</ul>
+
+  </div>
+</div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="getting_started.html"
+                          title="previous chapter">Getting Started</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="quickstart.html"
+                          title="next chapter">Quickstart</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/installation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+      
+    </div>
+  </div>
+        <div id="content">
+          <div id="right-column">
+            
+            <div role="navigation" aria-label="breadcrumbs navigation">
+              <ol class="breadcrumb">
+                <li><a href="index.html">Docs</a></li>
+                
+                <li>Installation</li>
+              </ol>
+            </div>
+            
+
+            <div class="document clearer body">
+              
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h1>
+<p>This guide covers the installation of Orchestrator and its dependencies.</p>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">¶</a></h2>
+<section id="system-requirements">
+<h3>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>Operating System</strong>: Linux, macOS, or Windows (with WSL2)</p></li>
+<li><p><strong>Python</strong>: 3.11 or higher</p></li>
+<li><p><strong>Memory</strong>: 8GB RAM minimum (16GB recommended for larger models)</p></li>
+<li><p><strong>Storage</strong>: 10GB free space for models and dependencies</p></li>
+</ul>
+</section>
+<section id="optional-requirements">
+<h3>Optional Requirements<a class="headerlink" href="#optional-requirements" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>Docker</strong>: For sandboxed execution environments</p></li>
+<li><p><strong>CUDA</strong>: For GPU acceleration (if using GPU models)</p></li>
+<li><p><strong>Ollama</strong>: For local model execution</p></li>
+<li><p><strong>PostgreSQL</strong>: For production state management</p></li>
+</ul>
+</section>
+</section>
+<section id="installation-methods">
+<h2>Installation Methods<a class="headerlink" href="#installation-methods" title="Link to this heading">¶</a></h2>
+<section id="using-pip-recommended">
+<h3>Using pip (Recommended)<a class="headerlink" href="#using-pip-recommended" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install from PyPI (when available)</span>
+pip<span class="w"> </span>install<span class="w"> </span>orchestrator-ai
+
+<span class="c1"># Or install from source</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/contextualdynamics/orchestrator.git
+<span class="nb">cd</span><span class="w"> </span>orchestrator
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+</section>
+<section id="using-conda">
+<h3>Using conda<a class="headerlink" href="#using-conda" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create conda environment</span>
+conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>orchestrator<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.11
+conda<span class="w"> </span>activate<span class="w"> </span>orchestrator
+
+<span class="c1"># Install orchestrator</span>
+pip<span class="w"> </span>install<span class="w"> </span>orchestrator-ai
+</pre></div>
+</div>
+</section>
+<section id="using-docker">
+<h3>Using Docker<a class="headerlink" href="#using-docker" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Pull the official image</span>
+docker<span class="w"> </span>pull<span class="w"> </span>contextualdynamics/orchestrator:latest
+
+<span class="c1"># Run with volume mount</span>
+docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:/workspace<span class="w"> </span>contextualdynamics/orchestrator
+</pre></div>
+</div>
+</section>
+<section id="development-installation">
+<h3>Development Installation<a class="headerlink" href="#development-installation" title="Link to this heading">¶</a></h3>
+<p>For contributors and developers:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the repository</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/contextualdynamics/orchestrator.git
+<span class="nb">cd</span><span class="w"> </span>orchestrator
+
+<span class="c1"># Create virtual environment</span>
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+<span class="nb">source</span><span class="w"> </span>venv/bin/activate<span class="w">  </span><span class="c1"># On Windows: venv\Scripts\activate</span>
+
+<span class="c1"># Install in development mode with extras</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev,test,docs]&quot;</span>
+
+<span class="c1"># Install pre-commit hooks</span>
+pre-commit<span class="w"> </span>install
+</pre></div>
+</div>
+</section>
+</section>
+<section id="model-setup">
+<h2>Model Setup<a class="headerlink" href="#model-setup" title="Link to this heading">¶</a></h2>
+<section id="ollama-models-recommended">
+<h3>Ollama Models (Recommended)<a class="headerlink" href="#ollama-models-recommended" title="Link to this heading">¶</a></h3>
+<ol class="arabic">
+<li><p><strong>Install Ollama</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># macOS</span>
+brew<span class="w"> </span>install<span class="w"> </span>ollama
+
+<span class="c1"># Linux</span>
+curl<span class="w"> </span>-fsSL<span class="w"> </span>https://ollama.ai/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</pre></div>
+</div>
+</li>
+<li><p><strong>Pull recommended models</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Large model for complex tasks</span>
+ollama<span class="w"> </span>pull<span class="w"> </span>gemma2:27b
+
+<span class="c1"># Small model for simple tasks</span>
+ollama<span class="w"> </span>pull<span class="w"> </span>llama3.2:1b
+
+<span class="c1"># Code-focused model</span>
+ollama<span class="w"> </span>pull<span class="w"> </span>codellama:7b
+</pre></div>
+</div>
+</li>
+<li><p><strong>Verify installation</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">orchestrator</span> <span class="k">as</span> <span class="nn">orc</span>
+
+<span class="c1"># Initialize and check models</span>
+<span class="n">registry</span> <span class="o">=</span> <span class="n">orc</span><span class="o">.</span><span class="n">init_models</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">list_models</span><span class="p">())</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="huggingface-models">
+<h3>HuggingFace Models<a class="headerlink" href="#huggingface-models" title="Link to this heading">¶</a></h3>
+<p>For HuggingFace models, set up your token:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set environment variable</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">HUGGINGFACE_TOKEN</span><span class="o">=</span><span class="s2">&quot;your-token-here&quot;</span>
+
+<span class="c1"># Or create .env file</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;HUGGINGFACE_TOKEN=your-token-here&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>.env
+</pre></div>
+</div>
+</section>
+<section id="openai-anthropic-models">
+<h3>OpenAI/Anthropic Models<a class="headerlink" href="#openai-anthropic-models" title="Link to this heading">¶</a></h3>
+<p>For cloud models, configure API keys:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># OpenAI</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-...&quot;</span>
+
+<span class="c1"># Anthropic</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-ant-...&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="tool-dependencies">
+<h2>Tool Dependencies<a class="headerlink" href="#tool-dependencies" title="Link to this heading">¶</a></h2>
+<section id="web-tools">
+<h3>Web Tools<a class="headerlink" href="#web-tools" title="Link to this heading">¶</a></h3>
+<p>For headless browser functionality:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install Playwright</span>
+pip<span class="w"> </span>install<span class="w"> </span>playwright
+playwright<span class="w"> </span>install<span class="w"> </span>chromium
+
+<span class="c1"># Or use Selenium</span>
+pip<span class="w"> </span>install<span class="w"> </span>selenium
+<span class="c1"># Download appropriate driver</span>
+</pre></div>
+</div>
+</section>
+<section id="system-tools">
+<h3>System Tools<a class="headerlink" href="#system-tools" title="Link to this heading">¶</a></h3>
+<p>No additional setup required for basic system tools.</p>
+</section>
+<section id="data-tools">
+<h3>Data Tools<a class="headerlink" href="#data-tools" title="Link to this heading">¶</a></h3>
+<p>Install optional data processing libraries:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For advanced data processing</span>
+pip<span class="w"> </span>install<span class="w"> </span>pandas<span class="w"> </span>numpy<span class="w"> </span>scipy
+
+<span class="c1"># For data validation</span>
+pip<span class="w"> </span>install<span class="w"> </span>pydantic<span class="w"> </span>jsonschema
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
+<p>Create a configuration file at <code class="docutils literal notranslate"><span class="pre">~/.orchestrator/config.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Model preferences</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ollama:gemma2:27b&quot;</span>
+<span class="w">  </span><span class="nt">fallback</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ollama:llama3.2:1b&quot;</span>
+
+<span class="c1"># Resource limits</span>
+<span class="nt">resources</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">max_memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;16GB&quot;</span>
+<span class="w">  </span><span class="nt">max_threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">  </span><span class="nt">gpu_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="c1"># Tool settings</span>
+<span class="nt">tools</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">mcp_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">  </span><span class="nt">sandbox_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="c1"># State management</span>
+<span class="nt">state</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgresql&quot;</span>
+<span class="w">  </span><span class="nt">connection</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgresql://user:pass@localhost/orchestrator&quot;</span>
+</pre></div>
+</div>
+<section id="environment-variables">
+<h3>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading">¶</a></h3>
+<p>Set these environment variables for additional configuration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Core settings</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORCHESTRATOR_HOME</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.orchestrator&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORCHESTRATOR_LOG_LEVEL</span><span class="o">=</span><span class="s2">&quot;INFO&quot;</span>
+
+<span class="c1"># Model settings</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORCHESTRATOR_MODEL_TIMEOUT</span><span class="o">=</span><span class="s2">&quot;300&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORCHESTRATOR_MODEL_RETRIES</span><span class="o">=</span><span class="s2">&quot;3&quot;</span>
+
+<span class="c1"># Tool settings</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORCHESTRATOR_TOOL_TIMEOUT</span><span class="o">=</span><span class="s2">&quot;60&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORCHESTRATOR_MCP_AUTO_START</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="verifying-installation">
+<h2>Verifying Installation<a class="headerlink" href="#verifying-installation" title="Link to this heading">¶</a></h2>
+<p>Run the verification script:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">orchestrator</span> <span class="k">as</span> <span class="nn">orc</span>
+
+<span class="c1"># Check version</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Orchestrator version: </span><span class="si">{</span><span class="n">orc</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Check models</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="n">orc</span><span class="o">.</span><span class="n">init_models</span><span class="p">()</span>
+    <span class="n">models</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">list_models</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available models: </span><span class="si">{</span><span class="n">models</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model initialization failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Check tools</span>
+<span class="kn">from</span> <span class="nn">orchestrator.tools.base</span> <span class="kn">import</span> <span class="n">default_registry</span>
+<span class="n">tools</span> <span class="o">=</span> <span class="n">default_registry</span><span class="o">.</span><span class="n">list_tools</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available tools: </span><span class="si">{</span><span class="n">tools</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Run test pipeline</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">orc</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;examples/hello-world.yaml&quot;</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Hello, Orchestrator!&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Test pipeline result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline test failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading">¶</a></h3>
+<p><strong>Import Error</strong>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ModuleNotFoundError: No module named &#39;orchestrator&#39;
+</pre></div>
+</div>
+<p>Solution: Ensure you’re in the correct environment and have installed the package.</p>
+<p><strong>Model Connection Error</strong>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Failed to connect to Ollama at http://localhost:11434
+</pre></div>
+</div>
+<p>Solution: Start Ollama service with <code class="docutils literal notranslate"><span class="pre">ollama</span> <span class="pre">serve</span></code>.</p>
+<p><strong>Permission Error</strong>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Permission denied: &#39;/home/user/.orchestrator&#39;
+</pre></div>
+</div>
+<p>Solution: Create directory with proper permissions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>~/.orchestrator
+chmod<span class="w"> </span><span class="m">755</span><span class="w"> </span>~/.orchestrator
+</pre></div>
+</div>
+</section>
+<section id="getting-help">
+<h3>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading">¶</a></h3>
+<p>If you encounter issues:</p>
+<ol class="arabic simple">
+<li><p>Check the <span class="xref std std-doc">troubleshooting</span> guide</p></li>
+<li><p>Search existing <a class="reference external" href="https://github.com/contextualdynamics/orchestrator/issues">GitHub issues</a></p></li>
+<li><p>Join our <a class="reference external" href="https://discord.gg/orchestrator">Discord community</a></p></li>
+<li><p>Create a new issue with detailed information</p></li>
+</ol>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
+<p>After installation:</p>
+<ul class="simple">
+<li><p>Continue to <a class="reference internal" href="quickstart.html"><span class="doc">Quickstart</span></a> to build your first pipeline</p></li>
+<li><p>Explore <a class="reference internal" href="tutorials/index.html"><span class="doc">Tutorials</span></a> for hands-on learning</p></li>
+<li><p>Review <span class="xref std std-doc">examples/index</span> for real-world use cases</p></li>
+</ul>
+</section>
+</section>
+
+
+              <div id="bottom-dl" class="xanadu-call-to-action-links">
+                <div id="tutorial-type">installation</div>
+                <div class="download-python-link">
+                  <i class="fab fa-python"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">Download Python script</div>
+                </div>
+                <div class="download-notebook-link">
+                  <i class="fas fa-download"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">Download Notebook</div>
+                </div>
+                <div class="github-view-link">
+                  <i class="fab fa-github"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">View on GitHub</div>
+                </div>
+              </div>
+
+            </div>
+            
+              
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-xanadu" href="getting_started.html" title="previous chapter (use the left arrow)"><i class="fas fa-arrow-left"></i> Previous</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-xanadu" href="quickstart.html" title="next chapter (use the right arrow)">Next <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+            
+          </div>
+<div class="localtoc-container nano has-scrollbar">
+  <div class="nano-content">
+    <div id="localtoc">
+        
+          <h3>Contents</h3>
+          <!-- Display the ToC for the current document if it is not empty. -->
+          <ul class='current'>
+<li class='current'><a class="reference internal" href="#">Installation</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#requirements">Requirements</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#system-requirements">System Requirements</a></li>
+<li class='current'><a class="reference internal" href="#optional-requirements">Optional Requirements</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#installation-methods">Installation Methods</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#using-pip-recommended">Using pip (Recommended)</a></li>
+<li class='current'><a class="reference internal" href="#using-conda">Using conda</a></li>
+<li class='current'><a class="reference internal" href="#using-docker">Using Docker</a></li>
+<li class='current'><a class="reference internal" href="#development-installation">Development Installation</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#model-setup">Model Setup</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#ollama-models-recommended">Ollama Models (Recommended)</a></li>
+<li class='current'><a class="reference internal" href="#huggingface-models">HuggingFace Models</a></li>
+<li class='current'><a class="reference internal" href="#openai-anthropic-models">OpenAI/Anthropic Models</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#tool-dependencies">Tool Dependencies</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#web-tools">Web Tools</a></li>
+<li class='current'><a class="reference internal" href="#system-tools">System Tools</a></li>
+<li class='current'><a class="reference internal" href="#data-tools">Data Tools</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#configuration">Configuration</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#environment-variables">Environment Variables</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#verifying-installation">Verifying Installation</a></li>
+<li class='current'><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#common-issues">Common Issues</a></li>
+<li class='current'><a class="reference internal" href="#getting-help">Getting Help</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+</ul>
+
+        
+    </div>
+
+    <div class="xanadu-call-to-action-links">
+        <h3>Downloads</h3>
+        <div id="tutorial-type">installation</div>
+        <div class="download-python-link">
+            <i class="fab fa-python"></i>&nbsp;
+            <div class="call-to-action-desktop-view">Download Python script</div>
+        </div>
+        <div class="download-notebook-link">
+            <i class="fas fa-download"></i>&nbsp;
+            <div class="call-to-action-desktop-view">Download Notebook</div>
+        </div>
+        <div class="github-view-link">
+            <i class="fab fa-github"></i>&nbsp;
+            <div class="call-to-action-desktop-view">View on GitHub</div>
+        </div>
+    </div>
+    <div id="related-tutorials" class="mt-4">
+      <h3> Related</h3>
+    </div>
+  </div>
+</div>
+
+
+          <div class="clearfix"></div>
+        </div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="quickstart.html" title="Quickstart"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="getting_started.html" title="Getting Started"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Orchestrator 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Installation</a></li> 
+      </ul>
+    </div>
+  <script type="text/javascript">
+    $("#mobile-toggle").click(function () {
+      $("#left-column").slideToggle("slow");
+    });
+  </script>
+
+  <!-- jQuery -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+  <!-- MathJax -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <!-- Bootstrap core JavaScript -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <!-- MDB core JavaScript -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.10/js/mdb.min.js"></script>
+  <!-- Overlay Scrollbars -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.11.4/overlayscrollbars.cjs.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Syntax Highlighting -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/highlight.min.js"></script>
+  <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+
+  <script type="text/javascript">
+
+    $("a.reference.internal").each(function(){
+      var link = $(this).attr("href");
+
+      var hash = link.split("#")[1];
+      var page = link.split("#")[0].split("/").slice(-1)[0].replace(".html", "");
+
+      if (hash == page) {
+        $(this).attr("href", link.split("#")[0]);
+      }
+    });
+
+    $(".document > .section").removeClass("section");
+    $("h1 ~ .section").removeClass("section");
+    OverlayScrollbars(document.querySelector('.nano'), {});
+  </script>
+
+  <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      const localToCContainer = document.querySelector(".localtoc-container");
+      const localToCTop = parseInt(getComputedStyle(localToCContainer).top, 10);
+      const navbarHeight = document.querySelector("nav").offsetHeight;
+      const footerHeight = document.querySelector("footer").offsetHeight;
+      const localToCPadding = localToCTop - navbarHeight;
+
+      function adjustLocalToC() {
+        // Adjusts the height and vertical offset of the local ToC.
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollBottom = document.documentElement.scrollHeight - window.innerHeight - scrollTop;
+
+        const localToCHeight = window.innerHeight - localToCTop - Math.max(0, footerHeight - scrollBottom) - localToCPadding;
+        localToCContainer.style.height = localToCHeight + "px";
+        localToCContainer.querySelector(".nano-content").style.height = localToCHeight + "px";
+
+        if (scrollBottom <= 1) {
+          // Switching the position away from "fixed" ensures that the local ToC
+          // "bounces" with the content and stays above the footer.
+          localToCContainer.style.position = "absolute";
+          localToCContainer.style.top = (scrollTop + localToCPadding) + "px";
+        } else {
+          localToCContainer.style.position = "fixed";
+          localToCContainer.style.top = localToCTop + "px";
+        }
+      }
+
+      adjustLocalToC();
+      window.addEventListener('scroll', adjustLocalToC);
+    });
+  </script>
+
+  <script type="text/javascript">
+    if (document.querySelector(".current")) {
+      var target = document.querySelector(".current");
+      var rect = target.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight) {
+          const nanoElement = document.querySelector(".nano");
+          const currentElement = document.querySelector(".current");
+          if (nanoElement && currentElement) {
+            nanoElement.scrollTop = currentElement.offsetTop - nanoElement.offsetTop;
+          }
+      } else {
+          document.querySelector(".nano").scrollTop = 0;
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll(".css-transitions-only-after-page-load").forEach(function (element) {
+            setTimeout(function () { 
+                element.classList.remove("css-transitions-only-after-page-load"); 
+            }, 10);
+        });
+        if (window.location.hash) {
+          const target = document.querySelector("[id='" + window.location.hash.substr(1) + "']");
+          if (target && target.closest(".collapse")) {
+            target.closest(".collapse").classList.add("show");
+            target.closest(".collapse").previousElementSibling.querySelector(".rotate").classList.add("up");
+          }
+        }
+    });
+  </script>
+
+    <script type="text/javascript">
+    var downloadNote = $(".sphx-glr-download-link-note.admonition.note");
+    if (downloadNote.length >= 1) {
+      var tutorialUrlArray = $("#tutorial-type").text().split('/');
+
+      if (tutorialUrlArray[0] == "demos") {
+        tutorialUrlArray[0] = "demonstrations";
+      }
+
+      var githubLink = "https://github.com/" + "https://github.com/contextualdynamics/orchestrator" + "/blob/master/" + tutorialUrlArray.join("/") + ".py",
+          pythonLink = $(".sphx-glr-download .reference.download")[0].href,
+          notebookLink = $(".sphx-glr-download .reference.download")[1].href;
+
+      $(".download-python-link").wrap("<a href=" + pythonLink + " data-behavior='call-to-action-event' data-response='Download Python script' download target='_blank'/>");
+      $(".download-notebook-link").wrap("<a href=" + notebookLink + " data-behavior='call-to-action-event' data-response='Download Notebook' download target='_blank'/>");
+      $(".github-view-link").wrap("<a href=" + githubLink + " data-behavior='call-to-action-event' data-response='View on Github' target='_blank'/>");
+      $("#right-column").addClass("page-shadow");
+    } else {
+      $(".xanadu-call-to-action-links").hide();
+      $("#bottom-dl").attr('style','display: none !important');
+    }
+    </script>
+
+    <script type="text/javascript">
+      function makeUL(urls, text) {
+          var list = document.createElement('ul');
+
+          for (var i = 0; i < urls.length; i++) {
+              var item = document.createElement('li');
+              var a = document.createElement('a');
+              var linkText = document.createTextNode(text[i]);
+              a.appendChild(linkText);
+              a.href = urls[i];
+              item.appendChild(a);
+              list.appendChild(item);
+          }
+          return list;
+      }
+
+      if (typeof related_tutorials !== 'undefined') {
+          document.getElementById('related-tutorials').appendChild(makeUL(related_tutorials, related_tutorials_titles));
+          $("#related-tutorials ul li a").append(' <i class="fas fa-angle-double-right" style="font-size: smaller;"></i>')
+          $("#related-tutorials").show();
+
+    } else {
+          $("#related-tutorials").hide();
+    }
+    </script>
+
+  <!-- Account for MathJax when navigating to anchor tags. -->
+  <script type="text/javascript">
+    function scrollToElement(e) {
+      // Scrolls to the given element, taking into account the navbar.
+      MathJax.Hub.Queue(function() {
+        // The following MUST be done asynchronously to take effect.
+        setTimeout(function() {
+          const navbar = document.querySelector("nav.navbar");
+          const navbarHeight = navbar ? navbar.offsetHeight : 0;
+          const scrollToY = e.offsetTop + e.offsetParent.offsetTop - navbarHeight;
+          window.scrollTo(0, scrollToY);
+        }, 0);
+      });
+    }
+
+    function scrollToFragment(fragment) {
+      // Scrolls to the position of the given URL fragment (which includes the "#").
+      const elementID = fragment.replace(".", "\\.");
+      if (elementID !== "") {
+        const element = document.querySelector(elementID);
+        if (element !== null) {
+          scrollToElement(element);
+        }
+      }
+    }
+
+    $(document).ready(() => {
+      scrollToFragment(window.location.hash);
+      window.addEventListener("popstate", (_) => scrollToFragment(document.location.hash), false);
+    });
+  </script>
+
+  <!-- Hide the rendering of :orphan: metadata. -->
+  <script type="text/javascript">
+    $(document).ready(() => {
+      const elements = document.getElementsByClassName("field-odd");
+      for (const element of elements) {
+          if (element.innerHTML.trim() === "orphan") {
+            element.style.display = "none";
+          }
+      }
+    });
+  </script>
+
+  <!-- Utility functions for setting ARIA attributes on buttons that show menus. -->
+  <script type="text/javascript">
+    function setAriaAttributes(button, expand) {
+      const skip = button.getAttribute("aria-label").indexOf(" ");
+      const menu = button.getAttribute("aria-label").substr(skip);
+      button.setAttribute("aria-label", (expand ? "close" : "open") + menu);
+      button.setAttribute("aria-expanded", expand.toString());
+    }
+
+    function toggleAriaAttributes(button) {
+      setAriaAttributes(button, button.getAttribute("aria-expanded") === "false");
+    }
+  </script>
+
+  <!-- Delays the closing of dropdowns on the LHS of the navigation bar. -->
+  <script type="text/javascript">
+    $(document).ready(() => {
+      const timers = {};
+      const navbar_left_links = document.querySelectorAll(".navbar-left-link");
+      for (const [i, link] of navbar_left_links.entries()) {
+        const dropdown = link.querySelector(".navbar-dropdown");
+        const button = link.querySelector("button");
+        if (dropdown !== null) {
+          timers[i] = {link: link, button: button, timeout: undefined};
+
+          // Expands the current dropdown and closes other dropdowns.
+          const expandDropdown = () => {
+            for (const [j, timer] of Object.entries(timers)) {
+              clearTimeout(timer.timeout);
+              if (i !== j) {
+                timer.link.classList.remove("open");
+                setAriaAttributes(timer.button, false);
+              }
+            }
+            link.classList.add("open");
+            setAriaAttributes(button, true);
+          }
+
+          // Closes the current dropdown after the given delay.
+          const collapseDropdown = (event, delay = 1000) => {
+            timers[i].timeout = setTimeout(function(event){
+              link.classList.remove("open");
+              setAriaAttributes(button, false);
+            }, delay);
+          }
+
+          // Toggles the current dropdown.
+          const toggleDropdown = (event) => {
+            if (link.classList.contains("open")) {
+              collapseDropdown(event, 0);
+            } else {
+              expandDropdown();
+            }
+          }
+
+          link.addEventListener("mouseenter", expandDropdown);
+          link.addEventListener("mouseleave", collapseDropdown);
+          button.addEventListener("click", toggleDropdown);
+        }
+      }
+    });
+  </script>
+
+  <!-- Toggles whether the global ToC is displayed on mobile. -->
+  <script type="text/javascript">
+    function toggleMobileToC(button) {
+      const sidebar = document.querySelector("#left-column");
+      const chevron = button.querySelector("i");
+      if (sidebar !== null) {
+        sidebar.classList.toggle("open");
+        chevron.classList.toggle("open");
+      }
+    }
+  </script>
+
+  <!-- Toggles whether the navbar dropdown is displayed on mobile. -->
+  <script type="text/javascript">
+    function toggleMobileNavbar(button) {
+      const dropdown = document.querySelector(".mobile.navbar-links");
+      if (dropdown !== null) {
+        dropdown.classList.toggle("open");
+        button.classList.toggle("open");
+        toggleAriaAttributes(button);
+
+        const hidden = button.getAttribute("aria-expanded") === "true";
+        const hidden_elements = document.querySelectorAll(".container-wrapper, footer");
+        for (const element of hidden_elements) {
+          element.setAttribute("aria-hidden", hidden.toString());
+        }
+      }
+    }
+  </script>
+
+  <!-- Toggles whether the dropdown from a navbar link is displayed on mobile. -->
+  <script type="text/javascript">
+    function getIntStyleProperty(element, property) {
+      const style = window.getComputedStyle(element);
+      return parseInt(style.getPropertyValue(property), 10);
+    }
+
+    function getDropdownHeight(dropdown) {
+      const dropdown_list = dropdown.querySelector("ul");
+      const dropdown_list_items = dropdown_list.querySelectorAll("li");
+      const dropdown_list_gap = getIntStyleProperty(dropdown_list, "gap");
+
+      let dropdown_list_height = -dropdown_list_gap;
+      for (const list_item of dropdown_list_items) {
+        dropdown_list_height += getIntStyleProperty(list_item, "height");
+        dropdown_list_height += dropdown_list_gap
+      }
+      return dropdown_list_height + "px";
+    }
+
+    function toggleMobileNavbarLink(button) {
+      const item = button.parentElement;
+      const dropdown = item.querySelector(".mobile.navbar-dropdown");
+      if (dropdown !== null) {
+        const hidden = button.getAttribute("aria-expanded") === "true";
+        dropdown.style.height = hidden ? "0px" : getDropdownHeight(dropdown);
+      }
+      item.classList.toggle("open");
+      toggleAriaAttributes(button);
+    }
+  </script>
+
+  <!-- Collapses the most specific menu when ESC is pressed. -->
+  <script type="text/javascript">
+    $(document).keyup(function(event) {
+      // The keycode of ESC is 27.
+      if (event.keyCode == 27) {
+        // Collapse an open dropdown from a navbar link on mobile.
+        const mobileSubMenuButtons = document.querySelectorAll(".mobile.navbar-link button");
+        for (const button of mobileSubMenuButtons) {
+          if (button.parentElement.classList.contains("open")) {
+            toggleMobileNavbarLink(button);
+            return;
+          }
+        }
+
+        // Collapse the navbar dropdown on mobile.
+        const mobileMenuButton = document.querySelector(".mobile.navbar-menu button");
+        if (mobileMenuButton !== null && mobileMenuButton.classList.contains("open")) {
+          toggleMobileNavbar(mobileMenuButton);
+          return;
+        }
+
+        // Close an open navbar dropdown on desktop.
+        const navbar_left_links = document.querySelectorAll(".navbar-left-link");
+        for (const link of navbar_left_links.values()) {
+          const button = link.querySelector("button");
+          if (link.classList.contains("open")) {
+            link.classList.remove("open");
+            setAriaAttributes(button, true);
+            return;
+          }
+        }
+      }
+    });
+  </script>
+
+  <!-- Trap focus in the navbar dropdown on mobile if it is expanded. -->
+  <script type="text/javascript">
+    // Using ``keyup`` would cause the last element to be quickly "skipped".
+    $(document).keydown(function(event) {
+      // The keycode of TAB is 9.
+      if (event.keyCode == 9) {
+        // Do nothing if the navbar dropdown is collapsed on mobile.
+        const mobileMenuButton = document.querySelector(".mobile.navbar-menu button");
+        if (mobileMenuButton === null || !mobileMenuButton.classList.contains("open")) {
+          return;
+        }
+
+        const links = document.querySelectorAll(".mobile.navbar-links a");
+        const bot = links[links.length - 1];
+        const top = document.querySelector(".mobile.navbar-menu button");
+
+        // Do nothing if there is a missing focus element.
+        if (top === null || bot === undefined) {
+          return;
+        }
+
+        // Wrap the focus to the top or bottom element if needed. The direction
+        // of the wrapping depends on whether TAB or SHIFT + TAB is pressed.
+        if (!event.shiftKey && document.activeElement === bot) {
+          top.focus();
+          event.preventDefault();
+        } else if (event.shiftKey && document.activeElement === top) {
+          bot.focus();
+          event.preventDefault();
+        }
+      }
+    });
+  </script>
+
+  <script type="text/javascript">
+    jQuery.noConflict(true);
+  </script>
+
+  <hr class="p-0 m-0">
+
+<footer>
+  <div class="footer-top">
+    <!-- About -->
+    <div class="footer-about">
+      <a class="footer-icon" href="https://xanadu.ai">
+        <img src="_static/xanadu_logo.svg" alt="Xanadu" height="40px" width="40px">
+      </a>
+      <p class="footer-description">
+                Located in the heart of downtown Toronto, we've brought together
+        exceptional minds from around the world to build quantum computers
+        that are useful and available to people everywhere.
+        
+      </p>
+    </div>
+
+    <div class="footer-social-icons-and-taglines">
+      <!-- Social Icons -->
+      <div class="footer-social-icons">
+        
+          <a href="https://twitter.com/xanaduai" aria-label="Twitter">
+            <i class="bx bxl-twitter"></i>
+          </a>
+        
+          <a href="https://github.com/XanaduAI" aria-label="GitHub">
+            <i class="bx bxl-github"></i>
+          </a>
+        
+          <a href="https://linkedin.com/company/xanaduai/" aria-label="LinkedIn">
+            <i class="bx bxl-linkedin"></i>
+          </a>
+        
+          <a href="https://discuss.pennylane.ai" aria-label="Discourse">
+            <i class="bx bxl-discourse"></i>
+          </a>
+        
+          <a href="https://u.strawberryfields.ai/slack" aria-label="Slack">
+            <i class="bx bxl-slack"></i>
+          </a>
+        
+          <a href="https://xanadu.ai/blog" aria-label="RSS">
+            <i class="bx bx-rss"></i>
+          </a>
+        
+      </div>
+
+      <!-- Taglines -->
+      
+      <a class="footer-tagline" href="https://xanadu.us17.list-manage.com/subscribe?u=725f07a1d1a4337416c3129fd&id=294b062630">
+        Stay updated with our newsletter
+      </a>
+      
+    </div>
+
+    <!-- Links -->
+    <div class="footer-links">
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">PennyLane</p>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/qml">Learn</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/qml/demonstrations.html">Demonstrations</a>
+        
+          <a class="footer-link-item" href="https://docs.pennylane.ai/">Documentation</a>
+        
+          <a class="footer-link-item" href="https://github.com/PennyLaneAI/pennylane">GitHub</a>
+        
+          <a class="footer-link-item" href="https://twitter.com/pennylaneai">Twitter</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/blog">Blog</a>
+        
+      </div>
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">Strawberry Fields</p>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/photonics">Photonics</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/photonics/demonstrations.html">Demonstrations</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.readthedocs.io/">Documentation</a>
+        
+          <a class="footer-link-item" href="https://github.com/XanaduAI/strawberryfields">GitHub</a>
+        
+      </div>
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">Xanadu</p>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/about/">About</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/photonics">Hardware</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/careers/">Careers</a>
+        
+          <a class="footer-link-item" href="https://discuss.pennylane.ai/">Forum</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/blog">Blog</a>
+        
+      </div>
+      
+    </div>
+  </div>
+
+  <hr class="footer-separator">
+
+  <div class="footer-bottom">
+    <!-- Copyright -->
+    <div class="footer-copyrights">
+        <p class="footer-copyright-item">
+            Copyright &copy; 2025, Contextual Dynamics Lab
+        </p>
+      
+        <p class="footer-copyright-item">
+          AI Pipeline Orchestration Framework
+        </p>
+      
+    </div>
+
+    <!-- Policies -->
+    <div class="footer-policies">
+      
+    </div>
+  </div>
+
+</footer>
+  </body>
+</html>

@@ -1,0 +1,2184 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+  <meta property="og:title" content="Tool Reference &#8212; PennyLane">
+  <meta property="og:url" content="None">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Serif">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500&display=swap">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+  <!-- Box Icons -->
+  <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+  <!-- Material Design Bootstrap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.5.14/css/mdb.min.css">
+  <!-- Overlay Scrollbars -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.11.4/styles/overlayscrollbars.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/tomorrow-night.min.css">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+       "HTML-CSS": { scale: 90, linebreaks: { automatic: true } },
+       TeX: {
+         Macros: {
+           pr : ['|\#1\\rangle\\langle\#1|',1],
+           ket: ['\\left| \#1\\right\\rangle',1],
+           bra: ['\\left\\langle \#1\\right|',1],
+           xket: ['\\left| \#1\\right\\rangle_x',1],
+           xbra: ['\\left\\langle \#1\\right|_x',1],
+           braket: ['\\langle \#1 \\rangle',1],
+           braketD: ['\\langle \#1 \\mid \#2 \\rangle',2],
+           braketT: ['\\langle \#1 \\mid \#2 \\mid \#3 \\rangle',3],
+           ketbra: ['| #1 \\rangle \\langle #2 |',2],
+           hc: ['\\text{h.c.}',0],
+           cc: ['\\text{c.c.}',0],
+           h: ['\\hat',0],
+           nn: ['\\nonumber',0],
+           di: ['\\frac{d}{d \#1}',1],
+           uu: ['\\mathcal{U}',0],
+           inn: ['\\text{in}',0],
+           out: ['\\text{out}',0],
+           vac: ['\\text{vac}',0],
+           I: ['\\hat{\\mathbf{1}}',0],
+           x: ['\\hat{x}',0],
+           p: ['\\hat{p}',0],
+           a: ['\\hat{a}',0],
+           ad: ['\\hat{a}^\\dagger',0],
+           n: ['\\hat{n}',0],
+           nbar: ['\\overline{n}',0],
+           sech: ['\\mathrm{sech~}',0],
+           tanh: ['\\mathrm{tanh~}',0],
+           re: ['\\text{Re}',0],
+           im: ['\\text{Im}',0],
+           tr: ['\\mathrm{Tr} #1',1],
+           sign: ['\\text{sign}',0],
+           overlr: ['\\overset\\leftrightarrow{\#1}',1],
+           overl: ['\\overset\leftarrow{\#1}',1],
+           overr: ['\\overset\rightarrow{\#1}',1],
+           avg: ['\\left< \#1 \\right>',1],
+           slashed: ['\\cancel{\#1}',1],
+           bold: ['\\boldsymbol{\#1}',1],
+           d: ['\\mathrm d',0],
+           expect: ["\\langle #1 \\rangle",1],
+           pde: ["\\frac{\\partial}{\\partial \#1}",1],
+           R: ["\\mathbb{R}",0],
+           C: ["\\mathbb{C}",0],
+           Ad: ["\\text{Ad}",0],
+           Var: ["\\text{Var}",0],
+           bx: ["\\mathbf{x}", 0],
+           bm: ["\\boldsymbol{\#1}",1],
+           haf: ["\\mathrm{haf}",0],
+           lhaf: ["\\mathrm{lhaf}",0]
+         }
+       }
+     });
+     </script>
+
+  <!-- Google Analytics -->
+  
+    <title>Tool Reference &#8212; Orchestrator 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b20cc3f5" />
+    <link rel="stylesheet" type="text/css" href="_static/xanadu.css?v=95dfc2d3" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <script src="_static/documentation_options.js?v=01f34227"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=fd10adb8"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body><nav>
+  <!-- Logo and Title -->
+
+  <a class="navbar-logo-title-container" href="https://github.com/contextualdynamics/orchestrator" aria-label="home">
+    
+    
+      <img class="navbar-logo-title-logo" src=" _static/xanadu_logo.svg" alt="Orchestrator" height="24px"></img>
+      <div class="navbar-logo-title-title">Orchestrator</div>
+    
+  </a>
+
+  <!-- Desktop Links -->
+
+  
+
+  
+
+  <div class="navbar-links desktop">
+    <ul class="navbar-left-links desktop">
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="getting_started" >
+          <span>Getting Started</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="tutorials/index" >
+          <span>Tutorials</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="api/index" >
+          <span>API</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="examples/index" >
+          <span>Examples</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+    </ul>
+    <ul class="navbar-right-links desktop">
+      
+      
+        
+    <li class="navbar-right-link desktop">
+      
+        <a href="https://github.com/contextualdynamics/orchestrator" target="_blank" aria-label="GitHub">
+          <i class="fab fa-github"></i>
+        </a>
+      
+    </li>
+  
+      
+    </ul>
+  </div>
+
+  <!-- Mobile Links -->
+
+  
+
+  
+
+  <div class="navbar-menu mobile">
+    <button onclick="toggleMobileNavbar(this)" aria-label="open menu" aria-expanded="false">
+      <i class="bx bx-menu"></i>
+      <i class="bx bx-x"></i>
+    </button>
+  </div>
+</nav>
+
+<div class="navbar-links mobile">
+  <ul>
+    
+
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="getting_started" >
+            <span>Getting Started</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="tutorials/index" >
+            <span>Tutorials</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="api/index" >
+            <span>API</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="examples/index" >
+            <span>Examples</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="https://github.com/contextualdynamics/orchestrator"  target="_blank" >
+            <span>GitHub</span>
+            
+              <i class="bx bx-link-external"></i>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+
+    
+  </ul>
+</div>
+
+
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">Orchestrator 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Tool Reference</a></li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+        <div class="toc-heading mobile">
+          <button onclick="toggleMobileToC(this)">
+            <span>Table of contents</span>
+            <i class="bx bx-chevron-down"></i>
+          </button>
+        </div>
+  <div id="left-column" class="nano css-transitions-only-after-page-load">
+    <div class="sphinxsidebar nano-content"><div class="sidebar-block search-block">
+  <div id="main-search">
+    <form action="search.html" method="GET" role="form">
+      <div class="md-input">
+        <input name="q" type="text" required>
+        <span class="bar"></span>
+        <label>Search</label>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes"/>
+      <input type="hidden" name="area" value="default"/>
+    </form>
+  </div>
+</div>
+<div class="sidebar-block">
+  <div class="sidebar-toc">
+    
+    <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Key Concepts</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+</ul>
+
+  </div>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tool_reference.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+      
+    </div>
+  </div>
+        <div id="content">
+          <div id="right-column">
+            
+            <div role="navigation" aria-label="breadcrumbs navigation">
+              <ol class="breadcrumb">
+                <li><a href="index.html">Docs</a></li>
+                
+                <li>Tool Reference</li>
+              </ol>
+            </div>
+            
+
+            <div class="document clearer body">
+              
+  <section id="tool-reference">
+<h1>Tool Reference<a class="headerlink" href="#tool-reference" title="Link to this heading">¶</a></h1>
+<p>This comprehensive guide covers all available tools in Orchestrator, how to use them, and provides examples for each.</p>
+<section id="tool-system-overview">
+<h2>Tool System Overview<a class="headerlink" href="#tool-system-overview" title="Link to this heading">¶</a></h2>
+<p>Orchestrator’s tool system provides real-world capabilities to your pipelines. Tools are automatically detected from your pipeline definitions and made available through the Model Context Protocol (MCP).</p>
+<section id="tool-categories">
+<h3>Tool Categories<a class="headerlink" href="#tool-categories" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Web Tools</strong>: Internet interaction and data gathering</p></li>
+<li><p><strong>System Tools</strong>: File and command execution</p></li>
+<li><p><strong>Data Tools</strong>: Processing and validation</p></li>
+<li><p><strong>AI Tools</strong>: Model-specific capabilities</p></li>
+<li><p><strong>Integration Tools</strong>: Third-party service connections</p></li>
+</ol>
+</section>
+<section id="how-tools-work">
+<h3>How Tools Work<a class="headerlink" href="#how-tools-work" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Automatic Detection</strong>: Tools are identified from action names</p></li>
+<li><p><strong>MCP Registration</strong>: Tools are exposed via MCP server</p></li>
+<li><p><strong>Parameter Validation</strong>: Input parameters are validated</p></li>
+<li><p><strong>Execution</strong>: Tools perform real-world actions</p></li>
+<li><p><strong>Result Handling</strong>: Results are returned to the pipeline</p></li>
+</ol>
+</section>
+</section>
+<section id="web-tools">
+<h2>Web Tools<a class="headerlink" href="#web-tools" title="Link to this heading">¶</a></h2>
+<section id="headlessbrowsertool">
+<h3>HeadlessBrowserTool<a class="headerlink" href="#headlessbrowsertool" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Interact with web pages using a headless browser</p>
+<p><strong>Action Names</strong>:
+- <code class="docutils literal notranslate"><span class="pre">search_web</span></code>
+- <code class="docutils literal notranslate"><span class="pre">scrape_page</span></code>
+- <code class="docutils literal notranslate"><span class="pre">screenshot_page</span></code>
+- <code class="docutils literal notranslate"><span class="pre">interact_with_page</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Web search</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search_web</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;orchestrator</span><span class="nv"> </span><span class="s">framework</span><span class="nv"> </span><span class="s">tutorial&quot;</span><span class="w">    </span><span class="c1"># Required: Search query</span>
+<span class="w">    </span><span class="nt">max_results</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">                            </span><span class="c1"># Optional: Number of results (default: 10)</span>
+<span class="w">    </span><span class="nt">search_engine</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;google&quot;</span><span class="w">                    </span><span class="c1"># Optional: google|bing|duckduckgo (default: google)</span>
+<span class="w">    </span><span class="nt">include_snippets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                     </span><span class="c1"># Optional: Include text snippets (default: true)</span>
+<span class="w">    </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;us&quot;</span><span class="w">                              </span><span class="c1"># Optional: Region code (default: us)</span>
+<span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;en&quot;</span><span class="w">                            </span><span class="c1"># Optional: Language code (default: en)</span>
+<span class="w">    </span><span class="nt">safe_search</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;moderate&quot;</span><span class="w">                   </span><span class="c1"># Optional: off|moderate|strict (default: moderate)</span>
+
+<span class="c1"># Scrape webpage</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scrape</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scrape_page</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://example.com/article&quot;</span><span class="w">        </span><span class="c1"># Required: URL to scrape</span>
+<span class="w">    </span><span class="nt">selectors</span><span class="p">:</span><span class="w">                                </span><span class="c1"># Optional: CSS selectors to extract</span>
+<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;h1.main-title&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;div.article-body&quot;</span>
+<span class="w">      </span><span class="nt">author</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;span.author-name&quot;</span>
+<span class="w">    </span><span class="nt">wait_for</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;div.content-loaded&quot;</span><span class="w">            </span><span class="c1"># Optional: Wait for element</span>
+<span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">                               </span><span class="c1"># Optional: Timeout in seconds (default: 30)</span>
+<span class="w">    </span><span class="nt">javascript</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                          </span><span class="c1"># Optional: Execute JavaScript (default: true)</span>
+<span class="w">    </span><span class="nt">clean_html</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                          </span><span class="c1"># Optional: Clean extracted HTML (default: true)</span>
+
+<span class="c1"># Take screenshot</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">screenshot</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">screenshot_page</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://example.com&quot;</span><span class="w">                </span><span class="c1"># Required: URL to screenshot</span>
+<span class="w">    </span><span class="nt">full_page</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                           </span><span class="c1"># Optional: Capture full page (default: false)</span>
+<span class="w">    </span><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1920</span><span class="w">                               </span><span class="c1"># Optional: Viewport width (default: 1920)</span>
+<span class="w">    </span><span class="nt">height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1080</span><span class="w">                              </span><span class="c1"># Optional: Viewport height (default: 1080)</span>
+<span class="w">    </span><span class="nt">wait_for</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;img&quot;</span><span class="w">                           </span><span class="c1"># Optional: Wait for element</span>
+<span class="w">    </span><span class="nt">output_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;screenshots/page.png&quot;</span><span class="w">       </span><span class="c1"># Optional: Save path</span>
+
+<span class="c1"># Interact with page</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">interact</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">interact_with_page</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://example.com/form&quot;</span><span class="w">           </span><span class="c1"># Required: URL to interact with</span>
+<span class="w">    </span><span class="nt">actions</span><span class="p">:</span><span class="w">                                  </span><span class="c1"># Required: List of interactions</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fill&quot;</span>
+<span class="w">        </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#username&quot;</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;testuser&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;click&quot;</span>
+<span class="w">        </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;#submit-button&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;wait&quot;</span>
+<span class="w">        </span><span class="nt">duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;extract&quot;</span>
+<span class="w">        </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.result&quot;</span>
+</pre></div>
+</div>
+<p><strong>Example Pipeline</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web-research-pipeline</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Comprehensive web research with validation</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Search for information</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search_topic</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search_web</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.topic</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">latest</span><span class="nv"> </span><span class="s">news</span><span class="nv"> </span><span class="s">2024&quot;</span>
+<span class="w">      </span><span class="nt">max_results</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+<span class="w">      </span><span class="nt">search_engine</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;google&quot;</span>
+
+<span class="w">  </span><span class="c1"># Scrape top results</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scrape_articles</span>
+<span class="w">    </span><span class="nt">for_each</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.search_topic.results[:5]</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">result</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scrape_page</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">result.url</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">selectors</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;h1,</span><span class="nv"> </span><span class="s">h2.article-title&quot;</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;main,</span><span class="nv"> </span><span class="s">article,</span><span class="nv"> </span><span class="s">div.content&quot;</span>
+<span class="w">        </span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;time,</span><span class="nv"> </span><span class="s">.date,</span><span class="nv"> </span><span class="s">.published&quot;</span>
+<span class="w">      </span><span class="nt">clean_html</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Take screenshots for reference</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">capture_pages</span>
+<span class="w">    </span><span class="nt">for_each</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.search_topic.results[:3]</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">result</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">screenshot_page</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">result.url</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">output_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;research/{{</span><span class="nv"> </span><span class="s">inputs.topic</span><span class="nv"> </span><span class="s">}}/{{</span><span class="nv"> </span><span class="s">loop.index</span><span class="nv"> </span><span class="s">}}.png&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="websearchtool">
+<h3>WebSearchTool<a class="headerlink" href="#websearchtool" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Simplified web search without browser overhead</p>
+<p><strong>Action Names</strong>:
+- <code class="docutils literal notranslate"><span class="pre">quick_search</span></code>
+- <code class="docutils literal notranslate"><span class="pre">search_news</span></code>
+- <code class="docutils literal notranslate"><span class="pre">search_academic</span></code>
+- <code class="docutils literal notranslate"><span class="pre">search_images</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Quick search</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quick_search</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;machine</span><span class="nv"> </span><span class="s">learning</span><span class="nv"> </span><span class="s">basics&quot;</span><span class="w">          </span><span class="c1"># Required: Search query</span>
+<span class="w">    </span><span class="nt">max_results</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">                           </span><span class="c1"># Optional: Result count (default: 10)</span>
+<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;json&quot;</span><span class="w">                           </span><span class="c1"># Optional: json|text (default: json)</span>
+
+<span class="c1"># News search</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">news</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search_news</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AI</span><span class="nv"> </span><span class="s">breakthroughs&quot;</span><span class="w">                </span><span class="c1"># Required: Search query</span>
+<span class="w">    </span><span class="nt">date_range</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;last_week&quot;</span><span class="w">                  </span><span class="c1"># Optional: last_day|last_week|last_month|last_year</span>
+<span class="w">    </span><span class="nt">sources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;reuters&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;techcrunch&quot;</span><span class="p p-Indicator">]</span><span class="w">       </span><span class="c1"># Optional: Preferred sources</span>
+<span class="w">    </span><span class="nt">sort_by</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;relevance&quot;</span><span class="w">                     </span><span class="c1"># Optional: relevance|date (default: relevance)</span>
+
+<span class="c1"># Academic search</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">academic</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search_academic</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quantum</span><span class="nv"> </span><span class="s">computing&quot;</span><span class="w">               </span><span class="c1"># Required: Search query</span>
+<span class="w">    </span><span class="nt">databases</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;arxiv&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pubmed&quot;</span><span class="p p-Indicator">]</span><span class="w">          </span><span class="c1"># Optional: Databases to search</span>
+<span class="w">    </span><span class="nt">year_range</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2020-2024&quot;</span><span class="w">                 </span><span class="c1"># Optional: Year range</span>
+<span class="w">    </span><span class="nt">peer_reviewed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                      </span><span class="c1"># Optional: Only peer-reviewed (default: false)</span>
+
+<span class="c1"># Image search</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">images</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search_images</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data</span><span class="nv"> </span><span class="s">visualization</span><span class="nv"> </span><span class="s">examples&quot;</span><span class="w">     </span><span class="c1"># Required: Search query</span>
+<span class="w">    </span><span class="nt">max_results</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">                         </span><span class="c1"># Optional: Number of images</span>
+<span class="w">    </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;large&quot;</span><span class="w">                           </span><span class="c1"># Optional: small|medium|large|any</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;photo&quot;</span><span class="w">                           </span><span class="c1"># Optional: photo|clipart|lineart|any</span>
+<span class="w">    </span><span class="nt">license</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;creative_commons&quot;</span><span class="w">             </span><span class="c1"># Optional: License filter</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="system-tools">
+<h2>System Tools<a class="headerlink" href="#system-tools" title="Link to this heading">¶</a></h2>
+<section id="terminaltool">
+<h3>TerminalTool<a class="headerlink" href="#terminaltool" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Execute shell commands in a sandboxed environment</p>
+<p><strong>Action Names</strong>:
+- Commands starting with <code class="docutils literal notranslate"><span class="pre">!</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">!ls</span></code>, <code class="docutils literal notranslate"><span class="pre">!python</span> <span class="pre">script.py</span></code>)
+- <code class="docutils literal notranslate"><span class="pre">execute_command</span></code>
+- <code class="docutils literal notranslate"><span class="pre">run_script</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Direct command execution</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list_files</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;!ls</span><span class="nv"> </span><span class="s">-la</span><span class="nv"> </span><span class="s">/data&quot;</span>
+
+<span class="c1"># Command with parameters</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">run_command</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">execute_command</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;python</span><span class="nv"> </span><span class="s">analyze.py&quot;</span><span class="w">              </span><span class="c1"># Required: Command to execute</span>
+<span class="w">    </span><span class="nt">arguments</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;--input&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;data.csv&quot;</span><span class="p p-Indicator">]</span><span class="w">       </span><span class="c1"># Optional: Command arguments</span>
+<span class="w">    </span><span class="nt">working_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/project&quot;</span><span class="w">                  </span><span class="c1"># Optional: Working directory</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span><span class="w">                             </span><span class="c1"># Optional: Environment variables</span>
+<span class="w">      </span><span class="nt">PYTHONPATH</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/project/lib&quot;</span>
+<span class="w">      </span><span class="nt">DEBUG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span><span class="w">                             </span><span class="c1"># Optional: Timeout in seconds (default: 60)</span>
+<span class="w">    </span><span class="nt">capture_output</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                     </span><span class="c1"># Optional: Capture stdout/stderr (default: true)</span>
+<span class="w">    </span><span class="nt">shell</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                              </span><span class="c1"># Optional: Use shell execution (default: true)</span>
+
+<span class="c1"># Run script file</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">run_analysis</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">run_script</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">script_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;scripts/analyze.sh&quot;</span><span class="w">        </span><span class="c1"># Required: Path to script</span>
+<span class="w">    </span><span class="nt">arguments</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.data_file</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="p p-Indicator">]</span><span class="w">    </span><span class="c1"># Optional: Script arguments</span>
+<span class="w">    </span><span class="nt">interpreter</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;bash&quot;</span><span class="w">                      </span><span class="c1"># Optional: bash|python|node (default: auto-detect)</span>
+<span class="w">    </span><span class="nt">working_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">execution.temp_dir</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w">  </span><span class="c1"># Optional: Working directory</span>
+</pre></div>
+</div>
+<p><strong>Example Pipeline</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data-processing-automation</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Automated data processing with shell commands</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Setup environment</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setup</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;!mkdir</span><span class="nv"> </span><span class="s">-p</span><span class="nv"> </span><span class="s">output/{{</span><span class="nv"> </span><span class="s">inputs.project_name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="c1"># Download data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">download</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">execute_command</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;wget&quot;</span>
+<span class="w">      </span><span class="nt">arguments</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-O&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/raw_data.csv&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.data_url</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+
+<span class="w">  </span><span class="c1"># Process with Python</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">process</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">execute_command</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;python&quot;</span>
+<span class="w">      </span><span class="nt">arguments</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;scripts/process_data.py&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--input&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/raw_data.csv&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--output&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;output/{{</span><span class="nv"> </span><span class="s">inputs.project_name</span><span class="nv"> </span><span class="s">}}/processed.csv&quot;</span>
+<span class="w">      </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">DATA_QUALITY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;high&quot;</span>
+<span class="w">        </span><span class="nt">PROCESSING_MODE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.mode</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="c1"># Generate report with R</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;!Rscript</span><span class="nv"> </span><span class="s">reports/generate_report.R</span><span class="nv"> </span><span class="s">output/{{</span><span class="nv"> </span><span class="s">inputs.project_name</span><span class="nv"> </span><span class="s">}}/processed.csv&quot;</span>
+
+<span class="w">  </span><span class="c1"># Package results</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">package</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">execute_command</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tar&quot;</span>
+<span class="w">      </span><span class="nt">arguments</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-czf&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.package</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;output/{{</span><span class="nv"> </span><span class="s">inputs.project_name</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+</section>
+<section id="filesystemtool">
+<h3>FileSystemTool<a class="headerlink" href="#filesystemtool" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Perform file and directory operations</p>
+<p><strong>Action Names</strong>:
+- <code class="docutils literal notranslate"><span class="pre">read_file</span></code>
+- <code class="docutils literal notranslate"><span class="pre">write_file</span></code>
+- <code class="docutils literal notranslate"><span class="pre">copy_file</span></code>
+- <code class="docutils literal notranslate"><span class="pre">move_file</span></code>
+- <code class="docutils literal notranslate"><span class="pre">delete_file</span></code>
+- <code class="docutils literal notranslate"><span class="pre">list_directory</span></code>
+- <code class="docutils literal notranslate"><span class="pre">create_directory</span></code>
+- <code class="docutils literal notranslate"><span class="pre">file_exists</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read file</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_config</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;config/settings.json&quot;</span><span class="w">             </span><span class="c1"># Required: File path</span>
+<span class="w">    </span><span class="nt">encoding</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;utf-8&quot;</span><span class="w">                        </span><span class="c1"># Optional: File encoding (default: utf-8)</span>
+<span class="w">    </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                              </span><span class="c1"># Optional: Parse JSON/YAML (default: false)</span>
+
+<span class="c1"># Write file</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_results</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output/results.json&quot;</span><span class="w">              </span><span class="c1"># Required: File path</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.analysis</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">json</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w"> </span><span class="c1"># Required: Content to write</span>
+<span class="w">    </span><span class="nt">encoding</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;utf-8&quot;</span><span class="w">                        </span><span class="c1"># Optional: File encoding (default: utf-8)</span>
+<span class="w">    </span><span class="nt">create_dirs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                        </span><span class="c1"># Optional: Create parent dirs (default: true)</span>
+<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                          </span><span class="c1"># Optional: Overwrite existing (default: false)</span>
+
+<span class="c1"># Copy file</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backup</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">copy_file</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/important.db&quot;</span><span class="w">              </span><span class="c1"># Required: Source path</span>
+<span class="w">    </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;backup/important_{{</span><span class="nv"> </span><span class="s">execution.timestamp</span><span class="nv"> </span><span class="s">}}.db&quot;</span><span class="w">  </span><span class="c1"># Required: Destination</span>
+<span class="w">    </span><span class="nt">overwrite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">                         </span><span class="c1"># Optional: Overwrite existing (default: false)</span>
+
+<span class="c1"># Move file</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">archive</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">move_file</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;temp/processed.csv&quot;</span><span class="w">             </span><span class="c1"># Required: Source path</span>
+<span class="w">    </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;archive/2024/processed.csv&quot;</span><span class="w"> </span><span class="c1"># Required: Destination</span>
+<span class="w">    </span><span class="nt">create_dirs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                        </span><span class="c1"># Optional: Create parent dirs (default: true)</span>
+
+<span class="c1"># Delete file</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cleanup</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">delete_file</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;temp/*&quot;</span><span class="w">                           </span><span class="c1"># Required: Path or pattern</span>
+<span class="w">    </span><span class="nt">recursive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                          </span><span class="c1"># Optional: Delete recursively (default: false)</span>
+<span class="w">    </span><span class="nt">force</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">                             </span><span class="c1"># Optional: Force deletion (default: false)</span>
+
+<span class="c1"># List directory</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scan_files</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list_directory</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/&quot;</span><span class="w">                            </span><span class="c1"># Required: Directory path</span>
+<span class="w">    </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*.csv&quot;</span><span class="w">                         </span><span class="c1"># Optional: File pattern</span>
+<span class="w">    </span><span class="nt">recursive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                          </span><span class="c1"># Optional: Search subdirs (default: false)</span>
+<span class="w">    </span><span class="nt">include_hidden</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">                    </span><span class="c1"># Optional: Include hidden files (default: false)</span>
+<span class="w">    </span><span class="nt">details</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                            </span><span class="c1"># Optional: Include file details (default: false)</span>
+
+<span class="c1"># Create directory</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setup_dirs</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create_directory</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output/{{</span><span class="nv"> </span><span class="s">inputs.project</span><span class="nv"> </span><span class="s">}}/data&quot;</span><span class="w"> </span><span class="c1"># Required: Directory path</span>
+<span class="w">    </span><span class="nt">parents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                            </span><span class="c1"># Optional: Create parents (default: true)</span>
+<span class="w">    </span><span class="nt">exist_ok</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                           </span><span class="c1"># Optional: Ok if exists (default: true)</span>
+
+<span class="c1"># Check existence</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_file</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file_exists</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;config/custom.yaml&quot;</span><span class="w">               </span><span class="c1"># Required: Path to check</span>
+</pre></div>
+</div>
+<p><strong>Example Pipeline</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file-organization-pipeline</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Organize and process files automatically</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Check for existing data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_existing</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file_exists</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/current_dataset.csv&quot;</span>
+
+<span class="w">  </span><span class="c1"># Backup if exists</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backup</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.check_existing</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">copy_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/current_dataset.csv&quot;</span>
+<span class="w">      </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;backups/dataset_{{</span><span class="nv"> </span><span class="s">execution.timestamp</span><span class="nv"> </span><span class="s">}}.csv&quot;</span>
+
+<span class="w">  </span><span class="c1"># Read configuration</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_config</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;config/processing.yaml&quot;</span>
+<span class="w">      </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Process files based on config</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">process_files</span>
+<span class="w">    </span><span class="nt">for_each</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.read_config.file_patterns</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pattern</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list_directory</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">pattern.directory</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">pattern.glob</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">recursive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Organize by type</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">organize</span>
+<span class="w">    </span><span class="nt">for_each</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.process_files</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">flatten</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">move_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">file.path</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;organized/{{</span><span class="nv"> </span><span class="s">file.extension</span><span class="nv"> </span><span class="s">}}/{{</span><span class="nv"> </span><span class="s">file.name</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">create_dirs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="data-tools">
+<h2>Data Tools<a class="headerlink" href="#data-tools" title="Link to this heading">¶</a></h2>
+<section id="dataprocessingtool">
+<h3>DataProcessingTool<a class="headerlink" href="#dataprocessingtool" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Transform and manipulate data in various formats</p>
+<p><strong>Action Names</strong>:
+- <code class="docutils literal notranslate"><span class="pre">transform_data</span></code>
+- <code class="docutils literal notranslate"><span class="pre">filter_data</span></code>
+- <code class="docutils literal notranslate"><span class="pre">aggregate_data</span></code>
+- <code class="docutils literal notranslate"><span class="pre">merge_data</span></code>
+- <code class="docutils literal notranslate"><span class="pre">convert_format</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Transform data</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_data&quot;</span><span class="w">               </span><span class="c1"># Required: Input data or path</span>
+<span class="w">    </span><span class="nt">operations</span><span class="p">:</span><span class="w">                              </span><span class="c1"># Required: List of operations</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;rename_columns&quot;</span>
+<span class="w">        </span><span class="nt">mapping</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">old_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;new_name&quot;</span>
+<span class="w">          </span><span class="nt">price</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cost&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;total&quot;</span>
+<span class="w">        </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quantity</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">cost&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;drop_columns&quot;</span>
+<span class="w">        </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;unnecessary_field&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;convert_types&quot;</span>
+<span class="w">        </span><span class="nt">conversions</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;datetime&quot;</span>
+<span class="w">          </span><span class="nt">amount</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+
+<span class="c1"># Filter data</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter_data</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.transform&quot;</span><span class="w">               </span><span class="c1"># Required: Input data</span>
+<span class="w">    </span><span class="nt">conditions</span><span class="p">:</span><span class="w">                              </span><span class="c1"># Required: Filter conditions</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;status&quot;</span>
+<span class="w">        </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;equals&quot;</span><span class="w">                   </span><span class="c1"># equals|not_equals|contains|gt|lt|gte|lte</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;active&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">        </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gt&quot;</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;and&quot;</span><span class="w">                              </span><span class="c1"># Optional: and|or (default: and)</span>
+
+<span class="c1"># Aggregate data</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aggregate</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aggregate_data</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.filter&quot;</span><span class="w">                  </span><span class="c1"># Required: Input data</span>
+<span class="w">    </span><span class="nt">group_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;category&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;region&quot;</span><span class="p p-Indicator">]</span><span class="w">        </span><span class="c1"># Optional: Grouping columns</span>
+<span class="w">    </span><span class="nt">aggregations</span><span class="p">:</span><span class="w">                            </span><span class="c1"># Required: Aggregation rules</span>
+<span class="w">      </span><span class="nt">total_amount</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">        </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sum&quot;</span><span class="w">                      </span><span class="c1"># sum|mean|median|min|max|count|std</span>
+<span class="w">      </span><span class="nt">average_price</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;price&quot;</span>
+<span class="w">        </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mean&quot;</span>
+<span class="w">      </span><span class="nt">item_count</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span>
+<span class="w">        </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;count&quot;</span>
+
+<span class="c1"># Merge data</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge_data</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">left</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.main_data&quot;</span><span class="w">               </span><span class="c1"># Required: Left dataset</span>
+<span class="w">    </span><span class="nt">right</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.lookup_data&quot;</span><span class="w">            </span><span class="c1"># Required: Right dataset</span>
+<span class="w">    </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;customer_id&quot;</span><span class="w">                        </span><span class="c1"># Required: Join column(s)</span>
+<span class="w">    </span><span class="nt">how</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;left&quot;</span><span class="w">                              </span><span class="c1"># Optional: left|right|inner|outer (default: left)</span>
+<span class="w">    </span><span class="nt">suffixes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;_main&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;_lookup&quot;</span><span class="p p-Indicator">]</span><span class="w">          </span><span class="c1"># Optional: Column suffixes</span>
+
+<span class="c1"># Convert format</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">convert</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">convert_format</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.final_data&quot;</span><span class="w">              </span><span class="c1"># Required: Input data</span>
+<span class="w">    </span><span class="nt">from_format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;json&quot;</span><span class="w">                      </span><span class="c1"># Optional: Auto-detect if not specified</span>
+<span class="w">    </span><span class="nt">to_format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="w">                     </span><span class="c1"># Required: Target format</span>
+<span class="w">    </span><span class="nt">options</span><span class="p">:</span><span class="w">                                 </span><span class="c1"># Optional: Format-specific options</span>
+<span class="w">      </span><span class="nt">compression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;snappy&quot;</span>
+<span class="w">      </span><span class="nt">index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p><strong>Example Pipeline</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sales-data-analysis</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Process and analyze sales data</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Load raw data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">load_sales</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/sales_2024.csv&quot;</span>
+<span class="w">      </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Clean and transform</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clean_data</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_sales&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;rename_columns&quot;</span>
+<span class="w">          </span><span class="nt">mapping</span><span class="p">:</span>
+<span class="w">            </span><span class="s">&quot;Sale</span><span class="nv"> </span><span class="s">Date&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;sale_date&quot;</span>
+<span class="w">            </span><span class="s">&quot;Customer</span><span class="nv"> </span><span class="s">Name&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;customer_name&quot;</span>
+<span class="w">            </span><span class="s">&quot;Product</span><span class="nv"> </span><span class="s">ID&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;product_id&quot;</span>
+<span class="w">            </span><span class="s">&quot;Sale</span><span class="nv"> </span><span class="s">Amount&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;convert_types&quot;</span>
+<span class="w">          </span><span class="nt">conversions</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">sale_date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;datetime&quot;</span>
+<span class="w">            </span><span class="nt">amount</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quarter&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sale_date.quarter&quot;</span>
+
+<span class="w">  </span><span class="c1"># Filter valid sales</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter_valid</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.clean_data&quot;</span>
+<span class="w">      </span><span class="nt">conditions</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">          </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gt&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;product_id&quot;</span>
+<span class="w">          </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;not_equals&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+
+<span class="w">  </span><span class="c1"># Aggregate by quarter</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quarterly_summary</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aggregate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.filter_valid&quot;</span>
+<span class="w">      </span><span class="nt">group_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;quarter&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;product_id&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">aggregations</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">total_sales</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">          </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sum&quot;</span>
+<span class="w">        </span><span class="nt">avg_sale</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">          </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mean&quot;</span>
+<span class="w">        </span><span class="nt">num_transactions</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span>
+<span class="w">          </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;count&quot;</span>
+
+<span class="w">  </span><span class="c1"># Save results</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_summary</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">convert_format</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.quarterly_summary&quot;</span>
+<span class="w">      </span><span class="nt">to_format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;excel&quot;</span>
+<span class="w">      </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">sheet_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Quarterly</span><span class="nv"> </span><span class="s">Sales&quot;</span>
+<span class="w">        </span><span class="nt">index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+</section>
+<section id="validationtool">
+<h3>ValidationTool<a class="headerlink" href="#validationtool" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Validate data against schemas and business rules</p>
+<p><strong>Action Names</strong>:
+- <code class="docutils literal notranslate"><span class="pre">validate_data</span></code>
+- <code class="docutils literal notranslate"><span class="pre">validate_schema</span></code>
+- <code class="docutils literal notranslate"><span class="pre">check_quality</span></code>
+- <code class="docutils literal notranslate"><span class="pre">validate_report</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Validate against schema</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_structure</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_schema</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.processed_data&quot;</span><span class="w">          </span><span class="c1"># Required: Data to validate</span>
+<span class="w">    </span><span class="nt">schema</span><span class="p">:</span><span class="w">                                  </span><span class="c1"># Required: Validation schema</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;object&quot;</span>
+<span class="w">      </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;name&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;email&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;integer&quot;</span>
+<span class="w">          </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+<span class="w">          </span><span class="nt">minLength</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">          </span><span class="nt">maxLength</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">        </span><span class="nt">email</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+<span class="w">          </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;email&quot;</span>
+<span class="w">        </span><span class="nt">age</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;integer&quot;</span>
+<span class="w">          </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">          </span><span class="nt">maximum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">150</span>
+<span class="w">    </span><span class="nt">strict</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">                            </span><span class="c1"># Optional: Strict mode (default: false)</span>
+
+<span class="c1"># Business rule validation</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_rules</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_data</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.transactions&quot;</span><span class="w">            </span><span class="c1"># Required: Data to validate</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span><span class="w">                                   </span><span class="c1"># Required: Validation rules</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;positive_amounts&quot;</span>
+<span class="w">        </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">        </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;error&quot;</span><span class="w">                    </span><span class="c1"># error|warning|info</span>
+<span class="w">        </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Transaction</span><span class="nv"> </span><span class="s">amounts</span><span class="nv"> </span><span class="s">must</span><span class="nv"> </span><span class="s">be</span><span class="nv"> </span><span class="s">positive&quot;</span>
+
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;valid_date_range&quot;</span>
+<span class="w">        </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;transaction_date&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value</span><span class="nv"> </span><span class="s">&gt;=</span><span class="nv"> </span><span class="s">&#39;2024-01-01&#39;</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">value</span><span class="nv"> </span><span class="s">&lt;=</span><span class="nv"> </span><span class="s">today()&quot;</span>
+<span class="w">        </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;error&quot;</span>
+
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;customer_exists&quot;</span>
+<span class="w">        </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;customer_id&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">valid_customers&quot;</span>
+<span class="w">        </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;warning&quot;</span>
+<span class="w">        </span><span class="nt">context</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">valid_customers</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.customer_list&quot;</span>
+
+<span class="w">    </span><span class="nt">stop_on_error</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">                     </span><span class="c1"># Optional: Stop on first error (default: false)</span>
+
+<span class="c1"># Data quality checks</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quality_check</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_quality</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.dataset&quot;</span><span class="w">                 </span><span class="c1"># Required: Data to check</span>
+<span class="w">    </span><span class="nt">checks</span><span class="p">:</span><span class="w">                                  </span><span class="c1"># Required: Quality checks</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;completeness&quot;</span>
+<span class="w">        </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.95</span><span class="w">                      </span><span class="c1"># 95% non-null required</span>
+<span class="w">        </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;name&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;email&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;uniqueness&quot;</span>
+<span class="w">        </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;email&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;consistency&quot;</span>
+<span class="w">        </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;start_date</span><span class="nv"> </span><span class="s">&lt;=</span><span class="nv"> </span><span class="s">end_date&quot;</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;total</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">sum(line_items)&quot;</span>
+
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;accuracy&quot;</span>
+<span class="w">        </span><span class="nt">validations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;regex:^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$&quot;</span>
+<span class="w">          </span><span class="nt">phone</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;regex:^\\+?1?\\d{9,15}$&quot;</span>
+
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;timeliness&quot;</span>
+<span class="w">        </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;last_updated&quot;</span>
+<span class="w">        </span><span class="nt">max_age_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+
+<span class="c1"># Report validation</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_report</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_report</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">report</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.generated_report&quot;</span><span class="w">      </span><span class="c1"># Required: Report to validate</span>
+<span class="w">    </span><span class="nt">checks</span><span class="p">:</span><span class="w">                                  </span><span class="c1"># Required: Report checks</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;completeness&quot;</span><span class="w">                       </span><span class="c1"># All sections present</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;accuracy&quot;</span><span class="w">                           </span><span class="c1"># Facts are accurate</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;consistency&quot;</span><span class="w">                        </span><span class="c1"># No contradictions</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;readability&quot;</span><span class="w">                        </span><span class="c1"># Appropriate reading level</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;citations&quot;</span><span class="w">                          </span><span class="c1"># Sources properly cited</span>
+<span class="w">    </span><span class="nt">requirements</span><span class="p">:</span><span class="w">                            </span><span class="c1"># Optional: Specific requirements</span>
+<span class="w">      </span><span class="nt">min_words</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">      </span><span class="nt">max_words</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">      </span><span class="nt">required_sections</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;intro&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;analysis&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;conclusion&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">citation_style</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;APA&quot;</span>
+</pre></div>
+</div>
+<p><strong>Example Pipeline</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data-quality-pipeline</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Comprehensive data validation and quality assurance</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Load data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">load</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.data_file</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Schema validation</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_schema</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_schema</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load&quot;</span>
+<span class="w">      </span><span class="nt">schema</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;array&quot;</span>
+<span class="w">        </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;object&quot;</span>
+<span class="w">          </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;order_id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;customer_id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;amount&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;date&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">order_id</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+<span class="w">              </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;^ORD-[0-9]{6}$&quot;</span>
+<span class="w">            </span><span class="nt">customer_id</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;integer&quot;</span>
+<span class="w">              </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">            </span><span class="nt">amount</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;number&quot;</span>
+<span class="w">              </span><span class="nt">minimum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">            </span><span class="nt">date</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+<span class="w">              </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;date&quot;</span>
+
+<span class="w">  </span><span class="c1"># Business rules</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_business</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load&quot;</span>
+<span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;valid_amounts&quot;</span>
+<span class="w">          </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">          </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">0</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">value</span><span class="nv"> </span><span class="s">&lt;</span><span class="nv"> </span><span class="s">10000&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;error&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;recent_orders&quot;</span>
+<span class="w">          </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;date&quot;</span>
+<span class="w">          </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;days_between(value,</span><span class="nv"> </span><span class="s">today())</span><span class="nv"> </span><span class="s">&lt;=</span><span class="nv"> </span><span class="s">365&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;warning&quot;</span>
+<span class="w">          </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Order</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">older</span><span class="nv"> </span><span class="s">than</span><span class="nv"> </span><span class="s">1</span><span class="nv"> </span><span class="s">year&quot;</span>
+
+<span class="w">  </span><span class="c1"># Quality assessment</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quality_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_quality</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load&quot;</span>
+<span class="w">      </span><span class="nt">checks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;completeness&quot;</span>
+<span class="w">          </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.98</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;uniqueness&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;order_id&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;consistency&quot;</span>
+<span class="w">          </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;item_total</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">quantity</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">unit_price&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;accuracy&quot;</span>
+<span class="w">          </span><span class="nt">validations</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;regex:^[\\w.-]+@[\\w.-]+\\.\\w+$&quot;</span>
+
+<span class="w">  </span><span class="c1"># Generate validation report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no"># Data Validation Report</span>
+
+<span class="w">        </span><span class="no">## Schema Validation</span>
+<span class="w">        </span><span class="no">{{ results.validate_schema.summary }}</span>
+
+<span class="w">        </span><span class="no">## Business Rules</span>
+<span class="w">        </span><span class="no">{{ results.validate_business.summary }}</span>
+
+<span class="w">        </span><span class="no">## Quality Metrics</span>
+<span class="w">        </span><span class="no">{{ results.quality_report | format_quality_metrics }}</span>
+
+<span class="w">        </span><span class="no">## Recommendations</span>
+<span class="w">        </span><span class="no">&lt;AUTO&gt;Based on the validation results, provide recommendations&lt;/AUTO&gt;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="ai-tools">
+<h2>AI Tools<a class="headerlink" href="#ai-tools" title="Link to this heading">¶</a></h2>
+<section id="model-specific-tools">
+<h3>Model-Specific Tools<a class="headerlink" href="#model-specific-tools" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Leverage specific AI model capabilities</p>
+<p><strong>Action Names</strong>:
+- <code class="docutils literal notranslate"><span class="pre">generate_content</span></code>
+- <code class="docutils literal notranslate"><span class="pre">analyze_text</span></code>
+- <code class="docutils literal notranslate"><span class="pre">extract_information</span></code>
+- <code class="docutils literal notranslate"><span class="pre">generate_code</span></code>
+- <code class="docutils literal notranslate"><span class="pre">reason_about</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate content</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.prompt</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w">            </span><span class="c1"># Required: Generation prompt</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;AUTO&gt;Select best model&lt;/AUTO&gt;</span><span class="w">    </span><span class="c1"># Optional: Model selection</span>
+<span class="w">    </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w">                         </span><span class="c1"># Optional: Maximum tokens</span>
+<span class="w">    </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span><span class="w">                         </span><span class="c1"># Optional: Creativity (0-2)</span>
+<span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;You</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">helpful</span><span class="nv"> </span><span class="s">AI&quot;</span><span class="w">    </span><span class="c1"># Optional: System message</span>
+<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;markdown&quot;</span><span class="w">                       </span><span class="c1"># Optional: Output format</span>
+<span class="w">    </span><span class="nt">style</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;professional&quot;</span><span class="w">                    </span><span class="c1"># Optional: Writing style</span>
+
+<span class="c1"># Analyze text</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyze</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyze_text</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.document&quot;</span><span class="w">                </span><span class="c1"># Required: Text to analyze</span>
+<span class="w">    </span><span class="nt">analysis_types</span><span class="p">:</span><span class="w">                          </span><span class="c1"># Required: Types of analysis</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sentiment</span><span class="w">                            </span><span class="c1"># Positive/negative/neutral</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">entities</span><span class="w">                             </span><span class="c1"># Named entities</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">topics</span><span class="w">                               </span><span class="c1"># Main topics</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">summary</span><span class="w">                              </span><span class="c1"># Brief summary</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">key_points</span><span class="w">                           </span><span class="c1"># Bullet points</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="w">                             </span><span class="c1"># Detect language</span>
+<span class="w">    </span><span class="nt">output_format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;structured&quot;</span><span class="w">              </span><span class="c1"># Optional: structured|narrative</span>
+
+<span class="c1"># Extract information</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_information</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.raw_text&quot;</span><span class="w">             </span><span class="c1"># Required: Source content</span>
+<span class="w">    </span><span class="nt">extract</span><span class="p">:</span><span class="w">                                 </span><span class="c1"># Required: What to extract</span>
+<span class="w">      </span><span class="nt">dates</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;All</span><span class="nv"> </span><span class="s">mentioned</span><span class="nv"> </span><span class="s">dates&quot;</span>
+<span class="w">        </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;YYYY-MM-DD&quot;</span>
+<span class="w">      </span><span class="nt">people</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Person</span><span class="nv"> </span><span class="s">names</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">roles&quot;</span>
+<span class="w">        </span><span class="nt">include_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">organizations</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Company</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">organization</span><span class="nv"> </span><span class="s">names&quot;</span>
+<span class="w">      </span><span class="nt">numbers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Numerical</span><span class="nv"> </span><span class="s">values</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">units&quot;</span>
+<span class="w">        </span><span class="nt">categories</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;financial&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;metrics&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">output_format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;json&quot;</span><span class="w">                    </span><span class="c1"># Optional: json|table|text</span>
+
+<span class="c1"># Generate code</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">code_gen</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_code</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.feature_request</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w"> </span><span class="c1"># Required: What to build</span>
+<span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;python&quot;</span><span class="w">                       </span><span class="c1"># Required: Programming language</span>
+<span class="w">    </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fastapi&quot;</span><span class="w">                     </span><span class="c1"># Optional: Framework/library</span>
+<span class="w">    </span><span class="nt">include_tests</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                      </span><span class="c1"># Optional: Generate tests</span>
+<span class="w">    </span><span class="nt">include_docs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                       </span><span class="c1"># Optional: Generate docs</span>
+<span class="w">    </span><span class="nt">style_guide</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PEP8&quot;</span><span class="w">                     </span><span class="c1"># Optional: Code style</span>
+<span class="w">    </span><span class="nt">example_usage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                      </span><span class="c1"># Optional: Include examples</span>
+
+<span class="c1"># Reasoning task</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reason</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reason_about</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.problem</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w">         </span><span class="c1"># Required: Problem/question</span>
+<span class="w">    </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.research&quot;</span><span class="w">             </span><span class="c1"># Optional: Additional context</span>
+<span class="w">    </span><span class="nt">approach</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;step_by_step&quot;</span><span class="w">                 </span><span class="c1"># Optional: Reasoning approach</span>
+<span class="w">    </span><span class="nt">show_work</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                          </span><span class="c1"># Optional: Show reasoning</span>
+<span class="w">    </span><span class="nt">confidence_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                   </span><span class="c1"># Optional: Include confidence</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-tools">
+<h2>Integration Tools<a class="headerlink" href="#integration-tools" title="Link to this heading">¶</a></h2>
+<section id="databasetool">
+<h3>DatabaseTool<a class="headerlink" href="#databasetool" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Interact with databases</p>
+<p><strong>Action Names</strong>:
+- <code class="docutils literal notranslate"><span class="pre">query_database</span></code>
+- <code class="docutils literal notranslate"><span class="pre">insert_data</span></code>
+- <code class="docutils literal notranslate"><span class="pre">update_data</span></code>
+- <code class="docutils literal notranslate"><span class="pre">delete_data</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Query database</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fetch_data</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">query_database</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">connection</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgresql://localhost/mydb&quot;</span><span class="w"> </span><span class="c1"># Required: Connection string</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SELECT</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">FROM</span><span class="nv"> </span><span class="s">users</span><span class="nv"> </span><span class="s">WHERE</span><span class="nv"> </span><span class="s">active</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">true&quot;</span><span class="w"> </span><span class="c1"># Required: SQL query</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">                           </span><span class="c1"># Optional: Query parameters</span>
+<span class="w">    </span><span class="nt">fetch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w">                         </span><span class="c1"># Optional: Batch size</span>
+<span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">                              </span><span class="c1"># Optional: Query timeout</span>
+</pre></div>
+</div>
+</section>
+<section id="apitool">
+<h3>APITool<a class="headerlink" href="#apitool" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose</strong>: Make HTTP API calls</p>
+<p><strong>Action Names</strong>:
+- <code class="docutils literal notranslate"><span class="pre">call_api</span></code>
+- <code class="docutils literal notranslate"><span class="pre">rest_request</span></code>
+- <code class="docutils literal notranslate"><span class="pre">graphql_query</span></code></p>
+<p><strong>Parameters</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># REST API call</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api_call</span>
+<span class="w">  </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">call_api</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://api.example.com/data&quot;</span><span class="w">     </span><span class="c1"># Required: API endpoint</span>
+<span class="w">    </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;POST&quot;</span><span class="w">                           </span><span class="c1"># Required: HTTP method</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span><span class="w">                                 </span><span class="c1"># Optional: Headers</span>
+<span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bearer</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">env.API_TOKEN</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">Content-Type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;application/json&quot;</span>
+<span class="w">    </span><span class="nt">body</span><span class="p">:</span><span class="w">                                    </span><span class="c1"># Optional: Request body</span>
+<span class="w">      </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.search_term</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span><span class="w">                              </span><span class="c1"># Optional: Request timeout</span>
+<span class="w">    </span><span class="nt">retry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">                                 </span><span class="c1"># Optional: Retry attempts</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="tool-chaining-examples">
+<h2>Tool Chaining Examples<a class="headerlink" href="#tool-chaining-examples" title="Link to this heading">¶</a></h2>
+<section id="research-and-report-pipeline">
+<h3>Research and Report Pipeline<a class="headerlink" href="#research-and-report-pipeline" title="Link to this heading">¶</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">comprehensive-research-tool-chain</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Chain multiple tools for research and reporting</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># 1. Search multiple sources</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web_search</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">search_web</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.topic</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">latest</span><span class="nv"> </span><span class="s">research</span><span class="nv"> </span><span class="s">2024&quot;</span>
+<span class="w">      </span><span class="nt">max_results</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+
+<span class="w">  </span><span class="c1"># 2. Scrape promising articles</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scrape_articles</span>
+<span class="w">    </span><span class="nt">for_each</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.web_search.results[:5]</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">article</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scrape_page</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">article.url</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">selectors</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;article,</span><span class="nv"> </span><span class="s">main,</span><span class="nv"> </span><span class="s">.content&quot;</span>
+
+<span class="w">  </span><span class="c1"># 3. Extract key information</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_facts</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_information</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.scrape_articles&quot;</span>
+<span class="w">      </span><span class="nt">extract</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">facts</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Key</span><span class="nv"> </span><span class="s">facts</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">findings&quot;</span>
+<span class="w">        </span><span class="nt">statistics</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Numerical</span><span class="nv"> </span><span class="s">data</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">context&quot;</span>
+<span class="w">        </span><span class="nt">quotes</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Notable</span><span class="nv"> </span><span class="s">quotes</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">attribution&quot;</span>
+
+<span class="w">  </span><span class="c1"># 4. Validate information</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cross_validate</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.extract_facts&quot;</span>
+<span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;source_diversity&quot;</span>
+<span class="w">          </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;count(unique(sources))</span><span class="nv"> </span><span class="s">&gt;=</span><span class="nv"> </span><span class="s">3&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;warning&quot;</span>
+
+<span class="w">  </span><span class="c1"># 5. Generate report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">Create a comprehensive report about {{ inputs.topic }}</span>
+<span class="w">        </span><span class="no">using the following validated information:</span>
+<span class="w">        </span><span class="no">{{ results.extract_facts | json }}</span>
+<span class="w">      </span><span class="nt">style</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;academic&quot;</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;markdown&quot;</span>
+<span class="w">      </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span>
+
+<span class="w">  </span><span class="c1"># 6. Save report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;reports/{{</span><span class="nv"> </span><span class="s">inputs.topic</span><span class="nv"> </span><span class="s">}}_{{</span><span class="nv"> </span><span class="s">execution.date</span><span class="nv"> </span><span class="s">}}.md&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.create_report&quot;</span>
+
+<span class="w">  </span><span class="c1"># 7. Generate PDF</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create_pdf</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;!pandoc</span><span class="nv"> </span><span class="s">-f</span><span class="nv"> </span><span class="s">markdown</span><span class="nv"> </span><span class="s">-t</span><span class="nv"> </span><span class="s">pdf</span><span class="nv"> </span><span class="s">-o</span><span class="nv"> </span><span class="s">reports/{{</span><span class="nv"> </span><span class="s">inputs.topic</span><span class="nv"> </span><span class="s">}}.pdf</span><span class="nv"> </span><span class="s">reports/{{</span><span class="nv"> </span><span class="s">inputs.topic</span><span class="nv"> </span><span class="s">}}_{{</span><span class="nv"> </span><span class="s">execution.date</span><span class="nv"> </span><span class="s">}}.md&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="data-processing-pipeline">
+<h3>Data Processing Pipeline<a class="headerlink" href="#data-processing-pipeline" title="Link to this heading">¶</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">etl-tool-chain</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Extract, transform, and load data using tool chain</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Extract from multiple sources</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_database</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">query_database</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">connection</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env.DB_CONNECTION</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SELECT</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">FROM</span><span class="nv"> </span><span class="s">sales</span><span class="nv"> </span><span class="s">WHERE</span><span class="nv"> </span><span class="s">date</span><span class="nv"> </span><span class="s">&gt;=</span><span class="nv"> </span><span class="s">&#39;2024-01-01&#39;&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_api</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">call_api</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://api.company.com/v2/transactions&quot;</span>
+<span class="w">      </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GET&quot;</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bearer</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">env.API_KEY</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">start_date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2024-01-01&quot;</span>
+<span class="w">        </span><span class="nt">page_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_files</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list_directory</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/uploads/&quot;</span>
+<span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sales_*.csv&quot;</span>
+<span class="w">      </span><span class="nt">recursive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Load file data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">load_files</span>
+<span class="w">    </span><span class="nt">for_each</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.extract_files</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">file.path</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Transform all data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge_all</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">datasets</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.extract_database&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.extract_api.data&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.load_files&quot;</span>
+<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;transaction_id&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clean_data</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.merge_all&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;remove_duplicates&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;transaction_id&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fill_missing&quot;</span>
+<span class="w">          </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;forward&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;standardize_formats&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;YYYY-MM-DD&quot;</span>
+<span class="w">            </span><span class="nt">amount</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;decimal(10,2)&quot;</span>
+
+<span class="w">  </span><span class="c1"># Validate</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_quality</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_quality</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.clean_data&quot;</span>
+<span class="w">      </span><span class="nt">checks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;completeness&quot;</span>
+<span class="w">          </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.99</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;accuracy&quot;</span>
+<span class="w">          </span><span class="nt">validations</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">amount</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;range:0,1000000&quot;</span>
+<span class="w">            </span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;date_range:2024-01-01,today&quot;</span>
+
+<span class="w">  </span><span class="c1"># Load to destination</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_processed</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;processed/sales_cleaned_{{</span><span class="nv"> </span><span class="s">execution.date</span><span class="nv"> </span><span class="s">}}.parquet&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.clean_data&quot;</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update_database</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.validate_quality.passed</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">insert_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">connection</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env.DW_CONNECTION</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">table</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sales_fact&quot;</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.clean_data&quot;</span>
+<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;append&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="tool-development">
+<h2>Tool Development<a class="headerlink" href="#tool-development" title="Link to this heading">¶</a></h2>
+<section id="creating-custom-tools">
+<h3>Creating Custom Tools<a class="headerlink" href="#creating-custom-tools" title="Link to this heading">¶</a></h3>
+<p>To create your own tools:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">orchestrator.tools.base</span> <span class="kn">import</span> <span class="n">Tool</span>
+
+<span class="k">class</span> <span class="nc">MyCustomTool</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-custom-tool&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Does something special&quot;</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Define parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;input_data&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Data to process&quot;</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Processing mode&quot;</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+            <span class="n">enum</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span> <span class="s2">&quot;advanced&quot;</span><span class="p">,</span> <span class="s2">&quot;expert&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the tool action.&quot;&quot;&quot;</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;input_data&quot;</span><span class="p">]</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;standard&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Your tool logic here</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">process_data</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">,</span>
+            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span>
+                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="registering-custom-tools">
+<h3>Registering Custom Tools<a class="headerlink" href="#registering-custom-tools" title="Link to this heading">¶</a></h3>
+<p>Register your tool to make it available:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">orchestrator.tools.base</span> <span class="kn">import</span> <span class="n">default_registry</span>
+
+<span class="c1"># Register tool</span>
+<span class="n">tool</span> <span class="o">=</span> <span class="n">MyCustomTool</span><span class="p">()</span>
+<span class="n">default_registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">tool</span><span class="p">)</span>
+
+<span class="c1"># Use in pipeline</span>
+<span class="n">pipeline_yaml</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">steps:</span>
+<span class="s2">  - id: custom_step</span>
+<span class="s2">    action: my-custom-tool</span>
+<span class="s2">    parameters:</span>
+<span class="s2">      input_data: &quot;{{ inputs.data }}&quot;</span>
+<span class="s2">      mode: &quot;advanced&quot;</span>
+<span class="s2">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Tool Selection</strong>:
+- Use the most specific tool for the job
+- Prefer built-in tools over shell commands
+- Chain tools for complex operations</p></li>
+<li><p><strong>Error Handling</strong>:
+- Always handle tool failures gracefully
+- Provide fallback options
+- Validate tool outputs</p></li>
+<li><p><strong>Performance</strong>:
+- Batch operations when possible
+- Use appropriate timeouts
+- Cache expensive tool results</p></li>
+<li><p><strong>Security</strong>:
+- Sanitize inputs to shell commands
+- Use parameterized queries for databases
+- Validate file paths</p></li>
+<li><p><strong>Monitoring</strong>:
+- Log tool executions
+- Track performance metrics
+- Monitor resource usage</p></li>
+</ol>
+</section>
+</section>
+
+
+              <div id="bottom-dl" class="xanadu-call-to-action-links">
+                <div id="tutorial-type">tool_reference</div>
+                <div class="download-python-link">
+                  <i class="fab fa-python"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">Download Python script</div>
+                </div>
+                <div class="download-notebook-link">
+                  <i class="fas fa-download"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">Download Notebook</div>
+                </div>
+                <div class="github-view-link">
+                  <i class="fab fa-github"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">View on GitHub</div>
+                </div>
+              </div>
+
+            </div>
+            
+              
+            
+          </div>
+<div class="localtoc-container nano has-scrollbar">
+  <div class="nano-content">
+    <div id="localtoc">
+        
+          <h3>Contents</h3>
+          <!-- Display the ToC for the current document if it is not empty. -->
+          <ul class='current'>
+<li class='current'><a class="reference internal" href="#">Tool Reference</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#tool-system-overview">Tool System Overview</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#tool-categories">Tool Categories</a></li>
+<li class='current'><a class="reference internal" href="#how-tools-work">How Tools Work</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#web-tools">Web Tools</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#headlessbrowsertool">HeadlessBrowserTool</a></li>
+<li class='current'><a class="reference internal" href="#websearchtool">WebSearchTool</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#system-tools">System Tools</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#terminaltool">TerminalTool</a></li>
+<li class='current'><a class="reference internal" href="#filesystemtool">FileSystemTool</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#data-tools">Data Tools</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#dataprocessingtool">DataProcessingTool</a></li>
+<li class='current'><a class="reference internal" href="#validationtool">ValidationTool</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#ai-tools">AI Tools</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#model-specific-tools">Model-Specific Tools</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#integration-tools">Integration Tools</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#databasetool">DatabaseTool</a></li>
+<li class='current'><a class="reference internal" href="#apitool">APITool</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#tool-chaining-examples">Tool Chaining Examples</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#research-and-report-pipeline">Research and Report Pipeline</a></li>
+<li class='current'><a class="reference internal" href="#data-processing-pipeline">Data Processing Pipeline</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#tool-development">Tool Development</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#creating-custom-tools">Creating Custom Tools</a></li>
+<li class='current'><a class="reference internal" href="#registering-custom-tools">Registering Custom Tools</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#best-practices">Best Practices</a></li>
+</ul>
+</li>
+</ul>
+
+        
+    </div>
+
+    <div class="xanadu-call-to-action-links">
+        <h3>Downloads</h3>
+        <div id="tutorial-type">tool_reference</div>
+        <div class="download-python-link">
+            <i class="fab fa-python"></i>&nbsp;
+            <div class="call-to-action-desktop-view">Download Python script</div>
+        </div>
+        <div class="download-notebook-link">
+            <i class="fas fa-download"></i>&nbsp;
+            <div class="call-to-action-desktop-view">Download Notebook</div>
+        </div>
+        <div class="github-view-link">
+            <i class="fab fa-github"></i>&nbsp;
+            <div class="call-to-action-desktop-view">View on GitHub</div>
+        </div>
+    </div>
+    <div id="related-tutorials" class="mt-4">
+      <h3> Related</h3>
+    </div>
+  </div>
+</div>
+
+
+          <div class="clearfix"></div>
+        </div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">Orchestrator 0.1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Tool Reference</a></li> 
+      </ul>
+    </div>
+  <script type="text/javascript">
+    $("#mobile-toggle").click(function () {
+      $("#left-column").slideToggle("slow");
+    });
+  </script>
+
+  <!-- jQuery -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+  <!-- MathJax -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <!-- Bootstrap core JavaScript -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <!-- MDB core JavaScript -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.10/js/mdb.min.js"></script>
+  <!-- Overlay Scrollbars -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.11.4/overlayscrollbars.cjs.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Syntax Highlighting -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/highlight.min.js"></script>
+  <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+
+  <script type="text/javascript">
+
+    $("a.reference.internal").each(function(){
+      var link = $(this).attr("href");
+
+      var hash = link.split("#")[1];
+      var page = link.split("#")[0].split("/").slice(-1)[0].replace(".html", "");
+
+      if (hash == page) {
+        $(this).attr("href", link.split("#")[0]);
+      }
+    });
+
+    $(".document > .section").removeClass("section");
+    $("h1 ~ .section").removeClass("section");
+    OverlayScrollbars(document.querySelector('.nano'), {});
+  </script>
+
+  <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      const localToCContainer = document.querySelector(".localtoc-container");
+      const localToCTop = parseInt(getComputedStyle(localToCContainer).top, 10);
+      const navbarHeight = document.querySelector("nav").offsetHeight;
+      const footerHeight = document.querySelector("footer").offsetHeight;
+      const localToCPadding = localToCTop - navbarHeight;
+
+      function adjustLocalToC() {
+        // Adjusts the height and vertical offset of the local ToC.
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollBottom = document.documentElement.scrollHeight - window.innerHeight - scrollTop;
+
+        const localToCHeight = window.innerHeight - localToCTop - Math.max(0, footerHeight - scrollBottom) - localToCPadding;
+        localToCContainer.style.height = localToCHeight + "px";
+        localToCContainer.querySelector(".nano-content").style.height = localToCHeight + "px";
+
+        if (scrollBottom <= 1) {
+          // Switching the position away from "fixed" ensures that the local ToC
+          // "bounces" with the content and stays above the footer.
+          localToCContainer.style.position = "absolute";
+          localToCContainer.style.top = (scrollTop + localToCPadding) + "px";
+        } else {
+          localToCContainer.style.position = "fixed";
+          localToCContainer.style.top = localToCTop + "px";
+        }
+      }
+
+      adjustLocalToC();
+      window.addEventListener('scroll', adjustLocalToC);
+    });
+  </script>
+
+  <script type="text/javascript">
+    if (document.querySelector(".current")) {
+      var target = document.querySelector(".current");
+      var rect = target.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight) {
+          const nanoElement = document.querySelector(".nano");
+          const currentElement = document.querySelector(".current");
+          if (nanoElement && currentElement) {
+            nanoElement.scrollTop = currentElement.offsetTop - nanoElement.offsetTop;
+          }
+      } else {
+          document.querySelector(".nano").scrollTop = 0;
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll(".css-transitions-only-after-page-load").forEach(function (element) {
+            setTimeout(function () { 
+                element.classList.remove("css-transitions-only-after-page-load"); 
+            }, 10);
+        });
+        if (window.location.hash) {
+          const target = document.querySelector("[id='" + window.location.hash.substr(1) + "']");
+          if (target && target.closest(".collapse")) {
+            target.closest(".collapse").classList.add("show");
+            target.closest(".collapse").previousElementSibling.querySelector(".rotate").classList.add("up");
+          }
+        }
+    });
+  </script>
+
+    <script type="text/javascript">
+    var downloadNote = $(".sphx-glr-download-link-note.admonition.note");
+    if (downloadNote.length >= 1) {
+      var tutorialUrlArray = $("#tutorial-type").text().split('/');
+
+      if (tutorialUrlArray[0] == "demos") {
+        tutorialUrlArray[0] = "demonstrations";
+      }
+
+      var githubLink = "https://github.com/" + "https://github.com/contextualdynamics/orchestrator" + "/blob/master/" + tutorialUrlArray.join("/") + ".py",
+          pythonLink = $(".sphx-glr-download .reference.download")[0].href,
+          notebookLink = $(".sphx-glr-download .reference.download")[1].href;
+
+      $(".download-python-link").wrap("<a href=" + pythonLink + " data-behavior='call-to-action-event' data-response='Download Python script' download target='_blank'/>");
+      $(".download-notebook-link").wrap("<a href=" + notebookLink + " data-behavior='call-to-action-event' data-response='Download Notebook' download target='_blank'/>");
+      $(".github-view-link").wrap("<a href=" + githubLink + " data-behavior='call-to-action-event' data-response='View on Github' target='_blank'/>");
+      $("#right-column").addClass("page-shadow");
+    } else {
+      $(".xanadu-call-to-action-links").hide();
+      $("#bottom-dl").attr('style','display: none !important');
+    }
+    </script>
+
+    <script type="text/javascript">
+      function makeUL(urls, text) {
+          var list = document.createElement('ul');
+
+          for (var i = 0; i < urls.length; i++) {
+              var item = document.createElement('li');
+              var a = document.createElement('a');
+              var linkText = document.createTextNode(text[i]);
+              a.appendChild(linkText);
+              a.href = urls[i];
+              item.appendChild(a);
+              list.appendChild(item);
+          }
+          return list;
+      }
+
+      if (typeof related_tutorials !== 'undefined') {
+          document.getElementById('related-tutorials').appendChild(makeUL(related_tutorials, related_tutorials_titles));
+          $("#related-tutorials ul li a").append(' <i class="fas fa-angle-double-right" style="font-size: smaller;"></i>')
+          $("#related-tutorials").show();
+
+    } else {
+          $("#related-tutorials").hide();
+    }
+    </script>
+
+  <!-- Account for MathJax when navigating to anchor tags. -->
+  <script type="text/javascript">
+    function scrollToElement(e) {
+      // Scrolls to the given element, taking into account the navbar.
+      MathJax.Hub.Queue(function() {
+        // The following MUST be done asynchronously to take effect.
+        setTimeout(function() {
+          const navbar = document.querySelector("nav.navbar");
+          const navbarHeight = navbar ? navbar.offsetHeight : 0;
+          const scrollToY = e.offsetTop + e.offsetParent.offsetTop - navbarHeight;
+          window.scrollTo(0, scrollToY);
+        }, 0);
+      });
+    }
+
+    function scrollToFragment(fragment) {
+      // Scrolls to the position of the given URL fragment (which includes the "#").
+      const elementID = fragment.replace(".", "\\.");
+      if (elementID !== "") {
+        const element = document.querySelector(elementID);
+        if (element !== null) {
+          scrollToElement(element);
+        }
+      }
+    }
+
+    $(document).ready(() => {
+      scrollToFragment(window.location.hash);
+      window.addEventListener("popstate", (_) => scrollToFragment(document.location.hash), false);
+    });
+  </script>
+
+  <!-- Hide the rendering of :orphan: metadata. -->
+  <script type="text/javascript">
+    $(document).ready(() => {
+      const elements = document.getElementsByClassName("field-odd");
+      for (const element of elements) {
+          if (element.innerHTML.trim() === "orphan") {
+            element.style.display = "none";
+          }
+      }
+    });
+  </script>
+
+  <!-- Utility functions for setting ARIA attributes on buttons that show menus. -->
+  <script type="text/javascript">
+    function setAriaAttributes(button, expand) {
+      const skip = button.getAttribute("aria-label").indexOf(" ");
+      const menu = button.getAttribute("aria-label").substr(skip);
+      button.setAttribute("aria-label", (expand ? "close" : "open") + menu);
+      button.setAttribute("aria-expanded", expand.toString());
+    }
+
+    function toggleAriaAttributes(button) {
+      setAriaAttributes(button, button.getAttribute("aria-expanded") === "false");
+    }
+  </script>
+
+  <!-- Delays the closing of dropdowns on the LHS of the navigation bar. -->
+  <script type="text/javascript">
+    $(document).ready(() => {
+      const timers = {};
+      const navbar_left_links = document.querySelectorAll(".navbar-left-link");
+      for (const [i, link] of navbar_left_links.entries()) {
+        const dropdown = link.querySelector(".navbar-dropdown");
+        const button = link.querySelector("button");
+        if (dropdown !== null) {
+          timers[i] = {link: link, button: button, timeout: undefined};
+
+          // Expands the current dropdown and closes other dropdowns.
+          const expandDropdown = () => {
+            for (const [j, timer] of Object.entries(timers)) {
+              clearTimeout(timer.timeout);
+              if (i !== j) {
+                timer.link.classList.remove("open");
+                setAriaAttributes(timer.button, false);
+              }
+            }
+            link.classList.add("open");
+            setAriaAttributes(button, true);
+          }
+
+          // Closes the current dropdown after the given delay.
+          const collapseDropdown = (event, delay = 1000) => {
+            timers[i].timeout = setTimeout(function(event){
+              link.classList.remove("open");
+              setAriaAttributes(button, false);
+            }, delay);
+          }
+
+          // Toggles the current dropdown.
+          const toggleDropdown = (event) => {
+            if (link.classList.contains("open")) {
+              collapseDropdown(event, 0);
+            } else {
+              expandDropdown();
+            }
+          }
+
+          link.addEventListener("mouseenter", expandDropdown);
+          link.addEventListener("mouseleave", collapseDropdown);
+          button.addEventListener("click", toggleDropdown);
+        }
+      }
+    });
+  </script>
+
+  <!-- Toggles whether the global ToC is displayed on mobile. -->
+  <script type="text/javascript">
+    function toggleMobileToC(button) {
+      const sidebar = document.querySelector("#left-column");
+      const chevron = button.querySelector("i");
+      if (sidebar !== null) {
+        sidebar.classList.toggle("open");
+        chevron.classList.toggle("open");
+      }
+    }
+  </script>
+
+  <!-- Toggles whether the navbar dropdown is displayed on mobile. -->
+  <script type="text/javascript">
+    function toggleMobileNavbar(button) {
+      const dropdown = document.querySelector(".mobile.navbar-links");
+      if (dropdown !== null) {
+        dropdown.classList.toggle("open");
+        button.classList.toggle("open");
+        toggleAriaAttributes(button);
+
+        const hidden = button.getAttribute("aria-expanded") === "true";
+        const hidden_elements = document.querySelectorAll(".container-wrapper, footer");
+        for (const element of hidden_elements) {
+          element.setAttribute("aria-hidden", hidden.toString());
+        }
+      }
+    }
+  </script>
+
+  <!-- Toggles whether the dropdown from a navbar link is displayed on mobile. -->
+  <script type="text/javascript">
+    function getIntStyleProperty(element, property) {
+      const style = window.getComputedStyle(element);
+      return parseInt(style.getPropertyValue(property), 10);
+    }
+
+    function getDropdownHeight(dropdown) {
+      const dropdown_list = dropdown.querySelector("ul");
+      const dropdown_list_items = dropdown_list.querySelectorAll("li");
+      const dropdown_list_gap = getIntStyleProperty(dropdown_list, "gap");
+
+      let dropdown_list_height = -dropdown_list_gap;
+      for (const list_item of dropdown_list_items) {
+        dropdown_list_height += getIntStyleProperty(list_item, "height");
+        dropdown_list_height += dropdown_list_gap
+      }
+      return dropdown_list_height + "px";
+    }
+
+    function toggleMobileNavbarLink(button) {
+      const item = button.parentElement;
+      const dropdown = item.querySelector(".mobile.navbar-dropdown");
+      if (dropdown !== null) {
+        const hidden = button.getAttribute("aria-expanded") === "true";
+        dropdown.style.height = hidden ? "0px" : getDropdownHeight(dropdown);
+      }
+      item.classList.toggle("open");
+      toggleAriaAttributes(button);
+    }
+  </script>
+
+  <!-- Collapses the most specific menu when ESC is pressed. -->
+  <script type="text/javascript">
+    $(document).keyup(function(event) {
+      // The keycode of ESC is 27.
+      if (event.keyCode == 27) {
+        // Collapse an open dropdown from a navbar link on mobile.
+        const mobileSubMenuButtons = document.querySelectorAll(".mobile.navbar-link button");
+        for (const button of mobileSubMenuButtons) {
+          if (button.parentElement.classList.contains("open")) {
+            toggleMobileNavbarLink(button);
+            return;
+          }
+        }
+
+        // Collapse the navbar dropdown on mobile.
+        const mobileMenuButton = document.querySelector(".mobile.navbar-menu button");
+        if (mobileMenuButton !== null && mobileMenuButton.classList.contains("open")) {
+          toggleMobileNavbar(mobileMenuButton);
+          return;
+        }
+
+        // Close an open navbar dropdown on desktop.
+        const navbar_left_links = document.querySelectorAll(".navbar-left-link");
+        for (const link of navbar_left_links.values()) {
+          const button = link.querySelector("button");
+          if (link.classList.contains("open")) {
+            link.classList.remove("open");
+            setAriaAttributes(button, true);
+            return;
+          }
+        }
+      }
+    });
+  </script>
+
+  <!-- Trap focus in the navbar dropdown on mobile if it is expanded. -->
+  <script type="text/javascript">
+    // Using ``keyup`` would cause the last element to be quickly "skipped".
+    $(document).keydown(function(event) {
+      // The keycode of TAB is 9.
+      if (event.keyCode == 9) {
+        // Do nothing if the navbar dropdown is collapsed on mobile.
+        const mobileMenuButton = document.querySelector(".mobile.navbar-menu button");
+        if (mobileMenuButton === null || !mobileMenuButton.classList.contains("open")) {
+          return;
+        }
+
+        const links = document.querySelectorAll(".mobile.navbar-links a");
+        const bot = links[links.length - 1];
+        const top = document.querySelector(".mobile.navbar-menu button");
+
+        // Do nothing if there is a missing focus element.
+        if (top === null || bot === undefined) {
+          return;
+        }
+
+        // Wrap the focus to the top or bottom element if needed. The direction
+        // of the wrapping depends on whether TAB or SHIFT + TAB is pressed.
+        if (!event.shiftKey && document.activeElement === bot) {
+          top.focus();
+          event.preventDefault();
+        } else if (event.shiftKey && document.activeElement === top) {
+          bot.focus();
+          event.preventDefault();
+        }
+      }
+    });
+  </script>
+
+  <script type="text/javascript">
+    jQuery.noConflict(true);
+  </script>
+
+  <hr class="p-0 m-0">
+
+<footer>
+  <div class="footer-top">
+    <!-- About -->
+    <div class="footer-about">
+      <a class="footer-icon" href="https://xanadu.ai">
+        <img src="_static/xanadu_logo.svg" alt="Xanadu" height="40px" width="40px">
+      </a>
+      <p class="footer-description">
+                Located in the heart of downtown Toronto, we've brought together
+        exceptional minds from around the world to build quantum computers
+        that are useful and available to people everywhere.
+        
+      </p>
+    </div>
+
+    <div class="footer-social-icons-and-taglines">
+      <!-- Social Icons -->
+      <div class="footer-social-icons">
+        
+          <a href="https://twitter.com/xanaduai" aria-label="Twitter">
+            <i class="bx bxl-twitter"></i>
+          </a>
+        
+          <a href="https://github.com/XanaduAI" aria-label="GitHub">
+            <i class="bx bxl-github"></i>
+          </a>
+        
+          <a href="https://linkedin.com/company/xanaduai/" aria-label="LinkedIn">
+            <i class="bx bxl-linkedin"></i>
+          </a>
+        
+          <a href="https://discuss.pennylane.ai" aria-label="Discourse">
+            <i class="bx bxl-discourse"></i>
+          </a>
+        
+          <a href="https://u.strawberryfields.ai/slack" aria-label="Slack">
+            <i class="bx bxl-slack"></i>
+          </a>
+        
+          <a href="https://xanadu.ai/blog" aria-label="RSS">
+            <i class="bx bx-rss"></i>
+          </a>
+        
+      </div>
+
+      <!-- Taglines -->
+      
+      <a class="footer-tagline" href="https://xanadu.us17.list-manage.com/subscribe?u=725f07a1d1a4337416c3129fd&id=294b062630">
+        Stay updated with our newsletter
+      </a>
+      
+    </div>
+
+    <!-- Links -->
+    <div class="footer-links">
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">PennyLane</p>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/qml">Learn</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/qml/demonstrations.html">Demonstrations</a>
+        
+          <a class="footer-link-item" href="https://docs.pennylane.ai/">Documentation</a>
+        
+          <a class="footer-link-item" href="https://github.com/PennyLaneAI/pennylane">GitHub</a>
+        
+          <a class="footer-link-item" href="https://twitter.com/pennylaneai">Twitter</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/blog">Blog</a>
+        
+      </div>
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">Strawberry Fields</p>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/photonics">Photonics</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/photonics/demonstrations.html">Demonstrations</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.readthedocs.io/">Documentation</a>
+        
+          <a class="footer-link-item" href="https://github.com/XanaduAI/strawberryfields">GitHub</a>
+        
+      </div>
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">Xanadu</p>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/about/">About</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/photonics">Hardware</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/careers/">Careers</a>
+        
+          <a class="footer-link-item" href="https://discuss.pennylane.ai/">Forum</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/blog">Blog</a>
+        
+      </div>
+      
+    </div>
+  </div>
+
+  <hr class="footer-separator">
+
+  <div class="footer-bottom">
+    <!-- Copyright -->
+    <div class="footer-copyrights">
+        <p class="footer-copyright-item">
+            Copyright &copy; 2025, Contextual Dynamics Lab
+        </p>
+      
+        <p class="footer-copyright-item">
+          AI Pipeline Orchestration Framework
+        </p>
+      
+    </div>
+
+    <!-- Policies -->
+    <div class="footer-policies">
+      
+    </div>
+  </div>
+
+</footer>
+  </body>
+</html>

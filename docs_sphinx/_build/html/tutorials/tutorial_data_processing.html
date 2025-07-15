@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+  <meta property="og:title" content="Data Processing Pipelines &#8212; PennyLane">
+  <meta property="og:url" content="None">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Serif">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500&display=swap">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+  <!-- Box Icons -->
+  <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+  <!-- Material Design Bootstrap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.5.14/css/mdb.min.css">
+  <!-- Overlay Scrollbars -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.11.4/styles/overlayscrollbars.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/tomorrow-night.min.css">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+       "HTML-CSS": { scale: 90, linebreaks: { automatic: true } },
+       TeX: {
+         Macros: {
+           pr : ['|\#1\\rangle\\langle\#1|',1],
+           ket: ['\\left| \#1\\right\\rangle',1],
+           bra: ['\\left\\langle \#1\\right|',1],
+           xket: ['\\left| \#1\\right\\rangle_x',1],
+           xbra: ['\\left\\langle \#1\\right|_x',1],
+           braket: ['\\langle \#1 \\rangle',1],
+           braketD: ['\\langle \#1 \\mid \#2 \\rangle',2],
+           braketT: ['\\langle \#1 \\mid \#2 \\mid \#3 \\rangle',3],
+           ketbra: ['| #1 \\rangle \\langle #2 |',2],
+           hc: ['\\text{h.c.}',0],
+           cc: ['\\text{c.c.}',0],
+           h: ['\\hat',0],
+           nn: ['\\nonumber',0],
+           di: ['\\frac{d}{d \#1}',1],
+           uu: ['\\mathcal{U}',0],
+           inn: ['\\text{in}',0],
+           out: ['\\text{out}',0],
+           vac: ['\\text{vac}',0],
+           I: ['\\hat{\\mathbf{1}}',0],
+           x: ['\\hat{x}',0],
+           p: ['\\hat{p}',0],
+           a: ['\\hat{a}',0],
+           ad: ['\\hat{a}^\\dagger',0],
+           n: ['\\hat{n}',0],
+           nbar: ['\\overline{n}',0],
+           sech: ['\\mathrm{sech~}',0],
+           tanh: ['\\mathrm{tanh~}',0],
+           re: ['\\text{Re}',0],
+           im: ['\\text{Im}',0],
+           tr: ['\\mathrm{Tr} #1',1],
+           sign: ['\\text{sign}',0],
+           overlr: ['\\overset\\leftrightarrow{\#1}',1],
+           overl: ['\\overset\leftarrow{\#1}',1],
+           overr: ['\\overset\rightarrow{\#1}',1],
+           avg: ['\\left< \#1 \\right>',1],
+           slashed: ['\\cancel{\#1}',1],
+           bold: ['\\boldsymbol{\#1}',1],
+           d: ['\\mathrm d',0],
+           expect: ["\\langle #1 \\rangle",1],
+           pde: ["\\frac{\\partial}{\\partial \#1}",1],
+           R: ["\\mathbb{R}",0],
+           C: ["\\mathbb{C}",0],
+           Ad: ["\\text{Ad}",0],
+           Var: ["\\text{Var}",0],
+           bx: ["\\mathbf{x}", 0],
+           bm: ["\\boldsymbol{\#1}",1],
+           haf: ["\\mathrm{haf}",0],
+           lhaf: ["\\mathrm{lhaf}",0]
+         }
+       }
+     });
+     </script>
+
+  <!-- Google Analytics -->
+  
+    <title>Data Processing Pipelines &#8212; Orchestrator 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b20cc3f5" />
+    <link rel="stylesheet" type="text/css" href="../_static/xanadu.css?v=95dfc2d3" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <script src="../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="API Reference" href="../api/index.html" />
+    <link rel="prev" title="Web Research Automation" href="tutorial_web_research.html" /> 
+  </head><body><nav>
+  <!-- Logo and Title -->
+
+  <a class="navbar-logo-title-container" href="https://github.com/contextualdynamics/orchestrator" aria-label="home">
+    
+    
+      <img class="navbar-logo-title-logo" src=" ../_static/xanadu_logo.svg" alt="Orchestrator" height="24px"></img>
+      <div class="navbar-logo-title-title">Orchestrator</div>
+    
+  </a>
+
+  <!-- Desktop Links -->
+
+  
+
+  
+
+  <div class="navbar-links desktop">
+    <ul class="navbar-left-links desktop">
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="../getting_started" >
+          <span>Getting Started</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="index" >
+          <span>Tutorials</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="../api/index" >
+          <span>API</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+        
+    <li class="navbar-left-link desktop">
+      
+        <a href="../examples/index" >
+          <span>Examples</span>
+          
+        </a>
+        
+      
+    </li>
+  
+      
+    </ul>
+    <ul class="navbar-right-links desktop">
+      
+      
+        
+    <li class="navbar-right-link desktop">
+      
+        <a href="https://github.com/contextualdynamics/orchestrator" target="_blank" aria-label="GitHub">
+          <i class="fab fa-github"></i>
+        </a>
+      
+    </li>
+  
+      
+    </ul>
+  </div>
+
+  <!-- Mobile Links -->
+
+  
+
+  
+
+  <div class="navbar-menu mobile">
+    <button onclick="toggleMobileNavbar(this)" aria-label="open menu" aria-expanded="false">
+      <i class="bx bx-menu"></i>
+      <i class="bx bx-x"></i>
+    </button>
+  </div>
+</nav>
+
+<div class="navbar-links mobile">
+  <ul>
+    
+
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="../getting_started" >
+            <span>Getting Started</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="index" >
+            <span>Tutorials</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="../api/index" >
+            <span>API</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="../examples/index" >
+            <span>Examples</span>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+
+    
+      
+    <li class="navbar-link mobile">
+      
+        <button class="navbar-link-heading mobile">
+          <a href="https://github.com/contextualdynamics/orchestrator"  target="_blank" >
+            <span>GitHub</span>
+            
+              <i class="bx bx-link-external"></i>
+            
+          </a>
+        </button>
+      
+      <div class="navbar-dropdown mobile">
+        <ul>
+          
+          
+        </ul>
+      </div>
+    </li>
+  
+    
+
+    
+  </ul>
+</div>
+
+
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../api/index.html" title="API Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tutorial_web_research.html" title="Web Research Automation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Orchestrator 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Tutorials</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Data Processing Pipelines</a></li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+        <div class="toc-heading mobile">
+          <button onclick="toggleMobileToC(this)">
+            <span>Table of contents</span>
+            <i class="bx bx-chevron-down"></i>
+          </button>
+        </div>
+  <div id="left-column" class="nano css-transitions-only-after-page-load">
+    <div class="sphinxsidebar nano-content"><div class="sidebar-block search-block">
+  <div id="main-search">
+    <form action="../search.html" method="GET" role="form">
+      <div class="md-input">
+        <input name="q" type="text" required>
+        <span class="bar"></span>
+        <label>Search</label>
+      </div>
+      <input type="hidden" name="check_keywords" value="yes"/>
+      <input type="hidden" name="area" value="default"/>
+    </form>
+  </div>
+</div>
+<div class="sidebar-block">
+  <div class="sidebar-toc">
+    
+    <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Key Concepts</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a></li>
+</ul>
+
+  </div>
+</div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="tutorial_web_research.html"
+                          title="previous chapter">Web Research Automation</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="../api/index.html"
+                          title="next chapter">API Reference</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/tutorials/tutorial_data_processing.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+      
+    </div>
+  </div>
+        <div id="content">
+          <div id="right-column">
+            
+            <div role="navigation" aria-label="breadcrumbs navigation">
+              <ol class="breadcrumb">
+                <li><a href="../index.html">Docs</a></li>
+                
+                  <li><a href="index.html">Tutorials</a></li>
+                
+                <li>Data Processing Pipelines</li>
+              </ol>
+            </div>
+            
+
+            <div class="document clearer body">
+              
+  <section id="data-processing-pipelines">
+<h1>Data Processing Pipelines<a class="headerlink" href="#data-processing-pipelines" title="Link to this heading">¶</a></h1>
+<p>This tutorial teaches you to build robust data processing pipelines that can handle ETL (Extract, Transform, Load) operations, data validation, and complex transformations.</p>
+<section id="what-you-ll-build">
+<h2>What You’ll Build<a class="headerlink" href="#what-you-ll-build" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Basic ETL Pipeline</strong> - Extract, transform, and load data</p></li>
+<li><p><strong>Multi-Source Data Integration</strong> - Combine data from various sources</p></li>
+<li><p><strong>Data Quality Assessment</strong> - Validate and clean data automatically</p></li>
+<li><p><strong>Real-Time Data Processing</strong> - Handle streaming data scenarios</p></li>
+<li><p><strong>Data Pipeline Orchestration</strong> - Coordinate complex data workflows</p></li>
+</ol>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Completed <span class="xref std std-doc">tutorial_basics</span></p></li>
+<li><p>Basic understanding of data formats (JSON, CSV, SQL)</p></li>
+<li><p>Familiarity with data concepts</p></li>
+</ul>
+</section>
+<section id="tutorial-1-basic-etl-pipeline">
+<h2>Tutorial 1: Basic ETL Pipeline<a class="headerlink" href="#tutorial-1-basic-etl-pipeline" title="Link to this heading">¶</a></h2>
+<p>Let’s start with a fundamental ETL pipeline that processes sales data.</p>
+<section id="step-1-create-the-etl-pipeline">
+<h3>Step 1: Create the ETL Pipeline<a class="headerlink" href="#step-1-create-the-etl-pipeline" title="Link to this heading">¶</a></h3>
+<p>Create <code class="docutils literal notranslate"><span class="pre">sales_etl.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sales-etl-pipeline</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Extract, transform, and load sales data</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">data_source</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Path</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">source</span><span class="nv"> </span><span class="s">data</span><span class="nv"> </span><span class="s">file&quot;</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="nt">output_format</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Output</span><span class="nv"> </span><span class="s">format&quot;</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span>
+<span class="w">    </span><span class="nt">validation</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;csv&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;json&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;excel&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">date_range</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Date</span><span class="nv"> </span><span class="s">range</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">filtering&quot;</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2024-01-01&quot;</span>
+<span class="w">      </span><span class="nt">end</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2024-12-31&quot;</span>
+
+<span class="nt">outputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">processed_data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;processed/sales_{{</span><span class="nv"> </span><span class="s">execution.date</span><span class="nv"> </span><span class="s">}}.{{</span><span class="nv"> </span><span class="s">inputs.output_format</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="nt">quality_report</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;reports/quality_{{</span><span class="nv"> </span><span class="s">execution.date</span><span class="nv"> </span><span class="s">}}.json&quot;</span>
+
+<span class="w">  </span><span class="nt">summary_stats</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;reports/summary_{{</span><span class="nv"> </span><span class="s">execution.date</span><span class="nv"> </span><span class="s">}}.md&quot;</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Extract: Load raw data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_data</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.data_source</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">error_handling</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">retry</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">max_attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">fallback</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">        </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Generate</span><span class="nv"> </span><span class="s">sample</span><span class="nv"> </span><span class="s">sales</span><span class="nv"> </span><span class="s">data</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">testing&quot;</span>
+
+<span class="w">  </span><span class="c1"># Transform: Clean and process data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clean_data</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.extract_data&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Standardize column names</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;rename_columns&quot;</span>
+<span class="w">          </span><span class="nt">mapping</span><span class="p">:</span>
+<span class="w">            </span><span class="s">&quot;Sale</span><span class="nv"> </span><span class="s">Date&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;sale_date&quot;</span>
+<span class="w">            </span><span class="s">&quot;Customer</span><span class="nv"> </span><span class="s">Name&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;customer_name&quot;</span>
+<span class="w">            </span><span class="s">&quot;Product</span><span class="nv"> </span><span class="s">ID&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;product_id&quot;</span>
+<span class="w">            </span><span class="s">&quot;Sale</span><span class="nv"> </span><span class="s">Amount&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">            </span><span class="s">&quot;Quantity&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;quantity&quot;</span>
+<span class="w">            </span><span class="s">&quot;Sales</span><span class="nv"> </span><span class="s">Rep&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;sales_rep&quot;</span>
+
+<span class="w">        </span><span class="c1"># Convert data types</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;convert_types&quot;</span>
+<span class="w">          </span><span class="nt">conversions</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">sale_date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;datetime&quot;</span>
+<span class="w">            </span><span class="nt">amount</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+<span class="w">            </span><span class="nt">quantity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;integer&quot;</span>
+<span class="w">            </span><span class="nt">product_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+
+<span class="w">        </span><span class="c1"># Remove duplicates</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;remove_duplicates&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;product_id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;sale_date&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;customer_name&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">        </span><span class="c1"># Handle missing values</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fill_missing&quot;</span>
+<span class="w">          </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;forward&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;sales_rep&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">        </span><span class="c1"># Add calculated fields</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;total_value&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">quantity&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quarter&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quarter(sale_date)&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;year&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;year(sale_date)&quot;</span>
+
+<span class="w">  </span><span class="c1"># Filter data by date range</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter_data</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.clean_data&quot;</span>
+<span class="w">      </span><span class="nt">conditions</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sale_date&quot;</span>
+<span class="w">          </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gte&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.date_range.start</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sale_date&quot;</span>
+<span class="w">          </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lte&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.date_range.end</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">          </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gt&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+
+<span class="w">  </span><span class="c1"># Data quality validation</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_quality</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_quality</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.filter_data&quot;</span>
+<span class="w">      </span><span class="nt">checks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;completeness&quot;</span>
+<span class="w">          </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.95</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;product_id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;amount&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;sale_date&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;uniqueness&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;product_id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;sale_date&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;customer_name&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;consistency&quot;</span>
+<span class="w">          </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;total_value</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">amount</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">quantity&quot;</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;amount</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;quantity</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">0&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;accuracy&quot;</span>
+<span class="w">          </span><span class="nt">validations</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">product_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;regex:^PROD-[0-9]{6}$&quot;</span>
+<span class="w">            </span><span class="nt">amount</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;range:1,50000&quot;</span>
+<span class="w">            </span><span class="nt">quantity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;range:1,1000&quot;</span>
+
+<span class="w">  </span><span class="c1"># Generate summary statistics</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculate_summary</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aggregate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.filter_data&quot;</span>
+<span class="w">      </span><span class="nt">group_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;year&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;quarter&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">aggregations</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">total_sales</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;total_value&quot;</span>
+<span class="w">          </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sum&quot;</span>
+<span class="w">        </span><span class="nt">avg_sale</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;amount&quot;</span>
+<span class="w">          </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mean&quot;</span>
+<span class="w">        </span><span class="nt">num_transactions</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span>
+<span class="w">          </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;count&quot;</span>
+<span class="w">        </span><span class="nt">unique_customers</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;customer_name&quot;</span>
+<span class="w">          </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;nunique&quot;</span>
+<span class="w">        </span><span class="nt">top_product</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;product_id&quot;</span>
+<span class="w">          </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mode&quot;</span>
+
+<span class="w">  </span><span class="c1"># Load: Save processed data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_processed_data</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">convert_format</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.filter_data&quot;</span>
+<span class="w">      </span><span class="nt">to_format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.output_format</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">output_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.processed_data</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">compression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;snappy&quot;</span>
+<span class="w">        </span><span class="nt">index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">  </span><span class="c1"># Save quality report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_quality_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.quality_report</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.validate_quality</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">json</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="c1"># Generate readable summary</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create_summary_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">Create a summary report for sales data processing:</span>
+
+<span class="w">        </span><span class="no">Quality Results: {{ results.validate_quality | json }}</span>
+<span class="w">        </span><span class="no">Summary Statistics: {{ results.calculate_summary | json }}</span>
+
+<span class="w">        </span><span class="no">Include:</span>
+<span class="w">        </span><span class="no">- Data quality assessment</span>
+<span class="w">        </span><span class="no">- Key metrics and trends</span>
+<span class="w">        </span><span class="no">- Any issues or recommendations</span>
+<span class="w">        </span><span class="no">- Processing summary</span>
+
+<span class="w">      </span><span class="nt">style</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;professional&quot;</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;markdown&quot;</span>
+
+<span class="w">  </span><span class="c1"># Save summary report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_summary</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.summary_stats</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.create_summary_report&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-run-the-etl-pipeline">
+<h3>Step 2: Run the ETL Pipeline<a class="headerlink" href="#step-2-run-the-etl-pipeline" title="Link to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">orchestrator</span> <span class="k">as</span> <span class="nn">orc</span>
+
+<span class="c1"># Initialize</span>
+<span class="n">orc</span><span class="o">.</span><span class="n">init_models</span><span class="p">()</span>
+
+<span class="c1"># Compile pipeline</span>
+<span class="n">etl_pipeline</span> <span class="o">=</span> <span class="n">orc</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;sales_etl.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Process sales data</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">etl_pipeline</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="n">data_source</span><span class="o">=</span><span class="s2">&quot;data/raw/sales_2024.csv&quot;</span><span class="p">,</span>
+    <span class="n">output_format</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">,</span>
+    <span class="n">date_range</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="s2">&quot;2024-06-30&quot;</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ETL completed: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="tutorial-2-multi-source-data-integration">
+<h2>Tutorial 2: Multi-Source Data Integration<a class="headerlink" href="#tutorial-2-multi-source-data-integration" title="Link to this heading">¶</a></h2>
+<p>Now let’s build a pipeline that integrates data from multiple sources.</p>
+<section id="step-1-multi-source-integration-pipeline">
+<h3>Step 1: Multi-Source Integration Pipeline<a class="headerlink" href="#step-1-multi-source-integration-pipeline" title="Link to this heading">¶</a></h3>
+<p>Create <code class="docutils literal notranslate"><span class="pre">data_integration.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">multi-source-integration</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Integrate data from multiple sources with validation</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data</span><span class="nv"> </span><span class="s">source</span><span class="nv"> </span><span class="s">configurations&quot;</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="c1"># Example:</span>
+<span class="w">    </span><span class="c1"># database:</span>
+<span class="w">    </span><span class="c1">#   type: &quot;postgresql&quot;</span>
+<span class="w">    </span><span class="c1">#   connection: &quot;postgresql://...&quot;</span>
+<span class="w">    </span><span class="c1">#   query: &quot;SELECT * FROM sales&quot;</span>
+<span class="w">    </span><span class="c1"># api:</span>
+<span class="w">    </span><span class="c1">#   type: &quot;rest&quot;</span>
+<span class="w">    </span><span class="c1">#   url: &quot;https://api.company.com/data&quot;</span>
+<span class="w">    </span><span class="c1">#   headers: {...}</span>
+<span class="w">    </span><span class="c1"># files:</span>
+<span class="w">    </span><span class="c1">#   type: &quot;file&quot;</span>
+<span class="w">    </span><span class="c1">#   paths: [&quot;data1.csv&quot;, &quot;data2.json&quot;]</span>
+
+<span class="w">  </span><span class="nt">merge_strategy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;How</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">merge</span><span class="nv"> </span><span class="s">data</span><span class="nv"> </span><span class="s">sources&quot;</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;outer&quot;</span>
+<span class="w">    </span><span class="nt">validation</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;inner&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;outer&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;left&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;right&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">deduplication_fields</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Fields</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">use</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">deduplication&quot;</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;timestamp&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="nt">outputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">integrated_data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;integrated/master_data_{{</span><span class="nv"> </span><span class="s">execution.timestamp</span><span class="nv"> </span><span class="s">}}.parquet&quot;</span>
+
+<span class="w">  </span><span class="nt">integration_report</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;reports/integration_{{</span><span class="nv"> </span><span class="s">execution.timestamp</span><span class="nv"> </span><span class="s">}}.md&quot;</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Extract from database sources</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_database</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;database&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">inputs.sources&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">query_database</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">connection</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.sources.database.connection</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.sources.database.query</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">fetch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+<span class="w">    </span><span class="nt">error_handling</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">continue_on_error</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Extract from API sources</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_api</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;api&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">inputs.sources&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">call_api</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.sources.api.url</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GET&quot;</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.sources.api.headers</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">default({})</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">params</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.sources.api.params</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">default({})</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">error_handling</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">retry</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">max_attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">        </span><span class="nt">backoff</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;exponential&quot;</span>
+
+<span class="w">  </span><span class="c1"># Extract from file sources</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_files</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;files&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">inputs.sources&quot;</span>
+<span class="w">    </span><span class="nt">for_each</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.sources.files.paths</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file_path</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">file_path</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Standardize data schemas</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">standardize_database</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;results.extract_database</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">defined&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.extract_database&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;source&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;database&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;standardize_schema&quot;</span>
+<span class="w">          </span><span class="nt">target_schema</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+<span class="w">            </span><span class="nt">timestamp</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;datetime&quot;</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+<span class="w">            </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">standardize_api</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;results.extract_api</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">defined&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.extract_api.data&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;source&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;api&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;flatten_nested&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;metadata&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;attributes&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;standardize_schema&quot;</span>
+<span class="w">          </span><span class="nt">target_schema</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+<span class="w">            </span><span class="nt">timestamp</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;datetime&quot;</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+<span class="w">            </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">standardize_files</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;results.extract_files</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">defined&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.extract_files&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;source&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;files&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;combine_files&quot;</span>
+<span class="w">          </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;union&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;standardize_schema&quot;</span>
+<span class="w">          </span><span class="nt">target_schema</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+<span class="w">            </span><span class="nt">timestamp</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;datetime&quot;</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+<span class="w">            </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+
+<span class="w">  </span><span class="c1"># Merge all data sources</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge_sources</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">datasets</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.standardize_database&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.standardize_api&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.standardize_files&quot;</span>
+<span class="w">      </span><span class="nt">how</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.merge_strategy</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">suffixes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;_db&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;_api&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;_file&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="c1"># Remove duplicates</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deduplicate</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.merge_sources&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;remove_duplicates&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.deduplication_fields</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">keep</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;last&quot;</span><span class="w">  </span><span class="c1"># Keep most recent</span>
+
+<span class="w">  </span><span class="c1"># Data quality assessment</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">assess_integration_quality</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_quality</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.deduplicate&quot;</span>
+<span class="w">      </span><span class="nt">checks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;completeness&quot;</span>
+<span class="w">          </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.90</span>
+<span class="w">          </span><span class="nt">critical_columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;timestamp&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;consistency&quot;</span>
+<span class="w">          </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;value_db</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">value_api</span><span class="nv"> </span><span class="s">OR</span><span class="nv"> </span><span class="s">value_db</span><span class="nv"> </span><span class="s">IS</span><span class="nv"> </span><span class="s">NULL</span><span class="nv"> </span><span class="s">OR</span><span class="nv"> </span><span class="s">value_api</span><span class="nv"> </span><span class="s">IS</span><span class="nv"> </span><span class="s">NULL&quot;</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;timestamp</span><span class="nv"> </span><span class="s">&gt;=</span><span class="nv"> </span><span class="s">&#39;2020-01-01&#39;&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;accuracy&quot;</span>
+<span class="w">          </span><span class="nt">validations</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;not_null&quot;</span>
+<span class="w">            </span><span class="nt">timestamp</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;datetime_format&quot;</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;numeric_range:-1000000,1000000&quot;</span>
+
+<span class="w">  </span><span class="c1"># Resolve conflicts between sources</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">resolve_conflicts</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.deduplicate&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;resolve_conflicts&quot;</span>
+<span class="w">          </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;priority&quot;</span>
+<span class="w">          </span><span class="nt">priority_order</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;database&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;api&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;files&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">conflict_columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;value&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;category&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;confidence_score&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;calculate_confidence(source_count,</span><span class="nv"> </span><span class="s">data_age,</span><span class="nv"> </span><span class="s">validation_status)&quot;</span>
+
+<span class="w">  </span><span class="c1"># Create final integrated dataset</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">finalize_integration</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.resolve_conflicts&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;select_columns&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;timestamp&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;value&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;category&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;source&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;confidence_score&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sort&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;timestamp&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">ascending</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">false</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="c1"># Save integrated data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_integrated</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">convert_format</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.finalize_integration&quot;</span>
+<span class="w">      </span><span class="nt">to_format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span>
+<span class="w">      </span><span class="nt">output_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.integrated_data</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">compression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;snappy&quot;</span>
+<span class="w">        </span><span class="nt">partition_cols</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;category&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="c1"># Generate integration report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create_integration_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">Create an integration report for multi-source data merge:</span>
+
+<span class="w">        </span><span class="no">Sources processed:</span>
+<span class="w">        </span><span class="no">{% for source in inputs.sources.keys() %}</span>
+<span class="w">        </span><span class="no">- {{ source }}</span>
+<span class="w">        </span><span class="no">{% endfor %}</span>
+
+<span class="w">        </span><span class="no">Quality assessment: {{ results.assess_integration_quality | json }}</span>
+<span class="w">        </span><span class="no">Final record count: {{ results.finalize_integration | length }}</span>
+
+<span class="w">        </span><span class="no">Include:</span>
+<span class="w">        </span><span class="no">- Source summary and statistics</span>
+<span class="w">        </span><span class="no">- Data quality metrics</span>
+<span class="w">        </span><span class="no">- Conflict resolution summary</span>
+<span class="w">        </span><span class="no">- Recommendations for data improvement</span>
+
+<span class="w">      </span><span class="nt">style</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;technical&quot;</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;markdown&quot;</span>
+
+<span class="w">  </span><span class="c1"># Save integration report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.integration_report</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.create_integration_report&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-run-multi-source-integration">
+<h3>Step 2: Run Multi-Source Integration<a class="headerlink" href="#step-2-run-multi-source-integration" title="Link to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">orchestrator</span> <span class="k">as</span> <span class="nn">orc</span>
+
+<span class="c1"># Initialize</span>
+<span class="n">orc</span><span class="o">.</span><span class="n">init_models</span><span class="p">()</span>
+
+<span class="c1"># Compile integration pipeline</span>
+<span class="n">integration</span> <span class="o">=</span> <span class="n">orc</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;data_integration.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Integrate data from multiple sources</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="n">sources</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;database&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;connection&quot;</span><span class="p">:</span> <span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;SELECT * FROM transactions WHERE date &gt;= &#39;2024-01-01&#39;&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;api&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;rest&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://api.external.com/v1/data&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="s2">&quot;Bearer token123&quot;</span><span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;file&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;paths&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;data/file1.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;data/file2.json&quot;</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="n">merge_strategy</span><span class="o">=</span><span class="s2">&quot;outer&quot;</span><span class="p">,</span>
+    <span class="n">deduplication_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;transaction_id&quot;</span><span class="p">,</span> <span class="s2">&quot;timestamp&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Integration completed: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="tutorial-3-data-quality-assessment-pipeline">
+<h2>Tutorial 3: Data Quality Assessment Pipeline<a class="headerlink" href="#tutorial-3-data-quality-assessment-pipeline" title="Link to this heading">¶</a></h2>
+<p>Create a comprehensive data quality assessment system.</p>
+<section id="step-1-data-quality-pipeline">
+<h3>Step 1: Data Quality Pipeline<a class="headerlink" href="#step-1-data-quality-pipeline" title="Link to this heading">¶</a></h3>
+<p>Create <code class="docutils literal notranslate"><span class="pre">data_quality.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data-quality-assessment</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Comprehensive data quality evaluation and reporting</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dataset_path</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="nt">quality_rules</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Custom</span><span class="nv"> </span><span class="s">quality</span><span class="nv"> </span><span class="s">rules&quot;</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">completeness_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.95</span>
+<span class="w">      </span><span class="nt">uniqueness_fields</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">date_range_field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;created_date&quot;</span>
+<span class="w">      </span><span class="nt">numeric_fields</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;amount&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;quantity&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="nt">remediation_mode</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;How</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">handle</span><span class="nv"> </span><span class="s">quality</span><span class="nv"> </span><span class="s">issues&quot;</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;report&quot;</span>
+<span class="w">    </span><span class="nt">validation</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;report&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;fix&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;quarantine&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="nt">outputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quality_report</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quality/report_{{</span><span class="nv"> </span><span class="s">execution.timestamp</span><span class="nv"> </span><span class="s">}}.html&quot;</span>
+
+<span class="w">  </span><span class="nt">cleaned_data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quality/cleaned_{{</span><span class="nv"> </span><span class="s">execution.timestamp</span><span class="nv"> </span><span class="s">}}.parquet&quot;</span>
+
+<span class="w">  </span><span class="nt">issues_log</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quality/issues_{{</span><span class="nv"> </span><span class="s">execution.timestamp</span><span class="nv"> </span><span class="s">}}.json&quot;</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Load the dataset</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">load_dataset</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.dataset_path</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Basic data profiling</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">profile_data</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyze_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_dataset&quot;</span>
+<span class="w">      </span><span class="nt">analysis_types</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">schema</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">statistics</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">distributions</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patterns</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">outliers</span>
+
+<span class="w">  </span><span class="c1"># Completeness assessment</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_completeness</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_quality</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_dataset&quot;</span>
+<span class="w">      </span><span class="nt">checks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;completeness&quot;</span>
+<span class="w">          </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.quality_rules.completeness_threshold</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">report_by_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;null_patterns&quot;</span>
+<span class="w">          </span><span class="nt">identify_patterns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Uniqueness validation</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_uniqueness</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_dataset&quot;</span>
+<span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;primary_key_uniqueness&quot;</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;uniqueness&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.quality_rules.uniqueness_fields</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;error&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;near_duplicates&quot;</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;similarity&quot;</span>
+<span class="w">          </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.9</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;name&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;email&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;warning&quot;</span>
+
+<span class="w">  </span><span class="c1"># Consistency validation</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_consistency</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_dataset&quot;</span>
+<span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;date_logic&quot;</span>
+<span class="w">          </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;start_date</span><span class="nv"> </span><span class="s">&lt;=</span><span class="nv"> </span><span class="s">end_date&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;error&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;numeric_consistency&quot;</span>
+<span class="w">          </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;total</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">sum(line_items)&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;error&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;referential_integrity&quot;</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;foreign_key&quot;</span>
+<span class="w">          </span><span class="nt">reference_table</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lookup_table&quot;</span>
+<span class="w">          </span><span class="nt">foreign_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;category_id&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;warning&quot;</span>
+
+<span class="w">  </span><span class="c1"># Accuracy validation</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_accuracy</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_dataset&quot;</span>
+<span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;email_format&quot;</span>
+<span class="w">          </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;email&quot;</span>
+<span class="w">          </span><span class="nt">validation</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;regex:^[\\w.-]+@[\\w.-]+\\.\\w+$&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;warning&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;phone_format&quot;</span>
+<span class="w">          </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;phone&quot;</span>
+<span class="w">          </span><span class="nt">validation</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;regex:^\\+?1?\\d{9,15}$&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;info&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;numeric_ranges&quot;</span>
+<span class="w">          </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.quality_rules.numeric_fields</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">validation</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;range:0,999999&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;error&quot;</span>
+
+<span class="w">  </span><span class="c1"># Timeliness assessment</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check_timeliness</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_dataset&quot;</span>
+<span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data_freshness&quot;</span>
+<span class="w">          </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.quality_rules.date_range_field</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;date_diff(value,</span><span class="nv"> </span><span class="s">today())</span><span class="nv"> </span><span class="s">&lt;=</span><span class="nv"> </span><span class="s">30&quot;</span>
+<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;warning&quot;</span>
+<span class="w">          </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Data</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">older</span><span class="nv"> </span><span class="s">than</span><span class="nv"> </span><span class="s">30</span><span class="nv"> </span><span class="s">days&quot;</span>
+
+<span class="w">  </span><span class="c1"># Outlier detection</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detect_outliers</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyze_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_dataset&quot;</span>
+<span class="w">      </span><span class="nt">analysis_types</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">outliers</span>
+<span class="w">      </span><span class="nt">methods</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">statistical</span><span class="w">  </span><span class="c1"># Z-score, IQR</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">isolation_forest</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local_outlier_factor</span>
+<span class="w">      </span><span class="nt">numeric_columns</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.quality_rules.numeric_fields</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="c1"># Compile quality issues</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compile_issues</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">completeness</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.check_completeness&quot;</span>
+<span class="w">        </span><span class="nt">uniqueness</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.check_uniqueness&quot;</span>
+<span class="w">        </span><span class="nt">consistency</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.check_consistency&quot;</span>
+<span class="w">        </span><span class="nt">accuracy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.check_accuracy&quot;</span>
+<span class="w">        </span><span class="nt">timeliness</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.check_timeliness&quot;</span>
+<span class="w">        </span><span class="nt">outliers</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.detect_outliers&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;consolidate_issues&quot;</span>
+<span class="w">          </span><span class="nt">prioritize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;categorize_severity&quot;</span>
+<span class="w">          </span><span class="nt">levels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;critical&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;major&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;minor&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;info&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="c1"># Data remediation (if requested)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remediate_data</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;inputs.remediation_mode</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">[&#39;fix&#39;,</span><span class="nv"> </span><span class="s">&#39;quarantine&#39;]&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.load_dataset&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Fix common issues</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;standardize_formats&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lowercase&quot;</span>
+<span class="w">            </span><span class="nt">phone</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;normalize_phone&quot;</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;title_case&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fill_missing&quot;</span>
+<span class="w">          </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;smart&quot;</span><span class="w">  </span><span class="c1"># Use ML-based imputation</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.quality_rules.numeric_fields</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;remove_outliers&quot;</span>
+<span class="w">          </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;iqr&quot;</span>
+<span class="w">          </span><span class="nt">columns</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.quality_rules.numeric_fields</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">&#39;quarantine&#39;</span><span class="nv"> </span><span class="s">if</span><span class="nv"> </span><span class="s">inputs.remediation_mode</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;quarantine&#39;</span><span class="nv"> </span><span class="s">else</span><span class="nv"> </span><span class="s">&#39;remove&#39;</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;deduplicate&quot;</span>
+<span class="w">          </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;keep_best&quot;</span><span class="w">  </span><span class="c1"># Keep record with highest completeness</span>
+
+<span class="w">  </span><span class="c1"># Generate comprehensive quality report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create_quality_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">Create a comprehensive data quality report:</span>
+
+<span class="w">        </span><span class="no">Dataset: {{ inputs.dataset_path }}</span>
+<span class="w">        </span><span class="no">Profile: {{ results.profile_data | json }}</span>
+<span class="w">        </span><span class="no">Issues: {{ results.compile_issues | json }}</span>
+
+<span class="w">        </span><span class="no">Include:</span>
+<span class="w">        </span><span class="no">1. Executive Summary</span>
+<span class="w">        </span><span class="no">2. Data Profile Overview</span>
+<span class="w">        </span><span class="no">3. Quality Metrics Dashboard</span>
+<span class="w">        </span><span class="no">4. Issue Analysis by Category</span>
+<span class="w">        </span><span class="no">5. Impact Assessment</span>
+<span class="w">        </span><span class="no">6. Remediation Recommendations</span>
+<span class="w">        </span><span class="no">7. Quality Score Calculation</span>
+
+<span class="w">        </span><span class="no">Format as HTML with charts and tables.</span>
+
+<span class="w">      </span><span class="nt">style</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;technical&quot;</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;html&quot;</span>
+<span class="w">      </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3000</span>
+
+<span class="w">  </span><span class="c1"># Save quality report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_quality_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.quality_report</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.create_quality_report&quot;</span>
+
+<span class="w">  </span><span class="c1"># Save cleaned data (if remediation performed)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_cleaned_data</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;inputs.remediation_mode</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">[&#39;fix&#39;,</span><span class="nv"> </span><span class="s">&#39;quarantine&#39;]&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.cleaned_data</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.remediate_data&quot;</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span>
+
+<span class="w">  </span><span class="c1"># Save issues log</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_issues_log</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.issues_log</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">results.compile_issues</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">json</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="tutorial-4-real-time-data-processing">
+<h2>Tutorial 4: Real-Time Data Processing<a class="headerlink" href="#tutorial-4-real-time-data-processing" title="Link to this heading">¶</a></h2>
+<p>Build a pipeline for handling streaming data scenarios.</p>
+<section id="step-1-real-time-processing-pipeline">
+<h3>Step 1: Real-Time Processing Pipeline<a class="headerlink" href="#step-1-real-time-processing-pipeline" title="Link to this heading">¶</a></h3>
+<p>Create <code class="docutils literal notranslate"><span class="pre">realtime_processing.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">realtime-data-processing</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Process streaming data with real-time analytics</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">stream_source</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Stream</span><span class="nv"> </span><span class="s">configuration&quot;</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="c1"># Example:</span>
+<span class="w">    </span><span class="c1"># type: &quot;kafka&quot;</span>
+<span class="w">    </span><span class="c1"># topic: &quot;events&quot;</span>
+<span class="w">    </span><span class="c1"># batch_size: 1000</span>
+<span class="w">    </span><span class="c1"># window_size: &quot;5m&quot;</span>
+
+<span class="w">  </span><span class="nt">processing_rules</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Processing</span><span class="nv"> </span><span class="s">rules</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">apply&quot;</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;filter&quot;</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;event_type</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">[&#39;purchase&#39;,</span><span class="nv"> </span><span class="s">&#39;click&#39;]&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;enrich&quot;</span>
+<span class="w">        </span><span class="nt">lookup_table</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user_profiles&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;aggregate&quot;</span>
+<span class="w">        </span><span class="nt">window</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5m&quot;</span>
+<span class="w">        </span><span class="nt">metrics</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;count&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;sum&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;avg&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="nt">outputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">processed_stream</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stream/processed_{{</span><span class="nv"> </span><span class="s">execution.date</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;alerts/stream_alerts_{{</span><span class="nv"> </span><span class="s">execution.timestamp</span><span class="nv"> </span><span class="s">}}.json&quot;</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Connect to stream source</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">connect_stream</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">connect_stream</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.stream_source</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.stream_source.batch_size</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">default(1000)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+
+<span class="w">  </span><span class="c1"># Process incoming batches</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">process_batches</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">process_stream_batch</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">stream</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.connect_stream&quot;</span>
+<span class="w">      </span><span class="nt">processing_rules</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.processing_rules</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">window_config</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.stream_source.window_size</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">default(&#39;5m&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tumbling&quot;</span><span class="w">  </span><span class="c1"># or &quot;sliding&quot;, &quot;session&quot;</span>
+
+<span class="w">  </span><span class="c1"># Real-time anomaly detection</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detect_anomalies</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detect_anomalies</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.process_batches&quot;</span>
+<span class="w">      </span><span class="nt">methods</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">statistical_control</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">machine_learning</span>
+<span class="w">      </span><span class="nt">thresholds</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">statistical</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span><span class="w">  </span><span class="c1"># standard deviations</span>
+<span class="w">        </span><span class="nt">ml_confidence</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.95</span>
+
+<span class="w">  </span><span class="c1"># Generate alerts</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_alerts</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;results.detect_anomalies.anomalies</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">length</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">Generate alerts for detected anomalies:</span>
+<span class="w">        </span><span class="no">{{ results.detect_anomalies.anomalies | json }}</span>
+
+<span class="w">        </span><span class="no">Include severity, description, and recommended actions.</span>
+
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;json&quot;</span>
+
+<span class="w">  </span><span class="c1"># Save processed data</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_processed</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_stream</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.process_batches&quot;</span>
+<span class="w">      </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.processed_stream</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;parquet&quot;</span>
+<span class="w">      </span><span class="nt">partition_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;date&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;hour&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="c1"># Save alerts</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">save_alerts</span>
+<span class="w">    </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;results.generate_alerts</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">defined&quot;</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">outputs.alerts</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.generate_alerts&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-examples">
+<h2>Advanced Examples<a class="headerlink" href="#advanced-examples" title="Link to this heading">¶</a></h2>
+<section id="example-1-customer-data-platform">
+<h3>Example 1: Customer Data Platform<a class="headerlink" href="#example-1-customer-data-platform" title="Link to this heading">¶</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer-data-platform</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unified customer data processing and analytics</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">customer_sources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="c1"># CRM, support tickets, web analytics, purchase history</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Extract from all customer touchpoints</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_crm</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">query_database</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">connection</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.customer_sources.crm.connection</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SELECT</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">FROM</span><span class="nv"> </span><span class="s">customers</span><span class="nv"> </span><span class="s">WHERE</span><span class="nv"> </span><span class="s">updated_at</span><span class="nv"> </span><span class="s">&gt;=</span><span class="nv"> </span><span class="s">CURRENT_DATE</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">INTERVAL</span><span class="nv"> </span><span class="s">&#39;1</span><span class="nv"> </span><span class="s">day&#39;&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_support</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">call_api</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.customer_sources.support.api_url</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bearer</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">env.SUPPORT_API_KEY</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_analytics</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read_file</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.customer_sources.analytics.export_path</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">parse</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Create unified customer profiles</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge_customer_data</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">datasets</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.extract_crm&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.extract_support&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;$results.extract_analytics&quot;</span>
+<span class="w">      </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;customer_id&quot;</span>
+<span class="w">      </span><span class="nt">how</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;outer&quot;</span>
+
+<span class="w">  </span><span class="c1"># Calculate customer metrics</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculate_metrics</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.merge_customer_data&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;customer_lifetime_value&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sum(purchase_amounts)</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">retention_probability&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;churn_risk_score&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;calculate_churn_risk(days_since_last_activity,</span><span class="nv"> </span><span class="s">support_tickets,</span><span class="nv"> </span><span class="s">engagement_score)&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;segment&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;classify_customer_segment(clv,</span><span class="nv"> </span><span class="s">engagement,</span><span class="nv"> </span><span class="s">recency)&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="example-2-financial-data-pipeline">
+<h3>Example 2: Financial Data Pipeline<a class="headerlink" href="#example-2-financial-data-pipeline" title="Link to this heading">¶</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">financial-data-pipeline</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Process financial transactions with compliance checks</span>
+
+<span class="nt">inputs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">transaction_sources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="nt">compliance_rules</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Extract transactions from multiple sources</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_transactions</span>
+<span class="w">    </span><span class="nt">for_each</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.transaction_sources</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">    </span><span class="nt">as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">source</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">extract_financial_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">source_config</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">source</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">date_range</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">execution.date</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">date_range(&#39;-1d&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="c1"># Compliance screening</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">screen_transactions</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validate_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.extract_transactions&quot;</span>
+<span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;aml_screening&quot;</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;anti_money_laundering&quot;</span>
+<span class="w">          </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.compliance_rules.aml_threshold</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sanctions_check&quot;</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sanctions_screening&quot;</span>
+<span class="w">          </span><span class="nt">watchlists</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.compliance_rules.watchlists</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pep_screening&quot;</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;politically_exposed_person&quot;</span>
+<span class="w">          </span><span class="nt">databases</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.compliance_rules.pep_databases</span><span class="nv"> </span><span class="s">}}&quot;</span>
+
+<span class="w">  </span><span class="c1"># Risk scoring</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculate_risk_scores</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">transform_data</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$results.extract_transactions&quot;</span>
+<span class="w">      </span><span class="nt">operations</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;risk_score&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;calculate_transaction_risk(amount,</span><span class="nv"> </span><span class="s">counterparty,</span><span class="nv"> </span><span class="s">geography,</span><span class="nv"> </span><span class="s">transaction_type)&quot;</span>
+
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;add_column&quot;</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;risk_category&quot;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;categorize_risk(risk_score)&quot;</span>
+
+<span class="w">  </span><span class="c1"># Generate compliance report</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create_compliance_report</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate_content</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">Generate daily compliance report:</span>
+
+<span class="w">        </span><span class="no">Transactions processed: {{ results.extract_transactions | length }}</span>
+<span class="w">        </span><span class="no">Screening results: {{ results.screen_transactions | json }}</span>
+<span class="w">        </span><span class="no">Risk distribution: {{ results.calculate_risk_scores | group_by(&#39;risk_category&#39;) }}</span>
+
+<span class="w">        </span><span class="no">Include regulatory compliance status and any required actions.</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="exercises">
+<h2>Exercises<a class="headerlink" href="#exercises" title="Link to this heading">¶</a></h2>
+<section id="exercise-1-e-commerce-analytics-pipeline">
+<h3>Exercise 1: E-commerce Analytics Pipeline<a class="headerlink" href="#exercise-1-e-commerce-analytics-pipeline" title="Link to this heading">¶</a></h3>
+<p>Build a pipeline that processes e-commerce data:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Your challenge:</span>
+<span class="c1"># - Extract: Orders, customers, products, reviews</span>
+<span class="c1"># - Transform: Calculate metrics, segment customers</span>
+<span class="c1"># - Load: Create analytics-ready datasets</span>
+<span class="c1"># - Quality: Validate business rules</span>
+</pre></div>
+</div>
+</section>
+<section id="exercise-2-iot-data-processing">
+<h3>Exercise 2: IoT Data Processing<a class="headerlink" href="#exercise-2-iot-data-processing" title="Link to this heading">¶</a></h3>
+<p>Create a pipeline for IoT sensor data:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Requirements:</span>
+<span class="c1"># - Handle high-volume time series data</span>
+<span class="c1"># - Detect sensor anomalies</span>
+<span class="c1"># - Aggregate by time windows</span>
+<span class="c1"># - Generate maintenance alerts</span>
+</pre></div>
+</div>
+</section>
+<section id="exercise-3-social-media-analytics">
+<h3>Exercise 3: Social Media Analytics<a class="headerlink" href="#exercise-3-social-media-analytics" title="Link to this heading">¶</a></h3>
+<p>Build a social media data processing pipeline:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Features:</span>
+<span class="c1"># - Extract from multiple platforms</span>
+<span class="c1"># - Text analysis and sentiment</span>
+<span class="c1"># - Trend detection</span>
+<span class="c1"># - Influence measurement</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="solutions-and-next-steps">
+<h2>Solutions and Next Steps<a class="headerlink" href="#solutions-and-next-steps" title="Link to this heading">¶</a></h2>
+<p>Complete solutions for all exercises are available in <code class="docutils literal notranslate"><span class="pre">examples/tutorials/data_processing/</span></code>.</p>
+<p><strong>Next Steps:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Try</strong> <span class="xref std std-doc">tutorial_content_generation</span> for AI-powered content creation</p></li>
+<li><p><strong>Explore</strong> <span class="xref std std-doc">tutorial_automation</span> for workflow automation</p></li>
+<li><p><strong>Combine</strong> data processing with web research for comprehensive analytics</p></li>
+<li><p><strong>Scale</strong> your pipelines for production workloads</p></li>
+</ol>
+</section>
+<section id="best-practices-for-production">
+<h2>Best Practices for Production<a class="headerlink" href="#best-practices-for-production" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Data Validation</strong>: Always validate data at ingestion and transformation steps</p></li>
+<li><p><strong>Error Handling</strong>: Plan for data quality issues and processing failures</p></li>
+<li><p><strong>Monitoring</strong>: Track data lineage and processing metrics</p></li>
+<li><p><strong>Performance</strong>: Optimize for your data volumes and latency requirements</p></li>
+<li><p><strong>Security</strong>: Protect sensitive data and comply with regulations</p></li>
+<li><p><strong>Testing</strong>: Test pipelines with representative data samples</p></li>
+<li><p><strong>Documentation</strong>: Document data schemas and business logic</p></li>
+</ol>
+</section>
+</section>
+
+
+              <div id="bottom-dl" class="xanadu-call-to-action-links">
+                <div id="tutorial-type">tutorials/tutorial_data_processing</div>
+                <div class="download-python-link">
+                  <i class="fab fa-python"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">Download Python script</div>
+                </div>
+                <div class="download-notebook-link">
+                  <i class="fas fa-download"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">Download Notebook</div>
+                </div>
+                <div class="github-view-link">
+                  <i class="fab fa-github"></i>&nbsp;
+                  <div class="call-to-action-desktop-view">View on GitHub</div>
+                </div>
+              </div>
+
+            </div>
+            
+              
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-xanadu" href="tutorial_web_research.html" title="previous chapter (use the left arrow)"><i class="fas fa-arrow-left"></i> Previous</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-xanadu" href="../api/index.html" title="next chapter (use the right arrow)">Next <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+            
+          </div>
+<div class="localtoc-container nano has-scrollbar">
+  <div class="nano-content">
+    <div id="localtoc">
+        
+          <h3>Contents</h3>
+          <!-- Display the ToC for the current document if it is not empty. -->
+          <ul class='current'>
+<li class='current'><a class="reference internal" href="#">Data Processing Pipelines</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#what-you-ll-build">What You’ll Build</a></li>
+<li class='current'><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class='current'><a class="reference internal" href="#tutorial-1-basic-etl-pipeline">Tutorial 1: Basic ETL Pipeline</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#step-1-create-the-etl-pipeline">Step 1: Create the ETL Pipeline</a></li>
+<li class='current'><a class="reference internal" href="#step-2-run-the-etl-pipeline">Step 2: Run the ETL Pipeline</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#tutorial-2-multi-source-data-integration">Tutorial 2: Multi-Source Data Integration</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#step-1-multi-source-integration-pipeline">Step 1: Multi-Source Integration Pipeline</a></li>
+<li class='current'><a class="reference internal" href="#step-2-run-multi-source-integration">Step 2: Run Multi-Source Integration</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#tutorial-3-data-quality-assessment-pipeline">Tutorial 3: Data Quality Assessment Pipeline</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#step-1-data-quality-pipeline">Step 1: Data Quality Pipeline</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#tutorial-4-real-time-data-processing">Tutorial 4: Real-Time Data Processing</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#step-1-real-time-processing-pipeline">Step 1: Real-Time Processing Pipeline</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#advanced-examples">Advanced Examples</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#example-1-customer-data-platform">Example 1: Customer Data Platform</a></li>
+<li class='current'><a class="reference internal" href="#example-2-financial-data-pipeline">Example 2: Financial Data Pipeline</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#exercises">Exercises</a><ul class='current'>
+<li class='current'><a class="reference internal" href="#exercise-1-e-commerce-analytics-pipeline">Exercise 1: E-commerce Analytics Pipeline</a></li>
+<li class='current'><a class="reference internal" href="#exercise-2-iot-data-processing">Exercise 2: IoT Data Processing</a></li>
+<li class='current'><a class="reference internal" href="#exercise-3-social-media-analytics">Exercise 3: Social Media Analytics</a></li>
+</ul>
+</li>
+<li class='current'><a class="reference internal" href="#solutions-and-next-steps">Solutions and Next Steps</a></li>
+<li class='current'><a class="reference internal" href="#best-practices-for-production">Best Practices for Production</a></li>
+</ul>
+</li>
+</ul>
+
+        
+    </div>
+
+    <div class="xanadu-call-to-action-links">
+        <h3>Downloads</h3>
+        <div id="tutorial-type">tutorials/tutorial_data_processing</div>
+        <div class="download-python-link">
+            <i class="fab fa-python"></i>&nbsp;
+            <div class="call-to-action-desktop-view">Download Python script</div>
+        </div>
+        <div class="download-notebook-link">
+            <i class="fas fa-download"></i>&nbsp;
+            <div class="call-to-action-desktop-view">Download Notebook</div>
+        </div>
+        <div class="github-view-link">
+            <i class="fab fa-github"></i>&nbsp;
+            <div class="call-to-action-desktop-view">View on GitHub</div>
+        </div>
+    </div>
+    <div id="related-tutorials" class="mt-4">
+      <h3> Related</h3>
+    </div>
+  </div>
+</div>
+
+
+          <div class="clearfix"></div>
+        </div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../api/index.html" title="API Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tutorial_web_research.html" title="Web Research Automation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Orchestrator 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Tutorials</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Data Processing Pipelines</a></li> 
+      </ul>
+    </div>
+  <script type="text/javascript">
+    $("#mobile-toggle").click(function () {
+      $("#left-column").slideToggle("slow");
+    });
+  </script>
+
+  <!-- jQuery -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+  <!-- MathJax -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <!-- Bootstrap core JavaScript -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <!-- MDB core JavaScript -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.10/js/mdb.min.js"></script>
+  <!-- Overlay Scrollbars -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.11.4/overlayscrollbars.cjs.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Syntax Highlighting -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/highlight.min.js"></script>
+  <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+
+  <script type="text/javascript">
+
+    $("a.reference.internal").each(function(){
+      var link = $(this).attr("href");
+
+      var hash = link.split("#")[1];
+      var page = link.split("#")[0].split("/").slice(-1)[0].replace(".html", "");
+
+      if (hash == page) {
+        $(this).attr("href", link.split("#")[0]);
+      }
+    });
+
+    $(".document > .section").removeClass("section");
+    $("h1 ~ .section").removeClass("section");
+    OverlayScrollbars(document.querySelector('.nano'), {});
+  </script>
+
+  <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+      const localToCContainer = document.querySelector(".localtoc-container");
+      const localToCTop = parseInt(getComputedStyle(localToCContainer).top, 10);
+      const navbarHeight = document.querySelector("nav").offsetHeight;
+      const footerHeight = document.querySelector("footer").offsetHeight;
+      const localToCPadding = localToCTop - navbarHeight;
+
+      function adjustLocalToC() {
+        // Adjusts the height and vertical offset of the local ToC.
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollBottom = document.documentElement.scrollHeight - window.innerHeight - scrollTop;
+
+        const localToCHeight = window.innerHeight - localToCTop - Math.max(0, footerHeight - scrollBottom) - localToCPadding;
+        localToCContainer.style.height = localToCHeight + "px";
+        localToCContainer.querySelector(".nano-content").style.height = localToCHeight + "px";
+
+        if (scrollBottom <= 1) {
+          // Switching the position away from "fixed" ensures that the local ToC
+          // "bounces" with the content and stays above the footer.
+          localToCContainer.style.position = "absolute";
+          localToCContainer.style.top = (scrollTop + localToCPadding) + "px";
+        } else {
+          localToCContainer.style.position = "fixed";
+          localToCContainer.style.top = localToCTop + "px";
+        }
+      }
+
+      adjustLocalToC();
+      window.addEventListener('scroll', adjustLocalToC);
+    });
+  </script>
+
+  <script type="text/javascript">
+    if (document.querySelector(".current")) {
+      var target = document.querySelector(".current");
+      var rect = target.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight) {
+          const nanoElement = document.querySelector(".nano");
+          const currentElement = document.querySelector(".current");
+          if (nanoElement && currentElement) {
+            nanoElement.scrollTop = currentElement.offsetTop - nanoElement.offsetTop;
+          }
+      } else {
+          document.querySelector(".nano").scrollTop = 0;
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll(".css-transitions-only-after-page-load").forEach(function (element) {
+            setTimeout(function () { 
+                element.classList.remove("css-transitions-only-after-page-load"); 
+            }, 10);
+        });
+        if (window.location.hash) {
+          const target = document.querySelector("[id='" + window.location.hash.substr(1) + "']");
+          if (target && target.closest(".collapse")) {
+            target.closest(".collapse").classList.add("show");
+            target.closest(".collapse").previousElementSibling.querySelector(".rotate").classList.add("up");
+          }
+        }
+    });
+  </script>
+
+    <script type="text/javascript">
+    var downloadNote = $(".sphx-glr-download-link-note.admonition.note");
+    if (downloadNote.length >= 1) {
+      var tutorialUrlArray = $("#tutorial-type").text().split('/');
+
+      if (tutorialUrlArray[0] == "demos") {
+        tutorialUrlArray[0] = "demonstrations";
+      }
+
+      var githubLink = "https://github.com/" + "https://github.com/contextualdynamics/orchestrator" + "/blob/master/" + tutorialUrlArray.join("/") + ".py",
+          pythonLink = $(".sphx-glr-download .reference.download")[0].href,
+          notebookLink = $(".sphx-glr-download .reference.download")[1].href;
+
+      $(".download-python-link").wrap("<a href=" + pythonLink + " data-behavior='call-to-action-event' data-response='Download Python script' download target='_blank'/>");
+      $(".download-notebook-link").wrap("<a href=" + notebookLink + " data-behavior='call-to-action-event' data-response='Download Notebook' download target='_blank'/>");
+      $(".github-view-link").wrap("<a href=" + githubLink + " data-behavior='call-to-action-event' data-response='View on Github' target='_blank'/>");
+      $("#right-column").addClass("page-shadow");
+    } else {
+      $(".xanadu-call-to-action-links").hide();
+      $("#bottom-dl").attr('style','display: none !important');
+    }
+    </script>
+
+    <script type="text/javascript">
+      function makeUL(urls, text) {
+          var list = document.createElement('ul');
+
+          for (var i = 0; i < urls.length; i++) {
+              var item = document.createElement('li');
+              var a = document.createElement('a');
+              var linkText = document.createTextNode(text[i]);
+              a.appendChild(linkText);
+              a.href = urls[i];
+              item.appendChild(a);
+              list.appendChild(item);
+          }
+          return list;
+      }
+
+      if (typeof related_tutorials !== 'undefined') {
+          document.getElementById('related-tutorials').appendChild(makeUL(related_tutorials, related_tutorials_titles));
+          $("#related-tutorials ul li a").append(' <i class="fas fa-angle-double-right" style="font-size: smaller;"></i>')
+          $("#related-tutorials").show();
+
+    } else {
+          $("#related-tutorials").hide();
+    }
+    </script>
+
+  <!-- Account for MathJax when navigating to anchor tags. -->
+  <script type="text/javascript">
+    function scrollToElement(e) {
+      // Scrolls to the given element, taking into account the navbar.
+      MathJax.Hub.Queue(function() {
+        // The following MUST be done asynchronously to take effect.
+        setTimeout(function() {
+          const navbar = document.querySelector("nav.navbar");
+          const navbarHeight = navbar ? navbar.offsetHeight : 0;
+          const scrollToY = e.offsetTop + e.offsetParent.offsetTop - navbarHeight;
+          window.scrollTo(0, scrollToY);
+        }, 0);
+      });
+    }
+
+    function scrollToFragment(fragment) {
+      // Scrolls to the position of the given URL fragment (which includes the "#").
+      const elementID = fragment.replace(".", "\\.");
+      if (elementID !== "") {
+        const element = document.querySelector(elementID);
+        if (element !== null) {
+          scrollToElement(element);
+        }
+      }
+    }
+
+    $(document).ready(() => {
+      scrollToFragment(window.location.hash);
+      window.addEventListener("popstate", (_) => scrollToFragment(document.location.hash), false);
+    });
+  </script>
+
+  <!-- Hide the rendering of :orphan: metadata. -->
+  <script type="text/javascript">
+    $(document).ready(() => {
+      const elements = document.getElementsByClassName("field-odd");
+      for (const element of elements) {
+          if (element.innerHTML.trim() === "orphan") {
+            element.style.display = "none";
+          }
+      }
+    });
+  </script>
+
+  <!-- Utility functions for setting ARIA attributes on buttons that show menus. -->
+  <script type="text/javascript">
+    function setAriaAttributes(button, expand) {
+      const skip = button.getAttribute("aria-label").indexOf(" ");
+      const menu = button.getAttribute("aria-label").substr(skip);
+      button.setAttribute("aria-label", (expand ? "close" : "open") + menu);
+      button.setAttribute("aria-expanded", expand.toString());
+    }
+
+    function toggleAriaAttributes(button) {
+      setAriaAttributes(button, button.getAttribute("aria-expanded") === "false");
+    }
+  </script>
+
+  <!-- Delays the closing of dropdowns on the LHS of the navigation bar. -->
+  <script type="text/javascript">
+    $(document).ready(() => {
+      const timers = {};
+      const navbar_left_links = document.querySelectorAll(".navbar-left-link");
+      for (const [i, link] of navbar_left_links.entries()) {
+        const dropdown = link.querySelector(".navbar-dropdown");
+        const button = link.querySelector("button");
+        if (dropdown !== null) {
+          timers[i] = {link: link, button: button, timeout: undefined};
+
+          // Expands the current dropdown and closes other dropdowns.
+          const expandDropdown = () => {
+            for (const [j, timer] of Object.entries(timers)) {
+              clearTimeout(timer.timeout);
+              if (i !== j) {
+                timer.link.classList.remove("open");
+                setAriaAttributes(timer.button, false);
+              }
+            }
+            link.classList.add("open");
+            setAriaAttributes(button, true);
+          }
+
+          // Closes the current dropdown after the given delay.
+          const collapseDropdown = (event, delay = 1000) => {
+            timers[i].timeout = setTimeout(function(event){
+              link.classList.remove("open");
+              setAriaAttributes(button, false);
+            }, delay);
+          }
+
+          // Toggles the current dropdown.
+          const toggleDropdown = (event) => {
+            if (link.classList.contains("open")) {
+              collapseDropdown(event, 0);
+            } else {
+              expandDropdown();
+            }
+          }
+
+          link.addEventListener("mouseenter", expandDropdown);
+          link.addEventListener("mouseleave", collapseDropdown);
+          button.addEventListener("click", toggleDropdown);
+        }
+      }
+    });
+  </script>
+
+  <!-- Toggles whether the global ToC is displayed on mobile. -->
+  <script type="text/javascript">
+    function toggleMobileToC(button) {
+      const sidebar = document.querySelector("#left-column");
+      const chevron = button.querySelector("i");
+      if (sidebar !== null) {
+        sidebar.classList.toggle("open");
+        chevron.classList.toggle("open");
+      }
+    }
+  </script>
+
+  <!-- Toggles whether the navbar dropdown is displayed on mobile. -->
+  <script type="text/javascript">
+    function toggleMobileNavbar(button) {
+      const dropdown = document.querySelector(".mobile.navbar-links");
+      if (dropdown !== null) {
+        dropdown.classList.toggle("open");
+        button.classList.toggle("open");
+        toggleAriaAttributes(button);
+
+        const hidden = button.getAttribute("aria-expanded") === "true";
+        const hidden_elements = document.querySelectorAll(".container-wrapper, footer");
+        for (const element of hidden_elements) {
+          element.setAttribute("aria-hidden", hidden.toString());
+        }
+      }
+    }
+  </script>
+
+  <!-- Toggles whether the dropdown from a navbar link is displayed on mobile. -->
+  <script type="text/javascript">
+    function getIntStyleProperty(element, property) {
+      const style = window.getComputedStyle(element);
+      return parseInt(style.getPropertyValue(property), 10);
+    }
+
+    function getDropdownHeight(dropdown) {
+      const dropdown_list = dropdown.querySelector("ul");
+      const dropdown_list_items = dropdown_list.querySelectorAll("li");
+      const dropdown_list_gap = getIntStyleProperty(dropdown_list, "gap");
+
+      let dropdown_list_height = -dropdown_list_gap;
+      for (const list_item of dropdown_list_items) {
+        dropdown_list_height += getIntStyleProperty(list_item, "height");
+        dropdown_list_height += dropdown_list_gap
+      }
+      return dropdown_list_height + "px";
+    }
+
+    function toggleMobileNavbarLink(button) {
+      const item = button.parentElement;
+      const dropdown = item.querySelector(".mobile.navbar-dropdown");
+      if (dropdown !== null) {
+        const hidden = button.getAttribute("aria-expanded") === "true";
+        dropdown.style.height = hidden ? "0px" : getDropdownHeight(dropdown);
+      }
+      item.classList.toggle("open");
+      toggleAriaAttributes(button);
+    }
+  </script>
+
+  <!-- Collapses the most specific menu when ESC is pressed. -->
+  <script type="text/javascript">
+    $(document).keyup(function(event) {
+      // The keycode of ESC is 27.
+      if (event.keyCode == 27) {
+        // Collapse an open dropdown from a navbar link on mobile.
+        const mobileSubMenuButtons = document.querySelectorAll(".mobile.navbar-link button");
+        for (const button of mobileSubMenuButtons) {
+          if (button.parentElement.classList.contains("open")) {
+            toggleMobileNavbarLink(button);
+            return;
+          }
+        }
+
+        // Collapse the navbar dropdown on mobile.
+        const mobileMenuButton = document.querySelector(".mobile.navbar-menu button");
+        if (mobileMenuButton !== null && mobileMenuButton.classList.contains("open")) {
+          toggleMobileNavbar(mobileMenuButton);
+          return;
+        }
+
+        // Close an open navbar dropdown on desktop.
+        const navbar_left_links = document.querySelectorAll(".navbar-left-link");
+        for (const link of navbar_left_links.values()) {
+          const button = link.querySelector("button");
+          if (link.classList.contains("open")) {
+            link.classList.remove("open");
+            setAriaAttributes(button, true);
+            return;
+          }
+        }
+      }
+    });
+  </script>
+
+  <!-- Trap focus in the navbar dropdown on mobile if it is expanded. -->
+  <script type="text/javascript">
+    // Using ``keyup`` would cause the last element to be quickly "skipped".
+    $(document).keydown(function(event) {
+      // The keycode of TAB is 9.
+      if (event.keyCode == 9) {
+        // Do nothing if the navbar dropdown is collapsed on mobile.
+        const mobileMenuButton = document.querySelector(".mobile.navbar-menu button");
+        if (mobileMenuButton === null || !mobileMenuButton.classList.contains("open")) {
+          return;
+        }
+
+        const links = document.querySelectorAll(".mobile.navbar-links a");
+        const bot = links[links.length - 1];
+        const top = document.querySelector(".mobile.navbar-menu button");
+
+        // Do nothing if there is a missing focus element.
+        if (top === null || bot === undefined) {
+          return;
+        }
+
+        // Wrap the focus to the top or bottom element if needed. The direction
+        // of the wrapping depends on whether TAB or SHIFT + TAB is pressed.
+        if (!event.shiftKey && document.activeElement === bot) {
+          top.focus();
+          event.preventDefault();
+        } else if (event.shiftKey && document.activeElement === top) {
+          bot.focus();
+          event.preventDefault();
+        }
+      }
+    });
+  </script>
+
+  <script type="text/javascript">
+    jQuery.noConflict(true);
+  </script>
+
+  <hr class="p-0 m-0">
+
+<footer>
+  <div class="footer-top">
+    <!-- About -->
+    <div class="footer-about">
+      <a class="footer-icon" href="https://xanadu.ai">
+        <img src="_static/xanadu_logo.svg" alt="Xanadu" height="40px" width="40px">
+      </a>
+      <p class="footer-description">
+                Located in the heart of downtown Toronto, we've brought together
+        exceptional minds from around the world to build quantum computers
+        that are useful and available to people everywhere.
+        
+      </p>
+    </div>
+
+    <div class="footer-social-icons-and-taglines">
+      <!-- Social Icons -->
+      <div class="footer-social-icons">
+        
+          <a href="https://twitter.com/xanaduai" aria-label="Twitter">
+            <i class="bx bxl-twitter"></i>
+          </a>
+        
+          <a href="https://github.com/XanaduAI" aria-label="GitHub">
+            <i class="bx bxl-github"></i>
+          </a>
+        
+          <a href="https://linkedin.com/company/xanaduai/" aria-label="LinkedIn">
+            <i class="bx bxl-linkedin"></i>
+          </a>
+        
+          <a href="https://discuss.pennylane.ai" aria-label="Discourse">
+            <i class="bx bxl-discourse"></i>
+          </a>
+        
+          <a href="https://u.strawberryfields.ai/slack" aria-label="Slack">
+            <i class="bx bxl-slack"></i>
+          </a>
+        
+          <a href="https://xanadu.ai/blog" aria-label="RSS">
+            <i class="bx bx-rss"></i>
+          </a>
+        
+      </div>
+
+      <!-- Taglines -->
+      
+      <a class="footer-tagline" href="https://xanadu.us17.list-manage.com/subscribe?u=725f07a1d1a4337416c3129fd&id=294b062630">
+        Stay updated with our newsletter
+      </a>
+      
+    </div>
+
+    <!-- Links -->
+    <div class="footer-links">
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">PennyLane</p>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/qml">Learn</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/qml/demonstrations.html">Demonstrations</a>
+        
+          <a class="footer-link-item" href="https://docs.pennylane.ai/">Documentation</a>
+        
+          <a class="footer-link-item" href="https://github.com/PennyLaneAI/pennylane">GitHub</a>
+        
+          <a class="footer-link-item" href="https://twitter.com/pennylaneai">Twitter</a>
+        
+          <a class="footer-link-item" href="https://pennylane.ai/blog">Blog</a>
+        
+      </div>
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">Strawberry Fields</p>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/photonics">Photonics</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.ai/photonics/demonstrations.html">Demonstrations</a>
+        
+          <a class="footer-link-item" href="https://strawberryfields.readthedocs.io/">Documentation</a>
+        
+          <a class="footer-link-item" href="https://github.com/XanaduAI/strawberryfields">GitHub</a>
+        
+      </div>
+      
+      <div class="footer-link-column">
+        <p class="footer-link-heading">Xanadu</p>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/">Home</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/about/">About</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/photonics">Hardware</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/careers/">Careers</a>
+        
+          <a class="footer-link-item" href="https://discuss.pennylane.ai/">Forum</a>
+        
+          <a class="footer-link-item" href="https://xanadu.ai/blog">Blog</a>
+        
+      </div>
+      
+    </div>
+  </div>
+
+  <hr class="footer-separator">
+
+  <div class="footer-bottom">
+    <!-- Copyright -->
+    <div class="footer-copyrights">
+        <p class="footer-copyright-item">
+            Copyright &copy; 2025, Contextual Dynamics Lab
+        </p>
+      
+        <p class="footer-copyright-item">
+          AI Pipeline Orchestration Framework
+        </p>
+      
+    </div>
+
+    <!-- Policies -->
+    <div class="footer-policies">
+      
+    </div>
+  </div>
+
+</footer>
+  </body>
+</html>
