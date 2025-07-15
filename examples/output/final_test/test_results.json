@@ -1,0 +1,19 @@
+{
+  "test_date": "2025-07-13T22:47:33.046460",
+  "model_used": "llama3.2:1b",
+  "tests": [
+    {
+      "name": "Research Pipeline",
+      "passed": false
+    },
+    {
+      "name": "Data Pipeline",
+      "passed": true
+    },
+    {
+      "name": "Simple Pipeline",
+      "passed": false
+    }
+  ],
+  "success_rate": 0.3333333333333333
+}
