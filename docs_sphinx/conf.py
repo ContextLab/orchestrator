@@ -12,9 +12,18 @@ sys.path.insert(0, os.path.abspath('../src'))
 # -- Project information -----------------------------------------------------
 project = 'Orchestrator'
 copyright = f'{datetime.now().year}, Contextual Dynamics Lab'
-author = 'Contextual Dynamics Lab'
+author = 'Contextual Dynamics Lab'  
 release = '0.1.0'
 version = '0.1.0'
+
+# HTML context variables to customize theme
+html_context = {
+    'display_github': True,
+    'github_user': 'contextualdynamics',
+    'github_repo': 'orchestrator',
+    'github_version': 'main',
+    'conf_py_path': '/docs_sphinx/',
+}
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -100,9 +109,7 @@ html_theme_options = {
             "icon": "fab fa-github",
         },
     ],
-    "extra_copyrights": [
-        "AI Pipeline Orchestration Framework",
-    ],
+    "extra_copyrights": [],
     "google_analytics_tracking_id": "",  # Add if needed
     "prev_next_button": True,
 }
@@ -111,6 +118,11 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# Include custom CSS
+html_css_files = [
+    'custom.css',
+]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
