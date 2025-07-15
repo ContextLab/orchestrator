@@ -15,6 +15,7 @@ from .state.state_manager import StateManager
 from .orchestrator import Orchestrator
 from .integrations.ollama_model import OllamaModel
 from .integrations.huggingface_model import HuggingFaceModel
+from .tools.mcp_server import default_mcp_server, default_tool_detector
 import asyncio
 from pathlib import Path
 
@@ -84,18 +85,33 @@ class OrchestratorPipeline:
         """Print keyword arguments as shown in README."""
         print(">> keyword arguments:")
         
-        # Extract inputs from pipeline
-        if hasattr(self.pipeline, 'metadata') and 'inputs' in self.pipeline.metadata:
-            inputs = self.pipeline.metadata['inputs']
-            if isinstance(inputs, dict):
-                for name, info in inputs.items():
-                    desc = info if isinstance(info, str) else info.get('description', 'No description')
-                    type_str = "String"  # Default type
-                    print(f">>   {name}: {desc} (type: {type_str})")
+        # Extract inputs from the raw pipeline definition
+        inputs = self._extract_inputs()
+        
+        if inputs:
+            for name, info in inputs.items():
+                if isinstance(info, dict):
+                    desc = info.get('description', 'No description')
+                    type_str = info.get('type', 'String').title()
+                    required = " (required)" if info.get('required', False) else ""
+                    print(f">>   {name}: {desc} (type: {type_str}){required}")
+                else:
+                    # Simple string description
+                    print(f">>   {name}: {info} (type: String)")
         else:
             # Default inputs for research report
             print(">>   topic: a word or underscore-separated phrase specifying the to-be-researched topic (type: String)")
             print(">>   instructions: detailed instructions to help guide the report, specify areas of particular interest (or areas to stay away from), etc. (type: String)")
+    
+    def _extract_inputs(self):
+        """Extract input definitions from the compiled pipeline."""
+        # The inputs are stored in the pipeline's metadata during compilation
+        if hasattr(self.pipeline, 'metadata') and 'inputs' in self.pipeline.metadata:
+            return self.pipeline.metadata['inputs']
+        
+        # If not in metadata, try to get from the original definition
+        # This is a fallback - we should enhance the compilation process
+        return {}
     
     def run(self, **kwargs):
         """Run the pipeline with given keyword arguments."""
@@ -109,22 +125,110 @@ class OrchestratorPipeline:
     
     async def _run_async(self, **kwargs):
         """Async pipeline execution."""
-        # Create context from kwargs
+        # Validate required inputs
+        self._validate_inputs(kwargs)
+        
+        # Resolve outputs using AUTO tags
+        outputs = await self._resolve_outputs(kwargs)
+        
+        # Create full context from kwargs and resolved outputs
         context = {
             'inputs': kwargs,
-            'outputs': {}
+            'outputs': outputs
         }
         
+        # Apply runtime template resolution to pipeline tasks
+        resolved_pipeline = await self._resolve_runtime_templates(self.pipeline, context)
+        
         # Execute pipeline
-        results = await self.orchestrator.execute_pipeline(self.pipeline, context)
+        results = await self.orchestrator.execute_pipeline(resolved_pipeline, context)
         
         # Return the final output (PDF path or report content)
-        if 'outputs' in context and 'pdf' in context['outputs']:
-            return context['outputs']['pdf']
+        if outputs and 'pdf' in outputs:
+            return outputs['pdf']
         elif 'final_report' in results:
             return results['final_report']
         else:
             return results
+    
+    def _validate_inputs(self, kwargs):
+        """Validate that required inputs are provided."""
+        inputs_def = self._extract_inputs()
+        
+        for name, info in inputs_def.items():
+            if isinstance(info, dict) and info.get('required', False):
+                if name not in kwargs:
+                    raise ValueError(f"Required input '{name}' not provided")
+    
+    async def _resolve_outputs(self, inputs):
+        """Resolve output definitions using AUTO tags."""
+        outputs = {}
+        outputs_def = self._extract_outputs()
+        
+        if outputs_def:
+            from jinja2 import Template
+            for name, value in outputs_def.items():
+                if isinstance(value, str):
+                    if value.startswith("<AUTO>") and value.endswith("</AUTO>"):
+                        # Resolve AUTO tag
+                        auto_content = value[6:-7]  # Remove <AUTO> tags
+                        if hasattr(self.orchestrator.yaml_compiler, 'ambiguity_resolver'):
+                            resolved = await self.orchestrator.yaml_compiler.ambiguity_resolver.resolve(auto_content, f"outputs.{name}")
+                            outputs[name] = resolved
+                        else:
+                            outputs[name] = f"report_{inputs.get('topic', 'research')}.pdf"
+                    else:
+                        # Regular template - render with current context
+                        try:
+                            template = Template(value)
+                            outputs[name] = template.render(inputs=inputs, outputs=outputs)
+                        except Exception:
+                            outputs[name] = value
+                else:
+                    outputs[name] = value
+        
+        return outputs
+    
+    def _extract_outputs(self):
+        """Extract output definitions from the compiled pipeline."""
+        if hasattr(self.pipeline, 'metadata') and 'outputs' in self.pipeline.metadata:
+            return self.pipeline.metadata['outputs']
+        return {}
+    
+    async def _resolve_runtime_templates(self, pipeline, context):
+        """Resolve templates in pipeline tasks at runtime."""
+        from jinja2 import Template
+        import copy
+        
+        # Create a deep copy to avoid modifying the original
+        resolved_pipeline = copy.deepcopy(pipeline)
+        
+        # Resolve templates in each task
+        for task_id, task in resolved_pipeline.tasks.items():
+            if hasattr(task, 'parameters'):
+                task.parameters = await self._resolve_task_templates(task.parameters, context)
+        
+        return resolved_pipeline
+    
+    async def _resolve_task_templates(self, obj, context):
+        """Recursively resolve templates in task parameters."""
+        from jinja2 import Template
+        
+        if isinstance(obj, str):
+            if "{{" in obj and "}}" in obj:
+                try:
+                    template = Template(obj)
+                    return template.render(**context)
+                except Exception as e:
+                    # If template resolution fails, return original
+                    return obj
+            return obj
+        elif isinstance(obj, dict):
+            return {k: await self._resolve_task_templates(v, context) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [await self._resolve_task_templates(item, context) for item in obj]
+        else:
+            return obj
 
 
 async def compile_async(yaml_path: str):
@@ -156,6 +260,24 @@ async def compile_async(yaml_path: str):
     
     with open(yaml_path, 'r') as f:
         yaml_content = f.read()
+    
+    # Parse YAML to detect required tools
+    import yaml as yaml_lib
+    pipeline_def = yaml_lib.safe_load(yaml_content)
+    
+    # Auto-detect and register tools
+    required_tools = default_tool_detector.detect_tools_from_yaml(pipeline_def)
+    if required_tools:
+        print(f">> Detected required tools: {', '.join(required_tools)}")
+        availability = default_tool_detector.ensure_tools_available(required_tools)
+        for tool, available in availability.items():
+            status = "✅" if available else "❌"
+            print(f">>   {status} {tool}")
+    
+    # Start MCP server if tools are required
+    if required_tools and any(availability.values()):
+        print(">> Starting MCP tool server...")
+        await default_mcp_server.start_server()
     
     # Compile pipeline
     pipeline = await _orchestrator.yaml_compiler.compile(yaml_content, {})

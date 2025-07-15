@@ -1,0 +1,104 @@
+# pipelines/research-report-template.yaml
+# Input-agnostic research report pipeline as shown in README
+
+name: research-report-writer
+description: Generate comprehensive research report with web search and quality checking
+
+inputs:
+  topic:
+    type: string
+    description: "a word or underscore-separated phrase specifying the to-be-researched topic"
+    required: true
+  instructions:
+    type: string  
+    description: "detailed instructions to help guide the report, specify areas of particular interest (or areas to stay away from), etc."
+    required: true
+
+outputs:
+  pdf: "<AUTO>come up with an appropriate filename for the final report</AUTO>"
+  tex: "{{ outputs.pdf[:-3] + '.tex' }}"
+
+steps:
+  - id: web_search
+    action: search_web
+    parameters:
+      query: "<AUTO>construct an appropriate web query about {{ inputs.topic }}, using these additional instructions: {{ inputs.instructions }}</AUTO>"
+      sources: ["web", "documentation", "academic"]
+    tool: headless-browser
+    produces: "<AUTO>markdown file with detailed notes on each relevant result with annotated links to original sources; other relevant files like images, code, data, etc., that can be saved locally</AUTO>"
+    location: "./searches/{{ outputs.pdf }}/"
+    requires-model:
+      min-size: 7B
+      expertise: medium
+
+  - id: compile_results
+    action: compile_markdown
+    dependencies: [web_search]
+    parameters:
+      content: "$results.web_search"
+      instruction: "<AUTO>create a markdown file collating the content from $results.web_search into a single cohesive document. maintain annotated links back to original sources.</AUTO>"
+    produces: markdown-file
+    location: "./searches/{{ outputs.pdf }}/compiled_results.md"
+    requires-model:
+      min-size: 10B
+      expertise: medium-high
+
+  - id: draft_report
+    action: generate_report
+    dependencies: [compile_results]
+    parameters:
+      content: "$results.compile_results"
+      topic: "{{ inputs.topic }}"
+      instructions: "{{ inputs.instructions }}"
+      style: "<AUTO>choose appropriate writing style: technical, academic, or accessible</AUTO>"
+      sections: ["introduction", "overview", "details", "examples", "conclusion"]
+    produces: markdown-file
+    requires-model:
+      min-size: 20B
+      expertise: high
+    location: "./searches/{{ outputs.pdf }}/draft_report.md"
+
+  - id: quality_check
+    action: validate_report
+    dependencies: [draft_report]
+    parameters:
+      report: "$results.draft_report"
+      checks: ["completeness", "accuracy", "sources_cited", "logical_flow"]
+    requires-model:
+      min-size: 7B
+      expertise: medium
+    produces: validation-result
+    location: "./searches/{{ outputs.pdf }}/quality_check.json"
+
+  - id: final_report
+    action: finalize_report
+    dependencies: [quality_check]
+    parameters:
+      draft: "$results.draft_report"
+      validation: "$results.quality_check"
+      improvements: "<AUTO>based on quality check results, determine what improvements to make</AUTO>"
+    produces: markdown-file
+    location: "./searches/{{ outputs.pdf }}/final_report.md"
+
+  - id: compile_pdf
+    action: compile_pdf
+    dependencies: [final_report]
+    tool: terminal
+    parameters:
+      source: "$results.final_report"
+      output: "{{ outputs.pdf }}"
+    action: "!pandoc -o {{ outputs.pdf }} $results.final_report"
+    requires-model: none
+    produces: pdf
+    on-error: debug-compilation
+
+  - id: debug-compilation
+    action: debug_pdf_compilation
+    requires-model:
+      min-size: 40B
+      expertise: very-high
+    parameters:
+      logs: "<AUTO>carefully check the output logs in the current directory to see why compiling the pdf failed</AUTO>"
+      commands: "<AUTO>use bash commands to update the document and/or run other bash commands as needed until {{ outputs.pdf }} is a valid pdf</AUTO>"
+    produces: pdf
+    location: "{{ outputs.pdf }}"

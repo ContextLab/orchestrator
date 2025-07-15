@@ -1,0 +1,40 @@
+{
+  "query": "machine_learning",
+  "results": [
+    {
+      "title": "Building AI Agents with LangChain",
+      "url": "https://python.langchain.com/docs/modules/agents/",
+      "snippet": "LangChain provides a framework for building AI agents that can use tools, make decisions, and execute complex workflows. Agents use an LLM as a reasoning engine to determine which actions to take and in what order.",
+      "source": "web",
+      "relevance": 0.95
+    },
+    {
+      "title": "AutoGen: Enable Next-Gen Large Language Model Applications",
+      "url": "https://microsoft.github.io/autogen/",
+      "snippet": "AutoGen is a framework that enables development of LLM applications using multiple agents that can converse with each other to solve tasks. It simplifies the orchestration, automation, and optimization of complex LLM workflows.",
+      "source": "web",
+      "relevance": 0.93
+    },
+    {
+      "title": "OpenAI Assistants API Documentation",
+      "url": "https://platform.openai.com/docs/assistants",
+      "snippet": "The Assistants API allows you to build AI assistants within your own applications. An Assistant has instructions and can leverage models, tools, and knowledge to respond to user queries.",
+      "source": "documentation",
+      "relevance": 0.9
+    },
+    {
+      "title": "Hugging Face Agents Documentation",
+      "url": "https://huggingface.co/docs/transformers/transformers_agents",
+      "snippet": "Transformers Agents provides a natural language API on top of transformers. It allows you to quickly create AI agents that can perform various tasks by leveraging the extensive collection of models on the Hugging Face Hub.",
+      "source": "documentation",
+      "relevance": 0.88
+    },
+    {
+      "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+      "url": "https://arxiv.org/abs/2210.03629",
+      "snippet": "This paper presents ReAct, a paradigm for synergizing reasoning and acting in language models. ReAct prompts LLMs to generate both verbal reasoning traces and actions in an interleaved manner.",
+      "source": "academic",
+      "relevance": 0.92
+    }
+  ]
+}

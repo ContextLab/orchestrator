@@ -1,0 +1,168 @@
+{
+  "tools": [
+    {
+      "name": "validation",
+      "description": "Validate data against schemas and rules",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Data to validate"
+          },
+          "schema": {
+            "type": "object",
+            "description": "Validation schema"
+          },
+          "rules": {
+            "type": "array",
+            "description": "Validation rules"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    {
+      "name": "filesystem",
+      "description": "Perform file system operations like read, write, copy, move",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action: 'read', 'write', 'copy', 'move', 'delete', 'list'"
+          },
+          "path": {
+            "type": "string",
+            "description": "File or directory path"
+          },
+          "content": {
+            "type": "string",
+            "description": "Content to write (for write action)"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Destination path (for copy/move)"
+          }
+        },
+        "required": [
+          "action",
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "headless-browser",
+      "description": "Perform web browsing, search, and verification tasks using a headless browser",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action to perform: 'search', 'verify', 'scrape'"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL to visit (for verify/scrape)"
+          },
+          "query": {
+            "type": "string",
+            "description": "Search query (for search)"
+          },
+          "sources": {
+            "type": "array",
+            "description": "List of sources to search"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "terminal",
+      "description": "Execute terminal commands in a sandboxed environment",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "Command to execute"
+          },
+          "working_dir": {
+            "type": "string",
+            "description": "Working directory"
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Timeout in seconds"
+          },
+          "capture_output": {
+            "type": "boolean",
+            "description": "Capture command output"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      }
+    },
+    {
+      "name": "web-search",
+      "description": "Perform web search and return results",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query"
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "data-processing",
+      "description": "Process and transform data in various formats",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action: 'convert', 'filter', 'aggregate', 'transform'"
+          },
+          "data": {
+            "type": "object",
+            "description": "Input data or file path"
+          },
+          "format": {
+            "type": "string",
+            "description": "Data format: 'json', 'csv', 'yaml'"
+          },
+          "operation": {
+            "type": "object",
+            "description": "Operation details"
+          }
+        },
+        "required": [
+          "action",
+          "data"
+        ]
+      }
+    }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+    "tools": {
+      "listChanged": true
+    }
+  }
+}

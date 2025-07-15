@@ -144,9 +144,10 @@ class YAMLCompiler:
                     return template.render(**context)
                 except Exception as e:
                     # If template rendering fails due to undefined variables,
-                    # only leave templates as-is if they reference pipeline steps (steps.*)
-                    if "undefined" in str(e).lower() and "steps." in value:
-                        return value
+                    # preserve templates that reference runtime values
+                    error_str = str(e).lower()
+                    if "undefined" in error_str and any(ref in value for ref in ["inputs.", "outputs.", "$results.", "steps."]):
+                        return value  # Keep template for runtime resolution
                     raise TemplateRenderError(f"Failed to render template '{value}': {e}") from e
             elif isinstance(value, dict):
                 return {k: process_value(v) for k, v in value.items()}
@@ -235,6 +236,12 @@ class YAMLCompiler:
         description = pipeline_def.get("description")
         context = pipeline_def.get("context", {})
         metadata = pipeline_def.get("metadata", {})
+        
+        # Include inputs and outputs in metadata for runtime access
+        if "inputs" in pipeline_def:
+            metadata["inputs"] = pipeline_def["inputs"]
+        if "outputs" in pipeline_def:
+            metadata["outputs"] = pipeline_def["outputs"]
         
         # Create pipeline
         pipeline = Pipeline(

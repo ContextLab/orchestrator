@@ -1,0 +1,549 @@
+<\!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Orchestrator Framework Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+        h2 { border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        code { background: #f4f4f4; padding: 2px 4px; border-radius: 3px; font-family: "Monaco", "Menlo", monospace; }
+        pre { background: #f8f8f8; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        .toc { background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .toc ul { margin: 0; }
+        blockquote { border-left: 4px solid #ddd; margin: 0; padding-left: 20px; color: #666; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+        th { background: #f2f2f2; }
+        .feature-status { font-weight: bold; }
+        .implemented { color: #22c55e; }
+        .working { color: #f59e0b; }
+        .planned { color: #3b82f6; }
+    </style>
+</head>
+<body>
+<h1 id="orchestrator-framework-documentation">Orchestrator Framework Documentation</h1>
+<p><strong>An AI pipeline orchestration framework with intelligent ambiguity resolution and tool integration</strong></p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#architecture-overview">Architecture Overview</a></li>
+<li><a href="#key-features">Key Features</a></li>
+<li><a href="#installation--setup">Installation &amp; Setup</a></li>
+<li><a href="#usage-examples">Usage Examples</a></li>
+<li><a href="#tool-system">Tool System</a></li>
+<li><a href="#api-reference">API Reference</a></li>
+<li><a href="#current-capabilities">Current Capabilities</a></li>
+<li><a href="#limitations">Limitations</a></li>
+<li><a href="#development">Development</a></li>
+</ol>
+<h2 id="architecture-overview">Architecture Overview</h2>
+<p>The Orchestrator framework is built around a modular architecture that separates concerns between pipeline definition, execution, and tool integration. The core components work together to provide a unified interface for AI workflow orchestration.</p>
+<h3 id="core-components">Core Components</h3>
+<h4 id="1-yamlcompiler-srcorchestratorcompiler">1. YAMLCompiler (<code>src/orchestrator/compiler/</code>)</h4>
+<ul>
+<li><strong>Purpose</strong>: Parses YAML pipeline definitions and compiles them into executable <code>Pipeline</code> objects</li>
+<li><strong>Key Features</strong>:</li>
+<li><code>&lt;AUTO&gt;</code> tag resolution using AI models for ambiguous values</li>
+<li>Jinja2 template processing for dynamic content</li>
+<li>Runtime vs compile-time template resolution</li>
+<li>Schema validation with detailed error reporting</li>
+<li>Dependency graph validation (circular dependency detection)</li>
+</ul>
+<h4 id="2-task-pipeline-abstractions-srcorchestratorcore">2. Task &amp; Pipeline Abstractions (<code>src/orchestrator/core/</code>)</h4>
+<ul>
+<li><strong>Task</strong>: Core unit of work with:</li>
+<li>Unique ID and action type</li>
+<li>Parameters (supports templates and references)</li>
+<li>Dependencies and status tracking</li>
+<li>Error handling and retry logic</li>
+<li><strong>Pipeline</strong>: Collection of tasks with:</li>
+<li>Execution ordering based on dependencies</li>
+<li>Input/output definitions for parameterization</li>
+<li>Metadata and configuration</li>
+<li>State management for checkpointing</li>
+</ul>
+<h4 id="3-modelregistry-srcorchestratormodels">3. ModelRegistry (<code>src/orchestrator/models/</code>)</h4>
+<ul>
+<li><strong>Purpose</strong>: Manages available AI models and intelligent selection</li>
+<li><strong>Features</strong>:</li>
+<li>Multi-provider support (Ollama, HuggingFace, OpenAI, Anthropic)</li>
+<li>Upper Confidence Bound (UCB) algorithm for model selection</li>
+<li>Capability-based matching (reasoning, tool_use, code_generation)</li>
+<li>Resource requirements tracking (GPU, memory, tokens)</li>
+<li>Fallback to quantized models when resources are limited</li>
+</ul>
+<h4 id="4-toolregistry-mcp-integration-srcorchestratortools">4. ToolRegistry &amp; MCP Integration (<code>src/orchestrator/tools/</code>)</h4>
+<ul>
+<li><strong>ToolRegistry</strong>: Central repository for tools with:</li>
+<li>Automatic tool registration and discovery</li>
+<li>Schema generation for MCP compatibility</li>
+<li>Parameter validation and type checking</li>
+<li>Execution delegation to appropriate tool implementations</li>
+<li><strong>MCP Server</strong>: Model Context Protocol integration:</li>
+<li>Automatic server startup when tools are required</li>
+<li>Tool schema exposure to AI models</li>
+<li>Bidirectional communication for tool execution</li>
+<li>Support for multiple concurrent tool operations</li>
+</ul>
+<h4 id="5-control-system-adapters-srcorchestratorcorecontrol_systempy">5. Control System Adapters (<code>src/orchestrator/core/control_system.py</code>)</h4>
+<ul>
+<li><strong>Purpose</strong>: Pluggable execution backends</li>
+<li><strong>Current Implementations</strong>:</li>
+<li>MockControlSystem: For testing and development</li>
+<li>ToolIntegratedControlSystem: With real tool execution</li>
+<li>LangGraph adapter (planned)</li>
+<li>Custom adapters supported</li>
+</ul>
+<h4 id="6-state-management-srcorchestratorstate">6. State Management (<code>src/orchestrator/state/</code>)</h4>
+<ul>
+<li><strong>Features</strong>:</li>
+<li>Automatic checkpointing at task boundaries</li>
+<li>Recovery from last successful checkpoint</li>
+<li>State persistence to various backends (PostgreSQL, Redis, file)</li>
+<li>Adaptive checkpointing based on task criticality</li>
+</ul>
+<h3 id="data-flow">Data Flow</h3>
+<p><code>YAML Definition → YAMLCompiler → Pipeline Object → Orchestrator → Control System → Tool Execution
+                      ↓                ↓               ↓               ↓
+                 Auto Tags      Input Validation   Dependency    Tool Registry
+                 Resolution     Template           Resolution    MCP Server
+                               Processing</code></p>
+<h2 id="key-features">Key Features</h2>
+<h3 id="1-input-agnostic-pipelines">1. Input-Agnostic Pipelines</h3>
+<p>Pipelines are designed to be reusable with different inputs, making them truly generic:</p>
+<p>```yaml
+inputs:
+  topic:
+    type: string
+    description: "Research topic to investigate"
+    required: true
+  instructions:
+    type: string
+    description: "Specific guidance for the research"
+    required: true</p>
+<p>outputs:
+  pdf:
+    type: string
+    value: "{{ inputs.topic }}_report.pdf"
+```</p>
+<p>The same pipeline can generate different outputs based on input parameters:
+- <code>topic: "machine_learning"</code> → <code>machine_learning_report.pdf</code>
+- <code>topic: "quantum_computing"</code> → <code>quantum_computing_report.pdf</code></p>
+<h3 id="2-auto-tag-ambiguity-resolution">2. AUTO Tag Ambiguity Resolution</h3>
+<p>The framework uses <code>&lt;AUTO&gt;</code> tags to let AI models resolve ambiguous values:</p>
+<p><code>yaml
+steps:
+  - id: analyze_data
+    action: analyze
+    parameters:
+      method: &lt;AUTO&gt;Choose best analysis method for this data type&lt;/AUTO&gt;
+      depth: &lt;AUTO&gt;Determine analysis depth based on data complexity&lt;/AUTO&gt;</code></p>
+<p>The ambiguity resolver:
+- Uses the best available model for resolution
+- Provides context-aware suggestions
+- Maintains consistency across related AUTO tags
+- Supports conditional resolution based on input parameters</p>
+<h3 id="3-runtime-template-resolution">3. Runtime Template Resolution</h3>
+<p>Templates are resolved at different stages:</p>
+<p>```yaml
+steps:
+  - id: search
+    action: search_web
+    parameters:
+      query: "{{ inputs.topic }} recent advances"  # Runtime resolution</p>
+<ul>
+<li>id: compile
+    action: compile_results
+    parameters:
+      content: "$results.search"  # Reference to previous task result
+```</li>
+</ul>
+<h3 id="4-automatic-tool-detection">4. Automatic Tool Detection</h3>
+<p>The framework automatically detects required tools from pipeline definitions:</p>
+<p>```yaml
+steps:
+  - id: web_search
+    action: search_web        # → Requires headless-browser tool</p>
+<ul>
+<li>
+<p>id: shell_command
+    action: "!echo hello"     # → Requires terminal tool</p>
+</li>
+<li>
+<p>id: file_operation
+    action: write_file        # → Requires filesystem tool
+```</p>
+</li>
+</ul>
+<h3 id="5-mcp-server-integration">5. MCP Server Integration</h3>
+<p>Tools are automatically exposed via Model Context Protocol:
+- Server starts automatically when tools are detected
+- Tools schemas are generated and exposed
+- AI models can discover and use tools dynamically
+- Bidirectional communication for complex tool interactions</p>
+<h2 id="installation-setup">Installation &amp; Setup</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li>Python 3.11+</li>
+<li>Optional: Docker (for sandboxed execution)</li>
+<li>Optional: Ollama or other model providers</li>
+</ul>
+<h3 id="basic-setup">Basic Setup</h3>
+<p>```bash</p>
+<h1 id="clone-the-repository">Clone the repository</h1>
+<p>git clone <repository-url>
+cd orchestrator</p>
+<h1 id="install-dependencies-when-implemented">Install dependencies (when implemented)</h1>
+<p>pip install -e .</p>
+<h1 id="initialize-models">Initialize models</h1>
+<p>python -c "import orchestrator; orchestrator.init_models()"
+```</p>
+<h3 id="model-configuration">Model Configuration</h3>
+<p>The framework auto-detects available models:</p>
+<p>```python
+import orchestrator as orc</p>
+<h1 id="initialize-available-models">Initialize available models</h1>
+<p>registry = orc.init_models()</p>
+<h1 id="check-available-models">Check available models</h1>
+<p>print(registry.list_models())</p>
+<h1 id="output-ollamagemma227b-ollamallama321b-huggingfacedistilgpt2">Output: ['ollama:gemma2:27b', 'ollama:llama3.2:1b', 'huggingface:distilgpt2']</h1>
+<p>```</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-pipeline-compilation-and-execution">Basic Pipeline Compilation and Execution</h3>
+<p>```python
+import orchestrator as orc</p>
+<h1 id="initialize-models_1">Initialize models</h1>
+<p>orc.init_models()</p>
+<h1 id="compile-pipeline">Compile pipeline</h1>
+<p>pipeline = orc.compile("examples/pipelines/research-report-template.yaml")</p>
+<h1 id="execute-with-different-inputs">Execute with different inputs</h1>
+<p>result1 = pipeline.run(
+    topic="machine_learning",
+    instructions="Focus on transformer architectures"
+)</p>
+<p>result2 = pipeline.run(
+    topic="renewable_energy", 
+    instructions="Emphasize solar and wind technologies"
+)</p>
+<p>print(f"Generated: {result1}")  # machine_learning_report.pdf
+print(f"Generated: {result2}")  # renewable_energy_report.pdf
+```</p>
+<h3 id="advanced-pipeline-with-tool-integration">Advanced Pipeline with Tool Integration</h3>
+<p>```python
+import orchestrator as orc</p>
+<h1 id="pipeline-automatically-detects-and-configures-required-tools">Pipeline automatically detects and configures required tools</h1>
+<p>pipeline = orc.compile("examples/pipelines/research-report-template.yaml")</p>
+<h1 id="tools-are-auto-detected-web-search-terminal-filesystem-validation">Tools are auto-detected: web-search, terminal, filesystem, validation</h1>
+<h1 id="mcp-server-starts-automatically">MCP server starts automatically</h1>
+<h1 id="execute-pipeline-tools-are-used-automatically">Execute pipeline - tools are used automatically</h1>
+<p>result = pipeline.run(
+    topic="quantum_computing",
+    instructions="Cover error correction and commercial applications"
+)
+```</p>
+<h3 id="custom-tool-registration">Custom Tool Registration</h3>
+<p>```python
+from orchestrator.tools.base import Tool, default_registry</p>
+<p>class CustomAnalysisTool(Tool):
+    def <strong>init</strong>(self):
+        super().<strong>init</strong>(
+            name="custom-analysis",
+            description="Perform custom data analysis"
+        )
+        self.add_parameter("data", "object", "Data to analyze")
+        self.add_parameter("method", "string", "Analysis method")</p>
+<div class="codehilite"><pre><span></span><code>async def execute(self, **kwargs):
+    # Implementation here
+    return {&quot;result&quot;: &quot;analysis complete&quot;}
+</code></pre></div>
+
+<h1 id="register-the-tool">Register the tool</h1>
+<p>default_registry.register(CustomAnalysisTool())
+```</p>
+<h3 id="async-pipeline-execution">Async Pipeline Execution</h3>
+<p>```python
+import asyncio
+import orchestrator as orc</p>
+<p>async def run_pipeline():
+    # Compile pipeline
+    pipeline = await orc.compile_async("pipeline.yaml")</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Execute multiple pipelines concurrently
+tasks = [
+    pipeline._run_async(topic=&quot;ai&quot;, instructions=&quot;Focus on ethics&quot;),
+    pipeline._run_async(topic=&quot;climate&quot;, instructions=&quot;Focus on solutions&quot;),
+    pipeline._run_async(topic=&quot;space&quot;, instructions=&quot;Focus on exploration&quot;)
+]
+
+results = await asyncio.gather(*tasks)
+return results
+</code></pre></div>
+
+<h1 id="run-async">Run async</h1>
+<p>results = asyncio.run(run_pipeline())
+```</p>
+<h2 id="tool-system">Tool System</h2>
+<h3 id="available-tools">Available Tools</h3>
+<p>The framework provides a comprehensive set of built-in tools:</p>
+<h4 id="web-tools-srcorchestratortoolsweb_toolspy">Web Tools (<code>src/orchestrator/tools/web_tools.py</code>)</h4>
+<ul>
+<li><strong>HeadlessBrowserTool</strong>: Web scraping and page interaction</li>
+<li><strong>WebSearchTool</strong>: Search engine integration</li>
+</ul>
+<h4 id="system-tools-srcorchestratortoolssystem_toolspy">System Tools (<code>src/orchestrator/tools/system_tools.py</code>)</h4>
+<ul>
+<li><strong>TerminalTool</strong>: Shell command execution</li>
+<li><strong>FileSystemTool</strong>: File operations (read, write, copy, move)</li>
+</ul>
+<h4 id="data-tools-srcorchestratortoolsdata_toolspy">Data Tools (<code>src/orchestrator/tools/data_tools.py</code>)</h4>
+<ul>
+<li><strong>DataProcessingTool</strong>: Data transformation and conversion</li>
+<li><strong>ValidationTool</strong>: Data validation and schema checking</li>
+</ul>
+<h3 id="tool-schema-example">Tool Schema Example</h3>
+<p>```python</p>
+<h1 id="tools-automatically-generate-mcp-compatible-schemas">Tools automatically generate MCP-compatible schemas</h1>
+<p>{
+  "name": "terminal",
+  "description": "Execute terminal commands in a sandboxed environment",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "command": {"type": "string", "description": "Command to execute"},
+      "working_dir": {"type": "string", "description": "Working directory"},
+      "timeout": {"type": "integer", "description": "Timeout in seconds"}
+    },
+    "required": ["command"]
+  }
+}
+```</p>
+<h3 id="mcp-server-configuration">MCP Server Configuration</h3>
+<p>```python
+from orchestrator.tools.mcp_server import default_mcp_server</p>
+<h1 id="server-automatically-starts-when-tools-are-detected">Server automatically starts when tools are detected</h1>
+<h1 id="configuration-is-generated-dynamically">Configuration is generated dynamically:</h1>
+<p>{
+  "mcpServers": {
+    "orchestrator-tools": {
+      "command": "python",
+      "args": ["-m", "orchestrator.tools.mcp_server"],
+      "env": {"ORCHESTRATOR_TOOLS": "enabled"}
+    }
+  }
+}
+```</p>
+<h3 id="tool-detection-logic">Tool Detection Logic</h3>
+<p>The framework uses intelligent heuristics to detect required tools:</p>
+<p>```python</p>
+<h1 id="action-patterns-that-trigger-tool-detection">Action patterns that trigger tool detection:</h1>
+<p>"search_web" → headless-browser
+"!command" → terminal<br />
+"write_file" → filesystem
+"validate_data" → validation
+"transform_data" → data-processing
+```</p>
+<h2 id="api-reference">API Reference</h2>
+<h3 id="core-functions">Core Functions</h3>
+<p>```python</p>
+<h1 id="model-initialization">Model initialization</h1>
+<p>orchestrator.init_models() -&gt; ModelRegistry</p>
+<h1 id="pipeline-compilation">Pipeline compilation</h1>
+<p>orchestrator.compile(yaml_path: str) -&gt; OrchestratorPipeline
+orchestrator.compile_async(yaml_path: str) -&gt; OrchestratorPipeline</p>
+<h1 id="pipeline-execution">Pipeline execution</h1>
+<p>pipeline.run(<strong>kwargs) -&gt; Any
+pipeline._run_async(</strong>kwargs) -&gt; Any
+```</p>
+<h3 id="orchestratorpipeline-class">OrchestratorPipeline Class</h3>
+<p>```python
+class OrchestratorPipeline:
+    def run(self, **kwargs) -&gt; Any:
+        """Execute pipeline with keyword arguments"""</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">_validate_inputs</span><span class="p">(</span><span class="kr">self</span><span class="p">,</span><span class="w"> </span><span class="n">kwargs</span><span class="o">:</span><span class="w"> </span><span class="n">dict</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">None</span><span class="o">:</span>
+<span class="w">    </span><span class="s">&quot;&quot;&quot;Validate required inputs are provided&quot;&quot;&quot;</span>
+
+<span class="n">def</span><span class="w"> </span><span class="n">_resolve_outputs</span><span class="p">(</span><span class="kr">self</span><span class="p">,</span><span class="w"> </span><span class="n">inputs</span><span class="o">:</span><span class="w"> </span><span class="n">dict</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">dict</span><span class="o">:</span>
+<span class="w">    </span><span class="s">&quot;&quot;&quot;Resolve output definitions using AUTO tags&quot;&quot;&quot;</span>
+
+<span class="n">def</span><span class="w"> </span><span class="n">_resolve_runtime_templates</span><span class="p">(</span><span class="kr">self</span><span class="p">,</span><span class="w"> </span><span class="n">pipeline</span><span class="o">:</span><span class="w"> </span><span class="n">Pipeline</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="o">:</span><span class="w"> </span><span class="n">dict</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Pipeline</span><span class="o">:</span>
+<span class="w">    </span><span class="s">&quot;&quot;&quot;Apply runtime template resolution&quot;&quot;&quot;</span>
+</code></pre></div>
+
+<p>```</p>
+<h3 id="tool-registry">Tool Registry</h3>
+<p>```python
+from orchestrator.tools.base import default_registry</p>
+<h1 id="register-tool">Register tool</h1>
+<p>default_registry.register(tool_instance)</p>
+<h1 id="execute-tool">Execute tool</h1>
+<p>result = await default_registry.execute_tool(tool_name, **params)</p>
+<h1 id="list-available-tools">List available tools</h1>
+<p>tools = default_registry.list_tools()</p>
+<h1 id="get-tool-by-name">Get tool by name</h1>
+<p>tool = default_registry.get_tool(tool_name)
+```</p>
+<h2 id="current-capabilities">Current Capabilities</h2>
+<h3 id="implemented-features">✅ Implemented Features</h3>
+<ol>
+<li><strong>Input-Agnostic Pipeline System</strong></li>
+<li>Templates with runtime resolution</li>
+<li>Input validation and type checking</li>
+<li>Output generation based on inputs</li>
+<li>
+<p>Keyword argument support</p>
+</li>
+<li>
+<p><strong>Tool Integration Framework</strong></p>
+</li>
+<li>Comprehensive tool library (web, system, data)</li>
+<li>Automatic tool detection from YAML</li>
+<li>MCP server integration</li>
+<li>
+<p>Tool parameter mapping and validation</p>
+</li>
+<li>
+<p><strong>AI Model Integration</strong> </p>
+</li>
+<li>Multi-provider support (Ollama, HuggingFace)</li>
+<li>Intelligent model selection</li>
+<li>AUTO tag resolution using AI</li>
+<li>
+<p>Fallback and error handling</p>
+</li>
+<li>
+<p><strong>Pipeline Execution Engine</strong></p>
+</li>
+<li>Dependency resolution and ordering</li>
+<li>Task status tracking</li>
+<li>Error handling with fallbacks</li>
+<li>
+<p>Reference resolution ($results.task_id)</p>
+</li>
+<li>
+<p><strong>YAML Processing</strong></p>
+</li>
+<li>Schema validation</li>
+<li>Template processing (Jinja2)</li>
+<li>Runtime vs compile-time resolution</li>
+<li>Circular dependency detection</li>
+</ol>
+<h3 id="working-features">🚧 Working Features</h3>
+<ol>
+<li><strong>MCP Server Protocol</strong></li>
+<li>Server startup and configuration</li>
+<li>Tool schema generation</li>
+<li>
+<p>Basic tool execution (simulated)</p>
+</li>
+<li>
+<p><strong>State Management</strong></p>
+</li>
+<li>Basic checkpointing infrastructure</li>
+<li>Recovery mechanisms (not fully tested)</li>
+</ol>
+<h3 id="planned-features">📋 Planned Features</h3>
+<ol>
+<li><strong>Advanced MCP Integration</strong></li>
+<li>Real MCP protocol implementation</li>
+<li>Tool discovery by AI models</li>
+<li>
+<p>Bidirectional tool communication</p>
+</li>
+<li>
+<p><strong>Sandboxed Execution</strong></p>
+</li>
+<li>Docker container isolation</li>
+<li>Resource limit enforcement</li>
+<li>
+<p>Network access controls</p>
+</li>
+<li>
+<p><strong>Advanced Control Systems</strong></p>
+</li>
+<li>LangGraph adapter implementation</li>
+<li>Custom control system plugins</li>
+<li>Distributed execution support</li>
+</ol>
+<h2 id="limitations">Limitations</h2>
+<h3 id="current-limitations">Current Limitations</h3>
+<ol>
+<li><strong>MCP Server</strong>: Currently simulated - needs real MCP protocol implementation</li>
+<li><strong>Tool Execution</strong>: Some tools use simulation rather than real execution</li>
+<li><strong>State Persistence</strong>: Database backends not fully implemented</li>
+<li><strong>Error Recovery</strong>: Advanced error handling strategies need refinement</li>
+<li><strong>Performance</strong>: No optimization for large-scale pipeline execution</li>
+<li><strong>Security</strong>: Sandboxing and input validation need hardening</li>
+</ol>
+<h3 id="known-issues">Known Issues</h3>
+<ol>
+<li><strong>Tool Parameter Mapping</strong>: Some edge cases in parameter conversion</li>
+<li><strong>Template Resolution</strong>: Complex nested templates may fail</li>
+<li><strong>Dependency Cycles</strong>: Detection works but error messages could be clearer</li>
+<li><strong>Resource Management</strong>: No active monitoring of CPU/memory usage</li>
+</ol>
+<h3 id="scale-limitations">Scale Limitations</h3>
+<ul>
+<li><strong>Pipeline Size</strong>: Tested with small pipelines (&lt; 20 tasks)</li>
+<li><strong>Concurrent Execution</strong>: Limited testing of parallel task execution</li>
+<li><strong>Model Selection</strong>: UCB algorithm needs tuning for production use</li>
+<li><strong>Tool Discovery</strong>: Heuristic-based detection may miss edge cases</li>
+</ul>
+<h2 id="development">Development</h2>
+<h3 id="project-structure">Project Structure</h3>
+<p><code>orchestrator/
+├── src/orchestrator/          # Core library
+│   ├── compiler/             # YAML parsing and compilation
+│   ├── core/                 # Core abstractions (Task, Pipeline, etc.)
+│   ├── models/               # Model registry and abstractions
+│   ├── tools/                # Tool library and MCP integration
+│   ├── state/                # State management
+│   ├── integrations/         # Third-party integrations
+│   └── orchestrator.py       # Main orchestrator class
+├── examples/                 # Example pipelines and tests
+│   ├── pipelines/            # YAML pipeline definitions
+│   └── test_*.py             # Integration tests
+├── tests/                    # Unit tests
+├── docs/                     # Documentation
+└── config/                   # Configuration schemas</code></p>
+<h3 id="running-tests">Running Tests</h3>
+<p>```bash</p>
+<h1 id="run-integration-tests">Run integration tests</h1>
+<p>python examples/test_full_integration.py</p>
+<h1 id="test-individual-components">Test individual components</h1>
+<p>python examples/test_orchestrator_coverage_lines_207_272.py
+python tests/test_ambiguity_resolver.py
+python tests/test_core_pipeline_coverage.py
+```</p>
+<h3 id="adding-new-tools">Adding New Tools</h3>
+<ol>
+<li>Create tool class inheriting from <code>Tool</code></li>
+<li>Implement <code>execute</code> method</li>
+<li>Register with <code>default_registry</code></li>
+<li>Add detection logic to <code>ToolDetector</code></li>
+</ol>
+<p>```python
+from orchestrator.tools.base import Tool</p>
+<p>class MyCustomTool(Tool):
+    def <strong>init</strong>(self):
+        super().<strong>init</strong>(name="my-tool", description="My tool description")
+        self.add_parameter("param1", "string", "Parameter description")</p>
+<div class="codehilite"><pre><span></span><code>async def execute(self, **kwargs):
+    # Implementation
+    return {&quot;result&quot;: &quot;success&quot;}
+</code></pre></div>
+
+<p>```</p>
+<h3 id="contributing">Contributing</h3>
+<p>The framework is in active development. Key areas for contribution:</p>
+<ol>
+<li><strong>Real MCP Protocol Implementation</strong></li>
+<li><strong>Additional Tool Integrations</strong> </li>
+<li><strong>Performance Optimization</strong></li>
+<li><strong>Security Hardening</strong></li>
+<li><strong>Documentation and Examples</strong></li>
+</ol>
+<hr />
+<p><em>This documentation reflects the current state of the Orchestrator framework as of July 2024. For the latest updates, see the project repository.</em></p>
+</body>
+</html>
