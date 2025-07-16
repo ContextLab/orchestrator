@@ -226,6 +226,7 @@ redis:/
 # Test and example outputs
 test_output/
 example_output/
+output/
 reports/
 *.pdf
 

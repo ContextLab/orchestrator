@@ -3,7 +3,7 @@
 orchestrator:
   # Basic settings
   name: orchestrator
-  version: 1.0.0
+  version: 0.1.0
   
   # Execution settings
   execution:
@@ -106,6 +106,72 @@ orchestrator:
       enabled: true
       requests_per_minute: 60
       burst_size: 10
+      
+  # Web tools configuration
+  web_tools:
+    # Search backends configuration
+    search:
+      default_backend: duckduckgo  # duckduckgo, bing, google
+      max_results: 20
+      timeout: 30
+      
+      # Backend-specific settings
+      backends:
+        duckduckgo:
+          enabled: true
+          region: us-en
+          time_range: all  # all, y, m, w, d
+          safe_search: moderate  # strict, moderate, off
+          
+        bing:
+          enabled: false
+          api_key: ""  # Required for Bing Search API
+          endpoint: "https://api.bing.microsoft.com/v7.0/search"
+          
+        google:
+          enabled: false
+          api_key: ""  # Required for Google Custom Search API
+          search_engine_id: ""  # Required for Google Custom Search API
+          
+    # Web scraping configuration
+    scraping:
+      timeout: 30
+      max_content_length: 1048576  # 1MB
+      user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+      follow_redirects: true
+      max_redirects: 5
+      
+      # Content extraction settings
+      extract_text: true
+      extract_links: true
+      extract_images: true
+      extract_metadata: true
+      
+    # Browser automation configuration
+    browser:
+      headless: true
+      timeout: 30
+      viewport:
+        width: 1920
+        height: 1080
+      browser_type: chromium  # chromium, firefox, webkit
+      
+      # JavaScript execution
+      javascript_enabled: true
+      wait_for_load: 2000  # milliseconds
+      
+    # Rate limiting for web requests
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 30
+      burst_size: 5
+      delay_between_requests: 2  # seconds
+      
+    # Caching for web content
+    caching:
+      enabled: true
+      ttl: 3600  # 1 hour
+      max_cache_size: 100  # number of cached responses
       
 # Development settings
 development:
