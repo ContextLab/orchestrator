@@ -12,7 +12,7 @@ import aiohttp
 import httpx
 import requests
 from bs4 import BeautifulSoup
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from playwright.async_api import async_playwright
 
 from .base import Tool

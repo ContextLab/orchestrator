@@ -198,6 +198,8 @@ Now, let's implement the research assistant in Python:
    # research_assistant.py
    import asyncio
    import logging
+   import yaml
+   import os
    from datetime import datetime
    from typing import Dict, List, Any, Optional
    
@@ -231,6 +233,8 @@ Now, let's implement the research assistant in Python:
            self.orchestrator = None
            self.state_manager = None
            self.cache = None
+           # Load orchestrator configuration for web tools
+           self.orchestrator_config = self._load_orchestrator_config()
            self._setup_orchestrator()
        
        def _setup_orchestrator(self):
@@ -290,12 +294,49 @@ Now, let's implement the research assistant in Python:
                except Exception as e:
                    print(f"Failed to register Anthropic model: {e}")
        
+       def _load_orchestrator_config(self) -> Dict[str, Any]:
+           """Load orchestrator configuration for web tools."""
+           config_path = "config/orchestrator.yaml"
+           if os.path.exists(config_path):
+               with open(config_path, 'r') as f:
+                   return yaml.safe_load(f)
+           else:
+               # Default configuration for web tools
+               return {
+                   "web_tools": {
+                       "search": {
+                           "default_backend": "duckduckgo",
+                           "max_results": 10,
+                           "timeout": 30
+                       },
+                       "scraping": {
+                           "timeout": 30,
+                           "max_content_length": 1048576,
+                           "user_agent": "Mozilla/5.0 (compatible; Research Assistant)"
+                       },
+                       "browser": {
+                           "headless": True,
+                           "timeout": 30
+                       },
+                       "rate_limiting": {
+                           "enabled": True,
+                           "requests_per_minute": 30,
+                           "delay_between_requests": 2
+                       },
+                       "caching": {
+                           "enabled": True,
+                           "ttl": 3600,
+                           "max_cache_size": 100
+                       }
+                   }
+               }
+       
        def _register_tools(self):
            """Register tools for web search and content extraction."""
            # Tools are handled by the control system in the orchestrator
            # For this example, we'll store them as instance variables
-           self.web_search = WebSearchTool()
-           self.browser_tool = HeadlessBrowserTool()
+           self.web_search = WebSearchTool(self.orchestrator_config)
+           self.browser_tool = HeadlessBrowserTool(self.orchestrator_config)
            self.data_analyzer = DataProcessingTool()
        
        async def conduct_research(self, query: str, context: str = "") -> Dict[str, Any]:
@@ -406,20 +447,28 @@ Now, let's implement the research assistant in Python:
 Tool Integration
 ^^^^^^^^^^^^^^^^
 
-The research assistant uses the existing Orchestrator web tools:
+The research assistant uses real web tools for actual data retrieval:
 
 .. code-block:: python
 
-   # The tools are automatically integrated when registered
-   # WebSearchTool: Performs web searches using multiple sources
-   # HeadlessBrowserTool: Extracts content from web pages
+   # Real Web Tools Implementation
+   # WebSearchTool: Uses DuckDuckGo (ddgs library) for real web searches
+   # HeadlessBrowserTool: Uses requests and BeautifulSoup for content extraction
    # DataProcessingTool: Analyzes source credibility and quality
    
    # These tools provide:
-   # - Web search across multiple sources (web, documentation, academic)
-   # - Content extraction with quality scoring
-   # - Source credibility analysis
-   # - Automatic result ranking and deduplication
+   # - Real web search using DuckDuckGo API (no API key required)
+   # - Actual content extraction from web pages
+   # - Source credibility analysis with real data
+   # - Quality scoring based on actual content
+   # - Rate limiting to prevent abuse
+   # - Error handling for network issues
+   
+   # Dependencies required:
+   # - ddgs>=9.0.0 (DuckDuckGo search)
+   # - requests>=2.28.0 (HTTP requests)
+   # - beautifulsoup4>=4.11.0 (HTML parsing)
+   # - lxml>=4.9.0 (XML/HTML parser backend)
 
 Running the Research Assistant
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

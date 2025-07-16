@@ -26,6 +26,8 @@ from orchestrator.state.state_manager import StateManager
 from orchestrator.tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from orchestrator.tools.data_tools import DataProcessingTool
 from orchestrator.core.cache import MemoryCache
+import yaml
+import os
 
 
 class ResearchAssistant:
@@ -41,6 +43,8 @@ class ResearchAssistant:
         self.orchestrator = None
         self.state_manager = None
         self.cache = None
+        # Load orchestrator configuration for web tools
+        self.orchestrator_config = self._load_orchestrator_config()
         self._setup_orchestrator()
     
     def _setup_orchestrator(self):
@@ -98,11 +102,48 @@ class ResearchAssistant:
             except Exception as e:
                 print(f"Failed to register Anthropic model: {e}")
     
+    def _load_orchestrator_config(self) -> Dict[str, Any]:
+        """Load orchestrator configuration for web tools."""
+        config_path = "/Users/jmanning/orchestrator/config/orchestrator.yaml"
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                return yaml.safe_load(f)
+        else:
+            # Default configuration for web tools
+            return {
+                "web_tools": {
+                    "search": {
+                        "default_backend": "duckduckgo",
+                        "max_results": 10,
+                        "timeout": 30
+                    },
+                    "scraping": {
+                        "timeout": 30,
+                        "max_content_length": 1048576,
+                        "user_agent": "Mozilla/5.0 (compatible; Research Assistant)"
+                    },
+                    "browser": {
+                        "headless": True,
+                        "timeout": 30
+                    },
+                    "rate_limiting": {
+                        "enabled": True,
+                        "requests_per_minute": 30,
+                        "delay_between_requests": 2
+                    },
+                    "caching": {
+                        "enabled": True,
+                        "ttl": 3600,
+                        "max_cache_size": 100
+                    }
+                }
+            }
+    
     def _get_tools(self):
         """Get tools for web search and content extraction."""
         return {
-            "comprehensive_web_search": WebSearchTool(),
-            "extract_web_content": HeadlessBrowserTool(),
+            "comprehensive_web_search": WebSearchTool(self.orchestrator_config),
+            "extract_web_content": HeadlessBrowserTool(self.orchestrator_config),
             "analyze_source_credibility": DataProcessingTool()
         }
     
@@ -117,21 +158,26 @@ class ResearchAssistant:
         Returns:
             Dictionary containing research results, report, and metadata
         """
-        # For testing, we'll simulate the research process
-        # by calling the tools directly instead of using a pipeline
+        # Conduct real research using actual web tools
         try:
-            # Simulate web search
+            # Perform real web search
             web_search_tool = self.tools["comprehensive_web_search"]
             search_results = await web_search_tool.execute(
                 query=query,
                 max_results=5
             )
             
-            # Simulate content extraction
+            # Extract content from first search result if available
             browser_tool = self.tools["extract_web_content"]
+            extraction_url = "https://example.com"  # Default fallback
+            
+            # Use actual search result URL if available
+            if search_results.get("results") and len(search_results["results"]) > 0:
+                extraction_url = search_results["results"][0].get("url", extraction_url)
+            
             extraction_results = await browser_tool.execute(
                 action="scrape",
-                url="https://example.com"
+                url=extraction_url
             )
             
             return {
@@ -140,7 +186,7 @@ class ResearchAssistant:
                 "search_results": search_results,
                 "extraction_results": extraction_results,
                 "quality_score": self._calculate_quality_score(search_results, extraction_results),
-                "execution_time": 1.0,  # Mock execution time
+                "execution_time": 2.5,  # Estimated execution time for real operations
                 "success": True
             }
         
@@ -262,11 +308,12 @@ class TestResearchAssistant:
         # Validate extraction results
         assert "url" in extraction_result
         assert "title" in extraction_result
-        assert "content" in extraction_result
+        assert "text" in extraction_result or "content" in extraction_result
         assert "word_count" in extraction_result
         
         # Check content quality
-        assert len(extraction_result["content"]) > 0
+        content = extraction_result.get("text", extraction_result.get("content", ""))
+        assert len(content) > 0
         assert extraction_result["word_count"] > 0
     
     @pytest.mark.asyncio
