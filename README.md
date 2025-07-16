@@ -3,7 +3,7 @@
 [![PyPI Version](https://img.shields.io/pypi/v/py-orc)](https://pypi.org/project/py-orc/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/py-orc)](https://pypi.org/project/py-orc/)
 [![Downloads](https://img.shields.io/pypi/dm/py-orc)](https://pypi.org/project/py-orc/)
-[![License](https://img.shields.io/pypi/l/py-orc)](https://github.com/ContextLab/orchestrator/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ContextLab/orchestrator/blob/main/LICENSE)
 [![Tests](https://github.com/ContextLab/orchestrator/actions/workflows/tests.yml/badge.svg)](https://github.com/ContextLab/orchestrator/actions/workflows/tests.yml)
 [![Coverage](https://github.com/ContextLab/orchestrator/actions/workflows/coverage.yml/badge.svg)](https://github.com/ContextLab/orchestrator/actions/workflows/coverage.yml)
 [![Documentation](https://readthedocs.org/projects/orc/badge/?version=latest)](https://orc.readthedocs.io/en/latest/?badge=latest)
