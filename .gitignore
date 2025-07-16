@@ -219,6 +219,9 @@ cache/
 *.tmp
 temp/
 tmp/
+# Redis cache directories with invalid Windows paths
+redis:*/
+redis:/
 
 # Test and example outputs
 test_output/
