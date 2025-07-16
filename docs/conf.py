@@ -7,11 +7,11 @@ import sys
 sys.path.insert(0, os.path.abspath('../src'))
 
 # -- Project information -----------------------------------------------------
-project = 'Orchestrator'
-copyright = '2025, Orchestrator Framework'
-author = 'Orchestrator Framework Team'
-release = '1.0.0'
-version = '1.0.0'
+project = 'py-orc'
+copyright = '2025, Contextual Dynamics Laboratory'
+author = 'Contextual Dynamics Laboratory'
+release = '0.1.0'
+version = '0.1.0'
 
 # -- General configuration ---------------------------------------------------
 extensions = [

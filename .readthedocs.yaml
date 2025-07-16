@@ -13,12 +13,12 @@ build:
       - pip install poetry
     post_install:
       # Install dependencies
-      - cd docs_sphinx && pip install -r requirements.txt
+      - cd docs && pip install -r requirements.txt
       - pip install -e .
 
-# Build documentation in the docs_sphinx/ directory with Sphinx
+# Build documentation in the docs/ directory with Sphinx
 sphinx:
-  configuration: docs_sphinx/conf.py
+  configuration: docs/conf.py
   fail_on_warning: false
 
 # Optionally build your docs in additional formats such as PDF and ePub
@@ -30,7 +30,7 @@ formats:
 # to build your documentation
 python:
   install:
-    - requirements: docs_sphinx/requirements.txt
+    - requirements: docs/requirements.txt
     - method: pip
       path: .
       extra_requirements:

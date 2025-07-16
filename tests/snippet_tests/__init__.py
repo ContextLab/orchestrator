@@ -1,1 +1,1 @@
-"""Tests for documentation code snippets."""
+"""Working tests for documentation code snippets."""

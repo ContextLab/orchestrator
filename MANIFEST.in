@@ -1,0 +1,43 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include requirements.txt
+include requirements-dev.txt
+
+# Include configuration files
+recursive-include config *.yaml *.yml *.json
+
+# Include documentation
+recursive-include docs *.rst *.py *.png *.jpg *.gif
+recursive-include docs_sphinx *.rst *.py *.png *.jpg *.gif
+
+# Include example files
+recursive-include examples *.yaml *.yml *.py *.md
+
+# Include test files
+recursive-include tests *.py *.yaml *.yml *.json
+
+# Include source package data
+recursive-include src *.py *.yaml *.yml *.json
+
+# Exclude unnecessary files
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude .DS_Store
+global-exclude .gitignore
+global-exclude .git
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~
+
+# Exclude cache and temporary directories
+prune cache
+prune checkpoints
+prune .pytest_cache
+prune .mypy_cache
+prune .ruff_cache
+prune htmlcov
+prune .coverage
+prune build
+prune dist
+prune *.egg-info
