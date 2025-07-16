@@ -8,6 +8,9 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+# Mark all tests in this file as local-only (not run in CI)
+pytestmark = pytest.mark.local
+
 
 def check_ollama_available():
     """Check if Ollama is available and has models."""
