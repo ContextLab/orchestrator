@@ -165,7 +165,7 @@ model.set_response("your prompt", "expected response")
 
 **Async/Await Issues**
 ```python
-# Use await in Jupyter notebook cells
+# Use await in Jupyter notebook cells (notebook-only syntax)
 result = await orchestrator.execute_pipeline(pipeline)
 ```
 

@@ -160,6 +160,7 @@ For headless browser functionality:
 
    # Install Playwright
    pip install playwright
+   # Install Playwright browser
    playwright install chromium
    
    # Or use Selenium

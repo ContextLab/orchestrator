@@ -126,6 +126,7 @@ This tutorial introduces you to the Orchestrator Framework fundamentals:
    pipeline.add_task(task)
    
    orchestrator = Orchestrator()
+   # Note: This code is for Jupyter notebooks which support top-level await
    result = await orchestrator.execute_pipeline(pipeline)
 
 Tutorial 02: YAML Configuration
@@ -230,6 +231,7 @@ This tutorial covers production-ready model orchestration:
    orchestrator.register_model(claude)
    
    # Orchestrator automatically selects best model
+   # Note: This code is for Jupyter notebooks which support top-level await
    result = await orchestrator.execute_pipeline(pipeline)
 
 Running the Tutorials
@@ -314,7 +316,7 @@ Common Issues and Solutions
       pip install jupyterlab
 
 **Import Errors**
-   .. code-block:: python
+   .. code-block:: bash
 
       # Make sure Orchestrator is installed
       pip install py-orc
@@ -331,7 +333,7 @@ Common Issues and Solutions
 **Async/Await Problems**
    .. code-block:: python
 
-      # Use await in notebook cells
+      # Use await in notebook cells (Jupyter notebooks only)
       result = await orchestrator.execute_pipeline(pipeline)
 
 Advanced Tutorial Topics

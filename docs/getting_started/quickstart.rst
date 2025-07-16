@@ -34,7 +34,21 @@ Let's create a simple text generation pipeline:
    orchestrator.register_model(model)
    
    # Execute pipeline
-   result = await orchestrator.execute_pipeline(pipeline)
+   import asyncio
+
+   
+
+   async def run_pipeline():
+
+       result = await orchestrator.execute_pipeline(pipeline)
+
+       return result
+
+   
+
+   # Run the pipeline
+
+   result = asyncio.run(run_pipeline())
    print(f"Result: {result['greeting']}")
 
 Multi-Task Pipeline
@@ -79,7 +93,21 @@ Let's create a more complex pipeline with multiple tasks:
    pipeline.add_task(summary_task)
    
    # Execute pipeline
-   result = await orchestrator.execute_pipeline(pipeline)
+   import asyncio
+
+   
+
+   async def run_pipeline():
+
+       result = await orchestrator.execute_pipeline(pipeline)
+
+       return result
+
+   
+
+   # Run the pipeline
+
+   result = asyncio.run(run_pipeline())
    print(f"Outline: {result['outline']}")
    print(f"Story: {result['story']}")
    print(f"Summary: {result['summary']}")
@@ -129,7 +157,21 @@ Load and execute the YAML pipeline:
    pipeline = compiler.compile_file("story_pipeline.yaml")
    
    # Execute pipeline
-   result = await orchestrator.execute_pipeline(pipeline)
+   import asyncio
+
+   
+
+   async def run_pipeline():
+
+       result = await orchestrator.execute_pipeline(pipeline)
+
+       return result
+
+   
+
+   # Run the pipeline
+
+   result = asyncio.run(run_pipeline())
 
 Real AI Models
 --------------
@@ -151,7 +193,21 @@ Let's use a real AI model instead of the mock:
    orchestrator.register_model(openai_model)
    
    # Execute pipeline (will use OpenAI)
-   result = await orchestrator.execute_pipeline(pipeline)
+   import asyncio
+
+   
+
+   async def run_pipeline():
+
+       result = await orchestrator.execute_pipeline(pipeline)
+
+       return result
+
+   
+
+   # Run the pipeline
+
+   result = asyncio.run(run_pipeline())
 
 Error Handling
 --------------
@@ -170,7 +226,21 @@ Orchestrator provides built-in error handling:
    
    # Execute pipeline with automatic retry on failures
    try:
-       result = await orchestrator.execute_pipeline(pipeline)
+       import asyncio
+
+       
+
+       async def run_pipeline():
+
+           result = await orchestrator.execute_pipeline(pipeline)
+
+           return result
+
+       
+
+       # Run the pipeline
+
+       result = asyncio.run(run_pipeline())
    except Exception as e:
        print(f"Pipeline failed: {e}")
 
@@ -190,7 +260,21 @@ Enable checkpointing for long-running pipelines:
    orchestrator = Orchestrator(state_manager=state_manager)
    
    # Execute pipeline with automatic checkpointing
-   result = await orchestrator.execute_pipeline(pipeline)
+   import asyncio
+
+   
+
+   async def run_pipeline():
+
+       result = await orchestrator.execute_pipeline(pipeline)
+
+       return result
+
+   
+
+   # Run the pipeline
+
+   result = asyncio.run(run_pipeline())
 
 Monitoring & Logging
 --------------------
@@ -205,7 +289,21 @@ Enable monitoring to track pipeline execution:
    logging.basicConfig(level=logging.DEBUG)
    
    # Execute pipeline with logging
-   result = await orchestrator.execute_pipeline(pipeline)
+   import asyncio
+
+   
+
+   async def run_pipeline():
+
+       result = await orchestrator.execute_pipeline(pipeline)
+
+       return result
+
+   
+
+   # Run the pipeline
+
+   result = asyncio.run(run_pipeline())
    
    # Get execution statistics
    stats = orchestrator.get_execution_stats()

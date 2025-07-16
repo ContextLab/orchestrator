@@ -88,12 +88,18 @@ The **Orchestrator** is the execution engine that:
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator import Orchestrator
    
-   orchestrator = Orchestrator()
-   orchestrator.register_model(model)
+   async def run_pipeline():
+       orchestrator = Orchestrator()
+       orchestrator.register_model(model)
+       
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run the pipeline
+   result = asyncio.run(run_pipeline())
 
 Task Dependencies
 -----------------
@@ -162,12 +168,19 @@ When you execute a pipeline, the orchestrator:
 
 .. code-block:: python
 
-   # Execute pipeline
-   result = await orchestrator.execute_pipeline(pipeline)
+   import asyncio
    
-   # Access individual task results
-   print(result["extract"])    # Output from extract task
-   print(result["summarize"])  # Output from summarize task
+   async def execute_and_process():
+       # Execute pipeline
+       result = await orchestrator.execute_pipeline(pipeline)
+       
+       # Access individual task results
+       print(result["extract"])    # Output from extract task
+       print(result["summarize"])  # Output from summarize task
+       return result
+   
+   # Run the execution
+   result = asyncio.run(execute_and_process())
 
 Model Selection
 ---------------
@@ -181,13 +194,20 @@ The orchestrator automatically selects the best model for each task based on:
 
 .. code-block:: python
 
-   # Register multiple models
-   orchestrator.register_model(gpt4_model)
-   orchestrator.register_model(claude_model)
-   orchestrator.register_model(local_model)
+   import asyncio
    
-   # Orchestrator will select best model for each task
-   result = await orchestrator.execute_pipeline(pipeline)
+   async def run_with_model_selection():
+       # Register multiple models
+       orchestrator.register_model(gpt4_model)
+       orchestrator.register_model(claude_model)
+       orchestrator.register_model(local_model)
+       
+       # Orchestrator will select best model for each task
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
+   
+   # Run with model selection
+   result = asyncio.run(run_with_model_selection())
 
 Error Handling
 --------------
@@ -199,36 +219,56 @@ Retry Strategies
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator.core.error_handler import ErrorHandler
    
-   error_handler = ErrorHandler()
-   orchestrator = Orchestrator(error_handler=error_handler)
+   async def run_with_retry():
+       error_handler = ErrorHandler()
+       orchestrator = Orchestrator(error_handler=error_handler)
+       
+       # Tasks will automatically retry on failure
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   # Tasks will automatically retry on failure
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run with retry handling
+   result = asyncio.run(run_with_retry())
 
 Circuit Breakers
 ~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
-   # Circuit breaker prevents cascading failures
-   breaker = error_handler.get_circuit_breaker("openai_api")
+   import asyncio
    
-   # Executes with circuit breaker protection
-   result = await orchestrator.execute_pipeline(pipeline)
+   async def run_with_circuit_breaker():
+       # Circuit breaker prevents cascading failures
+       breaker = error_handler.get_circuit_breaker("openai_api")
+       
+       # Executes with circuit breaker protection
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
+   
+   # Run with circuit breaker
+   result = asyncio.run(run_with_circuit_breaker())
 
 Fallback Models
 ~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
-   # Register models in order of preference
-   orchestrator.register_model(primary_model)
-   orchestrator.register_model(fallback_model)
+   import asyncio
    
-   # Will use fallback if primary fails
-   result = await orchestrator.execute_pipeline(pipeline)
+   async def run_with_fallback():
+       # Register models in order of preference
+       orchestrator.register_model(primary_model)
+       orchestrator.register_model(fallback_model)
+       
+       # Will use fallback if primary fails
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
+   
+   # Run with fallback support
+   result = asyncio.run(run_with_fallback())
 
 State Management
 ---------------
@@ -240,21 +280,34 @@ Checkpointing
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator.state import StateManager
    
-   state_manager = StateManager(storage_path="./checkpoints")
-   orchestrator = Orchestrator(state_manager=state_manager)
+   async def run_with_checkpointing():
+       state_manager = StateManager(storage_path="./checkpoints")
+       orchestrator = Orchestrator(state_manager=state_manager)
+       
+       # Automatically saves checkpoints during execution
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   # Automatically saves checkpoints during execution
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run with checkpointing
+   result = asyncio.run(run_with_checkpointing())
 
 Recovery
 ~~~~~~~~
 
 .. code-block:: python
 
-   # Resume from last checkpoint
-   result = await orchestrator.resume_pipeline("pipeline_id")
+   import asyncio
+   
+   async def resume_from_checkpoint():
+       # Resume from last checkpoint
+       result = await orchestrator.resume_pipeline("pipeline_id")
+       return result
+   
+   # Resume execution
+   result = asyncio.run(resume_from_checkpoint())
 
 YAML Configuration
 -----------------
@@ -285,12 +338,18 @@ Load and execute:
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator.compiler import YAMLCompiler
    
-   compiler = YAMLCompiler()
-   pipeline = compiler.compile_file("document_pipeline.yaml")
+   async def run_yaml_pipeline():
+       compiler = YAMLCompiler()
+       pipeline = compiler.compile_file("document_pipeline.yaml")
+       
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run YAML pipeline
+   result = asyncio.run(run_yaml_pipeline())
 
 Advanced Features
 -----------------
@@ -300,39 +359,57 @@ Resource Management
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator.core.resource_allocator import ResourceAllocator
    
-   allocator = ResourceAllocator()
-   orchestrator = Orchestrator(resource_allocator=allocator)
+   async def run_with_resource_management():
+       allocator = ResourceAllocator()
+       orchestrator = Orchestrator(resource_allocator=allocator)
+       
+       # Automatically manages CPU, memory, and API quotas
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   # Automatically manages CPU, memory, and API quotas
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run with resource management
+   result = asyncio.run(run_with_resource_management())
 
 Parallel Execution
 ~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator.executor import ParallelExecutor
    
-   executor = ParallelExecutor(max_workers=4)
-   orchestrator = Orchestrator(executor=executor)
+   async def run_parallel_execution():
+       executor = ParallelExecutor(max_workers=4)
+       orchestrator = Orchestrator(executor=executor)
+       
+       # Independent tasks run in parallel
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   # Independent tasks run in parallel
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run with parallel execution
+   result = asyncio.run(run_parallel_execution())
 
 Caching
 ~~~~~~~
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator.core.cache import MultiLevelCache
    
-   cache = MultiLevelCache()
-   orchestrator = Orchestrator(cache=cache)
+   async def run_with_caching():
+       cache = MultiLevelCache()
+       orchestrator = Orchestrator(cache=cache)
+       
+       # Results are cached for faster subsequent runs
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   # Results are cached for faster subsequent runs
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run with caching
+   result = asyncio.run(run_with_caching())
 
 Best Practices
 --------------

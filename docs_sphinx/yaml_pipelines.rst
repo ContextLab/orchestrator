@@ -289,26 +289,53 @@ Orchestrator uses Jinja2 templating with extensions:
 
 **Variable Access**:
 
+Variables can be referenced throughout your pipeline using Jinja2-style template expressions:
+
 .. code-block:: yaml
 
-   # Input variables
-   "{{ inputs.parameter_name }}"
+   id: variable_demo
+   name: Variable Access Demo
    
-   # Results from previous steps
-   "$results.step_id"
-   "$results.step_id.specific_field"
+   inputs:
+     - name: user_topic
+       type: string
+       description: Topic to research
    
-   # Output references
-   "{{ outputs.output_name }}"
+   steps:
+     - id: initial_search
+       action: search_web
+       parameters:
+         # Reference input variables
+         query: "{{ user_topic }} latest news"
+         
+     - id: analyze_results
+       action: analyze
+       parameters:
+         # Reference results from previous steps
+         data: "{{ initial_search.results }}"
+         # Can access nested fields
+         first_result: "{{ initial_search.results[0].title }}"
+       dependencies: [initial_search]
+       
+     - id: final_report
+       action: generate_text
+       parameters:
+         # Combine multiple references
+         prompt: |
+           Create a report about {{ user_topic }}
+           Based on: {{ analyze_results.summary }}
+           Total results found: {{ initial_search.count }}
+       dependencies: [analyze_results]
    
-   # Execution context
-   "{{ execution.timestamp }}"
-   "{{ execution.pipeline_id }}"
-   "{{ execution.run_id }}"
+   outputs:
+     # Define output variables
+     report: "{{ final_report.result }}"
+     summary: "{{ analyze_results.summary }}"
+     search_count: "{{ initial_search.count }}"
 
 **Filters and Functions**:
 
-.. code-block:: yaml
+.. code-block:: text
 
    # String manipulation
    "{{ inputs.topic | lower }}"

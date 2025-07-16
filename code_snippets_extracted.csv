@@ -9,19 +9,19 @@
 ├── tests/                    # Unit and integration tests
 ├── examples/                 # Example pipeline definitions
 ├── docs/                     # Documentation
-└── config/                   # Configuration schemas","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+└── config/                   # Configuration schemas","unverified","",""
 "CLAUDE.md","67","73","yaml","Pipelines use <AUTO> tags for LLM-resolved ambiguities:","steps:
   - id: analyze_data
     action: analyze
     parameters:
       data: ""{{ input_data }}""
       method: <AUTO>Choose best analysis method for this data type</AUTO>
-      depth: <AUTO>Determine analysis depth based on data complexity</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
-"README.md","32","32","bash","- 💾 Lazy Model Loading: Models are downloaded only when needed, saving disk space","pip install py-orc","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+      depth: <AUTO>Determine analysis depth based on data complexity</AUTO>","unverified","",""
+"README.md","32","32","bash","- 💾 Lazy Model Loading: Models are downloaded only when needed, saving disk space","pip install py-orc","unverified","",""
 "README.md","37","40","bash","For additional features:","pip install py-orc[ollama]      # Ollama model support
 pip install py-orc[cloud]        # Cloud model providers
 pip install py-orc[dev]          # Development tools
-pip install py-orc[all]          # Everything","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+pip install py-orc[all]          # Everything","unverified","",""
 "README.md","48","66","yaml","1. Create a simple pipeline (hello_world.yaml):","id: hello_world
 name: Hello World Pipeline
 description: A simple example pipeline
@@ -40,7 +40,7 @@ steps:
 
 outputs:
   greeting: ""{{ greet.result }}""
-  spanish: ""{{ translate.result }}""","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+  spanish: ""{{ translate.result }}""","unverified","",""
 "README.md","72","81","python","2. Run the pipeline:","import orchestrator as orc
 
 # Initialize models (auto-detects available models)
@@ -50,14 +50,14 @@ orc.init_models()
 pipeline = orc.compile(""hello_world.yaml"")
 result = pipeline.run()
 
-print(result)","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+print(result)","unverified","",""
 "README.md","89","95","yaml","Orchestrator's <AUTO> tags let AI decide configuration details:","steps:
   - id: analyze_data
     action: analyze
     parameters:
       data: ""{{ input_data }}""
       method: <AUTO>Choose the best analysis method for this data type</AUTO>
-      visualization: <AUTO>Decide if we should create a chart</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+      visualization: <AUTO>Decide if we should create a chart</AUTO>","unverified","",""
 "README.md","103","125","yaml","Configure available models in models.yaml:","models:
   # Local models (via Ollama) - downloaded on first use
   - source: ollama
@@ -80,7 +80,7 @@ defaults:
   expertise_preferences:
     code: qwen2.5-coder:7b
     reasoning: deepseek-r1:8b
-    fast: llama3.2:1b","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+    fast: llama3.2:1b","unverified","",""
 "README.md","135","192","yaml","Here's a more complex example showing model requirements and parallel execution:","id: research_pipeline
 name: AI Research Pipeline
 description: Research a topic and create a comprehensive report
@@ -138,7 +138,7 @@ steps:
 
 outputs:
   report: ""{{ write_report.document }}""
-  summary: ""{{ analyze_findings.summary }}""","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+  summary: ""{{ analyze_findings.summary }}""","unverified","",""
 "README.md","200","274","yaml","Here's a fully functional pipeline that generates research reports:","# research_report.yaml
 id: research_report
 name: Research Report Generator
@@ -213,7 +213,7 @@ steps:
     parameters:
       markdown: ""{{ write_report.document }}""
       filename: ""{{ outputs.pdf }}""
-    dependencies: [write_report]","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+    dependencies: [write_report]","unverified","",""
 "README.md","280","294","python","Run it with:","import orchestrator as orc
 
 # Initialize models
@@ -228,14 +228,14 @@ result = pipeline.run(
     instructions=""Focus on recent breakthroughs and future potential""
 )
 
-print(f""Report saved to: {result}"")","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+print(f""Report saved to: {result}"")","unverified","",""
 "README.md","353","359","bibtex","If you use Orchestrator in your research, please cite:","@software{orchestrator2025,
   title = {Orchestrator: AI Pipeline Orchestration Framework},
   author = {Manning, Jeremy R. and {Contextual Dynamics Lab}},
   year = {2025},
   url = {https://github.com/ContextLab/orchestrator},
   organization = {Dartmouth College}
-}","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+}","unverified","",""
 "design.md","12","47","text","The Orchestrator is a Python library that provides a unified interface for executing AI pipelines defined in YAML with automatic ambiguity resolution using LLMs. It transparently integrates multiple c","┌─────────────────────────────────────────────────────────────────┐
 │                         User Interface                          │
 │                    (YAML Pipeline Definition)                   │
@@ -271,7 +271,7 @@ print(f""Report saved to: {result}"")","test_created","tests/snippet_tests/test_
 │  │ Sandboxed   │  │ Model        │  │ State              │    │
 │  │ Executors   │  │ Registry     │  │ Persistence        │    │
 │  └─────────────┘  └──────────────┘  └────────────────────┘    │
-└───────────────────────────────────────────────────────────────┘","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+└───────────────────────────────────────────────────────────────┘","unverified","",""
 "design.md","63","89","python","5. Security by Default: Sandboxed execution and input validation","from dataclasses import dataclass
 from typing import Dict, Any, Optional, List
 from enum import Enum
@@ -298,7 +298,7 @@ class Task:
 
     def is_ready(self, completed_tasks: set) -> bool:
         """"""Check if all dependencies are satisfied""""""
-        return all(dep in completed_tasks for dep in self.dependencies)","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        return all(dep in completed_tasks for dep in self.dependencies)","unverified","",""
 "design.md","95","135","python","`","@dataclass
 class Pipeline:
     """"""Pipeline represents a collection of tasks with dependencies""""""
@@ -339,7 +339,7 @@ class Pipeline:
 
             levels.append(current_level)
 
-        return levels","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        return levels","unverified","",""
 "design.md","141","171","python","`","@dataclass
 class ModelCapabilities:
     """"""Defines what a model can do""""""
@@ -370,7 +370,7 @@ class Model:
         raise NotImplementedError
 
     async def generate_structured(self, prompt: str, schema: dict, **kwargs) -> dict:
-        raise NotImplementedError","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        raise NotImplementedError","unverified","",""
 "design.md","177","200","python","`","from abc import ABC, abstractmethod
 
 class ControlSystem(ABC):
@@ -394,7 +394,7 @@ class ControlSystem(ABC):
     @abstractmethod
     async def health_check(self) -> bool:
         """"""Check if the system is healthy""""""
-        pass","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        pass","unverified","",""
 "design.md","208","271","python","`","import yaml
 from typing import Dict, Any, List
 import jsonschema
@@ -458,7 +458,7 @@ class YAMLCompiler:
                 return [process_auto_tags(item, f""{path}[{i}]"") for i, item in enumerate(obj)]
             return obj
 
-        return process_auto_tags(pipeline_def)","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        return process_auto_tags(pipeline_def)","unverified","",""
 "design.md","277","338","python","`","class AmbiguityResolver:
     """"""Resolves ambiguous specifications using LLMs""""""
 
@@ -520,7 +520,7 @@ class YAMLCompiler:
             }
         )
 
-        return schema","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        return schema","unverified","",""
 "design.md","344","435","python","`","import pickle
 import json
 from datetime import datetime
@@ -612,7 +612,7 @@ class AdaptiveCheckpointStrategy:
         if len(self.task_history[pipeline_id]) % self.checkpoint_interval == 0:
             return True
 
-        return False","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        return False","unverified","",""
 "design.md","441","553","python","`","import numpy as np
 from typing import List, Dict, Optional
 from dataclasses import dataclass
@@ -725,7 +725,7 @@ class UCBModelSelector:
             self.model_stats[model_name][""attempts""] += 1
             self.model_stats[model_name][""total_reward""] += reward
             if reward > 0:
-                self.model_stats[model_name][""successes""] += 1","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+                self.model_stats[model_name][""successes""] += 1","unverified","",""
 "design.md","559","677","python","`","from enum import Enum
 from typing import Optional, Callable
 import asyncio
@@ -844,7 +844,7 @@ class CircuitBreaker:
     def record_success(self, system_id: str):
         """"""Record a success for a system""""""
         if system_id in self.failures:
-            self.failures[system_id] = max(0, self.failures[system_id] - 1)","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+            self.failures[system_id] = max(0, self.failures[system_id] - 1)","unverified","",""
 "design.md","685","740","yaml","`","# schema/pipeline-schema.yaml
 $schema: ""http://json-schema.org/draft-07/schema#""
 type: object
@@ -900,7 +900,7 @@ properties:
           enum: [""continue"", ""fail"", ""retry"", ""skip""]
         timeout:
           type: integer
-          minimum: 1","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+          minimum: 1","unverified","",""
 "design.md","746","794","yaml","`","# example-pipeline.yaml
 name: research_report_pipeline
 version: 1.0.0
@@ -949,7 +949,7 @@ steps:
       format: markdown
       sections: <AUTO>Organize content into appropriate sections</AUTO>
     dependencies: [content_synthesis]
-    on_failure: retry","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+    on_failure: retry","unverified","",""
 "design.md","802","836","python","`","# main.py
 import asyncio
 from orchestrator import Orchestrator, YAMLCompiler
@@ -984,7 +984,7 @@ async def main():
         print(f""Recovery result: {recovered_result}"")
 
 if __name__ == ""__main__"":
-    asyncio.run(main())","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+    asyncio.run(main())","unverified","",""
 "design.md","842","903","python","`","# adapters/custom_adapter.py
 from orchestrator.adapters import ControlSystem
 from orchestrator.models import Task
@@ -1046,7 +1046,7 @@ class CustomMLAdapter(ControlSystem):
         try:
             return await self.ml_engine.ping()
         except Exception:
-            return False","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+            return False","unverified","",""
 "design.md","909","1012","python","`","# sandbox/executor.py
 import docker
 import asyncio
@@ -1150,7 +1150,7 @@ class SandboxedExecutor:
             ""errors"": stderr.decode() if stderr else """",
             ""exit_code"": result.exit_code,
             ""execution_time"": execution_time
-        }","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        }","unverified","",""
 "design.md","1020","1062","python","`","# tests/test_ambiguity_resolver.py
 import pytest
 from orchestrator.compiler import AmbiguityResolver
@@ -1193,7 +1193,7 @@ async def test_nested_ambiguity_resolution():
     assert ""query"" in result
     assert ""filters"" in result
     assert ""date_range"" in result[""filters""]
-    assert ""sources"" in result[""filters""]","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+    assert ""sources"" in result[""filters""]","unverified","",""
 "design.md","1068","1116","python","`","# tests/test_pipeline_execution.py
 import pytest
 from orchestrator import Orchestrator
@@ -1242,7 +1242,7 @@ async def test_pipeline_recovery():
     result = await orchestrator.recover_pipeline(pipeline_id)
 
     assert result[""recovered""] == True
-    assert result[""resumed_from""] == ""step3""","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+    assert result[""resumed_from""] == ""step3""","unverified","",""
 "design.md","1124","1152","python","`","class NestedAmbiguityHandler:
     """"""Handles complex nested ambiguities""""""
 
@@ -1271,7 +1271,7 @@ async def test_pipeline_recovery():
                 for i, item in enumerate(obj)
             ]
 
-        return obj","test_created","tests/snippet_tests/test_snippets_batch_1.py",""
+        return obj","unverified","",""
 "design.md","1158","1196","python","`","class DynamicModelSwitcher:
     """"""Handles model switching during pipeline execution""""""
 
@@ -1310,7 +1310,7 @@ async def test_pipeline_recovery():
                 new_model
             )
 
-        return new_model","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+        return new_model","unverified","",""
 "design.md","1202","1232","python","`","class DependencyValidator:
     """"""Validates and resolves pipeline dependencies""""""
 
@@ -1341,7 +1341,7 @@ async def test_pipeline_recovery():
             if color[task_id] == WHITE:
                 dfs(task_id, [])
 
-        return cycles","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+        return cycles","unverified","",""
 "design.md","1240","1271","python","`","class MultiLevelCache:
     """"""Multi-level caching system for performance""""""
 
@@ -1373,7 +1373,7 @@ async def test_pipeline_recovery():
         """"""Set in all cache levels""""""
         self.memory_cache.set(key, value)
         await self.redis_cache.set(key, value, ttl=ttl or 3600)
-        await self.disk_cache.set(key, value)","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+        await self.disk_cache.set(key, value)","unverified","",""
 "design.md","1277","1320","python","`","class ParallelExecutor:
     """"""Optimized parallel task execution""""""
 
@@ -1417,7 +1417,7 @@ async def test_pipeline_recovery():
         return {
             task.id: self._process_result(result)
             for task, result in zip(tasks, results)
-        }","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+        }","unverified","",""
 "design.md","1328","1444","yaml","`","# models.yaml
 models:
   # Large models
@@ -1534,7 +1534,7 @@ selection_policies:
     weights:
       latency: 0.5
       accuracy: 0.4
-      cost: 0.1","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+      cost: 0.1","unverified","",""
 "design.md","1450","1527","yaml","`","# config.yaml
 orchestrator:
   # Core settings
@@ -1612,7 +1612,7 @@ orchestrator:
     redis_url: ${REDIS_URL}
     memory_cache_size: 1000
     ttl_seconds: 3600
-    compression_enabled: true","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+    compression_enabled: true","unverified","",""
 "design.md","1535","1577","yaml","`","# pipelines/code-review.yaml
 name: automated_code_review
 version: 1.0.0
@@ -1655,7 +1655,7 @@ steps:
       complexity_results: ""{{ steps.complexity_analysis.metrics }}""
       review_tone: <AUTO>Professional, constructive, or educational</AUTO>
       priority_order: <AUTO>Order findings by severity and impact</AUTO>
-    dependencies: [security_scan, style_check, complexity_analysis]","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+    dependencies: [security_scan, style_check, complexity_analysis]","unverified","",""
 "design.md","1583","1629","yaml","`","# pipelines/data-analysis.yaml
 name: intelligent_data_analysis
 version: 1.0.0
@@ -1702,7 +1702,7 @@ steps:
       insights: ""{{ steps.statistical_analysis.insights }}""
       executive_summary: <AUTO>Generate executive summary</AUTO>
       technical_depth: <AUTO>Adjust based on audience</AUTO>
-    dependencies: [visualization_planning]","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+    dependencies: [visualization_planning]","unverified","",""
 "design.md","1635","1678","yaml","`","# pipelines/ensemble-prediction.yaml
 name: ensemble_prediction
 version: 1.0.0
@@ -1746,7 +1746,7 @@ steps:
       ensemble_predictions: ""{{ steps.ensemble_aggregation.final_predictions }}""
       validation_threshold: <AUTO>Set based on task criticality</AUTO>
       fallback_strategy: <AUTO>Define fallback if validation fails</AUTO>
-    dependencies: [ensemble_aggregation]","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+    dependencies: [ensemble_aggregation]","unverified","",""
 "examples/README.md","54","68","python","Edit config/models.yaml to customize model settings.","import asyncio
 from orchestrator import Orchestrator
 
@@ -1761,18 +1761,18 @@ async def run_example():
 
     print(""Pipeline results:"", results)
 
-asyncio.run(run_example())","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+asyncio.run(run_example())","unverified","",""
 "examples/README.md","74","80","bash","`","# Simple pipeline
 python -m orchestrator run examples/simple_pipeline.yaml \
     --context input_topic=""machine learning""
 
 # Multi-model pipeline
 python -m orchestrator run examples/multi_model_pipeline.yaml \
-    --context dataset_url=""https://example.com/sales_data.csv""","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/README.md","89","89","yaml","The examples demonstrate various AUTO tag patterns:","analysis_type: <AUTO>What type of analysis is most appropriate for this text?</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/README.md","94","94","yaml","`","format: <AUTO>Determine the best format for this data source</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/README.md","99","99","yaml","`","methods: <AUTO>Choose the most appropriate statistical methods</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/README.md","104","104","yaml","`","validation_rules: <AUTO>Generate appropriate validation rules for this dataset</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+    --context dataset_url=""https://example.com/sales_data.csv""","unverified","",""
+"examples/README.md","89","89","yaml","The examples demonstrate various AUTO tag patterns:","analysis_type: <AUTO>What type of analysis is most appropriate for this text?</AUTO>","unverified","",""
+"examples/README.md","94","94","yaml","`","format: <AUTO>Determine the best format for this data source</AUTO>","unverified","",""
+"examples/README.md","99","99","yaml","`","methods: <AUTO>Choose the most appropriate statistical methods</AUTO>","unverified","",""
+"examples/README.md","104","104","yaml","`","validation_rules: <AUTO>Generate appropriate validation rules for this dataset</AUTO>","unverified","",""
 "examples/README.md","112","131","yaml","`","id: my_pipeline
 name: My Custom Pipeline
 description: Description of what this pipeline does
@@ -1792,7 +1792,7 @@ steps:
     metadata:
       # Optional metadata
       requires_model: true
-      priority: 1.0","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+      priority: 1.0","unverified","",""
 "examples/README.md","137","152","yaml","`","steps:
   - id: advanced_task
     name: Advanced Task
@@ -1808,18 +1808,24 @@ steps:
       memory_mb: 2048
       timeout: 300
       priority: 0.8
-      on_failure: continue  # Error handling","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+      on_failure: continue  # Error handling","unverified","",""
 "examples/README.md","181","184","python","Enable debug logging to see detailed execution information:","import logging
 logging.basicConfig(level=logging.DEBUG)
 
-orchestrator = Orchestrator()","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/README.md","192","193","python","Verify system health before running pipelines:","health = await orchestrator.health_check()
-print(""System health:"", health[""overall""])","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/output/readme_report/draft_report.md","59","59","text","- Execution Engine: Action orchestration and error handling","Thought → Action → Observation → Thought → ...","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/output/readme_report/draft_report.md","68","68","text","- Observe results and adjust approach","Goal → Plan → Execute Steps → Evaluate → Replan if needed","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+orchestrator = Orchestrator()","unverified","",""
+"examples/README.md","192","199","python","Verify system health before running pipelines:","async def check_health():
+    health = await orchestrator.health_check()
+    print(""System health:"", health[""overall""])
+    return health
+
+# Run the health check
+import asyncio
+health_status = asyncio.run(check_health())","unverified","",""
+"examples/output/readme_report/draft_report.md","59","59","text","- Execution Engine: Action orchestration and error handling","Thought → Action → Observation → Thought → ...","unverified","",""
+"examples/output/readme_report/draft_report.md","68","68","text","- Observe results and adjust approach","Goal → Plan → Execute Steps → Evaluate → Replan if needed","unverified","",""
 "examples/output/readme_report/draft_report.md","74","76","text","Suitable for complex, multi-step tasks requiring upfront planning.","Agent A ↔ Agent B ↔ Agent C
    ↓         ↓         ↓
-Shared State/Communication","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+Shared State/Communication","unverified","",""
 "examples/output/readme_report/draft_report.md","88","95","python","- Key Features: Chains, agents, tools, memory, callbacks","from langchain.agents import create_react_agent
 from langchain.tools import Tool
 
@@ -1827,16 +1833,16 @@ agent = create_react_agent(
     llm=llm,
     tools=[search_tool, calculator_tool],
     prompt=agent_prompt
-)","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+)","unverified","",""
 "examples/output/readme_report/draft_report.md","104","107","python","- Key Features: Conversable agents, group chat, code execution","from autogen import AssistantAgent, UserProxyAgent
 
 assistant = AssistantAgent(""assistant"", llm_config=llm_config)
-user_proxy = UserProxyAgent(""user"", code_execution_config=Ellipsis)","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+user_proxy = UserProxyAgent(""user"", code_execution_config=Ellipsis)","unverified","",""
 "examples/output/readme_report/draft_report.md","116","120","python","- Key Features: Crews, roles, tasks, processes","from crewai import Agent, Task, Crew
 
 researcher = Agent(role=""Researcher"", goal=""Find information"")
 writer = Agent(role=""Writer"", goal=""Create content"")
-crew = Crew(agents=[researcher, writer], tasks=[...])","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+crew = Crew(agents=[researcher, writer], tasks=[...])","unverified","",""
 "examples/output/readme_report/draft_report.md","128","144","python","`","# Using LangChain
 from langchain.agents import initialize_agent, AgentType
 from langchain.tools import DuckDuckGoSearchRun, WikipediaQueryRun
@@ -1853,7 +1859,7 @@ research_agent = initialize_agent(
     verbose=True
 )
 
-result = research_agent.run(""What are the latest developments in quantum computing?"")","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+result = research_agent.run(""What are the latest developments in quantum computing?"")","unverified","",""
 "examples/output/readme_report/draft_report.md","150","166","python","`","# Using AutoGen
 coding_assistant = AssistantAgent(
     ""coding_assistant"",
@@ -1870,7 +1876,7 @@ user_proxy = UserProxyAgent(
 user_proxy.initiate_chat(
     coding_assistant,
     message=""Write a Python function to calculate fibonacci numbers efficiently""
-)","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+)","unverified","",""
 "examples/output/readme_report/draft_report.md","172","206","python","`","# Using CrewAI
 from crewai import Agent, Task, Crew, Process
 
@@ -1905,12 +1911,12 @@ crew = Crew(
     process=Process.sequential
 )
 
-result = crew.kickoff()","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/output/readme_report/final_report.md","59","59","text","- Execution Engine: Action orchestration and error handling","Thought → Action → Observation → Thought → ...","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
-"examples/output/readme_report/final_report.md","68","68","text","- Observe results and adjust approach","Goal → Plan → Execute Steps → Evaluate → Replan if needed","test_created","tests/snippet_tests/test_snippets_batch_2.py",""
+result = crew.kickoff()","unverified","",""
+"examples/output/readme_report/final_report.md","59","59","text","- Execution Engine: Action orchestration and error handling","Thought → Action → Observation → Thought → ...","unverified","",""
+"examples/output/readme_report/final_report.md","68","68","text","- Observe results and adjust approach","Goal → Plan → Execute Steps → Evaluate → Replan if needed","unverified","",""
 "examples/output/readme_report/final_report.md","74","76","text","Suitable for complex, multi-step tasks requiring upfront planning.","Agent A ↔ Agent B ↔ Agent C
    ↓         ↓         ↓
-Shared State/Communication","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+Shared State/Communication","unverified","",""
 "examples/output/readme_report/final_report.md","88","95","python","- Key Features: Chains, agents, tools, memory, callbacks","from langchain.agents import create_react_agent
 from langchain.tools import Tool
 
@@ -1918,16 +1924,16 @@ agent = create_react_agent(
     llm=llm,
     tools=[search_tool, calculator_tool],
     prompt=agent_prompt
-)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+)","unverified","",""
 "examples/output/readme_report/final_report.md","104","107","python","- Key Features: Conversable agents, group chat, code execution","from autogen import AssistantAgent, UserProxyAgent
 
 assistant = AssistantAgent(""assistant"", llm_config=llm_config)
-user_proxy = UserProxyAgent(""user"", code_execution_config=Ellipsis)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+user_proxy = UserProxyAgent(""user"", code_execution_config=Ellipsis)","unverified","",""
 "examples/output/readme_report/final_report.md","116","120","python","- Key Features: Crews, roles, tasks, processes","from crewai import Agent, Task, Crew
 
 researcher = Agent(role=""Researcher"", goal=""Find information"")
 writer = Agent(role=""Writer"", goal=""Create content"")
-crew = Crew(agents=[researcher, writer], tasks=[...])","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+crew = Crew(agents=[researcher, writer], tasks=[...])","unverified","",""
 "examples/output/readme_report/final_report.md","128","144","python","`","# Using LangChain
 from langchain.agents import initialize_agent, AgentType
 from langchain.tools import DuckDuckGoSearchRun, WikipediaQueryRun
@@ -1944,7 +1950,7 @@ research_agent = initialize_agent(
     verbose=True
 )
 
-result = research_agent.run(""What are the latest developments in quantum computing?"")","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+result = research_agent.run(""What are the latest developments in quantum computing?"")","unverified","",""
 "examples/output/readme_report/final_report.md","150","166","python","`","# Using AutoGen
 coding_assistant = AssistantAgent(
     ""coding_assistant"",
@@ -1961,7 +1967,7 @@ user_proxy = UserProxyAgent(
 user_proxy.initiate_chat(
     coding_assistant,
     message=""Write a Python function to calculate fibonacci numbers efficiently""
-)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+)","unverified","",""
 "examples/output/readme_report/final_report.md","172","206","python","`","# Using CrewAI
 from crewai import Agent, Task, Crew, Process
 
@@ -1996,12 +2002,12 @@ crew = Crew(
     process=Process.sequential
 )
 
-result = crew.kickoff()","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
-"examples/output/readme_report/research_report.md","59","59","text","- Execution Engine: Action orchestration and error handling","Thought → Action → Observation → Thought → ...","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
-"examples/output/readme_report/research_report.md","68","68","text","- Observe results and adjust approach","Goal → Plan → Execute Steps → Evaluate → Replan if needed","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+result = crew.kickoff()","unverified","",""
+"examples/output/readme_report/research_report.md","59","59","text","- Execution Engine: Action orchestration and error handling","Thought → Action → Observation → Thought → ...","unverified","",""
+"examples/output/readme_report/research_report.md","68","68","text","- Observe results and adjust approach","Goal → Plan → Execute Steps → Evaluate → Replan if needed","unverified","",""
 "examples/output/readme_report/research_report.md","74","76","text","Suitable for complex, multi-step tasks requiring upfront planning.","Agent A ↔ Agent B ↔ Agent C
    ↓         ↓         ↓
-Shared State/Communication","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+Shared State/Communication","unverified","",""
 "examples/output/readme_report/research_report.md","88","95","python","- Key Features: Chains, agents, tools, memory, callbacks","from langchain.agents import create_react_agent
 from langchain.tools import Tool
 
@@ -2009,16 +2015,16 @@ agent = create_react_agent(
     llm=llm,
     tools=[search_tool, calculator_tool],
     prompt=agent_prompt
-)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+)","unverified","",""
 "examples/output/readme_report/research_report.md","104","107","python","- Key Features: Conversable agents, group chat, code execution","from autogen import AssistantAgent, UserProxyAgent
 
 assistant = AssistantAgent(""assistant"", llm_config=llm_config)
-user_proxy = UserProxyAgent(""user"", code_execution_config=Ellipsis)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+user_proxy = UserProxyAgent(""user"", code_execution_config=Ellipsis)","unverified","",""
 "examples/output/readme_report/research_report.md","116","120","python","- Key Features: Crews, roles, tasks, processes","from crewai import Agent, Task, Crew
 
 researcher = Agent(role=""Researcher"", goal=""Find information"")
 writer = Agent(role=""Writer"", goal=""Create content"")
-crew = Crew(agents=[researcher, writer], tasks=[...])","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+crew = Crew(agents=[researcher, writer], tasks=[...])","unverified","",""
 "examples/output/readme_report/research_report.md","128","144","python","`","# Using LangChain
 from langchain.agents import initialize_agent, AgentType
 from langchain.tools import DuckDuckGoSearchRun, WikipediaQueryRun
@@ -2035,7 +2041,7 @@ research_agent = initialize_agent(
     verbose=True
 )
 
-result = research_agent.run(""What are the latest developments in quantum computing?"")","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+result = research_agent.run(""What are the latest developments in quantum computing?"")","unverified","",""
 "examples/output/readme_report/research_report.md","150","166","python","`","# Using AutoGen
 coding_assistant = AssistantAgent(
     ""coding_assistant"",
@@ -2052,7 +2058,7 @@ user_proxy = UserProxyAgent(
 user_proxy.initiate_chat(
     coding_assistant,
     message=""Write a Python function to calculate fibonacci numbers efficiently""
-)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+)","unverified","",""
 "examples/output/readme_report/research_report.md","172","206","python","`","# Using CrewAI
 from crewai import Agent, Task, Crew, Process
 
@@ -2087,7 +2093,7 @@ crew = Crew(
     process=Process.sequential
 )
 
-result = crew.kickoff()","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+result = crew.kickoff()","unverified","",""
 "notebooks/README.md","57","64","bash","2. Dependencies: Install the orchestrator package and dependencies","# Install the package
 pip install -e .
 
@@ -2095,37 +2101,37 @@ pip install -e .
 pip install jupyter
 
 # Start Jupyter
-jupyter notebook","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+jupyter notebook","unverified","",""
 "notebooks/README.md","79","81","python","If you're running from the source repository:","# Add the src directory to your Python path (included in notebooks)
 import sys
-sys.path.insert(0, '../src')","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+sys.path.insert(0, '../src')","unverified","",""
 "notebooks/README.md","109","115","python","The tutorials use mock models for demonstration. To work with real AI models:","from orchestrator.integrations.openai_model import OpenAIModel
 
 model = OpenAIModel(
     name=""gpt-4"",
     api_key=""your-openai-api-key"",
     model=""gpt-4""
-)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+)","unverified","",""
 "notebooks/README.md","120","126","python","`","from orchestrator.integrations.anthropic_model import AnthropicModel
 
 model = AnthropicModel(
     name=""claude-3-sonnet"",
     api_key=""your-anthropic-api-key"",
     model=""claude-3-sonnet-20240229""
-)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+)","unverified","",""
 "notebooks/README.md","131","136","python","`","from orchestrator.integrations.huggingface_model import HuggingFaceModel
 
 model = HuggingFaceModel(
     name=""llama-7b"",
     model_path=""meta-llama/Llama-2-7b-chat-hf""
-)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+)","unverified","",""
 "notebooks/README.md","155","157","python","Import Errors","# Make sure the src path is correctly added
 import sys
-sys.path.insert(0, '../src')","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+sys.path.insert(0, '../src')","unverified","",""
 "notebooks/README.md","162","163","python","Mock Model Responses","# Mock models require explicit response configuration
-model.set_response(""your prompt"", ""expected response"")","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
-"notebooks/README.md","168","169","python","Async/Await Issues","# Use await in Jupyter notebook cells
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+model.set_response(""your prompt"", ""expected response"")","unverified","",""
+"notebooks/README.md","168","169","python","Async/Await Issues","# Use await in Jupyter notebook cells (notebook-only syntax)
+result = await orchestrator.execute_pipeline(pipeline)","unverified","",""
 "notes/design_compliance_achievement.md","53","60","text","- Clarity: High - Includes tutorials and documentation","src/orchestrator/
 ├── core/                    # Core abstractions (Task, Pipeline, Model, etc.)
 ├── compiler/               # YAML parsing and compilation
@@ -2133,68 +2139,75 @@ result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/sn
 ├── adapters/              # Control system adapters (LangGraph, MCP)
 ├── models/                # Model registry and selection
 ├── state/                 # State management and checkpointing
-└── orchestrator.py        # Main orchestration engine","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+└── orchestrator.py        # Main orchestration engine","unverified","",""
 "notes/phase2_completion_summary.md","73","77","bash","- Real-world Patterns: Demonstrates dependency management, error handling, resource allocation","✅ OpenAI model integration loads successfully
 ✅ Anthropic model integration loads successfully
 ✅ Google model integration loads successfully
 ✅ HuggingFace model integration loads successfully
-✅ All model integrations imported successfully","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+✅ All model integrations imported successfully","unverified","",""
 "notes/phase2_completion_summary.md","82","85","bash","`","✅ YAML compilation successful
   - Pipeline ID: test_pipeline
   - Tasks: 2
-  - AUTO resolved method: Mock response for: You are an AI pipeline orchestration expert...","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+  - AUTO resolved method: Mock response for: You are an AI pipeline orchestration expert...","unverified","",""
 "notes/phase2_completion_summary.md","90","92","bash","`","🚀 Starting orchestrator test...
 ❌ Pipeline execution failed: Task 'hello' failed and policy is 'fail'
-Error: NoEligibleModelsError - No models meet the specified requirements","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
+Error: NoEligibleModelsError - No models meet the specified requirements","unverified","",""
 "notes/phase2_completion_summary.md","135","139","yaml","Revolutionary approach to pipeline ambiguity resolution:","# Before: Manual specification required
 analysis_method: ""statistical""
 
 # After: AI-resolved automatically
-analysis_method: <AUTO>Choose the best analysis method for this data</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
-"notes/phase2_completion_summary.md","145","151","python","Seamless integration across providers:","# Automatically selects best model for each task
+analysis_method: <AUTO>Choose the best analysis method for this data</AUTO>","unverified","",""
+"notes/phase2_completion_summary.md","145","152","python","Seamless integration across providers:","# Automatically selects best model for each task
+# Note: Use in Jupyter notebooks or wrap in async function
 pipeline = await orchestrator.execute_yaml(""""""
 steps:
   - action: generate    # Uses GPT for generation
   - action: analyze     # Uses Claude for analysis
   - action: transform   # Uses Gemini for transformation
-"""""")","test_created","tests/snippet_tests/test_snippets_batch_3.py",""
-"notes/session_summary_context_limit.md","45","49","python","Core Framework Structure:","# Main abstractions in src/orchestrator/core/
+"""""")","unverified","",""
+"notes/session_summary_context_limit.md","45","49","text","Core Framework Structure:","# Main abstractions in src/orchestrator/core/
 - task.py:Task, TaskStatus (lines 1-200+)
 - pipeline.py:Pipeline (lines 1-300+)
 - model.py:Model, ModelCapabilities (lines 1-250+)
-- control_system.py:ControlSystem, ControlAction (lines 1-150+)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"notes/session_summary_context_limit.md","54","60","python","Advanced Components:","# Advanced features in src/orchestrator/
+- control_system.py:ControlSystem, ControlAction (lines 1-150+)","unverified","",""
+"notes/session_summary_context_limit.md","54","60","text","Advanced Components:","# Advanced features in src/orchestrator/
 - core/error_handler.py:ErrorHandler, CircuitBreaker (lines 1-400+)
 - core/cache.py:MultiLevelCache (lines 1-550+)
 - core/resource_allocator.py:ResourceAllocator (lines 1-450+)
 - executor/parallel_executor.py:ParallelExecutor (lines 1-425+)
 - executor/sandboxed_executor.py:SandboxManager (lines 1-345+)
-- state/adaptive_checkpoint.py:AdaptiveCheckpointManager (lines 1-400+)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"notes/session_summary_context_limit.md","65","67","python","Control System Adapters:","# Adapters in src/orchestrator/adapters/
+- state/adaptive_checkpoint.py:AdaptiveCheckpointManager (lines 1-400+)","unverified","",""
+"notes/session_summary_context_limit.md","65","67","text","Control System Adapters:","# Adapters in src/orchestrator/adapters/
 - langgraph_adapter.py:LangGraphAdapter (lines 1-350+)
-- mcp_adapter.py:MCPAdapter (lines 1-450+)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
+- mcp_adapter.py:MCPAdapter (lines 1-450+)","unverified","",""
 "docs/api/compiler.rst","22","26","python","**Example Usage:**","from orchestrator.compiler import YAMLCompiler
 
 compiler = YAMLCompiler()
-pipeline = compiler.compile_file(""my_pipeline.yaml"")","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/api/core.rst","108","125","python","~~~~~~~~~~~","from orchestrator import Task, Pipeline, Orchestrator
+pipeline = compiler.compile_file(""my_pipeline.yaml"")","unverified","",""
+"docs/api/core.rst","108","131","python","~~~~~~~~~~~","import asyncio
+from orchestrator import Task, Pipeline, Orchestrator
 
-# Create a task
-task = Task(
-    id=""hello"",
-    name=""Hello Task"",
-    action=""generate_text"",
-    parameters={""prompt"": ""Hello, world!""}
-)
+async def main():
+    # Create a task
+    task = Task(
+        id=""hello"",
+        name=""Hello Task"",
+        action=""generate_text"",
+        parameters={""prompt"": ""Hello, world!""}
+    )
 
-# Create a pipeline
-pipeline = Pipeline(id=""demo"", name=""Demo Pipeline"")
-pipeline.add_task(task)
+    # Create a pipeline
+    pipeline = Pipeline(id=""demo"", name=""Demo Pipeline"")
+    pipeline.add_task(task)
 
-# Execute with orchestrator
-orchestrator = Orchestrator()
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/api/core.rst","131","140","yaml","~~~~~~~~~~~~~~~~~~","id: demo_pipeline
+    # Execute with orchestrator
+    orchestrator = Orchestrator()
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run the pipeline
+result = asyncio.run(main())","unverified","",""
+"docs/api/core.rst","137","146","yaml","~~~~~~~~~~~~~~~~~~","id: demo_pipeline
 name: Demo Pipeline
 
 tasks:
@@ -2202,19 +2215,25 @@ tasks:
     name: Hello Task
     action: generate_text
     parameters:
-      prompt: ""Hello, world!""","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/api/core.rst","146","153","python","~~~~~~~~~~~~~~","from orchestrator.core.error_handler import ErrorHandler
+      prompt: ""Hello, world!""","unverified","",""
+"docs/api/core.rst","152","165","python","~~~~~~~~~~~~~~","import asyncio
+from orchestrator.core.error_handler import ErrorHandler
 
-error_handler = ErrorHandler()
-orchestrator = Orchestrator(error_handler=error_handler)
+async def run_with_error_handling():
+    error_handler = ErrorHandler()
+    orchestrator = Orchestrator(error_handler=error_handler)
 
-# Tasks will automatically retry on failure
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
+    # Tasks will automatically retry on failure
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run with error handling
+result = asyncio.run(run_with_error_handling())","unverified","",""
 "docs/development/github_actions.rst","67","72","bash","If you prefer to update badges manually, you can extract coverage from the test output:","# Run tests with coverage
 pytest --cov=src/orchestrator --cov-report=term
 
 # The output will show coverage percentage
-# Update the README badge URL with the percentage","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
+# Update the README badge URL with the percentage","unverified","",""
 "docs/development/github_actions.rst","93","100","markdown","You can customize badge colors and styles:","# Different styles
 ![Badge](https://img.shields.io/badge/style-flat-green)
 ![Badge](https://img.shields.io/badge/style-flat--square-green?style=flat-square)
@@ -2222,7 +2241,7 @@ pytest --cov=src/orchestrator --cov-report=term
 
 # Custom colors
 ![Badge](https://img.shields.io/badge/custom-color-ff69b4)
-![Badge](https://img.shields.io/badge/custom-color-blueviolet)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
+![Badge](https://img.shields.io/badge/custom-color-blueviolet)","unverified","",""
 "docs/getting_started/basic_concepts.rst","28","40","python","* **Dependencies** - Other tasks that must complete first","from orchestrator import Task
 
 task = Task(
@@ -2234,7 +2253,7 @@ task = Task(
         ""max_tokens"": 150
     },
     dependencies=[""extract_document""]
-)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
+)","unverified","",""
 "docs/getting_started/basic_concepts.rst","48","59","python","A **Pipeline** is a collection of tasks with defined dependencies. It represents your complete workflow:","from orchestrator import Pipeline
 
 pipeline = Pipeline(
@@ -2245,21 +2264,27 @@ pipeline = Pipeline(
 # Add tasks to pipeline
 pipeline.add_task(extract_task)
 pipeline.add_task(summarize_task)
-pipeline.add_task(classify_task)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
+pipeline.add_task(classify_task)","unverified","",""
 "docs/getting_started/basic_concepts.rst","71","78","python","* **Custom models** (your own implementations)","from orchestrator.models import OpenAIModel
 
 model = OpenAIModel(
     name=""gpt-4"",
     api_key=""your-api-key"",
     model=""gpt-4""
-)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","91","97","python","* Manages state and checkpointing","from orchestrator import Orchestrator
+)","unverified","",""
+"docs/getting_started/basic_concepts.rst","91","103","python","* Manages state and checkpointing","import asyncio
+from orchestrator import Orchestrator
 
-orchestrator = Orchestrator()
-orchestrator.register_model(model)
+async def run_pipeline():
+    orchestrator = Orchestrator()
+    orchestrator.register_model(model)
 
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","105","115","python","Tasks can depend on other tasks, creating a directed acyclic graph (DAG):","# Task A (no dependencies)
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run the pipeline
+result = asyncio.run(run_pipeline())","unverified","",""
+"docs/getting_started/basic_concepts.rst","111","121","python","Tasks can depend on other tasks, creating a directed acyclic graph (DAG):","# Task A (no dependencies)
 task_a = Task(id=""a"", name=""Task A"", action=""generate_text"")
 
 # Task B depends on A
@@ -2268,11 +2293,11 @@ task_b = Task(id=""b"", name=""Task B"", action=""generate_text"",
 
 # Task C depends on A and B
 task_c = Task(id=""c"", name=""Task C"", action=""generate_text"",
-              dependencies=[""a"", ""b""])","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","123","126","text","The orchestrator automatically determines execution order based on dependencies:","Level 0: [Task A]           # No dependencies
+              dependencies=[""a"", ""b""])","unverified","",""
+"docs/getting_started/basic_concepts.rst","129","132","text","The orchestrator automatically determines execution order based on dependencies:","Level 0: [Task A]           # No dependencies
 Level 1: [Task B]           # Depends on A
-Level 2: [Task C]           # Depends on A and B","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","136","150","python","Tasks can reference outputs from other tasks using template syntax:","task_a = Task(
+Level 2: [Task C]           # Depends on A and B","unverified","",""
+"docs/getting_started/basic_concepts.rst","142","156","python","Tasks can reference outputs from other tasks using template syntax:","task_a = Task(
     id=""extract"",
     name=""Extract Information"",
     action=""generate_text"",
@@ -2285,48 +2310,95 @@ task_b = Task(
     action=""generate_text"",
     parameters={""prompt"": ""Summarize these facts: {extract}""},
     dependencies=[""extract""]
-)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","165","171","python","6. **Returns** results from all tasks","# Execute pipeline
-result = await orchestrator.execute_pipeline(pipeline)
+)","unverified","",""
+"docs/getting_started/basic_concepts.rst","171","184","python","6. **Returns** results from all tasks","import asyncio
 
-# Access individual task results
-print(result[""extract""])    # Output from extract task
-print(result[""summarize""])  # Output from summarize task","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","184","191","python","* **Cost** - Resource usage and API costs","# Register multiple models
-orchestrator.register_model(gpt4_model)
-orchestrator.register_model(claude_model)
-orchestrator.register_model(local_model)
+async def execute_and_process():
+    # Execute pipeline
+    result = await orchestrator.execute_pipeline(pipeline)
 
-# Orchestrator will select best model for each task
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","202","209","python","~~~~~~~~~~~~~~~~","from orchestrator.core.error_handler import ErrorHandler
+    # Access individual task results
+    print(result[""extract""])    # Output from extract task
+    print(result[""summarize""])  # Output from summarize task
+    return result
 
-error_handler = ErrorHandler()
-orchestrator = Orchestrator(error_handler=error_handler)
+# Run the execution
+result = asyncio.run(execute_and_process())","unverified","",""
+"docs/getting_started/basic_concepts.rst","197","211","python","* **Cost** - Resource usage and API costs","import asyncio
 
-# Tasks will automatically retry on failure
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","215","220","python","~~~~~~~~~~~~~~~~","# Circuit breaker prevents cascading failures
-breaker = error_handler.get_circuit_breaker(""openai_api"")
+async def run_with_model_selection():
+    # Register multiple models
+    orchestrator.register_model(gpt4_model)
+    orchestrator.register_model(claude_model)
+    orchestrator.register_model(local_model)
 
-# Executes with circuit breaker protection
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","226","232","python","~~~~~~~~~~~~~~~","# Register models in order of preference
-orchestrator.register_model(primary_model)
-orchestrator.register_model(fallback_model)
+    # Orchestrator will select best model for each task
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
 
-# Will use fallback if primary fails
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","243","250","python","~~~~~~~~~~~~~","from orchestrator.state import StateManager
+# Run with model selection
+result = asyncio.run(run_with_model_selection())","unverified","",""
+"docs/getting_started/basic_concepts.rst","222","235","python","~~~~~~~~~~~~~~~~","import asyncio
+from orchestrator.core.error_handler import ErrorHandler
 
-state_manager = StateManager(storage_path=""./checkpoints"")
-orchestrator = Orchestrator(state_manager=state_manager)
+async def run_with_retry():
+    error_handler = ErrorHandler()
+    orchestrator = Orchestrator(error_handler=error_handler)
 
-# Automatically saves checkpoints during execution
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","256","258","python","~~~~~~~~","# Resume from last checkpoint
-result = await orchestrator.resume_pipeline(""pipeline_id"")","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","266","283","yaml","Define pipelines declaratively in YAML:","id: document_pipeline
+    # Tasks will automatically retry on failure
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run with retry handling
+result = asyncio.run(run_with_retry())","unverified","",""
+"docs/getting_started/basic_concepts.rst","241","253","python","~~~~~~~~~~~~~~~~","import asyncio
+
+async def run_with_circuit_breaker():
+    # Circuit breaker prevents cascading failures
+    breaker = error_handler.get_circuit_breaker(""openai_api"")
+
+    # Executes with circuit breaker protection
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run with circuit breaker
+result = asyncio.run(run_with_circuit_breaker())","unverified","",""
+"docs/getting_started/basic_concepts.rst","259","272","python","~~~~~~~~~~~~~~~","import asyncio
+
+async def run_with_fallback():
+    # Register models in order of preference
+    orchestrator.register_model(primary_model)
+    orchestrator.register_model(fallback_model)
+
+    # Will use fallback if primary fails
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run with fallback support
+result = asyncio.run(run_with_fallback())","unverified","",""
+"docs/getting_started/basic_concepts.rst","283","296","python","~~~~~~~~~~~~~","import asyncio
+from orchestrator.state import StateManager
+
+async def run_with_checkpointing():
+    state_manager = StateManager(storage_path=""./checkpoints"")
+    orchestrator = Orchestrator(state_manager=state_manager)
+
+    # Automatically saves checkpoints during execution
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run with checkpointing
+result = asyncio.run(run_with_checkpointing())","unverified","",""
+"docs/getting_started/basic_concepts.rst","302","311","python","~~~~~~~~","import asyncio
+
+async def resume_from_checkpoint():
+    # Resume from last checkpoint
+    result = await orchestrator.resume_pipeline(""pipeline_id"")
+    return result
+
+# Resume execution
+result = asyncio.run(resume_from_checkpoint())","unverified","",""
+"docs/getting_started/basic_concepts.rst","319","336","yaml","Define pipelines declaratively in YAML:","id: document_pipeline
 name: Document Processing Pipeline
 
 tasks:
@@ -2342,41 +2414,65 @@ tasks:
     parameters:
       prompt: ""Summarize these facts: {extract}""
     dependencies:
-      - extract","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","288","294","python","Load and execute:","from orchestrator.compiler import YAMLCompiler
+      - extract","unverified","",""
+"docs/getting_started/basic_concepts.rst","341","353","python","Load and execute:","import asyncio
+from orchestrator.compiler import YAMLCompiler
 
-compiler = YAMLCompiler()
-pipeline = compiler.compile_file(""document_pipeline.yaml"")
+async def run_yaml_pipeline():
+    compiler = YAMLCompiler()
+    pipeline = compiler.compile_file(""document_pipeline.yaml"")
 
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","303","310","python","~~~~~~~~~~~~~~~~~~","from orchestrator.core.resource_allocator import ResourceAllocator
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
 
-allocator = ResourceAllocator()
-orchestrator = Orchestrator(resource_allocator=allocator)
+# Run YAML pipeline
+result = asyncio.run(run_yaml_pipeline())","unverified","",""
+"docs/getting_started/basic_concepts.rst","362","375","python","~~~~~~~~~~~~~~~~~~","import asyncio
+from orchestrator.core.resource_allocator import ResourceAllocator
 
-# Automatically manages CPU, memory, and API quotas
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","316","323","python","~~~~~~~~~~~~~~~~~~","from orchestrator.executor import ParallelExecutor
+async def run_with_resource_management():
+    allocator = ResourceAllocator()
+    orchestrator = Orchestrator(resource_allocator=allocator)
 
-executor = ParallelExecutor(max_workers=4)
-orchestrator = Orchestrator(executor=executor)
+    # Automatically manages CPU, memory, and API quotas
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
 
-# Independent tasks run in parallel
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/basic_concepts.rst","329","336","python","~~~~~~~","from orchestrator.core.cache import MultiLevelCache
+# Run with resource management
+result = asyncio.run(run_with_resource_management())","unverified","",""
+"docs/getting_started/basic_concepts.rst","381","394","python","~~~~~~~~~~~~~~~~~~","import asyncio
+from orchestrator.executor import ParallelExecutor
 
-cache = MultiLevelCache()
-orchestrator = Orchestrator(cache=cache)
+async def run_parallel_execution():
+    executor = ParallelExecutor(max_workers=4)
+    orchestrator = Orchestrator(executor=executor)
 
-# Results are cached for faster subsequent runs
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/installation.rst","26","27","bash","Install Orchestrator using pip:","pip install py-orc","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
+    # Independent tasks run in parallel
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run with parallel execution
+result = asyncio.run(run_parallel_execution())","unverified","",""
+"docs/getting_started/basic_concepts.rst","400","413","python","~~~~~~~","import asyncio
+from orchestrator.core.cache import MultiLevelCache
+
+async def run_with_caching():
+    cache = MultiLevelCache()
+    orchestrator = Orchestrator(cache=cache)
+
+    # Results are cached for faster subsequent runs
+    result = await orchestrator.execute_pipeline(pipeline)
+    return result
+
+# Run with caching
+result = asyncio.run(run_with_caching())","unverified","",""
+"docs/getting_started/installation.rst","26","27","bash","Install Orchestrator using pip:","pip install py-orc","unverified","",""
 "docs/getting_started/installation.rst","37","40","bash","To install from source for development:","git clone https://github.com/ContextLab/orchestrator.git
 cd orchestrator
-pip install -e .","test_created","tests/snippet_tests/test_snippets_batch_4.py",""
-"docs/getting_started/installation.rst","56","57","bash","For sandboxed execution with Docker:","pip install py-orc[docker]","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/installation.rst","64","65","bash","For persistent state storage:","pip install py-orc[database]","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/installation.rst","72","73","bash","For all optional dependencies:","pip install py-orc[all]","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+pip install -e .","unverified","",""
+"docs/getting_started/installation.rst","56","57","bash","For sandboxed execution with Docker:","pip install py-orc[docker]","unverified","",""
+"docs/getting_started/installation.rst","64","65","bash","For persistent state storage:","pip install py-orc[database]","unverified","",""
+"docs/getting_started/installation.rst","72","73","bash","For all optional dependencies:","pip install py-orc[all]","unverified","",""
 "docs/getting_started/installation.rst","81","92","python","Verify your installation by running:","import orchestrator
 print(f""Orchestrator version: {orchestrator.__version__}"")
 
@@ -2387,7 +2483,7 @@ task = Task(id=""test"", name=""Test Task"", action=""echo"", parameters={""mess
 pipeline = Pipeline(id=""test_pipeline"", name=""Test Pipeline"")
 pipeline.add_task(task)
 
-print(""✅ Installation successful!"")","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+print(""✅ Installation successful!"")","unverified","",""
 "docs/getting_started/installation.rst","105","113","bash","Set these environment variables for optimal performance:","# Optional: Set cache directory
 export ORCHESTRATOR_CACHE_DIR=/path/to/cache
 
@@ -2395,7 +2491,7 @@ export ORCHESTRATOR_CACHE_DIR=/path/to/cache
 export ORCHESTRATOR_CHECKPOINT_DIR=/path/to/checkpoints
 
 # Optional: Set log level
-export ORCHESTRATOR_LOG_LEVEL=INFO","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+export ORCHESTRATOR_LOG_LEVEL=INFO","unverified","",""
 "docs/getting_started/installation.rst","121","129","bash","Configure API keys for external services:","# OpenAI
 export OPENAI_API_KEY=your_openai_key
 
@@ -2403,9 +2499,9 @@ export OPENAI_API_KEY=your_openai_key
 export ANTHROPIC_API_KEY=your_anthropic_key
 
 # Google
-export GOOGLE_API_KEY=your_google_key","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+export GOOGLE_API_KEY=your_google_key","unverified","",""
 "docs/getting_started/installation.rst","137","139","bash","If using Docker features, ensure Docker is running:","docker --version
-docker run hello-world","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+docker run hello-world","unverified","",""
 "docs/getting_started/installation.rst","157","166","bash","Install system dependencies:","# Ubuntu/Debian
 sudo apt-get update
 sudo apt-get install python3-dev build-essential
@@ -2414,10 +2510,10 @@ sudo apt-get install python3-dev build-essential
 brew install python
 
 # Windows
-# Use Python from python.org","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+# Use Python from python.org","unverified","",""
 "docs/getting_started/installation.rst","172","174","bash","Ensure Docker is installed and running:","docker --version
-docker info","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/quickstart.rst","13","39","python","Let's create a simple text generation pipeline:","from orchestrator import Orchestrator, Task, Pipeline
+docker info","unverified","",""
+"docs/getting_started/quickstart.rst","13","53","python","Let's create a simple text generation pipeline:","from orchestrator import Orchestrator, Task, Pipeline
 from orchestrator.models.mock_model import MockModel
 
 # Create a mock model for testing
@@ -2441,9 +2537,23 @@ orchestrator = Orchestrator()
 orchestrator.register_model(model)
 
 # Execute pipeline
-result = await orchestrator.execute_pipeline(pipeline)
-print(f""Result: {result['greeting']}"")","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/quickstart.rst","47","86","python","Let's create a more complex pipeline with multiple tasks:","from orchestrator import Task, Pipeline
+import asyncio
+
+
+
+async def run_pipeline():
+
+    result = await orchestrator.execute_pipeline(pipeline)
+
+    return result
+
+
+
+# Run the pipeline
+
+result = asyncio.run(run_pipeline())
+print(f""Result: {result['greeting']}"")","unverified","",""
+"docs/getting_started/quickstart.rst","61","114","python","Let's create a more complex pipeline with multiple tasks:","from orchestrator import Task, Pipeline
 
 # Task 1: Generate story outline
 outline_task = Task(
@@ -2478,11 +2588,25 @@ pipeline.add_task(story_task)
 pipeline.add_task(summary_task)
 
 # Execute pipeline
-result = await orchestrator.execute_pipeline(pipeline)
+import asyncio
+
+
+
+async def run_pipeline():
+
+    result = await orchestrator.execute_pipeline(pipeline)
+
+    return result
+
+
+
+# Run the pipeline
+
+result = asyncio.run(run_pipeline())
 print(f""Outline: {result['outline']}"")
 print(f""Story: {result['story']}"")
-print(f""Summary: {result['summary']}"")","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/quickstart.rst","94","120","yaml","You can also define pipelines in YAML:","# story_pipeline.yaml
+print(f""Summary: {result['summary']}"")","unverified","",""
+"docs/getting_started/quickstart.rst","122","148","yaml","You can also define pipelines in YAML:","# story_pipeline.yaml
 id: story_pipeline
 name: Story Creation Pipeline
 
@@ -2507,16 +2631,30 @@ tasks:
     parameters:
       prompt: ""Summarize this story: {story}""
     dependencies:
-      - story","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/quickstart.rst","125","133","python","Load and execute the YAML pipeline:","from orchestrator.compiler import YAMLCompiler
+      - story","unverified","",""
+"docs/getting_started/quickstart.rst","153","175","python","Load and execute the YAML pipeline:","from orchestrator.compiler import YAMLCompiler
 
 # Load pipeline from YAML
 compiler = YAMLCompiler()
 pipeline = compiler.compile_file(""story_pipeline.yaml"")
 
 # Execute pipeline
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/quickstart.rst","141","155","python","Let's use a real AI model instead of the mock:","from orchestrator.models.openai_model import OpenAIModel
+import asyncio
+
+
+
+async def run_pipeline():
+
+    result = await orchestrator.execute_pipeline(pipeline)
+
+    return result
+
+
+
+# Run the pipeline
+
+result = asyncio.run(run_pipeline())","unverified","",""
+"docs/getting_started/quickstart.rst","183","211","python","Let's use a real AI model instead of the mock:","from orchestrator.models.openai_model import OpenAIModel
 
 # Create OpenAI model
 openai_model = OpenAIModel(
@@ -2529,8 +2667,22 @@ openai_model = OpenAIModel(
 orchestrator.register_model(openai_model)
 
 # Execute pipeline (will use OpenAI)
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/quickstart.rst","163","176","python","Orchestrator provides built-in error handling:","from orchestrator.core.error_handler import ErrorHandler
+import asyncio
+
+
+
+async def run_pipeline():
+
+    result = await orchestrator.execute_pipeline(pipeline)
+
+    return result
+
+
+
+# Run the pipeline
+
+result = asyncio.run(run_pipeline())","unverified","",""
+"docs/getting_started/quickstart.rst","219","246","python","Orchestrator provides built-in error handling:","from orchestrator.core.error_handler import ErrorHandler
 
 # Create error handler with retry strategy
 error_handler = ErrorHandler()
@@ -2540,10 +2692,24 @@ orchestrator = Orchestrator(error_handler=error_handler)
 
 # Execute pipeline with automatic retry on failures
 try:
-    result = await orchestrator.execute_pipeline(pipeline)
+    import asyncio
+
+
+
+    async def run_pipeline():
+
+        result = await orchestrator.execute_pipeline(pipeline)
+
+        return result
+
+
+
+    # Run the pipeline
+
+    result = asyncio.run(run_pipeline())
 except Exception as e:
-    print(f""Pipeline failed: {e}"")","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/quickstart.rst","184","194","python","Enable checkpointing for long-running pipelines:","from orchestrator.state import StateManager
+    print(f""Pipeline failed: {e}"")","unverified","",""
+"docs/getting_started/quickstart.rst","254","278","python","Enable checkpointing for long-running pipelines:","from orchestrator.state import StateManager
 
 # Create state manager
 state_manager = StateManager(storage_path=""./checkpoints"")
@@ -2552,19 +2718,47 @@ state_manager = StateManager(storage_path=""./checkpoints"")
 orchestrator = Orchestrator(state_manager=state_manager)
 
 # Execute pipeline with automatic checkpointing
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/quickstart.rst","202","214","python","Enable monitoring to track pipeline execution:","import logging
+import asyncio
+
+
+
+async def run_pipeline():
+
+    result = await orchestrator.execute_pipeline(pipeline)
+
+    return result
+
+
+
+# Run the pipeline
+
+result = asyncio.run(run_pipeline())","unverified","",""
+"docs/getting_started/quickstart.rst","286","312","python","Enable monitoring to track pipeline execution:","import logging
 
 # Enable debug logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Execute pipeline with logging
-result = await orchestrator.execute_pipeline(pipeline)
+import asyncio
+
+
+
+async def run_pipeline():
+
+    result = await orchestrator.execute_pipeline(pipeline)
+
+    return result
+
+
+
+# Run the pipeline
+
+result = asyncio.run(run_pipeline())
 
 # Get execution statistics
 stats = orchestrator.get_execution_stats()
 print(f""Execution time: {stats['total_time']:.2f}s"")
-print(f""Tasks completed: {stats['completed_tasks']}"")","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+print(f""Tasks completed: {stats['completed_tasks']}"")","unverified","",""
 "docs/getting_started/your_first_pipeline.rst","24","46","python","First, let's set up our environment:","import asyncio
 from orchestrator import Orchestrator, Task, Pipeline
 from orchestrator.models.mock_model import MockModel
@@ -2586,7 +2780,7 @@ model.set_response(
 model.set_response(
     ""Write a comprehensive report on artificial intelligence covering these themes: Economic Impact, Ethics and Responsibility, Accessibility and Democratization"",
     ""# AI Research Report\n\n## Economic Impact\nAI is reshaping job markets...\n\n## Ethics and Responsibility\nAI systems must be developed responsibly...\n\n## Accessibility and Democratization\nMaking AI tools accessible to all...""
-)","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+)","unverified","",""
 "docs/getting_started/your_first_pipeline.rst","54","88","python","Now let's create our three tasks:","# Task 1: Generate research questions
 research_task = Task(
     id=""research_questions"",
@@ -2620,7 +2814,7 @@ report_task = Task(
         ""max_tokens"": 500
     },
     dependencies=[""analyze_themes""]  # Depends on analysis task
-)","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+)","unverified","",""
 "docs/getting_started/your_first_pipeline.rst","96","114","python","Combine tasks into a pipeline:","# Create pipeline
 pipeline = Pipeline(
     id=""research_assistant"",
@@ -2638,8 +2832,8 @@ pipeline.set_context(""topic"", ""artificial intelligence"")
 
 print(""Pipeline created successfully!"")
 print(f""Tasks: {list(pipeline.tasks.keys())}"")
-print(f""Execution order: {pipeline.get_execution_order()}"")","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/your_first_pipeline.rst","122","143","python","Now let's execute our pipeline:","async def run_pipeline():
+print(f""Execution order: {pipeline.get_execution_order()}"")","unverified","",""
+"docs/getting_started/your_first_pipeline.rst","122","148","python","Now let's execute our pipeline:","async def run_pipeline():
     # Create orchestrator
     orchestrator = Orchestrator()
 
@@ -2659,8 +2853,13 @@ print(f""Execution order: {pipeline.get_execution_order()}"")","test_created","t
     return result
 
 # Run the pipeline
-result = await run_pipeline()","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/your_first_pipeline.rst","151","181","python","Let's make our pipeline more robust:","from orchestrator.core.error_handler import ErrorHandler
+# Note: In Jupyter notebooks, you can use top-level await:
+# result = await run_pipeline()
+
+# In regular Python scripts, use asyncio.run():
+import asyncio
+result = asyncio.run(run_pipeline())","unverified","",""
+"docs/getting_started/your_first_pipeline.rst","156","188","python","Let's make our pipeline more robust:","from orchestrator.core.error_handler import ErrorHandler
 from orchestrator.core.error_handler import ExponentialBackoffRetry
 
 async def run_robust_pipeline():
@@ -2689,8 +2888,10 @@ async def run_robust_pipeline():
         return None
 
 # Run robust pipeline
-result = await run_robust_pipeline()","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/your_first_pipeline.rst","189","214","python","For longer pipelines, add checkpointing:","from orchestrator.state import StateManager
+# In Jupyter notebooks: result = await run_robust_pipeline()
+# In regular Python scripts:
+result = asyncio.run(run_robust_pipeline())","unverified","",""
+"docs/getting_started/your_first_pipeline.rst","196","223","python","For longer pipelines, add checkpointing:","from orchestrator.state import StateManager
 
 async def run_stateful_pipeline():
     # Create state manager
@@ -2714,8 +2915,10 @@ async def run_stateful_pipeline():
     return result
 
 # Run stateful pipeline
-result = await run_stateful_pipeline()","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/your_first_pipeline.rst","222","255","yaml","Let's convert our pipeline to YAML:","# research_pipeline.yaml
+# In Jupyter notebooks: result = await run_stateful_pipeline()
+# In regular Python scripts:
+result = asyncio.run(run_stateful_pipeline())","unverified","",""
+"docs/getting_started/your_first_pipeline.rst","231","264","yaml","Let's convert our pipeline to YAML:","# research_pipeline.yaml
 id: research_assistant
 name: Research Assistant Pipeline
 description: Generates research questions, analyzes themes, and writes a report
@@ -2747,8 +2950,8 @@ tasks:
       prompt: ""Write a comprehensive report on {topic} covering these themes: {analyze_themes}""
       max_tokens: 500
     dependencies:
-      - analyze_themes","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/your_first_pipeline.rst","260","281","python","Load and execute the YAML pipeline:","from orchestrator.compiler import YAMLCompiler
+      - analyze_themes","unverified","",""
+"docs/getting_started/your_first_pipeline.rst","269","292","python","Load and execute the YAML pipeline:","from orchestrator.compiler import YAMLCompiler
 
 async def run_yaml_pipeline():
     # Create compiler and load pipeline
@@ -2768,8 +2971,10 @@ async def run_yaml_pipeline():
     return result
 
 # Run YAML pipeline
-result = await run_yaml_pipeline()","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/your_first_pipeline.rst","289","313","python","Replace mock model with real AI:","from orchestrator.models.openai_model import OpenAIModel
+# In Jupyter notebooks: result = await run_yaml_pipeline()
+# In regular Python scripts:
+result = asyncio.run(run_yaml_pipeline())","unverified","",""
+"docs/getting_started/your_first_pipeline.rst","300","325","python","Replace mock model with real AI:","from orchestrator.models.openai_model import OpenAIModel
 
 async def run_with_real_ai():
     # Create OpenAI model
@@ -2792,8 +2997,9 @@ async def run_with_real_ai():
     return result
 
 # Run with real AI (uncomment when you have API keys)
-# result = await run_with_real_ai()","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/your_first_pipeline.rst","321","351","python","Add monitoring to track performance:","import time
+# In Jupyter notebooks: result = await run_with_real_ai()
+# In regular Python scripts: result = asyncio.run(run_with_real_ai())","unverified","",""
+"docs/getting_started/your_first_pipeline.rst","333","365","python","Add monitoring to track performance:","import time
 from orchestrator.core.resource_allocator import ResourceAllocator
 
 async def run_monitored_pipeline():
@@ -2822,8 +3028,10 @@ async def run_monitored_pipeline():
     return result
 
 # Run monitored pipeline
-result = await run_monitored_pipeline()","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/getting_started/your_first_pipeline.rst","359","474","python","Here's the complete, production-ready pipeline:","import asyncio
+# In Jupyter notebooks: result = await run_monitored_pipeline()
+# In regular Python scripts:
+result = asyncio.run(run_monitored_pipeline())","unverified","",""
+"docs/getting_started/your_first_pipeline.rst","373","488","python","Here's the complete, production-ready pipeline:","import asyncio
 import logging
 from orchestrator import Orchestrator, Task, Pipeline
 from orchestrator.models.mock_model import MockModel
@@ -2937,8 +3145,8 @@ async def main():
 
 # Run the complete example
 if __name__ == ""__main__"":
-    asyncio.run(main())","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
-"docs/index.rst","27","28","bash","Get started with Orchestrator in just a few minutes:","pip install py-orc","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+    asyncio.run(main())","unverified","",""
+"docs/index.rst","27","28","bash","Get started with Orchestrator in just a few minutes:","pip install py-orc","unverified","",""
 "docs/index.rst","107","124","text","The Orchestrator Framework is built with a modular architecture that separates concerns and promotes extensibility:","┌─────────────────────────────────────────────────────────────┐
 │                    Orchestrator Engine                      │
 └─────────────────────────────────────────────────────────────┘
@@ -2955,7 +3163,7 @@ if __name__ == ""__main__"":
 │ - Parallel      │  │ - Circuit Break │  │ - Allocation    │
 │ - Sandboxed     │  │ - Retry Logic   │  │ - Monitoring    │
 │ - Distributed   │  │ - Recovery      │  │ - Optimization  │
-└─────────────────┘  └─────────────────┘  └─────────────────┘","test_created","tests/snippet_tests/test_snippets_batch_5.py",""
+└─────────────────┘  └─────────────────┘  └─────────────────┘","unverified","",""
 "docs/tutorials/notebooks.rst","55","64","bash","~~~~~~~~~~~~","# Install Orchestrator Framework
 pip install py-orc
 
@@ -2964,13 +3172,13 @@ pip install jupyter
 
 # Clone the repository for tutorials
 git clone https://github.com/ContextLab/orchestrator.git
-cd orchestrator","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+cd orchestrator","unverified","",""
 "docs/tutorials/notebooks.rst","70","75","bash","~~~~~~~~~~~~~~~~~","# Start Jupyter Notebook
 jupyter notebook
 
 # Or start JupyterLab
-jupyter lab","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/tutorials/notebooks.rst","112","130","python","* Add state management for reliability","# Example from Tutorial 01
+jupyter lab","unverified","",""
+"docs/tutorials/notebooks.rst","112","131","python","* Add state management for reliability","# Example from Tutorial 01
 from orchestrator import Orchestrator, Task, Pipeline
 from orchestrator.models.mock_model import MockModel
 
@@ -2987,8 +3195,9 @@ pipeline = Pipeline(id=""first_pipeline"", name=""First Pipeline"")
 pipeline.add_task(task)
 
 orchestrator = Orchestrator()
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/tutorials/notebooks.rst","165","186","yaml","* Create reusable pipeline templates","# Example from Tutorial 02
+# Note: This code is for Jupyter notebooks which support top-level await
+result = await orchestrator.execute_pipeline(pipeline)","unverified","",""
+"docs/tutorials/notebooks.rst","166","187","yaml","* Create reusable pipeline templates","# Example from Tutorial 02
 id: research_pipeline
 name: Research Assistant Pipeline
 
@@ -3008,8 +3217,8 @@ tasks:
     parameters:
       prompt: ""Analyze themes in: {research}""
     dependencies:
-      - research","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/tutorials/notebooks.rst","221","234","python","* Optimize for cost and latency","# Example from Tutorial 03
+      - research","unverified","",""
+"docs/tutorials/notebooks.rst","222","236","python","* Optimize for cost and latency","# Example from Tutorial 03
 from orchestrator.models.openai_model import OpenAIModel
 from orchestrator.models.anthropic_model import AnthropicModel
 
@@ -3021,8 +3230,9 @@ orchestrator.register_model(gpt4)
 orchestrator.register_model(claude)
 
 # Orchestrator automatically selects best model
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/tutorials/notebooks.rst","275","291","text","The tutorials come with supporting files:","notebooks/
+# Note: This code is for Jupyter notebooks which support top-level await
+result = await orchestrator.execute_pipeline(pipeline)","unverified","",""
+"docs/tutorials/notebooks.rst","277","293","text","The tutorials come with supporting files:","notebooks/
 ├── 01_getting_started.ipynb
 ├── 02_yaml_configuration.ipynb
 ├── 03_advanced_model_integration.ipynb
@@ -3037,23 +3247,23 @@ result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/sn
 └── solutions/                          # Exercise solutions
     ├── 01_solutions.ipynb
     ├── 02_solutions.ipynb
-    └── 03_solutions.ipynb","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/tutorials/notebooks.rst","310","315","bash","**Jupyter Not Starting**","# Try updating Jupyter
+    └── 03_solutions.ipynb","unverified","",""
+"docs/tutorials/notebooks.rst","312","317","bash","**Jupyter Not Starting**","# Try updating Jupyter
 pip install --upgrade jupyter
 
 # Or install JupyterLab
-pip install jupyterlab","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/tutorials/notebooks.rst","319","324","python","**Import Errors**","# Make sure Orchestrator is installed
+pip install jupyterlab","unverified","",""
+"docs/tutorials/notebooks.rst","321","326","bash","**Import Errors**","# Make sure Orchestrator is installed
 pip install py-orc
 
 # Or install in development mode
-pip install -e .","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/tutorials/notebooks.rst","328","330","python","**Mock Model Issues**","# Mock models need explicit responses
-model.set_response(""your prompt"", ""expected response"")","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/tutorials/notebooks.rst","334","336","python","**Async/Await Problems**","# Use await in notebook cells
-result = await orchestrator.execute_pipeline(pipeline)","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+pip install -e .","unverified","",""
+"docs/tutorials/notebooks.rst","330","332","python","**Mock Model Issues**","# Mock models need explicit responses
+model.set_response(""your prompt"", ""expected response"")","unverified","",""
+"docs/tutorials/notebooks.rst","336","338","python","**Async/Await Problems**","# Use await in notebook cells (Jupyter notebooks only)
+result = await orchestrator.execute_pipeline(pipeline)","unverified","",""
 "docs/user_guide/configuration.rst","33","35","bash","When you install Orchestrator via pip, default configuration files are available but not automatically installed to avoid overwriting existing configurations. To install the default configurations:","# Install default configs to ~/.orchestrator/
-orchestrator-install-configs","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+orchestrator-install-configs","unverified","",""
 "docs/user_guide/configuration.rst","53","81","yaml","The models configuration file defines available AI models:","models:
   # Local models (via Ollama)
   - source: ollama
@@ -3081,12 +3291,12 @@ defaults:
   fallback_chain:
     - llama3.1:8b
     - mistral:7b
-    - llama3.2:1b","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+    - llama3.2:1b","unverified","",""
 "docs/user_guide/configuration.rst","86","91","yaml","You can add new models by editing this file:","# Add a new Ollama model
 - source: ollama
   name: my-custom-model:13b
   expertise: [domain-specific, analysis]
-  size: 13b","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+  size: 13b","unverified","",""
 "docs/user_guide/configuration.rst","99","129","yaml","The main configuration file controls framework behavior:","# Execution settings
 execution:
   parallel_tasks: 10
@@ -3116,20 +3326,20 @@ monitoring:
 error_handling:
   circuit_breaker_threshold: 5
   circuit_breaker_timeout: 60
-  fallback_enabled: true","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+  fallback_enabled: true","unverified","",""
 "docs/user_guide/configuration.rst","137","144","bash","You can override configuration settings using environment variables:","# Set custom config location
 export ORCHESTRATOR_HOME=/path/to/configs
 
 # Override specific settings
 export ORCHESTRATOR_LOG_LEVEL=DEBUG
 export ORCHESTRATOR_PARALLEL_TASKS=20
-export ORCHESTRATOR_CACHE_ENABLED=false","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+export ORCHESTRATOR_CACHE_ENABLED=false","unverified","",""
 "docs/user_guide/configuration.rst","161","167","python","Orchestrator validates configuration files on startup:","import orchestrator as orc
 
 # Validate configuration files
 config_valid, errors = orc.validate_config()
 if not config_valid:
-    print(""Configuration errors:"", errors)","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+    print(""Configuration errors:"", errors)","unverified","",""
 "docs/user_guide/configuration.rst","176","187","yaml","~~~~~~~~~~~~~~~~~~~~~~","# orchestrator.yaml for development
 execution:
   parallel_tasks: 2
@@ -3140,7 +3350,7 @@ monitoring:
   trace_enabled: true
 
 cache:
-  enabled: false  # Disable cache for testing","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+  enabled: false  # Disable cache for testing","unverified","",""
 "docs/user_guide/configuration.rst","193","206","yaml","~~~~~~~~~~~~~~~~~~~~~~","# orchestrator.yaml for production
 execution:
   parallel_tasks: 50
@@ -3153,7 +3363,7 @@ monitoring:
 
 error_handling:
   circuit_breaker_threshold: 10
-  fallback_enabled: true","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+  fallback_enabled: true","unverified","",""
 "docs/user_guide/configuration.rst","212","224","yaml","~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~","# models.yaml for limited resources
 models:
   # Only small, efficient models
@@ -3165,7 +3375,7 @@ models:
   - source: ollama
     name: phi-3-mini:3.8b
     expertise: [reasoning, compact]
-    size: 3.8b","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+    size: 3.8b","unverified","",""
 "docs/user_guide/configuration.rst","230","242","yaml","~~~~~~~~~~~~~~~~~~~~~~~~~~~~","# orchestrator.yaml for high performance
 execution:
   parallel_tasks: 100
@@ -3177,7 +3387,7 @@ resources:
 
 cache:
   backend: redis
-  redis_url: redis://localhost:6379","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+  redis_url: redis://localhost:6379","unverified","",""
 "docs/user_guide/model_configuration.rst","16","61","yaml","~~~~~~~~~~~~~~~~~~~~~~~","models:
   # Ollama models (automatically installed if not present)
   - source: ollama
@@ -3222,7 +3432,7 @@ defaults:
   fallback_chain:
     - gemma2:27b
     - llama3.2:1b
-    - TinyLlama/TinyLlama-1.1B-Chat-v1.0","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+    - TinyLlama/TinyLlama-1.1B-Chat-v1.0","unverified","",""
 "docs/user_guide/model_configuration.rst","104","112","python","The framework uses lazy loading for both Ollama and HuggingFace models to avoid downloading large models until they're actually needed:","import orchestrator as orc
 
 # This registers models but doesn't download them yet
@@ -3230,16 +3440,16 @@ registry = orc.init_models()
 
 # Models are downloaded only when first used by a pipeline
 pipeline = orc.compile(""my_pipeline.yaml"")
-result = pipeline.run()  # Model downloads happen here if needed","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+result = pipeline.run()  # Model downloads happen here if needed","unverified","",""
 "docs/user_guide/model_configuration.rst","130","133","yaml","HuggingFace models are also downloaded on first use:","- source: huggingface
   name: microsoft/Phi-3.5-mini-instruct
-  expertise: [reasoning, code]","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+  expertise: [reasoning, code]","unverified","",""
 "docs/user_guide/model_configuration.rst","156","162","yaml","Specify a model by name:","steps:
   - id: summarize
     action: generate_text
     parameters:
       prompt: ""Summarize this text...""
-    requires_model: gemma2:27b  # Use specific model","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+    requires_model: gemma2:27b  # Use specific model","unverified","",""
 "docs/user_guide/model_configuration.rst","170","178","yaml","Specify requirements and let the framework choose:","steps:
   - id: generate_code
     action: generate_text
@@ -3247,7 +3457,7 @@ result = pipeline.run()  # Model downloads happen here if needed","test_created"
       prompt: ""Write a Python function...""
     requires_model:
       expertise: code
-      min_size: 7b  # At least 7B parameters","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+      min_size: 7b  # At least 7B parameters","unverified","",""
 "docs/user_guide/model_configuration.rst","186","196","yaml","Specify multiple expertise areas (any match will qualify):","steps:
   - id: analyze
     action: analyze
@@ -3257,7 +3467,7 @@ result = pipeline.run()  # Model downloads happen here if needed","test_created"
       expertise:
         - reasoning
         - analysis
-      min_size: 20b","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+      min_size: 20b","unverified","",""
 "docs/user_guide/model_configuration.rst","204","240","yaml","Here's a complete pipeline demonstrating model requirements:","id: multi_model_pipeline
 name: Multi-Model Processing Pipeline
 
@@ -3293,7 +3503,7 @@ steps:
     requires_model:
       expertise: [reasoning, analysis]
       min_size: 27b
-    dependencies: [code_example]","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+    dependencies: [code_example]","unverified","",""
 "docs/user_guide/model_configuration.rst","280","291","python","Check which models are being used:","import orchestrator as orc
 
 # Initialize and list available models
@@ -3304,13 +3514,13 @@ for model_key in registry.list_models():
 
 # Run pipeline and check model selection
 pipeline = orc.compile(""pipeline.yaml"")
-result = pipeline.run(topic=""AI agents"")","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
+result = pipeline.run(topic=""AI agents"")","unverified","",""
 "docs/user_guide/model_configuration.rst","296","299","text","The framework logs model selection decisions:",">> Using model for task 'quick_check': ollama:llama3.2:1b (fast, 1B params)
 >> Using model for task 'code_example': ollama:codellama:7b (code, 7B params)
->> Using model for task 'deep_analysis': ollama:gemma2:27b (reasoning, 27B params)","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/user_guide/model_configuration.rst","337","338","text","**Model Installation Fails**:",">> ❌ Failed to install gemma2:27b: connection timeout","test_created","tests/snippet_tests/test_snippets_batch_6.py",""
-"docs/user_guide/model_configuration.rst","348","349","text","**No Models Match Requirements**:","NoEligibleModelsError: No models meet the specified requirements","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
-"docs/user_guide/model_configuration.rst","359","360","text","**API Key Missing**:",">> ⚠️  OpenAI models configured but OPENAI_API_KEY not set","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+>> Using model for task 'deep_analysis': ollama:gemma2:27b (reasoning, 27B params)","unverified","",""
+"docs/user_guide/model_configuration.rst","337","338","text","**Model Installation Fails**:",">> ❌ Failed to install gemma2:27b: connection timeout","unverified","",""
+"docs/user_guide/model_configuration.rst","348","349","text","**No Models Match Requirements**:","NoEligibleModelsError: No models meet the specified requirements","unverified","",""
+"docs/user_guide/model_configuration.rst","359","360","text","**API Key Missing**:",">> ⚠️  OpenAI models configured but OPENAI_API_KEY not set","unverified","",""
 "docs/user_guide/models_and_adapters.rst","34","50","python","~~~~~~~~~~~~~~~~~~~","import orchestrator as orc
 
 # Initialize and discover available models
@@ -3326,38 +3536,38 @@ if any(""gemma2:27b"" in model for model in available_models):
 elif any(""llama3.2:1b"" in model for model in available_models):
     print(""Lightweight Ollama model available"")
 else:
-    print(""Using fallback models"")","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+    print(""Using fallback models"")","unverified","",""
 "docs/user_guide/models_and_adapters.rst","60","67","bash","Install Ollama and pull recommended models:","# Install Ollama
 brew install ollama  # macOS
 # or visit https://ollama.ai for other platforms
 
 # Pull recommended models
 ollama pull gemma2:27b    # Large model for complex tasks
-ollama pull llama3.2:1b   # Lightweight fallback","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
-"docs/user_guide/models_and_adapters.rst","74","75","bash","Install the transformers library:","pip install transformers torch","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+ollama pull llama3.2:1b   # Lightweight fallback","unverified","",""
+"docs/user_guide/models_and_adapters.rst","74","75","bash","Install the transformers library:","pip install transformers torch","unverified","",""
 "docs/user_guide/models_and_adapters.rst","82","85","bash","Set up API keys as environment variables:","export OPENAI_API_KEY=""sk-...""
 export ANTHROPIC_API_KEY=""sk-ant-...""
-export GOOGLE_API_KEY=""...""","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+export GOOGLE_API_KEY=""...""","unverified","",""
 "docs/user_guide/models_and_adapters.rst","96","103","python","~~~~~~~~~~~~~","from orchestrator.models.openai_model import OpenAIModel
 
 model = OpenAIModel(
     name=""gpt-4o"",
     api_key=""your-api-key"",
     model=""gpt-4o""
-)","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+)","unverified","",""
 "docs/user_guide/models_and_adapters.rst","109","116","python","~~~~~~~~~~~~~~~~","from orchestrator.models.anthropic_model import AnthropicModel
 
 model = AnthropicModel(
     name=""claude-3.5-sonnet"",
     api_key=""your-api-key"",
     model=""claude-3.5-sonnet""
-)","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+)","unverified","",""
 "docs/user_guide/models_and_adapters.rst","122","128","python","~~~~~~~~~~~~","from orchestrator.models.huggingface_model import HuggingFaceModel
 
 model = HuggingFaceModel(
     name=""llama-3.2-3b"",
     model_path=""meta-llama/Llama-3.2-3B-Instruct""
-)","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+)","unverified","",""
 "docs/user_guide/models_and_adapters.rst","136","144","python","The model registry manages model selection and load balancing:","from orchestrator.models.model_registry import ModelRegistry
 
 registry = ModelRegistry()
@@ -3365,7 +3575,7 @@ registry.register_model(gpt4_model)
 registry.register_model(claude_model)
 
 # Automatic selection based on task requirements
-selected_model = registry.select_model(task)","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+selected_model = registry.select_model(task)","unverified","",""
 "docs/user_guide/yaml_configuration.rst","26","44","yaml","A basic pipeline YAML file contains:","id: my_pipeline
 name: My Pipeline
 description: A sample pipeline
@@ -3383,7 +3593,7 @@ tasks:
     parameters:
       prompt: ""Process this: {task1}""
     dependencies:
-      - task1","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+      - task1","unverified","",""
 "docs/user_guide/yaml_configuration.rst","52","65","yaml","Use template variables for dynamic content:","id: research_pipeline
 name: Research Pipeline
 
@@ -3396,14 +3606,14 @@ tasks:
     name: Research Task
     action: generate_text
     parameters:
-      prompt: ""Research {topic} with {depth} analysis""","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+      prompt: ""Research {topic} with {depth} analysis""","unverified","",""
 "docs/user_guide/yaml_configuration.rst","73","80","yaml","The AUTO tag automatically resolves ambiguous parameters:","tasks:
   - id: analysis
     name: Analysis Task
     action: <AUTO>
     parameters:
       data: {previous_task}
-      model: <AUTO>","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+      model: <AUTO>","unverified","",""
 "docs_sphinx/api/index.rst","118","128","python","-----------","import orchestrator as orc
 
 # Initialize models
@@ -3413,7 +3623,7 @@ registry = orc.init_models()
 pipeline = orc.compile(""my_pipeline.yaml"")
 
 # Execute
-result = pipeline.run(input_param=""value"")","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+result = pipeline.run(input_param=""value"")","unverified","",""
 "docs_sphinx/api/index.rst","134","151","python","--------------","from orchestrator import Orchestrator
 from orchestrator.core.control_system import MockControlSystem
 from orchestrator.models.model_registry import ModelRegistry
@@ -3430,7 +3640,7 @@ registry = ModelRegistry()
 pipeline = orchestrator.compile(
     yaml_content,
     config={""timeout"": 3600}
-)","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+)","unverified","",""
 "docs_sphinx/api/index.rst","159","168","python","The Orchestrator framework uses comprehensive type annotations for better IDE support and type checking:","from typing import Dict, Any, List, Optional
 from orchestrator import Pipeline, Task
 
@@ -3439,7 +3649,7 @@ def process_pipeline(
     inputs: Dict[str, Any],
     timeout: Optional[int] = None
 ) -> Dict[str, Any]:
-    return pipeline.run(**inputs)","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+    return pipeline.run(**inputs)","unverified","",""
 "docs_sphinx/api/index.rst","198","215","yaml","Default configuration can be overridden using a config file at ``~/.orchestrator/config.yaml``:","models:
   default: ""ollama:gemma2:27b""
   fallback: ""ollama:llama3.2:1b""
@@ -3456,7 +3666,7 @@ execution:
 
 logging:
   level: ""INFO""
-  format: ""%(asctime)s - %(name)s - %(levelname)s - %(message)s""","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+  format: ""%(asctime)s - %(name)s - %(levelname)s - %(message)s""","unverified","",""
 "docs_sphinx/api/index.rst","226","235","python","Models are loaded lazily and cached. For better performance:","# Initialize models once at startup
 orc.init_models()
 
@@ -3465,7 +3675,7 @@ pipeline = orc.compile(""pipeline.yaml"")
 
 # Multiple executions reuse the same pipeline
 for inputs in input_batches:
-    result = pipeline.run(**inputs)","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+    result = pipeline.run(**inputs)","unverified","",""
 "docs_sphinx/api/index.rst","243","253","python","Large pipelines and datasets can consume significant memory:","# Enable checkpointing for long pipelines
 pipeline = orc.compile(""pipeline.yaml"", config={
     ""checkpoint"": True,
@@ -3475,7 +3685,7 @@ pipeline = orc.compile(""pipeline.yaml"", config={
 # Process data in batches
 for batch in data_batches:
     result = pipeline.run(data=batch)
-    # Results are automatically checkpointed","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+    # Results are automatically checkpointed","unverified","",""
 "docs_sphinx/api/index.rst","261","273","python","The framework provides structured error handling:","from orchestrator import CompilationError, ExecutionError
 
 try:
@@ -3487,7 +3697,7 @@ except CompilationError as e:
 except ExecutionError as e:
     print(f""Pipeline execution failed: {e}"")
     print(f""Failed step: {e.step_id}"")
-    print(f""Error context: {e.context}"")","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+    print(f""Error context: {e.context}"")","unverified","",""
 "docs_sphinx/api/index.rst","281","291","python","Enable detailed logging for debugging:","import logging
 
 # Enable debug logging
@@ -3497,13 +3707,13 @@ logging.basicConfig(level=logging.DEBUG)
 pipeline = orc.compile(""pipeline.yaml"", debug=True)
 
 # Execute with verbose output
-result = pipeline.run(input=""value"", _verbose=True)","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+result = pipeline.run(input=""value"", _verbose=True)","unverified","",""
 "docs_sphinx/api/index.rst","302","308","python","----------------------","from orchestrator.core.control_system import ControlSystem
 
 class MyControlSystem(ControlSystem):
     async def execute_task(self, task: Task, context: dict) -> dict:
         # Custom execution logic
-        pass","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+        pass","unverified","",""
 "docs_sphinx/api/index.rst","314","323","python","------------","from orchestrator.tools.base import Tool
 
 class MyTool(Tool):
@@ -3512,13 +3722,13 @@ class MyTool(Tool):
 
     async def execute(self, **kwargs) -> dict:
         # Tool implementation
-        pass","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+        pass","unverified","",""
 "docs_sphinx/api/index.rst","329","335","python","-------------","from orchestrator.core.model import Model
 
 class MyModel(Model):
     async def generate(self, prompt: str, **kwargs) -> str:
         # Model implementation
-        pass","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+        pass","unverified","",""
 "docs_sphinx/api/index.rst","343","356","python","The framework is designed to be thread-safe:","import concurrent.futures
 
 # Safe to use across threads
@@ -3531,7 +3741,7 @@ def process_input(input_data):
 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
     futures = [executor.submit(process_input, data)
               for data in input_datasets]
-    results = [f.result() for f in futures]","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+    results = [f.result() for f in futures]","unverified","",""
 "docs_sphinx/api/index.rst","364","381","python","Testing utilities and patterns:","from orchestrator.testing import MockModel, TestRunner
 
 def test_my_pipeline():
@@ -3548,7 +3758,7 @@ def test_my_pipeline():
 runner = TestRunner(""pipelines/"")
 runner.validate_all()  # Validates all YAML files
 runner.test_compilation()  # Tests compilation
-runner.run_smoke_tests()  # Basic execution tests","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+runner.run_smoke_tests()  # Basic execution tests","unverified","",""
 "docs_sphinx/concepts.rst","19","31","yaml","One of Orchestrator's core innovations is **input-agnostic pipelines**. This means a single pipeline definition can work with different inputs to produce different outputs:","# One pipeline definition
 name: research-pipeline
 
@@ -3560,14 +3770,14 @@ steps:
   - id: research
     action: search_web
     parameters:
-      query: ""{{ inputs.topic }}""","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+      query: ""{{ inputs.topic }}""","unverified","",""
 "docs_sphinx/concepts.rst","55","62","yaml","Every task has these key components:","- id: unique_identifier        # Required: Unique name
   action: what_to_do           # Required: Action to perform
   description: ""What it does""  # Optional: Human description
   parameters:                  # Optional: Input parameters
     key: value
   depends_on: [other_task]     # Optional: Dependencies
-  condition: ""when_to_run""     # Optional: Conditional execution","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+  condition: ""when_to_run""     # Optional: Conditional execution","unverified","",""
 "docs_sphinx/concepts.rst","70","87","yaml","Tasks can depend on other tasks, creating execution ordering:","steps:
   - id: fetch_data
     action: download_file
@@ -3584,7 +3794,7 @@ steps:
     depends_on: [process_data] # Runs after process_data
     action: write_file
     parameters:
-      content: ""$results.process_data""","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+      content: ""$results.process_data""","unverified","",""
 "docs_sphinx/concepts.rst","98","109","yaml","---------------","# Access input values
 query: ""{{ inputs.search_term }}""
 
@@ -3595,7 +3805,7 @@ data: ""$results.previous_task""
 filename: ""{{ inputs.name | slugify }}.pdf""
 
 # Conditional expressions
-mode: ""{{ 'advanced' if inputs.premium else 'basic' }}""","test_created","tests/snippet_tests/test_snippets_batch_7.py",""
+mode: ""{{ 'advanced' if inputs.premium else 'basic' }}""","unverified","",""
 "docs_sphinx/concepts.rst","120","129","yaml","- **Runtime**: Dynamic values resolved during execution","steps:
   - id: example
     parameters:
@@ -3604,7 +3814,7 @@ mode: ""{{ 'advanced' if inputs.premium else 'basic' }}""","test_created","tests
 
       # Runtime: resolved during each execution
       user_input: ""{{ inputs.query }}""
-      previous_result: ""$results.other_task""","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+      previous_result: ""$results.other_task""","unverified","",""
 "docs_sphinx/concepts.rst","137","153","yaml","**AUTO tags** are Orchestrator's solution to ambiguous or uncertain values. When you're not sure what value to use, let an AI model decide:","parameters:
   # Simple AUTO tag
   style: <AUTO>Choose appropriate writing style</AUTO>
@@ -3620,7 +3830,7 @@ mode: ""{{ 'advanced' if inputs.premium else 'basic' }}""","test_created","tests
     - Technical Details: yes/no
     - Future Outlook: yes/no
     Return as JSON object
-    </AUTO>","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+    </AUTO>","unverified","",""
 "docs_sphinx/concepts.rst","197","215","yaml","Actions are how you invoke tools in pipelines:","# Web search
 - action: search_web
   parameters:
@@ -3638,35 +3848,35 @@ mode: ""{{ 'advanced' if inputs.premium else 'basic' }}""","test_created","tests
 # AI generation
 - action: generate_content
   parameters:
-    prompt: ""Write a summary about {{ topic }}""","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+    prompt: ""Write a summary about {{ topic }}""","unverified","",""
 "docs_sphinx/concepts.rst","223","227","yaml","Orchestrator automatically detects required tools from your pipeline:","steps:
   - action: search_web        # → Requires web tool
   - action: ""!python script.py""  # → Requires terminal tool
-  - action: write_file        # → Requires filesystem tool","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+  - action: write_file        # → Requires filesystem tool","unverified","",""
 "docs_sphinx/concepts.rst","265","271","python","- **Cost considerations** (API costs, efficiency)","# Models are selected automatically
 registry = orc.init_models()
 
 # Available models are ranked by capability
 print(registry.list_models())
-# ['ollama:gemma2:27b', 'ollama:llama3.2:1b', 'huggingface:gpt2']","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+# ['ollama:gemma2:27b', 'ollama:llama3.2:1b', 'huggingface:gpt2']","unverified","",""
 "docs_sphinx/concepts.rst","284","291","yaml","Orchestrator can save pipeline state at task boundaries:","config:
   checkpoint: true  # Enable automatic checkpointing
 
 steps:
   - id: expensive_task
     action: long_running_process
-    checkpoint: true  # Force checkpoint after this step","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+    checkpoint: true  # Force checkpoint after this step","unverified","",""
 "docs_sphinx/concepts.rst","299","304","python","If a pipeline fails, it can resume from the last checkpoint:","# Pipeline fails at step 5
 pipeline.run(inputs)  # Fails
 
 # Resume from last checkpoint
-pipeline.resume()  # Continues from step 4","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+pipeline.resume()  # Continues from step 4","unverified","",""
 "docs_sphinx/concepts.rst","335","341","python","You can create custom control systems for specific needs:","from orchestrator.core.control_system import ControlSystem
 
 class MyControlSystem(ControlSystem):
     async def execute_task(self, task, context):
         # Custom execution logic
-        pass","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+        pass","unverified","",""
 "docs_sphinx/concepts.rst","352","366","yaml","---------------","imports:
   - common/validation.yaml as validator
   - workflows/analysis.yaml as analyzer
@@ -3680,7 +3890,7 @@ steps:
   - id: analyze
     pipeline: analyzer
     inputs:
-      validated_data: ""$results.validate""","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+      validated_data: ""$results.validate""","unverified","",""
 "docs_sphinx/concepts.rst","386","401","yaml","---------------","steps:
   - id: risky_task
     action: external_api_call
@@ -3695,7 +3905,7 @@ steps:
         action: use_cached_data
 
       # Continue pipeline on error
-      continue_on_error: true","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+      continue_on_error: true","unverified","",""
 "docs_sphinx/concepts.rst","422","434","yaml","Tasks without dependencies can run in parallel:","steps:
   # These run in parallel
   - id: source1
@@ -3707,19 +3917,19 @@ steps:
   # This waits for both
   - id: combine
     depends_on: [source1, source2]
-    action: merge_data","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+    action: merge_data","unverified","",""
 "docs_sphinx/concepts.rst","442","449","yaml","Expensive operations can be cached:","steps:
   - id: expensive_computation
     action: complex_analysis
     cache:
       enabled: true
       key: ""{{ inputs.data_hash }}""
-      ttl: 3600  # 1 hour","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+      ttl: 3600  # 1 hour","unverified","",""
 "docs_sphinx/concepts.rst","457","462","yaml","Control resource usage:","config:
   resources:
     max_memory: ""8GB""
     max_threads: 4
-    gpu_enabled: false","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+    gpu_enabled: false","unverified","",""
 "docs_sphinx/concepts.rst","483","494","yaml","All inputs are validated:","inputs:
   email:
     type: string
@@ -3730,10 +3940,10 @@ steps:
     type: number
     validation:
       min: 0
-      max: 10000","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+      max: 10000","unverified","",""
 "docs_sphinx/concepts.rst","502","505","yaml","Sensitive data is handled securely:","parameters:
   api_key: ""{{ env.SECRET_API_KEY }}""  # From environment
-  password: ""{{ vault.db_password }}""   # From secret vault","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+  password: ""{{ vault.db_password }}""   # From secret vault","unverified","",""
 "docs_sphinx/concepts.rst","523","533","","--------------------","pipelines/
 ├── common/           # Shared components
 │   ├── validation.yaml
@@ -3743,7 +3953,7 @@ steps:
 │   └── analysis.yaml
 └── specialized/      # Domain-specific
     ├── finance.yaml
-    └── healthcare.yaml","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+    └── healthcare.yaml","unverified","",""
 "docs_sphinx/getting_started.rst","29","43","yaml","A pipeline is a collection of tasks that work together to achieve a goal. Pipelines are defined in YAML and can include:","name: research-report
 description: Generate comprehensive research reports
 
@@ -3757,10 +3967,10 @@ steps:
   - id: search
     action: search_web
     parameters:
-      query: ""{{ inputs.topic }} latest research""","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+      query: ""{{ inputs.topic }} latest research""","unverified","",""
 "docs_sphinx/getting_started.rst","61","64","yaml","When you're unsure about a value, use ``<AUTO>`` tags to let AI models decide:","parameters:
   method: <AUTO>Choose best analysis method for this data</AUTO>
-  depth: <AUTO>Determine appropriate depth level</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+  depth: <AUTO>Determine appropriate depth level</AUTO>","unverified","",""
 "docs_sphinx/getting_started.rst","83","108","yaml","1. **Create a pipeline definition** (``research.yaml``):","name: quick-research
 description: Quick research on any topic
 
@@ -3785,7 +3995,7 @@ steps:
     action: generate_summary
     parameters:
       content: ""$results.search""
-      style: <AUTO>Choose appropriate summary style</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+      style: <AUTO>Choose appropriate summary style</AUTO>","unverified","",""
 "docs_sphinx/getting_started.rst","113","126","python","2. **Run the pipeline**:","import orchestrator as orc
 
 # Initialize models
@@ -3798,21 +4008,21 @@ pipeline = orc.compile(""research.yaml"")
 result1 = pipeline.run(topic=""artificial intelligence"")
 result2 = pipeline.run(topic=""climate change"")
 
-print(f""Reports generated: {result1}, {result2}"")","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+print(f""Reports generated: {result1}, {result2}"")","unverified","",""
 "docs_sphinx/getting_started.rst","141","148","python","The same pipeline works with different inputs:","# One pipeline, many uses
 pipeline = orc.compile(""report-template.yaml"")
 
 # Generate different reports
 ai_report = pipeline.run(topic=""AI"", style=""technical"")
 bio_report = pipeline.run(topic=""Biology"", style=""educational"")
-eco_report = pipeline.run(topic=""Economics"", style=""executive"")","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+eco_report = pipeline.run(topic=""Economics"", style=""executive"")","unverified","",""
 "docs_sphinx/getting_started.rst","153","160","yaml","eco_report = pipeline.run(topic=""Economics"", style=""executive"")","inputs:
   topic:
     type: string
     required: true
   style:
     type: string
-    default: ""technical""","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+    default: ""technical""","unverified","",""
 "docs_sphinx/getting_started.rst","168","177","yaml","Tools are automatically detected and made available:","steps:
   - id: fetch_data
     action: search_web        # Auto-detects web tool
@@ -3821,7 +4031,7 @@ eco_report = pipeline.run(topic=""Economics"", style=""executive"")","test_creat
     action: write_file        # Auto-detects filesystem tool
 
   - id: run_analysis
-    action: ""!python analyze.py""  # Auto-detects terminal tool","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+    action: ""!python analyze.py""  # Auto-detects terminal tool","unverified","",""
 "docs_sphinx/getting_started.rst","185","193","python","The framework intelligently selects the best model for each task:","# Models are selected based on:
 # - Task requirements (reasoning, coding, etc.)
 # - Available resources
@@ -3829,7 +4039,7 @@ eco_report = pipeline.run(topic=""Economics"", style=""executive"")","test_creat
 
 registry = orc.init_models()
 print(registry.list_models())
-# Output: ['ollama:gemma2:27b', 'ollama:llama3.2:1b', 'huggingface:gpt2']","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+# Output: ['ollama:gemma2:27b', 'ollama:llama3.2:1b', 'huggingface:gpt2']","unverified","",""
 "docs_sphinx/index.rst","43","56","python","-------------","import orchestrator as orc
 
 # Initialize models
@@ -3842,25 +4052,25 @@ pipeline = orc.compile(""pipelines/research-report.yaml"")
 result = pipeline.run(
     topic=""quantum_computing"",
     instructions=""Focus on error correction""
-)","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+)","unverified","",""
 "docs_sphinx/installation.rst","34","41","bash","-----------------------","# Install from PyPI (when available)
 pip install py-orc
 
 # Or install from source
 git clone https://github.com/ContextLab/orchestrator.git
 cd orchestrator
-pip install -e .","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+pip install -e .","unverified","",""
 "docs_sphinx/installation.rst","47","53","bash","-----------","# Create conda environment
 conda create -n py-orc python=3.11
 conda activate py-orc
 
 # Install orchestrator
-pip install py-orc","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+pip install py-orc","unverified","",""
 "docs_sphinx/installation.rst","59","64","bash","------------","# Pull the official image
 docker pull contextlab/py-orc:latest
 
 # Run with volume mount
-docker run -v $(pwd):/workspace contextlab/py-orc","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+docker run -v $(pwd):/workspace contextlab/py-orc","unverified","",""
 "docs_sphinx/installation.rst","72","85","bash","For contributors and developers:","# Clone the repository
 git clone https://github.com/ContextLab/orchestrator.git
 cd orchestrator
@@ -3873,12 +4083,12 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e "".[dev,test,docs]""
 
 # Install pre-commit hooks
-pre-commit install","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+pre-commit install","unverified","",""
 "docs_sphinx/installation.rst","96","101","bash","1. **Install Ollama**:","# macOS
 brew install ollama
 
 # Linux
-curl -fsSL https://ollama.ai/install.sh | sh","test_created","tests/snippet_tests/test_snippets_batch_8.py",""
+curl -fsSL https://ollama.ai/install.sh | sh","unverified","",""
 "docs_sphinx/installation.rst","106","114","bash","2. **Pull recommended models**:","# Large model for complex tasks
 ollama pull gemma2:27b
 
@@ -3886,35 +4096,36 @@ ollama pull gemma2:27b
 ollama pull llama3.2:1b
 
 # Code-focused model
-ollama pull codellama:7b","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+ollama pull codellama:7b","unverified","",""
 "docs_sphinx/installation.rst","119","124","python","3. **Verify installation**:","import orchestrator as orc
 
 # Initialize and check models
 registry = orc.init_models()
-print(registry.list_models())","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+print(registry.list_models())","unverified","",""
 "docs_sphinx/installation.rst","132","137","bash","For HuggingFace models, set up your token:","# Set environment variable
 export HUGGINGFACE_TOKEN=""your-token-here""
 
 # Or create .env file
-echo ""HUGGINGFACE_TOKEN=your-token-here"" > .env","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+echo ""HUGGINGFACE_TOKEN=your-token-here"" > .env","unverified","",""
 "docs_sphinx/installation.rst","145","150","bash","For cloud models, configure API keys:","# OpenAI
 export OPENAI_API_KEY=""sk-...""
 
 # Anthropic
-export ANTHROPIC_API_KEY=""sk-ant-...""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","161","168","bash","For headless browser functionality:","# Install Playwright
+export ANTHROPIC_API_KEY=""sk-ant-...""","unverified","",""
+"docs_sphinx/installation.rst","161","169","bash","For headless browser functionality:","# Install Playwright
 pip install playwright
+# Install Playwright browser
 playwright install chromium
 
 # Or use Selenium
 pip install selenium
-# Download appropriate driver","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","181","186","bash","Install optional data processing libraries:","# For advanced data processing
+# Download appropriate driver","unverified","",""
+"docs_sphinx/installation.rst","182","187","bash","Install optional data processing libraries:","# For advanced data processing
 pip install pandas numpy scipy
 
 # For data validation
-pip install pydantic jsonschema","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","194","214","yaml","Create a configuration file at ``~/.orchestrator/config.yaml``:","# Model preferences
+pip install pydantic jsonschema","unverified","",""
+"docs_sphinx/installation.rst","195","215","yaml","Create a configuration file at ``~/.orchestrator/config.yaml``:","# Model preferences
 models:
   default: ""ollama:gemma2:27b""
   fallback: ""ollama:llama3.2:1b""
@@ -3933,8 +4144,8 @@ tools:
 # State management
 state:
   backend: ""postgresql""
-  connection: ""postgresql://user:pass@localhost/orchestrator""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","222","233","bash","Set these environment variables for additional configuration:","# Core settings
+  connection: ""postgresql://user:pass@localhost/orchestrator""","unverified","",""
+"docs_sphinx/installation.rst","223","234","bash","Set these environment variables for additional configuration:","# Core settings
 export ORCHESTRATOR_HOME=""$HOME/.orchestrator""
 export ORCHESTRATOR_LOG_LEVEL=""INFO""
 
@@ -3944,8 +4155,8 @@ export ORCHESTRATOR_MODEL_RETRIES=""3""
 
 # Tool settings
 export ORCHESTRATOR_TOOL_TIMEOUT=""60""
-export ORCHESTRATOR_MCP_AUTO_START=""true""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","241","266","python","Run the verification script:","import orchestrator as orc
+export ORCHESTRATOR_MCP_AUTO_START=""true""","unverified","",""
+"docs_sphinx/installation.rst","242","267","python","Run the verification script:","import orchestrator as orc
 
 # Check version
 print(f""Orchestrator version: {orc.__version__}"")
@@ -3969,12 +4180,12 @@ try:
     result = pipeline.run(message=""Hello, Orchestrator!"")
     print(f""Test pipeline result: {result}"")
 except Exception as e:
-    print(f""Pipeline test failed: {e}"")","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","277","278","text","**Import Error**:","ModuleNotFoundError: No module named 'orchestrator'","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","285","286","text","**Model Connection Error**:","Failed to connect to Ollama at http://localhost:11434","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","293","294","text","**Permission Error**:","Permission denied: '/home/user/.orchestrator'","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
-"docs_sphinx/installation.rst","299","301","bash","Solution: Create directory with proper permissions:","mkdir -p ~/.orchestrator
-chmod 755 ~/.orchestrator","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+    print(f""Pipeline test failed: {e}"")","unverified","",""
+"docs_sphinx/installation.rst","278","279","text","**Import Error**:","ModuleNotFoundError: No module named 'orchestrator'","unverified","",""
+"docs_sphinx/installation.rst","286","287","text","**Model Connection Error**:","Failed to connect to Ollama at http://localhost:11434","unverified","",""
+"docs_sphinx/installation.rst","294","295","text","**Permission Error**:","Permission denied: '/home/user/.orchestrator'","unverified","",""
+"docs_sphinx/installation.rst","300","302","bash","Solution: Create directory with proper permissions:","mkdir -p ~/.orchestrator
+chmod 755 ~/.orchestrator","unverified","",""
 "docs_sphinx/quickstart.rst","19","59","yaml","Create a file called ``summarize.yaml``:","name: topic-summarizer
 description: Generate a concise summary of any topic
 
@@ -4014,7 +4225,7 @@ steps:
     action: write_file
     parameters:
       path: ""{{ outputs.summary }}""
-      content: ""$results.summarize""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+      content: ""$results.summarize""","unverified","",""
 "docs_sphinx/quickstart.rst","67","87","python","Create a Python script to run your pipeline:","import orchestrator as orc
 
 # Initialize the model pool
@@ -4034,7 +4245,7 @@ result2 = pipeline.run(
     length=250
 )
 
-print(f""Created summaries: {result1}, {result2}"")","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+print(f""Created summaries: {result1}, {result2}"")","unverified","",""
 "docs_sphinx/quickstart.rst","107","179","yaml","Let's create a more sophisticated pipeline that generates research reports:","name: research-report-generator
 description: Generate comprehensive research reports with citations
 
@@ -4106,7 +4317,7 @@ steps:
   - id: create_pdf
     action: ""!pandoc -o {{ outputs.report_pdf }} --pdf-engine=xelatex""
     parameters:
-      input: ""$results.write_report""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+      input: ""$results.write_report""","unverified","",""
 "docs_sphinx/quickstart.rst","192","201","yaml","**Web Tools**:","# Web search
 - action: search_web
   parameters:
@@ -4115,7 +4326,7 @@ steps:
 # Scrape webpage
 - action: scrape_page
   parameters:
-    url: ""https://example.com""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+    url: ""https://example.com""","unverified","",""
 "docs_sphinx/quickstart.rst","206","218","yaml","**System Tools**:","# Run shell commands (prefix with !)
 - action: ""!ls -la""
 
@@ -4127,7 +4338,7 @@ steps:
 - action: write_file
   parameters:
     path: ""output.txt""
-    content: ""Your content""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+    content: ""Your content""","unverified","",""
 "docs_sphinx/quickstart.rst","223","238","yaml","**Data Tools**:","# Process data
 - action: transform_data
   parameters:
@@ -4142,7 +4353,7 @@ steps:
     data: ""$results.data""
     schema:
       type: object
-      required: [""name"", ""value""]","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+      required: [""name"", ""value""]","unverified","",""
 "docs_sphinx/quickstart.rst","246","254","yaml","AUTO tags let AI models make intelligent decisions:","steps:
   - id: analyze
     action: analyze_data
@@ -4150,7 +4361,7 @@ steps:
       data: ""$results.fetch""
       method: <AUTO>Choose best analysis method based on data type</AUTO>
       visualization: <AUTO>Determine if visualization would be helpful</AUTO>
-      depth: <AUTO>Set analysis depth (shallow/medium/deep)</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+      depth: <AUTO>Set analysis depth (shallow/medium/deep)</AUTO>","unverified","",""
 "docs_sphinx/quickstart.rst","264","288","yaml","You can compose pipelines from smaller, reusable components:","name: composite-pipeline
 
 imports:
@@ -4174,7 +4385,7 @@ steps:
   - id: validate
     pipeline: validator
     parameters:
-      data: ""$results.process""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+      data: ""$results.process""","unverified","",""
 "docs_sphinx/quickstart.rst","296","309","yaml","Add error handling to make pipelines robust:","steps:
   - id: risky_operation
     action: fetch_external_data
@@ -4187,7 +4398,7 @@ steps:
       fallback:
         action: use_cached_data
         parameters:
-          cache_key: ""{{ inputs.topic }}""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+          cache_key: ""{{ inputs.topic }}""","unverified","",""
 "docs_sphinx/quickstart.rst","317","332","python","Enable debug mode for detailed execution logs:","import logging
 import orchestrator as orc
 
@@ -4202,7 +4413,7 @@ result = pipeline.run(
     topic=""test"",
     _verbose=True,
     _step_callback=lambda step: print(f""Executing: {step.id}"")
-)","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+)","unverified","",""
 "docs_sphinx/tool_reference.rst","48","100","yaml","**Parameters**:","# Web search
 - id: search
   action: search_web
@@ -4254,7 +4465,7 @@ result = pipeline.run(
       - type: ""wait""
         duration: 2000
       - type: ""extract""
-        selector: "".result""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+        selector: "".result""","unverified","",""
 "docs_sphinx/tool_reference.rst","105","138","yaml","**Example Pipeline**:","name: web-research-pipeline
 description: Comprehensive web research with validation
 
@@ -4287,7 +4498,7 @@ steps:
     action: screenshot_page
     parameters:
       url: ""{{ result.url }}""
-      output_path: ""research/{{ inputs.topic }}/{{ loop.index }}.png""","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+      output_path: ""research/{{ inputs.topic }}/{{ loop.index }}.png""","unverified","",""
 "docs_sphinx/tool_reference.rst","154","189","yaml","**Parameters**:","# Quick search
 - id: search
   action: quick_search
@@ -4322,7 +4533,7 @@ steps:
     max_results: 10                         # Optional: Number of images
     size: ""large""                           # Optional: small|medium|large|any
     type: ""photo""                           # Optional: photo|clipart|lineart|any
-    license: ""creative_commons""             # Optional: License filter","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+    license: ""creative_commons""             # Optional: License filter","unverified","",""
 "docs_sphinx/tool_reference.rst","207","233","yaml","**Parameters**:","# Direct command execution
 - id: list_files
   action: ""!ls -la /data""
@@ -4348,7 +4559,7 @@ steps:
     script_path: ""scripts/analyze.sh""        # Required: Path to script
     arguments: [""{{ inputs.data_file }}""]    # Optional: Script arguments
     interpreter: ""bash""                      # Optional: bash|python|node (default: auto-detect)
-    working_dir: ""{{ execution.temp_dir }}""  # Optional: Working directory","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+    working_dir: ""{{ execution.temp_dir }}""  # Optional: Working directory","unverified","",""
 "docs_sphinx/tool_reference.rst","238","282","yaml","**Example Pipeline**:","name: data-processing-automation
 description: Automated data processing with shell commands
 
@@ -4392,7 +4603,7 @@ steps:
     action: execute_command
     parameters:
       command: ""tar""
-      arguments: [""-czf"", ""{{ outputs.package }}"", ""output/{{ inputs.project_name }}""]","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+      arguments: [""-czf"", ""{{ outputs.package }}"", ""output/{{ inputs.project_name }}""]","unverified","",""
 "docs_sphinx/tool_reference.rst","302","367","yaml","**Parameters**:","# Read file
 - id: read_config
   action: read_file
@@ -4457,7 +4668,7 @@ steps:
 - id: check_file
   action: file_exists
   parameters:
-    path: ""config/custom.yaml""               # Required: Path to check","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+    path: ""config/custom.yaml""               # Required: Path to check","unverified","",""
 "docs_sphinx/tool_reference.rst","372","416","yaml","**Example Pipeline**:","name: file-organization-pipeline
 description: Organize and process files automatically
 
@@ -4501,7 +4712,7 @@ steps:
     parameters:
       source: ""{{ file.path }}""
       destination: ""organized/{{ file.extension }}/{{ file.name }}""
-      create_dirs: true","test_created","tests/snippet_tests/test_snippets_batch_9.py",""
+      create_dirs: true","unverified","",""
 "docs_sphinx/tool_reference.rst","436","507","yaml","**Parameters**:","# Transform data
 - id: transform
   action: transform_data
@@ -4572,7 +4783,7 @@ steps:
     to_format: ""parquet""                     # Required: Target format
     options:                                 # Optional: Format-specific options
       compression: ""snappy""
-      index: false","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      index: false","unverified","",""
 "docs_sphinx/tool_reference.rst","512","582","yaml","**Example Pipeline**:","name: sales-data-analysis
 description: Process and analyze sales data
 
@@ -4642,7 +4853,7 @@ steps:
       to_format: ""excel""
       options:
         sheet_name: ""Quarterly Sales""
-        index: false","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+        index: false","unverified","",""
 "docs_sphinx/tool_reference.rst","598","692","yaml","**Parameters**:","# Validate against schema
 - id: validate_structure
   action: validate_schema
@@ -4736,7 +4947,7 @@ steps:
       min_words: 1000
       max_words: 5000
       required_sections: [""intro"", ""analysis"", ""conclusion""]
-      citation_style: ""APA""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      citation_style: ""APA""","unverified","",""
 "docs_sphinx/tool_reference.rst","697","784","yaml","**Example Pipeline**:","name: data-quality-pipeline
 description: Comprehensive data validation and quality assurance
 
@@ -4823,7 +5034,7 @@ steps:
         {{ results.quality_report | format_quality_metrics }}
 
         ## Recommendations
-        <AUTO>Based on the validation results, provide recommendations</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+        <AUTO>Based on the validation results, provide recommendations</AUTO>","unverified","",""
 "docs_sphinx/tool_reference.rst","804","870","yaml","**Parameters**:","# Generate content
 - id: generate
   action: generate_content
@@ -4889,7 +5100,7 @@ steps:
     context: ""$results.research""             # Optional: Additional context
     approach: ""step_by_step""                 # Optional: Reasoning approach
     show_work: true                          # Optional: Show reasoning
-    confidence_level: true                   # Optional: Include confidence","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+    confidence_level: true                   # Optional: Include confidence","unverified","",""
 "docs_sphinx/tool_reference.rst","889","898","yaml","**Parameters**:","# Query database
 - id: fetch_data
   action: query_database
@@ -4898,7 +5109,7 @@ steps:
     query: ""SELECT * FROM users WHERE active = true"" # Required: SQL query
     parameters: []                           # Optional: Query parameters
     fetch_size: 1000                         # Optional: Batch size
-    timeout: 30                              # Optional: Query timeout","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+    timeout: 30                              # Optional: Query timeout","unverified","",""
 "docs_sphinx/tool_reference.rst","913","927","yaml","**Parameters**:","# REST API call
 - id: api_call
   action: call_api
@@ -4912,7 +5123,7 @@ steps:
       query: ""{{ inputs.search_term }}""
       limit: 100
     timeout: 60                              # Optional: Request timeout
-    retry: 3                                 # Optional: Retry attempts","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+    retry: 3                                 # Optional: Retry attempts","unverified","",""
 "docs_sphinx/tool_reference.rst","936","1002","yaml","----------------------------","name: comprehensive-research-tool-chain
 description: Chain multiple tools for research and reporting
 
@@ -4978,7 +5189,7 @@ steps:
 
   # 7. Generate PDF
   - id: create_pdf
-    action: ""!pandoc -f markdown -t pdf -o reports/{{ inputs.topic }}.pdf reports/{{ inputs.topic }}_{{ execution.date }}.md""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+    action: ""!pandoc -f markdown -t pdf -o reports/{{ inputs.topic }}.pdf reports/{{ inputs.topic }}_{{ execution.date }}.md""","unverified","",""
 "docs_sphinx/tool_reference.rst","1008","1099","yaml","------------------------","name: etl-tool-chain
 description: Extract, transform, and load data using tool chain
 
@@ -5069,7 +5280,7 @@ steps:
       connection: ""{{ env.DW_CONNECTION }}""
       table: ""sales_fact""
       data: ""$results.clean_data""
-      mode: ""append""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      mode: ""append""","unverified","",""
 "docs_sphinx/tool_reference.rst","1110","1152","python","To create your own tools:","from orchestrator.tools.base import Tool
 
 class MyCustomTool(Tool):
@@ -5111,7 +5322,7 @@ class MyCustomTool(Tool):
                 ""mode"": mode,
                 ""timestamp"": datetime.now()
             }
-        }","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+        }","unverified","",""
 "docs_sphinx/tool_reference.rst","1160","1175","python","Register your tool to make it available:","from orchestrator.tools.base import default_registry
 
 # Register tool
@@ -5126,7 +5337,7 @@ steps:
     parameters:
       input_data: ""{{ inputs.data }}""
       mode: ""advanced""
-""""""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+""""""","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","35","239","yaml","Create ``sales_etl.yaml``:","name: sales-etl-pipeline
 description: Extract, transform, and load sales data
 
@@ -5330,7 +5541,7 @@ steps:
     action: write_file
     parameters:
       path: ""{{ outputs.summary_stats }}""
-      content: ""$results.create_summary_report""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      content: ""$results.create_summary_report""","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","245","264","python","----------------------------","import orchestrator as orc
 
 # Initialize
@@ -5349,7 +5560,7 @@ result = etl_pipeline.run(
     }
 )
 
-print(f""ETL completed: {result}"")","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+print(f""ETL completed: {result}"")","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","277","521","yaml","Create ``data_integration.yaml``:","name: multi-source-integration
 description: Integrate data from multiple sources with validation
 
@@ -5593,7 +5804,7 @@ steps:
     action: write_file
     parameters:
       path: ""{{ outputs.integration_report }}""
-      content: ""$results.create_integration_report""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      content: ""$results.create_integration_report""","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","527","558","python","-----------------------------------","import orchestrator as orc
 
 # Initialize
@@ -5624,7 +5835,7 @@ result = integration.run(
     deduplication_fields=[""transaction_id"", ""timestamp""]
 )
 
-print(f""Integration completed: {result}"")","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+print(f""Integration completed: {result}"")","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","571","815","yaml","Create ``data_quality.yaml``:","name: data-quality-assessment
 description: Comprehensive data quality evaluation and reporting
 
@@ -5868,7 +6079,7 @@ steps:
     action: write_file
     parameters:
       path: ""{{ outputs.issues_log }}""
-      content: ""{{ results.compile_issues | json }}""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      content: ""{{ results.compile_issues | json }}""","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","828","923","yaml","Create ``realtime_processing.yaml``:","name: realtime-data-processing
 description: Process streaming data with real-time analytics
 
@@ -5963,7 +6174,7 @@ steps:
     action: write_file
     parameters:
       path: ""{{ outputs.alerts }}""
-      content: ""$results.generate_alerts""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      content: ""$results.generate_alerts""","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","932","990","yaml","---------------------------------","name: customer-data-platform
 description: Unified customer data processing and analytics
 
@@ -6021,7 +6232,7 @@ steps:
 
         - type: ""add_column""
           name: ""segment""
-          expression: ""classify_customer_segment(clv, engagement, recency)""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+          expression: ""classify_customer_segment(clv, engagement, recency)""","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","996","1062","yaml","----------------------------------","name: financial-data-pipeline
 description: Process financial transactions with compliance checks
 
@@ -6087,22 +6298,22 @@ steps:
         Screening results: {{ results.screen_transactions | json }}
         Risk distribution: {{ results.calculate_risk_scores | group_by('risk_category') }}
 
-        Include regulatory compliance status and any required actions.","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
-"docs_sphinx/tutorials/tutorial_data_processing.rst","1073","1078","yaml","Build a pipeline that processes e-commerce data:","# Your challenge:
-# - Extract: Orders, customers, products, reviews
-# - Transform: Calculate metrics, segment customers
-# - Load: Create analytics-ready datasets
-# - Quality: Validate business rules","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
-"docs_sphinx/tutorials/tutorial_data_processing.rst","1086","1091","yaml","Create a pipeline for IoT sensor data:","# Requirements:
-# - Handle high-volume time series data
-# - Detect sensor anomalies
-# - Aggregate by time windows
-# - Generate maintenance alerts","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+        Include regulatory compliance status and any required actions.","unverified","",""
+"docs_sphinx/tutorials/tutorial_data_processing.rst","1073","1078","text","Build a pipeline that processes e-commerce data:","Your challenge:
+- Extract: Orders, customers, products, reviews
+- Transform: Calculate metrics, segment customers
+- Load: Create analytics-ready datasets
+- Quality: Validate business rules","unverified","",""
+"docs_sphinx/tutorials/tutorial_data_processing.rst","1086","1091","text","Create a pipeline for IoT sensor data:","Requirements:
+- Handle high-volume time series data
+- Detect sensor anomalies
+- Aggregate by time windows
+- Generate maintenance alerts","unverified","",""
 "docs_sphinx/tutorials/tutorial_data_processing.rst","1099","1104","yaml","Build a social media data processing pipeline:","# Features:
 # - Extract from multiple platforms
 # - Text analysis and sentiment
 # - Trend detection
-# - Influence measurement","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+# - Influence measurement","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","36","91","yaml","Create a file called ``web_search.yaml``:","name: basic-web-search
 description: Search the web and compile results into a report
 
@@ -6157,7 +6368,7 @@ steps:
     action: write_file
     parameters:
       path: ""{{ outputs.report }}""
-      content: ""$results.compile_report""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      content: ""$results.compile_report""","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","97","117","python","------------------------","import orchestrator as orc
 
 # Initialize
@@ -6177,7 +6388,7 @@ result2 = pipeline.run(
     max_results=10
 )
 
-print(f""Generated reports: {result1}, {result2}"")","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+print(f""Generated reports: {result1}, {result2}"")","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","125","142","markdown","Your pipeline will create markdown files like:","# Search Results: Artificial Intelligence Trends 2024
 
 ## Executive Summary
@@ -6194,7 +6405,7 @@ Recent searches reveal significant developments in AI across multiple domains...
 
 ### 1. AI Breakthrough: New Model Achieves Human-Level Performance
 **Source**: [TechCrunch](https://techcrunch.com/...)
-**Summary**: Details about the latest AI advancement...","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+**Summary**: Details about the latest AI advancement...","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","155","346","yaml","Create ``multi_source_research.yaml``:","name: multi-source-research
 description: Comprehensive research using web, news, and academic sources
 
@@ -6385,7 +6596,7 @@ steps:
     action: write_file
     parameters:
       path: ""{{ outputs.comprehensive_report }}""
-      content: ""$results.create_report""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      content: ""$results.create_report""","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","352","375","python","---------------------------------","import orchestrator as orc
 
 # Initialize
@@ -6408,7 +6619,7 @@ result2 = pipeline.run(
     topic=""edge computing trends"",
     depth=""medium"",
     include_sources=[""web"", ""news""]
-)","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+)","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","388","488","yaml","Create ``fact_checker.yaml``:","name: fact-checker
 description: Verify claims against multiple reliable sources
 
@@ -6508,7 +6719,7 @@ steps:
     action: write_file
     parameters:
       path: ""{{ outputs.fact_check_report }}""
-      content: ""$results.create_fact_check_report""","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      content: ""$results.create_fact_check_report""","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","494","514","python","----------------------------","import orchestrator as orc
 
 # Initialize
@@ -6528,7 +6739,7 @@ result = fact_checker.run(
     confidence_threshold=0.8
 )
 
-print(f""Fact-check report: {result}"")","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+print(f""Fact-check report: {result}"")","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","527","805","yaml","Create ``report_generator.yaml``:","name: automated-report-generator
 description: Generate professional reports from research data
 
@@ -6806,7 +7017,7 @@ steps:
   - id: create_html
     action: ""!pandoc {{ outputs.report_markdown }} -o {{ outputs.report_html }} --standalone --css=style.css""
     error_handling:
-      continue_on_error: true","test_created","tests/snippet_tests/test_snippets_batch_10.py",""
+      continue_on_error: true","unverified","",""
 "docs_sphinx/tutorials/tutorial_web_research.rst","811","843","python","------------------------------------","import orchestrator as orc
 
 # Initialize
@@ -6838,30 +7049,44 @@ briefing = generator.run(
     target_audience=""general""
 )
 
-print(f""Generated reports: {exec_report}, {tech_report}, {briefing}"")","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/tutorials/tutorial_web_research.rst","854","865","yaml","Create a pipeline that monitors a specific industry for news, updates, and trends:","# Hints for your solution:
+print(f""Generated reports: {exec_report}, {tech_report}, {briefing}"")","unverified","",""
+"docs_sphinx/tutorials/tutorial_web_research.rst","854","879","yaml","Create a pipeline that monitors a specific industry for news, updates, and trends:","# Hints for your solution:
 inputs:
-  industry: # e.g., ""fintech"", ""biotech"", ""cleantech""
-  monitoring_period: # ""daily"", ""weekly"", ""monthly""
-  alert_keywords: # Important terms to watch for
+  - name: industry
+    type: string
+    description: ""Industry to monitor""  # Examples: ""fintech"", ""biotech"", ""cleantech""
+  - name: monitoring_period
+    type: string
+    description: ""daily""  # Valid values: ""daily"", ""weekly"", ""monthly""
+  - name: alert_keywords
+    type: list
+    description: Important terms to watch for
 
 steps:
-  # Multiple search strategies
-  # Trend analysis
-  # Alert generation
-  # Automated summaries","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/tutorials/tutorial_web_research.rst","873","878","yaml","Build a system that researches competitors and market positioning:","# Structure your pipeline to:
+  - id: search_news
+    action: search_web
+    # Multiple search strategies
+  - id: analyze_trends
+    action: analyze
+    # Trend analysis
+  - id: generate_alerts
+    action: filter
+    # Alert generation
+  - id: create_summary
+    action: generate_text
+    # Automated summaries","unverified","",""
+"docs_sphinx/tutorials/tutorial_web_research.rst","887","892","yaml","Build a system that researches competitors and market positioning:","# Structure your pipeline to:
 # 1. Research multiple companies
 # 2. Compare features and positioning
 # 3. Analyze market trends
-# 4. Generate competitive analysis","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/tutorials/tutorial_web_research.rst","886","893","python","Create a pipeline that combines multiple research pipelines for comprehensive analysis:","# Combine:
+# 4. Generate competitive analysis","unverified","",""
+"docs_sphinx/tutorials/tutorial_web_research.rst","900","907","python","Create a pipeline that combines multiple research pipelines for comprehensive analysis:","# Combine:
 # - Basic web search
 # - Multi-source research
 # - Fact-checking
 # - Report generation
 
-# Into a single meta-pipeline","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
+# Into a single meta-pipeline","unverified","",""
 "docs_sphinx/yaml_pipelines.rst","14","67","yaml","A complete pipeline definition consists of several sections, each serving a specific purpose:","# Pipeline metadata
 name: pipeline-name           # Required: Unique identifier
 description: Pipeline purpose # Required: Human-readable description
@@ -6914,7 +7139,7 @@ steps:
         max_attempts: 3
         backoff: exponential
       fallback:
-        action: alternate_action","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
+        action: alternate_action","unverified","",""
 "docs_sphinx/yaml_pipelines.rst","78","87","yaml","The metadata section identifies and describes your pipeline:","name: advanced-research-pipeline
 description: |
   Multi-stage research pipeline that:
@@ -6923,7 +7148,7 @@ description: |
   - Generates comprehensive reports
 version: ""2.1.0""
 author: ""Your Name""
-tags: [""research"", ""automation"", ""reporting""]","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
+tags: [""research"", ""automation"", ""reporting""]","unverified","",""
 "docs_sphinx/yaml_pipelines.rst","97","148","yaml","**Basic Types**:","inputs:
   # String input with validation
   topic:
@@ -6974,7 +7199,7 @@ tags: [""research"", ""automation"", ""reporting""]","test_created","tests/snipp
           enum: [""en"", ""es"", ""fr"", ""de""]
         format:
           type: string
-          enum: [""pdf"", ""html"", ""markdown""]","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
+          enum: [""pdf"", ""html"", ""markdown""]","unverified","",""
 "docs_sphinx/yaml_pipelines.rst","156","184","yaml","Outputs define what the pipeline produces:","outputs:
   # Simple file output
   report:
@@ -7002,7 +7227,7 @@ tags: [""research"", ""automation"", ""reporting""]","test_created","tests/snipp
     value:
       - ""{{ outputs.report }}""
       - ""data/{{ inputs.topic }}_data.json""
-      - ""images/{{ inputs.topic }}_charts.png""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
+      - ""images/{{ inputs.topic }}_charts.png""","unverified","",""
 "docs_sphinx/yaml_pipelines.rst","194","226","yaml","**Basic Actions**:","steps:
   # Simple action
   - id: fetch_data
@@ -7034,7 +7259,7 @@ tags: [""research"", ""automation"", ""reporting""]","test_created","tests/snipp
     parameters:
       content: ""$results.analyze""
       style: <AUTO>Choose style based on audience</AUTO>
-      length: <AUTO>Determine optimal length</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
+      length: <AUTO>Determine optimal length</AUTO>","unverified","",""
 "docs_sphinx/yaml_pipelines.rst","231","257","yaml","**Dependencies and Flow Control**:","steps:
   # Parallel execution (no dependencies)
   - id: source1
@@ -7060,7 +7285,7 @@ tags: [""research"", ""automation"", ""reporting""]","test_created","tests/snipp
 
   # Dynamic dependencies
   - id: final_step
-    depends_on: ""{{ ['combine', 'premium_analysis'] if inputs.tier == 'premium' else ['combine'] }}""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
+    depends_on: ""{{ ['combine', 'premium_analysis'] if inputs.tier == 'premium' else ['combine'] }}""","unverified","",""
 "docs_sphinx/yaml_pipelines.rst","262","284","yaml","**Error Handling**:","steps:
   - id: risky_operation
     action: external_api_call
@@ -7082,22 +7307,47 @@ tags: [""research"", ""automation"", ""reporting""]","test_created","tests/snipp
       continue_on_error: true
 
       # Custom error message
-      error_message: ""Failed to fetch external data, using cache""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","294","308","yaml","**Variable Access**:","# Input variables
-""{{ inputs.parameter_name }}""
+      error_message: ""Failed to fetch external data, using cache""","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","296","335","yaml","Variables can be referenced throughout your pipeline using Jinja2-style template expressions:","id: variable_demo
+name: Variable Access Demo
 
-# Results from previous steps
-""$results.step_id""
-""$results.step_id.specific_field""
+inputs:
+  - name: user_topic
+    type: string
+    description: Topic to research
 
-# Output references
-""{{ outputs.output_name }}""
+steps:
+  - id: initial_search
+    action: search_web
+    parameters:
+      # Reference input variables
+      query: ""{{ user_topic }} latest news""
 
-# Execution context
-""{{ execution.timestamp }}""
-""{{ execution.pipeline_id }}""
-""{{ execution.run_id }}""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","313","332","yaml","**Filters and Functions**:","# String manipulation
+  - id: analyze_results
+    action: analyze
+    parameters:
+      # Reference results from previous steps
+      data: ""{{ initial_search.results }}""
+      # Can access nested fields
+      first_result: ""{{ initial_search.results[0].title }}""
+    dependencies: [initial_search]
+
+  - id: final_report
+    action: generate_text
+    parameters:
+      # Combine multiple references
+      prompt: |
+        Create a report about {{ user_topic }}
+        Based on: {{ analyze_results.summary }}
+        Total results found: {{ initial_search.count }}
+    dependencies: [analyze_results]
+
+outputs:
+  # Define output variables
+  report: ""{{ final_report.result }}""
+  summary: ""{{ analyze_results.summary }}""
+  search_count: ""{{ initial_search.count }}""","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","340","359","text","**Filters and Functions**:","# String manipulation
 ""{{ inputs.topic | lower }}""
 ""{{ inputs.topic | upper }}""
 ""{{ inputs.topic | slugify }}""
@@ -7115,8 +7365,8 @@ tags: [""research"", ""automation"", ""reporting""]","test_created","tests/snipp
 
 # Lists and loops
 ""{{ inputs.items | join(', ') }}""
-""{{ inputs.sources | length }}""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","342","353","yaml","**Basic AUTO Tags**:","parameters:
+""{{ inputs.sources | length }}""","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","369","380","yaml","**Basic AUTO Tags**:","parameters:
   # Simple decision
   style: <AUTO>Choose appropriate writing style</AUTO>
 
@@ -7126,8 +7376,8 @@ tags: [""research"", ""automation"", ""reporting""]","test_created","tests/snipp
   # Multiple choices
   options:
     visualization: <AUTO>Should we create visualizations for this data?</AUTO>
-    format: <AUTO>What's the best output format: json, csv, or parquet?</AUTO>","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","358","379","yaml","**Advanced AUTO Patterns**:","# Conditional AUTO
+    format: <AUTO>What's the best output format: json, csv, or parquet?</AUTO>","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","385","406","yaml","**Advanced AUTO Patterns**:","# Conditional AUTO
 analysis_depth: |
   <AUTO>
   Given:
@@ -7147,8 +7397,8 @@ report_sections: |
   - Future Outlook: yes/no
   - Recommendations: yes/no
   Return as JSON object
-  </AUTO>","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","398","419","python","**User Control Points**:","import orchestrator as orc
+  </AUTO>","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","425","446","python","**User Control Points**:","import orchestrator as orc
 
 # Control compilation options
 pipeline = orc.compile(
@@ -7168,8 +7418,8 @@ pipeline = orc.compile(
 # Inspect compilation result
 print(pipeline.get_required_tools())
 print(pipeline.get_task_graph())
-print(pipeline.get_estimated_cost())","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","424","434","yaml","**Runtime vs Compile-Time Resolution**:","# Compile-time (resolved during compilation)
+print(pipeline.get_estimated_cost())","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","451","461","yaml","**Runtime vs Compile-Time Resolution**:","# Compile-time (resolved during compilation)
 config:
   timestamp: ""{{ compile_time.timestamp }}""
 
@@ -7178,8 +7428,8 @@ steps:
   - id: dynamic
     parameters:
       query: ""{{ inputs.topic }}""  # Runtime
-      results: ""$results.previous""  # Runtime","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","445","464","yaml","Reuse common patterns:","imports:
+      results: ""$results.previous""  # Runtime","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","472","491","yaml","Reuse common patterns:","imports:
   # Import specific steps
   - common/data_validation.yaml#validate_step as validate
 
@@ -7197,8 +7447,8 @@ steps:
   - id: analyze
     pipeline: analysis
     inputs:
-      data: ""$results.validation""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","470","498","yaml","-------------------------","steps:
+      data: ""$results.validation""","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","497","525","yaml","-------------------------","steps:
   # Define parallel group
   - id: parallel_fetch
     parallel:
@@ -7225,8 +7475,8 @@ steps:
       sources:
         - ""$results.parallel_fetch.fetch_api""
         - ""$results.parallel_fetch.fetch_db""
-        - ""$results.parallel_fetch.fetch_file""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","504","521","yaml","-------------------","steps:
+        - ""$results.parallel_fetch.fetch_file""","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","531","548","yaml","-------------------","steps:
   # For-each loop
   - id: process_items
     for_each: ""{{ inputs.items }}""
@@ -7242,8 +7492,8 @@ steps:
     max_iterations: 10
     action: refine_result
     parameters:
-      current: ""$results.previous_iteration""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","527","541","yaml","----------------","# Enable checkpointing
+      current: ""$results.previous_iteration""","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","554","568","yaml","----------------","# Enable checkpointing
 config:
   checkpoint:
     enabled: true
@@ -7256,8 +7506,8 @@ steps:
     checkpoint: true  # Force checkpoint after this step
     recovery:
       strategy: ""retry""  # or: ""skip"", ""use_cached""
-      max_attempts: 3","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","578","638","yaml","------------------------","name: data-processing-pipeline
+      max_attempts: 3","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","605","665","yaml","------------------------","name: data-processing-pipeline
 description: ETL pipeline with validation
 
 inputs:
@@ -7316,8 +7566,8 @@ steps:
     parameters:
       data: ""$results.validate""
       path: ""output/processed_data.{{ inputs.output_format }}""
-      format: ""{{ inputs.output_format }}""","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
-"docs_sphinx/yaml_pipelines.rst","644","703","yaml","------------------------------","name: comprehensive-research
+      format: ""{{ inputs.output_format }}""","unverified","",""
+"docs_sphinx/yaml_pipelines.rst","671","730","yaml","------------------------------","name: comprehensive-research
 description: Research from multiple sources with cross-validation
 
 inputs:
@@ -7376,4 +7626,4 @@ steps:
     parameters:
       validated_facts: ""$results.cross_validate""
       style: ""analytical""
-      include_confidence: true","test_created","tests/snippet_tests/test_snippets_batch_11.py",""
+      include_confidence: true","unverified","",""

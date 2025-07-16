@@ -105,23 +105,29 @@ Basic Usage
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator import Task, Pipeline, Orchestrator
    
-   # Create a task
-   task = Task(
-       id="hello",
-       name="Hello Task",
-       action="generate_text",
-       parameters={"prompt": "Hello, world!"}
-   )
+   async def main():
+       # Create a task
+       task = Task(
+           id="hello",
+           name="Hello Task",
+           action="generate_text",
+           parameters={"prompt": "Hello, world!"}
+       )
+       
+       # Create a pipeline
+       pipeline = Pipeline(id="demo", name="Demo Pipeline")
+       pipeline.add_task(task)
+       
+       # Execute with orchestrator
+       orchestrator = Orchestrator()
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   # Create a pipeline
-   pipeline = Pipeline(id="demo", name="Demo Pipeline")
-   pipeline.add_task(task)
-   
-   # Execute with orchestrator
-   orchestrator = Orchestrator()
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run the pipeline
+   result = asyncio.run(main())
 
 YAML Configuration
 ~~~~~~~~~~~~~~~~~~
@@ -143,12 +149,18 @@ Error Handling
 
 .. code-block:: python
 
+   import asyncio
    from orchestrator.core.error_handler import ErrorHandler
    
-   error_handler = ErrorHandler()
-   orchestrator = Orchestrator(error_handler=error_handler)
+   async def run_with_error_handling():
+       error_handler = ErrorHandler()
+       orchestrator = Orchestrator(error_handler=error_handler)
+       
+       # Tasks will automatically retry on failure
+       result = await orchestrator.execute_pipeline(pipeline)
+       return result
    
-   # Tasks will automatically retry on failure
-   result = await orchestrator.execute_pipeline(pipeline)
+   # Run with error handling
+   result = asyncio.run(run_with_error_handling())
 
 For detailed API documentation, explore the source code in the ``src/orchestrator/`` directory.

@@ -853,15 +853,29 @@ Create a pipeline that monitors a specific industry for news, updates, and trend
 
    # Hints for your solution:
    inputs:
-     industry: # e.g., "fintech", "biotech", "cleantech"
-     monitoring_period: # "daily", "weekly", "monthly"
-     alert_keywords: # Important terms to watch for
+     - name: industry
+       type: string
+       description: "Industry to monitor"  # Examples: "fintech", "biotech", "cleantech"
+     - name: monitoring_period
+       type: string
+       description: "daily"  # Valid values: "daily", "weekly", "monthly"
+     - name: alert_keywords
+       type: list
+       description: Important terms to watch for
    
    steps:
-     # Multiple search strategies
-     # Trend analysis
-     # Alert generation
-     # Automated summaries
+     - id: search_news
+       action: search_web
+       # Multiple search strategies
+     - id: analyze_trends
+       action: analyze
+       # Trend analysis
+     - id: generate_alerts
+       action: filter
+       # Alert generation
+     - id: create_summary
+       action: generate_text
+       # Automated summaries
 
 Exercise 2: Competitive Intelligence
 -----------------------------------

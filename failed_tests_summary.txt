@@ -1,0 +1,23 @@
+Failed Tests Summary:
+
+Batch 10 (5 failures):
+- test_session_summary_context_limit_lines_45_49_0: Python block contains descriptive text, not code
+- test_session_summary_context_limit_lines_54_60_1: Python block contains descriptive text, not code
+- test_session_summary_context_limit_lines_65_67_2: Python block contains descriptive text, not code
+- test_core_lines_108_125_4: Python block contains descriptive text, not code
+- test_core_lines_146_153_6: Python block contains descriptive text, not code
+
+Batch 29 (1 failure):
+- test_tutorial_data_processing_lines_1073_1078_9: YAML block contains only comments
+
+Batch 30 (1 failure):
+- test_tutorial_data_processing_lines_1086_1091_0: YAML block contains only comments
+
+Batch 31 (1 failure):
+- test_tutorial_web_research_lines_854_865_1: YAML block contains incomplete/template YAML
+
+Batch 32 (1 failure):
+- test_yaml_pipelines_lines_294_308_1: YAML block contains template syntax examples, not valid YAML
+
+Total: 9 failures out of 323 tests (97.2% pass rate)
+EOF < /dev/null

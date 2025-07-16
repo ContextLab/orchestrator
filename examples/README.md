@@ -189,8 +189,14 @@ orchestrator = Orchestrator()
 Verify system health before running pipelines:
 
 ```python
-health = await orchestrator.health_check()
-print("System health:", health["overall"])
+async def check_health():
+    health = await orchestrator.health_check()
+    print("System health:", health["overall"])
+    return health
+
+# Run the health check
+import asyncio
+health_status = asyncio.run(check_health())
 ```
 
 ## Contributing

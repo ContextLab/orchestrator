@@ -41,7 +41,7 @@
 ### **Key Code References:**
 
 **Core Framework Structure:**
-```python
+```
 # Main abstractions in src/orchestrator/core/
 - task.py:Task, TaskStatus (lines 1-200+)
 - pipeline.py:Pipeline (lines 1-300+) 
@@ -50,7 +50,7 @@
 ```
 
 **Advanced Components:**
-```python
+```
 # Advanced features in src/orchestrator/
 - core/error_handler.py:ErrorHandler, CircuitBreaker (lines 1-400+)
 - core/cache.py:MultiLevelCache (lines 1-550+)
@@ -61,7 +61,7 @@
 ```
 
 **Control System Adapters:**
-```python
+```
 # Adapters in src/orchestrator/adapters/
 - langgraph_adapter.py:LangGraphAdapter (lines 1-350+)
 - mcp_adapter.py:MCPAdapter (lines 1-450+)

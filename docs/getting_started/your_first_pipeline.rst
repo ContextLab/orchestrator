@@ -139,7 +139,12 @@ Now let's execute our pipeline:
        return result
    
    # Run the pipeline
-   result = await run_pipeline()
+   # Note: In Jupyter notebooks, you can use top-level await:
+   # result = await run_pipeline()
+   
+   # In regular Python scripts, use asyncio.run():
+   import asyncio
+   result = asyncio.run(run_pipeline())
 
 Step 5: Add Error Handling
 ---------------------------
@@ -177,7 +182,9 @@ Let's make our pipeline more robust:
            return None
    
    # Run robust pipeline
-   result = await run_robust_pipeline()
+   # In Jupyter notebooks: result = await run_robust_pipeline()
+   # In regular Python scripts:
+   result = asyncio.run(run_robust_pipeline())
 
 Step 6: Add State Management
 -----------------------------
@@ -210,7 +217,9 @@ For longer pipelines, add checkpointing:
        return result
    
    # Run stateful pipeline
-   result = await run_stateful_pipeline()
+   # In Jupyter notebooks: result = await run_stateful_pipeline()
+   # In regular Python scripts:
+   result = asyncio.run(run_stateful_pipeline())
 
 Step 7: YAML Configuration
 --------------------------
@@ -277,7 +286,9 @@ Load and execute the YAML pipeline:
        return result
    
    # Run YAML pipeline
-   result = await run_yaml_pipeline()
+   # In Jupyter notebooks: result = await run_yaml_pipeline()
+   # In regular Python scripts:
+   result = asyncio.run(run_yaml_pipeline())
 
 Step 8: Real AI Models
 ----------------------
@@ -309,7 +320,8 @@ Replace mock model with real AI:
        return result
    
    # Run with real AI (uncomment when you have API keys)
-   # result = await run_with_real_ai()
+   # In Jupyter notebooks: result = await run_with_real_ai()
+   # In regular Python scripts: result = asyncio.run(run_with_real_ai())
 
 Step 9: Monitoring and Analytics
 --------------------------------
@@ -347,7 +359,9 @@ Add monitoring to track performance:
        return result
    
    # Run monitored pipeline
-   result = await run_monitored_pipeline()
+   # In Jupyter notebooks: result = await run_monitored_pipeline()
+   # In regular Python scripts:
+   result = asyncio.run(run_monitored_pipeline())
 
 Complete Example
 ----------------

@@ -1068,26 +1068,26 @@ Exercise 1: E-commerce Analytics Pipeline
 
 Build a pipeline that processes e-commerce data:
 
-.. code-block:: yaml
+.. code-block:: text
 
-   # Your challenge:
-   # - Extract: Orders, customers, products, reviews
-   # - Transform: Calculate metrics, segment customers
-   # - Load: Create analytics-ready datasets
-   # - Quality: Validate business rules
+   Your challenge:
+   - Extract: Orders, customers, products, reviews
+   - Transform: Calculate metrics, segment customers
+   - Load: Create analytics-ready datasets
+   - Quality: Validate business rules
 
 Exercise 2: IoT Data Processing
 ------------------------------
 
 Create a pipeline for IoT sensor data:
 
-.. code-block:: yaml
+.. code-block:: text
 
-   # Requirements:
-   # - Handle high-volume time series data
-   # - Detect sensor anomalies
-   # - Aggregate by time windows
-   # - Generate maintenance alerts
+   Requirements:
+   - Handle high-volume time series data
+   - Detect sensor anomalies
+   - Aggregate by time windows
+   - Generate maintenance alerts
 
 Exercise 3: Social Media Analytics
 ---------------------------------
