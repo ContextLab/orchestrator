@@ -127,8 +127,8 @@ If you get stuck:
 
 - Check the **Troubleshooting** section in each tutorial
 - Review the :doc:`../troubleshooting` guide
-- Search our `GitHub Discussions <https://github.com/contextualdynamics/orchestrator/discussions>`_
-- Ask in our `Discord Community <https://discord.gg/orchestrator>`_
+- Search our `GitHub Discussions <https://github.com/ContextLab/orchestrator/discussions>`_
+- Create a GitHub issue for specific problems
 
 Ready to Start?
 ===============

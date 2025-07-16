@@ -24,7 +24,7 @@ Get started with Orchestrator in just a few minutes:
 
 .. code-block:: bash
 
-   pip install orchestrator-framework
+   pip install py-orc
 
 .. code-block:: python
 

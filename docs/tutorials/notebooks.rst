@@ -53,7 +53,7 @@ Installation
 .. code-block:: bash
 
    # Install Orchestrator Framework
-   pip install orchestrator-framework
+   pip install py-orc
    
    # Install Jupyter (if not already installed)
    pip install jupyter
@@ -122,7 +122,7 @@ This tutorial introduces you to the Orchestrator Framework fundamentals:
    )
    
    # Build and execute pipeline
-   pipeline = Pipeline(id="first_pipeline")
+   pipeline = Pipeline(id="first_pipeline", name="First Pipeline")
    pipeline.add_task(task)
    
    orchestrator = Orchestrator()
@@ -317,7 +317,7 @@ Common Issues and Solutions
    .. code-block:: python
 
       # Make sure Orchestrator is installed
-      pip install orchestrator-framework
+      pip install py-orc
       
       # Or install in development mode
       pip install -e .

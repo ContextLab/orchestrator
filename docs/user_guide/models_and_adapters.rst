@@ -6,6 +6,83 @@ Learn how to integrate AI models and external services with the Orchestrator Fra
 .. note::
    This guide covers model integration. For hands-on practice, see the :doc:`../tutorials/notebooks` tutorial 03.
 
+Model Detection and Availability
+---------------------------------
+
+The Orchestrator Framework automatically detects and registers available models when you call ``orc.init_models()``. The system checks for models in the following order:
+
+1. **Ollama Models** (preferred for local execution)
+   
+   - ``gemma2:27b`` - Large model for complex tasks
+   - ``llama3.2:1b`` - Lightweight fallback model
+   
+2. **HuggingFace Models** (if transformers library is available)
+   
+   - ``distilgpt2`` - Default lightweight model for testing
+
+3. **Cloud Models** (if API keys are configured)
+   
+   - OpenAI models (via ``OPENAI_API_KEY``)
+   - Anthropic models (via ``ANTHROPIC_API_KEY``)
+   - Google models (via ``GOOGLE_API_KEY``)
+
+Initializing Models
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import orchestrator as orc
+   
+   # Initialize and discover available models
+   registry = orc.init_models()
+   
+   # List all detected models
+   available_models = registry.list_models()
+   print("Available models:", available_models)
+   
+   # Check specific model availability
+   if any("gemma2:27b" in model for model in available_models):
+       print("Large Ollama model available")
+   elif any("llama3.2:1b" in model for model in available_models):
+       print("Lightweight Ollama model available")
+   else:
+       print("Using fallback models")
+
+Model Installation
+~~~~~~~~~~~~~~~~~~
+
+**Ollama Models (Recommended)**
+
+Install Ollama and pull recommended models:
+
+.. code-block:: bash
+
+   # Install Ollama
+   brew install ollama  # macOS
+   # or visit https://ollama.ai for other platforms
+   
+   # Pull recommended models
+   ollama pull gemma2:27b    # Large model for complex tasks
+   ollama pull llama3.2:1b   # Lightweight fallback
+
+**HuggingFace Models**
+
+Install the transformers library:
+
+.. code-block:: bash
+
+   pip install transformers torch
+
+**Cloud Models**
+
+Set up API keys as environment variables:
+
+.. code-block:: bash
+
+   export OPENAI_API_KEY="sk-..."
+   export ANTHROPIC_API_KEY="sk-ant-..."
+   export GOOGLE_API_KEY="..."
+
 Supported Models
 ----------------
 

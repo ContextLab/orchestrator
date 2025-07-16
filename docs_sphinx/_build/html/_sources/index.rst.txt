@@ -1,7 +1,7 @@
-.. Orchestrator documentation master file
+.. py-orc documentation master file
 
 ==============================================
-Orchestrator: AI Pipeline Orchestration Framework
+py-orc: AI Pipeline Orchestration Framework
 ==============================================
 
 .. image:: https://img.shields.io/badge/python-3.11+-blue.svg
@@ -12,7 +12,7 @@ Orchestrator: AI Pipeline Orchestration Framework
    :target: https://opensource.org/licenses/MIT
    :alt: License
 
-**Orchestrator** is a powerful AI pipeline orchestration framework that provides a unified interface for executing AI workflows defined in YAML. It serves as an intelligent wrapper around LangGraph, MCP (Model Context Protocol), and other AI agent control systems.
+**py-orc** is a powerful AI pipeline orchestration framework that provides a unified interface for executing AI workflows defined in YAML. It serves as an intelligent wrapper around LangGraph, MCP (Model Context Protocol), and other AI agent control systems.
 
 .. raw:: html
 

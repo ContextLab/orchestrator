@@ -430,6 +430,6 @@ Getting Help
 ============
 
 - **Documentation**: https://orchestrator.readthedocs.io
-- **GitHub Issues**: https://github.com/contextualdynamics/orchestrator/issues
-- **Discussions**: https://github.com/contextualdynamics/orchestrator/discussions
+- **GitHub Issues**: https://github.com/ContextLab/orchestrator/issues
+- **Discussions**: https://github.com/ContextLab/orchestrator/discussions
 - **Discord**: https://discord.gg/orchestrator

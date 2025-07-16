@@ -16,7 +16,7 @@ author = 'Contextual Dynamics Lab'
 release = '0.1.0'
 version = '0.1.0'
 
-# HTML context variables to customize theme
+# HTML context variables
 html_context = {
     'display_github': True,
     'github_user': 'ContextLab',
@@ -71,47 +71,25 @@ pygments_style = 'monokai'
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.
-html_theme = 'xanadu'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.
 html_theme_options = {
-    "navbar_name": "Orchestrator",
-    "navbar_logo_colour": "#FFF",
-    "navbar_home_link": "https://github.com/contextualdynamics/orchestrator",
-    "github_repo": "https://github.com/contextualdynamics/orchestrator",
-    "navbar_left_links": [
-        {
-            "name": "Getting Started",
-            "href": "getting_started",
-            "active": True,
-        },
-        {
-            "name": "Tutorials",
-            "href": "tutorials/index",
-            "active": True,
-        },
-        {
-            "name": "API",
-            "href": "api/index",
-            "active": True,
-        },
-        {
-            "name": "Examples",
-            "href": "examples/index",
-            "active": True,
-        },
-    ],
-    "navbar_right_links": [
-        {
-            "name": "GitHub",
-            "href": "https://github.com/contextualdynamics/orchestrator",
-            "icon": "fab fa-github",
-        },
-    ],
-    "extra_copyrights": [],
-    "google_analytics_tracking_id": "",  # Add if needed
-    "prev_next_button": True,
+    'repository_url': 'https://github.com/ContextLab/orchestrator',
+    'repository_branch': 'main',
+    'use_repository_button': True,
+    'use_edit_page_button': True,
+    'use_source_button': True,
+    'navigation_with_keys': True,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False,
+    'collapse_navigation': False,
+    'logo_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'both',
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -119,10 +97,8 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-# Include custom CSS
-html_css_files = [
-    'custom.css',
-]
+# Custom CSS files (if any)
+# html_css_files = []
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

@@ -23,7 +23,7 @@ Install Orchestrator using pip:
 
 .. code-block:: bash
 
-   pip install orchestrator-framework
+   pip install py-orc
 
 This installs the core framework with all essential dependencies.
 
@@ -53,7 +53,7 @@ Install additional dependencies for specific features:
 
       .. code-block:: bash
 
-         pip install orchestrator-framework[docker]
+         pip install py-orc[docker]
 
    .. tab:: Database Support
 
@@ -61,7 +61,7 @@ Install additional dependencies for specific features:
 
       .. code-block:: bash
 
-         pip install orchestrator-framework[database]
+         pip install py-orc[database]
 
    .. tab:: All Features
 
@@ -69,7 +69,7 @@ Install additional dependencies for specific features:
 
       .. code-block:: bash
 
-         pip install orchestrator-framework[all]
+         pip install py-orc[all]
 
 Verifying Installation
 ---------------------
@@ -144,7 +144,7 @@ Common Installation Issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Permission Errors**
-   Use ``--user`` flag: ``pip install --user orchestrator-framework``
+   Use ``--user`` flag: ``pip install --user py-orc``
 
 **Python Version Issues**
    Ensure Python 3.8+: ``python --version``

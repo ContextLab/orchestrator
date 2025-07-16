@@ -379,24 +379,6 @@ Testing utilities and patterns:
    runner.test_compilation()  # Tests compilation
    runner.run_smoke_tests()  # Basic execution tests
 
-Migration Guide
-===============
-
-From Version 0.1.x to 0.2.x
----------------------------
-
-.. code-block:: python
-
-   # Old way (0.1.x)
-   from orchestrator import OrchestratorEngine
-   engine = OrchestratorEngine()
-   result = engine.run_pipeline("pipeline.yaml", inputs)
-   
-   # New way (0.2.x)
-   import orchestrator as orc
-   pipeline = orc.compile("pipeline.yaml")
-   result = pipeline.run(**inputs)
-
 Troubleshooting
 ===============
 
@@ -405,7 +387,7 @@ Common Issues
 
 **ImportError: No module named 'orchestrator'**
 
-- Ensure the package is installed: ``pip install orchestrator-ai``
+- Ensure the package is installed: ``pip install py-orc``
 - Check virtual environment activation
 
 **Model Loading Failures**
@@ -429,7 +411,6 @@ Common Issues
 Getting Help
 ============
 
-- **Documentation**: https://orchestrator.readthedocs.io
-- **GitHub Issues**: https://github.com/contextualdynamics/orchestrator/issues
-- **Discussions**: https://github.com/contextualdynamics/orchestrator/discussions
-- **Discord**: https://discord.gg/orchestrator
+- **Documentation**: https://orc.readthedocs.io
+- **GitHub Issues**: https://github.com/ContextLab/orchestrator/issues
+- **Discussions**: https://github.com/ContextLab/orchestrator/discussions
