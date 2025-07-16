@@ -34,7 +34,7 @@ To install from source for development:
 
 .. code-block:: bash
 
-   git clone https://github.com/orchestrator-framework/orchestrator.git
+   git clone https://github.com/ContextLab/orchestrator.git
    cd orchestrator
    pip install -e .
 
@@ -178,7 +178,7 @@ Getting Help
 If you encounter issues:
 
 1. Check the :doc:`../advanced/troubleshooting` guide
-2. Search existing `GitHub issues <https://github.com/orchestrator-framework/orchestrator/issues>`_
+2. Search existing `GitHub issues <https://github.com/ContextLab/orchestrator/issues>`_
 3. Create a new issue with your error details
 
 Next Steps

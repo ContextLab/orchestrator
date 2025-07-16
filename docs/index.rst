@@ -15,7 +15,7 @@ Orchestrator Framework Documentation
 Welcome to the **Orchestrator Framework** - a powerful, flexible, and production-ready system for orchestrating AI workflows. Whether you're building simple task chains or complex multi-model pipelines, Orchestrator provides the tools you need to create, manage, and scale your AI applications.
 
 .. note::
-   This documentation covers version 1.0.0 of the Orchestrator Framework. For the latest updates and features, please visit our `GitHub repository <https://github.com/orchestrator-framework/orchestrator>`_.
+   This documentation covers version 1.0.0 of the Orchestrator Framework. For the latest updates and features, please visit our `GitHub repository <https://github.com/ContextLab/orchestrator>`_.
 
 Quick Start
 -----------
@@ -211,7 +211,7 @@ Community & Support
 License
 -------
 
-The Orchestrator Framework is released under the MIT License. See the `LICENSE <https://github.com/orchestrator-framework/orchestrator/blob/main/LICENSE>`_ file for details.
+The Orchestrator Framework is released under the MIT License. See the `LICENSE <https://github.com/ContextLab/orchestrator/blob/main/LICENSE>`_ file for details.
 
 Indices and Tables
 ==================

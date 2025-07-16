@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Set
 
 class TaskStatus(Enum):
     """Task execution status."""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -21,11 +22,11 @@ class TaskStatus(Enum):
 class Task:
     """
     Core task abstraction for the orchestrator.
-    
+
     A task represents a single unit of work in a pipeline with dependencies,
     parameters, and execution metadata.
     """
-    
+
     id: str
     name: str
     action: str
@@ -41,7 +42,7 @@ class Task:
     created_at: float = field(default_factory=time.time)
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
-    
+
     def __post_init__(self) -> None:
         """Validate task after initialization."""
         if not self.id:
@@ -52,53 +53,53 @@ class Task:
             raise ValueError("Task action cannot be empty")
         if self.max_retries < 0:
             raise ValueError("Max retries must be non-negative")
-        
+
         # Validate dependencies
         if self.id in self.dependencies:
             raise ValueError(f"Task {self.id} cannot depend on itself")
-    
+
     def is_ready(self, completed_tasks: Set[str]) -> bool:
         """
         Check if all dependencies are satisfied.
-        
+
         Args:
             completed_tasks: Set of completed task IDs
-            
+
         Returns:
             True if all dependencies are satisfied, False otherwise
         """
         return all(dep in completed_tasks for dep in self.dependencies)
-    
+
     def can_retry(self) -> bool:
         """Check if task can be retried."""
         return self.retry_count < self.max_retries and self.status == TaskStatus.FAILED
-    
+
     def start(self) -> None:
         """Mark task as started."""
         self.status = TaskStatus.RUNNING
         self.started_at = time.time()
-    
+
     def complete(self, result: Any = None) -> None:
         """Mark task as completed."""
         self.status = TaskStatus.COMPLETED
         self.result = result
         self.completed_at = time.time()
         self.error = None
-    
+
     def fail(self, error: Exception) -> None:
         """Mark task as failed."""
         self.status = TaskStatus.FAILED
         self.error = error
         self.completed_at = time.time()
         self.retry_count += 1
-    
+
     def skip(self, reason: str = "") -> None:
         """Mark task as skipped."""
         self.status = TaskStatus.SKIPPED
         self.completed_at = time.time()
         if reason:
             self.metadata["skip_reason"] = reason
-    
+
     def reset(self) -> None:
         """Reset task to pending state."""
         self.status = TaskStatus.PENDING
@@ -106,7 +107,7 @@ class Task:
         self.error = None
         self.started_at = None
         self.completed_at = None
-    
+
     @property
     def execution_time(self) -> Optional[float]:
         """Get task execution time in seconds."""
@@ -114,12 +115,16 @@ class Task:
             return None
         end_time = self.completed_at or time.time()
         return end_time - self.started_at
-    
+
     @property
     def is_terminal(self) -> bool:
         """Check if task is in a terminal state."""
-        return self.status in {TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.SKIPPED}
-    
+        return self.status in {
+            TaskStatus.COMPLETED,
+            TaskStatus.FAILED,
+            TaskStatus.SKIPPED,
+        }
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert task to dictionary representation."""
         return {
@@ -140,33 +145,33 @@ class Task:
             "completed_at": self.completed_at,
             "execution_time": self.execution_time,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Task:
         """Create task from dictionary representation."""
         # Convert status back to enum
         if "status" in data:
             data["status"] = TaskStatus(data["status"])
-        
+
         # Handle error
         if "error" in data and data["error"]:
             data["error"] = Exception(data["error"])
-        
+
         # Remove computed properties
         data.pop("execution_time", None)
-        
+
         return cls(**data)
-    
+
     def __repr__(self) -> str:
         """String representation of task."""
         return f"Task(id='{self.id}', name='{self.name}', status={self.status.value})"
-    
+
     def __eq__(self, other: object) -> bool:
         """Check equality based on task ID."""
         if not isinstance(other, Task):
             return NotImplemented
         return self.id == other.id
-    
+
     def __hash__(self) -> int:
         """Hash based on task ID."""
         return hash(self.id)

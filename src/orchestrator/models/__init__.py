@@ -1,15 +1,15 @@
 """Model management and selection."""
 
 from .model_registry import (
-    ModelRegistry,
-    UCBModelSelector,
     ModelNotFoundError,
+    ModelRegistry,
     NoEligibleModelsError,
+    UCBModelSelector,
 )
 
 __all__ = [
     "ModelRegistry",
-    "UCBModelSelector", 
+    "UCBModelSelector",
     "ModelNotFoundError",
     "NoEligibleModelsError",
 ]

@@ -305,7 +305,7 @@ Getting Help
 If you encounter issues:
 
 1. Check the :doc:`troubleshooting` guide
-2. Search existing `GitHub issues <https://github.com/contextualdynamics/orchestrator/issues>`_
+2. Search existing `GitHub issues <https://github.com/ContextLab/orchestrator/issues>`_
 3. Join our `Discord community <https://discord.gg/orchestrator>`_
 4. Create a new issue with detailed information
 

@@ -9,23 +9,36 @@ from typing import Any, Dict, List, Optional
 try:
     import google.generativeai as genai
     from google.generativeai import GenerativeModel
+
     GOOGLE_AI_AVAILABLE = True
 except ImportError:
     GOOGLE_AI_AVAILABLE = False
     genai = None
     GenerativeModel = None
 
-from orchestrator.core.model import Model, ModelCapabilities, ModelMetrics, ModelRequirements
+from orchestrator.core.model import (
+    Model,
+    ModelCapabilities,
+    ModelMetrics,
+    ModelRequirements,
+)
 
 
 class GoogleModel(Model):
     """Google AI model implementation."""
-    
+
     # Model configurations
     MODEL_CONFIGS = {
         "gemini-1.5-pro": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "analyze", "transform", "code", "reasoning", "vision"],
+                supported_tasks=[
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                    "vision",
+                ],
                 context_window=2000000,
                 supports_function_calling=True,
                 supports_structured_output=True,
@@ -52,7 +65,14 @@ class GoogleModel(Model):
         },
         "gemini-1.5-flash": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "analyze", "transform", "code", "reasoning", "vision"],
+                supported_tasks=[
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                    "vision",
+                ],
                 context_window=1000000,
                 supports_function_calling=True,
                 supports_structured_output=True,
@@ -79,7 +99,13 @@ class GoogleModel(Model):
         },
         "gemini-1.0-pro": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "analyze", "transform", "code", "reasoning"],
+                supported_tasks=[
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                ],
                 context_window=32768,
                 supports_function_calling=True,
                 supports_structured_output=True,
@@ -105,7 +131,7 @@ class GoogleModel(Model):
             ),
         },
     }
-    
+
     def __init__(
         self,
         model_name: str = "gemini-1.5-flash",
@@ -116,7 +142,7 @@ class GoogleModel(Model):
     ) -> None:
         """
         Initialize Google AI model.
-        
+
         Args:
             model_name: Google AI model name
             api_key: Google AI API key (if not provided, will use GOOGLE_AI_API_KEY env var)
@@ -128,10 +154,12 @@ class GoogleModel(Model):
             raise ImportError(
                 "Google AI library not available. Install with: pip install google-generativeai"
             )
-        
+
         # Get model configuration
-        config = self.MODEL_CONFIGS.get(model_name, self.MODEL_CONFIGS["gemini-1.5-flash"])
-        
+        config = self.MODEL_CONFIGS.get(
+            model_name, self.MODEL_CONFIGS["gemini-1.5-flash"]
+        )
+
         super().__init__(
             name=model_name,
             provider="google",
@@ -140,7 +168,7 @@ class GoogleModel(Model):
             metrics=config["metrics"],
             **kwargs,
         )
-        
+
         # Initialize Google AI client
         self.api_key = api_key or os.getenv("GOOGLE_AI_API_KEY")
         if not self.api_key:
@@ -148,21 +176,21 @@ class GoogleModel(Model):
                 "Google AI API key not provided. Set GOOGLE_AI_API_KEY environment variable "
                 "or pass api_key parameter."
             )
-        
+
         # Configure the API
         genai.configure(api_key=self.api_key)
-        
+
         # Create model instance
         self.model = GenerativeModel(model_name)
         self.model_name = model_name
         self.max_retries = max_retries
         self.timeout = timeout
-        
+
         # Rate limiting
         self._rate_limiter = None
         self._last_request_time = 0.0
         self._min_request_interval = 0.1  # 10 requests per second max
-        
+
     async def generate(
         self,
         prompt: str,
@@ -172,43 +200,43 @@ class GoogleModel(Model):
     ) -> str:
         """
         Generate text using Google AI API.
-        
+
         Args:
             prompt: Input prompt
             temperature: Sampling temperature (0.0 to 2.0)
             max_tokens: Maximum tokens to generate
             **kwargs: Additional Google AI parameters
-            
+
         Returns:
             Generated text
         """
         await self._rate_limit()
-        
+
         # Validate temperature
         temp_min, temp_max = self.capabilities.temperature_range
         if not temp_min <= temperature <= temp_max:
             raise ValueError(
                 f"Temperature {temperature} not in valid range {self.capabilities.temperature_range}"
             )
-        
+
         # Set up generation config
         generation_config = {
             "temperature": temperature,
             "max_output_tokens": max_tokens or self.capabilities.max_tokens,
             **kwargs,
         }
-        
+
         try:
             response = self.model.generate_content(
                 prompt,
                 generation_config=generation_config,
             )
-            
+
             return response.text if response.text else ""
-            
+
         except Exception as e:
             raise RuntimeError(f"Google AI API error: {str(e)}") from e
-    
+
     async def generate_structured(
         self,
         prompt: str,
@@ -218,21 +246,21 @@ class GoogleModel(Model):
     ) -> Dict[str, Any]:
         """
         Generate structured output using Google AI API.
-        
+
         Args:
             prompt: Input prompt
             schema: JSON schema for output structure
             temperature: Sampling temperature
             **kwargs: Additional Google AI parameters
-            
+
         Returns:
             Structured output matching schema
         """
         if not self.capabilities.supports_structured_output:
             raise ValueError(f"Model {self.name} does not support structured output")
-        
+
         await self._rate_limit()
-        
+
         # Create prompt with schema instructions
         structured_prompt = f"""
         {prompt}
@@ -242,40 +270,43 @@ class GoogleModel(Model):
         
         Return only the JSON object, no additional text.
         """
-        
+
         try:
             generation_config = {
                 "temperature": temperature,
                 "max_output_tokens": self.capabilities.max_tokens,
                 **kwargs,
             }
-            
+
             response = self.model.generate_content(
                 structured_prompt,
                 generation_config=generation_config,
             )
-            
+
             content = response.text if response.text else "{}"
-            
+
             # Parse JSON response
             try:
                 return json.loads(content)
             except json.JSONDecodeError:
                 # Try to extract JSON from response
                 import re
-                json_match = re.search(r'\{.*\}', content, re.DOTALL)
+
+                json_match = re.search(r"\{.*\}", content, re.DOTALL)
                 if json_match:
                     return json.loads(json_match.group())
                 else:
                     raise ValueError("Could not parse JSON from response")
-                    
+
         except Exception as e:
-            raise RuntimeError(f"Google AI structured generation error: {str(e)}") from e
-    
+            raise RuntimeError(
+                f"Google AI structured generation error: {str(e)}"
+            ) from e
+
     async def health_check(self) -> bool:
         """
         Check if Google AI API is available and healthy.
-        
+
         Returns:
             True if healthy, False otherwise
         """
@@ -285,18 +316,18 @@ class GoogleModel(Model):
                 "temperature": 0.0,
                 "max_output_tokens": 1,
             }
-            
+
             response = self.model.generate_content(
                 "Test",
                 generation_config=generation_config,
             )
             self._is_available = True
             return True
-            
+
         except Exception:
             self._is_available = False
             return False
-    
+
     async def estimate_cost(
         self,
         prompt: str,
@@ -304,38 +335,38 @@ class GoogleModel(Model):
     ) -> float:
         """
         Estimate cost for generation.
-        
+
         Args:
             prompt: Input prompt
             max_tokens: Maximum tokens to generate
-            
+
         Returns:
             Estimated cost in USD
         """
         # Rough token estimation (1 token ≈ 4 characters)
         input_tokens = len(prompt) // 4
         output_tokens = max_tokens or 100
-        
+
         total_tokens = input_tokens + output_tokens
         return total_tokens * self.metrics.cost_per_token
-    
+
     async def _rate_limit(self) -> None:
         """Apply rate limiting to API requests."""
         import asyncio
         import time
-        
+
         current_time = time.time()
         time_since_last = current_time - self._last_request_time
-        
+
         if time_since_last < self._min_request_interval:
             await asyncio.sleep(self._min_request_interval - time_since_last)
-        
+
         self._last_request_time = time.time()
-    
+
     def supports_streaming(self) -> bool:
         """Check if model supports streaming."""
         return self.capabilities.supports_streaming
-    
+
     async def generate_stream(
         self,
         prompt: str,
@@ -345,45 +376,45 @@ class GoogleModel(Model):
     ):
         """
         Generate text with streaming.
-        
+
         Args:
             prompt: Input prompt
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             **kwargs: Additional Google AI parameters
-            
+
         Yields:
             Streaming text chunks
         """
         if not self.supports_streaming():
             raise ValueError(f"Model {self.name} does not support streaming")
-        
+
         await self._rate_limit()
-        
+
         try:
             generation_config = {
                 "temperature": temperature,
                 "max_output_tokens": max_tokens or self.capabilities.max_tokens,
                 **kwargs,
             }
-            
+
             response = self.model.generate_content(
                 prompt,
                 generation_config=generation_config,
                 stream=True,
             )
-            
+
             for chunk in response:
                 if chunk.text:
                     yield chunk.text
-                    
+
         except Exception as e:
             raise RuntimeError(f"Google AI streaming error: {str(e)}") from e
-    
+
     def supports_function_calling(self) -> bool:
         """Check if model supports function calling."""
         return self.capabilities.supports_function_calling
-    
+
     async def generate_with_tools(
         self,
         prompt: str,
@@ -394,64 +425,64 @@ class GoogleModel(Model):
     ) -> Dict[str, Any]:
         """
         Generate text with tool/function calling.
-        
+
         Args:
             prompt: Input prompt
             tools: List of tool definitions
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             **kwargs: Additional Google AI parameters
-            
+
         Returns:
             Response with tool calls
         """
         if not self.supports_function_calling():
             raise ValueError(f"Model {self.name} does not support function calling")
-        
+
         await self._rate_limit()
-        
+
         try:
             generation_config = {
                 "temperature": temperature,
                 "max_output_tokens": max_tokens or self.capabilities.max_tokens,
                 **kwargs,
             }
-            
+
             # Convert tools to Google AI format
             google_tools = []
             for tool in tools:
-                google_tools.append({
-                    "function_declarations": [tool]
-                })
-            
+                google_tools.append({"function_declarations": [tool]})
+
             response = self.model.generate_content(
                 prompt,
                 generation_config=generation_config,
                 tools=google_tools,
             )
-            
+
             # Extract tool calls
             tool_calls = []
             if response.candidates and response.candidates[0].content.parts:
                 for part in response.candidates[0].content.parts:
-                    if hasattr(part, 'function_call'):
-                        tool_calls.append({
-                            "name": part.function_call.name,
-                            "args": dict(part.function_call.args),
-                        })
-            
+                    if hasattr(part, "function_call"):
+                        tool_calls.append(
+                            {
+                                "name": part.function_call.name,
+                                "args": dict(part.function_call.args),
+                            }
+                        )
+
             return {
                 "content": response.text if response.text else "",
                 "tool_calls": tool_calls,
             }
-            
+
         except Exception as e:
             raise RuntimeError(f"Google AI function calling error: {str(e)}") from e
-    
+
     def supports_vision(self) -> bool:
         """Check if model supports vision/image processing."""
         return "vision" in self.capabilities.supported_tasks
-    
+
     async def generate_with_image(
         self,
         prompt: str,
@@ -462,49 +493,49 @@ class GoogleModel(Model):
     ) -> str:
         """
         Generate text with image input.
-        
+
         Args:
             prompt: Input prompt
             image_data: Image data as bytes
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             **kwargs: Additional Google AI parameters
-            
+
         Returns:
             Generated text
         """
         if not self.supports_vision():
             raise ValueError(f"Model {self.name} does not support vision")
-        
+
         await self._rate_limit()
-        
+
         try:
             generation_config = {
                 "temperature": temperature,
                 "max_output_tokens": max_tokens or self.capabilities.max_tokens,
                 **kwargs,
             }
-            
+
             # Create image part
             image_part = {
                 "mime_type": "image/jpeg",  # Assume JPEG for simplicity
                 "data": image_data,
             }
-            
+
             response = self.model.generate_content(
                 [prompt, image_part],
                 generation_config=generation_config,
             )
-            
+
             return response.text if response.text else ""
-            
+
         except Exception as e:
             raise RuntimeError(f"Google AI vision error: {str(e)}") from e
-    
+
     def get_available_models(self) -> List[str]:
         """Get list of available Google AI models."""
         return list(self.MODEL_CONFIGS.keys())
-    
+
     def list_models(self) -> List[str]:
         """List all available models from the API."""
         try:
@@ -512,7 +543,7 @@ class GoogleModel(Model):
             return [model.name for model in models]
         except Exception:
             return self.get_available_models()
-    
+
     @classmethod
     def create_from_config(cls, config: Dict[str, Any]) -> "GoogleModel":
         """Create Google model from configuration."""

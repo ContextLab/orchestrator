@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 @dataclass
 class ModelCapabilities:
     """Defines what a model can do."""
-    
+
     supported_tasks: List[str] = field(default_factory=list)
     context_window: int = 4096
     supports_function_calling: bool = False
@@ -19,7 +19,7 @@ class ModelCapabilities:
     languages: List[str] = field(default_factory=lambda: ["en"])
     max_tokens: Optional[int] = None
     temperature_range: tuple[float, float] = (0.0, 2.0)
-    
+
     def __post_init__(self) -> None:
         """Validate capabilities after initialization."""
         if self.context_window <= 0:
@@ -32,15 +32,15 @@ class ModelCapabilities:
             raise ValueError("Temperature range must be a tuple of two values")
         if self.temperature_range[0] > self.temperature_range[1]:
             raise ValueError("Temperature range min must be <= max")
-    
+
     def supports_task(self, task: str) -> bool:
         """Check if model supports a specific task."""
         return task in self.supported_tasks
-    
+
     def supports_language(self, language: str) -> bool:
         """Check if model supports a specific language."""
         return language in self.languages
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         return {
@@ -53,7 +53,7 @@ class ModelCapabilities:
             "max_tokens": self.max_tokens,
             "temperature_range": self.temperature_range,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ModelCapabilities:
         """Create from dictionary representation."""
@@ -63,7 +63,7 @@ class ModelCapabilities:
 @dataclass
 class ModelRequirements:
     """Resource requirements for a model."""
-    
+
     memory_gb: float = 1.0
     gpu_memory_gb: Optional[float] = None
     cpu_cores: int = 1
@@ -71,7 +71,7 @@ class ModelRequirements:
     min_python_version: str = "3.8"
     requires_gpu: bool = False
     disk_space_gb: float = 1.0
-    
+
     def __post_init__(self) -> None:
         """Validate requirements after initialization."""
         if self.memory_gb <= 0:
@@ -82,7 +82,7 @@ class ModelRequirements:
             raise ValueError("CPU cores requirement must be positive")
         if self.disk_space_gb <= 0:
             raise ValueError("Disk space requirement must be positive")
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         return {
@@ -94,7 +94,7 @@ class ModelRequirements:
             "requires_gpu": self.requires_gpu,
             "disk_space_gb": self.disk_space_gb,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ModelRequirements:
         """Create from dictionary representation."""
@@ -104,14 +104,14 @@ class ModelRequirements:
 @dataclass
 class ModelMetrics:
     """Performance metrics for a model."""
-    
+
     latency_p50: float = 0.0
     latency_p95: float = 0.0
     throughput: float = 0.0
     accuracy: float = 0.0
     cost_per_token: float = 0.0
     success_rate: float = 1.0
-    
+
     def __post_init__(self) -> None:
         """Validate metrics after initialization."""
         if self.latency_p50 < 0:
@@ -126,7 +126,7 @@ class ModelMetrics:
             raise ValueError("Cost per token must be non-negative")
         if not 0 <= self.success_rate <= 1:
             raise ValueError("Success rate must be between 0 and 1")
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         return {
@@ -137,7 +137,7 @@ class ModelMetrics:
             "cost_per_token": self.cost_per_token,
             "success_rate": self.success_rate,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ModelMetrics:
         """Create from dictionary representation."""
@@ -146,7 +146,7 @@ class ModelMetrics:
 
 class Model(ABC):
     """Abstract base class for all models."""
-    
+
     def __init__(
         self,
         name: str,
@@ -157,7 +157,7 @@ class Model(ABC):
     ) -> None:
         """
         Initialize model.
-        
+
         Args:
             name: Model name
             provider: Provider name (e.g., "openai", "anthropic", "local")
@@ -169,14 +169,14 @@ class Model(ABC):
             raise ValueError("Model name cannot be empty")
         if not provider:
             raise ValueError("Provider name cannot be empty")
-        
+
         self.name = name
         self.provider = provider
         self.capabilities = capabilities or ModelCapabilities()
         self.requirements = requirements or ModelRequirements()
         self.metrics = metrics or ModelMetrics()
         self._is_available = False
-    
+
     @abstractmethod
     async def generate(
         self,
@@ -187,18 +187,18 @@ class Model(ABC):
     ) -> str:
         """
         Generate text from prompt.
-        
+
         Args:
             prompt: Input prompt
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             **kwargs: Additional model-specific parameters
-            
+
         Returns:
             Generated text
         """
         pass
-    
+
     @abstractmethod
     async def generate_structured(
         self,
@@ -209,28 +209,28 @@ class Model(ABC):
     ) -> Dict[str, Any]:
         """
         Generate structured output from prompt.
-        
+
         Args:
             prompt: Input prompt
             schema: JSON schema for output structure
             temperature: Sampling temperature
             **kwargs: Additional model-specific parameters
-            
+
         Returns:
             Structured output matching schema
         """
         pass
-    
+
     @abstractmethod
     async def health_check(self) -> bool:
         """
         Check if model is available and healthy.
-        
+
         Returns:
             True if healthy, False otherwise
         """
         pass
-    
+
     @abstractmethod
     async def estimate_cost(
         self,
@@ -239,31 +239,31 @@ class Model(ABC):
     ) -> float:
         """
         Estimate cost for generation.
-        
+
         Args:
             prompt: Input prompt
             max_tokens: Maximum tokens to generate
-            
+
         Returns:
             Estimated cost in USD
         """
         pass
-    
+
     def can_handle_task(self, task: str) -> bool:
         """Check if model can handle a specific task."""
         return self.capabilities.supports_task(task)
-    
+
     def can_handle_language(self, language: str) -> bool:
         """Check if model can handle a specific language."""
         return self.capabilities.supports_language(language)
-    
+
     def meets_requirements(self, requirements: Dict[str, Any]) -> bool:
         """
         Check if model meets specified requirements.
-        
+
         Args:
             requirements: Dict of requirements to check
-            
+
         Returns:
             True if all requirements are met
         """
@@ -271,36 +271,36 @@ class Model(ABC):
         if "context_window" in requirements:
             if self.capabilities.context_window < requirements["context_window"]:
                 return False
-        
+
         # Check function calling
         if requirements.get("supports_function_calling", False):
             if not self.capabilities.supports_function_calling:
                 return False
-        
+
         # Check structured output
         if requirements.get("supports_structured_output", False):
             if not self.capabilities.supports_structured_output:
                 return False
-        
+
         # Check supported tasks
         if "tasks" in requirements:
             required_tasks = requirements["tasks"]
             if not all(self.can_handle_task(task) for task in required_tasks):
                 return False
-        
+
         # Check supported languages
         if "languages" in requirements:
             required_languages = requirements["languages"]
             if not all(self.can_handle_language(lang) for lang in required_languages):
                 return False
-        
+
         return True
-    
+
     @property
     def is_available(self) -> bool:
         """Check if model is available."""
         return self._is_available
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary representation."""
         return {
@@ -311,17 +311,17 @@ class Model(ABC):
             "metrics": self.metrics.to_dict(),
             "is_available": self.is_available,
         }
-    
+
     def __repr__(self) -> str:
         """String representation of model."""
         return f"Model(name='{self.name}', provider='{self.provider}')"
-    
+
     def __eq__(self, other: object) -> bool:
         """Check equality based on name and provider."""
         if not isinstance(other, Model):
             return NotImplemented
         return self.name == other.name and self.provider == other.provider
-    
+
     def __hash__(self) -> int:
         """Hash based on name and provider."""
         return hash((self.name, self.provider))
@@ -329,7 +329,7 @@ class Model(ABC):
 
 class MockModel(Model):
     """Mock model implementation for testing."""
-    
+
     def __init__(
         self,
         name: str = "mock-model",
@@ -345,15 +345,15 @@ class MockModel(Model):
                 supports_function_calling=True,
                 supports_structured_output=True,
             )
-        
+
         super().__init__(name, provider, capabilities, **kwargs)
         self._is_available = True
         self._responses = {}
-    
+
     def set_response(self, prompt: str, response: Union[str, Dict[str, Any]]) -> None:
         """Set canned response for a prompt."""
         self._responses[prompt] = response
-    
+
     async def generate(
         self,
         prompt: str,
@@ -370,7 +370,7 @@ class MockModel(Model):
             elif isinstance(response, Exception):
                 raise response
             return str(response)
-        
+
         # Then try partial match (useful for ambiguity resolution)
         for key, response in self._responses.items():
             if key in prompt:
@@ -379,9 +379,9 @@ class MockModel(Model):
                 elif isinstance(response, Exception):
                     raise response
                 return str(response)
-        
+
         return f"Mock response for: {prompt[:50]}..."
-    
+
     async def generate_structured(
         self,
         prompt: str,
@@ -394,14 +394,14 @@ class MockModel(Model):
             response = self._responses[prompt]
             if isinstance(response, dict):
                 return response
-        
+
         # Generate mock response based on schema
         return {"result": f"Mock structured response for: {prompt[:50]}..."}
-    
+
     async def health_check(self) -> bool:
         """Mock health check."""
         return True
-    
+
     async def estimate_cost(
         self,
         prompt: str,

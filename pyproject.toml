@@ -7,7 +7,7 @@ name = "py-orc"
 version = "0.1.0"
 description = "AI pipeline orchestration framework with intelligent ambiguity resolution"
 authors = [
-    {name = "Contextual Dynamics Lab", email = "contextualdynamics@gmail.com"},
+    {name = "Contextual Dynamics Lab", email = "info@context-lab.com"},
 ]
 readme = "README.md"
 license = {text = "MIT"}
@@ -70,10 +70,11 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ContextLab/orchestrator"
+Homepage = "https://www.context-lab.com/"
 Repository = "https://github.com/ContextLab/orchestrator"
 Documentation = "https://orc.readthedocs.io"
 Changelog = "https://github.com/ContextLab/orchestrator/blob/main/CHANGELOG.md"
+Organization = "https://www.context-lab.com/"
 
 [project.scripts]
 py-orc = "orchestrator.cli:main"

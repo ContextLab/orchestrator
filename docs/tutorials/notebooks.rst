@@ -4,7 +4,7 @@ Interactive Tutorials
 The Orchestrator Framework comes with comprehensive Jupyter notebook tutorials that provide hands-on learning experiences. These tutorials are designed to take you from beginner to advanced user.
 
 .. note::
-   All tutorials are available in the ``notebooks/`` directory of your Orchestrator installation. You can also `view them on GitHub <https://github.com/orchestrator-framework/orchestrator/tree/main/notebooks>`_.
+   All tutorials are available in the ``notebooks/`` directory of your Orchestrator installation. You can also `view them on GitHub <https://github.com/ContextLab/orchestrator/tree/main/notebooks>`_.
 
 Tutorial Overview
 -----------------
@@ -59,7 +59,7 @@ Installation
    pip install jupyter
    
    # Clone the repository for tutorials
-   git clone https://github.com/orchestrator-framework/orchestrator.git
+   git clone https://github.com/ContextLab/orchestrator.git
    cd orchestrator
 
 Starting Jupyter

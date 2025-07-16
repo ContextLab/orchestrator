@@ -9,17 +9,23 @@ from typing import Any, Dict, List, Optional
 
 try:
     import requests
+
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
     requests = None
 
-from orchestrator.core.model import Model, ModelCapabilities, ModelMetrics, ModelRequirements
+from orchestrator.core.model import (
+    Model,
+    ModelCapabilities,
+    ModelMetrics,
+    ModelRequirements,
+)
 
 
 class OllamaModel(Model):
     """Ollama model implementation."""
-    
+
     # Model configurations for popular Ollama models
     MODEL_CONFIGS = {
         "gemma2:27b": {
@@ -139,7 +145,7 @@ class OllamaModel(Model):
             ),
         },
     }
-    
+
     def __init__(
         self,
         model_name: str = "llama3.2:3b",
@@ -149,7 +155,7 @@ class OllamaModel(Model):
     ) -> None:
         """
         Initialize Ollama model.
-        
+
         Args:
             model_name: Ollama model name (e.g., "gemma2:27b", "llama3.2:3b")
             base_url: Ollama server URL
@@ -160,38 +166,41 @@ class OllamaModel(Model):
             raise ImportError(
                 "Requests library not available. Install with: pip install requests"
             )
-        
+
         # Get model configuration
-        config = self.MODEL_CONFIGS.get(model_name, {
-            "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "chat"],
-                context_window=4096,
-                supports_function_calling=False,
-                supports_structured_output=True,
-                supports_streaming=True,
-                languages=["en"],
-                max_tokens=1024,
-                temperature_range=(0.0, 2.0),
-            ),
-            "requirements": ModelRequirements(
-                memory_gb=4.0,
-                gpu_memory_gb=2.0,
-                cpu_cores=2,
-                supports_quantization=["q4_0", "q4_1", "q5_0", "q5_1", "q8_0"],
-                min_python_version="3.8",
-                requires_gpu=False,
-                disk_space_gb=2.0,
-            ),
-            "metrics": ModelMetrics(
-                latency_p50=2.0,
-                latency_p95=6.0,
-                throughput=20.0,
-                accuracy=0.80,
-                cost_per_token=0.0,
-                success_rate=0.90,
-            ),
-        })
-        
+        config = self.MODEL_CONFIGS.get(
+            model_name,
+            {
+                "capabilities": ModelCapabilities(
+                    supported_tasks=["generate", "chat"],
+                    context_window=4096,
+                    supports_function_calling=False,
+                    supports_structured_output=True,
+                    supports_streaming=True,
+                    languages=["en"],
+                    max_tokens=1024,
+                    temperature_range=(0.0, 2.0),
+                ),
+                "requirements": ModelRequirements(
+                    memory_gb=4.0,
+                    gpu_memory_gb=2.0,
+                    cpu_cores=2,
+                    supports_quantization=["q4_0", "q4_1", "q5_0", "q5_1", "q8_0"],
+                    min_python_version="3.8",
+                    requires_gpu=False,
+                    disk_space_gb=2.0,
+                ),
+                "metrics": ModelMetrics(
+                    latency_p50=2.0,
+                    latency_p95=6.0,
+                    throughput=20.0,
+                    accuracy=0.80,
+                    cost_per_token=0.0,
+                    success_rate=0.90,
+                ),
+            },
+        )
+
         super().__init__(
             name=model_name,
             provider="ollama",
@@ -200,14 +209,14 @@ class OllamaModel(Model):
             metrics=config["metrics"],
             **kwargs,
         )
-        
+
         self.model_name = model_name
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
-        
+
         # Check if Ollama is available
         self._check_ollama_availability()
-    
+
     def _check_ollama_availability(self) -> None:
         """Check if Ollama is running and available."""
         try:
@@ -224,7 +233,7 @@ class OllamaModel(Model):
                 self._is_available = False
         except Exception:
             self._is_available = False
-    
+
     def _pull_model(self) -> None:
         """Pull model if not available locally."""
         try:
@@ -233,15 +242,19 @@ class OllamaModel(Model):
                 ["ollama", "pull", self.model_name],
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minutes timeout for model pull
+                timeout=300,  # 5 minutes timeout for model pull
             )
             if result.returncode == 0:
                 self._is_available = True
             else:
-                print(f"Warning: Could not pull model {self.model_name}: {result.stderr}")
+                print(
+                    f"Warning: Could not pull model {self.model_name}: {result.stderr}"
+                )
         except (subprocess.TimeoutExpired, FileNotFoundError):
-            print(f"Warning: Could not pull model {self.model_name} (ollama CLI not available or timeout)")
-    
+            print(
+                f"Warning: Could not pull model {self.model_name} (ollama CLI not available or timeout)"
+            )
+
     async def generate(
         self,
         prompt: str,
@@ -251,30 +264,32 @@ class OllamaModel(Model):
     ) -> str:
         """
         Generate text using Ollama model.
-        
+
         Args:
             prompt: Input prompt
             temperature: Sampling temperature (0.0 to 2.0)
             max_tokens: Maximum tokens to generate
             **kwargs: Additional generation parameters
-            
+
         Returns:
             Generated text
         """
         if not self._is_available:
-            raise RuntimeError("Ollama model not available. Check if Ollama is running.")
-        
+            raise RuntimeError(
+                "Ollama model not available. Check if Ollama is running."
+            )
+
         # Validate temperature
         temp_min, temp_max = self.capabilities.temperature_range
         if not temp_min <= temperature <= temp_max:
             raise ValueError(
                 f"Temperature {temperature} not in valid range {self.capabilities.temperature_range}"
             )
-        
+
         # Set default max_tokens if not provided
         if max_tokens is None:
             max_tokens = self.capabilities.max_tokens
-        
+
         # Prepare request payload
         payload = {
             "model": self.model_name,
@@ -283,24 +298,22 @@ class OllamaModel(Model):
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,
-                **kwargs
-            }
+                **kwargs,
+            },
         }
-        
+
         try:
             response = requests.post(
-                f"{self.base_url}/api/generate",
-                json=payload,
-                timeout=self.timeout
+                f"{self.base_url}/api/generate", json=payload, timeout=self.timeout
             )
             response.raise_for_status()
-            
+
             result = response.json()
             return result.get("response", "").strip()
-            
+
         except Exception as e:
             raise RuntimeError(f"Ollama generation error: {str(e)}") from e
-    
+
     async def generate_structured(
         self,
         prompt: str,
@@ -310,19 +323,19 @@ class OllamaModel(Model):
     ) -> Dict[str, Any]:
         """
         Generate structured output using Ollama model.
-        
+
         Args:
             prompt: Input prompt
             schema: JSON schema for output structure
             temperature: Sampling temperature
             **kwargs: Additional generation parameters
-            
+
         Returns:
             Structured output matching schema
         """
         if not self.capabilities.supports_structured_output:
             raise ValueError(f"Model {self.name} does not support structured output")
-        
+
         # Create prompt with schema instructions
         structured_prompt = f"""
 {prompt}
@@ -332,29 +345,32 @@ Please respond with a JSON object that matches this schema:
 
 Return only the JSON object, no additional text.
 """
-        
+
         try:
-            response = await self.generate(structured_prompt, temperature=temperature, **kwargs)
-            
+            response = await self.generate(
+                structured_prompt, temperature=temperature, **kwargs
+            )
+
             # Parse JSON response
             try:
                 return json.loads(response)
             except json.JSONDecodeError:
                 # Try to extract JSON from response
                 import re
-                json_match = re.search(r'\{.*\}', response, re.DOTALL)
+
+                json_match = re.search(r"\{.*\}", response, re.DOTALL)
                 if json_match:
                     return json.loads(json_match.group())
                 else:
                     raise ValueError("Could not parse JSON from response")
-                    
+
         except Exception as e:
             raise RuntimeError(f"Ollama structured generation error: {str(e)}") from e
-    
+
     async def health_check(self) -> bool:
         """
         Check if Ollama model is available and healthy.
-        
+
         Returns:
             True if healthy, False otherwise
         """
@@ -364,23 +380,23 @@ Return only the JSON object, no additional text.
             if response.status_code != 200:
                 self._is_available = False
                 return False
-            
+
             # Check if our model is available
             models = response.json().get("models", [])
             model_names = [model["name"] for model in models]
             if self.model_name not in model_names:
                 self._is_available = False
                 return False
-            
+
             # Simple test generation
             test_output = await self.generate("Test", max_tokens=1, temperature=0.0)
             self._is_available = True
             return True
-            
+
         except Exception:
             self._is_available = False
             return False
-    
+
     async def estimate_cost(
         self,
         prompt: str,
@@ -388,16 +404,16 @@ Return only the JSON object, no additional text.
     ) -> float:
         """
         Estimate cost for generation (local models are free).
-        
+
         Args:
             prompt: Input prompt
             max_tokens: Maximum tokens to generate
-            
+
         Returns:
             Estimated cost in USD (0.0 for local models)
         """
         return 0.0  # Local models are free
-    
+
     def get_available_models(self) -> List[str]:
         """Get list of available Ollama models."""
         try:
@@ -407,9 +423,9 @@ Return only the JSON object, no additional text.
                 return [model["name"] for model in models]
         except Exception:
             pass
-        
+
         return list(self.MODEL_CONFIGS.keys())
-    
+
     def get_model_info(self) -> Dict[str, Any]:
         """Get model information."""
         return {
@@ -419,7 +435,7 @@ Return only the JSON object, no additional text.
             "timeout": self.timeout,
             "supported_quantizations": self.requirements.supports_quantization,
         }
-    
+
     def is_ollama_running(self) -> bool:
         """Check if Ollama service is running."""
         try:
@@ -427,7 +443,7 @@ Return only the JSON object, no additional text.
             return response.status_code == 200
         except Exception:
             return False
-    
+
     def get_ollama_models(self) -> List[Dict[str, Any]]:
         """Get list of all models available in Ollama."""
         try:
@@ -437,32 +453,29 @@ Return only the JSON object, no additional text.
         except Exception:
             pass
         return []
-    
+
     @classmethod
     def create_from_config(cls, config: Dict[str, Any]) -> "OllamaModel":
         """Create Ollama model from configuration."""
         return cls(**config)
-    
+
     @staticmethod
     def check_ollama_installation() -> bool:
         """Check if Ollama CLI is installed."""
         try:
             result = subprocess.run(
-                ["ollama", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["ollama", "--version"], capture_output=True, text=True, timeout=5
             )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return False
-    
+
     @staticmethod
     def get_recommended_models() -> List[str]:
         """Get list of recommended models for testing."""
         return [
-            "gemma2:27b",     # Best quality, high resource requirements
-            "gemma2:9b",      # Good balance of quality and resources
-            "llama3.2:3b",    # Good for testing, moderate resources
-            "llama3.2:1b",    # Fastest, lowest resources
+            "gemma2:27b",  # Best quality, high resource requirements
+            "gemma2:9b",  # Good balance of quality and resources
+            "llama3.2:3b",  # Good for testing, moderate resources
+            "llama3.2:1b",  # Fastest, lowest resources
         ]
