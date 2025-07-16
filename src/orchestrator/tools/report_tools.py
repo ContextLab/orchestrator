@@ -62,11 +62,10 @@ class ReportGeneratorTool(Tool):
         
         report_lines.extend(["---", "", "## Executive Summary", ""])
         
-        # Add search summary
-        total_results = search_results.get("total_results", 0)
-        search_time = search_results.get("search_time", 0)
+        # Generate content-based executive summary
+        executive_summary = self._generate_executive_summary(query, search_results, findings)
         report_lines.extend([
-            f"The research query returned {total_results} results in {search_time:.2f} seconds.",
+            executive_summary,
             ""
         ])
         
@@ -169,6 +168,85 @@ class ReportGeneratorTool(Tool):
             "timestamp": timestamp,
             "title": title
         }
+    
+    def _generate_executive_summary(self, query: str, search_results: Dict[str, Any], findings: List[str]) -> str:
+        """Generate a content-based executive summary instead of search metadata."""
+        results = search_results.get("results", [])
+        
+        if not results:
+            return f"No relevant information was found for the query '{query}'."
+        
+        # Extract key themes from search results
+        themes = set()
+        key_points = []
+        
+        # Analyze titles and snippets for content insights
+        for result in results[:5]:  # Focus on top 5 most relevant results
+            title = result.get("title", "")
+            snippet = result.get("snippet", "")
+            relevance = result.get("relevance", 0)
+            
+            # Extract potential themes from titles (simple keyword extraction)
+            title_words = title.lower().split()
+            for word in title_words:
+                if len(word) > 4 and word not in ['best', 'practices', 'guide', 'tutorial', 'overview']:
+                    themes.add(word)
+            
+            # Extract key information from high-relevance snippets
+            if relevance > 0.7 and snippet:
+                # Look for key phrases that indicate important information
+                snippet_lower = snippet.lower()
+                if any(phrase in snippet_lower for phrase in ['breakthrough', 'development', 'new', 'recent', 'latest', 'advance']):
+                    # This suggests new developments
+                    key_points.append(f"Recent developments include: {snippet[:100]}...")
+                elif any(phrase in snippet_lower for phrase in ['framework', 'method', 'approach', 'technique', 'tool']):
+                    # This suggests methodological information
+                    key_points.append(f"Key approaches: {snippet[:100]}...")
+                elif any(phrase in snippet_lower for phrase in ['improve', 'best', 'optimal', 'effective', 'efficient']):
+                    # This suggests best practices
+                    key_points.append(f"Best practices: {snippet[:100]}...")
+        
+        # Build content-focused summary
+        summary_parts = []
+        
+        # Opening statement based on query
+        if 'best practices' in query.lower():
+            summary_parts.append(f"This research examines best practices for {query.lower().replace('best practices for ', '')}.")
+        elif 'latest' in query.lower() or 'recent' in query.lower() or '2024' in query:
+            summary_parts.append(f"This research explores recent developments in {query.lower().replace('latest developments in ', '').replace(' 2024', '')}.")
+        elif 'technologies' in query.lower():
+            summary_parts.append(f"This research investigates current technologies related to {query.lower().replace(' technologies', '')}.")
+        else:
+            summary_parts.append(f"This research provides insights into {query.lower()}.")
+        
+        # Add findings if available
+        if findings:
+            summary_parts.append("Key findings include:")
+            for finding in findings[:3]:  # Top 3 findings
+                summary_parts.append(f"• {finding}")
+        
+        # Add information about source diversity
+        if len(results) > 1:
+            unique_domains = set()
+            for result in results:
+                url = result.get("url", "")
+                if url:
+                    from urllib.parse import urlparse
+                    try:
+                        domain = urlparse(url).netloc
+                        unique_domains.add(domain)
+                    except:
+                        pass
+            
+            if len(unique_domains) > 1:
+                summary_parts.append(f"The analysis draws from {len(unique_domains)} different authoritative sources, providing a comprehensive perspective on the topic.")
+        
+        # Add themes if found
+        if themes and len(themes) > 1:
+            theme_list = list(themes)[:4]  # Top 4 themes
+            summary_parts.append(f"Key themes identified include: {', '.join(theme_list)}.")
+        
+        return " ".join(summary_parts)
 
 
 class PDFCompilerTool(Tool):
