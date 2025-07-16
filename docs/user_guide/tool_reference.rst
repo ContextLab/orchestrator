@@ -15,8 +15,9 @@ Tool Categories
 1. **Web Tools**: Internet interaction and data gathering
 2. **System Tools**: File and command execution
 3. **Data Tools**: Processing and validation
-4. **AI Tools**: Model-specific capabilities
-5. **Integration Tools**: Third-party service connections
+4. **Report Tools**: Markdown and PDF report generation
+5. **AI Tools**: Model-specific capabilities
+6. **Integration Tools**: Third-party service connections
 
 How Tools Work
 --------------
@@ -782,6 +783,218 @@ ValidationTool
            ## Recommendations
            <AUTO>Based on the validation results, provide recommendations</AUTO>
 
+Report Tools
+============
+
+ReportGeneratorTool
+-------------------
+
+**Purpose**: Generate structured markdown reports from research data
+
+**Action Names**:
+- ``generate_report``
+- ``create_report``
+- ``format_report``
+
+**Parameters**:
+
+.. code-block:: yaml
+
+   # Generate research report
+   - id: generate_report
+     action: generate_report
+     parameters:
+       title: "Research Report: {{ inputs.topic }}"   # Required: Report title
+       query: "{{ inputs.search_query }}"             # Optional: Original search query
+       context: "Focus on recent developments"        # Optional: Additional context
+       search_results:                                # Optional: Search results data
+         results:
+           - title: "Article Title"
+             url: "https://example.com"
+             snippet: "Article summary..."
+             relevance: 0.95
+       extraction_results:                            # Optional: Extracted content
+         success: true
+         text: "Full article content..."
+         word_count: 1500
+       findings:                                      # Optional: Key findings list
+         - "Finding 1: Important discovery"
+         - "Finding 2: Statistical trend"
+         - "Finding 3: Expert opinion"
+       recommendations:                               # Optional: Recommendations
+         - "Review the primary sources"
+         - "Conduct follow-up research"
+         - "Consult domain experts"
+       quality_score: 0.85                           # Optional: Quality metric (0-1)
+       metadata:                                     # Optional: Additional metadata
+         author: "Research Assistant"
+         date: "{{ execution.date }}"
+         version: "1.0"
+
+**Example Usage**:
+
+.. code-block:: yaml
+
+   name: research-report-pipeline
+   description: Generate comprehensive research reports
+   
+   steps:
+     # Conduct research
+     - id: search
+       action: search_web
+       parameters:
+         query: "{{ inputs.topic }} trends 2024"
+         max_results: 10
+     
+     # Extract content from top result
+     - id: extract
+       action: scrape_page
+       parameters:
+         url: "{{ results.search.results[0].url }}"
+         selectors:
+           content: "article, main"
+     
+     # Analyze findings
+     - id: analyze
+       action: analyze_text
+       parameters:
+         text: "$results.extract.content"
+         analysis_types: ["key_points", "summary"]
+     
+     # Generate report
+     - id: create_report
+       action: generate_report
+       parameters:
+         title: "Analysis: {{ inputs.topic }}"
+         search_results: "$results.search"
+         extraction_results: "$results.extract"
+         findings: "$results.analyze.key_points"
+         quality_score: 0.75
+     
+     # Save report
+     - id: save
+       action: write_file
+       parameters:
+         path: "reports/{{ inputs.topic }}_report.md"
+         content: "$results.create_report.markdown"
+
+PDFCompilerTool
+---------------
+
+**Purpose**: Convert markdown reports to PDF using pandoc with cross-platform support
+
+**Action Names**:
+- ``compile_pdf``
+- ``markdown_to_pdf``
+- ``generate_pdf``
+
+**Parameters**:
+
+.. code-block:: yaml
+
+   # Compile markdown to PDF
+   - id: compile_pdf
+     action: compile_pdf
+     parameters:
+       markdown_content: "{{ results.report }}"       # Required: Markdown content
+       output_path: "reports/final_report.pdf"        # Required: Output PDF path
+       title: "Research Report"                       # Optional: Document title
+       author: "AI Assistant"                         # Optional: Document author
+       date: "{{ execution.date }}"                   # Optional: Document date
+       toc: true                                      # Optional: Table of contents (default: false)
+       paper_size: "letter"                           # Optional: letter|a4 (default: letter)
+       margin: "1in"                                  # Optional: Page margins
+       font_size: "11pt"                              # Optional: Base font size
+       install_if_missing: true                       # Optional: Auto-install pandoc (default: true)
+       template: "default"                            # Optional: LaTeX template
+       metadata:                                      # Optional: Additional metadata
+         subject: "Research Analysis"
+         keywords: ["research", "analysis"]
+         lang: "en-US"
+
+**Cross-Platform Installation**:
+
+The PDFCompilerTool automatically installs pandoc if it's not available:
+
+- **Windows**: Downloads and installs from GitHub releases
+- **macOS**: Uses Homebrew if available, otherwise downloads installer
+- **Linux**: Uses apt-get (Debian/Ubuntu) or downloads AppImage
+
+**Example Usage**:
+
+.. code-block:: yaml
+
+   name: pdf-generation-pipeline
+   description: Generate PDF reports from markdown
+   
+   steps:
+     # Generate markdown report
+     - id: create_markdown
+       action: generate_content
+       parameters:
+         prompt: "Create a professional report about {{ inputs.topic }}"
+         format: "markdown"
+         style: "academic"
+     
+     # Compile to PDF
+     - id: create_pdf
+       action: compile_pdf
+       parameters:
+         markdown_content: "$results.create_markdown"
+         output_path: "output/{{ inputs.topic }}_report.pdf"
+         title: "{{ inputs.topic }} Analysis"
+         author: "{{ inputs.author | default('Research Team') }}"
+         toc: true
+         paper_size: "letter"
+     
+     # Alternative: compile existing markdown file
+     - id: compile_existing
+       action: compile_pdf
+       parameters:
+         markdown_content: "$file:reports/draft.md"
+         output_path: "output/final_report.pdf"
+         title: "Final Report"
+         metadata:
+           version: "2.0"
+           confidential: true
+
+**Advanced PDF Generation**:
+
+.. code-block:: yaml
+
+   # Research pipeline with PDF output
+   - id: research_and_report
+     steps:
+       # Conduct research
+       - id: research
+         action: search_web
+         parameters:
+           query: "{{ inputs.query }}"
+           max_results: 20
+       
+       # Generate comprehensive report
+       - id: report
+         action: generate_report
+         parameters:
+           title: "Research: {{ inputs.query }}"
+           search_results: "$results.research"
+           findings: <AUTO>Extract key findings from search results</AUTO>
+           recommendations: <AUTO>Generate recommendations based on findings</AUTO>
+       
+       # Create PDF with custom styling
+       - id: pdf
+         action: compile_pdf
+         parameters:
+           markdown_content: "$results.report.markdown"
+           output_path: "research/{{ inputs.query | slugify }}.pdf"
+           title: "$results.report.title"
+           author: "Orchestrator Research Assistant"
+           toc: true
+           template: "academic"  # Use academic paper template
+           metadata:
+             abstract: "$results.report.summary"
+             keywords: "$results.report.keywords"
+
 AI Tools
 ========
 
@@ -977,28 +1190,35 @@ Research and Report Pipeline
              condition: "count(unique(sources)) >= 3"
              severity: "warning"
      
-     # 5. Generate report
+     # 5. Generate structured report
      - id: create_report
-       action: generate_content
+       action: generate_report
        parameters:
-         prompt: |
-           Create a comprehensive report about {{ inputs.topic }}
-           using the following validated information:
-           {{ results.extract_facts | json }}
-         style: "academic"
-         format: "markdown"
-         max_tokens: 2000
+         title: "Comprehensive Analysis: {{ inputs.topic }}"
+         query: "{{ inputs.topic }} latest research 2024"
+         search_results: "$results.web_search"
+         extraction_results: "$results.scrape_articles"
+         findings: "$results.extract_facts.facts"
+         recommendations: <AUTO>Generate recommendations based on findings</AUTO>
+         quality_score: 0.85
      
-     # 6. Save report
+     # 6. Save markdown report
      - id: save_report
        action: write_file
        parameters:
          path: "reports/{{ inputs.topic }}_{{ execution.date }}.md"
-         content: "$results.create_report"
+         content: "$results.create_report.markdown"
      
-     # 7. Generate PDF
+     # 7. Generate PDF with automatic pandoc installation
      - id: create_pdf
-       action: "!pandoc -f markdown -t pdf -o reports/{{ inputs.topic }}.pdf reports/{{ inputs.topic }}_{{ execution.date }}.md"
+       action: compile_pdf
+       parameters:
+         markdown_content: "$results.create_report.markdown"
+         output_path: "reports/{{ inputs.topic }}_{{ execution.date }}.pdf"
+         title: "{{ inputs.topic }} Research Report"
+         author: "Orchestrator Research Assistant"
+         toc: true
+         install_if_missing: true
 
 Data Processing Pipeline
 ------------------------

@@ -18,7 +18,8 @@ The Research Assistant pipeline performs the following workflow:
 3. **Content Extraction**: Extract and clean relevant content from web pages
 4. **Information Synthesis**: Analyze and synthesize findings from multiple sources
 5. **Report Generation**: Create structured research reports with citations
-6. **Quality Assurance**: Validate findings and check for accuracy
+6. **PDF Export**: Generate professional PDF reports with automatic pandoc installation
+7. **Quality Assurance**: Validate findings and check for accuracy
 
 **Key Features Demonstrated:**
 - Multi-step pipeline orchestration
@@ -172,6 +173,23 @@ First, let's define the research pipeline in YAML:
          - citation_list
          - recommendations
    
+     - id: generate_pdf
+       name: "Export Report as PDF"
+       action: "compile_pdf"
+       parameters:
+         markdown_content: "{{ generate_report.research_report }}"
+         output_path: "reports/research_report_{{ execution.timestamp }}.pdf"
+         title: "Research Report: {{ analyze_query.search_terms[0] }}"
+         author: "Orchestrator Research Assistant"
+         toc: true
+         paper_size: "letter"
+         install_if_missing: true
+       dependencies:
+         - generate_report
+       outputs:
+         - pdf_path
+         - file_size
+   
      - id: quality_check
        name: "Quality Assurance Check"
        action: "validate_research_quality"
@@ -210,6 +228,7 @@ Now, let's implement the research assistant in Python:
    from orchestrator.state.state_manager import StateManager
    from orchestrator.tools.web_tools import WebSearchTool, HeadlessBrowserTool
    from orchestrator.tools.data_tools import DataProcessingTool
+   from orchestrator.tools.report_tools import ReportGeneratorTool, PDFCompilerTool
    from orchestrator.core.cache import MemoryCache
    
    # Configure logging
@@ -332,12 +351,14 @@ Now, let's implement the research assistant in Python:
                }
        
        def _register_tools(self):
-           """Register tools for web search and content extraction."""
+           """Register tools for web search, content extraction, and report generation."""
            # Tools are handled by the control system in the orchestrator
            # For this example, we'll store them as instance variables
            self.web_search = WebSearchTool(self.orchestrator_config)
            self.browser_tool = HeadlessBrowserTool(self.orchestrator_config)
            self.data_analyzer = DataProcessingTool()
+           self.report_generator = ReportGeneratorTool()
+           self.pdf_compiler = PDFCompilerTool()
        
        async def conduct_research(self, query: str, context: str = "") -> Dict[str, Any]:
            """
@@ -451,16 +472,20 @@ The research assistant uses real web tools for actual data retrieval:
 
 .. code-block:: python
 
-   # Real Web Tools Implementation
+   # Real Tools Implementation
    # WebSearchTool: Uses DuckDuckGo (ddgs library) for real web searches
    # HeadlessBrowserTool: Uses requests and BeautifulSoup for content extraction
    # DataProcessingTool: Analyzes source credibility and quality
+   # ReportGeneratorTool: Creates structured markdown reports
+   # PDFCompilerTool: Converts markdown to PDF with cross-platform pandoc installation
    
    # These tools provide:
    # - Real web search using DuckDuckGo API (no API key required)
    # - Actual content extraction from web pages
    # - Source credibility analysis with real data
    # - Quality scoring based on actual content
+   # - Professional markdown report generation
+   # - Automatic PDF export with pandoc (auto-installs if missing)
    # - Rate limiting to prevent abuse
    # - Error handling for network issues
    
@@ -507,6 +532,21 @@ Here's how to use the research assistant:
            f.write(results["research_report"])
        
        print(f"Detailed report saved to research_report.md")
+       
+       # Generate PDF report
+       from orchestrator.tools.report_tools import PDFCompilerTool
+       pdf_tool = PDFCompilerTool()
+       pdf_result = await pdf_tool.execute(
+           markdown_content=results["research_report"],
+           output_path="research_report.pdf",
+           title=query,
+           author="Research Assistant",
+           toc=True
+       )
+       
+       if pdf_result["success"]:
+           print(f"PDF report saved to research_report.pdf ({pdf_result['file_size']:,} bytes)")
+       
        print(f"Research quality score: {results['quality_score']:.2f}/1.0")
    
    if __name__ == "__main__":
