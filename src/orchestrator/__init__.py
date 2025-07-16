@@ -33,7 +33,7 @@ def init_models(config_path: str = "models.yaml"):
     """Initialize the pool of available models by reading models.yaml and environment."""
     global _model_registry
     
-    from .utils.model_utils import load_model_config, parse_model_size, check_ollama_model, install_ollama_model
+    from .utils.model_utils import load_model_config, parse_model_size, check_ollama_installed
     from .integrations.anthropic_model import AnthropicModel
     from .integrations.google_model import GoogleModel
     from .integrations.openai_model import OpenAIModel
@@ -46,6 +46,12 @@ def init_models(config_path: str = "models.yaml"):
     # Load model configuration
     config = load_model_config(config_path)
     models_config = config.get("models", [])
+    
+    # Check if Ollama is installed
+    ollama_available = check_ollama_installed()
+    if not ollama_available:
+        print(">> ⚠️  Ollama not found - Ollama models will not be available")
+        print(">>    Install from: https://ollama.ai")
     
     # Process each model in configuration
     for model_config in models_config:
@@ -62,22 +68,17 @@ def init_models(config_path: str = "models.yaml"):
         
         try:
             if source == "ollama":
-                # Check if model is available, install if needed
-                if not check_ollama_model(name):
-                    if install_ollama_model(name):
-                        # Model was successfully installed
-                        pass
-                    else:
-                        # Skip this model if installation failed
-                        continue
-                
-                # Create and register the model
-                model = OllamaModel(model_name=name, timeout=60)
-                model._expertise = expertise  # Add expertise info
+                if not ollama_available:
+                    continue
+                    
+                # Register model for lazy loading (will be downloaded on first use)
+                # Use a lazy wrapper that doesn't check availability yet
+                from .integrations.lazy_ollama_model import LazyOllamaModel
+                model = LazyOllamaModel(model_name=name, timeout=60)
+                model._expertise = expertise
                 model._size_billions = size_billions
-                if model._is_available:
-                    _model_registry.register_model(model)
-                    print(f">>   ✅ Registered Ollama model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                _model_registry.register_model(model)
+                print(f">>   📦 Registered Ollama model: {name} ({size_billions}B params) - will download on first use")
                     
             elif source == "huggingface":
                 # Check if transformers is available
@@ -85,13 +86,13 @@ def init_models(config_path: str = "models.yaml"):
                     import transformers
                     import torch
                     
-                    # HuggingFace models are downloaded automatically on first use
-                    hf_model = HuggingFaceModel(model_name=name)
+                    # Register for lazy loading (will be downloaded on first use)
+                    from .integrations.lazy_huggingface_model import LazyHuggingFaceModel
+                    hf_model = LazyHuggingFaceModel(model_name=name)
                     hf_model._expertise = expertise
                     hf_model._size_billions = size_billions
                     _model_registry.register_model(hf_model)
-                    print(f">>   ✅ Registered HuggingFace model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
-                    print(">>      Model will be downloaded on first use")
+                    print(f">>   📦 Registered HuggingFace model: {name} ({size_billions}B params) - will download on first use")
                 except ImportError:
                     print(f">>   ⚠️  HuggingFace model {name} configured but transformers not installed")
                     print(">>      Install with: pip install transformers torch")
@@ -104,7 +105,7 @@ def init_models(config_path: str = "models.yaml"):
                 model._expertise = expertise
                 model._size_billions = size_billions
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                print(f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)")
                 
             elif source == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
                 # Only register if API key is available
@@ -112,7 +113,7 @@ def init_models(config_path: str = "models.yaml"):
                 model._expertise = expertise
                 model._size_billions = size_billions
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                print(f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)")
                 
             elif source == "google" and os.environ.get("GOOGLE_API_KEY"):
                 # Only register if API key is available
@@ -120,11 +121,13 @@ def init_models(config_path: str = "models.yaml"):
                 model._expertise = expertise
                 model._size_billions = size_billions
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered Google model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                print(f">>   ✅ Registered Google model: {name} ({size_billions}B params)")
                 
         except Exception as e:
             print(f">>   ⚠️  Error registering {source} model {name}: {e}")
 
+    print(f"\n>> Model initialization complete: {len(_model_registry.list_models())} models registered")
+    
     if not _model_registry.list_models():
         print(">>   ⚠️  No models available - using mock fallback")
         

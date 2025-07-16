@@ -1,15 +1,78 @@
-# Orchestrator Model Configuration
-# This file defines available models and their capabilities
+# Model configuration for Orchestrator
+# This file defines available models and their properties
 
 models:
-  # Ollama models (automatically installed if not present)
+  # Ollama models (downloaded on first use)
   - source: ollama
-    name: gemma2:27b
+    name: deepseek-r1:1.5b
     expertise: 
+      - reasoning
+      - code
+      - math
+    size: 1.5b
+    
+  - source: ollama
+    name: deepseek-r1:8b
+    expertise: 
+      - reasoning
+      - code
+      - math
+    size: 8b
+    
+  - source: ollama
+    name: deepseek-r1:32b
+    expertise: 
+      - reasoning
+      - code
+      - math
+      - analysis
+    size: 32b
+    
+  - source: ollama
+    name: gemma3:1b
+    expertise:
+      - general
+      - fast
+      - compact
+    size: 1b
+    
+  - source: ollama
+    name: gemma3:4b
+    expertise:
+      - general
+      - reasoning
+    size: 4b
+    
+  - source: ollama
+    name: gemma3:12b
+    expertise:
+      - general
+      - reasoning
+      - analysis
+    size: 12b
+    
+  - source: ollama
+    name: gemma3:27b
+    expertise:
       - general
       - reasoning
       - analysis
     size: 27b
+    
+  - source: ollama
+    name: gemma3n:e4b
+    expertise:
+      - general
+      - efficient
+    size: 4b
+    
+  - source: ollama
+    name: llama3.1:8b
+    expertise:
+      - general
+      - reasoning
+      - multilingual
+    size: 8b
     
   - source: ollama
     name: llama3.2:1b
@@ -19,44 +82,285 @@ models:
     size: 1b
     
   - source: ollama
-    name: codellama:7b
+    name: llama3.2:3b
+    expertise:
+      - general
+      - fast
+    size: 3b
+    
+  - source: ollama
+    name: mistral:7b
+    expertise:
+      - general
+      - code
+    size: 7b
+    
+  - source: ollama
+    name: qwen2.5-coder:7b
     expertise:
       - code
       - programming
     size: 7b
     
   - source: ollama
-    name: mistral:7b-instruct
+    name: qwen2.5-coder:14b
     expertise:
-      - instruct
+      - code
+      - programming
+      - analysis
+    size: 14b
+    
+  - source: ollama
+    name: qwen2.5-coder:32b
+    expertise:
+      - code
+      - programming
+      - analysis
+      - reasoning
+    size: 32b
+
+  # HuggingFace models (downloaded on first use)
+  # Top instruct models
+  - source: huggingface
+    name: meta-llama/Llama-3.2-11B-Vision-Instruct
+    expertise:
       - general
+      - vision
+      - multimodal
+    size: 11b
+    
+  - source: huggingface
+    name: meta-llama/Llama-3.1-8B-Instruct
+    expertise:
+      - general
+      - reasoning
+      - multilingual
+    size: 8b
+    
+  - source: huggingface
+    name: Qwen/Qwen2.5-1.5B-Instruct
+    expertise:
+      - general
+      - multilingual
+      - fast
+    size: 1.5b
+    
+  - source: huggingface
+    name: Qwen/Qwen2-VL-7B-Instruct
+    expertise:
+      - general
+      - vision
+      - multimodal
     size: 7b
     
-  # HuggingFace models (automatically downloaded if not present)
   - source: huggingface
-    name: distilgpt2
+    name: tencent/Hunyuan-A13B-Instruct
     expertise:
-      - text-generation
-      - fast
-    size: 82m
+      - general
+      - reasoning
+      - math
+      - science
+    size: 13b
     
   - source: huggingface
-    name: microsoft/phi-2
+    name: microsoft/Phi-3.5-mini-instruct
     expertise:
       - reasoning
       - code
-    size: 2.7b
+      - compact
+    size: 3.8b
     
-  # Cloud models (require API keys)
+  - source: huggingface
+    name: SmolLM-1.7B-Instruct
+    expertise:
+      - general
+      - compact
+      - fast
+    size: 1.7b
+    
+  - source: huggingface
+    name: stabilityai/stable-code-instruct-3b
+    expertise:
+      - code
+      - programming
+      - compact
+    size: 3b
+    
+  # Top coding models
+  - source: huggingface
+    name: Qwen/Qwen2.5-Coder-32B-Instruct
+    expertise:
+      - code
+      - programming
+      - reasoning
+    size: 32b
+    
+  - source: huggingface
+    name: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+    expertise:
+      - reasoning
+      - code
+      - math
+    size: 32b
+    
+  - source: huggingface
+    name: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+    expertise:
+      - reasoning
+      - code
+      - compact
+    size: 1.5b
+    
+  - source: huggingface
+    name: Qwen/Qwen2.5-Coder-7B-Instruct
+    expertise:
+      - code
+      - programming
+    size: 7b
+    
+  - source: huggingface
+    name: codellama/CodeLlama-7b-Instruct-hf
+    expertise:
+      - code
+      - programming
+    size: 7b
+    
+  - source: huggingface
+    name: bigcode/starcoder2-15b
+    expertise:
+      - code
+      - programming
+    size: 15b
+    
+  - source: huggingface
+    name: WizardLM/WizardCoder-Python-34B-V1.0
+    expertise:
+      - code
+      - python
+      - programming
+    size: 34b
+
+  # OpenAI models (require OPENAI_API_KEY)
+  # GPT-4.1 Series
+  - source: openai
+    name: gpt-4.1
+    expertise:
+      - general
+      - reasoning
+      - code
+      - analysis
+      - instruction-following
+    size: 1760b  # Estimated
+    
+  - source: openai
+    name: gpt-4.1-mini
+    expertise:
+      - general
+      - fast
+      - efficient
+    size: 8b  # Estimated
+    
+  - source: openai
+    name: gpt-4.1-nano
+    expertise:
+      - fast
+      - compact
+      - efficient
+    size: 1b  # Estimated
+    
+  # GPT-4o Series  
+  - source: openai
+    name: gpt-4o
+    expertise:
+      - general
+      - reasoning
+      - code
+      - analysis
+      - vision
+    size: 1760b  # Estimated
+    
+  - source: openai
+    name: gpt-4o-mini
+    expertise:
+      - general
+      - fast
+      - efficient
+    size: 8b  # Estimated
+    
+  # O-series reasoning models
+  - source: openai
+    name: o3
+    expertise:
+      - reasoning
+      - code
+      - math
+      - science
+      - vision
+    size: 2000b  # Estimated
+    
+  - source: openai
+    name: o3-mini
+    expertise:
+      - reasoning
+      - code
+      - math
+      - fast
+    size: 70b  # Estimated
+    
+  - source: openai
+    name: o4-mini
+    expertise:
+      - reasoning
+      - code
+      - math
+      - fast
+      - efficient
+    size: 70b  # Estimated
+    
+  - source: openai
+    name: o1
+    expertise:
+      - reasoning
+      - code
+      - math
+    size: 175b  # Estimated
+    
+  - source: openai
+    name: o1-mini
+    expertise:
+      - reasoning
+      - code
+      - fast
+    size: 65b  # Estimated
+    
+  - source: openai
+    name: o1-preview
+    expertise:
+      - reasoning
+      - code
+      - math
+      - preview
+    size: 175b  # Estimated
+    
+  # GPT-4 Series
   - source: openai
     name: gpt-4
     expertise:
       - general
       - reasoning
       - code
-      - analysis
-    size: 1.76t  # Estimated
+    size: 1760b  # Estimated
     
+  - source: openai
+    name: gpt-4-turbo
+    expertise:
+      - general
+      - reasoning
+      - code
+      - vision
+    size: 1760b  # Estimated
+    
+  # GPT-3.5 Series
   - source: openai
     name: gpt-3.5-turbo
     expertise:
@@ -64,42 +368,154 @@ models:
       - fast
     size: 175b
     
+  - source: openai
+    name: gpt-3.5-turbo-instruct
+    expertise:
+      - general
+      - instruct
+    size: 175b
+    
+  # Specialized models
+  - source: openai
+    name: gpt-4o-audio-preview
+    expertise:
+      - audio
+      - transcription
+      - multimodal
+    size: 1760b  # Estimated
+    
+  - source: openai
+    name: gpt-4o-realtime-preview
+    expertise:
+      - realtime
+      - voice
+      - multimodal
+    size: 1760b  # Estimated
+
+  # Anthropic models (require ANTHROPIC_API_KEY)
+  # Claude 4 Series
   - source: anthropic
-    name: claude-3-opus
+    name: claude-opus-4-20250514
     expertise:
       - general
       - reasoning
       - analysis
       - code
-    size: 2t  # Estimated
+      - complex-tasks
+    size: 2500b  # Estimated
     
   - source: anthropic
-    name: claude-3-sonnet
+    name: claude-sonnet-4-20250514
+    expertise:
+      - general
+      - reasoning
+      - efficient
+    size: 600b  # Estimated
+    
+  # Claude 3.x Series
+  - source: anthropic
+    name: claude-3-7-sonnet-20250219
+    expertise:
+      - general
+      - reasoning
+      - analysis
+      - extended-thinking
+    size: 400b  # Estimated
+    
+  - source: anthropic
+    name: claude-3-5-sonnet-20241022
     expertise:
       - general
       - fast
+      - balanced
     size: 200b  # Estimated
     
-  - source: google
-    name: gemini-pro
+  - source: anthropic
+    name: claude-3-5-haiku-20241022
+    expertise:
+      - fast
+      - efficient
+      - compact
+    size: 20b  # Estimated
+    
+  # Legacy models
+  - source: anthropic
+    name: claude-3-opus-20240229
     expertise:
       - general
-      - multimodal
       - reasoning
-    size: 1.5t  # Estimated
-
-# Default model selection preferences
-defaults:
-  # Preferred model for different expertise areas
-  expertise_preferences:
-    code: codellama:7b
-    reasoning: gemma2:27b
-    fast: llama3.2:1b
-    general: gemma2:27b
+      - analysis
+    size: 2000b  # Estimated
     
-  # Fallback chain if preferred models are not available
+  - source: anthropic
+    name: claude-3-haiku-20240307
+    expertise:
+      - fast
+      - efficient
+    size: 20b  # Estimated
+
+  # Google models (require GOOGLE_API_KEY)
+  # Gemini 2.5 Series
+  - source: google
+    name: gemini-2.5-pro
+    expertise:
+      - general
+      - reasoning
+      - code
+      - math
+      - stem
+      - long-context
+    size: 1500b  # Estimated
+    
+  - source: google
+    name: gemini-2.5-flash
+    expertise:
+      - general
+      - fast
+      - efficient
+      - thinking
+    size: 80b  # Estimated
+    
+  - source: google
+    name: gemini-2.5-flash-lite-preview-06-17
+    expertise:
+      - fast
+      - efficient
+      - compact
+      - classification
+    size: 8b  # Estimated
+    
+  # Gemini 2.0 Series
+  - source: google
+    name: gemini-2.0-flash
+    expertise:
+      - general
+      - fast
+      - multimodal
+      - native-tools
+    size: 70b  # Estimated
+    
+  - source: google
+    name: gemini-2.0-flash-lite
+    expertise:
+      - fast
+      - efficient
+      - compact
+    size: 8b  # Estimated
+
+defaults:
+  expertise_preferences:
+    code: qwen2.5-coder:32b
+    reasoning: deepseek-r1:32b
+    fast: llama3.2:1b
+    general: llama3.1:8b
+    analysis: gemma3:27b
+    compact: gemma3:1b
+    vision: meta-llama/Llama-3.2-11B-Vision-Instruct
+    
   fallback_chain:
-    - gemma2:27b
-    - mistral:7b-instruct
+    - llama3.1:8b
+    - gemma3:27b
+    - mistral:7b
+    - llama3.2:3b
     - llama3.2:1b
-    - distilgpt2

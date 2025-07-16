@@ -18,7 +18,7 @@ The Orchestrator Framework automatically detects and registers available models 
    
 2. **HuggingFace Models** (if transformers library is available)
    
-   - ``distilgpt2`` - Default lightweight model for testing
+   - ``TinyLlama/TinyLlama-1.1B-Chat-v1.0`` - Default lightweight model for testing
 
 3. **Cloud Models** (if API keys are configured)
    
@@ -96,9 +96,9 @@ OpenAI Models
    from orchestrator.models.openai_model import OpenAIModel
    
    model = OpenAIModel(
-       name="gpt-4",
+       name="gpt-4o",
        api_key="your-api-key",
-       model="gpt-4"
+       model="gpt-4o"
    )
 
 Anthropic Models
@@ -109,9 +109,9 @@ Anthropic Models
    from orchestrator.models.anthropic_model import AnthropicModel
    
    model = AnthropicModel(
-       name="claude-3-sonnet",
+       name="claude-3.5-sonnet",
        api_key="your-api-key",
-       model="claude-3-sonnet-20240229"
+       model="claude-3.5-sonnet"
    )
 
 Local Models
@@ -122,8 +122,8 @@ Local Models
    from orchestrator.models.huggingface_model import HuggingFaceModel
    
    model = HuggingFaceModel(
-       name="llama-7b",
-       model_path="meta-llama/Llama-2-7b-chat-hf"
+       name="llama-3.2-3b",
+       model_path="meta-llama/Llama-3.2-3B-Instruct"
    )
 
 Model Registry

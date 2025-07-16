@@ -212,3 +212,45 @@ notes/
 CLAUDE.md
 .DS_Store
 docs/_build/
+
+# Cache files and temporary files
+cache/
+*.cache
+*.tmp
+temp/
+tmp/
+
+# Test and example outputs
+test_output/
+example_output/
+reports/
+*.pdf
+
+# Local configuration overrides
+config.local.yaml
+settings.local.json
+
+# IDE and editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+
+# Logs and databases
+*.log
+*.sqlite
+*.db

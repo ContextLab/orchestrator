@@ -40,13 +40,14 @@ Configuration Structure
        
      # Cloud models (require API keys)
      - source: openai
-       name: gpt-4
+       name: gpt-4o
        expertise:
          - general
          - reasoning
          - code
          - analysis
-       size: 1.76t
+         - vision
+       size: 1760b
    
    defaults:
      expertise_preferences:
@@ -56,7 +57,7 @@ Configuration Structure
      fallback_chain:
        - gemma2:27b
        - llama3.2:1b
-       - distilgpt2
+       - TinyLlama/TinyLlama-1.1B-Chat-v1.0
 
 Model Sources
 ~~~~~~~~~~~~~
@@ -75,7 +76,7 @@ Model Properties
 Each model configuration includes:
 
 - **source**: Where the model comes from
-- **name**: Model identifier (e.g., "gemma2:27b", "gpt-4")
+- **name**: Model identifier (e.g., "gemma2:27b", "gpt-4o")
 - **expertise**: List of areas the model excels at
 - **size**: Model size (automatically parsed from name if not specified)
 
@@ -93,37 +94,52 @@ The framework automatically parses common size patterns from model names (e.g., 
 Automatic Model Installation
 ----------------------------
 
-Ollama Models
-~~~~~~~~~~~~~
+Lazy Loading (On-Demand Downloads)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When initializing models, the framework automatically installs missing Ollama models:
+The framework uses lazy loading for both Ollama and HuggingFace models to avoid downloading large models until they're actually needed:
 
 .. code-block:: python
 
    import orchestrator as orc
    
-   # This will automatically install configured Ollama models if needed
+   # This registers models but doesn't download them yet
    registry = orc.init_models()
+   
+   # Models are downloaded only when first used by a pipeline
+   pipeline = orc.compile("my_pipeline.yaml")
+   result = pipeline.run()  # Model downloads happen here if needed
 
-The installation process:
+Ollama Models
+~~~~~~~~~~~~~
 
-1. Checks if Ollama is installed
-2. Verifies which models are already available
-3. Runs ``ollama pull <model>`` for missing models
-4. Registers successfully installed models
+Ollama models are downloaded on first use:
+
+1. When a task requires an Ollama model, the framework checks if it's available locally
+2. If not available, it automatically runs ``ollama pull <model>``
+3. The download happens only once - subsequent uses will use the cached model
+4. Progress is shown during download: ``📥 Downloading Ollama model: llama3.1:8b``
 
 HuggingFace Models
 ~~~~~~~~~~~~~~~~~~
 
-HuggingFace models are downloaded automatically on first use:
+HuggingFace models are also downloaded on first use:
 
 .. code-block:: yaml
 
    - source: huggingface
-     name: microsoft/phi-2
+     name: microsoft/Phi-3.5-mini-instruct
      expertise: [reasoning, code]
 
-The model will be downloaded and cached when first requested by a task.
+The model will be downloaded from HuggingFace Hub and cached locally when first requested by a task. The transformers library handles caching automatically.
+
+.. note::
+   
+   Model downloads can be large (several GB). Ensure you have:
+   
+   - Sufficient disk space for model storage
+   - A stable internet connection for downloads
+   - Time for the initial download (subsequent uses are instant)
 
 Specifying Model Requirements in Pipelines
 ------------------------------------------

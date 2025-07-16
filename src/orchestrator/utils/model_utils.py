@@ -47,12 +47,20 @@ def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
     
     # Default sizes for known models
     known_sizes = {
-        'gpt-4': 1760.0,  # 1.76T parameters
-        'gpt-3.5-turbo': 175.0,
-        'claude-3-opus': 2000.0,  # Estimated 2T
-        'claude-3-sonnet': 200.0,  # Estimated
-        'gemini-pro': 1500.0,  # Estimated 1.5T
-        'distilgpt2': 0.082,  # 82M parameters
+        'gpt-4o': 1760.0,  # Estimated
+        'gpt-4.1': 1760.0,  # Estimated
+        'o3': 2000.0,  # Estimated
+        'o4-mini': 70.0,  # Estimated
+        'claude-4-opus': 2500.0,  # Estimated
+        'claude-4-sonnet': 600.0,  # Estimated
+        'claude-3.7-sonnet': 400.0,  # Estimated
+        'claude-3.5-sonnet': 200.0,  # Estimated
+        'gemini-2.5-pro': 1500.0,  # Estimated
+        'gemini-2.5-flash': 80.0,  # Estimated
+        'gemini-2.0-pro': 1000.0,  # Estimated
+        'tinyllama': 1.1,  # 1.1B parameters
+        'phi-2': 2.7,  # 2.7B parameters
+        'phi-3.5': 3.8,  # 3.8B parameters
         'gpt2': 0.117,  # 117M parameters
     }
     
@@ -144,9 +152,9 @@ def load_model_config(config_path: str = "models.yaml") -> Dict[str, Any]:
         "models": [
             {
                 "source": "ollama",
-                "name": "gemma2:27b",
-                "expertise": ["general", "reasoning", "analysis"],
-                "size": "27b"
+                "name": "llama3.1:8b",
+                "expertise": ["general", "reasoning", "multilingual"],
+                "size": "8b"
             },
             {
                 "source": "ollama", 
@@ -156,22 +164,23 @@ def load_model_config(config_path: str = "models.yaml") -> Dict[str, Any]:
             },
             {
                 "source": "huggingface",
-                "name": "distilgpt2",
-                "expertise": ["text-generation", "fast"],
-                "size": "82m"
+                "name": "microsoft/Phi-3.5-mini-instruct",
+                "expertise": ["reasoning", "code", "compact"],
+                "size": "3.8b"
             }
         ],
         "defaults": {
             "expertise_preferences": {
-                "code": "codellama:7b",
-                "reasoning": "gemma2:27b",
+                "code": "qwen2.5-coder:7b",
+                "reasoning": "deepseek-r1:8b",
                 "fast": "llama3.2:1b",
-                "general": "gemma2:27b"
+                "general": "llama3.1:8b"
             },
             "fallback_chain": [
-                "gemma2:27b",
+                "llama3.1:8b",
+                "mistral:7b",
                 "llama3.2:1b",
-                "distilgpt2"
+                "microsoft/Phi-3.5-mini-instruct"
             ]
         }
     }
