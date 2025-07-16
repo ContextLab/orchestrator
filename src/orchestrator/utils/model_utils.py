@@ -45,28 +45,17 @@ def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
         if match:
             return float(match.group(1))
     
-    # Default sizes for known models
-    known_sizes = {
-        'gpt-4o': 1760.0,  # Estimated
-        'gpt-4.1': 1760.0,  # Estimated
-        'o3': 2000.0,  # Estimated
-        'o4-mini': 70.0,  # Estimated
-        'claude-4-opus': 2500.0,  # Estimated
-        'claude-4-sonnet': 600.0,  # Estimated
-        'claude-3.7-sonnet': 400.0,  # Estimated
-        'claude-3.5-sonnet': 200.0,  # Estimated
-        'gemini-2.5-pro': 1500.0,  # Estimated
-        'gemini-2.5-flash': 80.0,  # Estimated
-        'gemini-2.0-pro': 1000.0,  # Estimated
-        'tinyllama': 1.1,  # 1.1B parameters
-        'phi-2': 2.7,  # 2.7B parameters
-        'phi-3.5': 3.8,  # 3.8B parameters
-        'gpt2': 0.117,  # 117M parameters
-    }
-    
-    for known_model, size in known_sizes.items():
-        if known_model in model_name.lower():
-            return size
+    # Try to get size from models.yaml configuration
+    try:
+        config = load_model_config()
+        if 'models' in config:
+            for model_config in config['models']:
+                if model_config.get('name', '').lower() in model_name.lower() or model_name.lower() in model_config.get('name', '').lower():
+                    if 'size' in model_config:
+                        return parse_model_size(model_config['name'], model_config['size'])
+    except Exception:
+        # If loading config fails, continue with default
+        pass
     
     # Default to small size if unknown
     return 1.0
@@ -138,7 +127,8 @@ def load_model_config(config_path: str = "models.yaml") -> Dict[str, Any]:
     search_paths = [
         Path(config_path),  # Current directory
         Path.home() / ".orchestrator" / config_path,  # User config directory
-        Path(__file__).parent.parent.parent / config_path,  # Project root
+        Path(__file__).parent.parent.parent / config_path,  # Package root
+        Path(__file__).parent.parent.parent / "config" / config_path,  # Package config dir
         Path(os.environ.get("ORCHESTRATOR_HOME", ".")) / config_path,  # Env variable
     ]
     

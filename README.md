@@ -1,138 +1,368 @@
-# py-orc 🧟
+# Orchestrator Framework
 
-py-orc is a convenient wrapper for LangGraph, MCP, model spec, and other AI (LLM) agent control systems. It provides a way to:
- - Specify task-based control flows, dependencies (including conditional dependencies), and completion criteria
- - Use external tools (through MCP and custom scripts or command line calls)
- - Run sandboxed code (using Docker, conda, uv, and/or pyenv)
- - Enforce requirements of model outputs, including simple checks (e.g., data formatting) and complex checks (e.g., high-level quality control checks).
- - Specify and enforce operating constraints (e.g., monetary cost, computing costs like time or memory, maximum total runtime, minimum time to first response, permissions, privacy, etc.)
+[![PyPI Version](https://img.shields.io/pypi/v/py-orc)](https://pypi.org/project/py-orc/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/py-orc)](https://pypi.org/project/py-orc/)
+[![Downloads](https://img.shields.io/pypi/dm/py-orc)](https://pypi.org/project/py-orc/)
+[![License](https://img.shields.io/pypi/l/py-orc)](https://github.com/ContextLab/orchestrator/blob/main/LICENSE)
+[![Tests](https://github.com/ContextLab/orchestrator/actions/workflows/tests.yml/badge.svg)](https://github.com/ContextLab/orchestrator/actions/workflows/tests.yml)
+[![Coverage](https://github.com/ContextLab/orchestrator/actions/workflows/coverage.yml/badge.svg)](https://github.com/ContextLab/orchestrator/actions/workflows/coverage.yml)
+[![Documentation](https://readthedocs.org/projects/orc/badge/?version=latest)](https://orc.readthedocs.io/en/latest/?badge=latest)
 
-## How it works ⚙️
+## Overview
 
-py-orc is built around two core components:
-  - YAML files for defining task control flows
-  - A Python library for compiling and executing control flows
+Orchestrator is a powerful, flexible AI pipeline orchestration framework that simplifies the creation and execution of complex AI workflows. By combining YAML-based configuration with intelligent model selection and automatic ambiguity resolution, Orchestrator makes it easy to build sophisticated AI applications without getting bogged down in implementation details.
 
-A task control flow looks something like this (ambiguous definitions or components are be sent to LLMs for parsing if enclosed by `<AUTO>...</AUTO>` tags, which can be nested):
-```yaml
-# pipelines/write-research-report.yaml
+### Key Features
 
-inputs:
- - topic: {report-topic}
- - instructions: {report-instructions}
+- 🎯 **YAML-Based Pipelines**: Define complex workflows in simple, readable YAML
+- 🤖 **Multi-Model Support**: Seamlessly work with OpenAI, Anthropic, Google, Ollama, and HuggingFace models
+- 🧠 **Intelligent Model Selection**: Automatically choose the best model based on task requirements
+- 🔄 **Automatic Ambiguity Resolution**: Use `<AUTO>` tags to let AI resolve configuration ambiguities
+- 📦 **Modular Architecture**: Extend with custom models, tools, and control systems
+- 🛡️ **Production Ready**: Built-in error handling, retries, checkpointing, and monitoring
+- ⚡ **Parallel Execution**: Efficient resource management and parallel task execution
+- 🐳 **Sandboxed Execution**: Secure code execution in isolated environments
+- 💾 **Lazy Model Loading**: Models are downloaded only when needed, saving disk space
 
-outputs:
- - pdf: <AUTO>come up with an appropriate filename for the final report</AUTO>
- - tex: {pdf}[:-3] + '.tex'  # text enclosed in curly braces can refer to keyword arguments, methods, variables, or outputs of pipeline steps
+## Quick Start
 
-pipeline:
- - web-search:
-  - action: <AUTO>search the web for <AUTO>construct an appropriate web query about {topic}, using these additional instructions: {instructions}</AUTO></AUTO>  # here "topic" and "instructions" are keyword arguments
-  - tool: headless-browser
-  - produces: <AUTO>markdown file with detailed notes on each relevant result with annotated links to original sources; other relevant files like images, code, data, etc., that can be saved locally</AUTO>
-  - location: ./searches/{pdf}/
-  - requires-model:
-   - min-size: 7B
-   - expertise: medium
- - compile-search-results:
-  - depends-on: web-search
-  - action: <AUTO>create a markdown file collating the content from {web-search} into a single cohesive document. maintain annotated links back to original sources.</AUTO>
-  - produces: markdown-file
-  - location: ./searches/{pdf}/compiled_results.md
-  - requires-model:
-    - min-size: 10B
-    - expertise: medium-high
- - quality-check-compilation:
-  - depends-on: compile-search-results
-  - requires-model:
-    - min-size: 7B
-    - expertise: medium
-  - action:
-    - create-parallel-queue:  # use the "on" attribute to create a list of tasks and execute each in parallel (omit "parallel" to execute sequentially)
-      - on: <AUTO>create a list of every source in this document: {compile-search-results}</AUTO>
-      - tool: headless-browser
-      - action-loop: # list of actions to loop through sequentially; if unspecified, inherit properties and requirements from parent
-        - action: <AUTO>verify the authenticity of this source (\#item) by following the web link and ensuring it is accurately described in {compile-search-results}</AUTO>  # use #item to refer to the current list/queue item; use square brackets to refer to specific *other* items
-          - name: verify
-          - produces: <AUTO>"true" if reference was verified, "<AUTO>corrected reference</AUTO>" if reference could be fixed with minor edits, or "false" if reference seems to be hallucinated</AUTO>
-        - action: <AUTO>if {verify} is "false", update {compilation-search-results} to remove the reference. if {verify} has a corrected reference, update {compilation-search-results} to use the corrected reference.</AUTO>
-        - until: <AUTO>all sources have been verified (or removed, if incorrect)</AUTO>
-  - produces: markdown-file
-  - location: ./searches/{pdf}/compiled_results_corrected.md
- - draft-report:
-  - depends-on: quality-check-compilation
-  - action <AUTO><<report_draft_prompt.md>></AUTO> # text between double angled brackets refers to filenames in the prompts/ folder
-  - produces: markdown-file
-  - requires-model:
-   - min-size: 20B
-   - expertise: high
-  - produces: markdown-file
-  - location: ./searches/{pdf}/draft_report.md
- - quality-check-assumptions:
-  - depends-on: draft-report
-  - requires-model:
-    - min-size: 20B
-    - expertise: high
-  - action:
-    - create-parallel-queue:
-      - on: <AUTO>create a comprehensive list of every non-trivial claim made in this document (include, for each claim, any sources or supporting evidence provided in the document): {draft-report}</AUTO>
-      - tool: headless-browser
-      - action-loop:
-        - action: <AUTO>verify the accuracy of this claim (\#item) by (a) doing a web search and (b) using logical reasoning and deductive inference *based only on the provided claim, sources, and supporting evidence. be sure to manually follow every source link to verify accuracy.</AUTO>
-          - name: claim-check
-          - produces: <AUTO>"true" if claim was verified, "<AUTO>corrected claim</AUTO>" if claim could be fixed with minor edits, or "false" if claim seems to be hallucinated</AUTO>
-        - action: <AUTO>if {claim-check} is "false", update {draft-report} to remove the claim. if {claim-check} has a corrected claim, update {draft-report} to use the corrected claim.</AUTO>
-        - until: <AUTO>all claims have been verified (or removed, if innacurate)</AUTO>
-  - produces: markdown-file
-  - location: ./searches/{pdf}/draft_report_corrected.md
- - quality-check-full-report:
-  - depends-on: draft-report
-  - requires-model:
-    - min-size: 40B
-    - expertise: very-high
-  - action: <AUTO>do a thorough pass through the this document. without adding *any* new claims or references, revise the document to improve (a) clarity, (b) logical flow, (c) grammar, and (d) writing quality: {quality-check-assumptions}</AUTO>
-  - produces: markdown-file
-  - location: ./searches/{pdf}/draft_report_final.md
- - compile-pdf
-  - depends-on: quality-check-full-report
-  - tool: terminal
-  - location: ./searches/{pdf}/report.pdf
-  - action: "!pandoc -o {location} {quality-check-full-report}"  # appending "!" runs a terminal command in a sandboxed environment
-  - requires-model: none
-  - produces: pdf
-  - on-error: debug-compilation
- - debug-compilation:
-  - requires-model:
-   - min-size: 40B
-   - expertise: very-high
-  - action-loop:
-   - action: <AUTO>carefully check the output logs in the current dirctory to see why compiling the pdf failed; use bash commands to update the document and/or run other bash commands as needed until {compile-pdf} is a valid pdf.</AUTO>
-   - tool: terminal
-   - until: <AUTO>{compile-pdf} is a valid pdf</AUTO>
-  - produces: pdf
-  - location: ./searches/{pdf}/report.pdf
+### Installation
+
+```bash
+pip install py-orc
 ```
 
-Given the above YAML file, the user calls this pipeline as follows:
+For additional features:
+```bash
+pip install py-orc[ollama]      # Ollama model support
+pip install py-orc[cloud]        # Cloud model providers
+pip install py-orc[dev]          # Development tools
+pip install py-orc[all]          # Everything
+```
+
+### Basic Usage
+
+1. **Create a simple pipeline** (`hello_world.yaml`):
+
+```yaml
+id: hello_world
+name: Hello World Pipeline
+description: A simple example pipeline
+
+steps:
+  - id: greet
+    action: generate_text
+    parameters:
+      prompt: "Say hello to the world in a creative way!"
+      
+  - id: translate
+    action: generate_text
+    parameters:
+      prompt: "Translate this greeting to Spanish: {{ greet.result }}"
+    dependencies: [greet]
+
+outputs:
+  greeting: "{{ greet.result }}"
+  spanish: "{{ translate.result }}"
+```
+
+2. **Run the pipeline**:
+
 ```python
 import orchestrator as orc
 
-orc.init_models()  # initializes the pool of available models by reading models.yaml, along with examining environment variables or secrets (if running in Colab or a GitHub action) for relevant API keys
-report_writer = orc.compile('pipelines/write-research-report.yaml')  # parse the pipeline into a callable OrchestratorPipeline object
-# prints out:
-# >> keyword arguments:
-# >>   topic: a word or underscore-separated phrase specifying the to-be-researched topic (type: String)
-# >>   instructions: detailed instructions to help guide the report, specify areas of particular interest (or areas to stay away from), etc. (type: String)
+# Initialize models (auto-detects available models)
+orc.init_models()
 
-# generate the report by running the pipeline
-report = report_writer.run(topic='agents', instructions='Teach me everything about how AI agents work, how to create them, and how to use them. Be sure to include example use cases and cite specific studies and resources-- especially Python toolboxes and open source tools.')
+# Compile and run the pipeline
+pipeline = orc.compile("hello_world.yaml")
+result = pipeline.run()
+
+print(result)
 ```
 
-## Under the Hood 🛠️
+### Using AUTO Tags
 
-Calling the `orc.compile` function on a pipeline's YAML file automatically:
- - Uses [LangGraph](https://langchain-ai.github.io/langgraph) to define a [StateGraph](https://langchain-ai.github.io/langgraph/tutorials/get-started/1-build-basic-chatbot/#2-create-a-stategraph) by parsing the file
- - Compiles a set of "tools" that will be used in the pipeline, and exposes them (via LangGraph's [`bind_tools`](https://langchain-ai.github.io/langgraph/tutorials/get-started/2-add-tools/) method and `BasicToolNode` object, and through the [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)).
- - Defines [structured outputs](https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#structured-output) for each type of output, based on the `-produces` attribute of the given task.
- - Uses the best-available LLM (via API calls or running locally) to resolve ambiguities in nodes, tools, and/or structured outputs; also generates human-readable descriptions of each keyword argument that will be exposed to the user
- - Returns a callable `OrchestratorPipeline` object that supports the given keyword arguments
+Orchestrator's `<AUTO>` tags let AI decide configuration details:
+
+```yaml
+steps:
+  - id: analyze_data
+    action: analyze
+    parameters:
+      data: "{{ input_data }}"
+      method: <AUTO>Choose the best analysis method for this data type</AUTO>
+      visualization: <AUTO>Decide if we should create a chart</AUTO>
+```
+
+## Model Configuration
+
+Configure available models in `models.yaml`:
+
+```yaml
+models:
+  # Local models (via Ollama) - downloaded on first use
+  - source: ollama
+    name: llama3.1:8b
+    expertise: [general, reasoning, multilingual]
+    size: 8b
+    
+  - source: ollama
+    name: qwen2.5-coder:7b
+    expertise: [code, programming]
+    size: 7b
+
+  # Cloud models
+  - source: openai
+    name: gpt-4o
+    expertise: [general, reasoning, code, analysis, vision]
+    size: 1760b  # Estimated
+
+defaults:
+  expertise_preferences:
+    code: qwen2.5-coder:7b
+    reasoning: deepseek-r1:8b
+    fast: llama3.2:1b
+```
+
+Models are downloaded only when first used, saving disk space and initialization time.
+
+## Advanced Example
+
+Here's a more complex example showing model requirements and parallel execution:
+
+```yaml
+id: research_pipeline
+name: AI Research Pipeline
+description: Research a topic and create a comprehensive report
+
+inputs:
+  - name: topic
+    type: string
+    description: Research topic
+    
+  - name: depth
+    type: string
+    default: <AUTO>Determine appropriate research depth</AUTO>
+
+steps:
+  # Parallel research from multiple sources
+  - id: web_search
+    action: search_web
+    parameters:
+      query: "{{ topic }} latest research 2025"
+      count: <AUTO>Decide how many results to fetch</AUTO>
+    requires_model:
+      expertise: [research, web]
+      
+  - id: academic_search
+    action: search_academic
+    parameters:
+      query: "{{ topic }}"
+      filters: <AUTO>Set appropriate academic filters</AUTO>
+    requires_model:
+      expertise: [research, academic]
+      
+  # Analyze findings with specialized model
+  - id: analyze_findings
+    action: analyze
+    parameters:
+      web_results: "{{ web_search.results }}"
+      academic_results: "{{ academic_search.results }}"
+      analysis_focus: <AUTO>Determine key aspects to analyze</AUTO>
+    dependencies: [web_search, academic_search]
+    requires_model:
+      expertise: [analysis, reasoning]
+      min_size: 20b  # Require large model for complex analysis
+      
+  # Generate report
+  - id: write_report
+    action: generate_document
+    parameters:
+      topic: "{{ topic }}"
+      analysis: "{{ analyze_findings.result }}"
+      style: <AUTO>Choose appropriate writing style</AUTO>
+      length: <AUTO>Determine optimal report length</AUTO>
+    dependencies: [analyze_findings]
+    requires_model:
+      expertise: [writing, general]
+
+outputs:
+  report: "{{ write_report.document }}"
+  summary: "{{ analyze_findings.summary }}"
+```
+
+## Complete Example: Research Report Generator
+
+Here's a fully functional pipeline that generates research reports:
+
+```yaml
+# research_report.yaml
+id: research_report
+name: Research Report Generator
+description: Generate comprehensive research reports with citations
+
+inputs:
+  - name: topic
+    type: string
+    description: Research topic
+  - name: instructions
+    type: string
+    description: Additional instructions for the report
+
+outputs:
+  - pdf: <AUTO>Generate appropriate filename for the research report PDF</AUTO>
+
+steps:
+  - id: search
+    name: Web Search
+    action: search_web
+    parameters:
+      query: <AUTO>Create effective search query for {topic} with {instructions}</AUTO>
+      max_results: 10
+    requires_model:
+      expertise: fast
+      
+  - id: compile_notes
+    name: Compile Research Notes
+    action: generate_text
+    parameters:
+      prompt: |
+        Compile comprehensive research notes from these search results:
+        {{ search.results }}
+        
+        Topic: {{ topic }}
+        Instructions: {{ instructions }}
+        
+        Create detailed notes with:
+        - Key findings
+        - Important quotes
+        - Source citations
+        - Relevant statistics
+    dependencies: [search]
+    requires_model:
+      expertise: [analysis, reasoning]
+      min_size: 7b
+      
+  - id: write_report
+    name: Write Report
+    action: generate_document
+    parameters:
+      content: |
+        Write a comprehensive research report on "{{ topic }}"
+        
+        Research notes:
+        {{ compile_notes.result }}
+        
+        Requirements:
+        - Professional academic style
+        - Include introduction, body sections, and conclusion
+        - Cite sources properly
+        - {{ instructions }}
+      format: markdown
+    dependencies: [compile_notes]
+    requires_model:
+      expertise: [writing, general]
+      min_size: 20b
+      
+  - id: create_pdf
+    name: Create PDF
+    action: convert_to_pdf
+    parameters:
+      markdown: "{{ write_report.document }}"
+      filename: "{{ outputs.pdf }}"
+    dependencies: [write_report]
+```
+
+Run it with:
+
+```python
+import orchestrator as orc
+
+# Initialize models
+orc.init_models()
+
+# Compile pipeline
+pipeline = orc.compile("research_report.yaml")
+
+# Run with inputs
+result = pipeline.run(
+    topic="quantum computing applications in medicine",
+    instructions="Focus on recent breakthroughs and future potential"
+)
+
+print(f"Report saved to: {result}")
+```
+
+## Documentation
+
+Comprehensive documentation is available at [orc.readthedocs.io](https://orc.readthedocs.io/), including:
+
+- [Getting Started Guide](https://orc.readthedocs.io/en/latest/getting_started/quickstart.html)
+- [YAML Configuration Reference](https://orc.readthedocs.io/en/latest/user_guide/yaml_configuration.html)
+- [Model Configuration](https://orc.readthedocs.io/en/latest/user_guide/model_configuration.html)
+- [API Reference](https://orc.readthedocs.io/en/latest/api/core.html)
+- [Examples and Tutorials](https://orc.readthedocs.io/en/latest/tutorials/examples.html)
+
+## Available Models
+
+Orchestrator supports a wide range of models:
+
+### Local Models (via Ollama)
+- **Llama 3.x**: General purpose, multilingual support
+- **DeepSeek-R1**: Advanced reasoning and coding
+- **Qwen2.5-Coder**: Specialized for code generation
+- **Mistral**: Fast and efficient general purpose
+- **Gemma3**: Google's efficient models in various sizes
+
+### Cloud Models
+- **OpenAI**: GPT-4.1, GPT-4o, o3, o4-mini (reasoning models)
+- **Anthropic**: Claude 4 Opus/Sonnet, Claude 3.7 Sonnet
+- **Google**: Gemini 2.5 Pro/Flash, Gemini 2.0 series
+
+### HuggingFace Models
+- Llama, Qwen, Phi, and many more
+- Automatically downloaded on first use
+
+## Requirements
+
+- Python 3.8+
+- Optional: Ollama for local model execution
+- Optional: API keys for cloud providers (OpenAI, Anthropic, Google)
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](https://github.com/ContextLab/orchestrator/blob/main/CONTRIBUTING.md) for details.
+
+## Support
+
+- 📚 [Documentation](https://orc.readthedocs.io/)
+- 🐛 [Issue Tracker](https://github.com/ContextLab/orchestrator/issues)
+- 💬 [Discussions](https://github.com/ContextLab/orchestrator/discussions)
+- 📧 Email: contextualdynamics@gmail.com
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/ContextLab/orchestrator/blob/main/LICENSE) file for details.
+
+## Citation
+
+If you use Orchestrator in your research, please cite:
+
+```bibtex
+@software{orchestrator2025,
+  title = {Orchestrator: AI Pipeline Orchestration Framework},
+  author = {Manning, Jeremy R. and {Contextual Dynamics Lab}},
+  year = {2025},
+  url = {https://github.com/ContextLab/orchestrator},
+  organization = {Dartmouth College}
+}
+```
+
+## Acknowledgments
+
+Orchestrator is developed and maintained by the [Contextual Dynamics Lab](https://www.context-lab.com/) at Dartmouth College.
+
+---
+
+*Built with ❤️ by the Contextual Dynamics Lab*

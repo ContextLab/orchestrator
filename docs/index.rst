@@ -183,6 +183,7 @@ This documentation is organized into several sections:
 
    development/contributing
    development/testing
+   development/github_actions
    development/architecture
 
 Community & Support
