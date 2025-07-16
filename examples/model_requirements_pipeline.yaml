@@ -1,0 +1,70 @@
+# Example pipeline demonstrating model requirements
+
+id: model_requirements_demo
+name: Model Requirements Demo
+description: Demonstrates how to specify model expertise and size requirements
+
+inputs:
+  - name: topic
+    type: string
+    description: Topic to analyze
+
+outputs:
+  - summary: "{summarize.result}"
+  - code: "{generate_code.result}"
+  - analysis: "{deep_analysis.result}"
+
+steps:
+  # Fast task with small model
+  - id: quick_summary
+    name: Quick Summary
+    action: generate_text
+    parameters:
+      prompt: "Give a brief 2-sentence summary of: {topic}"
+    requires_model:
+      expertise: fast
+      min_size: 0  # Any size model
+
+  # Code generation requiring specialized model
+  - id: generate_code
+    name: Generate Example Code
+    action: generate_text
+    parameters:
+      prompt: |
+        Generate Python code that demonstrates the concept of {topic}.
+        Include comments and a simple example.
+    requires_model:
+      expertise: code
+      min_size: 7b  # At least 7B parameters for good code
+
+  # Complex analysis requiring large model
+  - id: deep_analysis
+    name: Deep Analysis
+    action: analyze
+    parameters:
+      content: "{topic}"
+      analysis_type: comprehensive
+      depth: detailed
+    requires_model:
+      expertise: 
+        - reasoning
+        - analysis
+      min_size: 20b  # Large model for complex reasoning
+
+  # Use specific model by name
+  - id: summarize
+    name: Final Summary
+    action: generate_text
+    parameters:
+      prompt: |
+        Based on the following information:
+        - Quick summary: {quick_summary.result}
+        - Code example: {generate_code.result}
+        - Analysis: {deep_analysis.result}
+        
+        Provide a comprehensive summary of {topic}.
+    requires_model: gemma2:27b  # Specific model by name
+    dependencies:
+      - quick_summary
+      - generate_code
+      - deep_analysis

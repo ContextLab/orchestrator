@@ -1,10 +1,8 @@
 """Control system with integrated tool support."""
 
-import asyncio
 from datetime import datetime
-import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 import sys
 import os
 
@@ -89,7 +87,7 @@ class ToolIntegratedControlSystem(MockControlSystem):
             result = await self.tool_server.handle_tool_call(tool_name, tool_params)
             
             if result.get("success", False):
-                print(f"   ✅ Tool execution successful")
+                print("   ✅ Tool execution successful")
                 return result.get("result", {})
             else:
                 print(f"   ❌ Tool execution failed: {result.get('error', 'Unknown error')}")
@@ -194,7 +192,7 @@ class ToolIntegratedControlSystem(MockControlSystem):
         content = task.parameters.get("content", {})
         instruction = task.parameters.get("instruction", "Compile results")
         
-        print(f"   📚 Compiling markdown...")
+        print("   📚 Compiling markdown...")
         
         if isinstance(content, dict) and "results" in content:
             results = content["results"]
@@ -338,7 +336,7 @@ See compiled research results for detailed source citations.
         draft = task.parameters.get("draft", {})
         validation = task.parameters.get("validation", {})
         
-        print(f"   📄 Finalizing report")
+        print("   📄 Finalizing report")
         
         draft_content = draft.get("content", "") if isinstance(draft, dict) else str(draft)
         

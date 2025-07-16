@@ -7,11 +7,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.core.model import Model
-from src.orchestrator.integrations.anthropic_model import AnthropicModel
-from src.orchestrator.integrations.openai_model import OpenAIModel
 
 
 async def mock_search(task):

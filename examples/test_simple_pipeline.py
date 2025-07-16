@@ -7,9 +7,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from orchestrator.orchestrator import Orchestrator
-from orchestrator.core.control_system import MockControlSystem, ControlAction
+from orchestrator.core.control_system import MockControlSystem
 from orchestrator.core.task import Task
-from orchestrator.core.pipeline import Pipeline
 
 
 # Mock actions for testing
@@ -43,7 +42,7 @@ async def mock_analyze(task):
 async def mock_summarize(task):
     """Mock summarize action."""
     content = task.parameters.get("content", {})
-    print(f"[Summarize] Creating summary")
+    print("[Summarize] Creating summary")
     return {
         "summary": "# Research Summary\n\n- Key finding 1\n- Key finding 2\n- Key finding 3\n\nAnalysis complete."
     }

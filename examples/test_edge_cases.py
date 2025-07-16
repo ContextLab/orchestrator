@@ -8,8 +8,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import MockControlSystem
-from orchestrator.core.task import Task
-from orchestrator.core.model import Model, ModelCapabilities
 
 
 async def test_edge_cases():
@@ -67,7 +65,7 @@ steps:
         results = await orchestrator.execute_yaml(invalid_yaml, context={})
         print("  ❌ Should have failed with invalid YAML")
         tests.append(False)
-    except Exception as e:
+    except Exception:
         print("  ✅ Correctly rejected invalid YAML")
         tests.append(True)
     
@@ -88,7 +86,7 @@ steps:
         results = await orchestrator.execute_yaml(circular_yaml, context={})
         print("  ❌ Should have detected circular dependency")
         tests.append(False)
-    except Exception as e:
+    except Exception:
         print("  ✅ Correctly detected circular dependency")
         tests.append(True)
     
@@ -132,7 +130,7 @@ steps:
         )
         print("  ❌ Should have failed with missing context")
         tests.append(False)
-    except Exception as e:
+    except Exception:
         print("  ✅ Correctly handled missing required context")
         tests.append(True)
     

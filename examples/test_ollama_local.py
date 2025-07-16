@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Local Ollama testing - only runs when Ollama is available."""
 
-import asyncio
 import sys
 import os
 import subprocess

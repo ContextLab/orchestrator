@@ -4,7 +4,6 @@
 import asyncio
 import sys
 import os
-import json
 from pathlib import Path
 from datetime import datetime
 
@@ -90,7 +89,7 @@ class SimpleResearchControlSystem(MockControlSystem):
         """Compile search results."""
         data = task.parameters.get("data", {})
         
-        print(f"\n📚 [COMPILE] Compiling results...")
+        print("\n📚 [COMPILE] Compiling results...")
         
         results = data.get("results", [])
         

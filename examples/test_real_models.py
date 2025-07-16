@@ -4,17 +4,13 @@
 import asyncio
 import sys
 import os
-import json
 import traceback
-from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import MockControlSystem
 from orchestrator.core.task import Task
-from orchestrator.integrations.ollama_model import OllamaModel
-from orchestrator.integrations.huggingface_model import HuggingFaceModel
 
 
 class RealModelControlSystem(MockControlSystem):
@@ -200,7 +196,7 @@ async def test_real_auto_resolution():
                 print(f"❌ Failed to resolve '{content}': {e}")
                 return False
         
-        print(f"\n✅ All AUTO resolution tests passed!")
+        print("\n✅ All AUTO resolution tests passed!")
         return True
         
     except Exception as e:
@@ -265,7 +261,7 @@ steps:
         
         results = await orchestrator.execute_yaml(pipeline_yaml, context=context)
         
-        print(f"\n✅ Pipeline executed successfully!")
+        print("\n✅ Pipeline executed successfully!")
         print(f"📊 Tasks completed: {len(results)}")
         
         # Verify results
@@ -282,7 +278,7 @@ steps:
                     count = len(result["results"])
                     print(f"   🔎 Retrieved {count} search results")
                 else:
-                    print(f"   ✓ Completed successfully")
+                    print("   ✓ Completed successfully")
         
         return True
         

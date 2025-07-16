@@ -514,7 +514,7 @@ async def run_research_pipeline():
         if quality_check.get("validation_passed"):
             print(f"\n✅ Quality Check: PASSED (Score: {quality_check.get('quality_score', 0):.0%})")
         else:
-            print(f"\n⚠️  Quality Check: NEEDS IMPROVEMENT")
+            print("\n⚠️  Quality Check: NEEDS IMPROVEMENT")
             if quality_check.get("issues"):
                 print("   Issues found:")
                 for issue in quality_check["issues"]:
@@ -532,7 +532,7 @@ async def run_research_pipeline():
             print(f"\n💾 Report saved to: {report_path}")
             
             # Display report statistics
-            print(f"\n📊 Report Statistics:")
+            print("\n📊 Report Statistics:")
             print(f"   Word count: {final_report.get('word_count', 'N/A')}")
             print(f"   Quality score: {final_report.get('quality_score', 0):.0%}")
             print(f"   Sections: {results.get('draft_report', {}).get('sections', 'N/A')}")
@@ -565,7 +565,7 @@ async def examine_report_quality():
     with open(report_path, "r") as f:
         report_content = f.read()
     
-    print(f"\n📄 Report Analysis:")
+    print("\n📄 Report Analysis:")
     print(f"   File: {report_path}")
     print(f"   Size: {len(report_content)} characters")
     print(f"   Words: {len(report_content.split())}")

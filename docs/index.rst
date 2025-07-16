@@ -141,6 +141,7 @@ This documentation is organized into several sections:
    :caption: User Guide
 
    user_guide/yaml_configuration
+   user_guide/model_configuration
    user_guide/models_and_adapters
    user_guide/error_handling
    user_guide/resource_management

@@ -1,10 +1,9 @@
 """Control system for research report generation following README design."""
 
-import asyncio
 from datetime import datetime
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from orchestrator.core.control_system import MockControlSystem
 from orchestrator.core.task import Task, TaskStatus
@@ -588,7 +587,7 @@ The field of AI agents is rapidly evolving with trends including:
         validation = task.parameters.get("validation", {})
         improvements = task.parameters.get("improvements", [])
         
-        print(f"   📄 Finalizing report")
+        print("   📄 Finalizing report")
         
         draft_content = draft.get("content", "") if isinstance(draft, dict) else str(draft)
         overall_score = validation.get("overall_score", 0) if isinstance(validation, dict) else 0.8

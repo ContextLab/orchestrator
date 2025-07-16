@@ -29,46 +29,107 @@ _model_registry = None
 _orchestrator = None
 
 
-def init_models():
+def init_models(config_path: str = "models.yaml"):
     """Initialize the pool of available models by reading models.yaml and environment."""
     global _model_registry
+    
+    from .utils.model_utils import load_model_config, parse_model_size, check_ollama_model, install_ollama_model
+    from .integrations.anthropic_model import AnthropicModel
+    from .integrations.google_model import GoogleModel
+    from .integrations.openai_model import OpenAIModel
+    import os
 
     print(">> Initializing model pool...")
 
     _model_registry = ModelRegistry()
-
-    # Check for available models
-    # Try Ollama first (prefer larger models)
-    try:
-        # Try gemma2:27b first
-        model = OllamaModel(model_name="gemma2:27b", timeout=60)
-        if model._is_available:
-            _model_registry.register_model(model)
-            print(f">>   ✅ Registered Ollama model: gemma2:27b")
-        else:
-            print(f">>   ⚠️  gemma2:27b not available")
-    except Exception as e:
-        print(f">>   ⚠️  Error checking gemma2:27b: {e}")
-
-    try:
-        # Fallback to smaller model
-        model = OllamaModel(model_name="llama3.2:1b", timeout=30)
-        if model._is_available:
-            _model_registry.register_model(model)
-            print(f">>   ✅ Registered Ollama model: llama3.2:1b")
-    except:
-        pass
-
-    # Try HuggingFace
-    try:
-        hf_model = HuggingFaceModel()
-        _model_registry.register_model(hf_model)
-        print(f">>   ✅ Registered HuggingFace model: {hf_model.name}")
-    except:
-        pass
+    
+    # Load model configuration
+    config = load_model_config(config_path)
+    models_config = config.get("models", [])
+    
+    # Process each model in configuration
+    for model_config in models_config:
+        source = model_config.get("source")
+        name = model_config.get("name")
+        expertise = model_config.get("expertise", ["general"])
+        size_str = model_config.get("size")
+        
+        if not source or not name:
+            continue
+            
+        # Parse model size
+        size_billions = parse_model_size(name, size_str)
+        
+        try:
+            if source == "ollama":
+                # Check if model is available, install if needed
+                if not check_ollama_model(name):
+                    if install_ollama_model(name):
+                        # Model was successfully installed
+                        pass
+                    else:
+                        # Skip this model if installation failed
+                        continue
+                
+                # Create and register the model
+                model = OllamaModel(model_name=name, timeout=60)
+                model._expertise = expertise  # Add expertise info
+                model._size_billions = size_billions
+                if model._is_available:
+                    _model_registry.register_model(model)
+                    print(f">>   ✅ Registered Ollama model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                    
+            elif source == "huggingface":
+                # Check if transformers is available
+                try:
+                    import transformers
+                    import torch
+                    
+                    # HuggingFace models are downloaded automatically on first use
+                    hf_model = HuggingFaceModel(model_name=name)
+                    hf_model._expertise = expertise
+                    hf_model._size_billions = size_billions
+                    _model_registry.register_model(hf_model)
+                    print(f">>   ✅ Registered HuggingFace model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                    print(">>      Model will be downloaded on first use")
+                except ImportError:
+                    print(f">>   ⚠️  HuggingFace model {name} configured but transformers not installed")
+                    print(">>      Install with: pip install transformers torch")
+                except Exception as e:
+                    print(f">>   ⚠️  Failed to register HuggingFace model {name}: {e}")
+                    
+            elif source == "openai" and os.environ.get("OPENAI_API_KEY"):
+                # Only register if API key is available
+                model = OpenAIModel(name=name, model=name)
+                model._expertise = expertise
+                model._size_billions = size_billions
+                _model_registry.register_model(model)
+                print(f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                
+            elif source == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
+                # Only register if API key is available
+                model = AnthropicModel(name=name, model=name)
+                model._expertise = expertise
+                model._size_billions = size_billions
+                _model_registry.register_model(model)
+                print(f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                
+            elif source == "google" and os.environ.get("GOOGLE_API_KEY"):
+                # Only register if API key is available
+                model = GoogleModel(name=name, model=name)
+                model._expertise = expertise
+                model._size_billions = size_billions
+                _model_registry.register_model(model)
+                print(f">>   ✅ Registered Google model: {name} ({size_billions}B params, expertise: {', '.join(expertise)})")
+                
+        except Exception as e:
+            print(f">>   ⚠️  Error registering {source} model {name}: {e}")
 
     if not _model_registry.list_models():
         print(">>   ⚠️  No models available - using mock fallback")
+        
+    # Store defaults in registry for later use
+    _model_registry._defaults = config.get("defaults", {})
 
     return _model_registry
 
@@ -237,7 +298,7 @@ class OrchestratorPipeline:
                 try:
                     template = Template(obj)
                     return template.render(**context)
-                except Exception as e:
+                except Exception:
                     # If template resolution fails, return original
                     return obj
             return obj

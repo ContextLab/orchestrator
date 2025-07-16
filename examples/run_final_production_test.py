@@ -152,7 +152,7 @@ class FinalProductionControlSystem(MockControlSystem):
         
         # Build summary
         if format == "markdown":
-            summary = f"# Summary Report\n\n"
+            summary = "# Summary Report\n\n"
             summary += f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
             summary += f"**Format**: {format}\n"
             summary += f"**Length**: {length}\n\n"

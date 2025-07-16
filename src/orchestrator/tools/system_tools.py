@@ -1,11 +1,9 @@
 """System-level tools for terminal commands and file operations."""
 
 import asyncio
-import os
 import shutil
-import subprocess
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from .base import Tool
 

@@ -63,7 +63,7 @@ async def mock_analyze_code(task):
 async def mock_find_issues(task):
     """Mock issue identification."""
     analysis = task.parameters.get("analysis", {})
-    print(f"[Find Issues] Identifying optimization opportunities")
+    print("[Find Issues] Identifying optimization opportunities")
     return {
         "issues": [
             {
@@ -102,7 +102,7 @@ async def mock_optimize(task):
 
 async def mock_validate(task):
     """Mock validation."""
-    print(f"[Validate] Validating optimized code")
+    print("[Validate] Validating optimized code")
     return {
         "valid": True,
         "tests_passed": True,
@@ -117,7 +117,7 @@ async def mock_validate(task):
 
 async def mock_report(task):
     """Mock report generation."""
-    print(f"[Report] Generating optimization report")
+    print("[Report] Generating optimization report")
     return {
         "document": """# Code Optimization Report
 
@@ -293,7 +293,7 @@ async def test_code_optimization():
         if "generate_fixes" in results:
             fixes = results["generate_fixes"]
             if isinstance(fixes, dict) and "estimated_improvement" in fixes:
-                print(f"\nEstimated Improvements:")
+                print("\nEstimated Improvements:")
                 for metric, value in fixes["estimated_improvement"].items():
                     print(f"  - {metric}: {value}")
         

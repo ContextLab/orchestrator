@@ -64,7 +64,7 @@ async def main():
                     with open(report_path, 'r') as f:
                         content = f.read()
                     
-                    print(f"\n📊 Report Statistics:")
+                    print("\n📊 Report Statistics:")
                     print(f"   Word count: {len(content.split())}")
                     print(f"   Characters: {len(content)}")
                     print(f"   Lines: {len(content.splitlines())}")
@@ -97,7 +97,7 @@ async def main():
                     else:
                         print("   Grade: C - Basic report, needs enhancement")
             else:
-                print(f"\n📊 Pipeline Results:")
+                print("\n📊 Pipeline Results:")
                 for key, value in report.items():
                     if isinstance(value, dict) and 'file' in value:
                         print(f"   {key}: saved to {value['file']}")

@@ -5,7 +5,6 @@ import asyncio
 import sys
 import os
 import json
-import csv
 import time
 from pathlib import Path
 from datetime import datetime
@@ -557,7 +556,7 @@ def verify_output_quality(results, pipeline_name):
                 issues.append(f"{task_id}: Invalid report format or too short")
     
     # Summary
-    print(f"\n📊 QUALITY VERIFICATION SUMMARY")
+    print("\n📊 QUALITY VERIFICATION SUMMARY")
     print("-" * 40)
     
     all_passed = all(quality_checks.values())

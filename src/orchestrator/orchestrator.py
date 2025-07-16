@@ -541,20 +541,41 @@ class Orchestrator:
         self, task: Task, context: Dict[str, Any]
     ) -> Optional[Any]:
         """Select appropriate model for task execution."""
-        # Check if task specifies a model
+        # Check if task specifies model requirements
         if "requires_model" in task.metadata:
-            model_name = task.metadata["requires_model"]
-            return self.model_registry.get_model(model_name)
+            model_req = task.metadata["requires_model"]
+            
+            # Handle string format (specific model name)
+            if isinstance(model_req, str):
+                return self.model_registry.get_model(model_req)
+            
+            # Handle dict format (requirements)
+            if isinstance(model_req, dict):
+                requirements = {
+                    "tasks": [task.action],
+                    "context_window": len(str(task.parameters).encode()) // 4,  # Rough token estimate
+                }
+                # Merge task-specific requirements
+                requirements.update(model_req)
+                
+                return await self.model_registry.select_model(requirements)
 
         # Check if task requires AI capabilities
-        if task.action in ["generate", "analyze", "transform", "chat"]:
-            # Select best model for the task
+        if task.action in ["generate", "analyze", "transform", "chat", "generate_text"]:
+            # Infer requirements based on task action
             requirements = {
                 "tasks": [task.action],
-                "context_window": len(str(task.parameters).encode())
-                // 4,  # Rough token estimate
+                "context_window": len(str(task.parameters).encode()) // 4,  # Rough token estimate
             }
-
+            
+            # Add default expertise based on action
+            if task.action in ["generate_text", "generate"]:
+                requirements["expertise"] = ["general"]
+            elif task.action == "analyze":
+                requirements["expertise"] = ["reasoning", "analysis"]
+            elif task.action == "transform":
+                requirements["expertise"] = ["general"]
+                
             return await self.model_registry.select_model(requirements)
 
         return None
@@ -574,6 +595,11 @@ class Orchestrator:
         default_model.set_response("analyze", {"analysis": "Analysis result"})
         default_model.set_response("transform", {"transformed": "Transformed data"})
         default_model.set_response("chat", "Chat response")
+        default_model.set_response("generate_text", "Generated text content")
+        
+        # Add metadata for expertise and size
+        default_model._expertise = ["general", "reasoning", "analysis", "code", "fast"]
+        default_model._size_billions = 1.0
 
         self.model_registry.register_model(default_model)
 

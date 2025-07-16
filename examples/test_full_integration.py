@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import orchestrator as orc
-from orchestrator.tools.mcp_server import default_mcp_server, default_tool_detector
+from orchestrator.tools.mcp_server import default_tool_detector
 from orchestrator.tools.base import default_registry
 
 # Import the tool integrated control system
@@ -92,7 +92,7 @@ async def test_input_agnostic_pipeline():
                     instructions=instructions
                 )
                 
-                print(f"      ✅ Pipeline completed successfully")
+                print("      ✅ Pipeline completed successfully")
                 
                 # Check output
                 if isinstance(result, dict):
@@ -114,7 +114,7 @@ async def test_input_agnostic_pipeline():
             except Exception as e:
                 print(f"      ❌ Pipeline failed: {e}")
         
-        print(f"\n4️⃣ Testing tool integration...")
+        print("\n4️⃣ Testing tool integration...")
         
         # Test individual tools
         available_tools = default_registry.list_tools()
@@ -132,7 +132,7 @@ async def test_input_agnostic_pipeline():
                     results = search_result.get("results", [])
                     print(f"      ✅ Found {len(results)} search results")
                 else:
-                    print(f"      ⚠️  Search simulation completed")
+                    print("      ⚠️  Search simulation completed")
             except Exception as e:
                 print(f"      ❌ Search tool error: {e}")
         
@@ -148,7 +148,7 @@ async def test_input_agnostic_pipeline():
                     output = terminal_result.get("stdout", "").strip()
                     print(f"      ✅ Command output: {output}")
                 else:
-                    print(f"      ⚠️  Terminal simulation completed")
+                    print("      ⚠️  Terminal simulation completed")
             except Exception as e:
                 print(f"      ❌ Terminal tool error: {e}")
         
@@ -178,13 +178,13 @@ async def test_input_agnostic_pipeline():
                         content = read_result.get("content", "")
                         print(f"      ✅ File operations: {len(content)} characters written and read")
                     else:
-                        print(f"      ⚠️  File read failed")
+                        print("      ⚠️  File read failed")
                 else:
-                    print(f"      ⚠️  File write failed")
+                    print("      ⚠️  File write failed")
             except Exception as e:
                 print(f"      ❌ Filesystem tool error: {e}")
         
-        print(f"\n5️⃣ Summary of capabilities demonstrated:")
+        print("\n5️⃣ Summary of capabilities demonstrated:")
         print("   ✅ Input-agnostic pipeline execution")
         print("   ✅ Multiple topic processing with same pipeline")
         print("   ✅ Tool auto-detection from YAML")

@@ -1,0 +1,105 @@
+# Orchestrator Model Configuration
+# This file defines available models and their capabilities
+
+models:
+  # Ollama models (automatically installed if not present)
+  - source: ollama
+    name: gemma2:27b
+    expertise: 
+      - general
+      - reasoning
+      - analysis
+    size: 27b
+    
+  - source: ollama
+    name: llama3.2:1b
+    expertise:
+      - general
+      - fast
+    size: 1b
+    
+  - source: ollama
+    name: codellama:7b
+    expertise:
+      - code
+      - programming
+    size: 7b
+    
+  - source: ollama
+    name: mistral:7b-instruct
+    expertise:
+      - instruct
+      - general
+    size: 7b
+    
+  # HuggingFace models (automatically downloaded if not present)
+  - source: huggingface
+    name: distilgpt2
+    expertise:
+      - text-generation
+      - fast
+    size: 82m
+    
+  - source: huggingface
+    name: microsoft/phi-2
+    expertise:
+      - reasoning
+      - code
+    size: 2.7b
+    
+  # Cloud models (require API keys)
+  - source: openai
+    name: gpt-4
+    expertise:
+      - general
+      - reasoning
+      - code
+      - analysis
+    size: 1.76t  # Estimated
+    
+  - source: openai
+    name: gpt-3.5-turbo
+    expertise:
+      - general
+      - fast
+    size: 175b
+    
+  - source: anthropic
+    name: claude-3-opus
+    expertise:
+      - general
+      - reasoning
+      - analysis
+      - code
+    size: 2t  # Estimated
+    
+  - source: anthropic
+    name: claude-3-sonnet
+    expertise:
+      - general
+      - fast
+    size: 200b  # Estimated
+    
+  - source: google
+    name: gemini-pro
+    expertise:
+      - general
+      - multimodal
+      - reasoning
+    size: 1.5t  # Estimated
+
+# Default model selection preferences
+defaults:
+  # Preferred model for different expertise areas
+  expertise_preferences:
+    code: codellama:7b
+    reasoning: gemma2:27b
+    fast: llama3.2:1b
+    general: gemma2:27b
+    
+  # Fallback chain if preferred models are not available
+  fallback_chain:
+    - gemma2:27b
+    - mistral:7b-instruct
+    - llama3.2:1b
+    - distilgpt2

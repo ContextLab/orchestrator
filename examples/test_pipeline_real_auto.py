@@ -123,7 +123,7 @@ steps:
         print("\n⚙️  Executing pipeline...")
         results = await orchestrator.execute_yaml(pipeline_yaml, context={})
         
-        print(f"✅ Pipeline completed!")
+        print("✅ Pipeline completed!")
         print(f"📊 Tasks: {len(results)}")
         
         # Check results

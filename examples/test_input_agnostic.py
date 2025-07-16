@@ -96,9 +96,9 @@ async def test_input_agnostic_pipeline():
     print("   - AUTO tag resolution for outputs")
     print("   - Runtime parameter customization")
     print("\n📄 Reports generated:")
-    print(f"   - Quantum Computing report")
-    print(f"   - Renewable Energy report") 
-    print(f"   - Machine Learning report")
+    print("   - Quantum Computing report")
+    print("   - Renewable Energy report") 
+    print("   - Machine Learning report")
     
     return True
 

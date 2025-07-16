@@ -7,14 +7,12 @@ import os
 import json
 import csv
 import traceback
-from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import MockControlSystem
 from orchestrator.core.task import Task
-from orchestrator.core.model import Model, ModelCapabilities
 
 
 class RealProcessingControlSystem(MockControlSystem):
@@ -600,7 +598,7 @@ async def run_pipeline_with_verification(pipeline_file, test_name, context):
         # Execute pipeline
         results = await orchestrator.execute_yaml(pipeline_yaml, context=context)
         
-        print(f"\\n✅ Pipeline executed successfully!")
+        print("\\n✅ Pipeline executed successfully!")
         print(f"📊 Tasks completed: {len(results)}")
         
         # Verify and display results
@@ -640,7 +638,7 @@ async def run_pipeline_with_verification(pipeline_file, test_name, context):
                     print(f"   📈 {result['processing_summary']}")
                     
                 else:
-                    print(f"   ✓ Completed successfully")
+                    print("   ✓ Completed successfully")
                     
                 # Check for any errors
                 if "error" in result or result.get("status") == "failed":
@@ -652,7 +650,7 @@ async def run_pipeline_with_verification(pipeline_file, test_name, context):
         return success, results
         
     except Exception as e:
-        print(f"\\n❌ Pipeline failed with error:")
+        print("\\n❌ Pipeline failed with error:")
         print(f"   Error: {str(e)}")
         traceback.print_exc()
         return False, None
@@ -721,9 +719,9 @@ async def main():
                             print(f"   🏷️  Sample fields: {', '.join(fields[:5])}")
                             files_verified += 1
                         else:
-                            print(f"   ⚠️  File exists but contains no records")
+                            print("   ⚠️  File exists but contains no records")
                     else:
-                        print(f"   ⚠️  File has unexpected structure")
+                        print("   ⚠️  File has unexpected structure")
             except Exception as e:
                 print(f"   ❌ Error reading file: {e}")
         else:
