@@ -22,8 +22,7 @@ from orchestrator.tools.mcp_server import default_tool_detector
 from orchestrator.tools.base import default_registry
 
 # Import the tool integrated control system
-sys.path.append(str(Path(__file__).parent))
-from tool_integrated_control_system import ToolIntegratedControlSystem
+from orchestrator.control_systems import ToolIntegratedControlSystem
 
 
 async def test_input_agnostic_pipeline():

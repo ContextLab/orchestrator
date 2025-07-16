@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 sys.path.insert(0, os.path.dirname(__file__))
 
 import orchestrator as orc
-from research_control_system import ResearchReportControlSystem
+from orchestrator.control_systems import ResearchReportControlSystem
 
 async def test_input_agnostic_pipeline():
     """Test the input-agnostic pipeline system."""

@@ -1,0 +1,121 @@
+name: "Data Processing Pipeline with Error Recovery"
+description: "Multi-stage data processing with checkpointing and error recovery"
+version: "1.0.0"
+
+context:
+  timeout: 1200
+  max_retries: 3
+  checkpoint_strategy: "adaptive"
+
+inputs:
+  data_source:
+    type: string
+    description: "Path or URL to data source"
+  processing_mode:
+    type: string
+    default: "batch"
+    enum: ["batch", "streaming"]
+  error_tolerance:
+    type: number
+    default: 0.05
+    description: "Maximum error rate before pipeline fails"
+
+steps:
+  - id: data_ingestion
+    name: "Ingest Data"
+    action: ingest
+    parameters:
+      source: "{{ data_source }}"
+      mode: "{{ processing_mode }}"
+      batch_size: <AUTO>Determine optimal batch size for {{ processing_mode }}</AUTO>
+    metadata:
+      checkpoint: true
+      retry_on_failure: true
+      
+  - id: data_validation
+    name: "Validate Data"
+    action: validate_data
+    dependencies: [data_ingestion]
+    parameters:
+      data: "$results.data_ingestion"
+      schema: <AUTO>Infer schema from data</AUTO>
+      strict_mode: false
+    on_failure: "continue"
+    metadata:
+      checkpoint: false
+      
+  - id: data_cleaning
+    name: "Clean Data"
+    action: clean
+    dependencies: [data_validation]
+    parameters:
+      data: "$results.data_ingestion"
+      validation_report: "$results.data_validation"
+      strategies: ["remove_duplicates", "handle_missing", "normalize"]
+      error_tolerance: "{{ error_tolerance }}"
+    metadata:
+      checkpoint: true
+      critical: true
+      
+  - id: data_transformation
+    name: "Transform Data"
+    action: transform
+    dependencies: [data_cleaning]
+    parameters:
+      cleaned_data: "$results.data_cleaning"
+      transformations: <AUTO>Select appropriate transformations</AUTO>
+      preserve_original: true
+    on_failure: "retry"
+    metadata:
+      checkpoint: true
+      max_retries: 2
+      
+  - id: quality_check
+    name: "Quality Check"
+    action: quality_check
+    dependencies: [data_transformation]
+    parameters:
+      transformed_data: "$results.data_transformation"
+      original_data: "$results.data_cleaning.original"
+      metrics: ["completeness", "accuracy", "consistency"]
+      threshold: 0.95
+    on_failure: "fail"
+    
+  - id: data_export
+    name: "Export Results"
+    action: export
+    dependencies: [quality_check]
+    parameters:
+      data: "$results.data_transformation"
+      format: <AUTO>Choose best format based on data size and type</AUTO>
+      destination: "./output/"
+      compression: true
+    metadata:
+      checkpoint: false
+      
+  - id: generate_report
+    name: "Generate Processing Report"
+    action: report
+    dependencies: [data_export]
+    parameters:
+      ingestion_stats: "$results.data_ingestion.stats"
+      validation_results: "$results.data_validation"
+      cleaning_summary: "$results.data_cleaning.summary"
+      transformation_metrics: "$results.data_transformation.metrics"
+      quality_results: "$results.quality_check"
+      export_info: "$results.data_export"
+    on_failure: "continue"
+
+outputs:
+  processed_data:
+    type: file
+    value: "$results.data_export.path"
+  processing_report:
+    type: document
+    value: "$results.generate_report"
+  quality_metrics:
+    type: object
+    value: "$results.quality_check.metrics"
+  error_log:
+    type: array
+    value: "$pipeline.errors"
