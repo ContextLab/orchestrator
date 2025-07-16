@@ -117,6 +117,7 @@ extend-exclude = '''
 [tool.isort]
 profile = "black"
 multi_line_output = 3
+known_first_party = ["orchestrator"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -132,18 +133,22 @@ addopts = [
     "--cov-report=html",
     "--cov-report=xml",
 ]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 # Exclude local tests from CI (Ollama tests require local setup)
 markers = [
     "local: marks tests as local-only (not run in CI)",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "docker: marks tests that require docker",
+    "redis: marks tests that require redis",
+    "postgres: marks tests that require postgres",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
 ]
-line_length = 88
-known_first_party = ["orchestrator"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -171,29 +176,6 @@ module = [
 ]
 ignore_missing_imports = true
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "--cov=orchestrator",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
-    "docker: marks tests that require docker",
-    "redis: marks tests that require redis",
-    "postgres: marks tests that require postgres",
-]
 
 [tool.coverage.run]
 source = ["src"]
