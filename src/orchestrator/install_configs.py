@@ -1,6 +1,5 @@
 """Install default configuration files to user's home directory."""
 
-import os
 import shutil
 from pathlib import Path
 
@@ -10,28 +9,28 @@ def install_default_configs():
     # Create ~/.orchestrator directory
     config_dir = Path.home() / ".orchestrator"
     config_dir.mkdir(exist_ok=True)
-    
+
     # Get config source directory (package root/config)
     package_root = Path(__file__).parent.parent.parent
     src_dir = package_root / "config"
-    
+
     # Configuration files to install
     config_files = {
         "orchestrator.yaml": "Default orchestrator configuration",
-        "models.yaml": "Model configuration and registry"
+        "models.yaml": "Model configuration and registry",
     }
-    
+
     for filename, description in config_files.items():
         src_file = src_dir / filename
         dst_file = config_dir / filename
-        
+
         # Only copy if destination doesn't exist (don't overwrite user configs)
         if not dst_file.exists() and src_file.exists():
             shutil.copy2(src_file, dst_file)
             print(f"Installed {filename} to {dst_file}")
         elif dst_file.exists():
             print(f"Keeping existing {filename} at {dst_file}")
-        
+
     # Create a README in the config directory
     readme_path = config_dir / "README.md"
     if not readme_path.exists():
@@ -64,7 +63,7 @@ For more information, see: https://orc.readthedocs.io/en/latest/user_guide/confi
 """
         readme_path.write_text(readme_content)
         print(f"Created README at {readme_path}")
-    
+
     print(f"\nConfiguration files installed to: {config_dir}")
     print("You can customize these files to change Orchestrator's behavior.")
 

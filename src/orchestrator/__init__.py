@@ -7,6 +7,7 @@ with automatic ambiguity resolution using LLMs.
 
 import asyncio
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem
@@ -21,6 +22,25 @@ from .state.state_manager import StateManager
 from .tools.mcp_server import default_mcp_server, default_tool_detector
 
 __version__ = "0.1.0"
+
+__all__ = [
+    "Orchestrator",
+    "Task",
+    "TaskStatus",
+    "Pipeline",
+    "Model",
+    "ModelRegistry",
+    "YAMLCompiler",
+    "ControlSystem",
+    "ErrorHandler",
+    "ResourceAllocator",
+    "StateManager",
+    "HuggingFaceModel",
+    "OllamaModel",
+    "init_models",
+    "compile",
+    "compile_async",
+]
 __author__ = "Contextual Dynamics Lab"
 __email__ = "contextualdynamics@gmail.com"
 
@@ -29,11 +49,15 @@ _model_registry = None
 _orchestrator = None
 
 
-def init_models(config_path: str = "models.yaml"):
+def init_models(config_path: str = "models.yaml") -> ModelRegistry:
     """Initialize the pool of available models by reading models.yaml and environment."""
     global _model_registry
-    
-    from .utils.model_utils import load_model_config, parse_model_size, check_ollama_installed
+
+    from .utils.model_utils import (
+        load_model_config,
+        parse_model_size,
+        check_ollama_installed,
+    )
     from .integrations.anthropic_model import AnthropicModel
     from .integrations.google_model import GoogleModel
     from .integrations.openai_model import OpenAIModel
@@ -42,97 +66,120 @@ def init_models(config_path: str = "models.yaml"):
     print(">> Initializing model pool...")
 
     _model_registry = ModelRegistry()
-    
+
     # Load model configuration
     config = load_model_config(config_path)
     models_config = config.get("models", [])
-    
+
     # Check if Ollama is installed
     ollama_available = check_ollama_installed()
     if not ollama_available:
         print(">> ⚠️  Ollama not found - Ollama models will not be available")
         print(">>    Install from: https://ollama.ai")
-    
+
     # Process each model in configuration
     for model_config in models_config:
         source = model_config.get("source")
         name = model_config.get("name")
         expertise = model_config.get("expertise", ["general"])
         size_str = model_config.get("size")
-        
+
         if not source or not name:
             continue
-            
+
         # Parse model size
         size_billions = parse_model_size(name, size_str)
-        
+
         try:
             if source == "ollama":
                 if not ollama_available:
                     continue
-                    
+
                 # Register model for lazy loading (will be downloaded on first use)
                 # Use a lazy wrapper that doesn't check availability yet
                 from .integrations.lazy_ollama_model import LazyOllamaModel
+
                 model = LazyOllamaModel(model_name=name, timeout=60)
-                model._expertise = expertise
-                model._size_billions = size_billions
+                # Add dynamic attributes for model selection
+                setattr(model, "_expertise", expertise)
+                setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(f">>   📦 Registered Ollama model: {name} ({size_billions}B params) - will download on first use")
-                    
+                print(
+                    f">>   📦 Registered Ollama model: {name} ({size_billions}B params) - will download on first use"
+                )
+
             elif source == "huggingface":
                 # Check if transformers is available
                 try:
-                    import transformers
-                    import torch
-                    
-                    # Register for lazy loading (will be downloaded on first use)
-                    from .integrations.lazy_huggingface_model import LazyHuggingFaceModel
+                    import importlib.util
+
+                    if importlib.util.find_spec("transformers") is not None:
+                        # Register for lazy loading (will be downloaded on first use)
+                        from .integrations.lazy_huggingface_model import (
+                            LazyHuggingFaceModel,
+                        )
+
                     hf_model = LazyHuggingFaceModel(model_name=name)
-                    hf_model._expertise = expertise
-                    hf_model._size_billions = size_billions
+                    # Add dynamic attributes for model selection
+                    setattr(hf_model, "_expertise", expertise)
+                    setattr(hf_model, "_size_billions", size_billions)
                     _model_registry.register_model(hf_model)
-                    print(f">>   📦 Registered HuggingFace model: {name} ({size_billions}B params) - will download on first use")
+                    print(
+                        f">>   📦 Registered HuggingFace model: {name} ({size_billions}B params) - will download on first use"
+                    )
                 except ImportError:
-                    print(f">>   ⚠️  HuggingFace model {name} configured but transformers not installed")
+                    print(
+                        f">>   ⚠️  HuggingFace model {name} configured but transformers not installed"
+                    )
                     print(">>      Install with: pip install transformers torch")
                 except Exception as e:
                     print(f">>   ⚠️  Failed to register HuggingFace model {name}: {e}")
-                    
+
             elif source == "openai" and os.environ.get("OPENAI_API_KEY"):
                 # Only register if API key is available
                 model = OpenAIModel(name=name, model=name)
-                model._expertise = expertise
-                model._size_billions = size_billions
+                # Add dynamic attributes for model selection
+                setattr(model, "_expertise", expertise)
+                setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)")
-                
+                print(
+                    f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)"
+                )
+
             elif source == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
                 # Only register if API key is available
                 model = AnthropicModel(name=name, model=name)
-                model._expertise = expertise
-                model._size_billions = size_billions
+                # Add dynamic attributes for model selection
+                setattr(model, "_expertise", expertise)
+                setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)")
-                
+                print(
+                    f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)"
+                )
+
             elif source == "google" and os.environ.get("GOOGLE_API_KEY"):
                 # Only register if API key is available
                 model = GoogleModel(name=name, model=name)
-                model._expertise = expertise
-                model._size_billions = size_billions
+                # Add dynamic attributes for model selection
+                setattr(model, "_expertise", expertise)
+                setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered Google model: {name} ({size_billions}B params)")
-                
+                print(
+                    f">>   ✅ Registered Google model: {name} ({size_billions}B params)"
+                )
+
         except Exception as e:
             print(f">>   ⚠️  Error registering {source} model {name}: {e}")
 
-    print(f"\n>> Model initialization complete: {len(_model_registry.list_models())} models registered")
-    
+    print(
+        f"\n>> Model initialization complete: {len(_model_registry.list_models())} models registered"
+    )
+
     if not _model_registry.list_models():
         print(">>   ⚠️  No models available - using mock fallback")
-        
+
     # Store defaults in registry for later use
-    _model_registry._defaults = config.get("defaults", {})
+    setattr(_model_registry, "_defaults", config.get("defaults", {}))
 
     return _model_registry
 
@@ -148,7 +195,7 @@ class OrchestratorPipeline:
         self.orchestrator = orchestrator
         self._print_usage()
 
-    def _print_usage(self):
+    def _print_usage(self) -> None:
         """Print keyword arguments as shown in README."""
         print(">> keyword arguments:")
 
@@ -174,7 +221,7 @@ class OrchestratorPipeline:
                 ">>   instructions: detailed instructions to help guide the report, specify areas of particular interest (or areas to stay away from), etc. (type: String)"
             )
 
-    def _extract_inputs(self):
+    def _extract_inputs(self) -> Dict[str, Any]:
         """Extract input definitions from the compiled pipeline."""
         # The inputs are stored in the pipeline's metadata during compilation
         if hasattr(self.pipeline, "metadata") and "inputs" in self.pipeline.metadata:
@@ -184,7 +231,7 @@ class OrchestratorPipeline:
         # This is a fallback - we should enhance the compilation process
         return {}
 
-    def run(self, **kwargs):
+    def run(self, **kwargs: Any) -> Any:
         """Run the pipeline with given keyword arguments."""
         # Run pipeline asynchronously
         loop = asyncio.new_event_loop()
@@ -211,7 +258,9 @@ class OrchestratorPipeline:
         )
 
         # Execute pipeline
-        results = await self.orchestrator.execute_pipeline(resolved_pipeline, context)
+        # Set the resolved pipeline's context
+        resolved_pipeline.context = context
+        results = await self.orchestrator.execute_pipeline(resolved_pipeline)
 
         # Return the final output (PDF path or report content)
         if outputs and "pdf" in outputs:
@@ -274,11 +323,11 @@ class OrchestratorPipeline:
             return self.pipeline.metadata["outputs"]
         return {}
 
-    async def _resolve_runtime_templates(self, pipeline, context):
+    async def _resolve_runtime_templates(
+        self, pipeline: Pipeline, context: Dict[str, Any]
+    ) -> Pipeline:
         """Resolve templates in pipeline tasks at runtime."""
         import copy
-
-        from jinja2 import Template
 
         # Create a deep copy to avoid modifying the original
         resolved_pipeline = copy.deepcopy(pipeline)
@@ -316,7 +365,7 @@ class OrchestratorPipeline:
             return obj
 
 
-async def compile_async(yaml_path: str):
+async def compile_async(yaml_path: str) -> "OrchestratorPipeline":
     """Compile a YAML pipeline file into an executable OrchestratorPipeline (async version)."""
     global _orchestrator, _model_registry
 
@@ -373,14 +422,13 @@ async def compile_async(yaml_path: str):
     return OrchestratorPipeline(pipeline, _orchestrator.yaml_compiler, _orchestrator)
 
 
-def compile(yaml_path: str):
+def compile(yaml_path: str) -> "OrchestratorPipeline":
     """Compile a YAML pipeline file into an executable OrchestratorPipeline."""
     # Check if we're already in an event loop
     try:
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
         # We're in an async context, need to run in a new thread or return a coroutine
         import concurrent.futures
-        import threading
 
         def run_in_new_loop():
             new_loop = asyncio.new_event_loop()

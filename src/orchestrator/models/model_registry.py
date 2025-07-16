@@ -185,33 +185,34 @@ class ModelRegistry:
     ) -> List[Model]:
         """Filter models by capabilities and expertise."""
         eligible = []
-        
+
         # Extract expertise and size requirements
         required_expertise = requirements.get("expertise", [])
         if isinstance(required_expertise, str):
             required_expertise = [required_expertise]
-        
+
         min_size_str = requirements.get("min_size", "0")
         from ..utils.model_utils import parse_model_size
+
         min_size_billions = parse_model_size("", min_size_str)
 
         for model in self.models.values():
             # Check basic requirements first
             if not model.meets_requirements(requirements):
                 continue
-                
+
             # Check expertise if specified
             if required_expertise:
                 model_expertise = getattr(model, "_expertise", ["general"])
                 # Check if any required expertise matches model expertise
                 if not any(exp in model_expertise for exp in required_expertise):
                     continue
-                    
+
             # Check model size if specified
             model_size = getattr(model, "_size_billions", 1.0)
             if model_size < min_size_billions:
                 continue
-                
+
             eligible.append(model)
 
         return eligible
