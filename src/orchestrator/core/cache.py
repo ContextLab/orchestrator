@@ -854,9 +854,10 @@ class RedisCache(DistributedCache):
         """Initialize with Redis-compatible parameters but use DistributedCache internally."""
         # If mock_mode is enabled or no Redis clients provided, use standard DistributedCache
         if mock_mode or (not redis_client and not sync_redis_client):
-            # If auto_fallback is False and not in mock mode, raise ConnectionError as expected
+            # Try to start Redis server if not in mock mode and auto_fallback is False
             if not auto_fallback and not mock_mode:
-                raise ConnectionError(f"Could not connect to Redis at {redis_url}")
+                if not self._check_and_start_redis(redis_url):
+                    raise ConnectionError(f"Could not connect to Redis at {redis_url}")
 
             # Initialize as DistributedCache for self-contained operation
             super().__init__(
@@ -883,6 +884,68 @@ class RedisCache(DistributedCache):
         # Store original Redis parameters for compatibility
         self.redis_url = redis_url
         self.auto_fallback = auto_fallback
+    
+    def _check_and_start_redis(self, redis_url: str) -> bool:
+        """Check if Redis is running and attempt to start it if not."""
+        import subprocess
+        import time
+        from urllib.parse import urlparse
+        
+        # Parse Redis URL to get host and port
+        parsed = urlparse(redis_url)
+        host = parsed.hostname or "localhost"
+        port = parsed.port or 6379
+        
+        # Check if Redis is already running
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            result = sock.connect_ex((host, int(port)))
+            sock.close()
+            if result == 0:
+                return True  # Redis is already running
+        except:
+            pass
+        
+        # Try to start Redis server
+        try:
+            # Try different Redis server commands
+            redis_commands = ["redis-server", "redis-server.exe", "/usr/local/bin/redis-server"]
+            
+            for cmd in redis_commands:
+                try:
+                    # Start Redis in background with custom port if needed
+                    if port != 6379:
+                        process = subprocess.Popen([cmd, "--port", str(port)], 
+                                                 stdout=subprocess.DEVNULL, 
+                                                 stderr=subprocess.DEVNULL)
+                    else:
+                        process = subprocess.Popen([cmd], 
+                                                 stdout=subprocess.DEVNULL, 
+                                                 stderr=subprocess.DEVNULL)
+                    
+                    # Give Redis time to start
+                    time.sleep(0.5)
+                    
+                    # Check if Redis started successfully
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(1)
+                    result = sock.connect_ex((host, int(port)))
+                    sock.close()
+                    
+                    if result == 0:
+                        return True  # Redis started successfully
+                    else:
+                        process.terminate()  # Stop the process if it didn't work
+                        
+                except (FileNotFoundError, OSError):
+                    continue  # Try next command
+                    
+        except Exception:
+            pass
+            
+        return False  # Could not start Redis
 
     async def get(self, key: str) -> Optional[Any]:
         """Get value, with mock mode returning None."""
