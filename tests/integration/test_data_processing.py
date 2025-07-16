@@ -341,7 +341,8 @@ async def test_data_processing():
     print("=" * 50)
     
     # Load pipeline
-    with open("pipelines/data_processing.yaml", "r") as f:
+    pipeline_path = os.path.join(os.path.dirname(__file__), "..", "..", "examples", "pipelines", "data_processing.yaml")
+    with open(pipeline_path, "r") as f:
         pipeline_yaml = f.read()
     
     # Initialize orchestrator

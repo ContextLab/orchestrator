@@ -258,7 +258,8 @@ async def test_code_optimization():
     print("=" * 50)
     
     # Load pipeline
-    with open("pipelines/code_optimization.yaml", "r") as f:
+    pipeline_path = os.path.join(os.path.dirname(__file__), "..", "..", "examples", "pipelines", "code_optimization.yaml")
+    with open(pipeline_path, "r") as f:
         pipeline_yaml = f.read()
     
     # Initialize orchestrator
