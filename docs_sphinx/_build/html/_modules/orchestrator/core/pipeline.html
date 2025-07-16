@@ -1,392 +1,376 @@
+
+
 <!DOCTYPE html>
-
-<html lang="en" data-content_root="../../../">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-
-  <meta property="og:title" content="orchestrator.core.pipeline &#8212; PennyLane">
-  <meta property="og:url" content="None">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>orchestrator.core.pipeline &mdash; py-orc 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b20cc3f5" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
 
   
-
-  <!-- Google Fonts -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Serif">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500&display=swap">
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
-  <!-- Box Icons -->
-  <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
-  <!-- Bootstrap core CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
-  <!-- Material Design Bootstrap -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.5.14/css/mdb.min.css">
-  <!-- Overlay Scrollbars -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.11.4/styles/overlayscrollbars.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <!-- Syntax Highlighting -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/tomorrow-night.min.css">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script type="text/x-mathjax-config">
-     MathJax.Hub.Config({
-       "HTML-CSS": { scale: 90, linebreaks: { automatic: true } },
-       TeX: {
-         Macros: {
-           pr : ['|\#1\\rangle\\langle\#1|',1],
-           ket: ['\\left| \#1\\right\\rangle',1],
-           bra: ['\\left\\langle \#1\\right|',1],
-           xket: ['\\left| \#1\\right\\rangle_x',1],
-           xbra: ['\\left\\langle \#1\\right|_x',1],
-           braket: ['\\langle \#1 \\rangle',1],
-           braketD: ['\\langle \#1 \\mid \#2 \\rangle',2],
-           braketT: ['\\langle \#1 \\mid \#2 \\mid \#3 \\rangle',3],
-           ketbra: ['| #1 \\rangle \\langle #2 |',2],
-           hc: ['\\text{h.c.}',0],
-           cc: ['\\text{c.c.}',0],
-           h: ['\\hat',0],
-           nn: ['\\nonumber',0],
-           di: ['\\frac{d}{d \#1}',1],
-           uu: ['\\mathcal{U}',0],
-           inn: ['\\text{in}',0],
-           out: ['\\text{out}',0],
-           vac: ['\\text{vac}',0],
-           I: ['\\hat{\\mathbf{1}}',0],
-           x: ['\\hat{x}',0],
-           p: ['\\hat{p}',0],
-           a: ['\\hat{a}',0],
-           ad: ['\\hat{a}^\\dagger',0],
-           n: ['\\hat{n}',0],
-           nbar: ['\\overline{n}',0],
-           sech: ['\\mathrm{sech~}',0],
-           tanh: ['\\mathrm{tanh~}',0],
-           re: ['\\text{Re}',0],
-           im: ['\\text{Im}',0],
-           tr: ['\\mathrm{Tr} #1',1],
-           sign: ['\\text{sign}',0],
-           overlr: ['\\overset\\leftrightarrow{\#1}',1],
-           overl: ['\\overset\leftarrow{\#1}',1],
-           overr: ['\\overset\rightarrow{\#1}',1],
-           avg: ['\\left< \#1 \\right>',1],
-           slashed: ['\\cancel{\#1}',1],
-           bold: ['\\boldsymbol{\#1}',1],
-           d: ['\\mathrm d',0],
-           expect: ["\\langle #1 \\rangle",1],
-           pde: ["\\frac{\\partial}{\\partial \#1}",1],
-           R: ["\\mathbb{R}",0],
-           C: ["\\mathbb{C}",0],
-           Ad: ["\\text{Ad}",0],
-           Var: ["\\text{Var}",0],
-           bx: ["\\mathbf{x}", 0],
-           bm: ["\\boldsymbol{\#1}",1],
-           haf: ["\\mathrm{haf}",0],
-           lhaf: ["\\mathrm{lhaf}",0]
-         }
-       }
-     });
-     </script>
-
-  <!-- Google Analytics -->
-  
-    <title>orchestrator.core.pipeline &#8212; Orchestrator 0.1.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b20cc3f5" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/xanadu.css?v=95dfc2d3" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-    <script src="../../../_static/documentation_options.js?v=01f34227"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
-    <script src="../../../_static/copybutton.js?v=fd10adb8"></script>
-    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=38b66d78"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=fd10adb8"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-  </head><body><nav>
-  <!-- Logo and Title -->
+</head>
 
-  <a class="navbar-logo-title-container" href="https://github.com/contextualdynamics/orchestrator" aria-label="home">
-    
-    
-      <img class="navbar-logo-title-logo" src=" ../../../_static/xanadu_logo.svg" alt="Orchestrator" height="24px"></img>
-      <div class="navbar-logo-title-title">Orchestrator</div>
-    
-  </a>
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
 
-  <!-- Desktop Links -->
-
-  
-
-  
-
-  <div class="navbar-links desktop">
-    <ul class="navbar-left-links desktop">
-      
-        
-    <li class="navbar-left-link desktop">
-      
-        <a href="../../../getting_started" >
-          <span>Getting Started</span>
           
-        </a>
-        
-      
-    </li>
-  
-      
-        
-    <li class="navbar-left-link desktop">
-      
-        <a href="../../../tutorials/index" >
-          <span>Tutorials</span>
           
-        </a>
-        
-      
-    </li>
-  
-      
-        
-    <li class="navbar-left-link desktop">
-      
-        <a href="../../../api/index" >
-          <span>API</span>
-          
-        </a>
-        
-      
-    </li>
-  
-      
-        
-    <li class="navbar-left-link desktop">
-      
-        <a href="../../../examples/index" >
-          <span>Examples</span>
-          
-        </a>
-        
-      
-    </li>
-  
-      
-    </ul>
-    <ul class="navbar-right-links desktop">
-      
-      
-        
-    <li class="navbar-right-link desktop">
-      
-        <a href="https://github.com/contextualdynamics/orchestrator" target="_blank" aria-label="GitHub">
-          <i class="fab fa-github"></i>
-        </a>
-      
-    </li>
-  
-      
-    </ul>
-  </div>
-
-  <!-- Mobile Links -->
-
-  
-
-  
-
-  <div class="navbar-menu mobile">
-    <button onclick="toggleMobileNavbar(this)" aria-label="open menu" aria-expanded="false">
-      <i class="bx bx-menu"></i>
-      <i class="bx bx-x"></i>
-    </button>
-  </div>
-</nav>
-
-<div class="navbar-links mobile">
-  <ul>
-    
-
-    
-      
-    <li class="navbar-link mobile">
-      
-        <button class="navbar-link-heading mobile">
-          <a href="../../../getting_started" >
-            <span>Getting Started</span>
-            
+          <a href="../../../index.html" class="icon icon-home">
+            py-orc
           </a>
-        </button>
-      
-      <div class="navbar-dropdown mobile">
-        <ul>
-          
-          
-        </ul>
-      </div>
-    </li>
-  
-    
-      
-    <li class="navbar-link mobile">
-      
-        <button class="navbar-link-heading mobile">
-          <a href="../../../tutorials/index" >
-            <span>Tutorials</span>
-            
-          </a>
-        </button>
-      
-      <div class="navbar-dropdown mobile">
-        <ul>
-          
-          
-        </ul>
-      </div>
-    </li>
-  
-    
-      
-    <li class="navbar-link mobile">
-      
-        <button class="navbar-link-heading mobile">
-          <a href="../../../api/index" >
-            <span>API</span>
-            
-          </a>
-        </button>
-      
-      <div class="navbar-dropdown mobile">
-        <ul>
-          
-          
-        </ul>
-      </div>
-    </li>
-  
-    
-      
-    <li class="navbar-link mobile">
-      
-        <button class="navbar-link-heading mobile">
-          <a href="../../../examples/index" >
-            <span>Examples</span>
-            
-          </a>
-        </button>
-      
-      <div class="navbar-dropdown mobile">
-        <ul>
-          
-          
-        </ul>
-      </div>
-    </li>
-  
-    
-
-    
-      
-    <li class="navbar-link mobile">
-      
-        <button class="navbar-link-heading mobile">
-          <a href="https://github.com/contextualdynamics/orchestrator"  target="_blank" >
-            <span>GitHub</span>
-            
-              <i class="bx bx-link-external"></i>
-            
-          </a>
-        </button>
-      
-      <div class="navbar-dropdown mobile">
-        <ul>
-          
-          
-        </ul>
-      </div>
-    </li>
-  
-    
-
-    
-  </ul>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
 </div>
-
-
-    <div class="related" role="navigation" aria-label="Related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">Orchestrator 0.1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../../orchestrator.html" accesskey="U">orchestrator</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">orchestrator.core.pipeline</a></li> 
-      </ul>
-    </div>
-    <div class="container-wrapper">
-        <div class="toc-heading mobile">
-          <button onclick="toggleMobileToC(this)">
-            <span>Table of contents</span>
-            <i class="bx bx-chevron-down"></i>
-          </button>
-        </div>
-  <div id="left-column" class="nano css-transitions-only-after-page-load">
-    <div class="sphinxsidebar nano-content"><div class="sidebar-block search-block">
-  <div id="main-search">
-    <form action="../../../search.html" method="GET" role="form">
-      <div class="md-input">
-        <input name="q" type="text" required>
-        <span class="bar"></span>
-        <label>Search</label>
-      </div>
-      <input type="hidden" name="check_keywords" value="yes"/>
-      <input type="hidden" name="area" value="default"/>
-    </form>
-  </div>
-</div>
-<div class="sidebar-block">
-  <div class="sidebar-toc">
-    
-    <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../concepts.html">Key Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started.html#what-is-orchestrator">What is Orchestrator?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started.html#core-concepts">Core Concepts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../getting_started.html#pipelines">Pipelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../getting_started.html#tasks">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../getting_started.html#auto-tags">AUTO Tags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../getting_started.html#tools">Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started.html#quick-start-example">Quick Start Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started.html#key-features-in-action">Key Features in Action</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../getting_started.html#input-agnostic-design">Input-Agnostic Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../getting_started.html#tool-integration">Tool Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../getting_started.html#model-selection">Model Selection</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#requirements">Requirements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#system-requirements">System Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#optional-requirements">Optional Requirements</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#installation-methods">Installation Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#using-pip-recommended">Using pip (Recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#using-conda">Using conda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#using-docker">Using Docker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#development-installation">Development Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#model-setup">Model Setup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#ollama-models-recommended">Ollama Models (Recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#huggingface-models">HuggingFace Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#openai-anthropic-models">OpenAI/Anthropic Models</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#tool-dependencies">Tool Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#web-tools">Web Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#system-tools">System Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#data-tools">Data Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#configuration">Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#environment-variables">Environment Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#verifying-installation">Verifying Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#common-issues">Common Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#getting-help">Getting Help</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#your-first-pipeline">Your First Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#step-1-create-the-pipeline-definition">Step 1: Create the Pipeline Definition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#step-2-run-the-pipeline">Step 2: Run the Pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#step-3-check-the-results">Step 3: Check the Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#building-more-complex-pipelines">Building More Complex Pipelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#research-report-pipeline">Research Report Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#working-with-tools">Working with Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#available-tool-actions">Available Tool Actions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#using-auto-tags">Using AUTO Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#pipeline-composition">Pipeline Composition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#debugging-pipelines">Debugging Pipelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#best-practices">Best Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../concepts.html">Key Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#pipelines">Pipelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#input-agnostic-design">Input-Agnostic Design</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#tasks">Tasks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#task-anatomy">Task Anatomy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#task-dependencies">Task Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#templates-and-references">Templates and References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#template-syntax">Template Syntax</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#runtime-vs-compile-time-resolution">Runtime vs Compile-Time Resolution</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#auto-tags">AUTO Tags</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#how-auto-tags-work">How AUTO Tags Work</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#tools-and-actions">Tools and Actions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#tool-categories">Tool Categories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#action-names">Action Names</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#automatic-tool-detection">Automatic Tool Detection</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#models-and-intelligence">Models and Intelligence</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#model-types">Model Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#intelligent-model-selection">Intelligent Model Selection</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#state-management">State Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#checkpointing">Checkpointing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#recovery">Recovery</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#control-systems">Control Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#built-in-control-systems">Built-in Control Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#custom-control-systems">Custom Control Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#pipeline-composition">Pipeline Composition</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#pipeline-imports">Pipeline Imports</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#modular-design">Modular Design</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#error-handling">Error Handling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#error-strategies">Error Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#error-types">Error Types</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#performance-concepts">Performance Concepts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#parallel-execution">Parallel Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#caching">Caching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#security-concepts">Security Concepts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#sandboxing">Sandboxing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#input-validation">Input Validation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#secret-management">Secret Management</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#best-practices">Best Practices</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#design-principles">Design Principles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#pipeline-organization">Pipeline Organization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../concepts.html#testing-strategy">Testing Strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html">Web Research Automation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#what-you-ll-build">What You’ll Build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#tutorial-1-basic-web-search">Tutorial 1: Basic Web Search</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-1-create-the-pipeline">Step 1: Create the Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-2-run-the-pipeline">Step 2: Run the Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-3-understanding-the-results">Step 3: Understanding the Results</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#tutorial-2-multi-source-research">Tutorial 2: Multi-Source Research</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-1-multi-source-pipeline">Step 1: Multi-Source Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-2-run-multi-source-research">Step 2: Run Multi-Source Research</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#tutorial-3-fact-checking-pipeline">Tutorial 3: Fact-Checking Pipeline</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-1-fact-checker-pipeline">Step 1: Fact-Checker Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-2-use-the-fact-checker">Step 2: Use the Fact-Checker</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#tutorial-4-automated-report-generator">Tutorial 4: Automated Report Generator</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-1-report-generator-pipeline">Step 1: Report Generator Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#step-2-generate-professional-reports">Step 2: Generate Professional Reports</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#advanced-exercises">Advanced Exercises</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#exercise-1-industry-monitor">Exercise 1: Industry Monitor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#exercise-2-competitive-intelligence">Exercise 2: Competitive Intelligence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#exercise-3-research-aggregator">Exercise 3: Research Aggregator</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#solutions">Solutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#next-steps">Next Steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_web_research.html#tips-for-production-use">Tips for Production Use</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html">Data Processing Pipelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#what-you-ll-build">What You’ll Build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#tutorial-1-basic-etl-pipeline">Tutorial 1: Basic ETL Pipeline</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#step-1-create-the-etl-pipeline">Step 1: Create the ETL Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#step-2-run-the-etl-pipeline">Step 2: Run the ETL Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#tutorial-2-multi-source-data-integration">Tutorial 2: Multi-Source Data Integration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#step-1-multi-source-integration-pipeline">Step 1: Multi-Source Integration Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#step-2-run-multi-source-integration">Step 2: Run Multi-Source Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#tutorial-3-data-quality-assessment-pipeline">Tutorial 3: Data Quality Assessment Pipeline</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#step-1-data-quality-pipeline">Step 1: Data Quality Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#tutorial-4-real-time-data-processing">Tutorial 4: Real-Time Data Processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#step-1-real-time-processing-pipeline">Step 1: Real-Time Processing Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#advanced-examples">Advanced Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#example-1-customer-data-platform">Example 1: Customer Data Platform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#example-2-financial-data-pipeline">Example 2: Financial Data Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#exercises">Exercises</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#exercise-1-e-commerce-analytics-pipeline">Exercise 1: E-commerce Analytics Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#exercise-2-iot-data-processing">Exercise 2: IoT Data Processing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#exercise-3-social-media-analytics">Exercise 3: Social Media Analytics</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#solutions-and-next-steps">Solutions and Next Steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/tutorial_data_processing.html#best-practices-for-production">Best Practices for Production</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/index.html#tutorial-overview">Tutorial Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/index.html#beginner-tutorials">Beginner Tutorials</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/index.html#intermediate-tutorials">Intermediate Tutorials</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/index.html#advanced-tutorials">Advanced Tutorials</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/index.html#what-you-ll-learn">What You’ll Learn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/index.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/index.html#tutorial-format">Tutorial Format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/index.html#getting-help">Getting Help</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/index.html#ready-to-start">Ready to Start?</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#overview">Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#core-module-core">Core Module (<span class="xref std std-doc">core</span>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#compiler-module-compiler">Compiler Module (<span class="xref std std-doc">compiler</span>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#models-module-models">Models Module (<span class="xref std std-doc">models</span>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#tools-module-tools">Tools Module (<span class="xref std std-doc">tools</span>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#orchestrator-module-orchestrator">Orchestrator Module (<span class="xref std std-doc">orchestrator</span>)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#quick-reference">Quick Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#core-classes">Core Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_autosummary/orchestrator.Task.html">orchestrator.Task</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_autosummary/orchestrator.Pipeline.html">orchestrator.Pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_autosummary/orchestrator.Orchestrator.html">orchestrator.Orchestrator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_autosummary/orchestrator.YAMLCompiler.html">orchestrator.YAMLCompiler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_autosummary/orchestrator.ModelRegistry.html">orchestrator.ModelRegistry</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#main-functions">Main Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_autosummary/orchestrator.init_models.html">orchestrator.init_models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_autosummary/orchestrator.compile.html">orchestrator.compile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_autosummary/orchestrator.compile_async.html">orchestrator.compile_async</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#key-exceptions">Key Exceptions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#advanced-usage">Advanced Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#type-annotations">Type Annotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#performance-considerations">Performance Considerations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#model-loading">Model Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#memory-management">Memory Management</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#debugging">Debugging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#extension-points">Extension Points</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#custom-control-systems">Custom Control Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#custom-tools">Custom Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#custom-models">Custom Models</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#thread-safety">Thread Safety</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/index.html#common-issues">Common Issues</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html#getting-help">Getting Help</a></li>
+</ul>
+</li>
 </ul>
 
-  </div>
-</div>
-      
-    </div>
-  </div>
-        <div id="content">
-          <div id="right-column">
-            
-            <div role="navigation" aria-label="breadcrumbs navigation">
-              <ol class="breadcrumb">
-                <li><a href="../../../index.html">Docs</a></li>
-                
-                  <li><a href="../../index.html">Module code</a></li>
-                
-                  <li><a href="../../orchestrator.html">orchestrator</a></li>
-                
-                <li>orchestrator.core.pipeline</li>
-              </ol>
-            </div>
-            
+        </div>
+      </div>
+    </nav>
 
-            <div class="document clearer body">
-              
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">py-orc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../orchestrator.html">orchestrator</a></li>
+      <li class="breadcrumb-item active">orchestrator.core.pipeline</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
   <h1>Source code for orchestrator.core.pipeline</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Pipeline abstraction for the orchestrator framework.&quot;&quot;&quot;</span>
 
@@ -402,11 +386,13 @@
 
 <span class="k">class</span> <span class="nc">CircularDependencyError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a circular dependency is detected in the pipeline.&quot;&quot;&quot;</span>
+
     <span class="k">pass</span>
 
 
 <span class="k">class</span> <span class="nc">InvalidDependencyError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a dependency refers to a non-existent task.&quot;&quot;&quot;</span>
+
     <span class="k">pass</span>
 
 
@@ -416,11 +402,11 @@
 <span class="k">class</span> <span class="nc">Pipeline</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Pipeline represents a collection of tasks with dependencies.</span>
-<span class="sd">    </span>
+
 <span class="sd">    A pipeline manages the execution order of tasks based on their dependencies</span>
 <span class="sd">    and provides methods for validation and execution planning.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    
+
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">tasks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Task</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
@@ -429,7 +415,7 @@
     <span class="n">created_at</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
     <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;1.0.0&quot;</span>
     <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    
+
 <div class="viewcode-block" id="Pipeline.__post_init__">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.__post_init__">[docs]</a>
     <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -438,132 +424,132 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Pipeline ID cannot be empty&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Pipeline name cannot be empty&quot;</span><span class="p">)</span>
-        
+
         <span class="c1"># Validate tasks and dependencies</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_dependencies</span><span class="p">()</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.add_task">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.add_task">[docs]</a>
     <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Task</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a task to the pipeline.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task: Task to add</span>
-<span class="sd">            </span>
+
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If task with same ID already exists</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Task with ID &#39;</span><span class="si">{</span><span class="n">task</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; already exists&quot;</span><span class="p">)</span>
-        
+
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_dependencies</span><span class="p">()</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.remove_task">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.remove_task">[docs]</a>
     <span class="k">def</span> <span class="nf">remove_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Task</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Remove a task from the pipeline and return it.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task_id: ID of task to remove</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            Removed task, or None if task doesn&#39;t exist</span>
-<span class="sd">            </span>
+
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If other tasks depend on it</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">task_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        
+
         <span class="c1"># Check if any tasks depend on this task</span>
         <span class="n">dependents</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dependents</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">dependents</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Cannot remove task &#39;</span><span class="si">{</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&#39; because it has dependents: </span><span class="si">{</span><span class="n">dependents</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
-        
+
         <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">task</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.remove_task_strict">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.remove_task_strict">[docs]</a>
     <span class="k">def</span> <span class="nf">remove_task_strict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Task</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Remove a task from the pipeline (legacy interface that raises exceptions).</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task_id: ID of task to remove</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            Removed task</span>
-<span class="sd">            </span>
+
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If task doesn&#39;t exist or other tasks depend on it</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">task_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Task &#39;</span><span class="si">{</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&#39; does not exist&quot;</span><span class="p">)</span>
-        
+
         <span class="c1"># Check if any tasks depend on this task</span>
         <span class="n">dependents</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dependents</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">dependents</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Cannot remove task &#39;</span><span class="si">{</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&#39; - tasks </span><span class="si">{</span><span class="n">dependents</span><span class="si">}</span><span class="s2"> depend on it&quot;</span>
             <span class="p">)</span>
-        
+
         <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">task</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_task">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_task">[docs]</a>
     <span class="k">def</span> <span class="nf">get_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Task</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a task by ID.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task_id: Task ID</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            Task object, or None if not found</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_task_safe">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_task_safe">[docs]</a>
     <span class="k">def</span> <span class="nf">get_task_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Task</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a task by ID without raising exceptions.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task_id: Task ID</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            Task object or None if not found</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_task_strict">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_task_strict">[docs]</a>
     <span class="k">def</span> <span class="nf">get_task_strict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Task</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a task by ID (legacy interface that raises exceptions).</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task_id: Task ID</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            Task object</span>
-<span class="sd">            </span>
+
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If task doesn&#39;t exist</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -571,7 +557,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Task &#39;</span><span class="si">{</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&#39; does not exist&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span></div>
 
-    
+
     <span class="k">def</span> <span class="nf">_validate_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate task dependencies.&quot;&quot;&quot;</span>
         <span class="c1"># Check for invalid dependencies</span>
@@ -581,27 +567,27 @@
                     <span class="k">raise</span> <span class="n">InvalidDependencyError</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Task &#39;</span><span class="si">{</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&#39; depends on non-existent task &#39;</span><span class="si">{</span><span class="n">dep</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
                     <span class="p">)</span>
-        
+
         <span class="c1"># Check for circular dependencies</span>
         <span class="n">cycles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detect_cycles</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">cycles</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">CircularDependencyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Circular dependencies detected: </span><span class="si">{</span><span class="n">cycles</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">def</span> <span class="nf">_detect_cycles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Detect circular dependencies using DFS.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of cycles found</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">WHITE</span><span class="p">,</span> <span class="n">GRAY</span><span class="p">,</span> <span class="n">BLACK</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span>
         <span class="n">color</span> <span class="o">=</span> <span class="p">{</span><span class="n">task_id</span><span class="p">:</span> <span class="n">WHITE</span> <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">}</span>
         <span class="n">cycles</span> <span class="o">=</span> <span class="p">[]</span>
-        
+
         <span class="k">def</span> <span class="nf">dfs</span><span class="p">(</span><span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">color</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">GRAY</span>
             <span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
-            
+
             <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">color</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span> <span class="o">==</span> <span class="n">GRAY</span><span class="p">:</span>
                     <span class="c1"># Found cycle</span>
@@ -609,15 +595,15 @@
                     <span class="n">cycles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="n">cycle_start</span><span class="p">:]</span> <span class="o">+</span> <span class="p">[</span><span class="n">dep</span><span class="p">])</span>
                 <span class="k">elif</span> <span class="n">color</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span> <span class="o">==</span> <span class="n">WHITE</span><span class="p">:</span>
                     <span class="n">dfs</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">path</span><span class="p">[:])</span>
-            
+
             <span class="n">color</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">BLACK</span>
-        
+
         <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">color</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">==</span> <span class="n">WHITE</span><span class="p">:</span>
                 <span class="n">dfs</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="p">[])</span>
-        
+
         <span class="k">return</span> <span class="n">cycles</span>
-    
+
     <span class="k">def</span> <span class="nf">_get_dependents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get tasks that depend on the given task.&quot;&quot;&quot;</span>
         <span class="n">dependents</span> <span class="o">=</span> <span class="p">[]</span>
@@ -625,84 +611,91 @@
             <span class="k">if</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
                 <span class="n">dependents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tid</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dependents</span>
-    
+
 <div class="viewcode-block" id="Pipeline.get_execution_order">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_execution_order">[docs]</a>
     <span class="k">def</span> <span class="nf">get_execution_order</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get flat execution order of tasks.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of task IDs in execution order</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">levels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_execution_levels</span><span class="p">()</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">task_id</span> <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="n">levels</span> <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">level</span><span class="p">]</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_ready_tasks">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_ready_tasks">[docs]</a>
     <span class="k">def</span> <span class="nf">get_ready_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">completed_tasks</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Task</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get tasks that are ready to execute.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            completed_tasks: Set of completed task IDs</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of Task objects ready for execution</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ready_tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">PENDING</span> <span class="ow">and</span> 
-                <span class="n">task</span><span class="o">.</span><span class="n">is_ready</span><span class="p">(</span><span class="n">completed_tasks</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">PENDING</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">is_ready</span><span class="p">(</span><span class="n">completed_tasks</span><span class="p">):</span>
                 <span class="n">ready_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ready_tasks</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_ready_task_ids">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_ready_task_ids">[docs]</a>
     <span class="k">def</span> <span class="nf">get_ready_task_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">completed_tasks</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get task IDs that are ready to execute (legacy interface).</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            completed_tasks: Set of completed task IDs</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of task IDs ready for execution</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ready_tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">PENDING</span> <span class="ow">and</span> 
-                <span class="n">task</span><span class="o">.</span><span class="n">is_ready</span><span class="p">(</span><span class="n">completed_tasks</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">PENDING</span> <span class="ow">and</span> <span class="n">task</span><span class="o">.</span><span class="n">is_ready</span><span class="p">(</span><span class="n">completed_tasks</span><span class="p">):</span>
                 <span class="n">ready_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ready_tasks</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_failed_tasks">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_failed_tasks">[docs]</a>
     <span class="k">def</span> <span class="nf">get_failed_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of failed task IDs.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">task_id</span> <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> 
-                <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">FAILED</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">task_id</span>
+            <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">FAILED</span>
+        <span class="p">]</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_completed_tasks">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_completed_tasks">[docs]</a>
     <span class="k">def</span> <span class="nf">get_completed_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of completed task IDs.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">task_id</span> <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> 
-                <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">COMPLETED</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">task_id</span>
+            <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">COMPLETED</span>
+        <span class="p">]</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_running_tasks">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_running_tasks">[docs]</a>
     <span class="k">def</span> <span class="nf">get_running_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of running task IDs.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">task_id</span> <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> 
-                <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">task_id</span>
+            <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">RUNNING</span>
+        <span class="p">]</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.reset">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.reset">[docs]</a>
     <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -710,21 +703,21 @@
         <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">task</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.is_complete">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.is_complete">[docs]</a>
     <span class="k">def</span> <span class="nf">is_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if all tasks are completed.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">COMPLETED</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.is_failed">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.is_failed">[docs]</a>
     <span class="k">def</span> <span class="nf">is_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if any critical task has failed.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">TaskStatus</span><span class="o">.</span><span class="n">FAILED</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_progress">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_progress">[docs]</a>
     <span class="k">def</span> <span class="nf">get_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
@@ -732,7 +725,7 @@
         <span class="n">status_counts</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">status_counts</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-        
+
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">),</span>
             <span class="s2">&quot;pending&quot;</span><span class="p">:</span> <span class="n">status_counts</span><span class="p">[</span><span class="n">TaskStatus</span><span class="o">.</span><span class="n">PENDING</span><span class="o">.</span><span class="n">value</span><span class="p">],</span>
@@ -742,13 +735,13 @@
             <span class="s2">&quot;skipped&quot;</span><span class="p">:</span> <span class="n">status_counts</span><span class="p">[</span><span class="n">TaskStatus</span><span class="o">.</span><span class="n">SKIPPED</span><span class="o">.</span><span class="n">value</span><span class="p">],</span>
         <span class="p">}</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_critical_path">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_critical_path">[docs]</a>
     <span class="k">def</span> <span class="nf">get_critical_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the critical path (longest path) through the pipeline.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of task IDs in the critical path</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -757,44 +750,44 @@
         <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
                 <span class="n">reverse_graph</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
-        
+
         <span class="c1"># Find longest path using DFS</span>
         <span class="n">memo</span> <span class="o">=</span> <span class="p">{}</span>
-        
+
         <span class="k">def</span> <span class="nf">longest_path</span><span class="p">(</span><span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
             <span class="k">if</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">memo</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">memo</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
-            
+
             <span class="k">if</span> <span class="ow">not</span> <span class="n">reverse_graph</span><span class="p">[</span><span class="n">task_id</span><span class="p">]:</span>  <span class="c1"># No dependencies</span>
                 <span class="n">memo</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="n">task_id</span><span class="p">])</span>
                 <span class="k">return</span> <span class="n">memo</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
-            
+
             <span class="n">max_length</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">max_path</span> <span class="o">=</span> <span class="p">[]</span>
-            
+
             <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">reverse_graph</span><span class="p">[</span><span class="n">task_id</span><span class="p">]:</span>
                 <span class="n">length</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">longest_path</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">length</span> <span class="o">&gt;</span> <span class="n">max_length</span><span class="p">:</span>
                     <span class="n">max_length</span> <span class="o">=</span> <span class="n">length</span>
                     <span class="n">max_path</span> <span class="o">=</span> <span class="n">path</span>
-            
+
             <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_path</span> <span class="o">+</span> <span class="p">[</span><span class="n">task_id</span><span class="p">])</span>
             <span class="n">memo</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
             <span class="k">return</span> <span class="n">result</span>
-        
+
         <span class="c1"># Find the longest path among all tasks</span>
         <span class="n">max_length</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">critical_path</span> <span class="o">=</span> <span class="p">[]</span>
-        
+
         <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
             <span class="n">length</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">longest_path</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">length</span> <span class="o">&gt;</span> <span class="n">max_length</span><span class="p">:</span>
                 <span class="n">max_length</span> <span class="o">=</span> <span class="n">length</span>
                 <span class="n">critical_path</span> <span class="o">=</span> <span class="n">path</span>
-        
+
         <span class="k">return</span> <span class="n">critical_path</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.to_dict">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.to_dict">[docs]</a>
     <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
@@ -810,7 +803,7 @@
             <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
         <span class="p">}</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.from_dict">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.from_dict">[docs]</a>
     <span class="nd">@classmethod</span>
@@ -821,123 +814,126 @@
         <span class="k">if</span> <span class="s2">&quot;tasks&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task_data</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;tasks&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">Task</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">task_data</span><span class="p">)</span>
-        
+
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;tasks&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tasks</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.__repr__">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.__repr__">[docs]</a>
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;String representation of pipeline.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Pipeline(id=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;, name=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;, tasks=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.__len__">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.__len__">[docs]</a>
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of tasks in pipeline.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.__contains__">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.__contains__">[docs]</a>
     <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if task exists in pipeline.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.__iter__">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.__iter__">[docs]</a>
     <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate over task IDs.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.has_task">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.has_task">[docs]</a>
     <span class="k">def</span> <span class="nf">has_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check if pipeline has a task with given ID.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task_id: Task ID to check</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            True if task exists, False otherwise</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_execution_order_flat">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_execution_order_flat">[docs]</a>
     <span class="k">def</span> <span class="nf">get_execution_order_flat</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get flat execution order of tasks.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of task IDs in execution order</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">levels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_execution_levels</span><span class="p">()</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">task_id</span> <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="n">levels</span> <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">level</span><span class="p">]</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_execution_levels">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_execution_levels">[docs]</a>
     <span class="k">def</span> <span class="nf">get_execution_levels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get tasks grouped by execution level (parallel groups).</span>
-<span class="sd">        </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of lists, where each inner list contains task IDs that can</span>
 <span class="sd">            be executed in parallel at that level</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Build dependency graph</span>
-        <span class="n">in_degree</span> <span class="o">=</span> <span class="p">{</span><span class="n">task_id</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">dependencies</span><span class="p">)</span> <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">in_degree</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">task_id</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">dependencies</span><span class="p">)</span> <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
         <span class="n">graph</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-        
+
         <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">dependencies</span><span class="p">:</span>
                 <span class="n">graph</span><span class="p">[</span><span class="n">dep</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
-        
+
         <span class="c1"># Topological sort with level grouping</span>
         <span class="n">levels</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">queue</span> <span class="o">=</span> <span class="n">deque</span><span class="p">([</span><span class="n">task_id</span> <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">degree</span> <span class="ow">in</span> <span class="n">in_degree</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">degree</span> <span class="o">==</span> <span class="mi">0</span><span class="p">])</span>
-        
+
         <span class="k">while</span> <span class="n">queue</span><span class="p">:</span>
             <span class="n">current_level</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">level_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
-            
+
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">level_size</span><span class="p">):</span>
                 <span class="n">task_id</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
                 <span class="n">current_level</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
-                
+
                 <span class="k">for</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">[</span><span class="n">task_id</span><span class="p">]:</span>
                     <span class="n">in_degree</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
                     <span class="k">if</span> <span class="n">in_degree</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="n">queue</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
-            
+
             <span class="k">if</span> <span class="n">current_level</span><span class="p">:</span>
                 <span class="n">levels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_level</span><span class="p">)</span>
-        
+
         <span class="c1"># Verify all tasks are included</span>
         <span class="n">total_tasks</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">level</span><span class="p">)</span> <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="n">levels</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">total_tasks</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">CircularDependencyError</span><span class="p">(</span><span class="s2">&quot;Cannot determine execution order - circular dependencies detected&quot;</span><span class="p">)</span>
-        
+            <span class="k">raise</span> <span class="n">CircularDependencyError</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot determine execution order - circular dependencies detected&quot;</span>
+            <span class="p">)</span>
+
         <span class="k">return</span> <span class="n">levels</span></div>
 
-    
-    
+
 <div class="viewcode-block" id="Pipeline.get_dependencies">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_dependencies">[docs]</a>
     <span class="k">def</span> <span class="nf">get_dependencies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get dependencies for a task.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task_id: Task ID</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of dependency task IDs</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -945,28 +941,28 @@
             <span class="k">return</span> <span class="p">[]</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">dependencies</span><span class="p">)</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_dependents">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_dependents">[docs]</a>
     <span class="k">def</span> <span class="nf">get_dependents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get tasks that depend on the given task.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            task_id: Task ID</span>
-<span class="sd">            </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            List of dependent task IDs</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dependents</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.is_valid">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.is_valid">[docs]</a>
     <span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check if pipeline is valid.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            True if valid, False otherwise</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -976,20 +972,20 @@
         <span class="k">except</span> <span class="p">(</span><span class="n">InvalidDependencyError</span><span class="p">,</span> <span class="n">CircularDependencyError</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.get_status">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.get_status">[docs]</a>
     <span class="k">def</span> <span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get pipeline status summary.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            Dictionary with status counts</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">status_counts</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">status_counts</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-        
+
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;total_tasks&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">),</span>
             <span class="s2">&quot;pending_tasks&quot;</span><span class="p">:</span> <span class="n">status_counts</span><span class="p">[</span><span class="n">TaskStatus</span><span class="o">.</span><span class="n">PENDING</span><span class="o">.</span><span class="n">value</span><span class="p">],</span>
@@ -999,19 +995,19 @@
             <span class="s2">&quot;skipped_tasks&quot;</span><span class="p">:</span> <span class="n">status_counts</span><span class="p">[</span><span class="n">TaskStatus</span><span class="o">.</span><span class="n">SKIPPED</span><span class="o">.</span><span class="n">value</span><span class="p">],</span>
         <span class="p">}</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.clear_tasks">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.clear_tasks">[docs]</a>
     <span class="k">def</span> <span class="nf">clear_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all tasks from the pipeline.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
 
-    
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">task_count</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get number of tasks in pipeline.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span>
-    
+
 <div class="viewcode-block" id="Pipeline.__eq__">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.__eq__">[docs]</a>
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1020,7 +1016,7 @@
             <span class="k">return</span> <span class="bp">NotImplemented</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">id</span></div>
 
-    
+
 <div class="viewcode-block" id="Pipeline.__hash__">
 <a class="viewcode-back" href="../../../api/_autosummary/orchestrator.Pipeline.html#orchestrator.Pipeline.__hash__">[docs]</a>
     <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -1030,616 +1026,31 @@
 
 </pre></div>
 
-              <div id="bottom-dl" class="xanadu-call-to-action-links">
-                <div id="tutorial-type">_modules/orchestrator/core/pipeline</div>
-                <div class="download-python-link">
-                  <i class="fab fa-python"></i>&nbsp;
-                  <div class="call-to-action-desktop-view">Download Python script</div>
-                </div>
-                <div class="download-notebook-link">
-                  <i class="fas fa-download"></i>&nbsp;
-                  <div class="call-to-action-desktop-view">Download Notebook</div>
-                </div>
-                <div class="github-view-link">
-                  <i class="fab fa-github"></i>&nbsp;
-                  <div class="call-to-action-desktop-view">View on GitHub</div>
-                </div>
-              </div>
-
-            </div>
-            
-              
-            
+           </div>
           </div>
-<div class="localtoc-container nano has-scrollbar">
-  <div class="nano-content">
-    <div id="localtoc">
-        
-          <h3>Contents</h3>
-          <!-- Display the ToC for a subset of the current document tree. -->
-          <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../concepts.html">Key Concepts</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
-</ul>
+          <footer>
 
-        
-    </div>
+  <hr/>
 
-    <div class="xanadu-call-to-action-links">
-        <h3>Downloads</h3>
-        <div id="tutorial-type">_modules/orchestrator/core/pipeline</div>
-        <div class="download-python-link">
-            <i class="fab fa-python"></i>&nbsp;
-            <div class="call-to-action-desktop-view">Download Python script</div>
-        </div>
-        <div class="download-notebook-link">
-            <i class="fas fa-download"></i>&nbsp;
-            <div class="call-to-action-desktop-view">Download Notebook</div>
-        </div>
-        <div class="github-view-link">
-            <i class="fab fa-github"></i>&nbsp;
-            <div class="call-to-action-desktop-view">View on GitHub</div>
-        </div>
-    </div>
-    <div id="related-tutorials" class="mt-4">
-      <h3> Related</h3>
-    </div>
-  </div>
-</div>
-
-
-          <div class="clearfix"></div>
-        </div>
-    </div>
-    <div class="related" role="navigation" aria-label="Related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">Orchestrator 0.1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../../orchestrator.html" >orchestrator</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">orchestrator.core.pipeline</a></li> 
-      </ul>
-    </div>
-  <script type="text/javascript">
-    $("#mobile-toggle").click(function () {
-      $("#left-column").slideToggle("slow");
-    });
-  </script>
-
-  <!-- jQuery -->
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-  <!-- MathJax -->
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-  <!-- Bootstrap core JavaScript -->
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
-  <!-- MDB core JavaScript -->
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.10/js/mdb.min.js"></script>
-  <!-- Overlay Scrollbars -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.11.4/overlayscrollbars.cjs.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <!-- Syntax Highlighting -->
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/highlight.min.js"></script>
-  <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
-
-  <script type="text/javascript">
-
-    $("a.reference.internal").each(function(){
-      var link = $(this).attr("href");
-
-      var hash = link.split("#")[1];
-      var page = link.split("#")[0].split("/").slice(-1)[0].replace(".html", "");
-
-      if (hash == page) {
-        $(this).attr("href", link.split("#")[0]);
-      }
-    });
-
-    $(".document > .section").removeClass("section");
-    $("h1 ~ .section").removeClass("section");
-    OverlayScrollbars(document.querySelector('.nano'), {});
-  </script>
-
-  <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-      const localToCContainer = document.querySelector(".localtoc-container");
-      const localToCTop = parseInt(getComputedStyle(localToCContainer).top, 10);
-      const navbarHeight = document.querySelector("nav").offsetHeight;
-      const footerHeight = document.querySelector("footer").offsetHeight;
-      const localToCPadding = localToCTop - navbarHeight;
-
-      function adjustLocalToC() {
-        // Adjusts the height and vertical offset of the local ToC.
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollBottom = document.documentElement.scrollHeight - window.innerHeight - scrollTop;
-
-        const localToCHeight = window.innerHeight - localToCTop - Math.max(0, footerHeight - scrollBottom) - localToCPadding;
-        localToCContainer.style.height = localToCHeight + "px";
-        localToCContainer.querySelector(".nano-content").style.height = localToCHeight + "px";
-
-        if (scrollBottom <= 1) {
-          // Switching the position away from "fixed" ensures that the local ToC
-          // "bounces" with the content and stays above the footer.
-          localToCContainer.style.position = "absolute";
-          localToCContainer.style.top = (scrollTop + localToCPadding) + "px";
-        } else {
-          localToCContainer.style.position = "fixed";
-          localToCContainer.style.top = localToCTop + "px";
-        }
-      }
-
-      adjustLocalToC();
-      window.addEventListener('scroll', adjustLocalToC);
-    });
-  </script>
-
-  <script type="text/javascript">
-    if (document.querySelector(".current")) {
-      var target = document.querySelector(".current");
-      var rect = target.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight) {
-          const nanoElement = document.querySelector(".nano");
-          const currentElement = document.querySelector(".current");
-          if (nanoElement && currentElement) {
-            nanoElement.scrollTop = currentElement.offsetTop - nanoElement.offsetTop;
-          }
-      } else {
-          document.querySelector(".nano").scrollTop = 0;
-      }
-    }
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll(".css-transitions-only-after-page-load").forEach(function (element) {
-            setTimeout(function () { 
-                element.classList.remove("css-transitions-only-after-page-load"); 
-            }, 10);
-        });
-        if (window.location.hash) {
-          const target = document.querySelector("[id='" + window.location.hash.substr(1) + "']");
-          if (target && target.closest(".collapse")) {
-            target.closest(".collapse").classList.add("show");
-            target.closest(".collapse").previousElementSibling.querySelector(".rotate").classList.add("up");
-          }
-        }
-    });
-  </script>
-
-    <script type="text/javascript">
-    var downloadNote = $(".sphx-glr-download-link-note.admonition.note");
-    if (downloadNote.length >= 1) {
-      var tutorialUrlArray = $("#tutorial-type").text().split('/');
-
-      if (tutorialUrlArray[0] == "demos") {
-        tutorialUrlArray[0] = "demonstrations";
-      }
-
-      var githubLink = "https://github.com/" + "https://github.com/contextualdynamics/orchestrator" + "/blob/master/" + tutorialUrlArray.join("/") + ".py",
-          pythonLink = $(".sphx-glr-download .reference.download")[0].href,
-          notebookLink = $(".sphx-glr-download .reference.download")[1].href;
-
-      $(".download-python-link").wrap("<a href=" + pythonLink + " data-behavior='call-to-action-event' data-response='Download Python script' download target='_blank'/>");
-      $(".download-notebook-link").wrap("<a href=" + notebookLink + " data-behavior='call-to-action-event' data-response='Download Notebook' download target='_blank'/>");
-      $(".github-view-link").wrap("<a href=" + githubLink + " data-behavior='call-to-action-event' data-response='View on Github' target='_blank'/>");
-      $("#right-column").addClass("page-shadow");
-    } else {
-      $(".xanadu-call-to-action-links").hide();
-      $("#bottom-dl").attr('style','display: none !important');
-    }
-    </script>
-
-    <script type="text/javascript">
-      function makeUL(urls, text) {
-          var list = document.createElement('ul');
-
-          for (var i = 0; i < urls.length; i++) {
-              var item = document.createElement('li');
-              var a = document.createElement('a');
-              var linkText = document.createTextNode(text[i]);
-              a.appendChild(linkText);
-              a.href = urls[i];
-              item.appendChild(a);
-              list.appendChild(item);
-          }
-          return list;
-      }
-
-      if (typeof related_tutorials !== 'undefined') {
-          document.getElementById('related-tutorials').appendChild(makeUL(related_tutorials, related_tutorials_titles));
-          $("#related-tutorials ul li a").append(' <i class="fas fa-angle-double-right" style="font-size: smaller;"></i>')
-          $("#related-tutorials").show();
-
-    } else {
-          $("#related-tutorials").hide();
-    }
-    </script>
-
-  <!-- Account for MathJax when navigating to anchor tags. -->
-  <script type="text/javascript">
-    function scrollToElement(e) {
-      // Scrolls to the given element, taking into account the navbar.
-      MathJax.Hub.Queue(function() {
-        // The following MUST be done asynchronously to take effect.
-        setTimeout(function() {
-          const navbar = document.querySelector("nav.navbar");
-          const navbarHeight = navbar ? navbar.offsetHeight : 0;
-          const scrollToY = e.offsetTop + e.offsetParent.offsetTop - navbarHeight;
-          window.scrollTo(0, scrollToY);
-        }, 0);
-      });
-    }
-
-    function scrollToFragment(fragment) {
-      // Scrolls to the position of the given URL fragment (which includes the "#").
-      const elementID = fragment.replace(".", "\\.");
-      if (elementID !== "") {
-        const element = document.querySelector(elementID);
-        if (element !== null) {
-          scrollToElement(element);
-        }
-      }
-    }
-
-    $(document).ready(() => {
-      scrollToFragment(window.location.hash);
-      window.addEventListener("popstate", (_) => scrollToFragment(document.location.hash), false);
-    });
-  </script>
-
-  <!-- Hide the rendering of :orphan: metadata. -->
-  <script type="text/javascript">
-    $(document).ready(() => {
-      const elements = document.getElementsByClassName("field-odd");
-      for (const element of elements) {
-          if (element.innerHTML.trim() === "orphan") {
-            element.style.display = "none";
-          }
-      }
-    });
-  </script>
-
-  <!-- Utility functions for setting ARIA attributes on buttons that show menus. -->
-  <script type="text/javascript">
-    function setAriaAttributes(button, expand) {
-      const skip = button.getAttribute("aria-label").indexOf(" ");
-      const menu = button.getAttribute("aria-label").substr(skip);
-      button.setAttribute("aria-label", (expand ? "close" : "open") + menu);
-      button.setAttribute("aria-expanded", expand.toString());
-    }
-
-    function toggleAriaAttributes(button) {
-      setAriaAttributes(button, button.getAttribute("aria-expanded") === "false");
-    }
-  </script>
-
-  <!-- Delays the closing of dropdowns on the LHS of the navigation bar. -->
-  <script type="text/javascript">
-    $(document).ready(() => {
-      const timers = {};
-      const navbar_left_links = document.querySelectorAll(".navbar-left-link");
-      for (const [i, link] of navbar_left_links.entries()) {
-        const dropdown = link.querySelector(".navbar-dropdown");
-        const button = link.querySelector("button");
-        if (dropdown !== null) {
-          timers[i] = {link: link, button: button, timeout: undefined};
-
-          // Expands the current dropdown and closes other dropdowns.
-          const expandDropdown = () => {
-            for (const [j, timer] of Object.entries(timers)) {
-              clearTimeout(timer.timeout);
-              if (i !== j) {
-                timer.link.classList.remove("open");
-                setAriaAttributes(timer.button, false);
-              }
-            }
-            link.classList.add("open");
-            setAriaAttributes(button, true);
-          }
-
-          // Closes the current dropdown after the given delay.
-          const collapseDropdown = (event, delay = 1000) => {
-            timers[i].timeout = setTimeout(function(event){
-              link.classList.remove("open");
-              setAriaAttributes(button, false);
-            }, delay);
-          }
-
-          // Toggles the current dropdown.
-          const toggleDropdown = (event) => {
-            if (link.classList.contains("open")) {
-              collapseDropdown(event, 0);
-            } else {
-              expandDropdown();
-            }
-          }
-
-          link.addEventListener("mouseenter", expandDropdown);
-          link.addEventListener("mouseleave", collapseDropdown);
-          button.addEventListener("click", toggleDropdown);
-        }
-      }
-    });
-  </script>
-
-  <!-- Toggles whether the global ToC is displayed on mobile. -->
-  <script type="text/javascript">
-    function toggleMobileToC(button) {
-      const sidebar = document.querySelector("#left-column");
-      const chevron = button.querySelector("i");
-      if (sidebar !== null) {
-        sidebar.classList.toggle("open");
-        chevron.classList.toggle("open");
-      }
-    }
-  </script>
-
-  <!-- Toggles whether the navbar dropdown is displayed on mobile. -->
-  <script type="text/javascript">
-    function toggleMobileNavbar(button) {
-      const dropdown = document.querySelector(".mobile.navbar-links");
-      if (dropdown !== null) {
-        dropdown.classList.toggle("open");
-        button.classList.toggle("open");
-        toggleAriaAttributes(button);
-
-        const hidden = button.getAttribute("aria-expanded") === "true";
-        const hidden_elements = document.querySelectorAll(".container-wrapper, footer");
-        for (const element of hidden_elements) {
-          element.setAttribute("aria-hidden", hidden.toString());
-        }
-      }
-    }
-  </script>
-
-  <!-- Toggles whether the dropdown from a navbar link is displayed on mobile. -->
-  <script type="text/javascript">
-    function getIntStyleProperty(element, property) {
-      const style = window.getComputedStyle(element);
-      return parseInt(style.getPropertyValue(property), 10);
-    }
-
-    function getDropdownHeight(dropdown) {
-      const dropdown_list = dropdown.querySelector("ul");
-      const dropdown_list_items = dropdown_list.querySelectorAll("li");
-      const dropdown_list_gap = getIntStyleProperty(dropdown_list, "gap");
-
-      let dropdown_list_height = -dropdown_list_gap;
-      for (const list_item of dropdown_list_items) {
-        dropdown_list_height += getIntStyleProperty(list_item, "height");
-        dropdown_list_height += dropdown_list_gap
-      }
-      return dropdown_list_height + "px";
-    }
-
-    function toggleMobileNavbarLink(button) {
-      const item = button.parentElement;
-      const dropdown = item.querySelector(".mobile.navbar-dropdown");
-      if (dropdown !== null) {
-        const hidden = button.getAttribute("aria-expanded") === "true";
-        dropdown.style.height = hidden ? "0px" : getDropdownHeight(dropdown);
-      }
-      item.classList.toggle("open");
-      toggleAriaAttributes(button);
-    }
-  </script>
-
-  <!-- Collapses the most specific menu when ESC is pressed. -->
-  <script type="text/javascript">
-    $(document).keyup(function(event) {
-      // The keycode of ESC is 27.
-      if (event.keyCode == 27) {
-        // Collapse an open dropdown from a navbar link on mobile.
-        const mobileSubMenuButtons = document.querySelectorAll(".mobile.navbar-link button");
-        for (const button of mobileSubMenuButtons) {
-          if (button.parentElement.classList.contains("open")) {
-            toggleMobileNavbarLink(button);
-            return;
-          }
-        }
-
-        // Collapse the navbar dropdown on mobile.
-        const mobileMenuButton = document.querySelector(".mobile.navbar-menu button");
-        if (mobileMenuButton !== null && mobileMenuButton.classList.contains("open")) {
-          toggleMobileNavbar(mobileMenuButton);
-          return;
-        }
-
-        // Close an open navbar dropdown on desktop.
-        const navbar_left_links = document.querySelectorAll(".navbar-left-link");
-        for (const link of navbar_left_links.values()) {
-          const button = link.querySelector("button");
-          if (link.classList.contains("open")) {
-            link.classList.remove("open");
-            setAriaAttributes(button, true);
-            return;
-          }
-        }
-      }
-    });
-  </script>
-
-  <!-- Trap focus in the navbar dropdown on mobile if it is expanded. -->
-  <script type="text/javascript">
-    // Using ``keyup`` would cause the last element to be quickly "skipped".
-    $(document).keydown(function(event) {
-      // The keycode of TAB is 9.
-      if (event.keyCode == 9) {
-        // Do nothing if the navbar dropdown is collapsed on mobile.
-        const mobileMenuButton = document.querySelector(".mobile.navbar-menu button");
-        if (mobileMenuButton === null || !mobileMenuButton.classList.contains("open")) {
-          return;
-        }
-
-        const links = document.querySelectorAll(".mobile.navbar-links a");
-        const bot = links[links.length - 1];
-        const top = document.querySelector(".mobile.navbar-menu button");
-
-        // Do nothing if there is a missing focus element.
-        if (top === null || bot === undefined) {
-          return;
-        }
-
-        // Wrap the focus to the top or bottom element if needed. The direction
-        // of the wrapping depends on whether TAB or SHIFT + TAB is pressed.
-        if (!event.shiftKey && document.activeElement === bot) {
-          top.focus();
-          event.preventDefault();
-        } else if (event.shiftKey && document.activeElement === top) {
-          bot.focus();
-          event.preventDefault();
-        }
-      }
-    });
-  </script>
-
-  <script type="text/javascript">
-    jQuery.noConflict(true);
-  </script>
-
-  <hr class="p-0 m-0">
-
-<footer>
-  <div class="footer-top">
-    <!-- About -->
-    <div class="footer-about">
-      <a class="footer-icon" href="https://xanadu.ai">
-        <img src="_static/xanadu_logo.svg" alt="Xanadu" height="40px" width="40px">
-      </a>
-      <p class="footer-description">
-                Located in the heart of downtown Toronto, we've brought together
-        exceptional minds from around the world to build quantum computers
-        that are useful and available to people everywhere.
-        
-      </p>
-    </div>
-
-    <div class="footer-social-icons-and-taglines">
-      <!-- Social Icons -->
-      <div class="footer-social-icons">
-        
-          <a href="https://twitter.com/xanaduai" aria-label="Twitter">
-            <i class="bx bxl-twitter"></i>
-          </a>
-        
-          <a href="https://github.com/XanaduAI" aria-label="GitHub">
-            <i class="bx bxl-github"></i>
-          </a>
-        
-          <a href="https://linkedin.com/company/xanaduai/" aria-label="LinkedIn">
-            <i class="bx bxl-linkedin"></i>
-          </a>
-        
-          <a href="https://discuss.pennylane.ai" aria-label="Discourse">
-            <i class="bx bxl-discourse"></i>
-          </a>
-        
-          <a href="https://u.strawberryfields.ai/slack" aria-label="Slack">
-            <i class="bx bxl-slack"></i>
-          </a>
-        
-          <a href="https://xanadu.ai/blog" aria-label="RSS">
-            <i class="bx bx-rss"></i>
-          </a>
-        
-      </div>
-
-      <!-- Taglines -->
-      
-      <a class="footer-tagline" href="https://xanadu.us17.list-manage.com/subscribe?u=725f07a1d1a4337416c3129fd&id=294b062630">
-        Stay updated with our newsletter
-      </a>
-      
-    </div>
-
-    <!-- Links -->
-    <div class="footer-links">
-      
-      <div class="footer-link-column">
-        <p class="footer-link-heading">PennyLane</p>
-        
-          <a class="footer-link-item" href="https://pennylane.ai/">Home</a>
-        
-          <a class="footer-link-item" href="https://pennylane.ai/qml">Learn</a>
-        
-          <a class="footer-link-item" href="https://pennylane.ai/qml/demonstrations.html">Demonstrations</a>
-        
-          <a class="footer-link-item" href="https://docs.pennylane.ai/">Documentation</a>
-        
-          <a class="footer-link-item" href="https://github.com/PennyLaneAI/pennylane">GitHub</a>
-        
-          <a class="footer-link-item" href="https://twitter.com/pennylaneai">Twitter</a>
-        
-          <a class="footer-link-item" href="https://pennylane.ai/blog">Blog</a>
-        
-      </div>
-      
-      <div class="footer-link-column">
-        <p class="footer-link-heading">Strawberry Fields</p>
-        
-          <a class="footer-link-item" href="https://strawberryfields.ai/">Home</a>
-        
-          <a class="footer-link-item" href="https://strawberryfields.ai/photonics">Photonics</a>
-        
-          <a class="footer-link-item" href="https://strawberryfields.ai/photonics/demonstrations.html">Demonstrations</a>
-        
-          <a class="footer-link-item" href="https://strawberryfields.readthedocs.io/">Documentation</a>
-        
-          <a class="footer-link-item" href="https://github.com/XanaduAI/strawberryfields">GitHub</a>
-        
-      </div>
-      
-      <div class="footer-link-column">
-        <p class="footer-link-heading">Xanadu</p>
-        
-          <a class="footer-link-item" href="https://xanadu.ai/">Home</a>
-        
-          <a class="footer-link-item" href="https://xanadu.ai/about/">About</a>
-        
-          <a class="footer-link-item" href="https://xanadu.ai/photonics">Hardware</a>
-        
-          <a class="footer-link-item" href="https://xanadu.ai/careers/">Careers</a>
-        
-          <a class="footer-link-item" href="https://discuss.pennylane.ai/">Forum</a>
-        
-          <a class="footer-link-item" href="https://xanadu.ai/blog">Blog</a>
-        
-      </div>
-      
-    </div>
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Contextual Dynamics Lab.</p>
   </div>
 
-  <hr class="footer-separator">
-
-  <div class="footer-bottom">
-    <!-- Copyright -->
-    <div class="footer-copyrights">
-        <p class="footer-copyright-item">
-            Copyright &copy; 2025, Contextual Dynamics Lab
-        </p>
-      
-        <p class="footer-copyright-item">
-          AI Pipeline Orchestration Framework
-        </p>
-      
-    </div>
-
-    <!-- Policies -->
-    <div class="footer-policies">
-      
-    </div>
-  </div>
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
-  </body>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
 </html>

@@ -340,10 +340,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#thread-safety">Thread Safety</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#migration-guide">Migration Guide</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#from-version-0-1-x-to-0-2-x">From Version 0.1.x to 0.2.x</a></li>
-</ul>
-</li>
 <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#common-issues">Common Issues</a></li>
 </ul>
@@ -748,30 +744,13 @@
 </pre></div>
 </div>
 </section>
-<section id="migration-guide">
-<h2>Migration Guide<a class="headerlink" href="#migration-guide" title="Link to this heading"></a></h2>
-<section id="from-version-0-1-x-to-0-2-x">
-<h3>From Version 0.1.x to 0.2.x<a class="headerlink" href="#from-version-0-1-x-to-0-2-x" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Old way (0.1.x)</span>
-<span class="kn">from</span> <span class="nn">orchestrator</span> <span class="kn">import</span> <span class="n">OrchestratorEngine</span>
-<span class="n">engine</span> <span class="o">=</span> <span class="n">OrchestratorEngine</span><span class="p">()</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">run_pipeline</span><span class="p">(</span><span class="s2">&quot;pipeline.yaml&quot;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">)</span>
-
-<span class="c1"># New way (0.2.x)</span>
-<span class="kn">import</span> <span class="nn">orchestrator</span> <span class="k">as</span> <span class="nn">orc</span>
-<span class="n">pipeline</span> <span class="o">=</span> <span class="n">orc</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;pipeline.yaml&quot;</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-</section>
 <section id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
 <section id="common-issues">
 <h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
 <p><strong>ImportError: No module named ‘orchestrator’</strong></p>
 <ul class="simple">
-<li><p>Ensure the package is installed: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">orchestrator-ai</span></code></p></li>
+<li><p>Ensure the package is installed: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">py-orc</span></code></p></li>
 <li><p>Check virtual environment activation</p></li>
 </ul>
 <p><strong>Model Loading Failures</strong></p>
@@ -797,10 +776,9 @@
 <section id="getting-help">
 <h2>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p><strong>Documentation</strong>: <a class="reference external" href="https://orchestrator.readthedocs.io">https://orchestrator.readthedocs.io</a></p></li>
+<li><p><strong>Documentation</strong>: <a class="reference external" href="https://orc.readthedocs.io">https://orc.readthedocs.io</a></p></li>
 <li><p><strong>GitHub Issues</strong>: <a class="reference external" href="https://github.com/ContextLab/orchestrator/issues">https://github.com/ContextLab/orchestrator/issues</a></p></li>
 <li><p><strong>Discussions</strong>: <a class="reference external" href="https://github.com/ContextLab/orchestrator/discussions">https://github.com/ContextLab/orchestrator/discussions</a></p></li>
-<li><p><strong>Discord</strong>: <a class="reference external" href="https://discord.gg/orchestrator">https://discord.gg/orchestrator</a></p></li>
 </ul>
 </section>
 </section>
