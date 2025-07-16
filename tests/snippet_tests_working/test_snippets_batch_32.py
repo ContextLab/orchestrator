@@ -23,9 +23,17 @@ def test_yaml_pipelines_lines_262_284_0():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation
@@ -49,9 +57,17 @@ def test_yaml_pipelines_lines_294_308_1():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation
@@ -75,9 +91,17 @@ def test_yaml_pipelines_lines_313_332_2():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation
@@ -101,9 +125,17 @@ def test_yaml_pipelines_lines_342_353_3():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation
@@ -127,9 +159,17 @@ def test_yaml_pipelines_lines_358_379_4():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation
@@ -177,9 +217,17 @@ def test_yaml_pipelines_lines_424_434_6():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation
@@ -203,9 +251,17 @@ def test_yaml_pipelines_lines_445_464_7():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation
@@ -229,9 +285,17 @@ def test_yaml_pipelines_lines_470_498_8():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation
@@ -255,9 +319,17 @@ def test_yaml_pipelines_lines_504_521_9():
     
     # Check if it's valid YAML
     try:
-        data = yaml.safe_load(content)
+        # Check if content contains AUTO tags
+        if '<AUTO>' in content:
+            # Use AUTO tag parser
+            from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+            parser = AutoTagYAMLParser()
+            data = parser.parse(content)
+        else:
+            # Use standard YAML parser
+            data = yaml.safe_load(content)
         assert data is not None
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, ValueError) as e:
         pytest.fail(f"YAML parsing error: {e}")
     
     # If it looks like a pipeline, do basic structure validation

@@ -12,6 +12,7 @@ from ..core.pipeline import Pipeline
 from ..core.task import Task
 from .ambiguity_resolver import AmbiguityResolver
 from .schema_validator import SchemaValidator
+from .auto_tag_yaml_parser import AutoTagYAMLParser
 
 
 class YAMLCompilerError(Exception):
@@ -106,7 +107,7 @@ class YAMLCompiler:
 
     def _parse_yaml(self, yaml_content: str) -> Dict[str, Any]:
         """
-        Parse YAML content safely.
+        Parse YAML content safely, handling AUTO tags properly.
 
         Args:
             yaml_content: YAML content as string
@@ -118,8 +119,10 @@ class YAMLCompiler:
             YAMLCompilerError: If YAML parsing fails
         """
         try:
-            return yaml.safe_load(yaml_content)
-        except yaml.YAMLError as e:
+            # Use AUTO tag parser to handle special AUTO tags
+            parser = AutoTagYAMLParser()
+            return parser.parse(yaml_content)
+        except (yaml.YAMLError, ValueError) as e:
             raise YAMLCompilerError(f"Invalid YAML: {e}") from e
 
     def _process_templates(

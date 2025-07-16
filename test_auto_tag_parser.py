@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from orchestrator.compiler.auto_tag_yaml_parser_v2 import AutoTagYAMLParser, parse_yaml_with_auto_tags
+from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser, parse_yaml_with_auto_tags
 import yaml
 
 
