@@ -1,0 +1,375 @@
+name: "Creative Writing Assistant"
+description: "AI-powered creative writing with story generation, character development, and world building"
+
+inputs:
+  genre:
+    type: string
+    description: "Story genre (fantasy, sci-fi, mystery, romance, etc.)"
+    required: true
+  
+  length:
+    type: string
+    description: "Target length (flash, short_story, novella, novel)"
+    default: "short_story"
+  
+  writing_style:
+    type: string
+    description: "Writing style to emulate"
+    default: "contemporary"
+  
+  target_audience:
+    type: string
+    description: "Target audience (young_adult, general, literary, etc.)"
+    default: "general"
+  
+  initial_premise:
+    type: string
+    description: "Optional starting premise for the story"
+    required: false
+  
+  include_worldbuilding:
+    type: boolean
+    description: "Include detailed world building (for fantasy/sci-fi)"
+    default: true
+  
+  chapter_count:
+    type: integer
+    description: "Number of chapters to generate"
+    default: 5
+
+steps:
+  # Step 1: Analyze genre conventions
+  - id: analyze_genre
+    action: <AUTO>analyze genre conventions for {{genre}}:
+      1. Identify key genre elements and tropes
+      2. Determine reader expectations
+      3. Find successful examples and patterns
+      4. Identify subgenres that apply
+      5. Note required story elements
+      6. Understand tone and pacing norms
+      
+      Return comprehensive genre analysis</AUTO>
+    timeout: 15.0
+    tags: ["analysis", "genre"]
+
+  # Step 2: Generate story premise
+  - id: generate_premise
+    action: <AUTO>create compelling story premise:
+      Genre: {{genre}}
+      Initial idea: {{initial_premise || 'create original concept'}}
+      Genre elements: {{analyze_genre.result.key_elements}}
+      
+      Generate:
+      1. Core premise and central question
+      2. Main conflict (internal and external)
+      3. Key themes to explore
+      4. Setting overview
+      5. Hook that grabs attention
+      6. What makes this story unique
+      
+      Balance familiarity with originality</AUTO>
+    depends_on: [analyze_genre]
+    cache_results: true
+    tags: ["creative", "premise"]
+
+  # Step 3: Develop main characters
+  - id: develop_characters
+    action: <AUTO>create main characters for the story:
+      Premise: {{generate_premise.result.premise}}
+      Genre: {{genre}}
+      
+      For each main character:
+      1. Name and role in story
+      2. Physical description
+      3. Personality traits (strengths and flaws)
+      4. Backstory and motivations
+      5. Internal conflicts
+      6. Character arc outline
+      7. Unique voice and speech patterns
+      8. Relationships to other characters
+      
+      Create 3-5 main characters with depth</AUTO>
+    depends_on: [generate_premise]
+    timeout: 30.0
+    tags: ["characters", "development"]
+
+  # Step 4: Build story world (conditional)
+  - id: build_world
+    action: <AUTO>create detailed world for {{genre}} story:
+      Setting: {{generate_premise.result.setting}}
+      
+      Develop:
+      1. Geography and key locations
+      2. History and lore
+      3. Cultural elements
+      4. Technology/magic systems
+      5. Societal structures
+      6. Unique world rules
+      7. Flora, fauna, and ecology
+      8. Languages and naming conventions
+      
+      Ensure consistency and originality</AUTO>
+    depends_on: [generate_premise]
+    condition: "{{include_worldbuilding}} == true and {{genre}} in ['fantasy', 'sci-fi', 'dystopian']"
+    tags: ["worldbuilding", "setting"]
+
+  # Step 5: Create plot structure
+  - id: design_plot
+    action: <AUTO>design complete plot structure:
+      Premise: {{generate_premise.result}}
+      Characters: {{develop_characters.result}}
+      Length: {{length}}
+      Chapters: {{chapter_count}}
+      
+      Create three-act structure:
+      1. Act 1 - Setup (25%)
+         - Opening scene
+         - Character introductions
+         - Inciting incident
+         - First plot point
+      
+      2. Act 2 - Confrontation (50%)
+         - Rising action
+         - Midpoint reversal
+         - Complications and obstacles
+         - Character development
+         - Second plot point
+      
+      3. Act 3 - Resolution (25%)
+         - Climax
+         - Falling action
+         - Resolution
+         - Denouement
+      
+      Include subplots and pacing</AUTO>
+    depends_on: [develop_characters]
+    cache_results: true
+    tags: ["plot", "structure"]
+
+  # Step 6: Generate chapter outlines
+  - id: outline_chapters
+    action: <AUTO>create detailed chapter outlines:
+      Plot structure: {{design_plot.result}}
+      Chapter count: {{chapter_count}}
+      
+      For each chapter:
+      1. Chapter title
+      2. POV character
+      3. Key events
+      4. Character development
+      5. Plot advancement
+      6. Emotional beats
+      7. Cliffhanger or hook
+      8. Word count target
+      
+      Ensure proper pacing and flow</AUTO>
+    depends_on: [design_plot]
+    tags: ["outline", "chapters"]
+
+  # Step 7: Write opening scene
+  - id: write_opening
+    action: <AUTO>write compelling opening scene:
+      First chapter outline: {{outline_chapters.result.chapters[0]}}
+      Style: {{writing_style}}
+      Genre: {{genre}}
+      
+      Create opening that:
+      1. Hooks reader immediately
+      2. Establishes tone and voice
+      3. Introduces protagonist
+      4. Sets up story world
+      5. Hints at central conflict
+      6. Uses vivid sensory details
+      
+      Write 500-1000 words</AUTO>
+    depends_on: [outline_chapters]
+    timeout: 45.0
+    tags: ["writing", "opening"]
+
+  # Step 8: Generate key scenes
+  - id: write_key_scenes
+    action: <AUTO>write key scene: {{item.description}}
+      Chapter: {{item.chapter}}
+      Characters: {{item.characters}}
+      Purpose: {{item.purpose}}
+      Style: {{writing_style}}
+      
+      Include:
+      1. Scene setting and atmosphere
+      2. Character actions and reactions
+      3. Dialogue that advances plot
+      4. Internal thoughts (if applicable)
+      5. Sensory details
+      6. Emotional tension
+      7. Scene resolution
+      
+      Maintain consistent voice</AUTO>
+    depends_on: [outline_chapters]
+    loop:
+      foreach: "{{design_plot.result.key_scenes}}"
+      parallel: true
+      max_iterations: 10
+    tags: ["writing", "scenes"]
+
+  # Step 9: Create dialogue
+  - id: generate_dialogue
+    action: <AUTO>write character dialogue for scenes:
+      Characters: {{develop_characters.result}}
+      Scene context: {{write_key_scenes.result}}
+      
+      For each conversation:
+      1. Match character voice
+      2. Reveal personality
+      3. Advance plot
+      4. Create subtext
+      5. Build tension
+      6. Sound natural
+      7. Show relationships
+      
+      Make each character distinct</AUTO>
+    depends_on: [write_key_scenes]
+    loop:
+      foreach: "{{write_key_scenes.result}}"
+      max_iterations: 10
+    tags: ["dialogue", "character-voice"]
+
+  # Step 10: Add descriptive elements
+  - id: enhance_descriptions
+    action: <AUTO>enhance scenes with rich descriptions:
+      Current scenes: {{generate_dialogue.result}}
+      World details: {{build_world.result || generate_premise.result.setting}}
+      Genre: {{genre}}
+      
+      Add:
+      1. Sensory details (all five senses)
+      2. Atmospheric elements
+      3. Character body language
+      4. Environmental details
+      5. Symbolic elements
+      6. Mood and tone
+      
+      Balance description with action</AUTO>
+    depends_on: [generate_dialogue]
+    tags: ["description", "atmosphere"]
+
+  # Step 11: Check narrative consistency
+  - id: check_consistency
+    action: <AUTO>verify narrative consistency:
+      Full content: {{enhance_descriptions.result}}
+      Characters: {{develop_characters.result}}
+      Plot: {{design_plot.result}}
+      World rules: {{build_world.result}}
+      
+      Check for:
+      1. Character consistency
+      2. Timeline accuracy
+      3. Plot hole detection
+      4. World rule violations
+      5. POV consistency
+      6. Fact checking
+      7. Name consistency
+      8. Motivation alignment
+      
+      Return issues and fixes</AUTO>
+    depends_on: [enhance_descriptions]
+    tags: ["consistency", "editing"]
+
+  # Step 12: Apply consistency fixes
+  - id: apply_fixes
+    action: <AUTO>apply consistency fixes to story:
+      Content: {{enhance_descriptions.result}}
+      Issues: {{check_consistency.result.issues}}
+      
+      Fix all identified problems while maintaining story flow</AUTO>
+    depends_on: [check_consistency]
+    condition: "{{check_consistency.result.issues_found}} > 0"
+    tags: ["fixes", "editing"]
+
+  # Step 13: Polish prose
+  - id: polish_writing
+    action: <AUTO>polish and refine the prose:
+      Content: {{apply_fixes.result || enhance_descriptions.result}}
+      Style: {{writing_style}}
+      Audience: {{target_audience}}
+      
+      Improve:
+      1. Sentence variety
+      2. Word choice
+      3. Rhythm and flow
+      4. Remove redundancies
+      5. Strengthen verbs
+      6. Clarify ambiguities
+      7. Enhance imagery
+      
+      Maintain author voice</AUTO>
+    depends_on: [apply_fixes, enhance_descriptions]
+    tags: ["polish", "style"]
+
+  # Step 14: Create chapter endings
+  - id: create_cliffhangers
+    action: <AUTO>create compelling chapter endings:
+      Chapters: {{polish_writing.result}}
+      
+      For each chapter ending:
+      1. Create tension or mystery
+      2. Pose unanswered question
+      3. Reveal surprising information
+      4. Emotional climax
+      5. Promise of what's next
+      
+      Keep readers turning pages</AUTO>
+    depends_on: [polish_writing]
+    tags: ["cliffhangers", "pacing"]
+
+  # Step 15: Generate story bible
+  - id: create_story_bible
+    action: <AUTO>compile comprehensive story bible:
+      Include:
+      1. Character profiles and relationships
+      2. World building details
+      3. Timeline of events
+      4. Location descriptions
+      5. Important objects/artifacts
+      6. Magic/technology rules
+      7. Language glossary
+      8. Theme exploration
+      9. Subplot tracking
+      10. Series potential
+      
+      Organize for easy reference</AUTO>
+    depends_on: [create_cliffhangers]
+    tags: ["bible", "reference"]
+
+  # Step 16: Create title and synopsis
+  - id: generate_title
+    action: <AUTO>create compelling title and synopsis:
+      Story content: {{create_cliffhangers.result}}
+      Genre: {{genre}}
+      Themes: {{generate_premise.result.themes}}
+      
+      Generate:
+      1. Main title (memorable and marketable)
+      2. Subtitle if applicable
+      3. One-line pitch
+      4. Short synopsis (100 words)
+      5. Back cover copy (250 words)
+      6. Series name (if applicable)
+      
+      Make it irresistible</AUTO>
+    depends_on: [create_cliffhangers]
+    tags: ["title", "marketing"]
+
+outputs:
+  title: "{{generate_title.result.title}}"
+  subtitle: "{{generate_title.result.subtitle}}"
+  genre: "{{genre}}"
+  word_count: "{{create_cliffhangers.result.total_words}}"
+  chapter_count: "{{create_cliffhangers.result.chapters.length}}"
+  characters: "{{develop_characters.result}}"
+  premise: "{{generate_premise.result.premise}}"
+  one_line_pitch: "{{generate_title.result.pitch}}"
+  synopsis: "{{generate_title.result.synopsis}}"
+  full_story: "{{create_cliffhangers.result}}"
+  story_bible: "{{create_story_bible.result}}"
+  consistency_report: "{{check_consistency.result}}"
+  world_details: "{{build_world.result}}"
