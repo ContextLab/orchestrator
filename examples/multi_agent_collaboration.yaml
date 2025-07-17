@@ -1,0 +1,215 @@
+name: "Multi-Agent Collaboration"
+description: "Collaborative multi-agent system for complex problem solving using declarative YAML"
+
+inputs:
+  problem:
+    type: string
+    description: "Complex problem to solve collaboratively"
+    required: true
+  
+  num_agents:
+    type: integer
+    description: "Number of agents to create"
+    default: 5
+  
+  max_rounds:
+    type: integer
+    description: "Maximum collaboration rounds"
+    default: 10
+  
+  agent_roles:
+    type: string
+    description: "Agent role distribution (auto, balanced, custom)"
+    default: "auto"
+  
+  consensus_threshold:
+    type: float
+    description: "Threshold for solution consensus (0-1)"
+    default: 0.85
+
+steps:
+  # Step 1: Initialize agent network
+  - id: initialize_agents
+    action: <AUTO>create a network of {{num_agents}} specialized AI agents with roles:
+      1. Researcher agents - gather information and conduct analysis
+      2. Analyst agents - process data and identify patterns
+      3. Creative agents - generate innovative solutions
+      4. Critic agents - evaluate and identify issues
+      5. Synthesizer agent - integrate and coordinate
+      
+      Use {{agent_roles}} role distribution strategy.
+      Create communication channels between agents.
+      Return agent profiles and network topology</AUTO>
+    timeout: 30.0
+    tags: ["initialization", "agents"]
+
+  # Step 2: Problem decomposition
+  - id: decompose_problem
+    action: <AUTO>using the synthesizer agent, decompose the problem "{{problem}}" into:
+      1. Sub-problems with clear boundaries
+      2. Dependencies between sub-problems
+      3. Required expertise for each sub-problem
+      4. Complexity assessment
+      5. Success criteria
+      
+      Return structured decomposition with dependency graph</AUTO>
+    depends_on: [initialize_agents]
+    cache_results: true
+    tags: ["decomposition", "planning"]
+
+  # Step 3: Assign tasks to agents
+  - id: assign_tasks
+    action: <AUTO>assign sub-problems to agents based on:
+      1. Agent capabilities and specializations
+      2. Current workload distribution
+      3. Sub-problem requirements
+      4. Optimal collaboration patterns
+      
+      Balance workload and match expertise.
+      Return task assignments and collaboration pairs</AUTO>
+    depends_on: [decompose_problem]
+    tags: ["assignment", "coordination"]
+
+  # Step 4: Collaborative problem solving rounds
+  - id: collaboration_round
+    action: <AUTO>agents work on assigned tasks collaboratively:
+      1. Each agent analyzes their assigned sub-problem
+      2. Agents share insights through message passing
+      3. Request help from peers when needed
+      4. Build on each other's solutions
+      5. Update shared knowledge base
+      
+      Return agent solutions and communication log</AUTO>
+    depends_on: [assign_tasks]
+    loop:
+      max_iterations: "{{max_rounds}}"
+      break_condition: "{{check_convergence.result.score}} >= {{consensus_threshold}}"
+    timeout: 120.0
+    tags: ["collaboration", "solving"]
+
+  # Step 5: Check solution convergence
+  - id: check_convergence
+    action: <AUTO>analyze agent solutions for convergence:
+      1. Calculate similarity between solutions
+      2. Measure consensus level
+      3. Identify remaining disagreements
+      4. Assess solution completeness
+      5. Compute convergence score (0-1)
+      
+      Return convergence metrics and analysis</AUTO>
+    depends_on: [collaboration_round]
+    condition: "{{collaboration_round.iteration}} > 0"
+    tags: ["analysis", "convergence"]
+
+  # Step 6: Peer review and critique
+  - id: peer_review
+    action: <AUTO>agents review each other's solutions:
+      1. Critic agents evaluate solution quality
+      2. Identify strengths and weaknesses
+      3. Suggest improvements
+      4. Rate solution components
+      5. Build trust scores between agents
+      
+      Return reviews and improvement suggestions</AUTO>
+    depends_on: [collaboration_round]
+    condition: "{{check_convergence.result.score}} < {{consensus_threshold}}"
+    tags: ["review", "quality-control"]
+
+  # Step 7: Conflict resolution
+  - id: resolve_conflicts
+    action: <AUTO>resolve disagreements between agents:
+      1. Identify conflict types (factual, approach, priority)
+      2. Apply appropriate resolution strategy
+      3. Build consensus through negotiation
+      4. Use weighted voting if needed
+      5. Document resolution rationale
+      
+      Return resolved conflicts and consensus</AUTO>
+    depends_on: [peer_review]
+    condition: "{{peer_review.result.conflicts}} > 0"
+    tags: ["conflict-resolution", "consensus"]
+
+  # Step 8: Solution integration
+  - id: integrate_solutions
+    action: <AUTO>synthesizer agent integrates all partial solutions:
+      1. Combine complementary solutions
+      2. Resolve overlaps and redundancies
+      3. Ensure consistency across components
+      4. Validate against original problem
+      5. Create unified solution architecture
+      
+      Return integrated solution with confidence score</AUTO>
+    depends_on: [collaboration_round, resolve_conflicts]
+    timeout: 60.0
+    tags: ["integration", "synthesis"]
+
+  # Step 9: Final critical review
+  - id: final_review
+    action: <AUTO>perform comprehensive review of integrated solution:
+      1. Verify solution addresses all sub-problems
+      2. Check feasibility and practicality
+      3. Assess risks and limitations
+      4. Validate against success criteria
+      5. Suggest final improvements
+      
+      Return review report with quality score</AUTO>
+    depends_on: [integrate_solutions]
+    tags: ["review", "validation"]
+
+  # Step 10: Generate solution report
+  - id: generate_report
+    action: <AUTO>create detailed solution report including:
+      1. Executive summary of the solution
+      2. Detailed solution architecture
+      3. Implementation roadmap with phases
+      4. Risk assessment and mitigation
+      5. Success metrics and KPIs
+      6. Agent contributions and insights
+      7. Collaboration patterns that emerged
+      8. Lessons learned
+      
+      Format as professional markdown report</AUTO>
+    depends_on: [final_review]
+    on_error:
+      action: <AUTO>generate simplified report with available information</AUTO>
+      continue_on_error: true
+    tags: ["reporting", "documentation"]
+
+  # Step 11: Analyze emergent behaviors
+  - id: analyze_emergence
+    action: <AUTO>analyze emergent behaviors from agent collaboration:
+      1. Communication patterns and clusters
+      2. Information flow dynamics
+      3. Decision-making patterns
+      4. Self-organization indicators
+      5. Collective intelligence metrics
+      6. Synergy and efficiency gains
+      
+      Return emergence analysis report</AUTO>
+    depends_on: [generate_report]
+    tags: ["analysis", "emergence"]
+
+  # Step 12: Agent learning and adaptation
+  - id: agent_learning
+    action: <AUTO>update agent knowledge and strategies:
+      1. Extract successful collaboration patterns
+      2. Update agent trust relationships
+      3. Refine communication protocols
+      4. Adjust problem-solving strategies
+      5. Store learned patterns for future use
+      
+      Return learning summary and updates</AUTO>
+    depends_on: [analyze_emergence]
+    tags: ["learning", "adaptation"]
+
+outputs:
+  solution: "{{generate_report.result}}"
+  convergence_achieved: "{{check_convergence.result.score}} >= {{consensus_threshold}}"
+  rounds_executed: "{{collaboration_round.iteration_count}}"
+  convergence_score: "{{check_convergence.result.score}}"
+  agent_contributions: "{{integrate_solutions.result.agent_contributions}}"
+  emergent_patterns: "{{analyze_emergence.result}}"
+  quality_score: "{{final_review.result.quality_score}}"
+  confidence_level: "{{integrate_solutions.result.confidence}}"
+  collaboration_efficiency: "{{analyze_emergence.result.efficiency_score}}"
+  knowledge_gained: "{{agent_learning.result.knowledge_items}}"

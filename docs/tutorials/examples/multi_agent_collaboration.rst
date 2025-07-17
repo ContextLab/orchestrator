@@ -1,1113 +1,460 @@
 Multi-Agent Collaboration
 =========================
 
-This example demonstrates how to build a sophisticated multi-agent system where specialized AI agents collaborate to solve complex problems. The system showcases agent coordination, communication protocols, and emergent problem-solving capabilities.
+This example demonstrates how to build a sophisticated multi-agent system using the Orchestrator's declarative YAML framework. Multiple specialized AI agents collaborate to solve complex problems through coordination, communication, and emergent problem-solving - all defined in pure YAML with no custom Python code required.
 
 .. note::
-   **Level:** Expert  
-   **Duration:** 90-120 minutes  
-   **Prerequisites:** Advanced Python, understanding of agent-based systems, distributed computing concepts
+   **Level:** Advanced  
+   **Duration:** 60-90 minutes  
+   **Prerequisites:** Orchestrator framework installed, multiple API keys configured
 
 Overview
 --------
 
-The Multi-Agent Collaboration system implements:
+The Multi-Agent Collaboration system orchestrates:
 
-1. **Agent Specialization**: Different agents with specific expertise
-2. **Communication Protocol**: Inter-agent messaging and coordination
-3. **Task Decomposition**: Breaking complex problems into sub-tasks
-4. **Consensus Building**: Agents reach agreement on solutions
-5. **Knowledge Sharing**: Agents share insights and learnings
-6. **Conflict Resolution**: Handle disagreements between agents
-7. **Emergent Behavior**: Complex solutions from simple agent interactions
+1. **Agent Network Creation**: Initialize specialized agents with different roles
+2. **Problem Decomposition**: Break complex problems into manageable sub-tasks
+3. **Task Assignment**: Match agent capabilities to sub-problems
+4. **Collaborative Solving**: Agents work together through multiple rounds
+5. **Consensus Building**: Reach agreement through negotiation
+6. **Conflict Resolution**: Handle disagreements constructively
+7. **Solution Integration**: Combine partial solutions into unified whole
+8. **Emergent Analysis**: Study patterns that emerge from collaboration
 
-**Key Features:**
-- Heterogeneous agent types (researcher, analyst, critic, synthesizer)
-- Asynchronous agent communication
-- Dynamic task allocation based on agent capabilities
-- Blackboard architecture for shared knowledge
-- Agent reputation and trust systems
-- Scalable to hundreds of agents
+**Key Features Demonstrated:**
+- Declarative YAML pipeline definition
+- AUTO tag resolution for natural language task descriptions
+- Dynamic agent creation and role assignment
+- Multi-round collaboration with convergence checking
+- Peer review and conflict resolution
+- Emergent behavior analysis
+- No Python code required
 
 Quick Start
 -----------
 
 .. code-block:: bash
 
-   # Clone the repository
-   git clone https://github.com/your-org/orchestrator.git
-   cd orchestrator
-   
-   # Install dependencies
-   pip install -r requirements.txt
-   pip install networkx redis asyncio-mqtt
-   
    # Set up environment variables
    export OPENAI_API_KEY="your-openai-key"
    export ANTHROPIC_API_KEY="your-anthropic-key"
-   export REDIS_URL="redis://localhost:6379"
    
-   # Run the example
-   python examples/multi_agent_collaboration.py \
-     --problem "Design a sustainable city for 1 million people" \
-     --agents 5 \
-     --max-rounds 10
+   # Run the multi-agent system
+   orchestrator run examples/multi_agent_collaboration.yaml \
+     --input problem="Design a sustainable city for 1 million people" \
+     --input num_agents=7 \
+     --input max_rounds=15
 
-Complete Implementation
------------------------
+Complete YAML Pipeline
+----------------------
 
-Pipeline Configuration (YAML)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The complete pipeline is defined in ``examples/multi_agent_collaboration.yaml``. Here are the key sections:
+
+**Pipeline Structure:**
 
 .. code-block:: yaml
 
-   # multi_agent_system.yaml
-   id: multi_agent_collaboration
-   name: Multi-Agent Problem Solving System
-   version: "1.0"
-   
-   metadata:
-     description: "Collaborative multi-agent system for complex problem solving"
-     author: "AI Research Team"
-     tags: ["multi-agent", "collaboration", "distributed-ai", "problem-solving"]
-   
-   agent_templates:
-     researcher:
-       model:
-         provider: "openai"
-         name: "gpt-4"
-         temperature: 0.7
-       capabilities: ["research", "analysis", "fact-checking"]
-       communication_style: "analytical"
-       
-     analyst:
-       model:
-         provider: "anthropic"
-         name: "claude-3-opus"
-         temperature: 0.3
-       capabilities: ["data-analysis", "pattern-recognition", "modeling"]
-       communication_style: "precise"
-       
-     creative:
-       model:
-         provider: "openai"
-         name: "gpt-4"
-         temperature: 0.9
-       capabilities: ["ideation", "innovation", "lateral-thinking"]
-       communication_style: "exploratory"
-       
-     critic:
-       model:
-         provider: "anthropic"
-         name: "claude-3-opus"
-         temperature: 0.2
-       capabilities: ["evaluation", "risk-assessment", "quality-control"]
-       communication_style: "critical"
-       
-     synthesizer:
-       model:
-         provider: "openai"
-         name: "gpt-4"
-         temperature: 0.5
-       capabilities: ["integration", "summarization", "consensus-building"]
-       communication_style: "diplomatic"
-   
-   coordination:
-     architecture: "blackboard"  # blackboard, hierarchical, or peer-to-peer
-     consensus_mechanism: "weighted_voting"
-     max_rounds: 10
-     convergence_threshold: 0.85
-   
-   tasks:
-     - id: initialize_agents
-       name: "Initialize Agent Network"
-       action: "create_agent_network"
-       parameters:
-         agent_count: "{{ inputs.num_agents }}"
-         agent_types: <AUTO>Select optimal mix of agent types for problem</AUTO>
-         network_topology: "small_world"  # fully_connected, star, or small_world
-       outputs:
-         - agent_network
-         - agent_registry
-     
-     - id: problem_decomposition
-       name: "Decompose Problem"
-       action: "decompose_problem"
-       agent: "synthesizer"
-       parameters:
-         problem: "{{ inputs.problem_statement }}"
-         complexity_analysis: true
-         decomposition_strategy: <AUTO>Choose hierarchical or functional decomposition</AUTO>
-       dependencies:
-         - initialize_agents
-       outputs:
-         - sub_problems
-         - dependency_graph
-         - complexity_score
-     
-     - id: agent_assignment
-       name: "Assign Tasks to Agents"
-       action: "assign_tasks"
-       parameters:
-         sub_problems: "{{ problem_decomposition.sub_problems }}"
-         agent_capabilities: "{{ initialize_agents.agent_registry }}"
-         assignment_strategy: <AUTO>Optimize based on capability matching</AUTO>
-       dependencies:
-         - problem_decomposition
-       outputs:
-         - task_assignments
-         - workload_distribution
-     
-     - id: collaborative_solving
-       name: "Collaborative Problem Solving"
-       action: "execute_collaboration"
-       parallel: true
-       max_rounds: "{{ coordination.max_rounds }}"
-       parameters:
-         assignments: "{{ agent_assignment.task_assignments }}"
-         communication_protocol: "async_message_passing"
-         knowledge_sharing: "blackboard"
-       dependencies:
-         - agent_assignment
-       outputs:
-         - agent_solutions
-         - communication_log
-         - knowledge_base
-     
-     - id: solution_integration
-       name: "Integrate Agent Solutions"
-       action: "integrate_solutions"
-       agent: "synthesizer"
-       parameters:
-         partial_solutions: "{{ collaborative_solving.agent_solutions }}"
-         integration_strategy: <AUTO>Choose based on solution compatibility</AUTO>
-         conflict_resolution: "consensus_voting"
-       dependencies:
-         - collaborative_solving
-       outputs:
-         - integrated_solution
-         - integration_conflicts
-         - confidence_score
-     
-     - id: critical_review
-       name: "Critical Review"
-       action: "review_solution"
-       agent: "critic"
-       parameters:
-         solution: "{{ solution_integration.integrated_solution }}"
-         review_criteria: <AUTO>Define based on problem domain</AUTO>
-         severity_threshold: "medium"
-       dependencies:
-         - solution_integration
-       outputs:
-         - review_report
-         - identified_issues
-         - improvement_suggestions
-     
-     - id: iterative_refinement
-       name: "Refine Solution"
-       action: "refine_collaboratively"
-       condition: "critical_review.identified_issues | length > 0"
-       parameters:
-         current_solution: "{{ solution_integration.integrated_solution }}"
-         issues: "{{ critical_review.identified_issues }}"
-         refinement_strategy: <AUTO>Address highest priority issues first</AUTO>
-       dependencies:
-         - critical_review
-       outputs:
-         - refined_solution
-         - refinement_log
-     
-     - id: final_synthesis
-       name: "Final Solution Synthesis"
-       action: "synthesize_final_solution"
-       agent: "synthesizer"
-       parameters:
-         refined_solution: "{{ iterative_refinement.refined_solution or solution_integration.integrated_solution }}"
-         supporting_evidence: "{{ collaborative_solving.knowledge_base }}"
-         presentation_format: <AUTO>Choose appropriate format for stakeholders</AUTO>
-       dependencies:
-         - iterative_refinement
-         - critical_review
-       outputs:
-         - final_solution
-         - executive_summary
-         - implementation_plan
+   name: "Multi-Agent Collaboration"
+   description: "Collaborative multi-agent system for complex problem solving"
 
-Python Implementation
-^^^^^^^^^^^^^^^^^^^^^
+   inputs:
+     problem:
+       type: string
+       description: "Complex problem to solve collaboratively"
+       required: true
+     
+     num_agents:
+       type: integer
+       description: "Number of agents to create"
+       default: 5
+     
+     max_rounds:
+       type: integer
+       description: "Maximum collaboration rounds"
+       default: 10
+     
+     consensus_threshold:
+       type: float
+       description: "Threshold for solution consensus (0-1)"
+       default: 0.85
+
+**Key Pipeline Steps:**
+
+1. **Agent Network Initialization:**
+
+.. code-block:: yaml
+
+   - id: initialize_agents
+     action: <AUTO>create a network of {{num_agents}} specialized AI agents with roles:
+       1. Researcher agents - gather information and conduct analysis
+       2. Analyst agents - process data and identify patterns
+       3. Creative agents - generate innovative solutions
+       4. Critic agents - evaluate and identify issues
+       5. Synthesizer agent - integrate and coordinate
+       
+       Create communication channels between agents.
+       Return agent profiles and network topology</AUTO>
+
+2. **Collaborative Problem Solving:**
+
+.. code-block:: yaml
+
+   - id: collaboration_round
+     action: <AUTO>agents work on assigned tasks collaboratively:
+       1. Each agent analyzes their assigned sub-problem
+       2. Agents share insights through message passing
+       3. Request help from peers when needed
+       4. Build on each other's solutions
+       5. Update shared knowledge base</AUTO>
+     loop:
+       max_iterations: "{{max_rounds}}"
+       break_condition: "{{check_convergence.result.score}} >= {{consensus_threshold}}"
+
+3. **Emergent Behavior Analysis:**
+
+.. code-block:: yaml
+
+   - id: analyze_emergence
+     action: <AUTO>analyze emergent behaviors from agent collaboration:
+       1. Communication patterns and clusters
+       2. Information flow dynamics
+       3. Decision-making patterns
+       4. Self-organization indicators
+       5. Collective intelligence metrics</AUTO>
+
+How It Works
+------------
+
+**1. Agent Specialization**
+
+The framework automatically creates agents with different cognitive styles:
+
+- **Researchers**: High exploration, broad information gathering
+- **Analysts**: Precise, data-driven, pattern recognition
+- **Creatives**: High temperature, lateral thinking
+- **Critics**: Low temperature, risk assessment
+- **Synthesizers**: Balanced, integration focused
+
+**2. Communication Protocols**
+
+Agents communicate through:
+- Direct messaging for specific requests
+- Broadcast messages for announcements
+- Shared knowledge base for persistent information
+- Voting mechanisms for decisions
+
+**3. Convergence Dynamics**
+
+The system monitors convergence through:
+- Solution similarity metrics
+- Consensus scores
+- Iteration efficiency
+- Quality improvements
+
+Running the Pipeline
+--------------------
+
+**Using the CLI:**
+
+.. code-block:: bash
+
+   # Basic multi-agent problem solving
+   orchestrator run multi_agent_collaboration.yaml \
+     --input problem="Develop a climate change mitigation strategy"
+
+   # With more agents and rounds
+   orchestrator run multi_agent_collaboration.yaml \
+     --input problem="Design an AI governance framework" \
+     --input num_agents=10 \
+     --input max_rounds=20
+
+   # Custom consensus threshold
+   orchestrator run multi_agent_collaboration.yaml \
+     --input problem="Create a universal healthcare system" \
+     --input consensus_threshold=0.9
+
+**Using Python SDK:**
 
 .. code-block:: python
 
-   # multi_agent_collaboration.py
-   import asyncio
-   import json
-   import networkx as nx
-   from typing import Dict, List, Any, Optional, Set
-   from dataclasses import dataclass, field
-   from enum import Enum
-   import redis.asyncio as redis
-   from datetime import datetime
-   import uuid
-   
    from orchestrator import Orchestrator
-   from orchestrator.agents.base import Agent, Message, AgentCapability
-   from orchestrator.coordination.blackboard import Blackboard
-   from orchestrator.consensus.voting import WeightedVotingSystem
    
+   # Initialize orchestrator
+   orchestrator = Orchestrator()
    
-   class AgentRole(Enum):
-       RESEARCHER = "researcher"
-       ANALYST = "analyst"
-       CREATIVE = "creative"
-       CRITIC = "critic"
-       SYNTHESIZER = "synthesizer"
-   
-   
-   @dataclass
-   class AgentProfile:
-       """Profile defining an agent's capabilities and characteristics."""
-       id: str
-       role: AgentRole
-       capabilities: Set[str]
-       reputation: float = 1.0
-       specializations: List[str] = field(default_factory=list)
-       communication_style: str = "neutral"
-       model_config: Dict[str, Any] = field(default_factory=dict)
-   
-   
-   class CollaborativeAgent(Agent):
-       """An intelligent agent that can collaborate with other agents."""
-       
-       def __init__(
-           self,
-           profile: AgentProfile,
-           blackboard: Blackboard,
-           communication_channel: Any
-       ):
-           super().__init__(agent_id=profile.id)
-           self.profile = profile
-           self.blackboard = blackboard
-           self.comm_channel = communication_channel
-           self.memory = []
-           self.peers = {}
-           self.current_task = None
-           self.trust_scores = {}
-       
-       async def receive_message(self, message: Message):
-           """Process incoming message from another agent."""
-           self.memory.append(message)
-           
-           if message.type == "task_assignment":
-               await self.handle_task_assignment(message)
-           elif message.type == "information_request":
-               await self.handle_information_request(message)
-           elif message.type == "solution_proposal":
-               await self.handle_solution_proposal(message)
-           elif message.type == "critique":
-               await self.handle_critique(message)
-       
-       async def handle_task_assignment(self, message: Message):
-           """Handle a new task assignment."""
-           self.current_task = message.content['task']
-           
-           # Acknowledge receipt
-           await self.send_message(
-               recipient=message.sender,
-               content={"status": "acknowledged", "task_id": self.current_task['id']},
-               message_type="acknowledgment"
-           )
-           
-           # Start working on the task
-           await self.work_on_task()
-       
-       async def work_on_task(self):
-           """Work on assigned task using agent's capabilities."""
-           task = self.current_task
-           
-           # Check if we need information from other agents
-           required_info = await self.identify_required_information(task)
-           
-           if required_info:
-               # Request information from peers
-               await self.request_information_from_peers(required_info)
-           
-           # Generate solution based on role
-           solution = await self.generate_solution(task)
-           
-           # Post solution to blackboard
-           await self.blackboard.post(
-               f"solution:{task['id']}:{self.profile.id}",
-               solution
-           )
-           
-           # Notify peers
-           await self.broadcast_message({
-               "type": "solution_proposal",
-               "task_id": task['id'],
-               "solution_summary": solution['summary']
-           })
-       
-       async def generate_solution(self, task: Dict[str, Any]) -> Dict[str, Any]:
-           """Generate solution based on agent's role and capabilities."""
-           # Use model to generate solution
-           prompt = self.build_solution_prompt(task)
-           
-           response = await self.model.generate(
-               prompt,
-               **self.profile.model_config
-           )
-           
-           return {
-               "task_id": task['id'],
-               "agent_id": self.profile.id,
-               "role": self.profile.role.value,
-               "solution": response,
-               "confidence": self.calculate_confidence(task),
-               "timestamp": datetime.now().isoformat()
-           }
-       
-       def build_solution_prompt(self, task: Dict[str, Any]) -> str:
-           """Build prompt based on agent role."""
-           role_prompts = {
-               AgentRole.RESEARCHER: f"""
-                   As a research specialist, analyze the following problem:
-                   {task['description']}
-                   
-                   Provide comprehensive research including:
-                   1. Background information and context
-                   2. Relevant data and statistics
-                   3. Prior work and existing solutions
-                   4. Key considerations and constraints
-               """,
-               AgentRole.ANALYST: f"""
-                   As a data analyst, examine this problem:
-                   {task['description']}
-                   
-                   Provide analytical insights including:
-                   1. Data patterns and trends
-                   2. Quantitative analysis
-                   3. Risk assessment
-                   4. Performance metrics
-               """,
-               AgentRole.CREATIVE: f"""
-                   As a creative problem solver, approach this challenge:
-                   {task['description']}
-                   
-                   Generate innovative solutions including:
-                   1. Novel approaches and ideas
-                   2. Unconventional solutions
-                   3. Creative combinations of existing methods
-                   4. Future possibilities
-               """,
-               AgentRole.CRITIC: f"""
-                   As a critical reviewer, evaluate this problem:
-                   {task['description']}
-                   
-                   Provide critical analysis including:
-                   1. Potential issues and risks
-                   2. Feasibility concerns
-                   3. Quality assessment criteria
-                   4. Areas for improvement
-               """,
-               AgentRole.SYNTHESIZER: f"""
-                   As a solution synthesizer, integrate approaches for:
-                   {task['description']}
-                   
-                   Synthesize a comprehensive solution including:
-                   1. Integration of different perspectives
-                   2. Balanced approach considering all factors
-                   3. Implementation roadmap
-                   4. Success metrics
-               """
-           }
-           
-           return role_prompts.get(self.profile.role, task['description'])
-       
-       async def evaluate_peer_solution(
-           self,
-           solution: Dict[str, Any]
-       ) -> Dict[str, Any]:
-           """Evaluate solution proposed by another agent."""
-           evaluation = {
-               "solution_id": solution['solution_id'],
-               "evaluator": self.profile.id,
-               "score": 0.0,
-               "feedback": []
-           }
-           
-           # Evaluate based on agent's expertise
-           if self.profile.role == AgentRole.CRITIC:
-               evaluation.update(await self.critical_evaluation(solution))
-           else:
-               evaluation.update(await self.supportive_evaluation(solution))
-           
-           # Update trust score for the proposing agent
-           self.update_trust_score(
-               solution['agent_id'],
-               evaluation['score']
-           )
-           
-           return evaluation
-       
-       def update_trust_score(self, agent_id: str, performance: float):
-           """Update trust score for another agent."""
-           if agent_id not in self.trust_scores:
-               self.trust_scores[agent_id] = 1.0
-           
-           # Exponential moving average
-           alpha = 0.1
-           self.trust_scores[agent_id] = (
-               alpha * performance + 
-               (1 - alpha) * self.trust_scores[agent_id]
-           )
-
-
-   class MultiAgentOrchestrator:
-       """Orchestrates multi-agent collaboration."""
-       
-       def __init__(self, config: Dict[str, Any]):
-           self.config = config
-           self.agents: Dict[str, CollaborativeAgent] = {}
-           self.blackboard = None
-           self.network = nx.Graph()
-           self.voting_system = WeightedVotingSystem()
-           self.redis_client = None
-           
-       async def initialize(self):
-           """Initialize the multi-agent system."""
-           # Setup Redis for communication
-           self.redis_client = await redis.from_url(
-               self.config.get('redis_url', 'redis://localhost:6379')
-           )
-           
-           # Initialize blackboard
-           self.blackboard = Blackboard(self.redis_client)
-           
-           # Create agent network
-           await self.create_agent_network()
-       
-       async def create_agent_network(self):
-           """Create network of collaborative agents."""
-           num_agents = self.config.get('num_agents', 5)
-           
-           # Create diverse set of agents
-           agent_distribution = {
-               AgentRole.RESEARCHER: max(1, num_agents // 4),
-               AgentRole.ANALYST: max(1, num_agents // 4),
-               AgentRole.CREATIVE: max(1, num_agents // 4),
-               AgentRole.CRITIC: max(1, num_agents // 5),
-               AgentRole.SYNTHESIZER: 1
-           }
-           
-           # Create agents
-           for role, count in agent_distribution.items():
-               for i in range(count):
-                   agent_id = f"{role.value}_{i}"
-                   profile = AgentProfile(
-                       id=agent_id,
-                       role=role,
-                       capabilities=self._get_role_capabilities(role),
-                       communication_style=self._get_communication_style(role)
-                   )
-                   
-                   agent = CollaborativeAgent(
-                       profile=profile,
-                       blackboard=self.blackboard,
-                       communication_channel=self.redis_client
-                   )
-                   
-                   self.agents[agent_id] = agent
-                   self.network.add_node(agent_id, agent=agent)
-           
-           # Create network topology
-           self._create_network_topology()
-       
-       def _create_network_topology(self):
-           """Create communication network between agents."""
-           topology = self.config.get('network_topology', 'small_world')
-           
-           if topology == 'fully_connected':
-               # Every agent can communicate with every other agent
-               for agent1 in self.agents:
-                   for agent2 in self.agents:
-                       if agent1 != agent2:
-                           self.network.add_edge(agent1, agent2)
-           
-           elif topology == 'small_world':
-               # Watts-Strogatz small-world network
-               n = len(self.agents)
-               k = min(4, n-1)  # Each node connected to k nearest neighbors
-               p = 0.3  # Rewiring probability
-               
-               # Create ring lattice
-               agent_list = list(self.agents.keys())
-               for i in range(n):
-                   for j in range(1, k//2 + 1):
-                           self.network.add_edge(
-                               agent_list[i],
-                               agent_list[(i+j) % n]
-                           )
-                           self.network.add_edge(
-                               agent_list[i],
-                               agent_list[(i-j) % n]
-                           )
-               
-               # Rewire edges
-               import random
-               for edge in list(self.network.edges()):
-                   if random.random() < p:
-                       u, v = edge
-                       self.network.remove_edge(u, v)
-                       new_v = random.choice(agent_list)
-                       if new_v != u and not self.network.has_edge(u, new_v):
-                           self.network.add_edge(u, new_v)
-       
-       async def solve_problem(
-           self,
-           problem_statement: str,
-           max_rounds: int = 10
-       ) -> Dict[str, Any]:
-           """Orchestrate agents to solve a complex problem."""
-           print(f"🧠 Initiating multi-agent collaboration for: {problem_statement}")
-           
-           # Phase 1: Problem decomposition
-           decomposition = await self.decompose_problem(problem_statement)
-           
-           # Phase 2: Task assignment
-           assignments = await self.assign_tasks(decomposition)
-           
-           # Phase 3: Collaborative solving
-           solutions = await self.collaborative_solving(
-               assignments,
-               max_rounds
-           )
-           
-           # Phase 4: Solution integration
-           integrated = await self.integrate_solutions(solutions)
-           
-           # Phase 5: Critical review
-           reviewed = await self.critical_review(integrated)
-           
-           # Phase 6: Final synthesis
-           final_solution = await self.synthesize_final_solution(reviewed)
-           
-           return final_solution
-       
-       async def decompose_problem(
-           self,
-           problem_statement: str
-       ) -> Dict[str, Any]:
-           """Decompose complex problem into sub-problems."""
-           # Use synthesizer agent for decomposition
-           synthesizer = next(
-               agent for agent in self.agents.values()
-               if agent.profile.role == AgentRole.SYNTHESIZER
-           )
-           
-           decomposition_task = {
-               "id": str(uuid.uuid4()),
-               "type": "decomposition",
-               "description": problem_statement
-           }
-           
-           # Request decomposition
-           await synthesizer.receive_message(Message(
-               sender="orchestrator",
-               recipient=synthesizer.profile.id,
-               content={"task": decomposition_task},
-               type="task_assignment"
-           ))
-           
-           # Wait for result
-           result = await self.blackboard.wait_for(
-               f"solution:{decomposition_task['id']}:{synthesizer.profile.id}",
-               timeout=60
-           )
-           
-           return self.parse_decomposition(result)
-       
-       async def collaborative_solving(
-           self,
-           assignments: Dict[str, Any],
-           max_rounds: int
-       ) -> Dict[str, Any]:
-           """Execute collaborative problem solving rounds."""
-           solutions = {}
-           convergence_achieved = False
-           
-           for round_num in range(max_rounds):
-               print(f"🔄 Collaboration round {round_num + 1}/{max_rounds}")
-               
-               # Agents work on their assignments
-               round_solutions = await self.execute_round(assignments)
-               
-               # Share solutions on blackboard
-               for agent_id, solution in round_solutions.items():
-                   await self.blackboard.post(
-                       f"round:{round_num}:solution:{agent_id}",
-                       solution
-                   )
-               
-               # Check for convergence
-               convergence_score = await self.check_convergence(round_solutions)
-               
-               if convergence_score > self.config.get('convergence_threshold', 0.85):
-                   convergence_achieved = True
-                   print(f"✅ Convergence achieved at round {round_num + 1}")
-                   break
-               
-               # Agents review and critique each other's solutions
-               await self.peer_review_round(round_solutions)
-               
-               # Update assignments based on feedback
-               assignments = await self.update_assignments(
-                   assignments,
-                   round_solutions
-               )
-           
-           return {
-               'solutions': solutions,
-               'rounds_executed': round_num + 1,
-               'convergence_achieved': convergence_achieved,
-               'final_convergence_score': convergence_score
-           }
-       
-       async def check_convergence(
-           self,
-           solutions: Dict[str, Any]
-       ) -> float:
-           """Check if agents are converging on a solution."""
-           # Calculate similarity between solutions
-           solution_vectors = []
-           
-           for solution in solutions.values():
-               # Convert solution to vector representation
-               vector = await self.solution_to_vector(solution)
-               solution_vectors.append(vector)
-           
-           # Calculate pairwise similarities
-           similarities = []
-           for i in range(len(solution_vectors)):
-               for j in range(i+1, len(solution_vectors)):
-                   similarity = self.cosine_similarity(
-                       solution_vectors[i],
-                       solution_vectors[j]
-                   )
-                   similarities.append(similarity)
-           
-           # Average similarity as convergence score
-           return sum(similarities) / len(similarities) if similarities else 0.0
-
-Running the System
-^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-   # main.py
-   import asyncio
-   import argparse
-   from multi_agent_collaboration import MultiAgentOrchestrator
-   
-   async def main():
-       parser = argparse.ArgumentParser(description='Multi-Agent Collaboration')
-       parser.add_argument('--problem', required=True, 
-                          help='Problem statement to solve')
-       parser.add_argument('--agents', type=int, default=5,
-                          help='Number of agents')
-       parser.add_argument('--max-rounds', type=int, default=10,
-                          help='Maximum collaboration rounds')
-       parser.add_argument('--topology', 
-                          choices=['fully_connected', 'small_world', 'hierarchical'],
-                          default='small_world')
-       parser.add_argument('--output', default='solution_report.json')
-       
-       args = parser.parse_args()
-       
-       # Configuration
-       config = {
-           'num_agents': args.agents,
-           'network_topology': args.topology,
-           'redis_url': os.getenv('REDIS_URL', 'redis://localhost:6379'),
-           'convergence_threshold': 0.85,
-           'openai_api_key': os.getenv('OPENAI_API_KEY'),
-           'anthropic_api_key': os.getenv('ANTHROPIC_API_KEY')
+   # Run multi-agent collaboration
+   result = await orchestrator.run_pipeline(
+       "multi_agent_collaboration.yaml",
+       inputs={
+           "problem": "Design a mars colony infrastructure",
+           "num_agents": 8,
+           "max_rounds": 15,
+           "agent_roles": "balanced"
        }
-       
-       # Create orchestrator
-       orchestrator = MultiAgentOrchestrator(config)
-       await orchestrator.initialize()
-       
-       # Solve problem
-       solution = await orchestrator.solve_problem(
-           problem_statement=args.problem,
-           max_rounds=args.max_rounds
-       )
-       
-       # Display results
-       print("\n🎯 Problem Solved!")
-       print(f"Problem: {args.problem}")
-       print(f"Agents Used: {args.agents}")
-       print(f"Rounds Required: {solution['rounds_executed']}")
-       print(f"Convergence Achieved: {solution['convergence_achieved']}")
-       
-       print("\n📋 Executive Summary:")
-       print(solution['executive_summary'])
-       
-       print("\n🔧 Implementation Plan:")
-       for i, step in enumerate(solution['implementation_plan'], 1):
-           print(f"{i}. {step}")
-       
-       # Save detailed report
-       with open(args.output, 'w') as f:
-           json.dump(solution, f, indent=2, default=str)
-       print(f"\n💾 Detailed solution saved to: {args.output}")
-       
-       # Visualize agent network
-       if args.agents <= 20:  # Only for small networks
-           await visualize_agent_network(orchestrator.network)
+   )
    
-   async def visualize_agent_network(network):
-       """Visualize the agent communication network."""
-       import matplotlib.pyplot as plt
-       
-       pos = nx.spring_layout(network)
-       
-       # Color nodes by agent role
-       role_colors = {
-           'researcher': 'lightblue',
-           'analyst': 'lightgreen',
-           'creative': 'yellow',
-           'critic': 'orange',
-           'synthesizer': 'red'
-       }
-       
-       node_colors = []
-       for node in network.nodes():
-           role = node.split('_')[0]
-           node_colors.append(role_colors.get(role, 'gray'))
-       
-       plt.figure(figsize=(10, 8))
-       nx.draw(network, pos, node_color=node_colors, with_labels=True,
-               node_size=1000, font_size=10, font_weight='bold')
-       plt.title("Agent Communication Network")
-       plt.axis('off')
-       plt.tight_layout()
-       plt.savefig('agent_network.png')
-       print("\n📊 Network visualization saved to: agent_network.png")
+   # Access results
+   print(f"Solution quality: {result['outputs']['quality_score']}")
+   print(f"Rounds needed: {result['outputs']['rounds_executed']}")
+   print(f"Convergence achieved: {result['outputs']['convergence_achieved']}")
+
+Example Output
+--------------
+
+**Console Output:**
+
+.. code-block:: text
+
+   🤝 Multi-Agent Collaboration
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ✓ initialize_agents: Created 7 agents (2 researchers, 2 analysts, 1 creative, 1 critic, 1 synthesizer) (3.2s)
+   ✓ decompose_problem: Identified 5 sub-problems with dependencies (4.1s)
+   ✓ assign_tasks: Distributed tasks based on agent capabilities (1.8s)
+   ⟳ collaboration_round: Round 1/15...
+     → Agents working on assigned tasks...
+     → Inter-agent messages: 23
+     → Knowledge base updates: 12
+   ✓ check_convergence: Convergence score: 0.42 (2.3s)
+   ✓ peer_review: 8 improvement suggestions generated (5.2s)
+   ⟳ collaboration_round: Round 2/15...
+     → Incorporating feedback...
+     → Inter-agent messages: 31
+     → Knowledge base updates: 18
+   ✓ check_convergence: Convergence score: 0.67 (2.1s)
+   ...
+   ⟳ collaboration_round: Round 5/15...
+   ✓ check_convergence: Convergence score: 0.86 - Threshold met! (1.9s)
+   ✓ integrate_solutions: Unified solution created (6.8s)
+   ✓ final_review: Quality score: 0.91/1.0 (3.4s)
+   ✓ generate_report: Comprehensive report generated (4.2s)
+   ✓ analyze_emergence: Identified 3 communication clusters (2.7s)
    
-   if __name__ == "__main__":
-       asyncio.run(main())
+   ✅ Pipeline completed successfully in 89.3s
+   📊 Convergence achieved in 5 rounds
+   🎯 Solution quality: 0.91/1.0
+   🤖 Agent efficiency: 0.87
+
+**Solution Report Example:**
+
+.. code-block:: markdown
+
+   # Multi-Agent Solution: Sustainable City Design
+   
+   ## Executive Summary
+   
+   Through collaborative analysis, our agent network has designed a sustainable city 
+   framework for 1 million residents, balancing environmental, social, and economic factors.
+   
+   ## Solution Architecture
+   
+   ### 1. Urban Planning (Researcher_1 + Analyst_1)
+   - Mixed-use neighborhoods reducing commute times
+   - Green corridors connecting all districts
+   - Distributed energy generation nodes
+   
+   ### 2. Transportation (Analyst_2 + Creative_1)
+   - Integrated public transit with 95% coverage
+   - Bike-sharing and pedestrian priority zones
+   - Electric vehicle infrastructure
+   
+   ### 3. Resource Management (Researcher_2 + Critic_1)
+   - Closed-loop water recycling systems
+   - Zero-waste initiatives with 90% diversion rate
+   - Local food production via vertical farms
+   
+   ## Implementation Roadmap
+   
+   Phase 1 (Years 1-3): Infrastructure foundation
+   Phase 2 (Years 4-7): System integration
+   Phase 3 (Years 8-10): Optimization and scaling
+   
+   ## Emergent Insights
+   
+   - Agents spontaneously formed working groups
+   - Creative-Critic pairs produced highest quality solutions
+   - Information flow followed small-world network pattern
 
 Advanced Features
 -----------------
 
-Reputation System
-^^^^^^^^^^^^^^^^^
+**1. Dynamic Role Assignment:**
 
-.. code-block:: python
+.. code-block:: yaml
 
-   class ReputationManager:
-       """Manage agent reputation and trust."""
-       
-       def __init__(self):
-           self.reputation_scores = {}
-           self.interaction_history = []
-           self.decay_factor = 0.95
-       
-       async def update_reputation(
-           self,
-           agent_id: str,
-           performance_metric: float,
-           interaction_type: str
-       ):
-           """Update agent reputation based on performance."""
-           if agent_id not in self.reputation_scores:
-               self.reputation_scores[agent_id] = {
-                   'score': 1.0,
-                   'interactions': 0,
-                   'successes': 0
-               }
-           
-           # Update based on interaction type
-           weight = self.get_interaction_weight(interaction_type)
-           
-           # Calculate new score
-           current = self.reputation_scores[agent_id]
-           new_score = (
-               current['score'] * self.decay_factor +
-               performance_metric * weight * (1 - self.decay_factor)
-           )
-           
-           # Update records
-           self.reputation_scores[agent_id].update({
-               'score': new_score,
-               'interactions': current['interactions'] + 1,
-               'successes': current['successes'] + (1 if performance_metric > 0.7 else 0)
-           })
-           
-           # Record interaction
-           self.interaction_history.append({
-               'agent_id': agent_id,
-               'timestamp': datetime.now(),
-               'type': interaction_type,
-               'performance': performance_metric
-           })
-       
-       def get_agent_reputation(self, agent_id: str) -> float:
-           """Get current reputation score for an agent."""
-           return self.reputation_scores.get(agent_id, {}).get('score', 1.0)
-       
-       def get_interaction_weight(self, interaction_type: str) -> float:
-           """Get weight for different interaction types."""
-           weights = {
-               'solution_quality': 1.0,
-               'peer_review': 0.8,
-               'collaboration': 0.6,
-               'communication': 0.4
-           }
-           return weights.get(interaction_type, 0.5)
+   - id: dynamic_roles
+     action: <AUTO>adjust agent roles based on problem type:
+       - Technical problems: More analysts and researchers
+       - Creative challenges: More creative agents
+       - Risk assessment: Additional critics
+       - Complex integration: Multiple synthesizers</AUTO>
+     condition: "{{agent_roles}} == 'auto'"
 
-Emergent Behavior Analysis
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+**2. Adaptive Consensus Building:**
 
-.. code-block:: python
+.. code-block:: yaml
 
-   class EmergentBehaviorAnalyzer:
-       """Analyze emergent behaviors in multi-agent systems."""
-       
-       def __init__(self):
-           self.behavior_patterns = []
-           self.interaction_graph = nx.DiGraph()
-       
-       async def analyze_system_behavior(
-           self,
-           interaction_logs: List[Dict[str, Any]]
-       ) -> Dict[str, Any]:
-           """Analyze emergent behaviors from interaction logs."""
-           # Build interaction graph
-           for log in interaction_logs:
-               self.interaction_graph.add_edge(
-                   log['sender'],
-                   log['recipient'],
-                   weight=log.get('importance', 1.0),
-                   timestamp=log['timestamp']
-               )
-           
-           # Identify patterns
-           patterns = {
-               'communication_clusters': self.identify_clusters(),
-               'information_flow': self.analyze_information_flow(),
-               'decision_patterns': self.analyze_decision_making(),
-               'emergence_indicators': self.detect_emergence()
-           }
-           
-           return patterns
-       
-       def identify_clusters(self) -> List[Set[str]]:
-           """Identify communication clusters."""
-           # Use community detection
-           import community
-           partition = community.best_partition(
-               self.interaction_graph.to_undirected()
-           )
-           
-           clusters = {}
-           for node, cluster_id in partition.items():
-               if cluster_id not in clusters:
-                   clusters[cluster_id] = set()
-               clusters[cluster_id].add(node)
-           
-           return list(clusters.values())
-       
-       def detect_emergence(self) -> Dict[str, Any]:
-           """Detect emergent properties."""
-           metrics = {
-               'self_organization': self.measure_self_organization(),
-               'collective_intelligence': self.measure_collective_intelligence(),
-               'adaptation_rate': self.measure_adaptation(),
-               'synergy_score': self.measure_synergy()
-           }
-           
-           return metrics
-       
-       def measure_collective_intelligence(self) -> float:
-           """Measure collective intelligence emergence."""
-           # Analyze solution quality improvement over time
-           # Compare individual vs. collective performance
-           # Return score 0-1
-           pass
+   - id: adaptive_consensus
+     action: <AUTO>adjust consensus strategy based on convergence rate:
+       - Slow convergence: Introduce mediator agents
+       - Divergence: Break into smaller working groups
+       - Deadlock: Use ranked voting system
+       - Fast agreement: Increase quality thresholds</AUTO>
 
-Conflict Resolution
-^^^^^^^^^^^^^^^^^^^
+**3. Knowledge Persistence:**
 
-.. code-block:: python
+.. code-block:: yaml
 
-   class ConflictResolver:
-       """Resolve conflicts between agents."""
-       
-       def __init__(self, voting_system):
-           self.voting_system = voting_system
-           self.conflict_history = []
-       
-       async def resolve_conflict(
-           self,
-           conflicting_solutions: List[Dict[str, Any]],
-           agents: Dict[str, CollaborativeAgent]
-       ) -> Dict[str, Any]:
-           """Resolve conflicts between different solutions."""
-           conflict_id = str(uuid.uuid4())
-           
-           # Identify conflict type
-           conflict_type = self.identify_conflict_type(conflicting_solutions)
-           
-           # Choose resolution strategy
-           if conflict_type == 'factual':
-               resolution = await self.fact_based_resolution(
-                   conflicting_solutions,
-                   agents
-               )
-           elif conflict_type == 'approach':
-               resolution = await self.voting_based_resolution(
-                   conflicting_solutions,
-                   agents
-               )
-           elif conflict_type == 'priority':
-               resolution = await self.consensus_building(
-                   conflicting_solutions,
-                   agents
-               )
-           else:
-               resolution = await self.synthesize_compromise(
-                   conflicting_solutions,
-                   agents
-               )
-           
-           # Record conflict resolution
-           self.conflict_history.append({
-               'id': conflict_id,
-               'type': conflict_type,
-               'solutions': conflicting_solutions,
-               'resolution': resolution,
-               'timestamp': datetime.now()
-           })
-           
-           return resolution
-       
-       async def consensus_building(
-           self,
-           solutions: List[Dict[str, Any]],
-           agents: Dict[str, CollaborativeAgent]
-       ) -> Dict[str, Any]:
-           """Build consensus through iterative negotiation."""
-           max_iterations = 5
-           consensus_threshold = 0.8
-           
-           current_proposal = solutions[0]  # Start with first solution
-           
-           for iteration in range(max_iterations):
-               # Get feedback from all agents
-               feedback = []
-               for agent in agents.values():
-                   agent_feedback = await agent.evaluate_peer_solution(
-                       current_proposal
-                   )
-                   feedback.append(agent_feedback)
-               
-               # Calculate consensus score
-               consensus_score = sum(
-                   f['score'] for f in feedback
-               ) / len(feedback)
-               
-               if consensus_score >= consensus_threshold:
-                   return {
-                       'solution': current_proposal,
-                       'consensus_score': consensus_score,
-                       'iterations': iteration + 1
-                   }
-               
-               # Modify proposal based on feedback
-               current_proposal = await self.modify_proposal(
-                   current_proposal,
-                   feedback
-               )
-           
-           # If no consensus, use weighted voting
-           return await self.voting_based_resolution(solutions, agents)
+   - id: persist_knowledge
+     action: <AUTO>save successful collaboration patterns:
+       - Agent pairing effectiveness
+       - Communication strategies
+       - Problem decomposition approaches
+       - Conflict resolution methods
+       Store for future problem solving</AUTO>
 
-Testing
--------
+Performance Optimization
+------------------------
 
-.. code-block:: python
+The pipeline includes several optimizations:
 
-   # test_multi_agent.py
-   import pytest
-   from multi_agent_collaboration import (
-       MultiAgentOrchestrator,
-       CollaborativeAgent,
-       AgentRole
-   )
-   
-   @pytest.mark.asyncio
-   async def test_agent_communication():
-       """Test inter-agent communication."""
-       config = {'num_agents': 3}
-       orchestrator = MultiAgentOrchestrator(config)
-       await orchestrator.initialize()
-       
-       # Send message between agents
-       agents = list(orchestrator.agents.values())
-       sender = agents[0]
-       recipient = agents[1]
-       
-       test_message = {
-           'content': 'Test message',
-           'priority': 'high'
-       }
-       
-       await sender.send_message(
-           recipient=recipient.profile.id,
-           content=test_message,
-           message_type='test'
-       )
-       
-       # Verify message received
-       assert len(recipient.memory) > 0
-       assert recipient.memory[-1].content == test_message
-   
-   @pytest.mark.asyncio
-   async def test_problem_decomposition():
-       """Test problem decomposition."""
-       orchestrator = MultiAgentOrchestrator({'num_agents': 5})
-       await orchestrator.initialize()
-       
-       problem = "Design a sustainable transportation system"
-       decomposition = await orchestrator.decompose_problem(problem)
-       
-       assert 'sub_problems' in decomposition
-       assert len(decomposition['sub_problems']) > 0
-       assert 'dependency_graph' in decomposition
+**1. Parallel Agent Execution**
+- Agents work simultaneously on independent sub-problems
+- Message passing is asynchronous
+- Shared resources are lock-free
 
-Best Practices
+**2. Early Convergence Detection**
+- Convergence checked after each round
+- Pipeline terminates when consensus reached
+- Avoids unnecessary iterations
+
+**3. Intelligent Caching**
+- Problem decompositions are cached
+- Successful patterns are remembered
+- Agent trust scores persist across runs
+
+Error Handling
 --------------
 
-1. **Agent Design**: Create specialized agents with clear responsibilities
-2. **Communication Protocols**: Define structured message formats
-3. **Scalability**: Design for hundreds of agents from the start
-4. **Fault Tolerance**: Handle agent failures gracefully
-5. **Emergence**: Design simple rules that lead to complex behaviors
-6. **Monitoring**: Track system-wide metrics and behaviors
-7. **Testing**: Test both individual agents and emergent behaviors
+The system handles various failure scenarios:
 
-Summary
--------
+**1. Agent Failures:**
 
-The Multi-Agent Collaboration system demonstrates:
+.. code-block:: yaml
 
-- Sophisticated agent coordination and communication
-- Emergent problem-solving from simple agent interactions
-- Consensus building and conflict resolution
-- Scalable architecture for complex problems
-- Real-world applicability to various domains
+   on_error:
+     action: <AUTO>redistribute failed agent's tasks to 
+       available agents with similar capabilities</AUTO>
+     continue_on_error: true
 
-This example provides a foundation for building advanced multi-agent systems that can tackle problems beyond the capability of individual AI models.
+**2. Communication Breakdowns:**
+
+.. code-block:: yaml
+
+   on_error:
+     action: <AUTO>switch to broadcast communication mode 
+       and rebuild agent network connections</AUTO>
+     retry_count: 3
+
+**3. Convergence Failures:**
+
+.. code-block:: yaml
+
+   on_error:
+     action: <AUTO>present best partial solutions with 
+       confidence scores and unresolved issues</AUTO>
+     fallback_value: "partial_solutions"
+
+Real-World Applications
+-----------------------
+
+**1. Strategic Planning:**
+
+.. code-block:: bash
+
+   orchestrator run multi_agent_collaboration.yaml \
+     --input problem="Develop 5-year digital transformation strategy" \
+     --input num_agents=12
+
+**2. Research Projects:**
+
+.. code-block:: bash
+
+   orchestrator run multi_agent_collaboration.yaml \
+     --input problem="Design novel cancer treatment approach" \
+     --input agent_roles="research-heavy"
+
+**3. Policy Development:**
+
+.. code-block:: bash
+
+   orchestrator run multi_agent_collaboration.yaml \
+     --input problem="Create comprehensive education reform policy" \
+     --input consensus_threshold=0.95
+
+Customization Examples
+----------------------
+
+**1. Domain-Specific Agents:**
+
+.. code-block:: yaml
+
+   - id: create_domain_agents
+     action: <AUTO>create specialized agents for {{domain}}:
+       - Medical: clinicians, researchers, ethicists
+       - Finance: analysts, risk assessors, strategists
+       - Engineering: designers, testers, integrators</AUTO>
+
+**2. Hierarchical Organization:**
+
+.. code-block:: yaml
+
+   - id: hierarchical_setup
+     action: <AUTO>organize agents hierarchically:
+       - Team leads coordinate sub-groups
+       - Specialists report to leads
+       - Synthesizer acts as overall coordinator
+       Enable both vertical and horizontal communication</AUTO>
+
+**3. Competitive Collaboration:**
+
+.. code-block:: yaml
+
+   - id: competitive_mode
+     action: <AUTO>split agents into competing teams:
+       - Each team develops independent solution
+       - Teams present and defend approaches
+       - Best elements combined in final solution
+       Foster innovation through competition</AUTO>
+
+Monitoring and Analysis
+-----------------------
+
+Track collaboration metrics:
+
+- **Communication Density**: Messages per agent per round
+- **Convergence Velocity**: Rate of consensus building  
+- **Knowledge Growth**: Unique insights generated
+- **Efficiency Score**: Solution quality vs. resources used
+
+Key Takeaways
+-------------
+
+This example demonstrates the power of Orchestrator's declarative framework:
+
+1. **Zero Code Required**: Complete multi-agent system in pure YAML
+2. **Emergent Intelligence**: Complex behaviors from simple rules
+3. **Automatic Coordination**: Framework handles agent communication
+4. **Flexible Architecture**: Easily adjust agent counts and roles
+5. **Production Ready**: Robust error handling and monitoring
+6. **Scalable Design**: Works with 3 to 100+ agents
+
+The declarative approach makes sophisticated AI systems accessible without programming expertise.
+
+Next Steps
+----------
+
+- Try the :doc:`content_creation_pipeline` for creative workflows
+- Explore :doc:`code_analysis_suite` for software development
+- Read the :doc:`../../advanced/agent_systems` guide
+- Check the :doc:`../../user_guide/collaboration_patterns` guide
