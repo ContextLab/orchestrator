@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from .pipeline_spec import PipelineSpec, TaskSpec
-from .enhanced_executor import EnhancedTaskExecutor
+from .advanced_executor import AdvancedTaskExecutor
 from ..models.model_registry import ModelRegistry
 from ..tools.base import default_registry
 
@@ -20,7 +20,7 @@ class DeclarativePipelineEngine:
     def __init__(self, model_registry: Optional[ModelRegistry] = None, tool_registry=None):
         self.model_registry = model_registry
         self.tool_registry = tool_registry or default_registry
-        self.task_executor = EnhancedTaskExecutor(model_registry, tool_registry)
+        self.task_executor = AdvancedTaskExecutor(model_registry, tool_registry)
         self.execution_history = []
     
     async def execute_pipeline(self, yaml_content: str, inputs: Dict[str, Any]) -> Dict[str, Any]:

@@ -6,6 +6,26 @@ import re
 
 
 @dataclass
+class ErrorHandling:
+    """Error handling specification for a task."""
+    action: str
+    continue_on_error: bool = False
+    retry_count: int = 0
+    retry_delay: float = 1.0
+    fallback_value: Any = None
+
+
+@dataclass  
+class LoopSpec:
+    """Loop specification for iterative execution."""
+    foreach: str
+    max_iterations: Optional[int] = None
+    parallel: bool = False
+    collect_results: bool = True
+    break_condition: Optional[str] = None
+
+
+@dataclass
 class TaskSpec:
     """Specification for a single pipeline task."""
     
@@ -15,9 +35,13 @@ class TaskSpec:
     tools: Optional[List[str]] = None
     depends_on: List[str] = field(default_factory=list)
     condition: Optional[str] = None
-    on_error: Optional[str] = None
-    foreach: Optional[str] = None
+    on_error: Optional[Union[str, ErrorHandling]] = None
+    loop: Optional[LoopSpec] = None
+    foreach: Optional[str] = None  # Simple foreach - converted to LoopSpec
     model_requirements: Dict[str, Any] = field(default_factory=dict)
+    timeout: Optional[float] = None
+    cache_results: bool = True
+    tags: List[str] = field(default_factory=list)
     
     def __post_init__(self):
         """Validate and process task specification."""
@@ -29,6 +53,19 @@ class TaskSpec:
         # Ensure depends_on is a list
         if isinstance(self.depends_on, str):
             self.depends_on = [self.depends_on]
+        
+        # Convert simple foreach to LoopSpec
+        if self.foreach and not self.loop:
+            self.loop = LoopSpec(foreach=self.foreach)
+            self.foreach = None
+        
+        # Convert simple error handling to ErrorHandling object
+        if isinstance(self.on_error, str):
+            self.on_error = ErrorHandling(action=self.on_error)
+        
+        # Ensure tags is a list
+        if isinstance(self.tags, str):
+            self.tags = [self.tags]
     
     def has_auto_tags(self) -> bool:
         """Check if action contains AUTO tags."""
@@ -45,6 +82,61 @@ class TaskSpec:
     def get_template_variables(self) -> List[str]:
         """Extract template variables from action (e.g., {{topic}})."""
         return re.findall(r'\{\{([^}]+)\}\}', self.action)
+    
+    def has_condition(self) -> bool:
+        """Check if task has a condition."""
+        return bool(self.condition)
+    
+    def has_loop(self) -> bool:
+        """Check if task has loop configuration."""
+        return bool(self.loop)
+    
+    def has_error_handling(self) -> bool:
+        """Check if task has error handling configuration."""
+        return bool(self.on_error)
+    
+    def is_iterative(self) -> bool:
+        """Check if task is iterative (has loop or foreach)."""
+        return self.has_loop()
+    
+    def get_loop_variable(self) -> Optional[str]:
+        """Get the loop variable for iterative tasks."""
+        return self.loop.foreach if self.loop else None
+    
+    def should_retry_on_error(self) -> bool:
+        """Check if task should retry on error."""
+        return (isinstance(self.on_error, ErrorHandling) and 
+                self.on_error.retry_count > 0)
+    
+    def should_continue_on_error(self) -> bool:
+        """Check if pipeline should continue on task error."""
+        return (isinstance(self.on_error, ErrorHandling) and 
+                self.on_error.continue_on_error)
+    
+    def get_condition_variables(self) -> List[str]:
+        """Extract variables from condition expression."""
+        if not self.condition:
+            return []
+        return re.findall(r'\{\{([^}]+)\}\}', self.condition)
+    
+    def is_conditional(self) -> bool:
+        """Check if task execution is conditional."""
+        return bool(self.condition)
+    
+    def get_execution_metadata(self) -> Dict[str, Any]:
+        """Get metadata about task execution requirements."""
+        return {
+            "has_condition": self.has_condition(),
+            "has_loop": self.has_loop(),
+            "has_error_handling": self.has_error_handling(),
+            "is_iterative": self.is_iterative(),
+            "is_conditional": self.is_conditional(),
+            "timeout": self.timeout,
+            "cache_results": self.cache_results,
+            "tags": self.tags,
+            "condition_variables": self.get_condition_variables(),
+            "template_variables": self.get_template_variables()
+        }
 
 
 @dataclass  
