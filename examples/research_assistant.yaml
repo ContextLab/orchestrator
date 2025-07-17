@@ -25,76 +25,81 @@ inputs:
 steps:
   # Step 1: Analyze the research query
   - id: analyze_query
-    action: <AUTO>analyze the research query "{{query}}" with context "{{context}}" and generate:
+    action: |
+      analyze the research query "{{query}}" with context "{{context}}" and generate:
       1. Refined search terms for web searching
       2. Key research objectives
       3. Expected types of sources (academic, news, technical, etc.)
-      4. Focus areas and subtopics to explore</AUTO>
-    cache_results: true
+      4. Focus areas and subtopics to explore
+      cache_results: true
+    
     timeout: 10.0
     tags: ["analysis", "query-processing"]
 
   # Step 2: Conduct web search
   - id: web_search
-    action: <AUTO>search the web for information about {{query}} using the search terms from {{analyze_query.result}} and find up to {{max_sources}} high-quality sources</AUTO>
-    depends_on: [analyze_query]
+    action: |
+      search the web for information about {{query}} using the search terms from {{analyze_query.result}} and find up to {{max_sources}} high-quality sources
+      depends_on: [analyze_query]
+    
     on_error:
-      action: <AUTO>use alternative search strategies or reduce the number of sources</AUTO>
-      continue_on_error: true
+      action: |        use alternative search strategies or reduce the number of sources      continue_on_error: true
       retry_count: 2
     timeout: 30.0
     tags: ["search", "data-collection"]
 
-  # Step 3: Extract content from sources (parallel processing)
+  # Step 3: Extract content from sources
   - id: extract_content
-    action: <AUTO>extract and clean the main content from each web source</AUTO>
-    depends_on: [web_search]
-    condition: "{{web_search.success}} == true"
-    loop:
-      foreach: "{{web_search.results}}"
-      parallel: true
-      max_iterations: "{{max_sources}}"
-      collect_results: true
+    action: |
+      extract and clean the main content from the web sources found in the search results: {{web_search.result}}
+      depends_on: [web_search]
+    
     timeout: 20.0
     tags: ["extraction", "data-processing"]
 
   # Step 4: Analyze source credibility
   - id: analyze_credibility
-    action: <AUTO>analyze the credibility and reliability of each extracted source based on:
+    action: |
+      analyze the credibility and reliability of the extracted sources based on:
       1. Domain authority and reputation
       2. Author credentials
       3. Publication date and relevance
       4. Content quality and depth
       5. Citations and references
-      Return a credibility score (0-1) for each source</AUTO>
-    depends_on: [extract_content]
-    condition: "{{extract_content.iteration_count}} > 0"
+      Extracted content: {{extract_content.result}}
+      Return a credibility score (0-1) for each source
+      depends_on: [extract_content]
+    
     tags: ["analysis", "quality-control"]
 
   # Step 5: Filter reliable sources
   - id: filter_sources
-    action: <AUTO>filter sources with credibility score >= {{quality_threshold}} and organize by relevance to {{query}}</AUTO>
-    depends_on: [analyze_credibility]
+    action: |
+      filter sources with credibility score >= {{quality_threshold}} and organize by relevance to {{query}}
+     depends_on: [analyze_credibility]
     cache_results: true
     tags: ["filtering", "quality-control"]
 
   # Step 6: Synthesize information
   - id: synthesize_findings
-    action: <AUTO>synthesize information from all reliable sources about {{query}} and extract:
+    action: |
+      synthesize information from all reliable sources about {{query}} and extract:
       1. Key findings and insights
       2. Common themes and patterns
       3. Contradictions or debates
       4. Supporting evidence
       5. Knowledge gaps
-      Organize findings by importance and relevance</AUTO>
-    depends_on: [filter_sources]
+      Organize findings by importance and relevance
+      depends_on: [filter_sources]
+    
     condition: "{{filter_sources.result}} != null"
     timeout: 60.0
     tags: ["synthesis", "analysis"]
 
   # Step 7: Generate research report
   - id: generate_report
-    action: <AUTO>create a comprehensive research report about {{query}} including:
+    action: |
+      create a comprehensive research report about {{query}} including:
       1. Executive summary (2-3 paragraphs)
       2. Introduction and research objectives
       3. Key findings organized by theme
@@ -103,37 +108,41 @@ steps:
       6. Limitations and knowledge gaps
       7. Recommendations for further research
       8. References in APA format
-      Format as professional markdown</AUTO>
-    depends_on: [synthesize_findings]
+      Format as professional markdown
+      depends_on: [synthesize_findings]
+    
     on_error:
-      action: <AUTO>generate a simplified report with available information</AUTO>
-      continue_on_error: true
+      action: |        generate a simplified report with available information      continue_on_error: true
       fallback_value: "Unable to generate complete report - see partial results"
     timeout: 45.0
     tags: ["report", "output"]
 
   # Step 8: Generate PDF
   - id: export_pdf
-    action: <AUTO>convert the markdown report to a professional PDF with:
+    action: |
+      convert the markdown report to a professional PDF with:
       - Title: "Research Report: {{query}}"
       - Author: "Orchestrator Research Assistant"
       - Table of contents
       - Proper formatting and styling
-      Save to reports/research_{{query}}_{{execution.timestamp}}.pdf</AUTO>
-    depends_on: [generate_report]
+      Save to reports/research_{{query}}_{{execution.timestamp}}.pdf
+      depends_on: [generate_report]
+    
     condition: "{{generate_report.success}} == true"
     tags: ["export", "output"]
 
   # Step 9: Quality assurance
   - id: quality_check
-    action: <AUTO>evaluate the quality of the research report based on:
+    action: |
+      evaluate the quality of the research report based on:
       1. Completeness of coverage
       2. Accuracy of information
       3. Clarity of presentation
       4. Proper citation of sources
       5. Relevance to original query
-      Return quality score (0-1) and improvement suggestions</AUTO>
-    depends_on: [generate_report]
+      Return quality score (0-1) and improvement suggestions
+      depends_on: [generate_report]
+    
     tags: ["validation", "quality-control"]
 
 outputs:

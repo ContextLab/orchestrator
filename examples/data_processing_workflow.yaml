@@ -35,46 +35,42 @@ inputs:
 steps:
   # Step 1: Discover and validate data sources
   - id: discover_sources
-    action: <AUTO>discover all data sources matching pattern {{source}} and gather metadata including:
+    action: |
+      discover all data sources matching pattern {{source}} and gather metadata including:
       1. File/table names and sizes
       2. Data formats and schemas
       3. Creation/modification dates
       4. Access permissions
-      Return list of valid sources with metadata</AUTO>
-    timeout: 30.0
+      Return list of valid sources with metadata
+      timeout: 30.0
+    
     tags: ["discovery", "metadata"]
 
   # Step 2: Validate data schema
   - id: validate_schema
-    action: <AUTO>analyze the schema of each data source and:
+    action: |
+      analyze the schema of each data source and:
       1. Detect column types and formats
       2. Identify primary keys and relationships
       3. Check for required fields
       4. Validate data types consistency
-      Return schema validation report</AUTO>
-    depends_on: [discover_sources]
+      Return schema validation report
+      depends_on: [discover_sources]
+    
     condition: "{{discover_sources.result.count}} > 0"
     tags: ["validation", "schema"]
 
   # Step 3: Profile data quality
   - id: profile_data
-    action: <AUTO>profile data quality for each source:
+    action: |
+      profile data quality for each source:
       1. Calculate completeness (null/missing values)
       2. Check data type consistency
       3. Identify outliers and anomalies
       4. Measure uniqueness and cardinality
       5. Detect potential duplicates
-      Return quality metrics and issues</AUTO>
-    depends_on: [validate_schema]
-    loop:
-      foreach: "{{discover_sources.result.sources}}"
-      parallel: true
-      max_iterations: 10
-    tags: ["profiling", "quality"]
-
-  # Step 4: Clean and transform data
-  - id: clean_data
-    action: <AUTO>clean and transform data based on quality profile:
+      Return quality metrics and issues
+     depends_on: [validate_schema]
       1. Handle missing values (impute/remove based on context)
       2. Standardize formats (dates, phone numbers, addresses)
       3. Remove duplicates
@@ -83,91 +79,101 @@ steps:
       Process in chunks of {{chunk_size}} records</AUTO>
     depends_on: [profile_data]
     condition: "{{profile_data.result.average_quality_score}} >= {{quality_threshold}}"
-    loop:
-      foreach: "{{discover_sources.result.sources}}"
-      parallel: true
     on_error:
-      action: <AUTO>log problematic records and continue with valid data</AUTO>
-      continue_on_error: true
+      action: |        log problematic records and continue with valid data      continue_on_error: true
       retry_count: 2
     tags: ["cleaning", "transformation"]
 
   # Step 5: Enrich data
   - id: enrich_data
-    action: <AUTO>enrich cleaned data by:
+    action: |
+      enrich cleaned data by:
       1. Adding calculated fields and derived metrics
       2. Joining with reference data if available
       3. Applying ML predictions or classifications
       4. Adding timestamps and processing metadata
-      Return enriched dataset</AUTO>
-    depends_on: [clean_data]
+      Return enriched dataset
+      depends_on: [clean_data]
+    
     condition: "{{clean_data.result.success}} == true"
     tags: ["enrichment", "feature-engineering"]
 
   # Step 6: Validate processed data
   - id: validate_output
-    action: <AUTO>validate the processed data:
+    action: |
+      validate the processed data:
       1. Verify all business rules are satisfied
       2. Check referential integrity
       3. Validate calculated fields
       4. Ensure output schema compliance
       5. Compare record counts and totals
-      Return validation report</AUTO>
-    depends_on: [enrich_data]
+      Return validation report
+      depends_on: [enrich_data]
+    
     tags: ["validation", "quality-assurance"]
 
   # Step 7: Generate quality report
   - id: generate_report
-    action: <AUTO>create comprehensive data quality report including:
+    action: |
+      create comprehensive data quality report including:
       1. Source data statistics
       2. Data quality metrics before/after
       3. Transformation summary
       4. Issues found and resolved
       5. Validation results
       6. Processing performance metrics
-      Format as markdown report</AUTO>
-    depends_on: [validate_output]
+      Format as markdown report
+      depends_on: [validate_output]
+    
     tags: ["reporting", "documentation"]
 
   # Step 8: Export processed data
   - id: export_data
-    action: <AUTO>export processed data to {{output_path}} in {{output_format}} format:
+    action: |
+      export processed data to {{output_path}} in {{output_format}} format:
       1. Optimize for the target format (compression, partitioning)
       2. Include metadata and schema information
       3. Create indexes if applicable
       4. Set appropriate permissions
-      Return export details and location</AUTO>
-    depends_on: [validate_output]
+      Return export details and location
+      depends_on: [validate_output]
+    
     condition: "{{validate_output.result.passed}} == true"
     parallel: true  # Export different partitions in parallel
     timeout: 300.0  # 5 minutes for large exports
     on_error:
-      action: <AUTO>retry with smaller chunk size or fallback format</AUTO>
+      action: |
+      retry with smaller chunk size or fallback format
       retry_count: 3
+    
     tags: ["export", "output"]
 
   # Step 9: Data lineage tracking
   - id: track_lineage
-    action: <AUTO>document complete data lineage:
+    action: |
+      document complete data lineage:
       1. Source to target field mappings
       2. Transformation rules applied
       3. Data quality changes
       4. Processing timestamps
       5. Version information
-      Save lineage metadata</AUTO>
-    depends_on: [export_data]
+      Save lineage metadata
+      depends_on: [export_data]
+    
     tags: ["lineage", "metadata"]
 
   # Step 10: Monitoring and alerts
   - id: monitor_pipeline
-    action: <AUTO>analyze pipeline execution and:
+    action: |
+      analyze pipeline execution and:
       1. Calculate processing time per stage
       2. Measure resource utilization
       3. Identify bottlenecks
       4. Check against SLAs
       5. Generate alerts for anomalies
-      Return monitoring summary</AUTO>
-    depends_on: [track_lineage]
+      Return monitoring summary
+      depends_on: [track_lineage]
+    
     tags: ["monitoring", "performance"]
 
 outputs:

@@ -40,33 +40,7 @@ inputs:
 steps:
   # Step 1: Collect market data
   - id: collect_market_data
-    action: <AUTO>fetch market data for symbol {{item}}:
-      Timeframe: {{timeframe}}
-      
-      Collect:
-      1. Price data (OHLCV)
-      2. Volume statistics
-      3. Market cap and shares outstanding
-      4. Fundamental data (if equity)
-      5. Recent splits and dividends
-      6. Sector and industry info
-      
-      Use best available data source
-      Handle missing data appropriately
-      
-      Return complete market dataset</AUTO>
-    loop:
-      foreach: "{{symbols}}"
-      parallel: true
-      max_iterations: 20
-    timeout: 30.0
-    tags: ["data", "market"]
-
-  # Step 2: Perform technical analysis
-  - id: technical_analysis
-    action: <AUTO>run technical analysis for {{item}}:
-      Price data: {{collect_market_data.result[item].price_data}}
-      
+    action: |      fetch market data for symbol {{loop_item}}:            Timeframe: {{timeframe}}                        Collect:            1. Price data (OHLCV)            2. Volume statistics            3. Market cap and shares outstanding            4. Fundamental data (if equity)            5. Recent splits and dividends            6. Sector and industry info                        Use best available data source            Handle missing data appropriately                        Return complete market dataset      
       Calculate indicators:
       1. Trend: SMA(20,50,200), EMA(12,26), MACD
       2. Momentum: RSI(14), Stochastic, Williams %R
@@ -82,17 +56,6 @@ steps:
       
       Return indicators and patterns with signals</AUTO>
     depends_on: [collect_market_data]
-    loop:
-      foreach: "{{symbols}}"
-      parallel: true
-      max_iterations: 20
-    timeout: 20.0
-    tags: ["technical", "indicators"]
-
-  # Step 3: Analyze fundamentals (for equities)
-  - id: fundamental_analysis
-    action: <AUTO>analyze fundamentals for {{item}}:
-      Financial data: {{collect_market_data.result[item].fundamental_data}}
       
       Calculate metrics:
       1. Valuation: P/E, P/B, P/S, EV/EBITDA, PEG
@@ -109,15 +72,6 @@ steps:
       Return fundamental scores and analysis</AUTO>
     depends_on: [collect_market_data]
     condition: "{{asset_type}} == 'equity'"
-    loop:
-      foreach: "{{symbols}}"
-      parallel: true
-      max_iterations: 20
-    tags: ["fundamental", "valuation"]
-
-  # Step 4: Analyze market sentiment
-  - id: sentiment_analysis
-    action: <AUTO>analyze market sentiment for {{item}}:
       Sources to analyze:
       1. Recent news headlines (last 7 days)
       2. Social media mentions (Twitter, Reddit)
@@ -136,19 +90,6 @@ steps:
       
       Return sentiment analysis with key drivers</AUTO>
     depends_on: [collect_market_data]
-    loop:
-      foreach: "{{symbols}}"
-      parallel: true
-      max_iterations: 20
-    timeout: 25.0
-    tags: ["sentiment", "news"]
-
-  # Step 5: Calculate risk metrics
-  - id: risk_assessment
-    action: <AUTO>assess risk metrics for portfolio:
-      Symbols: {{symbols}}
-      Price data: {{collect_market_data.result}}
-      Risk tolerance: {{risk_tolerance}}
       
       Calculate:
       1. Individual volatility (daily, annualized)
@@ -172,42 +113,27 @@ steps:
 
   # Step 6: Generate price predictions
   - id: predictive_modeling
-    action: <AUTO>generate price predictions for {{item}}:
-      Historical data: {{collect_market_data.result[item]}}
-      Technical indicators: {{technical_analysis.result[item]}}
-      Sentiment: {{sentiment_analysis.result[item]}}
-      
+    action: |
+      generate price predictions for {{loop_item}}:
+      Historical data: {{collect_market_data.result[loop_item]}}
+      Technical indicators: {{technical_analysis.result[loop_item]}}
+      Sentiment: {{sentiment_analysis.result[loop_item]}}
       Create predictions for:
       1. Next day (1D)
       2. Next week (1W)
       3. Next month (1M)
       4. Next quarter (3M)
-      
       Include:
       1. Point forecast
       2. Confidence intervals (68%, 95%)
       3. Probability of direction
       4. Key drivers of prediction
       5. Model confidence score
-      
       Use ensemble of methods
-      
-      Return predictions with uncertainty</AUTO>
-    depends_on: [technical_analysis, sentiment_analysis]
+      Return predictions with uncertainty
+      depends_on: [technical_analysis, sentiment_analysis]
+    
     condition: "{{include_predictions}} == true"
-    loop:
-      foreach: "{{symbols}}"
-      parallel: true
-      max_iterations: 20
-    tags: ["prediction", "ml"]
-
-  # Step 7: Portfolio optimization
-  - id: portfolio_optimization
-    action: <AUTO>optimize portfolio allocation:
-      Symbols: {{symbols}}
-      Returns data: {{collect_market_data.result}}
-      Risk metrics: {{risk_assessment.result}}
-      Risk tolerance: {{risk_tolerance}}
       
       Optimize for:
       1. Maximum Sharpe ratio
@@ -229,19 +155,18 @@ steps:
 
   # Step 8: Generate trading signals
   - id: generate_signals
-    action: <AUTO>create trading signals for {{item}}:
-      Technical analysis: {{technical_analysis.result[item]}}
-      Sentiment: {{sentiment_analysis.result[item]}}
+    action: |
+      create trading signals for {{loop_item}}:
+      Technical analysis: {{technical_analysis.result[loop_item]}}
+      Sentiment: {{sentiment_analysis.result[loop_item]}}
       Risk profile: {{risk_assessment.result}}
-      Predictions: {{predictive_modeling.result[item] || {}}}
-      
+      Predictions: {{predictive_modeling.result[loop_item] | default({})}}
       Combine factors:
       1. Technical indicators alignment
       2. Pattern confirmations
       3. Sentiment momentum
       4. Risk-adjusted opportunity
       5. Prediction confidence
-      
       Generate:
       1. Signal strength (0-100)
       2. Action (buy/hold/sell)
@@ -249,20 +174,8 @@ steps:
       4. Stop loss levels
       5. Take profit targets
       6. Position sizing
-      
-      Return actionable trading signals</AUTO>
-    depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
-    loop:
-      foreach: "{{symbols}}"
-      parallel: true
-      max_iterations: 20
-    tags: ["signals", "trading"]
-
-  # Step 9: Backtest strategies
-  - id: backtest_strategies
-    action: <AUTO>backtest trading signals:
-      Signals: {{generate_signals.result}}
-      Historical data: {{collect_market_data.result}}
+      Return actionable trading signals
+     depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
       
       Test parameters:
       1. Initial capital: $100,000
@@ -288,31 +201,30 @@ steps:
 
   # Step 10: Analyze correlations
   - id: correlation_analysis
-    action: <AUTO>analyze asset correlations:
+    action: |
+      analyze asset correlations:
       Price data: {{collect_market_data.result}}
-      
       Calculate:
       1. Correlation matrix (Pearson, Spearman)
       2. Rolling correlations (30d, 90d)
       3. Correlation stability
       4. Lead-lag relationships
       5. Regime-dependent correlations
-      
       Identify:
       1. Highly correlated pairs
       2. Diversification opportunities
       3. Hedging possibilities
-      
-      Return correlation insights</AUTO>
-    depends_on: [collect_market_data]
+      Return correlation insights
+      depends_on: [collect_market_data]
+    
     condition: "{{symbols|length}} > 1"
     tags: ["correlation", "relationships"]
 
   # Step 11: Generate market insights
   - id: generate_insights
-    action: <AUTO>synthesize key market insights:
+    action: |
+      synthesize key market insights:
       All analyses: {{technical_analysis.result}}, {{sentiment_analysis.result}}, {{risk_assessment.result}}
-      
       Identify:
       1. Major market themes
       2. Emerging opportunities
@@ -320,64 +232,59 @@ steps:
       4. Sector rotations
       5. Unusual patterns
       6. Contrarian indicators
-      
       Prioritize by:
       1. Impact potential
       2. Time sensitivity
       3. Confidence level
-      
-      Return top 10 actionable insights</AUTO>
-    depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
+      Return top 10 actionable insights
+      depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
+    
     tags: ["insights", "synthesis"]
 
   # Step 12: Create financial report
   - id: generate_report
-    action: <AUTO>compile comprehensive financial report:
+    action: |
+      compile comprehensive financial report:
       Include sections:
       1. Executive Summary
-         - Key findings
-         - Top recommendations
-         - Risk warnings
-      
+      - Key findings
+      - Top recommendations
+      - Risk warnings
       2. Market Analysis
-         - Price performance
-         - Technical indicators
-         - Market sentiment
-      
+      - Price performance
+      - Technical indicators
+      - Market sentiment
       3. Fundamental Analysis (if applicable)
-         - Valuation metrics
-         - Financial health
-         - Peer comparison
-      
+      - Valuation metrics
+      - Financial health
+      - Peer comparison
       4. Risk Assessment
-         - Portfolio risk metrics
-         - Stress test results
-         - Correlation analysis
-      
+      - Portfolio risk metrics
+      - Stress test results
+      - Correlation analysis
       5. Predictions & Signals
-         - Price forecasts
-         - Trading signals
-         - Confidence levels
-      
+      - Price forecasts
+      - Trading signals
+      - Confidence levels
       6. Portfolio Optimization
-         - Recommended allocation
-         - Expected returns
-      
+      - Recommended allocation
+      - Expected returns
       7. Action Items
-         - Immediate actions
-         - Watch list
-         - Review schedule
-      
-      Format: Professional investment report
+      - Immediate actions
+      - Watch list
+      - Review schedule
+      Format:
+      Professional investment report
       Include charts and visualizations
-      
-      Return formatted report</AUTO>
-    depends_on: [generate_insights]
+      Return formatted report
+      depends_on: [generate_insights]
+    
     tags: ["report", "output"]
 
   # Step 13: Create visualizations
   - id: create_visualizations
-    action: <AUTO>generate financial charts and graphs:
+    action: |
+      generate financial charts and graphs:
       Create:
       1. Price charts with technical indicators
       2. Correlation heatmap
@@ -387,12 +294,12 @@ steps:
       6. Prediction confidence bands
       7. Backtest performance curves
       8. Drawdown charts
-      
-      Style: Professional financial charts
+      Style:
+      Professional financial charts
       Interactive where possible
-      
-      Return visualization package</AUTO>
-    depends_on: [generate_report]
+      Return visualization package
+      depends_on: [generate_report]
+    
     tags: ["visualization", "charts"]
 
 outputs:
@@ -400,14 +307,14 @@ outputs:
   analysis_date: "{{collect_market_data.result.timestamp}}"
   market_overview: "{{collect_market_data.result}}"
   technical_signals: "{{technical_analysis.result}}"
-  fundamental_scores: "{{fundamental_analysis.result || {}}}"
+  fundamental_scores: "{{fundamental_analysis.result | default({})}}"
   sentiment_scores: "{{sentiment_analysis.result}}"
   risk_metrics: "{{risk_assessment.result}}"
-  predictions: "{{predictive_modeling.result || {}}}"
-  optimal_portfolio: "{{portfolio_optimization.result || {}}}"
+  predictions: "{{predictive_modeling.result | default({})}}"
+  optimal_portfolio: "{{portfolio_optimization.result | default({})}}"
   trading_signals: "{{generate_signals.result}}"
-  backtest_results: "{{backtest_strategies.result || {}}}"
-  correlations: "{{correlation_analysis.result || {}}}"
+  backtest_results: "{{backtest_strategies.result | default({})}}"
+  correlations: "{{correlation_analysis.result | default({})}}"
   key_insights: "{{generate_insights.result}}"
   report: "{{generate_report.result}}"
   visualizations: "{{create_visualizations.result}}"

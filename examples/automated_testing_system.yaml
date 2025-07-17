@@ -40,38 +40,40 @@ inputs:
 steps:
   # Step 1: Analyze source code structure
   - id: analyze_codebase
-    action: <AUTO>analyze source code in {{source_dir}}:
+    action: |
+      analyze source code in {{source_dir}}:
       1. Identify all functions, classes, and methods
       2. Extract function signatures and parameters
       3. Map dependencies and imports
       4. Identify API endpoints if present
       5. Detect design patterns used
       6. Find complex logic areas
-      
-      Return comprehensive code structure analysis</AUTO>
-    timeout: 30.0
+      Return comprehensive code structure analysis
+      timeout: 30.0
+    
     tags: ["analysis", "code-structure"]
 
   # Step 2: Analyze existing test coverage
   - id: analyze_existing_tests
-    action: <AUTO>analyze existing tests in {{test_dir}}:
+    action: |
+      analyze existing tests in {{test_dir}}:
       1. Find all existing test files
       2. Map which functions are already tested
       3. Calculate current coverage percentage
       4. Identify coverage gaps
       5. Analyze test patterns used
       6. Find missing test types
-      
-      Return coverage report and gaps analysis</AUTO>
-    depends_on: [analyze_codebase]
+      Return coverage report and gaps analysis
+      depends_on: [analyze_codebase]
+    
     tags: ["coverage", "analysis"]
 
   # Step 3: Generate comprehensive test plan
   - id: generate_test_plan
-    action: <AUTO>create test plan based on code analysis:
+    action: |
+      create test plan based on code analysis:
       Code structure: {{analyze_codebase.result}}
       Current coverage: {{analyze_existing_tests.result}}
-      
       Generate plan including:
       1. Priority matrix for untested functions
       2. Test cases for each function
@@ -79,18 +81,17 @@ steps:
       4. Integration test scenarios
       5. Performance test requirements
       6. Mock/stub requirements
-      
-      Focus on {{coverage_target}}% coverage target</AUTO>
-    depends_on: [analyze_existing_tests]
+      Focus on {{coverage_target}}% coverage target
+     depends_on: [analyze_existing_tests]
     cache_results: true
     tags: ["planning", "strategy"]
 
   # Step 4: Generate unit tests
   - id: generate_unit_tests
-    action: <AUTO>generate unit tests for function {{item}}:
+    action: |
+      generate unit tests for function {{loop_item}}:
       Framework: {{test_framework}}
-      Function details: {{item.signature}}
-      
+      Function details: {{loop_item.signature}}
       Create tests including:
       1. Happy path test cases
       2. Edge cases (null, empty, boundary values)
@@ -98,22 +99,10 @@ steps:
       4. Type validation tests
       5. Property-based tests where applicable
       6. Parameterized test cases
-      
-      Include proper setup/teardown and mocking</AUTO>
-    depends_on: [generate_test_plan]
+      Include proper setup/teardown and mocking
+      depends_on: [generate_test_plan]
+    
     condition: "'unit' in {{test_types}}"
-    loop:
-      foreach: "{{generate_test_plan.result.unit_test_targets}}"
-      parallel: true
-      max_iterations: 100
-    timeout: 45.0
-    tags: ["generation", "unit-tests"]
-
-  # Step 5: Generate integration tests
-  - id: generate_integration_tests
-    action: <AUTO>generate integration tests for {{item}}:
-      Test scenario: {{item}}
-      Dependencies: {{item.dependencies}}
       
       Create tests for:
       1. Component interactions
@@ -126,16 +115,6 @@ steps:
       Include test data setup and cleanup</AUTO>
     depends_on: [generate_test_plan]
     condition: "'integration' in {{test_types}}"
-    loop:
-      foreach: "{{generate_test_plan.result.integration_scenarios}}"
-      parallel: true
-      max_iterations: 50
-    tags: ["generation", "integration-tests"]
-
-  # Step 6: Generate test fixtures and mocks
-  - id: generate_fixtures
-    action: <AUTO>create test fixtures and mocks:
-      Required mocks: {{generate_test_plan.result.mock_requirements}}
       
       Generate:
       1. Mock objects for external dependencies
@@ -151,9 +130,9 @@ steps:
 
   # Step 7: Generate performance tests
   - id: generate_performance_tests
-    action: <AUTO>create performance tests:
+    action: |
+      create performance tests:
       Target functions: {{analyze_codebase.result.performance_critical}}
-      
       Generate tests for:
       1. Response time benchmarks
       2. Throughput testing
@@ -161,18 +140,18 @@ steps:
       4. Concurrent operation testing
       5. Load testing scenarios
       6. Stress testing limits
-      
-      Include performance baselines</AUTO>
-    depends_on: [generate_test_plan]
+      Include performance baselines
+      depends_on: [generate_test_plan]
+    
     condition: "{{include_performance}} == true"
     tags: ["performance", "benchmarks"]
 
   # Step 8: Execute generated tests
   - id: execute_tests
-    action: <AUTO>run all generated tests:
+    action: |
+      run all generated tests:
       Test directory: {{test_dir}}
       Framework: {{test_framework}}
-      
       Execute:
       1. Run tests with coverage tracking
       2. Capture detailed results
@@ -180,15 +159,16 @@ steps:
       4. Track execution time
       5. Identify flaky tests
       6. Collect failure details
-      
-      Return test results and coverage metrics</AUTO>
-    depends_on: [generate_unit_tests, generate_integration_tests, generate_fixtures]
+      Return test results and coverage metrics
+      depends_on: [generate_unit_tests, generate_integration_tests, generate_fixtures]
+    
     timeout: 300.0
     tags: ["execution", "validation"]
 
   # Step 9: Analyze test failures
   - id: analyze_failures
-    action: <AUTO>analyze any test failures:
+    action: |
+      Analyze any test failures:
       Failed tests: {{execute_tests.result.failures}}
       
       For each failure:
@@ -199,17 +179,17 @@ steps:
       5. Verify test correctness
       6. Recommend improvements
       
-      Return detailed failure analysis</AUTO>
+      Return detailed failure analysis
     depends_on: [execute_tests]
     condition: "{{execute_tests.result.failed_count}} > 0"
     tags: ["analysis", "debugging"]
 
   # Step 10: Optimize test suite
   - id: optimize_test_suite
-    action: <AUTO>optimize the test suite:
+    action: |
+      optimize the test suite:
       Test results: {{execute_tests.result}}
       Coverage data: {{execute_tests.result.coverage}}
-      
       Identify:
       1. Redundant tests with same coverage
       2. Slow-running tests to optimize
@@ -217,31 +197,32 @@ steps:
       4. Missing critical test scenarios
       5. Opportunities for parallelization
       6. Test organization improvements
-      
-      Return optimization recommendations</AUTO>
-    depends_on: [execute_tests]
+      Return optimization recommendations
+      depends_on: [execute_tests]
+    
     tags: ["optimization", "performance"]
 
   # Step 11: Generate mutation tests
   - id: mutation_testing
-    action: <AUTO>evaluate test quality with mutation testing:
+    action: |
+      evaluate test quality with mutation testing:
       Select critical functions from {{analyze_codebase.result}}
-      
       For each function:
       1. Generate code mutations
       2. Run tests against mutations
       3. Identify surviving mutants
       4. Calculate mutation score
       5. Suggest additional tests
-      
-      Return mutation testing report</AUTO>
-    depends_on: [execute_tests]
+      Return mutation testing report
+      depends_on: [execute_tests]
+    
     condition: "{{execute_tests.result.coverage}} >= {{coverage_target}}"
     tags: ["mutation", "quality"]
 
   # Step 12: Generate comprehensive report
   - id: generate_report
-    action: <AUTO>create detailed testing report:
+    action: |
+      create detailed testing report:
       Include:
       1. Executive summary with key metrics
       2. Coverage report (current vs target)
@@ -251,16 +232,16 @@ steps:
       6. Mutation testing results
       7. Optimization suggestions
       8. CI/CD integration guide
-      
-      Format as HTML and markdown reports</AUTO>
-    depends_on: [optimize_test_suite, analyze_failures, mutation_testing]
+      Format as HTML and markdown reports
+      depends_on: [optimize_test_suite, analyze_failures, mutation_testing]
+    
     tags: ["reporting", "documentation"]
 
   # Step 13: Create CI/CD configuration
   - id: generate_ci_config
-    action: <AUTO>generate CI/CD test configuration:
+    action: |
+      generate CI/CD test configuration:
       Detect CI platform (GitHub Actions, GitLab, Jenkins)
-      
       Create configuration for:
       1. Test execution commands
       2. Coverage thresholds
@@ -268,9 +249,9 @@ steps:
       4. Test result reporting
       5. Failure notifications
       6. Performance regression checks
-      
-      Return CI configuration files</AUTO>
-    depends_on: [generate_report]
+      Return CI configuration files
+      depends_on: [generate_report]
+    
     tags: ["ci-cd", "automation"]
 
 outputs:

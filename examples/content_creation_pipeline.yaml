@@ -40,88 +40,84 @@ inputs:
 steps:
   # Step 1: Research topic and keywords
   - id: research_topic
-    action: <AUTO>research the topic "{{topic}}" to identify:
+    action: |
+      research the topic "{{topic}}" to identify:
       1. Primary and secondary keywords for SEO
       2. Current trends and angles
       3. Related topics and subtopics
       4. Competitor content analysis
       5. Target audience interests
-      
-      Return keywords, trending angles, and insights</AUTO>
-    timeout: 30.0
+      Return keywords, trending angles, and insights
+      timeout: 30.0
+    
     tags: ["research", "seo"]
 
   # Step 2: Generate content outline
   - id: generate_outline
-    action: <AUTO>create a detailed content outline for "{{topic}}" that:
+    action: |
+      create a detailed content outline for "{{topic}}" that:
       1. Incorporates keywords from {{research_topic.result.keywords}}
       2. Targets {{audience}}
       3. Aligns with goals: {{goals}}
       4. Plans for {{target_length}} words
       5. Includes engaging sections and CTAs
-      
-      Return structured outline with key points</AUTO>
-    depends_on: [research_topic]
+      Return structured outline with key points
+     depends_on: [research_topic]
     cache_results: true
     tags: ["planning", "structure"]
 
   # Step 3: Create blog content
   - id: create_blog_content
-    action: <AUTO>write a comprehensive blog post about "{{topic}}" using:
+    action: |
+      write a comprehensive blog post about "{{topic}}" using:
       - Outline: {{generate_outline.result}}
       - Keywords: {{research_topic.result.keywords}}
       - Brand voice: {{brand_voice}}
       - Target length: {{target_length}} words
-      
       Include:
       1. Compelling introduction
       2. Well-structured sections with examples
       3. Data and statistics where relevant
       4. Clear conclusions and CTAs
-      5. Meta description and 3 title variations</AUTO>
-    depends_on: [generate_outline]
+      5. Meta description and 3 title variations
+      depends_on: [generate_outline]
+    
     condition: "'blog' in {{formats}}"
     timeout: 60.0
     tags: ["content", "blog"]
 
   # Step 4: SEO optimization
   - id: optimize_seo
-    action: <AUTO>optimize the blog content for SEO:
+    action: |
+      optimize the blog content for SEO:
       1. Ensure keyword density is 1-2%
       2. Add internal linking suggestions
       3. Optimize headings (H1, H2, H3)
       4. Improve readability score
       5. Add schema markup suggestions
       6. Calculate SEO score (0-100)
-      
-      Return optimized content with SEO metrics</AUTO>
-    depends_on: [create_blog_content]
+      Return optimized content with SEO metrics
+      depends_on: [create_blog_content]
+    
     condition: "'blog' in {{formats}}"
     tags: ["seo", "optimization"]
 
   # Step 5: Generate social media content
   - id: create_social_content
-    action: <AUTO>create social media posts from the blog content for platforms:
+    action: |
+      create social media posts from the blog content for platforms:
       - Twitter: 3 variations (280 chars max)
       - LinkedIn: 2 variations (3000 chars max)
       - Instagram: 2 variations with caption
       - Facebook: 2 variations
-      
       Include:
       1. Platform-optimized messaging
       2. Relevant hashtags (5-10 per platform)
       3. CTAs appropriate for each platform
-      4. Suggested posting times</AUTO>
-    depends_on: [create_blog_content]
+      4. Suggested posting times
+      depends_on: [create_blog_content]
+    
     condition: "'social' in {{formats}}"
-    loop:
-      foreach: ["twitter", "linkedin", "instagram", "facebook"]
-      parallel: true
-    tags: ["social", "content"]
-
-  # Step 6: Create visual content
-  - id: generate_visuals
-    action: <AUTO>design visual content for the campaign:
       1. Hero image for blog post (1200x628px)
       2. Social media cards for each platform
       3. Infographic summarizing key points
@@ -134,89 +130,97 @@ steps:
 
   # Step 7: Create email newsletter
   - id: create_email_content
-    action: <AUTO>create an email newsletter about "{{topic}}" that:
+    action: |
+      create an email newsletter about "{{topic}}" that:
       1. Summarizes key blog points
       2. Uses {{brand_voice}} tone
       3. Includes personalization tokens
       4. Has clear CTA to full article
       5. Optimized for mobile reading
-      
       Generate:
       - 3 subject line variations
       - Preview text
-      - Email body in HTML/text</AUTO>
-    depends_on: [create_blog_content]
+      - Email body in HTML/text
+      depends_on: [create_blog_content]
+    
     condition: "'email' in {{formats}}"
     tags: ["email", "newsletter"]
 
   # Step 8: Quality review
   - id: quality_review
-    action: <AUTO>review all content for quality:
+    action: |
+      review all content for quality:
       1. Grammar and spelling check
       2. Fact verification
       3. Brand voice consistency
       4. Tone appropriateness for {{audience}}
       5. CTA effectiveness
       6. Legal/compliance check
-      
-      Return quality scores and revision suggestions</AUTO>
-    depends_on: [optimize_seo, create_social_content, create_email_content]
+      Return quality scores and revision suggestions
+      depends_on: [optimize_seo, create_social_content, create_email_content]
+    
     tags: ["review", "quality"]
 
   # Step 9: A/B test variations
   - id: create_ab_tests
-    action: <AUTO>create A/B test variations for:
+    action: |
+      create A/B test variations for:
       1. Blog post titles (pick top 2)
       2. Email subject lines (pick top 2)
       3. Social media CTAs
       4. Visual styles
-      
-      Set up test parameters and success metrics</AUTO>
-    depends_on: [quality_review]
+      Set up test parameters and success metrics
+      depends_on: [quality_review]
+    
     tags: ["testing", "optimization"]
 
   # Step 10: Schedule content
   - id: schedule_content
-    action: <AUTO>create optimal publishing schedule:
+    action: |
+      create optimal publishing schedule:
       1. Analyze best posting times for {{audience}}
       2. Space out social posts appropriately
       3. Coordinate email with blog publication
       4. Set up content calendar entries
       5. Configure platform-specific scheduling
-      
-      Return publishing timeline</AUTO>
-    depends_on: [create_ab_tests]
+      Return publishing timeline
+      depends_on: [create_ab_tests]
+    
     condition: "{{auto_publish}} == true"
     tags: ["scheduling", "distribution"]
 
   # Step 11: Publish content
   - id: publish_content
-    action: <AUTO>publish content to platforms:
+    action: |
+      publish content to platforms:
       1. Publish blog post to CMS
       2. Schedule social media posts
       3. Set up email campaign
       4. Upload images to media library
       5. Configure tracking/analytics
-      
-      Return published URLs and campaign IDs</AUTO>
-    depends_on: [schedule_content]
+      Return published URLs and campaign IDs
+      depends_on: [schedule_content]
+    
     condition: "{{auto_publish}} == true"
     on_error:
-      action: <AUTO>save content locally and provide manual publishing instructions</AUTO>
+      action: |
+      save content locally and provide manual publishing instructions
       continue_on_error: true
+    
     tags: ["publishing", "distribution"]
 
   # Step 12: Set up monitoring
   - id: setup_monitoring
-    action: <AUTO>configure performance monitoring:
+    action: |
+      configure performance monitoring:
       1. Set up analytics tracking
       2. Create performance dashboard
       3. Configure alerts for metrics
       4. Set up conversion tracking
       5. Schedule performance reports
-      
-      Return monitoring configuration</AUTO>
-    depends_on: [publish_content]
+      Return monitoring configuration
+      depends_on: [publish_content]
+    
     condition: "{{auto_publish}} == true"
     tags: ["analytics", "monitoring"]
 

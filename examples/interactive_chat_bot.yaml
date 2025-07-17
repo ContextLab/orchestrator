@@ -40,9 +40,9 @@ inputs:
 steps:
   # Step 1: Process and analyze user input
   - id: process_input
-    action: <AUTO>analyze user input message:
+    action: |
+      analyze user input message:
       Message: {{message}}
-      
       Extract:
       1. Language detection
       2. Input complexity
@@ -50,33 +50,33 @@ steps:
       4. Potential commands or requests
       5. Emotional indicators
       6. Question vs statement classification
-      
-      Return processed input with metadata</AUTO>
-    timeout: 5.0
+      Return processed input with metadata
+      timeout: 5.0
+    
     tags: ["input", "analysis"]
 
   # Step 2: Safety and content check
   - id: safety_check
-    action: <AUTO>check content safety:
+    action: |
+      check content safety:
       Content: {{process_input.result.text}}
       Safety level: {{safety_level}}
-      
       Check for:
       1. Toxic or harmful content
       2. Personal information (PII)
       3. Inappropriate requests
       4. Security threats
       5. Manipulation attempts
-      
-      Return safety status and filtered content</AUTO>
-    depends_on: [process_input]
+      Return safety status and filtered content
+      depends_on: [process_input]
+    
     tags: ["safety", "moderation"]
 
   # Step 3: Retrieve conversation context
   - id: retrieve_context
-    action: <AUTO>retrieve conversation context and history:
+    action: |
+      retrieve conversation context and history:
       Conversation ID: {{conversation_id}}
-      
       Get:
       1. Recent message history (last 10 messages)
       2. Current conversation topic
@@ -84,19 +84,19 @@ steps:
       4. Previous tool usage
       5. Important entities mentioned
       6. Conversation summary
-      
-      Return relevant context for response generation</AUTO>
-    depends_on: [safety_check]
+      Return relevant context for response generation
+      depends_on: [safety_check]
+    
     condition: "{{safety_check.result.is_safe}} == true"
     cache_results: true
     tags: ["context", "memory"]
 
   # Step 4: Classify user intent
   - id: classify_intent
-    action: <AUTO>classify the user's intent:
+    action: |
+      classify the user's intent:
       Message: {{safety_check.result.filtered_content}}
       Context: {{retrieve_context.result}}
-      
       Determine:
       1. Primary intent (question, command, statement, etc.)
       2. Secondary intents if any
@@ -104,57 +104,55 @@ steps:
       4. Information needs
       5. Emotional context
       6. Urgency level
-      
-      Return intent classification with confidence scores</AUTO>
-    depends_on: [retrieve_context]
+      Return intent classification with confidence scores
+      depends_on: [retrieve_context]
+    
     tags: ["intent", "classification"]
 
   # Step 5: Determine required tools
   - id: select_tools
-    action: <AUTO>select appropriate tools for the task:
+    action: |
+      select appropriate tools for the task:
       Intent: {{classify_intent.result.primary_intent}}
       Message: {{safety_check.result.filtered_content}}
       Available tools: {{available_tools}}
-      
       For each potentially useful tool:
       1. Evaluate relevance to the task
       2. Check if tool can help answer the query
       3. Determine tool parameters
       4. Consider tool dependencies
       5. Estimate execution time
-      
-      Return list of tools to use with parameters</AUTO>
-    depends_on: [classify_intent]
+      Return list of tools to use with parameters
+      depends_on: [classify_intent]
+    
     tags: ["tools", "planning"]
 
   # Step 6: Execute selected tools
   - id: execute_tools
-    action: <AUTO>execute tool: {{item.name}}
-      Parameters: {{item.parameters}}
-      
-      Run the tool and return results</AUTO>
-    depends_on: [select_tools]
+    action: |
+      execute tool: {{loop_item.name}}
+      Parameters: {{loop_item.parameters}}
+      Run the tool and return results
+      depends_on: [select_tools]
+    
     condition: "{{select_tools.result.tools|length}} > 0"
-    loop:
-      foreach: "{{select_tools.result.tools}}"
-      parallel: true
-      max_iterations: 5
-    timeout: 10.0
     on_error:
-      action: <AUTO>return error message for tool {{item.name}}</AUTO>
+      action: |
+      return error message for tool {{loop_item.name}}
       continue_on_error: true
+    
     tags: ["tools", "execution"]
 
   # Step 7: Generate conversational response
   - id: generate_response
-    action: <AUTO>generate helpful conversational response:
+    action: |
+      generate helpful conversational response:
       User message: {{safety_check.result.filtered_content}}
       Conversation context: {{retrieve_context.result}}
       Intent: {{classify_intent.result}}
-      Tool results: {{execute_tools.result || []}}
+      Tool results: {{execute_tools.result | default([])}}
       Persona: {{persona}}
       Max length: {{max_response_length}} tokens
-      
       Create response that:
       1. Directly addresses the user's query
       2. Incorporates tool results naturally
@@ -162,21 +160,21 @@ steps:
       4. Matches the persona style
       5. Shows appropriate empathy/emotion
       6. Includes relevant follow-up suggestions
-      
-      Tone: Match user's formality level
+      Tone:
+      Match user's formality level
       Language: {{process_input.result.language}}
-      
-      Return response with metadata</AUTO>
-    depends_on: [classify_intent, execute_tools]
+      Return response with metadata
+      depends_on: [classify_intent, execute_tools]
+    
     timeout: 30.0
     tags: ["generation", "response"]
 
   # Step 8: Enhance response quality
   - id: enhance_response
-    action: <AUTO>enhance and polish the response:
+    action: |
+      enhance and polish the response:
       Response: {{generate_response.result.text}}
       Language: {{process_input.result.language}}
-      
       Improve:
       1. Grammar and clarity
       2. Formatting for readability
@@ -184,17 +182,17 @@ steps:
       4. Ensure factual accuracy
       5. Check tone consistency
       6. Verify completeness
-      
-      Return enhanced response</AUTO>
-    depends_on: [generate_response]
+      Return enhanced response
+      depends_on: [generate_response]
+    
     tags: ["enhancement", "quality"]
 
   # Step 9: Extract facts for memory
   - id: extract_facts
-    action: <AUTO>extract important facts from conversation:
+    action: |
+      extract important facts from conversation:
       User message: {{message}}
       Bot response: {{enhance_response.result}}
-      
       Identify:
       1. User preferences mentioned
       2. Important entities (names, places, dates)
@@ -202,18 +200,18 @@ steps:
       4. Technical requirements stated
       5. Personal information shared
       6. Action items or commitments
-      
-      Return structured facts for memory storage</AUTO>
-    depends_on: [enhance_response]
+      Return structured facts for memory storage
+      depends_on: [enhance_response]
+    
     tags: ["memory", "extraction"]
 
   # Step 10: Update conversation memory
   - id: update_memory
-    action: <AUTO>update conversation memory systems:
+    action: |
+      update conversation memory systems:
       Conversation ID: {{conversation_id}}
       New facts: {{extract_facts.result}}
       Intent: {{classify_intent.result.primary_intent}}
-      
       Update:
       1. Short-term memory with recent exchange
       2. Long-term memory with important facts
@@ -221,55 +219,56 @@ steps:
       4. Topic tracking
       5. Entity recognition database
       6. Conversation summary
-      
-      Return memory update confirmation</AUTO>
-    depends_on: [extract_facts]
+      Return memory update confirmation
+      depends_on: [extract_facts]
+    
     tags: ["memory", "update"]
 
   # Step 11: Generate follow-up suggestions
   - id: suggest_followups
-    action: <AUTO>generate relevant follow-up questions or actions:
+    action: |
+      generate relevant follow-up questions or actions:
       Current topic: {{classify_intent.result}}
       Response: {{enhance_response.result}}
       Context: {{retrieve_context.result}}
-      
       Suggest 3-5 follow-up options that:
       1. Deepen the current topic
       2. Explore related areas
       3. Clarify any ambiguities
       4. Offer helpful next steps
       5. Match user's interest level
-      
-      Return as list of suggestions</AUTO>
-    depends_on: [enhance_response]
+      Return as list of suggestions
+      depends_on: [enhance_response]
+    
     tags: ["suggestions", "engagement"]
 
   # Step 12: Prepare streaming response (conditional)
   - id: prepare_streaming
-    action: <AUTO>prepare response for streaming delivery:
+    action: |
+      prepare response for streaming delivery:
       Response: {{enhance_response.result}}
-      
       Split into chunks for natural streaming:
       1. Sentence boundaries
       2. Phrase boundaries for long sentences
       3. Natural pause points
       4. Tool execution indicators
-      
-      Return chunked response</AUTO>
-    depends_on: [enhance_response]
+      Return chunked response
+      depends_on: [enhance_response]
+    
     condition: "{{enable_streaming}} == true"
     tags: ["streaming", "formatting"]
 
   # Step 13: Log conversation analytics
   - id: log_analytics
-    action: <AUTO>log conversation analytics:
+    action: |
+      log conversation analytics:
       Conversation ID: {{conversation_id}}
       Message: {{message}}
       Response: {{enhance_response.result}}
       Intent: {{classify_intent.result}}
-      Tools used: {{execute_tools.result || []}}
-      Response time: Calculate from timestamps
-      
+      Tools used: {{execute_tools.result | default([])}}
+      Response time:
+      Calculate from timestamps
       Track:
       1. User satisfaction indicators
       2. Response relevance
@@ -277,27 +276,27 @@ steps:
       4. Conversation flow quality
       5. Error occurrences
       6. Performance metrics
-      
-      Store for analysis and improvement</AUTO>
-    depends_on: [enhance_response]
+      Store for analysis and improvement
+      depends_on: [enhance_response]
+    
     tags: ["analytics", "logging"]
 
   # Step 14: Prepare final output
   - id: prepare_output
-    action: <AUTO>prepare final response package:
+    action: |
+      prepare final response package:
       Response: {{enhance_response.result}}
-      Streaming chunks: {{prepare_streaming.result || null}}
+      Streaming chunks: {{prepare_streaming.result | default(null)}}
       Follow-ups: {{suggest_followups.result}}
-      
       Create output with:
       1. Main response text
       2. Response metadata
       3. Suggested follow-ups
       4. Streaming data if enabled
       5. Conversation state update
-      
-      Return complete response package</AUTO>
-    depends_on: [suggest_followups, prepare_streaming, log_analytics]
+      Return complete response package
+      depends_on: [suggest_followups, prepare_streaming, log_analytics]
+    
     tags: ["output", "final"]
 
 outputs:
@@ -306,9 +305,9 @@ outputs:
   intent: "{{classify_intent.result.primary_intent}}"
   confidence: "{{classify_intent.result.confidence}}"
   language: "{{process_input.result.language}}"
-  tools_used: "{{execute_tools.result || []}}"
+  tools_used: "{{execute_tools.result | default([])}}"
   suggested_followups: "{{suggest_followups.result}}"
-  streaming_chunks: "{{prepare_streaming.result || null}}"
+  streaming_chunks: "{{prepare_streaming.result | default(null)}}"
   safety_passed: "{{safety_check.result.is_safe}}"
   facts_extracted: "{{extract_facts.result|length}}"
   response_time_ms: "{{log_analytics.result.response_time}}"

@@ -45,32 +45,31 @@ inputs:
 steps:
   # Step 1: Discover documents in directory
   - id: discover_documents
-    action: <AUTO>scan directory for documents:
+    action: |
+      scan directory for documents:
       Path: {{input_dir}}
-      
       Find all documents with extensions:
       - PDF files
       - Word documents (docx, doc)
       - Excel files (xlsx, xls)
       - Images (png, jpg, jpeg, tiff)
       - Text files (txt, md)
-      
       For each document collect:
       1. File path and name
       2. File size
       3. Creation/modification date
       4. File type
       5. Initial metadata
-      
-      Return document list with metadata</AUTO>
-    timeout: 10.0
+      Return document list with metadata
+      timeout: 10.0
+    
     tags: ["discovery", "files"]
 
   # Step 2: Classify document types
   - id: classify_documents
-    action: <AUTO>classify document type for {{item.name}}:
-      Analyze file: {{item.path}}
-      
+    action: |
+      classify document type for {{loop_item.name}}:
+      Analyze file: {{loop_item.path}}
       Determine:
       1. Document category (invoice, contract, report, form, etc.)
       2. Business function (finance, legal, HR, technical, etc.)
@@ -78,23 +77,8 @@ steps:
       4. Key indicators used for classification
       5. Document language
       6. Estimated complexity
-      
-      Return classification with confidence</AUTO>
-    depends_on: [discover_documents]
-    loop:
-      foreach: "{{discover_documents.result.document_list}}"
-      parallel: true
-      max_iterations: 100
-    timeout: 15.0
-    tags: ["classification", "analysis"]
-
-  # Step 3: Extract text content
-  - id: extract_text
-    action: <AUTO>extract text from document {{item.name}}:
-      File path: {{item.path}}
-      File type: {{item.type}}
-      Enable OCR: {{enable_ocr}}
-      Languages: {{languages}}
+      Return classification with confidence
+     depends_on: [discover_documents]
       
       Extract:
       1. Full text content
@@ -110,18 +94,6 @@ steps:
       
       Return extracted text with metadata</AUTO>
     depends_on: [classify_documents]
-    loop:
-      foreach: "{{discover_documents.result.document_list}}"
-      parallel: true
-      max_iterations: 100
-    timeout: 30.0
-    tags: ["extraction", "ocr"]
-
-  # Step 4: Analyze document structure
-  - id: analyze_structure
-    action: <AUTO>analyze structure of document {{item.name}}:
-      Text content: {{extract_text.result[item.id].content}}
-      Document type: {{classify_documents.result[item.id].category}}
       
       Identify:
       1. Headers and sections
@@ -136,16 +108,6 @@ steps:
       
       Return document structure analysis</AUTO>
     depends_on: [extract_text]
-    loop:
-      foreach: "{{discover_documents.result.document_list}}"
-      parallel: true
-      max_iterations: 100
-    tags: ["structure", "layout"]
-
-  # Step 5: Extract tables if present
-  - id: extract_tables
-    action: <AUTO>extract tables from document {{item.document}}:
-      Table locations: {{item.table_locations}}
       
       For each table:
       1. Extract table structure (rows, columns)
@@ -158,17 +120,6 @@ steps:
       Return structured table data</AUTO>
     depends_on: [analyze_structure]
     condition: "{{extract_tables}} == true"
-    loop:
-      foreach: "{{analyze_structure.result.tables}}"
-      parallel: true
-      max_iterations: 50
-    tags: ["tables", "data-extraction"]
-
-  # Step 6: Extract named entities
-  - id: extract_entities
-    action: <AUTO>extract entities from document {{item.id}}:
-      Text: {{extract_text.result[item.id].content}}
-      Custom entities: {{custom_entities}}
       
       Extract:
       1. Person names
@@ -191,17 +142,6 @@ steps:
       
       Return entities with metadata</AUTO>
     depends_on: [extract_text]
-    loop:
-      foreach: "{{discover_documents.result.document_list}}"
-      parallel: true
-      max_iterations: 100
-    timeout: 20.0
-    tags: ["entities", "ner"]
-
-  # Step 7: Detect PII and sensitive data
-  - id: detect_pii
-    action: <AUTO>scan for PII in document {{item.id}}:
-      Text: {{extract_text.result[item.id].content}}
       
       Detect:
       1. Social security numbers
@@ -221,18 +161,6 @@ steps:
       
       Return PII findings and compliance report</AUTO>
     depends_on: [extract_text]
-    loop:
-      foreach: "{{discover_documents.result.document_list}}"
-      parallel: true
-      max_iterations: 100
-    tags: ["pii", "compliance"]
-
-  # Step 8: Analyze content semantically
-  - id: analyze_content
-    action: <AUTO>perform semantic analysis on document {{item.id}}:
-      Text: {{extract_text.result[item.id].content}}
-      Document type: {{classify_documents.result[item.id].category}}
-      Entities: {{extract_entities.result[item.id]}}
       
       Analyze:
       1. Main topics and themes
@@ -245,19 +173,6 @@ steps:
       
       Return comprehensive content analysis</AUTO>
     depends_on: [extract_entities]
-    loop:
-      foreach: "{{discover_documents.result.document_list}}"
-      parallel: true
-      max_iterations: 100
-    timeout: 25.0
-    tags: ["analysis", "semantic"]
-
-  # Step 9: Generate document summaries
-  - id: generate_summary
-    action: <AUTO>generate summary for document {{item.id}}:
-      Content: {{extract_text.result[item.id].content}}
-      Key points: {{analyze_content.result[item.id].key_points}}
-      Document type: {{classify_documents.result[item.id].category}}
       
       Create summary that:
       1. Captures main purpose
@@ -272,17 +187,6 @@ steps:
       
       Return summary with metadata</AUTO>
     depends_on: [analyze_content]
-    loop:
-      foreach: "{{discover_documents.result.document_list}}"
-      parallel: true
-      max_iterations: 100
-    tags: ["summary", "abstractive"]
-
-  # Step 10: Extract relationships between entities
-  - id: extract_relationships
-    action: <AUTO>identify relationships between entities:
-      All entities: {{extract_entities.result}}
-      Document contexts: {{analyze_content.result}}
       
       Find relationships:
       1. Person to organization
@@ -300,11 +204,11 @@ steps:
 
   # Step 11: Build knowledge graph
   - id: build_knowledge_graph
-    action: <AUTO>construct knowledge graph:
+    action: |
+      construct knowledge graph:
       Entities: {{extract_entities.result}}
       Relationships: {{extract_relationships.result}}
       Document metadata: {{classify_documents.result}}
-      
       Build graph with:
       1. Entity nodes with properties
       2. Relationship edges with types
@@ -312,24 +216,24 @@ steps:
       4. Cross-document connections
       5. Temporal relationships
       6. Hierarchical structures
-      
       Calculate:
       - Node centrality
       - Community detection
       - Important paths
-      
-      Return knowledge graph structure</AUTO>
-    depends_on: [extract_relationships]
+      Return knowledge graph structure
+      depends_on: [extract_relationships]
+    
     condition: "{{build_knowledge_graph}} == true"
     tags: ["knowledge-graph", "network"]
 
   # Step 12: Generate cross-document insights
   - id: generate_insights
-    action: <AUTO>generate insights across all documents:
+    action: |
+      generate insights across all documents:
       Document analyses: {{analyze_content.result}}
       Knowledge graph: {{build_knowledge_graph.result}}
-      Entity frequencies: Calculate from {{extract_entities.result}}
-      
+      Entity frequencies:
+      Calculate from {{extract_entities.result}}
       Identify:
       1. Common themes across documents
       2. Trending topics over time
@@ -339,18 +243,18 @@ steps:
       6. Compliance risks
       7. Business opportunities
       8. Process improvements
-      
-      Return prioritized insights list</AUTO>
-    depends_on: [analyze_content, build_knowledge_graph]
+      Return prioritized insights list
+      depends_on: [analyze_content, build_knowledge_graph]
+    
     tags: ["insights", "analytics"]
 
   # Step 13: Create compliance report
   - id: create_compliance_report
-    action: <AUTO>generate compliance and risk report:
+    action: |
+      generate compliance and risk report:
       PII findings: {{detect_pii.result}}
       Document classifications: {{classify_documents.result}}
       Content analyses: {{analyze_content.result}}
-      
       Report on:
       1. PII exposure summary
       2. Regulatory compliance status
@@ -358,14 +262,15 @@ steps:
       4. Security classification
       5. Risk assessment
       6. Recommended actions
-      
-      Return compliance report</AUTO>
-    depends_on: [detect_pii, analyze_content]
+      Return compliance report
+      depends_on: [detect_pii, analyze_content]
+    
     tags: ["compliance", "reporting"]
 
   # Step 14: Generate final intelligence report
   - id: create_intelligence_report
-    action: <AUTO>compile comprehensive intelligence report:
+    action: |
+      compile comprehensive intelligence report:
       Include:
       1. Executive summary
       2. Document inventory ({{discover_documents.result.count}} documents)
@@ -376,16 +281,16 @@ steps:
       7. Compliance summary
       8. Table data summary
       9. Recommendations
-      
       Format: {{output_format}}
-      
-      Return complete intelligence report</AUTO>
-    depends_on: [generate_insights, create_compliance_report]
+      Return complete intelligence report
+      depends_on: [generate_insights, create_compliance_report]
+    
     tags: ["reporting", "final"]
 
   # Step 15: Save outputs
   - id: save_outputs
-    action: <AUTO>save all outputs to {{output_dir}}:
+    action: |
+      save all outputs to {{output_dir}}:
       Save:
       1. Intelligence report ({{output_format}})
       2. Extracted text files
@@ -395,7 +300,6 @@ steps:
       6. Compliance report (PDF)
       7. Table data (Excel)
       8. Processing log
-      
       Organize in folder structure:
       - /reports
       - /extracted_text
@@ -403,16 +307,16 @@ steps:
       - /summaries
       - /data
       - /visualizations
-      
-      Return output locations</AUTO>
-    depends_on: [create_intelligence_report]
+      Return output locations
+      depends_on: [create_intelligence_report]
+    
     tags: ["output", "save"]
 
 outputs:
   total_documents: "{{discover_documents.result.document_list|length}}"
   document_types: "{{classify_documents.result}}"
   total_entities: "{{extract_entities.result|sum}}"
-  pii_documents: "{{detect_pii.result|count_positive}}"
+  pii_documents: "{{detect_pii.result|length}}"
   key_insights: "{{generate_insights.result.top_5}}"
   knowledge_graph_nodes: "{{build_knowledge_graph.result.node_count}}"
   knowledge_graph_edges: "{{build_knowledge_graph.result.edge_count}}"
