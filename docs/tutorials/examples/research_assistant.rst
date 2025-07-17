@@ -1,12 +1,12 @@
 Research Assistant Pipeline
 ===========================
 
-This example demonstrates how to build a comprehensive research assistant that can conduct web research, analyze findings, synthesize information, and generate detailed reports. This showcases the Orchestrator's ability to handle complex, multi-step workflows with intelligent model selection and robust error handling.
+This example demonstrates how to build a comprehensive research assistant using the Orchestrator's declarative YAML framework. The assistant can conduct web research, analyze findings, synthesize information, and generate detailed reports - all defined in pure YAML with no custom Python code required.
 
 .. note::
    **Level:** Intermediate  
-   **Duration:** 45-60 minutes  
-   **Prerequisites:** Basic Python knowledge, Orchestrator framework installed
+   **Duration:** 30-45 minutes  
+   **Prerequisites:** Orchestrator framework installed, API keys configured
 
 Overview
 --------
@@ -16,786 +16,515 @@ The Research Assistant pipeline performs the following workflow:
 1. **Query Analysis**: Analyze research query and generate search terms
 2. **Web Search**: Perform comprehensive web searches across multiple sources
 3. **Content Extraction**: Extract and clean relevant content from web pages
-4. **Information Synthesis**: Analyze and synthesize findings from multiple sources
-5. **Report Generation**: Create structured research reports with citations
-6. **PDF Export**: Generate professional PDF reports with automatic pandoc installation
-7. **Quality Assurance**: Validate findings and check for accuracy
+4. **Credibility Analysis**: Evaluate source reliability and quality
+5. **Information Synthesis**: Analyze and synthesize findings from multiple sources
+6. **Report Generation**: Create structured research reports with citations
+7. **PDF Export**: Generate professional PDF reports
+8. **Quality Assurance**: Validate findings and check for accuracy
 
 **Key Features Demonstrated:**
-- Multi-step pipeline orchestration
-- Intelligent model selection based on task complexity
-- Error handling with retry logic
-- State management and checkpointing
-- Performance optimization with caching
-- Real-time progress monitoring
+- Declarative YAML pipeline definition
+- AUTO tag resolution for natural language task descriptions
+- Conditional execution based on previous results
+- Parallel loop processing for content extraction
+- Advanced error handling with retry logic
+- Automatic tool discovery and execution
+- No Python code required
 
 Quick Start
 -----------
 
 .. code-block:: bash
 
-   # Clone the repository and install dependencies
-   git clone https://github.com/your-org/orchestrator.git
-   cd orchestrator
-   pip install -r requirements.txt
-   
    # Set up environment variables
    export OPENAI_API_KEY="your-openai-key"
    export ANTHROPIC_API_KEY="your-anthropic-key"
    
-   # Run the example
-   python examples/research_assistant.py
+   # Run the research assistant
+   orchestrator run examples/research_assistant.yaml \
+     --input query="Latest developments in quantum computing" \
+     --input context="Focus on practical applications in 2024"
 
-Complete Implementation
------------------------
+Complete YAML Pipeline
+----------------------
 
-Pipeline Configuration (YAML)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-First, let's define the research pipeline in YAML:
+Here's the complete research assistant pipeline defined in declarative YAML:
 
 .. code-block:: yaml
 
-   # research_assistant_pipeline.yaml
-   id: research_assistant
-   name: Comprehensive Research Assistant
-   version: "1.0"
-   
-   metadata:
-     description: "Multi-step research pipeline with web search and analysis"
-     author: "Research Team"
-     tags: ["research", "web-search", "analysis", "reporting"]
-   
-   models:
-     analyzer: 
-       provider: "openai"
-       model: "gpt-4"
-       temperature: 0.1
-     searcher:
-       provider: "anthropic" 
-       model: "claude-3-opus"
-       temperature: 0.0
-     synthesizer:
-       provider: "openai"
-       model: "gpt-4"
-       temperature: 0.3
-   
-   context:
-     max_sources: 10
-     search_depth: 3
-     quality_threshold: 0.7
-   
-   tasks:
+   name: "Research Assistant Pipeline"
+   description: "Comprehensive research assistant using declarative YAML framework"
+
+   inputs:
+     query:
+       type: string
+       description: "Research question or topic"
+       required: true
+     
+     context:
+       type: string
+       description: "Additional context to guide research"
+       default: ""
+     
+     max_sources:
+       type: integer
+       description: "Maximum number of sources to analyze"
+       default: 10
+     
+     quality_threshold:
+       type: float
+       description: "Minimum quality score for sources"
+       default: 0.7
+
+   steps:
+     # Step 1: Analyze the research query
      - id: analyze_query
-       name: "Analyze Research Query"
-       action: "analyze_research_query"
-       model: "analyzer"
-       parameters:
-         query: "{{ user_query }}"
-         context: "{{ research_context }}"
-         focus_areas: <AUTO>Identify key research focus areas based on the query</AUTO>
-       outputs:
-         - search_terms
-         - research_objectives
-         - expected_sources
-   
+       action: <AUTO>analyze the research query "{{query}}" with context "{{context}}" and generate:
+         1. Refined search terms for web searching
+         2. Key research objectives
+         3. Expected types of sources (academic, news, technical, etc.)
+         4. Focus areas and subtopics to explore</AUTO>
+       cache_results: true
+       timeout: 10.0
+       tags: ["analysis", "query-processing"]
+
+     # Step 2: Conduct web search
      - id: web_search
-       name: "Conduct Web Search"
-       action: "comprehensive_web_search"
-       model: "searcher"
-       parameters:
-         search_terms: "{{ analyze_query.search_terms }}"
-         max_results: "{{ max_sources }}"
-         search_depth: "{{ search_depth }}"
-         search_engines: ["google", "bing", "duckduckgo"]
-         filters: <AUTO>Determine appropriate search filters for academic reliability</AUTO>
-       dependencies:
-         - analyze_query
-       outputs:
-         - search_results
-         - source_metadata
-   
+       action: <AUTO>search the web for information about {{query}} using the search terms from {{analyze_query.result}} and find up to {{max_sources}} high-quality sources</AUTO>
+       depends_on: [analyze_query]
+       on_error:
+         action: <AUTO>use alternative search strategies or reduce the number of sources</AUTO>
+         continue_on_error: true
+         retry_count: 2
+       timeout: 30.0
+       tags: ["search", "data-collection"]
+
+     # Step 3: Extract content from sources (parallel processing)
      - id: extract_content
-       name: "Extract and Clean Content"
-       action: "extract_web_content"
-       parameters:
-         urls: "{{ web_search.search_results }}"
-         extraction_method: <AUTO>Choose optimal extraction method based on content type</AUTO>
-         quality_filter: "{{ quality_threshold }}"
-       dependencies:
-         - web_search
-       outputs:
-         - extracted_content
-         - content_quality_scores
-   
-     - id: analyze_sources
-       name: "Analyze Source Credibility"
-       action: "analyze_source_credibility"
-       model: "analyzer"
-       parameters:
-         sources: "{{ extract_content.extracted_content }}"
-         metadata: "{{ web_search.source_metadata }}"
-         credibility_criteria: <AUTO>Define credibility criteria for sources</AUTO>
-       dependencies:
-         - extract_content
-       outputs:
-         - credibility_scores
-         - reliable_sources
-   
-     - id: synthesize_information
-       name: "Synthesize Research Findings"
-       action: "synthesize_research"
-       model: "synthesizer"
-       parameters:
-         content: "{{ analyze_sources.reliable_sources }}"
-         objectives: "{{ analyze_query.research_objectives }}"
-         synthesis_approach: <AUTO>Choose synthesis approach: thematic, chronological, or comparative</AUTO>
-       dependencies:
-         - analyze_sources
-       outputs:
-         - key_findings
-         - supporting_evidence
-         - knowledge_gaps
-   
+       action: <AUTO>extract and clean the main content from each web source</AUTO>
+       depends_on: [web_search]
+       condition: "{{web_search.success}} == true"
+       loop:
+         foreach: "{{web_search.results}}"
+         parallel: true
+         max_iterations: "{{max_sources}}"
+         collect_results: true
+       timeout: 20.0
+       tags: ["extraction", "data-processing"]
+
+     # Step 4: Analyze source credibility
+     - id: analyze_credibility
+       action: <AUTO>analyze the credibility and reliability of each extracted source based on:
+         1. Domain authority and reputation
+         2. Author credentials
+         3. Publication date and relevance
+         4. Content quality and depth
+         5. Citations and references
+         Return a credibility score (0-1) for each source</AUTO>
+       depends_on: [extract_content]
+       condition: "{{extract_content.iteration_count}} > 0"
+       tags: ["analysis", "quality-control"]
+
+     # Step 5: Filter reliable sources
+     - id: filter_sources
+       action: <AUTO>filter sources with credibility score >= {{quality_threshold}} and organize by relevance to {{query}}</AUTO>
+       depends_on: [analyze_credibility]
+       cache_results: true
+       tags: ["filtering", "quality-control"]
+
+     # Step 6: Synthesize information
+     - id: synthesize_findings
+       action: <AUTO>synthesize information from all reliable sources about {{query}} and extract:
+         1. Key findings and insights
+         2. Common themes and patterns
+         3. Contradictions or debates
+         4. Supporting evidence
+         5. Knowledge gaps
+         Organize findings by importance and relevance</AUTO>
+       depends_on: [filter_sources]
+       condition: "{{filter_sources.result}} != null"
+       timeout: 60.0
+       tags: ["synthesis", "analysis"]
+
+     # Step 7: Generate research report
      - id: generate_report
-       name: "Generate Research Report"
-       action: "generate_research_report"
-       model: "synthesizer"
-       parameters:
-         findings: "{{ synthesize_information.key_findings }}"
-         evidence: "{{ synthesize_information.supporting_evidence }}"
-         sources: "{{ analyze_sources.reliable_sources }}"
-         format: <AUTO>Choose optimal report format: academic, executive summary, or detailed analysis</AUTO>
-       dependencies:
-         - synthesize_information
-       outputs:
-         - research_report
-         - citation_list
-         - recommendations
-   
-     - id: generate_pdf
-       name: "Export Report as PDF"
-       action: "compile_pdf"
-       parameters:
-         markdown_content: "{{ generate_report.research_report }}"
-         output_path: "reports/research_report_{{ execution.timestamp }}.pdf"
-         title: "Research Report: {{ analyze_query.search_terms[0] }}"
-         author: "Orchestrator Research Assistant"
-         toc: true
-         paper_size: "letter"
-         install_if_missing: true
-       dependencies:
-         - generate_report
-       outputs:
-         - pdf_path
-         - file_size
-   
+       action: <AUTO>create a comprehensive research report about {{query}} including:
+         1. Executive summary (2-3 paragraphs)
+         2. Introduction and research objectives
+         3. Key findings organized by theme
+         4. Supporting evidence with proper citations
+         5. Analysis and insights
+         6. Limitations and knowledge gaps
+         7. Recommendations for further research
+         8. References in APA format
+         Format as professional markdown</AUTO>
+       depends_on: [synthesize_findings]
+       on_error:
+         action: <AUTO>generate a simplified report with available information</AUTO>
+         continue_on_error: true
+         fallback_value: "Unable to generate complete report - see partial results"
+       timeout: 45.0
+       tags: ["report", "output"]
+
+     # Step 8: Generate PDF
+     - id: export_pdf
+       action: <AUTO>convert the markdown report to a professional PDF with:
+         - Title: "Research Report: {{query}}"
+         - Author: "Orchestrator Research Assistant"
+         - Table of contents
+         - Proper formatting and styling
+         Save to reports/research_{{query}}_{{execution.timestamp}}.pdf</AUTO>
+       depends_on: [generate_report]
+       condition: "{{generate_report.success}} == true"
+       tags: ["export", "output"]
+
+     # Step 9: Quality assurance
      - id: quality_check
-       name: "Quality Assurance Check"
-       action: "validate_research_quality"
-       model: "analyzer"
-       parameters:
-         report: "{{ generate_report.research_report }}"
-         sources: "{{ analyze_sources.reliable_sources }}"
-         objectives: "{{ analyze_query.research_objectives }}"
-         quality_criteria: <AUTO>Define quality criteria for research validation</AUTO>
-       dependencies:
-         - generate_report
-       outputs:
-         - quality_score
-         - validation_report
-         - improvement_suggestions
+       action: <AUTO>evaluate the quality of the research report based on:
+         1. Completeness of coverage
+         2. Accuracy of information
+         3. Clarity of presentation
+         4. Proper citation of sources
+         5. Relevance to original query
+         Return quality score (0-1) and improvement suggestions</AUTO>
+       depends_on: [generate_report]
+       tags: ["validation", "quality-control"]
 
-Python Implementation
-^^^^^^^^^^^^^^^^^^^^^
+   outputs:
+     report_markdown: "{{generate_report.result}}"
+     pdf_path: "{{export_pdf.result}}"
+     quality_score: "{{quality_check.result.score}}"
+     key_findings: "{{synthesize_findings.result.key_findings}}"
+     sources_analyzed: "{{filter_sources.result.count}}"
+     total_sources_found: "{{web_search.result.count}}"
+     search_terms_used: "{{analyze_query.result.search_terms}}"
+     improvement_suggestions: "{{quality_check.result.suggestions}}"
 
-Now, let's implement the research assistant in Python:
+How It Works
+------------
+
+**1. Declarative Task Definition**
+
+Each step uses ``<AUTO>`` tags to describe what needs to be done in natural language. The framework automatically:
+
+- Converts abstract descriptions into executable prompts
+- Discovers and configures appropriate tools
+- Selects optimal models for each task
+- Handles errors and retries
+
+**2. Automatic Tool Discovery**
+
+The framework automatically identifies which tools are needed:
+
+- Web search tasks → ``web-search`` tool
+- Content extraction → ``headless-browser`` tool  
+- Data analysis → ``data-processing`` tool
+- Report generation → ``report-generator`` tool
+- PDF creation → ``pdf-compiler`` tool
+
+No manual tool configuration required!
+
+**3. Advanced Control Flow**
+
+The pipeline demonstrates advanced features:
+
+- **Conditional Execution**: Steps only run when conditions are met
+- **Parallel Loops**: Extract content from multiple sources simultaneously
+- **Error Handling**: Automatic retries and fallback strategies
+- **Caching**: Results cached for performance
+- **Timeouts**: Protection against long-running tasks
+
+Running the Pipeline
+--------------------
+
+**Using the CLI:**
+
+.. code-block:: bash
+
+   # Basic research
+   orchestrator run research_assistant.yaml --input query="Climate change solutions"
+
+   # With additional context
+   orchestrator run research_assistant.yaml \
+     --input query="Machine learning in healthcare" \
+     --input context="Focus on diagnostic applications" \
+     --input max_sources=20
+
+   # With custom quality threshold
+   orchestrator run research_assistant.yaml \
+     --input query="Renewable energy trends" \
+     --input quality_threshold=0.8
+
+**Using Python SDK:**
 
 .. code-block:: python
 
-   # research_assistant.py
-   import asyncio
-   import logging
-   import yaml
-   import os
-   from datetime import datetime
-   from typing import Dict, List, Any, Optional
-   
    from orchestrator import Orchestrator
-   from orchestrator.compiler.yaml_compiler import YAMLCompiler
-   from orchestrator.integrations.openai_model import OpenAIModel
-   from orchestrator.integrations.anthropic_model import AnthropicModel
-   from orchestrator.state.state_manager import StateManager
-   from orchestrator.tools.web_tools import WebSearchTool, HeadlessBrowserTool
-   from orchestrator.tools.data_tools import DataProcessingTool
-   from orchestrator.tools.report_tools import ReportGeneratorTool, PDFCompilerTool
-   from orchestrator.core.cache import MemoryCache
    
-   # Configure logging
-   logging.basicConfig(level=logging.INFO)
-   logger = logging.getLogger(__name__)
+   # Initialize orchestrator
+   orchestrator = Orchestrator()
    
-   class ResearchAssistant:
-       """
-       Comprehensive research assistant using the Orchestrator framework.
-       
-       This class demonstrates advanced features including:
-       - Multi-model orchestration
-       - Intelligent caching
-       - Error handling and retries
-       - Progress monitoring
-       - State management
-       """
-       
-       def __init__(self, config: Dict[str, Any]):
-           self.config = config
-           self.orchestrator = None
-           self.state_manager = None
-           self.cache = None
-           # Load orchestrator configuration for web tools
-           self.orchestrator_config = self._load_orchestrator_config()
-           self._setup_orchestrator()
-       
-       def _setup_orchestrator(self):
-           """Initialize the orchestrator with models and tools."""
-           # Initialize state manager for checkpointing
-           self.state_manager = StateManager(
-               backend_type="file",
-               storage_path="./research_checkpoints",
-               compression_enabled=True
-           )
-           
-           # Initialize caching for performance
-           self.cache = MemoryCache(
-               max_size=1000,
-               default_ttl=3600  # 1 hour
-           )
-           
-           # Initialize orchestrator
-           self.orchestrator = Orchestrator(
-               state_manager=self.state_manager,
-               cache=self.cache
-           )
-           
-           # Register models
-           self._register_models()
-           
-           # Register tools
-           self._register_tools()
-       
-       def _register_models(self):
-           """Register AI models with the orchestrator based on config/models.yaml."""
-           # Register OpenAI models if API key is available
-           if self.config.get("openai_api_key"):
-               try:
-                   # Use gpt-4.1 from config/models.yaml
-                   gpt4 = OpenAIModel(
-                       model_name="gpt-4.1",
-                       api_key=self.config["openai_api_key"],
-                       max_retries=3,
-                       timeout=30.0
-                   )
-                   self.orchestrator.model_registry.register_model(gpt4)
-               except Exception as e:
-                   print(f"Failed to register OpenAI model: {e}")
-           
-           # Register Anthropic models if API key is available  
-           if self.config.get("anthropic_api_key"):
-               try:
-                   # Use claude-4-sonnet from config/models.yaml
-                   claude = AnthropicModel(
-                       model_name="claude-sonnet-4-20250514",
-                       api_key=self.config["anthropic_api_key"],
-                       max_retries=3,
-                       timeout=30.0
-                   )
-                   self.orchestrator.model_registry.register_model(claude)
-               except Exception as e:
-                   print(f"Failed to register Anthropic model: {e}")
-       
-       def _load_orchestrator_config(self) -> Dict[str, Any]:
-           """Load orchestrator configuration for web tools."""
-           config_path = "config/orchestrator.yaml"
-           if os.path.exists(config_path):
-               with open(config_path, 'r') as f:
-                   return yaml.safe_load(f)
-           else:
-               # Default configuration for web tools
-               return {
-                   "web_tools": {
-                       "search": {
-                           "default_backend": "duckduckgo",
-                           "max_results": 10,
-                           "timeout": 30
-                       },
-                       "scraping": {
-                           "timeout": 30,
-                           "max_content_length": 1048576,
-                           "user_agent": "Mozilla/5.0 (compatible; Research Assistant)"
-                       },
-                       "browser": {
-                           "headless": True,
-                           "timeout": 30
-                       },
-                       "rate_limiting": {
-                           "enabled": True,
-                           "requests_per_minute": 30,
-                           "delay_between_requests": 2
-                       },
-                       "caching": {
-                           "enabled": True,
-                           "ttl": 3600,
-                           "max_cache_size": 100
-                       }
-                   }
-               }
-       
-       def _register_tools(self):
-           """Register tools for web search, content extraction, and report generation."""
-           # Tools are handled by the control system in the orchestrator
-           # For this example, we'll store them as instance variables
-           self.web_search = WebSearchTool(self.orchestrator_config)
-           self.browser_tool = HeadlessBrowserTool(self.orchestrator_config)
-           self.data_analyzer = DataProcessingTool()
-           self.report_generator = ReportGeneratorTool()
-           self.pdf_compiler = PDFCompilerTool()
-       
-       async def conduct_research(self, query: str, context: str = "") -> Dict[str, Any]:
-           """
-           Conduct comprehensive research on a given query.
-           
-           Args:
-               query: The research question or topic
-               context: Additional context to guide the research
-               
-           Returns:
-               Dictionary containing research results, report, and metadata
-           """
-           logger.info(f"Starting research for query: {query}")
-           
-           # Load pipeline configuration
-           compiler = YAMLCompiler()
-           pipeline = compiler.compile_file("research_assistant_pipeline.yaml")
-           
-           # Set pipeline context
-           pipeline.set_context({
-               "user_query": query,
-               "research_context": context,
-               "start_time": datetime.now().isoformat()
-           })
-           
-           # Execute pipeline with progress monitoring
-           try:
-               result = await self.orchestrator.execute_pipeline(
-                   pipeline,
-                   progress_callback=self._progress_callback,
-                   error_callback=self._error_callback
-               )
-               
-               # Extract key results
-               research_results = {
-                   "query": query,
-                   "context": context,
-                   "search_terms": result.get("analyze_query", {}).get("search_terms", []),
-                   "sources_found": len(result.get("web_search", {}).get("search_results", [])),
-                   "reliable_sources": result.get("analyze_sources", {}).get("reliable_sources", []),
-                   "key_findings": result.get("synthesize_information", {}).get("key_findings", []),
-                   "research_report": result.get("generate_report", {}).get("research_report", ""),
-                   "citations": result.get("generate_report", {}).get("citation_list", []),
-                   "quality_score": result.get("quality_check", {}).get("quality_score", 0),
-                   "recommendations": result.get("generate_report", {}).get("recommendations", []),
-                   "execution_time": result.get("metadata", {}).get("execution_time", 0),
-                   "model_costs": result.get("metadata", {}).get("model_costs", {})
-               }
-               
-               logger.info(f"Research completed successfully. Quality score: {research_results['quality_score']}")
-               return research_results
-               
-           except Exception as e:
-               logger.error(f"Research failed: {str(e)}")
-               # Attempt to recover from checkpoint
-               return await self._recover_from_checkpoint(pipeline.id)
-       
-       async def _progress_callback(self, task_id: str, progress: float, message: str):
-           """Handle progress updates during pipeline execution."""
-           logger.info(f"Task {task_id}: {progress:.1%} - {message}")
-       
-       async def _error_callback(self, task_id: str, error: Exception):
-           """Handle errors during pipeline execution."""
-           logger.error(f"Task {task_id} failed: {str(error)}")
-           # Implement retry logic or fallback strategies here
-       
-       async def _recover_from_checkpoint(self, pipeline_id: str) -> Dict[str, Any]:
-           """Recover pipeline execution from the last checkpoint."""
-           try:
-               logger.info("Attempting to recover from checkpoint...")
-               recovered_state = await self.state_manager.load_pipeline_state(pipeline_id)
-               
-               # Resume pipeline execution
-               result = await self.orchestrator.resume_pipeline(pipeline_id)
-               return result
-               
-           except Exception as e:
-               logger.error(f"Recovery failed: {str(e)}")
-               return {
-                   "error": "Pipeline execution failed and could not be recovered",
-                   "details": str(e)
-               }
-       
-       def generate_research_summary(self, results: Dict[str, Any]) -> str:
-           """Generate a formatted summary of research results."""
-           summary = f"""
-   Research Summary
-   ================
-   
-   Query: {results['query']}
-   Search Terms: {', '.join(results['search_terms'])}
-   Sources Found: {results['sources_found']}
-   Reliable Sources: {len(results['reliable_sources'])}
-   Quality Score: {results['quality_score']:.2f}/1.0
-   
-   Key Findings:
-   {chr(10).join(f"• {finding}" for finding in results['key_findings'])}
-   
-   Recommendations:
-   {chr(10).join(f"• {rec}" for rec in results['recommendations'])}
-   
-   Execution Time: {results['execution_time']:.2f} seconds
-   Model Costs: ${sum(results['model_costs'].values()):.4f}
-   """
-           return summary
-
-Tool Integration
-^^^^^^^^^^^^^^^^
-
-The research assistant uses real web tools for actual data retrieval:
-
-.. code-block:: python
-
-   # Real Tools Implementation
-   # WebSearchTool: Uses DuckDuckGo (ddgs library) for real web searches
-   # HeadlessBrowserTool: Uses requests and BeautifulSoup for content extraction
-   # DataProcessingTool: Analyzes source credibility and quality
-   # ReportGeneratorTool: Creates structured markdown reports
-   # PDFCompilerTool: Converts markdown to PDF with cross-platform pandoc installation
-   
-   # These tools provide:
-   # - Real web search using DuckDuckGo API (no API key required)
-   # - Actual content extraction from web pages
-   # - Source credibility analysis with real data
-   # - Quality scoring based on actual content
-   # - Professional markdown report generation
-   # - Automatic PDF export with pandoc (auto-installs if missing)
-   # - Rate limiting to prevent abuse
-   # - Error handling for network issues
-   
-   # Dependencies required:
-   # - ddgs>=9.0.0 (DuckDuckGo search)
-   # - requests>=2.28.0 (HTTP requests)
-   # - beautifulsoup4>=4.11.0 (HTML parsing)
-   # - lxml>=4.9.0 (XML/HTML parser backend)
-
-Running the Research Assistant
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Here's how to use the research assistant:
-
-.. code-block:: python
-
-   # main.py
-   import asyncio
-   import os
-   from research_assistant import ResearchAssistant
-   
-   async def main():
-       # Configuration
-       config = {
-           "openai_api_key": os.getenv("OPENAI_API_KEY"),
-           "anthropic_api_key": os.getenv("ANTHROPIC_API_KEY")
+   # Run research pipeline
+   result = await orchestrator.run_pipeline(
+       "research_assistant.yaml",
+       inputs={
+           "query": "Artificial intelligence ethics",
+           "context": "Focus on bias and fairness",
+           "max_sources": 15
        }
-       
-       # Initialize research assistant
-       assistant = ResearchAssistant(config)
-       
-       # Conduct research
-       query = "What are the latest developments in quantum computing for machine learning?"
-       context = "Focus on practical applications and recent breakthroughs in 2024"
-       
-       results = await assistant.conduct_research(query, context)
-       
-       # Generate and display summary
-       summary = assistant.generate_research_summary(results)
-       print(summary)
-       
-       # Save detailed report
-       with open("research_report.md", "w") as f:
-           f.write(results["research_report"])
-       
-       print(f"Detailed report saved to research_report.md")
-       
-       # Generate PDF report
-       from orchestrator.tools.report_tools import PDFCompilerTool
-       pdf_tool = PDFCompilerTool()
-       pdf_result = await pdf_tool.execute(
-           markdown_content=results["research_report"],
-           output_path="research_report.pdf",
-           title=query,
-           author="Research Assistant",
-           toc=True
-       )
-       
-       if pdf_result["success"]:
-           print(f"PDF report saved to research_report.pdf ({pdf_result['file_size']:,} bytes)")
-       
-       print(f"Research quality score: {results['quality_score']:.2f}/1.0")
+   )
    
-   if __name__ == "__main__":
-       asyncio.run(main())
+   # Access results
+   print(f"Report saved to: {result['outputs']['pdf_path']}")
+   print(f"Quality score: {result['outputs']['quality_score']}")
+   print(f"Sources analyzed: {result['outputs']['sources_analyzed']}")
+
+Example Output
+--------------
+
+Here's what the research assistant produces:
+
+**1. Console Output:**
+
+.. code-block:: text
+
+   🔍 Research Assistant Pipeline
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ✓ analyze_query: Analyzing research query... (2.3s)
+   ✓ web_search: Found 47 potential sources (8.1s)
+   ⟳ extract_content: Processing 10 sources in parallel...
+     ✓ Source 1/10: arxiv.org (1.2s)
+     ✓ Source 2/10: nature.com (2.1s)
+     ✓ Source 3/10: mit.edu (1.8s)
+     ...
+   ✓ analyze_credibility: Evaluating source reliability (3.4s)
+   ✓ filter_sources: 8 sources meet quality threshold (0.2s)
+   ✓ synthesize_findings: Synthesizing information... (12.3s)
+   ✓ generate_report: Creating research report... (8.7s)
+   ✓ export_pdf: Generating PDF... (2.1s)
+   ✓ quality_check: Quality score: 0.92/1.0 (1.8s)
+   
+   ✅ Pipeline completed successfully in 42.8s
+   📄 Report: reports/research_quantum_computing_20240716_143022.pdf
+   📊 Quality Score: 0.92/1.0
+   📚 Sources Analyzed: 8/10
+
+**2. Generated Report Structure:**
+
+.. code-block:: markdown
+
+   # Research Report: Quantum Computing Applications
+
+   ## Executive Summary
+   
+   This report examines the latest developments in quantum computing...
+   
+   ## 1. Introduction
+   
+   ### 1.1 Research Objectives
+   - Identify current state of quantum computing
+   - Analyze practical applications
+   - Evaluate commercial viability
+   
+   ## 2. Key Findings
+   
+   ### 2.1 Quantum Advantage Demonstrations
+   Recent breakthroughs have shown...
+   
+   ### 2.2 Industry Applications
+   Several sectors are actively exploring...
+   
+   ## 3. Analysis and Insights
+   
+   The synthesis of multiple sources reveals...
+   
+   ## 4. Recommendations
+   
+   Based on our analysis, we recommend...
+   
+   ## References
+   
+   1. Zhang, L. et al. (2024). "Quantum supremacy in..." Nature, 123(4), 567-589.
+   2. Smith, J. (2024). "Commercial quantum applications..." MIT Technology Review.
+   ...
+
+Customization Options
+---------------------
+
+**1. Custom Search Strategies**
+
+Modify the web search step to use specific search approaches:
+
+.. code-block:: yaml
+
+   - id: web_search
+     action: <AUTO>search for {{query}} focusing on:
+       - Academic papers from the last 2 years
+       - Industry reports from reputable sources
+       - Government publications
+       - Peer-reviewed journals
+       Prioritize recent, authoritative sources</AUTO>
+
+**2. Specialized Analysis**
+
+Add domain-specific analysis steps:
+
+.. code-block:: yaml
+
+   - id: technical_analysis
+     action: <AUTO>perform technical analysis of findings:
+       - Identify technological readiness levels
+       - Assess implementation challenges
+       - Evaluate cost-benefit ratios
+       - Compare competing approaches</AUTO>
+     depends_on: [synthesize_findings]
+     condition: "{{query}} contains 'technology' or {{query}} contains 'technical'"
+
+**3. Multi-format Output**
+
+Generate reports in multiple formats:
+
+.. code-block:: yaml
+
+   - id: export_formats
+     action: <AUTO>export report in multiple formats</AUTO>
+     depends_on: [generate_report]
+     loop:
+       foreach: ["pdf", "docx", "html", "epub"]
+       parallel: true
+
+Performance Optimization
+------------------------
+
+The pipeline includes several optimizations:
+
+**1. Caching Strategy**
+
+- Query analysis results cached to avoid reprocessing
+- Filtered sources cached for subsequent runs
+- Cache TTL based on content freshness requirements
+
+**2. Parallel Processing**
+
+- Content extraction runs in parallel for all sources
+- Multiple export formats generated simultaneously
+- Independent analysis tasks executed concurrently
+
+**3. Resource Management**
+
+- Timeouts prevent runaway tasks
+- Memory limits for large content processing
+- Rate limiting for web requests
+
+Error Handling
+--------------
+
+The pipeline handles various failure scenarios:
+
+**1. Search Failures**
+
+.. code-block:: yaml
+
+   on_error:
+     action: <AUTO>use alternative search strategies or reduce the number of sources</AUTO>
+     continue_on_error: true
+     retry_count: 2
+
+**2. Content Extraction Issues**
+
+- Automatic fallback to simplified extraction
+- Skip inaccessible sources
+- Continue with available content
+
+**3. Report Generation Failures**
+
+.. code-block:: yaml
+
+   on_error:
+     action: <AUTO>generate a simplified report with available information</AUTO>
+     continue_on_error: true
+     fallback_value: "Unable to generate complete report - see partial results"
 
 Advanced Features
 -----------------
 
-Performance Optimization
-^^^^^^^^^^^^^^^^^^^^^^^^^
+**1. Conditional Processing**
 
-The research assistant includes several performance optimizations:
-
-.. code-block:: python
-
-   # performance_config.py
-   PERFORMANCE_CONFIG = {
-       "caching": {
-           "enabled": True,
-           "ttl": 3600,  # 1 hour
-           "max_size": 1000
-       },
-       "parallel_processing": {
-           "max_concurrent_searches": 5,
-           "max_concurrent_extractions": 10
-       },
-       "resource_limits": {
-           "max_memory": "2GB",
-           "max_execution_time": 1800  # 30 minutes
-       },
-       "retry_strategy": {
-           "max_retries": 3,
-           "backoff_factor": 2.0,
-           "timeout": 30
-       }
-   }
-
-Error Handling and Recovery
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Comprehensive error handling ensures robust operation:
-
-.. code-block:: python
-
-   # error_handling.py
-   class ResearchError(Exception):
-       """Base exception for research operations."""
-       pass
-   
-   class SearchError(ResearchError):
-       """Raised when web search fails."""
-       pass
-   
-   class ExtractionError(ResearchError):
-       """Raised when content extraction fails."""
-       pass
-   
-   async def handle_search_error(self, error: SearchError, task_context: Dict):
-       """Handle search-related errors with fallback strategies."""
-       logger.warning(f"Search error: {str(error)}")
-       
-       # Try alternative search terms
-       if "alternative_terms" in task_context:
-           return await self._search_with_alternatives(task_context["alternative_terms"])
-       
-       # Fall back to cached results
-       cached_results = await self.cache.get(f"search:{task_context['query']}")
-       if cached_results:
-           logger.info("Using cached search results")
-           return cached_results
-       
-       # Last resort: use mock data for development
-       if self.config.get("development_mode", False):
-           return await self._generate_mock_results(task_context["query"])
-       
-       raise error
-
-Monitoring and Analytics
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Track research performance and quality:
-
-.. code-block:: python
-
-   # monitoring.py
-   from orchestrator.monitoring.metrics import MetricsCollector
-   
-   class ResearchMetrics:
-       """Collect and analyze research performance metrics."""
-       
-       def __init__(self):
-           self.metrics = MetricsCollector()
-       
-       def track_research_session(self, results: Dict[str, Any]):
-           """Track metrics for a research session."""
-           self.metrics.increment("research_sessions_total")
-           self.metrics.histogram("research_duration", results["execution_time"])
-           self.metrics.gauge("research_quality_score", results["quality_score"])
-           self.metrics.histogram("sources_found", results["sources_found"])
-           self.metrics.histogram("reliable_sources", len(results["reliable_sources"]))
-       
-       def get_performance_report(self) -> Dict[str, Any]:
-           """Generate performance report."""
-           return {
-               "total_sessions": self.metrics.get_counter("research_sessions_total"),
-               "average_duration": self.metrics.get_histogram_avg("research_duration"),
-               "average_quality": self.metrics.get_gauge_avg("research_quality_score"),
-               "success_rate": self.metrics.calculate_success_rate(),
-               "cost_per_session": self.metrics.calculate_average_cost()
-           }
-
-Testing and Validation
------------------------
-
-Comprehensive testing ensures reliability:
-
-.. code-block:: python
-
-   # test_research_assistant.py
-   import pytest
-   import asyncio
-   from unittest.mock import Mock, patch
-   from research_assistant import ResearchAssistant
-   
-   class TestResearchAssistant:
-       """Test suite for research assistant."""
-       
-       @pytest.fixture
-       def assistant(self):
-           config = {
-               "openai_api_key": "test-key",
-               "anthropic_api_key": "test-key", 
-               "serp_api_key": "test-key"
-           }
-           return ResearchAssistant(config)
-       
-       @pytest.mark.asyncio
-       async def test_basic_research_flow(self, assistant):
-           """Test basic research workflow."""
-           query = "Test query"
-           context = "Test context"
-           
-           with patch.object(assistant, '_conduct_web_search') as mock_search:
-               mock_search.return_value = {
-                   "search_results": ["url1", "url2"],
-                   "source_metadata": []
-               }
-               
-               results = await assistant.conduct_research(query, context)
-               
-               assert results["query"] == query
-               assert "research_report" in results
-               assert results["quality_score"] > 0
-       
-       @pytest.mark.asyncio
-       async def test_error_recovery(self, assistant):
-           """Test error recovery mechanisms."""
-           with patch.object(assistant.orchestrator, 'execute_pipeline') as mock_execute:
-               mock_execute.side_effect = Exception("Test error")
-               
-               # Should attempt recovery
-               results = await assistant.conduct_research("test query")
-               
-               assert "error" in results
-               # Verify recovery was attempted
-               assert assistant.state_manager.load_pipeline_state.called
-       
-       @pytest.mark.asyncio
-       async def test_performance_optimization(self, assistant):
-           """Test performance optimization features."""
-           # Test caching
-           query = "cached query"
-           
-           # First request
-           results1 = await assistant.conduct_research(query)
-           
-           # Second request (should use cache)
-           results2 = await assistant.conduct_research(query)
-           
-           # Verify cache was used
-           assert assistant.cache.get_statistics().hit_rate > 0
-
-Deployment Configuration
-------------------------
-
-Production deployment configuration:
+Process sources differently based on type:
 
 .. code-block:: yaml
 
-   # docker-compose.yml
-   version: '3.8'
-   
-   services:
-     research-assistant:
-       build: .
-       environment:
-         - OPENAI_API_KEY=${OPENAI_API_KEY}
-         - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-         - SERP_API_KEY=${SERP_API_KEY}
-         - POSTGRES_URL=${POSTGRES_URL}
-         - REDIS_URL=${REDIS_URL}
-       volumes:
-         - ./research_data:/app/data
-         - ./research_checkpoints:/app/checkpoints
-       depends_on:
-         - postgres
-         - redis
-       deploy:
-         resources:
-           limits:
-             memory: 2G
-             cpus: '1.0'
-   
-     postgres:
-       image: postgres:15
-       environment:
-         POSTGRES_DB: research_db
-         POSTGRES_USER: research_user
-         POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-       volumes:
-         - postgres_data:/var/lib/postgresql/data
-   
-     redis:
-       image: redis:7-alpine
-       volumes:
-         - redis_data:/data
-   
-   volumes:
-     postgres_data:
-     redis_data:
+   - id: process_academic
+     action: <AUTO>extract citations, methodology, and findings from academic papers</AUTO>
+     condition: "{{source.type}} == 'academic'"
+
+   - id: process_news
+     action: <AUTO>extract key facts, quotes, and timeline from news articles</AUTO>
+     condition: "{{source.type}} == 'news'"
+
+**2. Dynamic Tool Selection**
+
+The framework automatically selects appropriate tools:
+
+- Academic sources → Specialized academic parsers
+- News sites → News-optimized extractors
+- PDFs → PDF processing tools
+- Videos → Transcript extraction tools
+
+**3. Quality-Based Routing**
+
+Route high-quality sources for deeper analysis:
+
+.. code-block:: yaml
+
+   - id: deep_analysis
+     action: <AUTO>perform in-depth analysis including:
+       - Cross-reference verification
+       - Fact checking
+       - Citation network analysis</AUTO>
+     condition: "{{source.credibility_score}} >= 0.9"
+
+Testing and Validation
+----------------------
+
+Test the pipeline with various queries:
+
+.. code-block:: bash
+
+   # Technical research
+   orchestrator test research_assistant.yaml \
+     --input query="Quantum error correction methods"
+
+   # Business research  
+   orchestrator test research_assistant.yaml \
+     --input query="AI market trends 2024"
+
+   # Scientific research
+   orchestrator test research_assistant.yaml \
+     --input query="CRISPR gene editing safety"
+
+   # Policy research
+   orchestrator test research_assistant.yaml \
+     --input query="Climate change policy effectiveness"
 
 Key Takeaways
 -------------
 
-This research assistant example demonstrates:
+This example demonstrates the power of Orchestrator's declarative framework:
 
-1. **Complex Pipeline Orchestration**: Multi-step workflows with dependencies
-2. **Intelligent Model Selection**: Different models for different tasks
-3. **Robust Error Handling**: Comprehensive error recovery and fallback strategies
-4. **Performance Optimization**: Caching, parallel processing, and resource management
-5. **Production Readiness**: Monitoring, logging, and deployment configuration
-6. **Extensibility**: Modular design allowing easy addition of new features
+1. **Zero Code Required**: Complete research pipeline in pure YAML
+2. **Natural Language Tasks**: Use AUTO tags to describe tasks naturally
+3. **Automatic Tool Discovery**: Framework selects appropriate tools
+4. **Advanced Control Flow**: Conditions, loops, and error handling
+5. **Production Ready**: Caching, timeouts, and error recovery
+6. **Extensible**: Easy to add new steps or modify behavior
 
-The example showcases how the Orchestrator framework can handle complex, real-world applications while maintaining clean, maintainable code and providing robust error handling and performance optimization.
+The declarative approach makes complex AI pipelines accessible to everyone, not just programmers.
 
 Next Steps
 ----------
 
-- Explore the :doc:`code_analysis_suite` example for development workflows
-- Learn about :doc:`multi_agent_collaboration` for complex AI systems
-- Check out the :doc:`../advanced/performance_optimization` guide for optimization techniques
-- Review the :doc:`../advanced/deployment` guide for production deployment strategies
+- Try the :doc:`data_processing_workflow` example for ETL pipelines
+- Explore :doc:`multi_agent_collaboration` for complex AI systems
+- Read the :doc:`../../user_guide/yaml_pipelines` guide for YAML syntax
+- Check the :doc:`../../user_guide/auto_tags` guide for AUTO tag usage
