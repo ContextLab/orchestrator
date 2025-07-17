@@ -1,0 +1,378 @@
+name: "Scalable Customer Service Agent"
+description: "Enterprise-grade customer service with intelligent routing and multi-channel support"
+
+inputs:
+  interaction_id:
+    type: string
+    description: "Unique interaction identifier"
+    required: true
+  
+  customer_id:
+    type: string
+    description: "Customer identifier"
+    required: true
+  
+  channel:
+    type: string
+    description: "Communication channel (chat, email, voice, social, sms)"
+    required: true
+  
+  content:
+    type: string
+    description: "Customer message or inquiry content"
+    required: true
+  
+  metadata:
+    type: object
+    description: "Channel-specific metadata"
+    default: {}
+  
+  business_hours:
+    type: object
+    description: "Business hours configuration"
+    default: {"start": "09:00", "end": "17:00", "timezone": "UTC"}
+  
+  sla_targets:
+    type: object
+    description: "SLA targets for response and resolution"
+    default: {"first_response": 60, "resolution": 3600}
+  
+  languages:
+    type: list
+    description: "Supported languages"
+    default: ["en", "es", "fr", "de", "ja"]
+
+steps:
+  # Step 1: Receive and standardize interaction
+  - id: receive_interaction
+    action: <AUTO>receive customer interaction from {{channel}}:
+      Interaction ID: {{interaction_id}}
+      Customer ID: {{customer_id}}
+      Content: {{content}}
+      Metadata: {{metadata}}
+      
+      Standardize format across channels and extract:
+      1. Timestamp
+      2. Channel context
+      3. Session information
+      4. Attachments if any
+      5. Priority indicators
+      
+      Return standardized interaction data</AUTO>
+    timeout: 5.0
+    tags: ["intake", "channel"]
+
+  # Step 2: Identify and authenticate customer
+  - id: identify_customer
+    action: <AUTO>identify and authenticate customer:
+      Customer ID: {{customer_id}}
+      Channel: {{channel}}
+      
+      Retrieve:
+      1. Customer profile and tier (bronze/silver/gold/platinum)
+      2. Account status and history
+      3. Previous interactions (last 10)
+      4. Preferences and language
+      5. Open tickets or issues
+      6. Authentication status
+      7. Customer lifetime value
+      
+      Return complete customer context</AUTO>
+    depends_on: [receive_interaction]
+    cache_results: true
+    tags: ["customer", "authentication"]
+
+  # Step 3: Analyze sentiment and urgency
+  - id: analyze_sentiment
+    action: <AUTO>analyze customer sentiment and urgency:
+      Message: {{content}}
+      Previous interactions: {{identify_customer.result.interaction_history}}
+      
+      Detect:
+      1. Overall sentiment score (-1 to 1)
+      2. Specific emotions (anger, frustration, joy, confusion)
+      3. Urgency level (low/medium/high/critical)
+      4. Escalation indicators
+      5. Churn risk signals
+      6. Satisfaction trend
+      
+      Return sentiment analysis with confidence scores</AUTO>
+    depends_on: [identify_customer]
+    timeout: 10.0
+    tags: ["sentiment", "analysis"]
+
+  # Step 4: Classify intent with high accuracy
+  - id: classify_intent
+    action: <AUTO>classify customer intent with multi-level taxonomy:
+      Content: {{content}}
+      Customer context: {{identify_customer.result}}
+      Channel: {{channel}}
+      
+      Determine:
+      1. Primary intent category
+      2. Specific sub-intent
+      3. Required actions list
+      4. Information needs
+      5. Complexity level (simple/moderate/complex)
+      6. Regulatory implications
+      
+      Use business-specific taxonomy
+      Return intent with confidence scores</AUTO>
+    depends_on: [identify_customer]
+    tags: ["intent", "classification"]
+
+  # Step 5: Search knowledge base for solutions
+  - id: search_knowledge_base
+    action: <AUTO>search comprehensive knowledge base:
+      Query: {{content}}
+      Intent: {{classify_intent.result.primary_intent}}
+      Customer tier: {{identify_customer.result.customer_profile.tier}}
+      Language: {{identify_customer.result.customer_profile.language}}
+      
+      Search:
+      1. Public knowledge articles
+      2. Internal procedures
+      3. Similar resolved cases
+      4. Video tutorials
+      5. FAQ entries
+      6. Policy documents
+      
+      Return top 5 relevant results with confidence</AUTO>
+    depends_on: [classify_intent]
+    timeout: 15.0
+    tags: ["knowledge", "search"]
+
+  # Step 6: Determine routing strategy
+  - id: determine_routing
+    action: <AUTO>determine optimal routing strategy:
+      Intent: {{classify_intent.result}}
+      Sentiment: {{analyze_sentiment.result}}
+      Customer tier: {{identify_customer.result.customer_profile.tier}}
+      Knowledge base confidence: {{search_knowledge_base.result.confidence}}
+      
+      Consider:
+      1. Automation eligibility
+      2. Agent availability by skill
+      3. Customer preferences
+      4. SLA requirements
+      5. Current queue status
+      6. Cost optimization
+      
+      Return routing decision (automated/tier1/tier2/specialist/manager)</AUTO>
+    depends_on: [classify_intent, analyze_sentiment, search_knowledge_base]
+    tags: ["routing", "decision"]
+
+  # Step 7: Check automation eligibility
+  - id: check_automation
+    action: <AUTO>verify automation eligibility:
+      Routing decision: {{determine_routing.result.decision}}
+      Intent: {{classify_intent.result}}
+      Customer profile: {{identify_customer.result.customer_profile}}
+      KB confidence: {{search_knowledge_base.result.confidence}}
+      
+      Check:
+      1. Is intent automatable?
+      2. KB confidence above threshold (0.8)?
+      3. No compliance restrictions?
+      4. Customer accepts automation?
+      5. Sentiment not too negative?
+      6. No high-risk factors?
+      
+      Return automation approval with risk assessment</AUTO>
+    depends_on: [determine_routing]
+    condition: "{{determine_routing.result.decision}} == 'automated'"
+    tags: ["automation", "validation"]
+
+  # Step 8: Generate automated response
+  - id: generate_response
+    action: <AUTO>generate personalized automated response:
+      Intent: {{classify_intent.result}}
+      Knowledge base: {{search_knowledge_base.result.articles}}
+      Customer name: {{identify_customer.result.customer_profile.name}}
+      Language: {{identify_customer.result.customer_profile.language}}
+      Tone: Match customer style (formal/casual)
+      
+      Create response that:
+      1. Acknowledges specific issue
+      2. Provides clear solution steps
+      3. Includes relevant KB links
+      4. Sets resolution expectations
+      5. Offers human assistance option
+      6. Personalizes appropriately
+      
+      Return response with next steps</AUTO>
+    depends_on: [check_automation]
+    condition: "{{check_automation.result.can_automate}} == true"
+    timeout: 20.0
+    tags: ["response", "generation"]
+
+  # Step 9: Translate response if needed
+  - id: translate_response
+    action: <AUTO>translate response to customer language:
+      Response: {{generate_response.result.content}}
+      Target language: {{identify_customer.result.customer_profile.language}}
+      
+      Maintain:
+      1. Technical accuracy
+      2. Cultural appropriateness
+      3. Brand voice
+      4. Formatting
+      
+      Return translated response</AUTO>
+    depends_on: [generate_response]
+    condition: "{{identify_customer.result.customer_profile.language}} != 'en'"
+    tags: ["translation", "localization"]
+
+  # Step 10: Route to human agent
+  - id: route_to_agent
+    action: <AUTO>route to appropriate human agent:
+      Queue: {{determine_routing.result.target_queue}}
+      Priority: {{determine_routing.result.priority_score}}
+      Required skills: {{classify_intent.result.required_skills}}
+      Language: {{identify_customer.result.customer_profile.language}}
+      
+      Package context:
+      - Customer profile and history
+      - Intent classification
+      - Sentiment analysis
+      - KB search results
+      - Suggested approach
+      
+      Find best available agent by:
+      1. Skill match score
+      2. Current workload
+      3. Language capability
+      4. Past performance
+      5. Customer history
+      
+      Return agent assignment with wait time</AUTO>
+    depends_on: [determine_routing]
+    condition: "{{determine_routing.result.decision}} != 'automated'"
+    tags: ["routing", "escalation"]
+
+  # Step 11: Quality assurance check
+  - id: quality_check
+    action: <AUTO>perform quality assurance:
+      Response: {{generate_response.result.content || route_to_agent.result.handoff_message}}
+      Intent: {{classify_intent.result.primary_intent}}
+      Customer tier: {{identify_customer.result.customer_profile.tier}}
+      
+      Check:
+      1. Compliance with policies
+      2. Brand voice consistency
+      3. Accuracy of information
+      4. Tone appropriateness
+      5. No PII exposure
+      6. Complete resolution
+      
+      Return QA score with issues if any</AUTO>
+    depends_on: [generate_response, route_to_agent]
+    tags: ["quality", "compliance"]
+
+  # Step 12: Send response via channel
+  - id: send_response
+    action: <AUTO>send response through {{channel}}:
+      Recipient: {{customer_id}}
+      Content: {{translate_response.result || generate_response.result.content || route_to_agent.result.handoff_message}}
+      Attachments: {{generate_response.result.attachments || []}}
+      
+      Optimize delivery for channel:
+      1. Format appropriately
+      2. Add channel-specific features
+      3. Include interaction reference
+      4. Set delivery priority
+      5. Request read receipt
+      
+      Return delivery confirmation</AUTO>
+    depends_on: [quality_check]
+    condition: "{{quality_check.result.qa_score}} >= 0.8"
+    tags: ["delivery", "channel"]
+
+  # Step 13: Update CRM and ticketing systems
+  - id: update_systems
+    action: <AUTO>update CRM and ticketing systems:
+      Interaction ID: {{interaction_id}}
+      Customer ID: {{customer_id}}
+      Resolution type: {{check_automation.result.can_automate ? 'automated' : 'human'}}
+      
+      Update:
+      1. Create/update ticket
+      2. Log interaction details
+      3. Update customer profile
+      4. Record resolution
+      5. Set follow-up if needed
+      6. Update metrics
+      
+      Return system update confirmations</AUTO>
+    depends_on: [send_response]
+    tags: ["integration", "crm"]
+
+  # Step 14: Calculate SLA compliance
+  - id: check_sla
+    action: <AUTO>check SLA compliance:
+      Interaction start: {{receive_interaction.result.timestamp}}
+      Response sent: {{send_response.result.timestamp}}
+      Customer tier: {{identify_customer.result.customer_profile.tier}}
+      SLA targets: {{sla_targets}}
+      
+      Calculate:
+      1. First response time
+      2. Resolution time (if resolved)
+      3. SLA status (met/at-risk/breached)
+      4. Time to next milestone
+      
+      Return SLA metrics and alerts</AUTO>
+    depends_on: [send_response]
+    tags: ["sla", "metrics"]
+
+  # Step 15: Schedule follow-up
+  - id: schedule_followup
+    action: <AUTO>schedule follow-up actions:
+      Resolution type: {{check_automation.result.can_automate ? 'automated' : 'human'}}
+      Customer tier: {{identify_customer.result.customer_profile.tier}}
+      Sentiment: {{analyze_sentiment.result.sentiment_score}}
+      
+      Schedule if needed:
+      1. Customer satisfaction survey (24h)
+      2. Resolution verification (48h)
+      3. Proactive check-in (1 week)
+      4. Escalation review (if negative)
+      5. Quality audit (random sample)
+      
+      Return scheduled tasks</AUTO>
+    depends_on: [update_systems]
+    condition: "{{generate_response.result.follow_up_needed}} == true or {{analyze_sentiment.result.sentiment_score}} < -0.3"
+    tags: ["followup", "scheduling"]
+
+  # Step 16: Log analytics and metrics
+  - id: log_analytics
+    action: <AUTO>log comprehensive analytics:
+      Track:
+      1. Response time: {{check_sla.result.first_response_time}}
+      2. Channel: {{channel}}
+      3. Intent: {{classify_intent.result.primary_intent}}
+      4. Resolution type: {{check_automation.result.can_automate ? 'automated' : 'human'}}
+      5. Customer satisfaction prediction
+      6. Agent performance (if applicable)
+      7. Automation success rate
+      8. Cost per interaction
+      
+      Store for reporting and ML training</AUTO>
+    depends_on: [check_sla]
+    tags: ["analytics", "metrics"]
+
+outputs:
+  interaction_id: "{{interaction_id}}"
+  resolution_type: "{{check_automation.result.can_automate ? 'automated' : 'human'}}"
+  assigned_agent: "{{route_to_agent.result.agent_id || null}}"
+  response_sent: "{{send_response.result.success}}"
+  delivery_timestamp: "{{send_response.result.timestamp}}"
+  ticket_id: "{{update_systems.result.ticket_id}}"
+  intent: "{{classify_intent.result.primary_intent}}"
+  sentiment_score: "{{analyze_sentiment.result.sentiment_score}}"
+  customer_tier: "{{identify_customer.result.customer_profile.tier}}"
+  sla_status: "{{check_sla.result.status}}"
+  response_time_seconds: "{{check_sla.result.first_response_time}}"
+  quality_score: "{{quality_check.result.qa_score}}"
+  follow_up_scheduled: "{{schedule_followup.result.tasks || []}}"
+  automation_confidence: "{{check_automation.result.confidence || 0}}"
