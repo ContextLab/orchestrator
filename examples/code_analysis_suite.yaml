@@ -1,0 +1,244 @@
+name: "Code Analysis Suite"
+description: "Comprehensive code analysis with security scanning, quality checks, and AI-powered review"
+
+inputs:
+  repo_path:
+    type: string
+    description: "Path to repository to analyze"
+    required: true
+  
+  languages:
+    type: list
+    description: "Programming languages to analyze"
+    default: ["python", "javascript", "typescript"]
+  
+  analysis_depth:
+    type: string
+    description: "Analysis depth (quick, standard, comprehensive)"
+    default: "comprehensive"
+  
+  security_scan:
+    type: boolean
+    description: "Enable security vulnerability scanning"
+    default: true
+  
+  performance_check:
+    type: boolean
+    description: "Enable performance profiling"
+    default: true
+  
+  doc_check:
+    type: boolean
+    description: "Check documentation coverage"
+    default: true
+  
+  severity_threshold:
+    type: string
+    description: "Minimum severity to report (low, medium, high, critical)"
+    default: "medium"
+
+steps:
+  # Step 1: Discover code files
+  - id: discover_code
+    action: <AUTO>discover all code files in {{repo_path}}:
+      1. Find files matching patterns for languages: {{languages}}
+      2. Exclude directories: .git, node_modules, venv, __pycache__, dist, build
+      3. Count lines of code per file
+      4. Identify test files vs source files
+      5. Find documentation files (README, docs/)
+      
+      Return file list with metadata and statistics</AUTO>
+    timeout: 15.0
+    tags: ["discovery", "filesystem"]
+
+  # Step 2: Static code analysis
+  - id: static_analysis
+    action: <AUTO>perform static analysis on each code file:
+      1. Syntax validation
+      2. Linting (style violations)
+      3. Type checking where applicable
+      4. Cyclomatic complexity calculation
+      5. Code duplication detection
+      6. Dead code identification
+      
+      Return issues categorized by severity and type</AUTO>
+    depends_on: [discover_code]
+    loop:
+      foreach: "{{discover_code.result.file_list}}"
+      parallel: true
+      max_iterations: 100
+    timeout: 30.0
+    tags: ["analysis", "quality"]
+
+  # Step 3: Security vulnerability scan
+  - id: security_scan
+    action: <AUTO>scan for security vulnerabilities:
+      1. Check for hardcoded secrets/credentials
+      2. Identify SQL injection risks
+      3. Find XSS vulnerabilities
+      4. Detect insecure dependencies
+      5. Check for command injection risks
+      6. Identify authentication/authorization issues
+      7. License compliance check
+      
+      Return vulnerabilities with severity and remediation</AUTO>
+    depends_on: [discover_code]
+    condition: "{{security_scan}} == true"
+    timeout: 45.0
+    tags: ["security", "vulnerabilities"]
+
+  # Step 4: AI-powered code review
+  - id: ai_code_review
+    action: <AUTO>review code quality using AI analysis for {{item}}:
+      1. Code structure and organization
+      2. Design patterns and best practices
+      3. Variable/function naming conventions
+      4. Error handling completeness
+      5. Performance optimization opportunities
+      6. Maintainability assessment
+      7. Suggested refactoring improvements
+      
+      Provide specific, actionable suggestions</AUTO>
+    depends_on: [static_analysis]
+    loop:
+      foreach: "{{discover_code.result.file_list}}"
+      parallel: true
+      max_iterations: 50
+    timeout: 60.0
+    tags: ["ai-review", "quality"]
+
+  # Step 5: Documentation analysis
+  - id: documentation_check
+    action: <AUTO>analyze documentation coverage:
+      1. Check for missing function/class docstrings
+      2. Verify README completeness
+      3. Analyze inline comment quality
+      4. Check for API documentation
+      5. Verify example code in docs
+      6. Calculate documentation coverage percentage
+      
+      Return missing documentation and quality score</AUTO>
+    depends_on: [discover_code]
+    condition: "{{doc_check}} == true"
+    tags: ["documentation", "coverage"]
+
+  # Step 6: Performance profiling
+  - id: performance_analysis
+    action: <AUTO>profile code for performance issues:
+      1. Identify computational hotspots
+      2. Find inefficient algorithms (O(n²) or worse)
+      3. Detect memory leaks or excessive allocation
+      4. Check for blocking I/O operations
+      5. Identify inefficient database queries
+      6. Find unnecessary loops or recursion
+      
+      Return performance bottlenecks with optimization suggestions</AUTO>
+    depends_on: [static_analysis]
+    condition: "{{performance_check}} == true"
+    timeout: 30.0
+    tags: ["performance", "optimization"]
+
+  # Step 7: Dependency analysis
+  - id: dependency_check
+    action: <AUTO>analyze project dependencies:
+      1. Check for outdated dependencies
+      2. Identify security vulnerabilities in dependencies
+      3. Detect unused dependencies
+      4. Check for dependency conflicts
+      5. Analyze dependency tree depth
+      6. Suggest dependency updates
+      
+      Return dependency health report</AUTO>
+    depends_on: [discover_code]
+    tags: ["dependencies", "maintenance"]
+
+  # Step 8: Test coverage analysis
+  - id: test_coverage
+    action: <AUTO>analyze test coverage:
+      1. Identify untested code paths
+      2. Calculate line/branch coverage
+      3. Find missing test cases
+      4. Analyze test quality and assertions
+      5. Check for test duplication
+      6. Suggest additional test scenarios
+      
+      Return coverage metrics and recommendations</AUTO>
+    depends_on: [discover_code]
+    condition: "{{discover_code.result.test_files_count}} > 0"
+    tags: ["testing", "coverage"]
+
+  # Step 9: Architecture analysis
+  - id: architecture_review
+    action: <AUTO>analyze code architecture:
+      1. Identify architectural patterns used
+      2. Check for circular dependencies
+      3. Analyze module coupling and cohesion
+      4. Review layer separation
+      5. Check for SOLID principle violations
+      6. Identify potential design improvements
+      
+      Return architecture assessment and recommendations</AUTO>
+    depends_on: [static_analysis, ai_code_review]
+    condition: "{{analysis_depth}} == 'comprehensive'"
+    tags: ["architecture", "design"]
+
+  # Step 10: Generate actionable insights
+  - id: generate_insights
+    action: <AUTO>synthesize all findings into actionable insights:
+      1. Prioritize issues by impact and effort
+      2. Group related issues together
+      3. Create fix order recommendation
+      4. Estimate time to fix each issue
+      5. Identify quick wins vs long-term improvements
+      6. Generate team-specific recommendations
+      
+      Return prioritized action plan</AUTO>
+    depends_on: [static_analysis, security_scan, ai_code_review, performance_analysis]
+    tags: ["insights", "recommendations"]
+
+  # Step 11: Generate comprehensive report
+  - id: generate_report
+    action: <AUTO>create detailed analysis report including:
+      1. Executive summary with key metrics
+      2. Quality score (0-100) with breakdown
+      3. Security score with critical issues highlighted
+      4. Top 10 priority issues to fix
+      5. Code metrics dashboard (complexity, duplication, etc.)
+      6. Trend analysis if historical data available
+      7. Team performance insights
+      8. Detailed findings by category
+      
+      Format as markdown report with charts/visualizations</AUTO>
+    depends_on: [generate_insights, test_coverage, architecture_review]
+    on_error:
+      action: <AUTO>generate basic report with available data</AUTO>
+      continue_on_error: true
+    timeout: 30.0
+    tags: ["reporting", "output"]
+
+  # Step 12: Generate CI/CD artifacts
+  - id: generate_artifacts
+    action: <AUTO>create CI/CD integration artifacts:
+      1. JSON report for CI tools
+      2. Badge data for README (quality, coverage, security)
+      3. PR comment summary
+      4. SARIF file for GitHub security tab
+      5. SonarQube compatible report
+      
+      Return artifact paths and integration instructions</AUTO>
+    depends_on: [generate_report]
+    tags: ["ci-cd", "integration"]
+
+outputs:
+  quality_score: "{{generate_report.result.quality_score}}"
+  security_score: "{{generate_report.result.security_score}}"
+  documentation_score: "{{documentation_check.result.coverage_percentage}}"
+  test_coverage: "{{test_coverage.result.coverage_percentage}}"
+  total_issues: "{{generate_report.result.total_issues}}"
+  critical_issues: "{{generate_report.result.critical_issues}}"
+  files_analyzed: "{{discover_code.result.total_files}}"
+  lines_of_code: "{{discover_code.result.total_lines}}"
+  report_path: "{{generate_report.result.report_path}}"
+  action_items: "{{generate_insights.result.action_items}}"
+  estimated_fix_time: "{{generate_insights.result.total_fix_time}}"
+  ci_artifacts: "{{generate_artifacts.result.artifacts}}"
