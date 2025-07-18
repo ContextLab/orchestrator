@@ -374,11 +374,20 @@ async def compile_async(yaml_path: str) -> "OrchestratorPipeline":
     if _model_registry is None:
         init_models()
 
-    # Create orchestrator with mock control system (will be replaced)
-    from .core.control_system import MockControlSystem
+    # Create orchestrator with hybrid control system that handles both models and tools
+    from .control_systems.hybrid_control_system import HybridControlSystem
 
-    control_system = MockControlSystem()
-    _orchestrator = Orchestrator(control_system=control_system)
+    # We need models to create a control system
+    if not _model_registry or not _model_registry.models:
+        raise RuntimeError(
+            "No models available. Run init_models() first or ensure API keys are set."
+        )
+    
+    control_system = HybridControlSystem(_model_registry)
+    _orchestrator = Orchestrator(
+        model_registry=_model_registry,
+        control_system=control_system
+    )
 
     # Set up model for ambiguity resolution
     model_keys = _model_registry.list_models() if _model_registry else []

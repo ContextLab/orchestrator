@@ -56,12 +56,23 @@ class Orchestrator:
             max_concurrent_tasks: Maximum concurrent tasks
         """
         self.model_registry = model_registry or ModelRegistry()
-        self.control_system = control_system or MockControlSystem()
+        
+        # Use a proper control system if none provided
+        if control_system is None:
+            # We need models to create a real control system
+            if not self.model_registry.models:
+                raise RuntimeError(
+                    "No control system provided and no models available. "
+                    "Initialize models first with init_models() or provide a control system."
+                )
+            
+            from .control_systems.hybrid_control_system import HybridControlSystem
+            control_system = HybridControlSystem(self.model_registry)
+        
+        self.control_system = control_system
         self.state_manager = state_manager or StateManager()
 
-        # Register default models if registry is empty
-        if not self.model_registry.models:
-            self._register_default_models()
+        # No default models - must be explicitly initialized
         self.yaml_compiler = yaml_compiler or YAMLCompiler()
         self.error_handler = error_handler or ErrorHandler()
         self.resource_allocator = resource_allocator or ResourceAllocator()
@@ -582,28 +593,6 @@ class Orchestrator:
 
         return None
 
-    def _register_default_models(self) -> None:
-        """Register default models for testing and basic functionality."""
-        from .core.model import MockModel
-
-        # Register a default mock model that can handle basic tasks
-        default_model = MockModel(
-            name="default-mock",
-            provider="mock",
-        )
-
-        # Set up the model to handle common tasks
-        default_model.set_response("generate", "Generated content")
-        default_model.set_response("analyze", {"analysis": "Analysis result"})
-        default_model.set_response("transform", {"transformed": "Transformed data"})
-        default_model.set_response("chat", "Chat response")
-        default_model.set_response("generate_text", "Generated text content")
-
-        # Add metadata for expertise and size
-        default_model._expertise = ["general", "reasoning", "analysis", "code", "fast"]
-        default_model._size_billions = 1.0
-
-        self.model_registry.register_model(default_model)
 
     async def get_performance_metrics(self) -> Dict[str, Any]:
         """Get performance metrics for the orchestrator."""

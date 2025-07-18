@@ -105,6 +105,25 @@ class SimpleControlSystem(ModelBasedControlSystem):
         # Template pattern for both file path and content
         template_pattern = r'\{\{([^}]+)\}\}'
         
+        # Build a full context for all template resolution
+        from datetime import datetime
+        full_context = context.copy()
+        full_context.update({
+            "execution": {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        })
+        
+        # Add previous results if available
+        if "previous_results" in context:
+            for step_id, result in context["previous_results"].items():
+                if isinstance(result, dict):
+                    full_context[step_id] = result.copy()
+                    if "result" not in full_context[step_id]:
+                        full_context[step_id]["result"] = result
+                else:
+                    full_context[step_id] = {"result": result}
+        
         # Resolve template variables in file path
         if "{{" in file_path:
             
@@ -116,11 +135,8 @@ class SimpleControlSystem(ModelBasedControlSystem):
                     parts = expr.split('|')
                     var_name = parts[0].strip()
                     
-                    # Get base value
-                    if var_name in context:
-                        value = context[var_name]
-                    else:
-                        value = var_name
+                    # Get base value from full_context
+                    value = full_context.get(var_name, var_name)
                     
                     # Apply filters
                     for filter_expr in parts[1:]:
@@ -137,26 +153,12 @@ class SimpleControlSystem(ModelBasedControlSystem):
                     return str(value)
                 else:
                     # Simple variable
-                    return str(context.get(var_name, var_name))
+                    return str(full_context.get(expr, expr))
             
             file_path = re.sub(template_pattern, replace_template, file_path)
         
         # Resolve templates in content
         if "{{" in content:
-            # Build full context including previous results
-            full_context = context.copy()
-            
-            # Add execution metadata
-            from datetime import datetime
-            full_context.update({
-                "execution": {
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }
-            })
-            
-            # Add previous results if available
-            if "previous_results" in context:
-                full_context.update(context["previous_results"])
             
             # Simple template resolution
             def resolve_content_template(match):
