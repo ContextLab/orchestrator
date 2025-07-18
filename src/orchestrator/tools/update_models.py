@@ -404,6 +404,9 @@ async def update_models(config_path: Optional[Path] = None) -> None:
     Args:
         config_path: Path to save models.yaml. Defaults to ~/.orchestrator/models.yaml
     """
+    # Ensure config_path is a Path object
+    if config_path is not None and not isinstance(config_path, Path):
+        config_path = Path(config_path)
     updater = ModelUpdater(config_path)
     await updater.run()
 

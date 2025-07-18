@@ -89,11 +89,12 @@ def init_models(config_path: str = None) -> ModelRegistry:
         # Extract model name from config
         name = config_params.get("model_name", model_id)
         
-        # Default expertise based on model name
+        # Default expertise based on model name or model_id
         expertise = ["general"]
-        if "code" in name.lower() or "coder" in name.lower():
+        combined_name = f"{model_id} {name}".lower()
+        if "code" in combined_name or "coder" in combined_name:
             expertise.append("code")
-        if "chat" in name.lower() or "instruct" in name.lower():
+        if "chat" in combined_name or "instruct" in combined_name:
             expertise.append("chat")
         
         if not provider or not name:
