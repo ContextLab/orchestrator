@@ -100,30 +100,31 @@ models:
 preferences:
   # Default model for different task types
   default_models:
-    generate: gpt-3.5-turbo
-    analyze: claude-3-haiku
-    transform: gemini-1.5-flash
-    code: gpt-4
-    reasoning: claude-3-5-sonnet
-    vision: gpt-4-turbo
+    generate: gpt-4.1
+    analyze: claude-4-sonnet
+    transform: gemini-2.5-pro
+    code: claude-4-sonnet
+    reasoning: claude-4-opus
+    vision: gpt-4.1
     
   # Fallback order if primary models are unavailable
   fallback_order:
-    - gpt-3.5-turbo
-    - claude-3-haiku
-    - gemini-1.5-flash
-    - distilgpt2
-    
+    - gemini-2.5-flash
+    - gpt-o3-mini
+    - claude-3-7-sonnet
+
   # Cost-optimized options
   cost_optimized:
-    - gemini-1.5-flash
-    - claude-3-haiku
-    - gpt-3.5-turbo
+    - gemini-2.5-flash
+    - claude-3-7-sonnet
+    - gpt-o3-mini
     - distilgpt2
     
   # Performance-optimized options
   performance_optimized:
-    - gpt-4-turbo
-    - claude-3-5-sonnet
-    - gemini-1.5-pro
-    - gpt-4
+    - gpt-4.1
+    - claude-4-opus
+    - claude-4-sonnet
+    - o3
+    - gemini-2.5-pro
+    - gpt-4.1
