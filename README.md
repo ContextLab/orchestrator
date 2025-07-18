@@ -14,7 +14,7 @@ Orchestrator is a powerful, flexible AI pipeline orchestration framework that si
 
 ### Key Features
 
-- 🎯 **YAML-Based Pipelines**: Define complex workflows in simple, readable YAML
+- 🎯 **YAML-Based Pipelines**: Define complex workflows in simple, readable YAML with full template variable support
 - 🤖 **Multi-Model Support**: Seamlessly work with OpenAI, Anthropic, Google, Ollama, and HuggingFace models
 - 🧠 **Intelligent Model Selection**: Automatically choose the best model based on task requirements
 - 🔄 **Automatic Ambiguity Resolution**: Use `<AUTO>` tags to let AI resolve configuration ambiguities
@@ -23,6 +23,8 @@ Orchestrator is a powerful, flexible AI pipeline orchestration framework that si
 - ⚡ **Parallel Execution**: Efficient resource management and parallel task execution
 - 🐳 **Sandboxed Execution**: Secure code execution in isolated environments
 - 💾 **Lazy Model Loading**: Models are downloaded only when needed, saving disk space
+- 🔧 **Reliable Tool Execution**: Guaranteed execution of file operations with LangChain structured outputs
+- 📝 **Advanced Templates**: Support for nested variables, filters, and Jinja2-style templates
 
 ## Quick Start
 
@@ -75,6 +77,9 @@ python scripts/run_pipeline.py hello_world.yaml
 # With inputs
 python scripts/run_pipeline.py hello_world.yaml -i name=World -i language=Spanish
 
+# From a JSON file
+python scripts/run_pipeline.py hello_world.yaml -f inputs.json -o output_dir/
+
 # Or programmatically
 import orchestrator as orc
 
@@ -101,41 +106,6 @@ steps:
       method: <AUTO>Choose the best analysis method for this data type</AUTO>
       visualization: <AUTO>Decide if we should create a chart</AUTO>
 ```
-
-## Recent Improvements
-
-### Enhanced Template Rendering
-- Proper rendering of `{{ variable }}` patterns in all outputs
-- Support for nested variables like `{{ task.result }}`
-- Jinja2-style templates with loops and conditionals
-- Special variables like `{{ execution.timestamp }}`
-
-### Reliable Tool Execution
-- Guaranteed execution of file save operations
-- Proper handling of tool calls vs. prompts
-- Enhanced control system for tool-aware execution
-- LangChain structured outputs for consistent tool responses
-- Automatic parsing and validation of tool parameters
-
-### Simplified Pipeline Execution
-```bash
-# Run any pipeline with one command
-python scripts/run_pipeline.py pipeline.yaml
-
-# Pass inputs via command line
-python scripts/run_pipeline.py pipeline.yaml -i topic="AI Safety" -i depth=comprehensive
-
-# Or from a JSON file
-python scripts/run_pipeline.py pipeline.yaml -f inputs.json -o output_dir/
-```
-
-### Updated Model Support
-All pipelines now use the latest, highest-quality models:
-- **OpenAI**: GPT-4.1 (latest)
-- **Anthropic**: Claude Sonnet 4 (claude-sonnet-4-20250514)
-- **Google**: Gemini 2.5 Flash (gemini-2.5-flash)
-- **Ollama**: Gemma3 27B (gemma3:27b)
-- **HuggingFace**: Mistral 7B Instruct v0.3 (mistralai/Mistral-7B-Instruct-v0.3)
 
 ## Model Configuration
 
@@ -351,18 +321,19 @@ Comprehensive documentation is available at [orc.readthedocs.io](https://orc.rea
 Orchestrator supports a wide range of models:
 
 ### Local Models (via Ollama)
+- **Gemma3 27B**: Google's powerful general-purpose model
 - **Llama 3.x**: General purpose, multilingual support
 - **DeepSeek-R1**: Advanced reasoning and coding
 - **Qwen2.5-Coder**: Specialized for code generation
 - **Mistral**: Fast and efficient general purpose
-- **Gemma3**: Google's efficient models in various sizes
 
 ### Cloud Models
-- **OpenAI**: GPT-4.1, GPT-4o, o3, o4-mini (reasoning models)
-- **Anthropic**: Claude 4 Opus/Sonnet, Claude 3.7 Sonnet
-- **Google**: Gemini 2.5 Pro/Flash, Gemini 2.0 series
+- **OpenAI**: GPT-4.1 (latest)
+- **Anthropic**: Claude Sonnet 4 (claude-sonnet-4-20250514)
+- **Google**: Gemini 2.5 Flash (gemini-2.5-flash)
 
 ### HuggingFace Models
+- **Mistral 7B Instruct v0.3**: High-quality instruction-following model
 - Llama, Qwen, Phi, and many more
 - Automatically downloaded on first use
 
