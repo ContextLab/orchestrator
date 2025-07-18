@@ -1,25 +1,39 @@
 """Control system with integrated tool support."""
 
+import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
-import sys
-import os
+from typing import Any, Dict, List, Optional
 
-# Add parent directory to path so we can import orchestrator
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from orchestrator.core.control_system import MockControlSystem
+from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.task import Task, TaskStatus
+from orchestrator.core.pipeline import Pipeline
 from orchestrator.tools.base import default_registry
 from orchestrator.tools.mcp_server import default_mcp_server
 
 
-class ToolIntegratedControlSystem(MockControlSystem):
+class ToolIntegratedControlSystem(ControlSystem):
     """Control system that integrates with the tool library."""
     
     def __init__(self, output_dir: str = "./output/tool_integrated"):
-        super().__init__(name="tool-integrated-system")
+        # Define capabilities for tool integrated control system
+        config = {
+            "capabilities": {
+                "supported_actions": [
+                    "search_web", "verify_url", "scrape_page", "web_search",
+                    "terminal", "command", "file", "read", "write",
+                    "validate", "check", "process", "transform", "convert",
+                    "compile_markdown", "generate_report", "validate_report",
+                    "finalize_report", "compile_pdf"
+                ],
+                "parallel_execution": True,
+                "streaming": True,
+                "checkpoint_support": True,
+            },
+            "base_priority": 20,
+        }
+        
+        super().__init__(name="tool-integrated-system", config=config)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._results = {}
@@ -28,7 +42,7 @@ class ToolIntegratedControlSystem(MockControlSystem):
         # Register default tools
         self.tool_server.register_default_tools()
     
-    async def execute_task(self, task: Task, context: dict = None) -> Dict[str, Any]:
+    async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task using integrated tools."""
         print(f"\n⚙️  Executing task: {task.id} ({task.action})")
         
@@ -50,6 +64,52 @@ class ToolIntegratedControlSystem(MockControlSystem):
         task.status = TaskStatus.COMPLETED
         
         return result
+    
+    async def execute_pipeline(self, pipeline: Pipeline) -> Dict[str, Any]:
+        """Execute a pipeline with tool integration."""
+        results: Dict[str, Any] = {}
+
+        # Get execution levels (groups of tasks that can run in parallel)
+        execution_levels = pipeline.get_execution_levels()
+
+        # Execute tasks level by level
+        for level in execution_levels:
+            level_results: Dict[str, Any] = {}
+
+            for task_id in level:
+                task = pipeline.get_task(task_id)
+
+                # Build context with results from previous tasks
+                context = {"pipeline_id": pipeline.id, "results": results}
+
+                # Execute task
+                result = await self.execute_task(task, context)
+                level_results[task_id] = result
+
+                # Mark task as completed
+                task.complete(result)
+
+            # Add level results to overall results
+            results.update(level_results)
+
+        return results
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        """Get control system capabilities."""
+        return self._capabilities
+    
+    async def health_check(self) -> bool:
+        """Check if control system is healthy."""
+        # Check if output directory is writable
+        try:
+            test_file = self.output_dir / ".health_check"
+            test_file.write_text("test")
+            test_file.unlink()
+            
+            # Check if tools are available
+            return len(default_registry.list_tools()) > 0
+        except Exception:
+            return False
     
     def _detect_tool_for_action(self, task: Task) -> str:
         """Detect which tool to use for the task action."""
