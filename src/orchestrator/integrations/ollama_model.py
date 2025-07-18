@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import subprocess
 from typing import Any, Dict, List, Optional
@@ -302,8 +303,12 @@ class OllamaModel(Model):
         }
 
         try:
-            response = requests.post(
-                f"{self.base_url}/api/generate", json=payload, timeout=self.timeout
+            # Run the synchronous request in a thread pool to avoid blocking
+            response = await asyncio.to_thread(
+                requests.post,
+                f"{self.base_url}/api/generate",
+                json=payload,
+                timeout=self.timeout
             )
             response.raise_for_status()
 
@@ -375,7 +380,11 @@ Return only the JSON object, no additional text.
         """
         try:
             # Check if Ollama is running
-            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            response = await asyncio.to_thread(
+                requests.get,
+                f"{self.base_url}/api/tags",
+                timeout=5
+            )
             if response.status_code != 200:
                 self._is_available = False
                 return False

@@ -93,20 +93,54 @@ class YAMLCompiler:
             # Step 2: Validate against schema
             self.schema_validator.validate(raw_pipeline)
 
-            # Step 3: Process templates
-            processed = self._process_templates(raw_pipeline, context or {})
+            # Step 3: Merge default values with context
+            merged_context = self._merge_defaults_with_context(raw_pipeline, context or {})
 
-            # Step 4: Detect and resolve ambiguities
+            # Step 4: Process templates
+            processed = self._process_templates(raw_pipeline, merged_context)
+
+            # Step 5: Detect and resolve ambiguities
             if resolve_ambiguities:
                 resolved = await self._resolve_ambiguities(processed)
             else:
                 resolved = processed
 
-            # Step 5: Build pipeline object
+            # Step 6: Build pipeline object
             return self._build_pipeline(resolved)
 
         except Exception as e:
             raise YAMLCompilerError(f"Failed to compile YAML: {e}") from e
+
+    def _merge_defaults_with_context(
+        self, pipeline_def: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Merge default input values with provided context.
+
+        Args:
+            pipeline_def: Pipeline definition with inputs section
+            context: User-provided context
+
+        Returns:
+            Merged context with defaults applied
+        """
+        merged = context.copy()
+        
+        # Check if inputs section exists
+        if "inputs" in pipeline_def:
+            inputs_def = pipeline_def["inputs"]
+            
+            # Process each input definition
+            for input_name, input_spec in inputs_def.items():
+                # Skip if input already provided in context
+                if input_name in merged:
+                    continue
+                    
+                # Apply default value if specified
+                if isinstance(input_spec, dict) and "default" in input_spec:
+                    merged[input_name] = input_spec["default"]
+        
+        return merged
 
     def _parse_yaml(self, yaml_content: str) -> Dict[str, Any]:
         """

@@ -96,6 +96,10 @@ class ModelBasedControlSystem(ControlSystem):
         prompt = self._build_prompt(task, action_text, context)
         
         try:
+            # Debug: print model info
+            print(f">> Using model: {model.name} from {model.provider}")
+            print(f">> Prompt: {prompt[:200]}...")
+            
             # Use the model to generate result
             result = await model.generate(
                 prompt=prompt,
@@ -103,11 +107,14 @@ class ModelBasedControlSystem(ControlSystem):
                 max_tokens=1000,
             )
             
+            print(f">> Model response: {result[:200]}...")
+            
             # Parse the result based on expected format
             return self._parse_result(result, task)
             
         except Exception as e:
             # Fallback to simple mock for errors
+            print(f">> Model execution error: {str(e)}")
             return f"Error executing task {task.id}: {str(e)}"
     
     def _get_task_requirements(self, task: Task) -> Dict[str, Any]:

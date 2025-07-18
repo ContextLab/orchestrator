@@ -49,7 +49,7 @@ _model_registry = None
 _orchestrator = None
 
 
-def init_models(config_path: str = "models.yaml") -> ModelRegistry:
+def init_models(config_path: str = None) -> ModelRegistry:
     """Initialize the pool of available models by reading models.yaml and environment."""
     global _model_registry
 
@@ -60,17 +60,18 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
     from .integrations.openai_model import OpenAIModel
     from .utils.model_utils import (
         check_ollama_installed,
-        load_model_config,
         parse_model_size,
     )
+    from .utils.model_config_loader import get_model_config_loader
 
     print(">> Initializing model pool...")
 
     _model_registry = ModelRegistry()
 
-    # Load model configuration
-    config = load_model_config(config_path)
-    models_config = config.get("models", [])
+    # Load model configuration using the new loader
+    loader = get_model_config_loader()
+    config = loader.load_config()
+    models_config = config.get("models", {})
 
     # Check if Ollama is installed
     ollama_available = check_ollama_installed()
@@ -79,20 +80,27 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
         print(">>    Install from: https://ollama.ai")
 
     # Process each model in configuration
-    for model_config in models_config:
-        source = model_config.get("source")
-        name = model_config.get("name")
-        expertise = model_config.get("expertise", ["general"])
-        size_str = model_config.get("size")
-
-        if not source or not name:
+    for model_id, model_config in models_config.items():
+        provider = model_config.get("provider")
+        model_type = model_config.get("type", provider)
+        size_billions = model_config.get("size_b", 1.0)
+        config_params = model_config.get("config", {})
+        
+        # Extract model name from config
+        name = config_params.get("model_name", model_id)
+        
+        # Default expertise based on model name
+        expertise = ["general"]
+        if "code" in name.lower() or "coder" in name.lower():
+            expertise.append("code")
+        if "chat" in name.lower() or "instruct" in name.lower():
+            expertise.append("chat")
+        
+        if not provider or not name:
             continue
 
-        # Parse model size
-        size_billions = parse_model_size(name, size_str)
-
         try:
-            if source == "ollama":
+            if provider == "ollama":
                 if not ollama_available:
                     continue
 
@@ -109,7 +117,7 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
                     f">>   📦 Registered Ollama model: {name} ({size_billions}B params) - will download on first use"
                 )
 
-            elif source == "huggingface":
+            elif provider == "huggingface":
                 # Check if transformers is available
                 try:
                     import importlib.util
@@ -136,9 +144,9 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
                 except Exception as e:
                     print(f">>   ⚠️  Failed to register HuggingFace model {name}: {e}")
 
-            elif source == "openai" and os.environ.get("OPENAI_API_KEY"):
+            elif provider == "openai" and os.environ.get("OPENAI_API_KEY"):
                 # Only register if API key is available
-                model = OpenAIModel(name=name, model=name)
+                model = OpenAIModel(model_name=name)
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
@@ -147,9 +155,9 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
                     f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)"
                 )
 
-            elif source == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
+            elif provider == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
                 # Only register if API key is available
-                model = AnthropicModel(name=name, model=name)
+                model = AnthropicModel(model_name=name)
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
@@ -158,9 +166,9 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
                     f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)"
                 )
 
-            elif source == "google" and os.environ.get("GOOGLE_API_KEY"):
+            elif provider == "google" and os.environ.get("GOOGLE_API_KEY"):
                 # Only register if API key is available
-                model = GoogleModel(name=name, model=name)
+                model = GoogleModel(model_name=name)
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
@@ -170,7 +178,7 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
                 )
 
         except Exception as e:
-            print(f">>   ⚠️  Error registering {source} model {name}: {e}")
+            print(f">>   ⚠️  Error registering {provider} model {name}: {e}")
 
     print(
         f"\n>> Model initialization complete: {len(_model_registry.list_models())} models registered"
@@ -181,6 +189,10 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
 
     # Store defaults in registry for later use
     setattr(_model_registry, "_defaults", config.get("defaults", {}))
+    
+    # Enable auto-registration for new models
+    _model_registry.enable_auto_registration()
+    print(">> Auto-registration enabled for new models")
 
     return _model_registry
 

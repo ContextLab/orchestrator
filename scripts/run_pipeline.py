@@ -13,13 +13,17 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from orchestrator import Orchestrator
+from orchestrator import Orchestrator, init_models
 
 
 async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = None):
     """Run a single pipeline."""
-    # Initialize orchestrator
-    orchestrator = Orchestrator()
+    # Initialize models first
+    print("Initializing models...")
+    model_registry = init_models()
+    
+    # Initialize orchestrator with models
+    orchestrator = Orchestrator(model_registry=model_registry)
     
     # Set output directory if specified
     if output_dir:

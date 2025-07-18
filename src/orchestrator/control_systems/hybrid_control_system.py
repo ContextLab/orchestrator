@@ -60,11 +60,19 @@ class HybridControlSystem(ModelBasedControlSystem):
     
     def _is_file_operation(self, action: str) -> bool:
         """Check if action is a file operation."""
+        # More specific patterns that indicate file operations
         file_patterns = [
-            "save", "write", "create.*file", "export", "store",
-            "write.*following.*content", "save.*following.*content"
+            r"write.*to\s+(?:a\s+)?(?:file|path)",  # Write ... to file/path
+            r"save.*to\s+(?:a\s+)?(?:file|path)",   # Save ... to file/path
+            r"write.*following.*content.*to",       # Write the following content to
+            r"save.*following.*content.*to",        # Save the following content to
+            r"create.*file\s+at",                   # Create file at
+            r"export.*to\s+file",                   # Export to file
+            r"store.*in\s+file",                    # Store in file
+            r"write.*to\s+[^\s]+\.(txt|md|json|yaml|yml|csv|html)",  # Write to filename.ext
+            r"save.*to\s+[^\s]+\.(txt|md|json|yaml|yml|csv|html)",   # Save to filename.ext
         ]
-        return any(re.search(pattern, action, re.IGNORECASE) for pattern in file_patterns)
+        return any(re.search(pattern, action, re.IGNORECASE | re.DOTALL) for pattern in file_patterns)
     
     async def _handle_file_operation(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle file write operations."""
@@ -121,11 +129,11 @@ class HybridControlSystem(ModelBasedControlSystem):
         
         # Try to extract from action text
         patterns = [
-            r'to (?:a )?(?:markdown )?file at ([^\s:]+)',
-            r'to ([^\s:]+\.(?:md|txt|json|yaml|yml|csv|html))',
-            r'Save.*to ([^\s:]+)',
-            r'Write.*to ([^\s:]+)',
-            r'(?:file|path):\s*([^\s:]+)',
+            r'to (?:a )?(?:markdown )?file at ([^\n]+?)(?=:|\s*$)',  # Match until colon or end of line
+            r'to ([^\s]+\.(?:md|txt|json|yaml|yml|csv|html))(?=:|\s|$)',  # Match file with extension
+            r'Save.*to ([^\n]+?)(?=:|\s*$)',  # Save to ... (until colon or end)
+            r'Write.*to ([^\n]+?)(?=:|\s*$)',  # Write to ... (until colon or end)
+            r'(?:file|path):\s*([^\n]+?)(?=:|\s*$)',  # file: or path: prefix
         ]
         
         for pattern in patterns:
@@ -177,6 +185,14 @@ class HybridControlSystem(ModelBasedControlSystem):
                     template_context[step_id] = result
                 else:
                     template_context[step_id] = {"result": result}
+        
+        # Also check for results in the main context (from pipeline execution)
+        # Look for any keys that look like task results
+        for key, value in context.items():
+            if key not in template_context and key not in ["model", "pipeline", "execution", "task_id"]:
+                # Check if this might be a task result
+                if isinstance(value, (str, int, float, bool, list, dict)):
+                    template_context[key] = value
         
         return template_context
     

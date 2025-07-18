@@ -134,8 +134,13 @@ class TemplateRenderer:
             return str(value).lower()
         elif filter_expr == 'upper':
             return str(value).upper()
-        elif filter_expr == "replace(' ', '_')":
-            return str(value).replace(' ', '_')
+        elif filter_expr.startswith('replace('):
+            # Handle replace filter with arguments
+            match = re.match(r'replace\(["\']([^"\']*)["\'],\s*["\']([^"\']*)["\']', filter_expr)
+            if match:
+                old_str = match.group(1)
+                new_str = match.group(2)
+                return str(value).replace(old_str, new_str)
         elif filter_expr.startswith('truncate('):
             match = re.match(r'truncate\((\d+)\)', filter_expr)
             if match:

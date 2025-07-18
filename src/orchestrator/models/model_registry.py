@@ -36,6 +36,7 @@ class ModelRegistry:
         self._model_health_cache: Dict[str, bool] = {}
         self._cache_ttl = 300  # 5 minutes
         self._last_health_check = 0  # Will be set to current time on first use
+        self._auto_registrar = None  # Will be set up after initialization
 
     def register_model(self, model: Model) -> None:
         """
@@ -80,6 +81,44 @@ class ModelRegistry:
             self.model_selector.remove_model(model_key)
         else:
             raise ModelNotFoundError(f"Model '{model_name}' not found")
+
+    def enable_auto_registration(self) -> None:
+        """Enable automatic model registration for new models."""
+        if self._auto_registrar is None:
+            from .auto_register import AutoModelRegistrar
+            self._auto_registrar = AutoModelRegistrar(self)
+
+    async def get_model_async(self, model_name: str, provider: str = "") -> Model:
+        """
+        Get a model by name, attempting auto-registration if not found.
+
+        Args:
+            model_name: Model name
+            provider: Provider name (optional)
+
+        Returns:
+            Model instance
+
+        Raises:
+            ModelNotFoundError: If model not found and auto-registration fails
+        """
+        try:
+            return self.get_model(model_name, provider)
+        except ModelNotFoundError:
+            # Try auto-registration if enabled
+            if self._auto_registrar and provider:
+                model = await self._auto_registrar.try_register_model(model_name, provider)
+                if model:
+                    return model
+            elif self._auto_registrar and not provider:
+                # Try to guess provider from model name
+                from .auto_register import get_provider_from_model_name
+                guessed_provider = get_provider_from_model_name(model_name)
+                if guessed_provider:
+                    model = await self._auto_registrar.try_register_model(model_name, guessed_provider)
+                    if model:
+                        return model
+            raise
 
     def get_model(self, model_name: str, provider: str = "") -> Model:
         """

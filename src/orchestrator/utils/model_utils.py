@@ -5,6 +5,8 @@ import re
 import subprocess
 from typing import Any, Dict, Optional
 
+from .model_config_loader import get_model_config_loader
+
 
 def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
     """
@@ -47,17 +49,23 @@ def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
 
     # Try to get size from models.yaml configuration
     try:
-        config = load_model_config()
+        loader = get_model_config_loader()
+        config = loader.load_config()
         if "models" in config:
-            for model_config in config["models"]:
+            # Check if model exists in config
+            if model_name in config["models"]:
+                model_config = config["models"][model_name]
+                if "size_b" in model_config:
+                    return float(model_config["size_b"])
+            
+            # Also check for partial matches
+            for model_id, model_config in config["models"].items():
                 if (
-                    model_config.get("name", "").lower() in model_name.lower()
-                    or model_name.lower() in model_config.get("name", "").lower()
+                    model_id.lower() in model_name.lower()
+                    or model_name.lower() in model_id.lower()
                 ):
-                    if "size" in model_config:
-                        return parse_model_size(
-                            model_config["name"], model_config["size"]
-                        )
+                    if "size_b" in model_config:
+                        return float(model_config["size_b"])
     except Exception:
         # If loading config fails, continue with default
         pass
@@ -69,11 +77,15 @@ def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
 def check_ollama_installed() -> bool:
     """Check if Ollama is installed and available."""
     try:
+        # Use simple check without capturing output to avoid hanging
         result = subprocess.run(
-            ["ollama", "--version"], capture_output=True, text=True, timeout=5
+            ["which", "ollama"], 
+            capture_output=True, 
+            text=True, 
+            timeout=1
         )
         return result.returncode == 0
-    except (subprocess.SubprocessError, FileNotFoundError):
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
         return False
 
 
@@ -84,12 +96,16 @@ def check_ollama_model(model_name: str) -> bool:
 
     try:
         result = subprocess.run(
-            ["ollama", "list"], capture_output=True, text=True, timeout=10
+            ["ollama", "list"], 
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True, 
+            timeout=3  # Reduced timeout
         )
         if result.returncode == 0:
             # Check if model is in the list
             return model_name in result.stdout
-    except subprocess.SubprocessError:
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError):
         pass
     return False
 
@@ -127,27 +143,22 @@ def install_ollama_model(model_name: str) -> bool:
 
 
 def load_model_config(config_path: str = "models.yaml") -> Dict[str, Any]:
-    """Load model configuration from YAML file."""
+    """Load model configuration from YAML file.
+    
+    This is a compatibility wrapper that uses the new ModelConfigLoader.
+    """
     from pathlib import Path
-
-    import yaml
-
-    # Try multiple locations for the config file
-    search_paths = [
-        Path(config_path),  # Current directory
-        Path.home() / ".orchestrator" / config_path,  # User config directory
-        Path(__file__).parent.parent.parent / config_path,  # Package root
-        Path(__file__).parent.parent.parent
-        / "config"
-        / config_path,  # Package config dir
-        Path(os.environ.get("ORCHESTRATOR_HOME", ".")) / config_path,  # Env variable
-    ]
-
-    for path in search_paths:
-        if path.exists():
-            with open(path, "r") as f:
-                return yaml.safe_load(f)
-
+    
+    # Use the new config loader
+    loader = get_model_config_loader()
+    config = loader.load_config()
+    
+    # Transform to old format for compatibility if needed
+    # The new format has models as a dict, old format expected a list
+    if "models" in config and isinstance(config["models"], dict):
+        # Keep the new format - callers will be updated
+        return config
+    
     # Return default configuration if no file found
     return {
         "models": [
