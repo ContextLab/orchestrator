@@ -12,11 +12,11 @@ Orchestrator is an AI pipeline orchestration framework that provides a unified i
 
 ### What models are supported?
 Orchestrator supports models from:
-- OpenAI (GPT-4, GPT-3.5)
-- Anthropic (Claude 3)
-- Google (Gemini)
-- Ollama (local models)
-- HuggingFace (various models)
+- OpenAI (gpt-4.1, o3, gpt-03-mini)
+- Anthropic (claude-4-opus, claude-4-sonnet, claude-3-7-sonnet)
+- Google (gemini-2.5-pro, gemini-2.5-flash)
+- Ollama (any model that can run locally)
+- HuggingFace (any model that can run locally)
 
 ## Technical Questions
 
@@ -55,9 +55,9 @@ The framework itself is free and open source. You only pay for:
 ## Support
 
 ### Where can I get help?
-- Documentation: https://orchestrator.ai/docs
-- GitHub Issues: https://github.com/orchestrator/orchestrator
-- Community Discord: https://discord.gg/orchestrator
+- Documentation: https://orc.readthedocs.io/en/latest/
+- GitHub Issues: https://github.com/ContextLab/orchestrator/issues
+- GitHub Discussions: https://github.com/ContextLab/orchestrator/discussions
 
 ### How do I report bugs?
 Please create an issue on our GitHub repository with:

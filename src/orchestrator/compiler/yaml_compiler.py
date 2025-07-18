@@ -59,6 +59,9 @@ class YAMLCompiler:
         self.schema_validator = schema_validator or SchemaValidator()
         self.ambiguity_resolver = ambiguity_resolver or AmbiguityResolver()
         self.template_engine = Environment(undefined=StrictUndefined)
+        
+        # Add custom filters to Jinja2 environment
+        self._register_custom_filters()
 
         # Regex pattern for AUTO tags
         self.auto_tag_pattern = re.compile(r"<AUTO>(.*?)</AUTO>", re.DOTALL)
@@ -387,6 +390,37 @@ class YAMLCompiler:
             return True
         except Exception:
             return False
+
+    def _register_custom_filters(self) -> None:
+        """Register custom Jinja2 filters."""
+        import re as regex_module
+        
+        def regex_search(value, pattern, group=None):
+            """Search for regex pattern in value."""
+            if not isinstance(value, str):
+                value = str(value)
+            match = regex_module.search(pattern, value, regex_module.DOTALL)
+            if match:
+                if group is not None:
+                    try:
+                        # Handle numeric group references
+                        if isinstance(group, str) and group.startswith('\\'):
+                            group_num = int(group[1:])
+                            return match.group(group_num) if group_num <= match.lastindex else ''
+                        return match.group(group) 
+                    except (IndexError, ValueError):
+                        return ''
+                return match.group(0)
+            return ''
+        
+        # Register filters
+        self.template_engine.filters['regex_search'] = regex_search
+        
+        # Also add other commonly used filters that might be missing
+        self.template_engine.filters['default'] = lambda v, d='': v if v else d
+        self.template_engine.filters['lower'] = lambda v: str(v).lower()
+        self.template_engine.filters['upper'] = lambda v: str(v).upper()
+        self.template_engine.filters['replace'] = lambda v, old, new: str(v).replace(old, new)
 
     def get_template_variables(self, yaml_content: str) -> List[str]:
         """
