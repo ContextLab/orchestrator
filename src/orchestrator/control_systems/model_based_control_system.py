@@ -113,9 +113,9 @@ class ModelBasedControlSystem(ControlSystem):
             return self._parse_result(result, task)
             
         except Exception as e:
-            # Fallback to simple mock for errors
+            # Log the error and re-raise it
             print(f">> Model execution error: {str(e)}")
-            return f"Error executing task {task.id}: {str(e)}"
+            raise RuntimeError(f"Failed to execute task {task.id}: {str(e)}") from e
     
     def _get_task_requirements(self, task: Task) -> Dict[str, Any]:
         """Get model requirements based on task."""
