@@ -135,22 +135,54 @@ class RealDataControlSystem(MockControlSystem):
         }
     
     async def _summarize(self, task):
-        """Create summary from analysis."""
+        """Create summary using AI."""
         content = task.parameters.get("content", {})
         findings = content.get("findings", [])
         
-        summary_text = "# Research Summary\\n\\n"
-        summary_text += "## Key Findings\\n"
-        for i, finding in enumerate(findings, 1):
-            summary_text += f"{i}. {finding}\\n"
-        
-        summary_text += f"\\n## Insights\\n{content.get('insights', 'No insights available')}"
-        
-        return {
-            "summary": summary_text,
-            "word_count": len(summary_text.split()),
-            "confidence": content.get("confidence", 0.8)
-        }
+        try:
+            # Use AI for summarization
+            registry = ModelRegistry()
+            model = registry.get_model("gpt-4o-mini") or registry.get_model("claude-3-5-haiku-20241022")
+            
+            if model:
+                prompt = f"""Create a research summary based on:
+
+Findings: {json.dumps(findings)}
+Insights: {content.get('insights', 'No insights available')}
+Source Types: {content.get('source_types', [])}
+
+Format as a markdown report with Key Findings and Insights sections."""
+                
+                summary_text = await model.generate(prompt, max_tokens=300, temperature=0.3)
+                
+                # Ensure markdown formatting
+                if not summary_text.startswith("#"):
+                    summary_text = "# Research Summary\\n\\n" + summary_text
+                
+                return {
+                    "summary": summary_text,
+                    "word_count": len(summary_text.split()),
+                    "confidence": content.get("confidence", 0.8),
+                    "ai_generated": True
+                }
+            else:
+                raise Exception("No AI model available")
+                
+        except Exception as e:
+            print(f"Summarization error: {e}, using fallback")
+            # Fallback summary
+            summary_text = "# Research Summary\\n\\n"
+            summary_text += "## Key Findings\\n"
+            for i, finding in enumerate(findings, 1):
+                summary_text += f"{i}. {finding}\\n"
+            
+            summary_text += f"\\n## Insights\\n{content.get('insights', 'No insights available')}"
+            
+            return {
+                "summary": summary_text,
+                "word_count": len(summary_text.split()),
+                "confidence": content.get("confidence", 0.8)
+            }
     
     # Code optimization actions
     async def _analyze_code(self, task):
@@ -660,3 +692,84 @@ def test_test_data_files_exist():
         # Mark as expected but don't fail if missing, just warn
         if not filepath.exists():
             pytest.warns(UserWarning, f"Test data file missing: {filename}")
+
+
+# Run tests directly
+if __name__ == "__main__":
+    async def main():
+        """Run tests directly without pytest."""
+        print("Running Real-World Pipeline Integration Tests")
+        print("=" * 60)
+        
+        # Set up orchestrator
+        control_system = RealDataControlSystem()
+        orchestrator = Orchestrator(control_system=control_system)
+        
+        # Set up real model
+        registry = ModelRegistry()
+        real_model = None
+        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
+            try:
+                real_model = registry.get_model(model_id)
+                if real_model:
+                    print(f"Using {model_id} for AUTO resolution")
+                    break
+            except:
+                continue
+        
+        if real_model:
+            orchestrator.yaml_compiler.ambiguity_resolver.model = real_model
+        else:
+            print("WARNING: No real model available for AUTO resolution")
+        
+        # Test 1: Simple Research Pipeline
+        print("\n1. Testing Simple Research Pipeline...")
+        try:
+            success, results = await run_pipeline_test(
+                orchestrator,
+                "simple_research.yaml",
+                {"topic": "Python asyncio programming"},
+                ["summarize"]
+            )
+            print(f"   {'✅ PASS' if success else '❌ FAIL'}")
+        except Exception as e:
+            print(f"   ❌ FAIL: {e}")
+        
+        # Test 2: Code Optimization Pipeline
+        print("\n2. Testing Code Optimization Pipeline...")
+        try:
+            success, results = await run_pipeline_test(
+                orchestrator,
+                "code_optimization.yaml",
+                {
+                    "code_path": "test_data/sample_code.py",
+                    "optimization_level": "performance",
+                    "language": "python"
+                },
+                ["create_report", "generate_fixes"]
+            )
+            print(f"   {'✅ PASS' if success else '❌ FAIL'}")
+        except Exception as e:
+            print(f"   ❌ FAIL: {e}")
+        
+        # Test 3: Data Processing Pipeline
+        print("\n3. Testing Data Processing Pipeline...")
+        try:
+            success, results = await run_pipeline_test(
+                orchestrator,
+                "data_processing.yaml",
+                {
+                    "data_source": "test_data/sample_data.csv",
+                    "processing_mode": "batch",
+                    "error_tolerance": 0.1
+                },
+                ["data_export", "generate_report"]
+            )
+            print(f"   {'✅ PASS' if success else '❌ FAIL'}")
+        except Exception as e:
+            print(f"   ❌ FAIL: {e}")
+        
+        print("\n" + "=" * 60)
+        print("Real-world pipeline tests completed!")
+    
+    asyncio.run(main())
