@@ -1,13 +1,11 @@
-id,name,age,salary,department,status
-1,John Doe,30,50000,Engineering,active
-2,Jane Smith,25,45000,Marketing,active
-3,,28,52000,Engineering,inactive
-1,John Doe,30,50000,Engineering,active
-4,Bob Johnson,35,,Sales,active
-5,Alice Brown,22,38000,Marketing,pending
-6,Charlie Wilson,40,-60000,Engineering,active
-7,Diana Lee,33,55000,Marketing,active
-8,Eve Davis,29,48000,Sales,inactive
-,Unknown Person,0,0,Unknown,unknown
-9,Frank Miller,45,75000,Engineering,active
-10,Grace Taylor,27,42000,Marketing,active
+date,product,quantity,price,region
+2024-01-15,Widget A,150,29.99,North
+2024-01-16,Widget B,200,39.99,South
+2024-01-17,Widget A,175,29.99,East
+2024-01-18,Widget C,100,49.99,West
+2024-01-19,Widget B,225,39.99,North
+2024-01-20,Widget A,180,29.99,South
+2024-01-21,Widget C,120,49.99,East
+2024-01-22,Widget B,210,39.99,West
+2024-01-23,Widget A,165,29.99,North
+2024-01-24,Widget C,110,49.99,South

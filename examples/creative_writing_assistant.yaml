@@ -70,7 +70,6 @@ steps:
       6. What makes this story unique
       Balance familiarity with originality
     depends_on: [analyze_genre]
-    cache_results: true
     tags: ["creative", "premise"]
 
   # Step 3: Develop main characters
@@ -90,7 +89,6 @@ steps:
       8. Relationships to other characters
       Create 3-5 main characters with depth
     depends_on: [generate_premise]
-    
     timeout: 30.0
     tags: ["characters", "development"]
 
@@ -110,7 +108,6 @@ steps:
       8. Languages and naming conventions
       Ensure consistency and originality
     depends_on: [generate_premise]
-    
     condition: "{{include_worldbuilding}} == true and {{genre}} in ['fantasy', 'sci-fi', 'dystopian']"
     tags: ["worldbuilding", "setting"]
 
@@ -141,7 +138,6 @@ steps:
       - Denouement
       Include subplots and pacing
     depends_on: [develop_characters]
-    cache_results: true
     tags: ["plot", "structure"]
 
   # Step 6: Generate chapter outlines
@@ -161,7 +157,6 @@ steps:
       8. Word count target
       Ensure proper pacing and flow
     depends_on: [design_plot]
-    
     tags: ["outline", "chapters"]
 
   # Step 7: Write opening scene
@@ -180,7 +175,6 @@ steps:
       6. Uses vivid sensory details
       Write 500-1000 words
     depends_on: [outline_chapters]
-    
     timeout: 45.0
     tags: ["writing", "opening"]
 
@@ -202,7 +196,15 @@ steps:
       7. Scene resolution
       Maintain consistent voice
     depends_on: [outline_chapters]
-      
+    condition: "{{write_detailed_chapters}} == true"
+    tags: ["writing", "scenes"]
+    
+  # Step 9: Generate dialogue
+  - id: generate_dialogue
+    action: |
+      <AUTO>write authentic dialogue:
+      Characters: {{develop_characters.result}}
+      Scene context: {{write_key_scenes.result}}
       For each conversation:
       1. Match character voice
       2. Reveal personality
@@ -214,7 +216,14 @@ steps:
       
       Make each character distinct</AUTO>
     depends_on: [write_key_scenes]
-      
+    tags: ["dialogue", "character-voice"]
+    
+  # Step 10: Enhance descriptions
+  - id: enhance_descriptions
+    action: |
+      <AUTO>enhance scene descriptions:
+      Current scenes: {{write_key_scenes.result}}
+      Dialogue: {{generate_dialogue.result}}
       Add:
       1. Sensory details (all five senses)
       2. Atmospheric elements
@@ -225,7 +234,6 @@ steps:
       
       Balance description with action</AUTO>
     depends_on: [generate_dialogue]
-    tags: ["description", "atmosphere"]
 
   # Step 11: Check narrative consistency
   - id: check_consistency
@@ -246,7 +254,6 @@ steps:
       8. Motivation alignment
       Return issues and fixes
     depends_on: [enhance_descriptions]
-    
     tags: ["consistency", "editing"]
 
   # Step 12: Apply consistency fixes
@@ -257,7 +264,6 @@ steps:
       Issues: {{check_consistency.result.issues}}
       Fix all identified problems while maintaining story flow
     depends_on: [check_consistency]
-    
     condition: "{{check_consistency.result.issues_found}} > 0"
     tags: ["fixes", "editing"]
 
@@ -278,7 +284,6 @@ steps:
       7. Enhance imagery
       Maintain author voice
     depends_on: [apply_fixes, enhance_descriptions]
-    
     tags: ["polish", "style"]
 
   # Step 14: Create chapter endings
@@ -294,7 +299,6 @@ steps:
       5. Promise of what's next
       Keep readers turning pages
     depends_on: [polish_writing]
-    
     tags: ["cliffhangers", "pacing"]
 
   # Step 15: Generate story bible
@@ -314,7 +318,6 @@ steps:
       10. Series potential
       Organize for easy reference
     depends_on: [create_cliffhangers]
-    
     tags: ["bible", "reference"]
 
   # Step 16: Create title and synopsis
@@ -333,7 +336,6 @@ steps:
       6. Series name (if applicable)
       Make it irresistible
     depends_on: [create_cliffhangers]
-    
     tags: ["title", "marketing"]
 
   # Step 17: Save complete story to file
@@ -341,73 +343,50 @@ steps:
     action: |
       Write the complete creative work to:
       examples/output/story_{{generate_title.result.title | default(genre) | replace(' ', '_') | lower}}.md
-      
       # {{generate_title.result.title | default('Untitled Story')}}
       {% if generate_title.result.subtitle %}
       ## {{generate_title.result.subtitle}}
       {% endif %}
-      
       *A {{genre}} {{length}} by AI Creative Writing Assistant*
       *Generated on: {{execution.timestamp}}*
       *Model: Anthropic Claude 3 Sonnet*
-      
       ---
-      
       ## Synopsis
-      
       {{generate_title.result.synopsis}}
-      
       ## Story Details
-      
       - **Genre**: {{genre}}
       - **Length**: {{length}}
       - **Word Count**: {{create_cliffhangers.result.total_words | default('N/A')}}
       - **Chapters**: {{create_cliffhangers.result.chapters.length | default('N/A')}}
       - **Writing Style**: {{writing_style}}
       - **Target Audience**: {{target_audience}}
-      
       ## Characters
-      
       {{develop_characters.result}}
-      
       ## World Building
-      
       {{build_world.result}}
-      
       ## The Story
-      
       {{create_cliffhangers.result}}
-      
       ## Story Bible
-      
       {{create_story_bible.result}}
-      
       ## Back Cover Copy
-      
       {{generate_title.result.back_cover}}
-      
       ---
       *This story was generated by the Orchestrator Creative Writing Assistant*
     depends_on: [generate_title, create_story_bible]
-    tags: ["output", "file-save"]
 
 
   - id: save_output
     action: |
       Save the following content to examples/output/creative_writing_assistant.md:
-      
       # Creative Writing Assistant
-      
       *Generated on: {{execution.timestamp}}*
       *Pipeline: creative_writing_assistant*
-      
       ## Output
-      
       {{complete_story.result}}
-      
       ---
       *Generated by Orchestrator Creative Writing Assistant Pipeline*
     depends_on: [complete_story]
+
 outputs:
   title: "{{generate_title.result.title}}"
   subtitle: "{{generate_title.result.subtitle}}"

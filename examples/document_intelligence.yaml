@@ -79,7 +79,13 @@ steps:
       6. Estimated complexity
       Return classification with confidence
     depends_on: [discover_documents]
-      
+    tags: ["classification", "ml"]
+    
+  # Step 3: Extract text content
+  - id: extract_text
+    action: |
+      <AUTO>extract text from document {{loop_item}}:
+      Document type: {{loop_item.classification}}
       Extract:
       1. Full text content
       2. Page-by-page text
@@ -94,7 +100,13 @@ steps:
       
       Return extracted text with metadata</AUTO>
     depends_on: [classify_documents]
-      
+    tags: ["extraction", "ocr"]
+    
+  # Step 4: Analyze document structure
+  - id: analyze_structure
+    action: |
+      <AUTO>analyze document structure:
+      Text content: {{extract_text.result}}
       Identify:
       1. Headers and sections
       2. Paragraphs and body text
@@ -108,7 +120,13 @@ steps:
       
       Return document structure analysis</AUTO>
     depends_on: [extract_text]
-      
+    tags: ["structure", "layout"]
+    
+  # Step 5: Extract tables
+  - id: extract_tables
+    action: |
+      <AUTO>extract and parse tables:
+      Document structure: {{analyze_structure.result}}
       For each table:
       1. Extract table structure (rows, columns)
       2. Identify headers
@@ -119,8 +137,14 @@ steps:
       
       Return structured table data</AUTO>
     depends_on: [analyze_structure]
-    condition: "{{extract_tables}} == true"
-      
+    condition: "{{analyze_structure.result.table_count}} > 0"
+    tags: ["tables", "data"]
+    
+  # Step 6: Extract entities
+  - id: extract_entities
+    action: |
+      <AUTO>extract named entities from text:
+      Text content: {{extract_text.result}}
       Extract:
       1. Person names
       2. Organization names
@@ -142,7 +166,13 @@ steps:
       
       Return entities with metadata</AUTO>
     depends_on: [extract_text]
-      
+    tags: ["entities", "nlp"]
+    
+  # Step 7: Detect PII
+  - id: detect_pii
+    action: |
+      <AUTO>detect personally identifiable information:
+      Text content: {{extract_text.result}}
       Detect:
       1. Social security numbers
       2. Credit card numbers
@@ -161,7 +191,14 @@ steps:
       
       Return PII findings and compliance report</AUTO>
     depends_on: [extract_text]
-      
+    tags: ["pii", "compliance"]
+    
+  # Step 8: Analyze content
+  - id: analyze_content
+    action: |
+      <AUTO>analyze document content and meaning:
+      Text: {{extract_text.result}}
+      Entities: {{extract_entities.result}}
       Analyze:
       1. Main topics and themes
       2. Key points and findings
@@ -173,7 +210,13 @@ steps:
       
       Return comprehensive content analysis</AUTO>
     depends_on: [extract_entities]
-      
+    tags: ["analysis", "insights"]
+    
+  # Step 9: Generate summary
+  - id: generate_summary
+    action: |
+      <AUTO>generate document summary:
+      Content analysis: {{analyze_content.result}}
       Create summary that:
       1. Captures main purpose
       2. Lists key findings
@@ -187,7 +230,14 @@ steps:
       
       Return summary with metadata</AUTO>
     depends_on: [analyze_content]
-      
+    tags: ["summary", "abstract"]
+    
+  # Step 10: Extract relationships
+  - id: extract_relationships
+    action: |
+      <AUTO>extract entity relationships:
+      Entities: {{extract_entities.result}}
+      Content: {{analyze_content.result}}
       Find relationships:
       1. Person to organization
       2. Organization hierarchies
@@ -199,7 +249,6 @@ steps:
       
       Return relationship graph</AUTO>
     depends_on: [extract_entities, analyze_content]
-    condition: "{{build_knowledge_graph}} == true"
     tags: ["relationships", "graph"]
 
   # Step 11: Build knowledge graph
@@ -222,7 +271,6 @@ steps:
       - Important paths
       Return knowledge graph structure
     depends_on: [extract_relationships]
-    
     condition: "{{build_knowledge_graph}} == true"
     tags: ["knowledge-graph", "network"]
 
@@ -245,7 +293,6 @@ steps:
       8. Process improvements
       Return prioritized insights list
     depends_on: [analyze_content, build_knowledge_graph]
-    
     tags: ["insights", "analytics"]
 
   # Step 13: Create compliance report
@@ -264,7 +311,6 @@ steps:
       6. Recommended actions
       Return compliance report
     depends_on: [detect_pii, analyze_content]
-    
     tags: ["compliance", "reporting"]
 
   # Step 14: Generate final intelligence report
@@ -284,7 +330,6 @@ steps:
       Format: {{output_format}}
       Return complete intelligence report
     depends_on: [generate_insights, create_compliance_report]
-    
     tags: ["reporting", "final"]
 
   # Step 15: Save outputs
@@ -309,7 +354,6 @@ steps:
       - /visualizations
       Return output locations
     depends_on: [create_intelligence_report]
-    
     tags: ["output", "save"]
 
 outputs:

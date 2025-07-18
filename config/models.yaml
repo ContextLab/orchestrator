@@ -59,20 +59,20 @@ models:
       timeout: 30.0
   
   # Google Models
-  gemini-1.5-pro:
+  gemini-2.5-pro:
     provider: google
     type: google
     config:
-      model_name: gemini-1.5-pro
+      model_name: gemini-2.5-pro
       api_key: "${GOOGLE_AI_API_KEY}"
       max_retries: 3
       timeout: 30.0
       
-  gemini-1.5-flash:
+  gemini-2.5-flash:
     provider: google
     type: google
     config:
-      model_name: gemini-1.5-flash
+      model_name: gemini-2.5-flash
       api_key: "${GOOGLE_AI_API_KEY}"
       max_retries: 3
       timeout: 30.0

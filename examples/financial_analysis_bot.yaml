@@ -42,23 +42,27 @@ steps:
   # Step 1: Collect market data
   - id: collect_market_data
     action: |
-      fetch market data for symbol {{loop_item}}:            Timeframe: {{timeframe}}                        Collect:            1. Price data (OHLCV)            2. Volume statistics            3. Market cap and shares outstanding            4. Fundamental data (if equity)            5. Recent splits and dividends            6. Sector and industry info                        Use best available data source            Handle missing data appropriately                        Return complete market dataset      
+      fetch market data for symbol {{loop_item}}:            Timeframe: {{timeframe}}                        Collect:            1. Price data (OHLCV)            2. Volume statistics            3. Market cap and shares outstanding            4. Fundamental data (if equity)            5. Recent splits and dividends            6. Sector and industry info                        Use best available data source            Handle missing data appropriately                        Return complete market dataset
       Calculate indicators:
       1. Trend: SMA(20,50,200), EMA(12,26), MACD
       2. Momentum: RSI(14), Stochastic, Williams %R
       3. Volatility: Bollinger Bands, ATR, Keltner Channels
       4. Volume: OBV, Volume Profile, VWAP
       5. Advanced: Ichimoku Cloud, ADX, Fibonacci levels
-      
       Detect patterns:
       1. Chart patterns (head-shoulders, triangles, flags)
       2. Candlestick patterns (doji, hammer, engulfing)
       3. Support and resistance levels
       4. Trend lines and channels
-      
       Return indicators and patterns with signals</AUTO>
     depends_on: [collect_market_data]
-      
+    tags: ["technical", "indicators"]
+    
+  # Step 3: Fundamental analysis
+  - id: fundamental_analysis
+    action: |
+      <AUTO>perform fundamental analysis for {{loop_item}}:
+      Financial data: {{collect_market_data.result[loop_item].fundamentals}}
       Calculate metrics:
       1. Valuation: P/E, P/B, P/S, EV/EBITDA, PEG
       2. Profitability: ROE, ROA, ROIC, Margins
@@ -73,7 +77,14 @@ steps:
       
       Return fundamental scores and analysis</AUTO>
     depends_on: [collect_market_data]
-    condition: "{{asset_type}} == 'equity'"
+    condition: "{{include_fundamentals}} == true"
+    tags: ["fundamental", "valuation"]
+    
+  # Step 4: Sentiment analysis
+  - id: sentiment_analysis
+    action: |
+      <AUTO>analyze market sentiment for {{loop_item}}:
+      Ticker: {{loop_item}}
       Sources to analyze:
       1. Recent news headlines (last 7 days)
       2. Social media mentions (Twitter, Reddit)
@@ -92,7 +103,14 @@ steps:
       
       Return sentiment analysis with key drivers</AUTO>
     depends_on: [collect_market_data]
-      
+    tags: ["sentiment", "news"]
+    
+  # Step 5: Risk assessment
+  - id: risk_assessment
+    action: |
+      <AUTO>assess portfolio risk metrics:
+      Holdings: {{symbols}}
+      Market data: {{collect_market_data.result}}
       Calculate:
       1. Individual volatility (daily, annualized)
       2. Beta vs market benchmark
@@ -110,7 +128,6 @@ steps:
       
       Return comprehensive risk profile</AUTO>
     depends_on: [collect_market_data]
-    timeout: 30.0
     tags: ["risk", "portfolio"]
 
   # Step 6: Generate price predictions
@@ -134,9 +151,15 @@ steps:
       Use ensemble of methods
       Return predictions with uncertainty
     depends_on: [technical_analysis, sentiment_analysis]
-    
     condition: "{{include_predictions}} == true"
-      
+    tags: ["prediction", "ml"]
+    
+  # Step 7: Portfolio optimization
+  - id: portfolio_optimization
+    action: |
+      <AUTO>optimize portfolio allocation:
+      Assets: {{symbols}}
+      Risk profiles: {{risk_assessment.result}}
       Optimize for:
       1. Maximum Sharpe ratio
       2. Minimum variance
@@ -152,7 +175,6 @@ steps:
       
       Return optimal weights and metrics</AUTO>
     depends_on: [risk_assessment]
-    condition: "{{symbols|length}} > 1"
     tags: ["portfolio", "optimization"]
 
   # Step 8: Generate trading signals
@@ -178,7 +200,14 @@ steps:
       6. Position sizing
       Return actionable trading signals
     depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
-      
+    tags: ["signals", "trading"]
+    
+  # Step 9: Backtest strategy
+  - id: backtest_strategy
+    action: |
+      <AUTO>backtest trading strategy:
+      Signals: {{generate_signals.result}}
+      Historical data: {{collect_market_data.result}}
       Test parameters:
       1. Initial capital: $100,000
       2. Commission: 0.1%
@@ -198,7 +227,6 @@ steps:
       
       Return backtest performance report</AUTO>
     depends_on: [generate_signals]
-    condition: "{{run_backtest}} == true"
     tags: ["backtest", "performance"]
 
   # Step 10: Analyze correlations
@@ -218,7 +246,6 @@ steps:
       3. Hedging possibilities
       Return correlation insights
     depends_on: [collect_market_data]
-    
     condition: "{{symbols|length}} > 1"
     tags: ["correlation", "relationships"]
 
@@ -240,7 +267,6 @@ steps:
       3. Confidence level
       Return top 10 actionable insights
     depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
-    
     tags: ["insights", "synthesis"]
 
   # Step 12: Create financial report
@@ -280,7 +306,6 @@ steps:
       Include charts and visualizations
       Return formatted report
     depends_on: [generate_insights]
-    
     tags: ["report", "output"]
 
   # Step 13: Create visualizations
@@ -301,7 +326,6 @@ steps:
       Interactive where possible
       Return visualization package
     depends_on: [generate_report]
-    
     tags: ["visualization", "charts"]
 
   # Step 14: Save analysis report
@@ -309,96 +333,62 @@ steps:
     action: |
       Write comprehensive financial analysis to:
       examples/output/financial_analysis_{{symbols | join('_') | replace(' ', '') | lower}}.md
-      
       # Financial Analysis Report
-      
       *Generated on: {{collect_market_data.result.timestamp | default(execution.timestamp)}}*
       *Model: OpenAI GPT-4 Turbo*
-      
       ## Executive Summary
-      
       {{generate_report.result | regex_search('Executive Summary(.+?)Market Analysis', '\\1') | default('See full report below')}}
-      
       ## Symbols Analyzed
-      
       {{symbols | join(', ')}}
-      
       ## Market Overview
-      
       {{collect_market_data.result}}
-      
       ## Technical Analysis
-      
       {{technical_analysis.result}}
-      
       ## Sentiment Analysis
-      
       {{sentiment_analysis.result}}
-      
       ## Risk Assessment
-      
       {{risk_assessment.result}}
-      
       {% if predictive_modeling.result %}
       ## Price Predictions
-      
       {{predictive_modeling.result}}
       {% endif %}
-      
       {% if portfolio_optimization.result %}
       ## Portfolio Optimization
-      
       {{portfolio_optimization.result}}
       {% endif %}
-      
       ## Trading Signals
-      
       {{generate_signals.result}}
-      
       {% if backtest_strategies.result %}
       ## Backtest Results
-      
       {{backtest_strategies.result}}
       {% endif %}
-      
       ## Key Insights
-      
       {{generate_insights.result}}
-      
       ## Full Report
-      
       {{generate_report.result}}
-      
       ## Analysis Parameters
-      
       - **Analysis Type**: {{analysis_type}}
       - **Time Period**: {{time_period}}
       - **Backtest Period**: {{backtest_period | default('N/A')}}
       - **Include Fundamentals**: {{include_fundamentals}}
-      
       ---
       *This analysis was generated by the Orchestrator Financial Analysis Bot*
       *Disclaimer: This is AI-generated analysis and should not be used as sole investment advice*
     depends_on: [generate_report, create_visualizations]
-    tags: ["output", "file-save"]
 
 
   - id: save_output
     action: |
       Save the following content to examples/output/financial_analysis_bot.md:
-      
       # Financial Analysis Bot
-      
       *Generated on: {{execution.timestamp}}*
       *Pipeline: financial_analysis_bot*
-      
       ## Output
-      
       {{generate_report.result}}
-      
       ---
       *Generated by Orchestrator Financial Analysis Bot Pipeline*
     depends_on: [generate_report]
+
 outputs:
   symbols_analyzed: "{{symbols}}"
   analysis_date: "{{collect_market_data.result.timestamp}}"
