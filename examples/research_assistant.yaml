@@ -1,6 +1,6 @@
 name: "Research Assistant Pipeline"
 description: "Comprehensive research assistant using declarative YAML framework"
-model: "google/gemini-2.0-flash-exp"
+model: "google/gemini-2.5-flash"
 
 inputs:
   query:
@@ -44,8 +44,9 @@ steps:
       depends_on: [analyze_query]
     
     on_error:
-      action: |        use alternative search strategies or reduce the number of sources      continue_on_error: true
-      retry_count: 2
+      action: |
+            use alternative search strategies or reduce the number of sources      continue_on_error: true
+            retry_count: 2
     timeout: 30.0
     tags: ["search", "data-collection"]
 
@@ -113,8 +114,9 @@ steps:
       depends_on: [synthesize_findings]
     
     on_error:
-      action: |        generate a simplified report with available information      continue_on_error: true
-      fallback_value: "Unable to generate complete report - see partial results"
+      action: |
+            generate a simplified report with available information      continue_on_error: true
+            fallback_value: "Unable to generate complete report - see partial results"
     timeout: 45.0
     tags: ["report", "output"]
 

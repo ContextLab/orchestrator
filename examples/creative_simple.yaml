@@ -1,6 +1,6 @@
 name: "Creative Writer Simple"
 description: "Simple creative writing pipeline"
-model: "anthropic/claude-3-5-sonnet-20241022"
+model: "anthropic/claude-sonnet-4-20250514"
 
 inputs:
   theme:
@@ -26,8 +26,8 @@ steps:
       3. Setting
       4. Unique hook
       
-  - id: create_characters
-    action: |
+          - id: create_characters
+          action: |
       Develop main characters for:
       {{develop_premise.result}}
       

@@ -1,6 +1,6 @@
 name: "Data Processing Workflow"
 description: "Scalable data processing pipeline with validation, transformation, and analysis"
-model: "ollama/llama3.2"
+model: "anthropic/claude-sonnet-4-20250514"
 
 inputs:
   source:
@@ -81,8 +81,9 @@ steps:
     depends_on: [profile_data]
     condition: "{{profile_data.result.average_quality_score}} >= {{quality_threshold}}"
     on_error:
-      action: |        log problematic records and continue with valid data      continue_on_error: true
-      retry_count: 2
+      action: |
+            log problematic records and continue with valid data      continue_on_error: true
+            retry_count: 2
     tags: ["cleaning", "transformation"]
 
   # Step 5: Enrich data
@@ -144,8 +145,8 @@ steps:
     timeout: 300.0  # 5 minutes for large exports
     on_error:
       action: |
-      retry with smaller chunk size or fallback format
-      retry_count: 3
+            retry with smaller chunk size or fallback format
+            retry_count: 3
     
     tags: ["export", "output"]
 

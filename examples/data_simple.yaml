@@ -1,6 +1,6 @@
 name: "Data Processor Simple"
 description: "Simple data processing pipeline"
-model: "ollama/llama3.2"
+model: "anthropic/claude-sonnet-4-20250514"
 
 inputs:
   data_source:
@@ -21,8 +21,8 @@ steps:
       3. Column/field names
       4. Data types
       
-  - id: analyze_data
-    action: |
+          - id: analyze_data
+          action: |
       Analyze the data:
       
       Data info: {{load_data.result}}

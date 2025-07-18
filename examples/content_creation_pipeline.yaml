@@ -1,6 +1,6 @@
 name: "Content Creation Pipeline"
 description: "Multi-format content creation with optimization and distribution using declarative YAML"
-model: "huggingface/meta-llama/Llama-3.2-3B-Instruct".2"
+model: "anthropic/claude-sonnet-4-20250514".2"
 
 inputs:
   topic:
@@ -205,8 +205,8 @@ steps:
     condition: "{{auto_publish}} == true"
     on_error:
       action: |
-      save content locally and provide manual publishing instructions
-      continue_on_error: true
+            save content locally and provide manual publishing instructions
+            continue_on_error: true
     
     tags: ["publishing", "distribution"]
 

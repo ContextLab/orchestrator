@@ -1,6 +1,6 @@
 name: "Research Assistant Simple"
 description: "Simple research pipeline that works"
-model: "google/gemini-2.0-flash-exp"
+model: "google/gemini-2.5-flash"
 
 inputs:
   query:
@@ -21,8 +21,8 @@ steps:
       3. Expected information types
       4. Related topics
     
-  - id: conduct_research
-    action: |
+          - id: conduct_research
+          action: |
       Research the topic: {{query}}
       Search depth: {{depth}}
       

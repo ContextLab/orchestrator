@@ -68,7 +68,14 @@ outputs:
 
 2. **Run the pipeline**:
 
-```python
+```bash
+# Using the CLI script
+python scripts/run_pipeline.py hello_world.yaml
+
+# With inputs
+python scripts/run_pipeline.py hello_world.yaml -i name=World -i language=Spanish
+
+# Or programmatically
 import orchestrator as orc
 
 # Initialize models (auto-detects available models)
@@ -94,6 +101,41 @@ steps:
       method: <AUTO>Choose the best analysis method for this data type</AUTO>
       visualization: <AUTO>Decide if we should create a chart</AUTO>
 ```
+
+## Recent Improvements
+
+### Enhanced Template Rendering
+- Proper rendering of `{{ variable }}` patterns in all outputs
+- Support for nested variables like `{{ task.result }}`
+- Jinja2-style templates with loops and conditionals
+- Special variables like `{{ execution.timestamp }}`
+
+### Reliable Tool Execution
+- Guaranteed execution of file save operations
+- Proper handling of tool calls vs. prompts
+- Enhanced control system for tool-aware execution
+- LangChain structured outputs for consistent tool responses
+- Automatic parsing and validation of tool parameters
+
+### Simplified Pipeline Execution
+```bash
+# Run any pipeline with one command
+python scripts/run_pipeline.py pipeline.yaml
+
+# Pass inputs via command line
+python scripts/run_pipeline.py pipeline.yaml -i topic="AI Safety" -i depth=comprehensive
+
+# Or from a JSON file
+python scripts/run_pipeline.py pipeline.yaml -f inputs.json -o output_dir/
+```
+
+### Updated Model Support
+All pipelines now use the latest, highest-quality models:
+- **OpenAI**: GPT-4.1 (latest)
+- **Anthropic**: Claude Sonnet 4 (claude-sonnet-4-20250514)
+- **Google**: Gemini 2.5 Flash (gemini-2.5-flash)
+- **Ollama**: Gemma3 27B (gemma3:27b)
+- **HuggingFace**: Mistral 7B Instruct v0.3 (mistralai/Mistral-7B-Instruct-v0.3)
 
 ## Model Configuration
 

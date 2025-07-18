@@ -1,6 +1,6 @@
 name: "Content Creator Simple"
 description: "Simple content creation pipeline"
-model: "huggingface/meta-llama/Llama-3.2-3B-Instruct"
+model: "anthropic/claude-sonnet-4-20250514"
 
 inputs:
   topic:
@@ -24,8 +24,8 @@ steps:
       3. Target audience interests
       4. Related topics
       
-  - id: create_outline
-    action: |
+          - id: create_outline
+          action: |
       Create content outline for: {{topic}}
       Target audience: {{audience}}
       

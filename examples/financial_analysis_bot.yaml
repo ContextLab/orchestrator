@@ -1,6 +1,6 @@
 name: "Financial Analysis Bot"
 description: "AI-powered financial analysis with market data, technical indicators, and predictions"
-model: "openai/gpt-4o"
+model: "anthropic/claude-sonnet-4-20250514"
 
 inputs:
   symbols:
@@ -41,7 +41,8 @@ inputs:
 steps:
   # Step 1: Collect market data
   - id: collect_market_data
-    action: |      fetch market data for symbol {{loop_item}}:            Timeframe: {{timeframe}}                        Collect:            1. Price data (OHLCV)            2. Volume statistics            3. Market cap and shares outstanding            4. Fundamental data (if equity)            5. Recent splits and dividends            6. Sector and industry info                        Use best available data source            Handle missing data appropriately                        Return complete market dataset      
+    action: |
+      fetch market data for symbol {{loop_item}}:            Timeframe: {{timeframe}}                        Collect:            1. Price data (OHLCV)            2. Volume statistics            3. Market cap and shares outstanding            4. Fundamental data (if equity)            5. Recent splits and dividends            6. Sector and industry info                        Use best available data source            Handle missing data appropriately                        Return complete market dataset      
       Calculate indicators:
       1. Trend: SMA(20,50,200), EMA(12,26), MACD
       2. Momentum: RSI(14), Stochastic, Williams %R

@@ -1,6 +1,6 @@
 name: "Code Analysis Simple"
 description: "Simple code analysis pipeline"
-model: "openai/gpt-4o"
+model: "anthropic/claude-sonnet-4-20250514"
 
 inputs:
   code_path:
@@ -22,8 +22,8 @@ steps:
       3. Dependencies
       4. Entry points
       
-  - id: check_quality
-    action: |
+          - id: check_quality
+          action: |
       Analyze code quality:
       
       Structure: {{analyze_structure.result}}
