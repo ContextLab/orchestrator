@@ -15,7 +15,7 @@ class StateManager:
     without the complexity of the backend architecture.
     """
 
-    def __init__(self, storage_path: str = "./checkpoints"):
+    def __init__(self, storage_path: str = "./checkpoints") -> None:
         """
         Initialize state manager with storage path.
 
@@ -25,13 +25,13 @@ class StateManager:
         self.storage_path = storage_path
         self._ensure_storage_path()
 
-    def _ensure_storage_path(self):
+    def _ensure_storage_path(self) -> None:
         """Ensure storage directory exists."""
         if not os.path.exists(self.storage_path):
             os.makedirs(self.storage_path, exist_ok=True)
 
     async def save_checkpoint(
-        self, execution_id: str, state: Dict[str, Any], metadata: Dict[str, Any] = None
+        self, execution_id: str, state: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Save pipeline state checkpoint.
@@ -66,7 +66,7 @@ class StateManager:
         return checkpoint_id
 
     async def restore_checkpoint(
-        self, execution_id: str, checkpoint_id: str = None
+        self, execution_id: str, checkpoint_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Restore pipeline state from checkpoint.
@@ -259,13 +259,13 @@ class InMemoryStateManager:
     In-memory state manager for testing and temporary use.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize in-memory state manager."""
         self._checkpoints = {}
         self._execution_checkpoints = {}
 
     async def save_checkpoint(
-        self, execution_id: str, state: Dict[str, Any], metadata: Dict[str, Any] = None
+        self, execution_id: str, state: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """Save checkpoint in memory."""
         timestamp = int(time.time())
@@ -289,7 +289,7 @@ class InMemoryStateManager:
         return checkpoint_id
 
     async def restore_checkpoint(
-        self, execution_id: str, checkpoint_id: str = None
+        self, execution_id: str, checkpoint_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Restore checkpoint from memory."""
         if checkpoint_id is None:

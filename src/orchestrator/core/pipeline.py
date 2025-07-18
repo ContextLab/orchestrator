@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import time
-from collections import defaultdict, deque
+from collections import defaultdict
+from typing import Dict, List, Any, Optional, Set, Tuple, Iterator
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .task import Task, TaskStatus
 
@@ -323,7 +323,7 @@ class Pipeline:
                 reverse_graph[task_id].append(dep)
 
         # Find longest path using DFS
-        memo = {}
+        memo: Dict[str, Any] = {}
 
         def longest_path(task_id: str) -> Tuple[int, List[str]]:
             if task_id in memo:
@@ -375,7 +375,7 @@ class Pipeline:
     def from_dict(cls, data: Dict[str, Any]) -> Pipeline:
         """Create pipeline from dictionary representation."""
         # Convert tasks back to Task objects
-        tasks = {}
+        tasks: Dict[str, Any] = {}
         if "tasks" in data:
             for task_id, task_data in data["tasks"].items():
                 tasks[task_id] = Task.from_dict(task_data)
@@ -395,7 +395,7 @@ class Pipeline:
         """Check if task exists in pipeline."""
         return task_id in self.tasks
 
-    def __iter__(self):
+    def __iter__(self) -> None:
         """Iterate over task IDs."""
         return iter(self.tasks)
 

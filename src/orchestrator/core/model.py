@@ -348,7 +348,7 @@ class MockModel(Model):
 
         super().__init__(name, provider, capabilities, **kwargs)
         self._is_available = True
-        self._responses = {}
+        self._responses: Dict[str, Any] = {}
 
     def set_response(self, prompt: str, response: Union[str, Dict[str, Any]]) -> None:
         """Set canned response for a prompt."""

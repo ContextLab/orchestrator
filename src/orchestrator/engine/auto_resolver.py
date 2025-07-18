@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class EnhancedAutoResolver:
     """AI-powered resolution of abstract task descriptions into executable prompts."""
     
-    def __init__(self, model: Optional[Model] = None):
+    def __init__(self, model: Optional[Model] = None) -> None:
         self.model = model
         self.action_patterns = self._build_action_patterns()
         self.tool_mappings = self._build_tool_mappings()

@@ -25,7 +25,7 @@ class TemplateRenderer:
     @staticmethod
     def _render_simple(text: str, context: Dict[str, Any]) -> str:
         """Render simple {{variable}} style templates."""
-        def replace_var(match):
+        def replace_var(match) -> str:
             var_expr = match.group(1).strip()
             
             # Special variables
@@ -58,7 +58,7 @@ class TemplateRenderer:
         # Handle {% for %} loops
         for_pattern = r'\{%\s*for\s+(\w+)\s+in\s+([^%]+)\s*%\}(.*?)\{%\s*endfor\s*%\}'
         
-        def replace_for(match):
+        def replace_for(match) -> str:
             var_name = match.group(1)
             collection_expr = match.group(2).strip()
             loop_body = match.group(3)
@@ -83,7 +83,7 @@ class TemplateRenderer:
         # Handle {% if %} conditions
         if_pattern = r'\{%\s*if\s+([^%]+)\s*%\}(.*?)(?:\{%\s*else\s*%\}(.*?))?\{%\s*endif\s*%\}'
         
-        def replace_if(match):
+        def replace_if(match) -> str:
             condition_expr = match.group(1).strip()
             if_body = match.group(2)
             else_body = match.group(3) or ''

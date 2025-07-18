@@ -12,7 +12,7 @@ class ErrorHandling:
     continue_on_error: bool = False
     retry_count: int = 0
     retry_delay: float = 1.0
-    fallback_value: Any = None
+    fallback_value: Optional[Any] = None
 
 
 @dataclass  
@@ -43,7 +43,7 @@ class TaskSpec:
     cache_results: bool = True
     tags: List[str] = field(default_factory=list)
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate and process task specification."""
         if not self.id:
             raise ValueError("Task ID is required")
@@ -151,7 +151,7 @@ class PipelineSpec:
     steps: List[TaskSpec] = field(default_factory=list)
     config: Dict[str, Any] = field(default_factory=dict)
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate and process pipeline specification."""
         if not self.name:
             raise ValueError("Pipeline name is required")
@@ -172,7 +172,7 @@ class PipelineSpec:
         # Validate dependencies
         self._validate_dependencies()
     
-    def _validate_dependencies(self):
+    def _validate_dependencies(self) -> None:
         """Validate that all dependencies exist and there are no cycles."""
         step_ids = {step.id for step in self.steps}
         
@@ -185,7 +185,7 @@ class PipelineSpec:
         # Check for circular dependencies using topological sort
         self._check_circular_dependencies()
     
-    def _check_circular_dependencies(self):
+    def _check_circular_dependencies(self) -> None:
         """Check for circular dependencies using DFS."""
         visited = set()
         rec_stack = set()

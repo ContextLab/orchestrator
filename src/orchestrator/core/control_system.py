@@ -208,14 +208,14 @@ class MockControlSystem(ControlSystem):
 
     async def execute_pipeline(self, pipeline: Pipeline) -> Dict[str, Any]:
         """Execute a mock pipeline."""
-        results = {}
+        results: Dict[str, Any] = {}
 
         # Get execution levels (groups of tasks that can run in parallel)
         execution_levels = pipeline.get_execution_levels()
 
         # Execute tasks level by level
         for level in execution_levels:
-            level_results = {}
+            level_results: Dict[str, Any] = {}
 
             for task_id in level:
                 task = pipeline.get_task(task_id)
