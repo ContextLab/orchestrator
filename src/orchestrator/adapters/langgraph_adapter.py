@@ -229,7 +229,7 @@ class LangGraphAdapter(ControlSystem):
     async def _execute_task(self, task: Task, state_data: Dict[str, Any]) -> Any:
         """Execute a task within LangGraph context."""
         # This would integrate with the actual Orchestrator execution
-        # For now, return a mock result
+        # For now, return a placeholder result
         return f"Executed {task.id} with state: {state_data}"
 
     async def execute_workflow(

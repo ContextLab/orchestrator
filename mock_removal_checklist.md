@@ -3,31 +3,6 @@
 Every file that mentions 'mock' in any way (including comments, class names, imports, etc.):
 
 
-### 🚨 Production Code - Core
-- [ ] `src/orchestrator/__init__.py` (1 mentions)
-  - Line 189: other mention - `print(">>   ⚠️  No models available - using mock fallback")`
-- [ ] `src/orchestrator/compiler/ambiguity_resolver.py` (1 mentions)
-  - Line 32: other mention - `- Never uses mock models`
-- [ ] `src/orchestrator/core/cache.py` (33 mentions)
-  - Line 844: mock_mode - `mock_mode: bool = False,`
-  - Line 855: mock_mode - `# If mock_mode is enabled or no Redis clients provided, use standard DistributedCache`
-  - Line 856: mock_mode - `if mock_mode or (not redis_client and not sync_redis_client):`
-  - ... and 30 more mentions
-- [ ] `src/orchestrator/core/control_system.py` (10 mentions)
-  - Line 148: MockControlSystem - `class MockControlSystem(ControlSystem):`
-  - Line 149: other mention - `"""Mock control system implementation for testing."""`
-  - Line 153: other mention - `name: str = "mock-control-system",`
-  - ... and 7 more mentions
-- [ ] `src/orchestrator/core/model.py` (12 mentions)
-  - Line 330: MockModel - `class MockModel(Model):`
-  - Line 331: other mention - `"""Mock model implementation for testing."""`
-  - Line 335: other mention - `name: str = "mock-model",`
-  - ... and 9 more mentions
-- [ ] `src/orchestrator/engine/runtime_auto_resolver.py` (1 mentions)
-  - Line 19: other mention - `- Never uses mock implementations`
-- [ ] `src/orchestrator/orchestrator.py` (1 mentions)
-  - Line 10: MockControlSystem - `from .core.control_system import ControlSystem, MockControlSystem`
-
 ### 🚨 Production Code - Other
 - [ ] `src/orchestrator/adapters/langgraph_adapter.py` (1 mentions)
   - Line 232: comment
@@ -36,12 +11,6 @@ Every file that mentions 'mock' in any way (including comments, class names, imp
   - Line 149: other mention
 - [ ] `src/orchestrator/control_systems/model_based_control_system.py` (1 mentions)
   - Line 116: comment
-- [ ] `src/orchestrator/control_systems/research_control_system.py` (2 mentions)
-  - Line 8: MockControlSystem
-  - Line 12: MockControlSystem
-- [ ] `src/orchestrator/control_systems/tool_integrated_control_system.py` (2 mentions)
-  - Line 12: MockControlSystem
-  - Line 18: MockControlSystem
 - [ ] `src/orchestrator/executor/sandboxed_executor.py` (3 mentions)
   - Line 686: comment
   - Line 687: comment
@@ -59,6 +28,7 @@ Every file that mentions 'mock' in any way (including comments, class names, imp
 ### 📚 Documentation
 - [ ] `CONTRIBUTING.md` (2 mentions)
 - [ ] `docs/tutorials/notebooks_README.md` (5 mentions)
+- [ ] `mock_removal_checklist.md` (7 mentions)
 - [ ] `notes/2025-07-18_debugging_session.md` (1 mentions)
 - [ ] `notes/2025-07-18_implementation_progress.md` (6 mentions)
 - [ ] `notes/2025-07-18_session_summary.md` (3 mentions)
@@ -79,7 +49,7 @@ Every file that mentions 'mock' in any way (including comments, class names, imp
 - [ ] ... and 59 more test files
 
 ### 📊 Summary
-- Total files with mock mentions: 94
-- Total mock mentions: 1841
-- Production code files: 13
+- Total files with mock mentions: 86
+- Total mock mentions: 1785
+- Production code files: 4
 - Test files: 69
