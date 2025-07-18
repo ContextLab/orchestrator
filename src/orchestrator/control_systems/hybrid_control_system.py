@@ -51,6 +51,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         """Execute task with support for both models and tools."""
         action_str = str(task.action).lower()
         
+        # Check if this is a simple echo/print operation
+        if self._is_echo_operation(action_str):
+            return await self._handle_echo_operation(task, context)
+        
         # Check if this is a file operation
         if self._is_file_operation(action_str):
             return await self._handle_file_operation(task, context)
@@ -73,6 +77,42 @@ class HybridControlSystem(ModelBasedControlSystem):
             r"save.*to\s+[^\s]+\.(txt|md|json|yaml|yml|csv|html)",   # Save to filename.ext
         ]
         return any(re.search(pattern, action, re.IGNORECASE | re.DOTALL) for pattern in file_patterns)
+    
+    def _is_echo_operation(self, action: str) -> bool:
+        """Check if action is a simple echo/print operation."""
+        echo_patterns = [
+            r"^echo\s+",
+            r"^print\s+",
+            r"^display\s+",
+            r"^show\s+",
+            r"^output\s+",
+        ]
+        return any(re.match(pattern, action, re.IGNORECASE) for pattern in echo_patterns)
+    
+    async def _handle_echo_operation(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle simple echo/print operations."""
+        action_text = str(task.action)
+        
+        # Extract the message to echo (everything after the command)
+        match = re.match(r"^(?:echo|print|display|show|output)\s+(.+)", action_text, re.IGNORECASE | re.DOTALL)
+        if match:
+            message = match.group(1).strip()
+        else:
+            message = action_text
+        
+        # Build template context
+        template_context = self._build_template_context(context)
+        
+        # Resolve templates in message
+        if "{{" in message:
+            message = self._resolve_templates(message, template_context)
+        
+        # Return the echoed message
+        return {
+            "result": message,
+            "status": "success",
+            "action": "echo",
+        }
     
     async def _handle_file_operation(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle file write operations."""

@@ -73,7 +73,7 @@ class Orchestrator:
         self.state_manager = state_manager or StateManager()
 
         # No default models - must be explicitly initialized
-        self.yaml_compiler = yaml_compiler or YAMLCompiler()
+        self.yaml_compiler = yaml_compiler or YAMLCompiler(model_registry=self.model_registry)
         self.error_handler = error_handler or ErrorHandler()
         self.resource_allocator = resource_allocator or ResourceAllocator()
         self.parallel_executor = parallel_executor or ParallelExecutor()

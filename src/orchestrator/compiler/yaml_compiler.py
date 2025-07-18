@@ -10,7 +10,7 @@ from jinja2 import Environment, StrictUndefined
 
 from ..core.pipeline import Pipeline
 from ..core.task import Task
-from .ambiguity_resolver import AmbiguityResolver
+from .ambiguity_resolver_v2 import AmbiguityResolverV2
 from .auto_tag_yaml_parser import AutoTagYAMLParser
 from .schema_validator import SchemaValidator
 
@@ -47,7 +47,8 @@ class YAMLCompiler:
     def __init__(
         self,
         schema_validator: Optional[SchemaValidator] = None,
-        ambiguity_resolver: Optional[AmbiguityResolver] = None,
+        ambiguity_resolver: Optional[AmbiguityResolverV2] = None,
+        model_registry=None,
     ) -> None:
         """
         Initialize YAML compiler.
@@ -55,9 +56,10 @@ class YAMLCompiler:
         Args:
             schema_validator: Schema validator instance
             ambiguity_resolver: Ambiguity resolver instance
+            model_registry: Model registry for ambiguity resolution
         """
         self.schema_validator = schema_validator or SchemaValidator()
-        self.ambiguity_resolver = ambiguity_resolver or AmbiguityResolver()
+        self.ambiguity_resolver = ambiguity_resolver or AmbiguityResolverV2(model_registry)
         self.template_engine = Environment(undefined=StrictUndefined)
         
         # Add custom filters to Jinja2 environment
