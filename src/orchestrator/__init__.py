@@ -186,7 +186,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
     )
 
     if not _model_registry.list_models():
-        print(">>   ⚠️  No models available - using mock fallback")
+        print(">>   ⚠️  No models available - ensure models.yaml is properly configured")
 
     # Store defaults in registry for later use
     setattr(_model_registry, "_defaults", config.get("defaults", {}))

@@ -29,7 +29,7 @@ class AmbiguityResolver:
     
     This version:
     - Uses ModelRegistry instead of direct model instantiation
-    - Never uses mock models
+    - Requires real models from the registry
     - Selects appropriate models based on task requirements
     """
 

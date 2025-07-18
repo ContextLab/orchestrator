@@ -841,10 +841,9 @@ class RedisCache(DistributedCache):
     def __init__(
         self,
         redis_url: str = "redis://localhost:6379",
-        mock_mode: bool = False,
         redis_client=None,
         sync_redis_client=None,
-        auto_fallback: bool = False,
+        auto_fallback: bool = True,
         cache_dir: str = None,
         max_memory_entries: int = 1000,
         max_disk_entries: int = 10000,
@@ -852,10 +851,10 @@ class RedisCache(DistributedCache):
         disk_cache=None,
     ):
         """Initialize with Redis-compatible parameters but use DistributedCache internally."""
-        # If mock_mode is enabled or no Redis clients provided, use standard DistributedCache
-        if mock_mode or (not redis_client and not sync_redis_client):
-            # Try to start Redis server if not in mock mode and auto_fallback is False
-            if not auto_fallback and not mock_mode:
+        # If no Redis clients provided, use standard DistributedCache
+        if not redis_client and not sync_redis_client:
+            # Try to start Redis server if auto_fallback is False
+            if not auto_fallback:
                 if not self._check_and_start_redis(redis_url):
                     raise ConnectionError(f"Could not connect to Redis at {redis_url}")
 
@@ -867,8 +866,7 @@ class RedisCache(DistributedCache):
                 memory_cache=memory_cache,
                 disk_cache=disk_cache,
             )
-            self.mock_mode = mock_mode
-            self._redis_available = mock_mode
+            self._redis_available = False
         else:
             # If Redis clients are provided via dependency injection, use them with DistributedCache
             super().__init__(
@@ -878,7 +876,6 @@ class RedisCache(DistributedCache):
                 memory_cache=memory_cache,
                 disk_cache=disk_cache,
             )
-            self.mock_mode = False
             self._redis_available = True
 
         # Store original Redis parameters for compatibility
@@ -947,55 +944,6 @@ class RedisCache(DistributedCache):
             
         return False  # Could not start Redis
 
-    async def get(self, key: str) -> Optional[Any]:
-        """Get value, with mock mode returning None."""
-        if self.mock_mode:
-            return None  # Mock Redis behavior - always return None
-        return await super().get(key)
-
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
-        """Set value, with mock mode always returning True but not storing."""
-        if self.mock_mode:
-            return True  # Mock Redis behavior - pretend success
-        return await super().set(key, value, ttl=ttl)
-
-    async def delete(self, key: str) -> bool:
-        """Delete value, with mock mode always returning True."""
-        if self.mock_mode:
-            return True  # Mock Redis behavior - pretend success
-        return await super().delete(key)
-
-    async def clear(self) -> bool:
-        """Clear cache, with mock mode always returning True."""
-        if self.mock_mode:
-            return True  # Mock Redis behavior - pretend success
-        return await super().clear()
-
-    async def size(self) -> int:
-        """Get cache size, with mock mode returning 0."""
-        if self.mock_mode:
-            return 0  # Mock Redis behavior
-        return await super().size()
-
-    async def keys(self, pattern: str = "*") -> List[str]:
-        """Get cache keys, with mock mode returning empty list."""
-        if self.mock_mode:
-            return []  # Mock Redis behavior
-        return await super().keys(pattern)
-
-    async def batch_set(
-        self, keys_values: List[tuple], ttl: Optional[int] = None
-    ) -> bool:
-        """Batch set, with mock mode always returning True."""
-        if self.mock_mode:
-            return True  # Mock Redis behavior
-        return await super().batch_set(keys_values, ttl)
-
-    async def invalidate_pattern(self, pattern: str) -> int:
-        """Invalidate pattern, with mock mode returning mock count."""
-        if self.mock_mode:
-            return 2  # Mock Redis behavior - return expected mock count
-        return await super().invalidate_pattern(pattern)
 
 
 class MultiLevelCache:
@@ -1015,7 +963,7 @@ class MultiLevelCache:
             max_size=config.get("disk_cache_size", 1000),
         )
 
-        # Redis cache (mock for now since Redis may not be available)
+        # Redis cache (with fallback if Redis not available)
         try:
             self.redis_cache = RedisCache(
                 config.get("redis_url", "redis://localhost:6379")

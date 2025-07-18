@@ -16,7 +16,7 @@ class RuntimeAutoResolver:
     - Has access to previous step results
     - Can use runtime context and template values
     - Makes real model calls for intelligent resolution
-    - Never uses mock implementations
+    - Uses real models from the registry
     """
     
     def __init__(self, model_registry: ModelRegistry) -> None:
