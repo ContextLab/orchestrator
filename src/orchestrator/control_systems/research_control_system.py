@@ -3,22 +3,37 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
-from orchestrator.core.control_system import MockControlSystem
-from orchestrator.core.task import Task, TaskStatus
+from ..core.control_system import ControlSystem
+from ..core.task import Task, TaskStatus
+from ..core.pipeline import Pipeline
 
 
-class ResearchReportControlSystem(MockControlSystem):
+class ResearchReportControlSystem(ControlSystem):
     """Control system that implements research report generation."""
     
     def __init__(self, output_dir: str = "./output/research"):
-        super().__init__(name="research-report-system")
+        # Define capabilities for research control system
+        config = {
+            "capabilities": {
+                "supported_actions": [
+                    "search_web", "compile_markdown", "generate_report",
+                    "validate_report", "finalize_report"
+                ],
+                "parallel_execution": True,
+                "streaming": False,
+                "checkpoint_support": True,
+            },
+            "base_priority": 15,
+        }
+        
+        super().__init__(name="research-report-system", config=config)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._results = {}
     
-    async def execute_task(self, task: Task, context: dict = None) -> Dict[str, Any]:
+    async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute a research task."""
         print(f"\n⚙️  Executing task: {task.id} ({task.action})")
         
@@ -44,6 +59,50 @@ class ResearchReportControlSystem(MockControlSystem):
         task.status = TaskStatus.COMPLETED
         
         return result
+    
+    async def execute_pipeline(self, pipeline: Pipeline) -> Dict[str, Any]:
+        """Execute a research pipeline."""
+        results: Dict[str, Any] = {}
+
+        # Get execution levels (groups of tasks that can run in parallel)
+        execution_levels = pipeline.get_execution_levels()
+
+        # Execute tasks level by level
+        for level in execution_levels:
+            level_results: Dict[str, Any] = {}
+
+            for task_id in level:
+                task = pipeline.get_task(task_id)
+
+                # Build context with results from previous tasks
+                context = {"pipeline_id": pipeline.id, "results": results}
+
+                # Execute task
+                result = await self.execute_task(task, context)
+                level_results[task_id] = result
+
+                # Mark task as completed
+                task.complete(result)
+
+            # Add level results to overall results
+            results.update(level_results)
+
+        return results
+    
+    def get_capabilities(self) -> Dict[str, Any]:
+        """Get control system capabilities."""
+        return self._capabilities
+    
+    async def health_check(self) -> bool:
+        """Check if control system is healthy."""
+        # Check if output directory is writable
+        try:
+            test_file = self.output_dir / ".health_check"
+            test_file.write_text("test")
+            test_file.unlink()
+            return True
+        except Exception:
+            return False
     
     def _resolve_references(self, task: Task, context: dict):
         """Resolve $results and template references."""
@@ -388,13 +447,13 @@ result = research_agent.run("What are the latest developments in quantum computi
 coding_assistant = AssistantAgent(
     "coding_assistant",
     system_message="You are a helpful AI that writes and explains code.",
-    llm_config={{"model": "gpt-4"}}
+    llm_config={"model": "gpt-4"}
 )
 
 user_proxy = UserProxyAgent(
     "user_proxy",
     human_input_mode="NEVER",
-    code_execution_config={{"work_dir": "coding", "use_docker": False}}
+    code_execution_config={"work_dir": "coding", "use_docker": False}
 )
 
 user_proxy.initiate_chat(

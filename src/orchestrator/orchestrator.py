@@ -7,7 +7,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from .compiler.yaml_compiler import YAMLCompiler
-from .core.control_system import ControlSystem, MockControlSystem
+from .core.control_system import ControlSystem
 from .core.error_handler import ErrorHandler
 from .core.pipeline import Pipeline
 from .core.resource_allocator import ResourceAllocator
