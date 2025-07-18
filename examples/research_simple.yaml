@@ -21,8 +21,8 @@ steps:
       3. Expected information types
       4. Related topics
     
-          - id: conduct_research
-          action: |
+  - id: conduct_research
+    action: |
       Research the topic: {{query}}
       Search depth: {{depth}}
       
@@ -53,12 +53,13 @@ steps:
     
   - id: save_report
     action: |
-      Save to examples/output/research_{{query | replace(' ', '_') | lower}}.md:
+      Create a file at: examples/output/research_{{query | replace(' ', '_') | lower}}.md
       
+      Content to save:
       # Research Report: {{query}}
       
       *Generated on: {{execution.timestamp}}*
-      *Model: Google Gemini 1.5 Flash*
+      *Model: Google Gemini 2.5 Flash*
       
       ## Executive Summary
       
@@ -80,8 +81,9 @@ steps:
 
   - id: save_output
     action: |
-      Save the following content to examples/output/research_simple.md:
+      Create a file at: examples/output/research_simple.md
       
+      Content to save:
       # Research Simple
       
       *Generated on: {{execution.timestamp}}*

@@ -1,29 +1,64 @@
 #!/usr/bin/env python3
-"""
-Simple pipeline runner - the main script for executing pipelines.
-"""
+"""Run pipeline with actual models and proper tool execution."""
 
 import asyncio
-import argparse
-import json
+import os
 from pathlib import Path
 from datetime import datetime
+import json
 import sys
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from orchestrator import Orchestrator
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.integrations.openai_model import OpenAIModel
+from orchestrator.integrations.anthropic_model import AnthropicModel
+from orchestrator.integrations.google_model import GoogleModel
+from scripts.run_pipelines_with_proper_rendering import ToolAwareControlSystem
+
+
+def setup_models():
+    """Set up high-quality models."""
+    registry = ModelRegistry()
+    
+    # Register available models
+    if os.getenv("ANTHROPIC_API_KEY"):
+        registry.register_model(AnthropicModel(model_name="claude-sonnet-4-20250514"))
+        print("✓ Anthropic Claude Sonnet 4 registered")
+    
+    if os.getenv("OPENAI_API_KEY"):
+        registry.register_model(OpenAIModel(model_name="gpt-4.1"))
+        print("✓ OpenAI GPT-4.1 registered")
+    
+    if os.getenv("GOOGLE_API_KEY"):
+        registry.register_model(GoogleModel(model_name="gemini-2.5-flash"))
+        print("✓ Google Gemini 2.5 Flash registered")
+    
+    if not registry.models:
+        print("⚠️  No models registered. Please set API keys.")
+        sys.exit(1)
+    
+    return registry
 
 
 async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = None):
-    """Run a single pipeline."""
-    # Initialize orchestrator
-    orchestrator = Orchestrator()
+    """Run a single pipeline with actual models."""
+    # Set up models
+    registry = setup_models()
     
-    # Set output directory if specified
+    # Create enhanced control system
+    control_system = ToolAwareControlSystem(registry)
+    
+    # Initialize orchestrator with proper control system
+    orchestrator = Orchestrator(
+        model_registry=registry,
+        control_system=control_system
+    )
+    
+    # Ensure output directory exists
     if output_dir:
-        # Ensure output directory exists
         Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     # Read pipeline YAML
@@ -35,7 +70,7 @@ async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = No
     yaml_content = yaml_path.read_text()
     
     # Run pipeline
-    print(f"Running pipeline: {yaml_path.name}")
+    print(f"\nRunning pipeline: {yaml_path.name}")
     print(f"Inputs: {json.dumps(inputs or {}, indent=2)}")
     
     try:
@@ -60,12 +95,16 @@ async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = No
         
     except Exception as e:
         print(f"\n❌ Pipeline failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return 1
 
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description='Run an Orchestrator pipeline')
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Run pipeline with real models')
     parser.add_argument('pipeline', help='Path to YAML pipeline file')
     parser.add_argument('-i', '--input', action='append', help='Input key=value pairs')
     parser.add_argument('-f', '--input-file', help='JSON file with inputs')

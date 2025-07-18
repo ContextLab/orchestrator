@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import Dict, List, Any, Optional, Set, Tuple, Iterator
 from dataclasses import dataclass, field
 
