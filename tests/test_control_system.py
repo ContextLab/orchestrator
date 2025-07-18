@@ -2,7 +2,7 @@
 
 import pytest
 
-from orchestrator.core.control_system import ControlSystem, MockControlSystem
+from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.pipeline import Pipeline
 from orchestrator.core.task import Task, TaskStatus
 
@@ -12,8 +12,16 @@ class TestControlSystem:
 
     def test_control_system_creation_valid_name(self):
         """Test control system creation with valid name."""
+        # Create a minimal concrete implementation for testing
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {"test": "value"}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
 
         assert system.name == "test_system"
         assert system.config == config
@@ -21,12 +29,26 @@ class TestControlSystem:
 
     def test_control_system_creation_empty_name(self):
         """Test control system creation with empty name raises error."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         with pytest.raises(ValueError, match="Control system name cannot be empty"):
-            MockControlSystem("")
+            TestControlSystem("")
 
     def test_control_system_creation_none_config(self):
         """Test control system creation with None config."""
-        system = MockControlSystem("test_system", None)
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system = TestControlSystem("test_system", None)
 
         assert system.name == "test_system"
         assert system.config is not None
@@ -34,6 +56,13 @@ class TestControlSystem:
 
     def test_load_capabilities_with_config(self):
         """Test loading capabilities from config."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {
             "capabilities": {
                 "feature1": True,
@@ -41,7 +70,7 @@ class TestControlSystem:
                 "supported_actions": ["action1", "action2"],
             }
         }
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
 
         assert system._capabilities["feature1"] is True
         assert system._capabilities["feature2"] is False
@@ -49,44 +78,94 @@ class TestControlSystem:
 
     def test_load_capabilities_no_config(self):
         """Test loading capabilities with no capabilities in config."""
-        system = MockControlSystem("test_system", {"other": "value"})
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system = TestControlSystem("test_system", {"other": "value"})
 
         # Should have empty capabilities when config doesn't contain capabilities
         assert system._capabilities == {}
 
     def test_supports_capability_true(self):
         """Test supports_capability returns True for supported capability."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {"capabilities": {"parallel_execution": True, "streaming": False}}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
 
         assert system.supports_capability("parallel_execution") is True
 
     def test_supports_capability_false(self):
         """Test supports_capability returns False for unsupported capability."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {"capabilities": {}}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
 
         assert system.supports_capability("nonexistent_capability") is False
 
     def test_can_execute_task_supported_action(self):
         """Test can_execute_task returns True for supported action."""
-        system = MockControlSystem()
+        class TestControlSystem(ControlSystem):
+            def __init__(self):
+                config = {
+                    "capabilities": {
+                        "supported_actions": ["generate", "analyze", "transform", "execute"]
+                    }
+                }
+                super().__init__("test-control", config)
+            
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system = TestControlSystem()
         task = Task(id="test_task", name="Test Task", action="generate")
 
         assert system.can_execute_task(task) is True
 
     def test_can_execute_task_unsupported_action(self):
         """Test can_execute_task returns False for unsupported action."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {"capabilities": {"supported_actions": ["generate", "analyze"]}}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
         task = Task(id="test_task", name="Test Task", action="unsupported_action")
 
         assert system.can_execute_task(task) is False
 
     def test_can_execute_task_no_supported_actions(self):
         """Test can_execute_task when no supported actions specified."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {"capabilities": {}}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
         task = Task(id="test_task", name="Test Task", action="any_action")
 
         # Should return True when no supported_actions are specified
@@ -94,8 +173,15 @@ class TestControlSystem:
 
     def test_can_execute_task_required_capabilities_satisfied(self):
         """Test can_execute_task when required capabilities are satisfied."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {"capabilities": {"feature1": True, "feature2": True}}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
         task = Task(
             id="test_task",
             name="Test Task",
@@ -107,8 +193,15 @@ class TestControlSystem:
 
     def test_can_execute_task_required_capabilities_not_satisfied(self):
         """Test can_execute_task when required capabilities are not satisfied."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {"capabilities": {"feature1": True}}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
         task = Task(
             id="test_task",
             name="Test Task",
@@ -120,15 +213,32 @@ class TestControlSystem:
 
     def test_get_priority_from_config(self):
         """Test get_priority returns base priority from config."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {"base_priority": 50}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
         task = Task(id="test_task", name="Test Task", action="generate")
 
         assert system.get_priority(task) == 50
 
     def test_get_priority_from_task_metadata(self):
         """Test get_priority returns priority from task metadata."""
-        system = MockControlSystem()
+        class TestControlSystem(ControlSystem):
+            def __init__(self):
+                super().__init__("test-control", {})
+            
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system = TestControlSystem()
         task = Task(
             id="test_task",
             name="Test Task",
@@ -140,8 +250,15 @@ class TestControlSystem:
 
     def test_get_priority_default(self):
         """Test get_priority returns default when not specified."""
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
         config = {}
-        system = MockControlSystem("test_system", config)
+        system = TestControlSystem("test_system", config)
         task = Task(id="test_task", name="Test Task", action="generate")
 
         # When no base_priority in config, should return 0
@@ -149,27 +266,55 @@ class TestControlSystem:
 
     def test_repr(self):
         """Test string representation of control system."""
-        system = MockControlSystem("test_system")
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system = TestControlSystem("test_system")
 
         assert repr(system) == "ControlSystem(name='test_system')"
 
     def test_equality_same_name(self):
         """Test equality comparison with same name."""
-        system1 = MockControlSystem("test_system")
-        system2 = MockControlSystem("test_system")
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system1 = TestControlSystem("test_system")
+        system2 = TestControlSystem("test_system")
 
         assert system1 == system2
 
     def test_equality_different_name(self):
         """Test equality comparison with different name."""
-        system1 = MockControlSystem("system1")
-        system2 = MockControlSystem("system2")
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system1 = TestControlSystem("system1")
+        system2 = TestControlSystem("system2")
 
         assert system1 != system2
 
     def test_equality_non_control_system(self):
         """Test equality comparison with non-ControlSystem object."""
-        system = MockControlSystem("test_system")
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system = TestControlSystem("test_system")
 
         assert system != "not_a_control_system"
         assert system != 123
@@ -177,35 +322,37 @@ class TestControlSystem:
 
     def test_hash_same_name(self):
         """Test hash function with same name."""
-        system1 = MockControlSystem("test_system")
-        system2 = MockControlSystem("test_system")
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system1 = TestControlSystem("test_system")
+        system2 = TestControlSystem("test_system")
 
         assert hash(system1) == hash(system2)
 
     def test_hash_different_name(self):
         """Test hash function with different name."""
-        system1 = MockControlSystem("system1")
-        system2 = MockControlSystem("system2")
+        class TestControlSystem(ControlSystem):
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        system1 = TestControlSystem("system1")
+        system2 = TestControlSystem("system2")
 
         assert hash(system1) != hash(system2)
 
 
-class TestMockControlSystem:
-    """Test cases for MockControlSystem implementation."""
+# Remove TestMockControlSystem class since MockControlSystem is gone
+# The tests below were specific to MockControlSystem implementation
 
-    def test_mock_control_system_default_config(self):
-        """Test MockControlSystem with default config."""
-        system = MockControlSystem()
-
-        assert system.name == "mock-control-system"
-        assert "supported_actions" in system._capabilities
-        assert "generate" in system._capabilities["supported_actions"]
-        assert system._capabilities["parallel_execution"] is True
-        assert system._capabilities["streaming"] is False
-        assert system._capabilities["checkpoint_support"] is True
-        assert system.config["base_priority"] == 10
-
-    def test_mock_control_system_custom_config(self):
+# Removed mock-specific tests
         """Test MockControlSystem with custom config."""
         config = {
             "capabilities": {
@@ -221,7 +368,6 @@ class TestMockControlSystem:
         assert system._capabilities["custom_feature"] is True
         assert system.config["base_priority"] == 50
 
-    def test_set_task_result(self):
         """Test setting canned task result."""
         system = MockControlSystem()
 
@@ -229,8 +375,6 @@ class TestMockControlSystem:
 
         assert system._task_results["task1"] == "custom_result"
 
-    @pytest.mark.asyncio
-    async def test_execute_task_with_canned_result(self):
         """Test executing task with canned result."""
         system = MockControlSystem()
         system.set_task_result("task1", "custom_result")
@@ -246,8 +390,6 @@ class TestMockControlSystem:
         assert system._execution_history[0]["action"] == "generate"
         assert system._execution_history[0]["context"] == context
 
-    @pytest.mark.asyncio
-    async def test_execute_task_generate_action(self):
         """Test executing task with generate action."""
         system = MockControlSystem()
 
@@ -259,8 +401,6 @@ class TestMockControlSystem:
         assert result == "Generated content for task task1"
         assert len(system._execution_history) == 1
 
-    @pytest.mark.asyncio
-    async def test_execute_task_analyze_action(self):
         """Test executing task with analyze action."""
         system = MockControlSystem()
 
@@ -272,8 +412,6 @@ class TestMockControlSystem:
         assert result == {"analysis": "Analysis result for task task1"}
         assert len(system._execution_history) == 1
 
-    @pytest.mark.asyncio
-    async def test_execute_task_transform_action(self):
         """Test executing task with transform action."""
         system = MockControlSystem()
 
@@ -285,8 +423,6 @@ class TestMockControlSystem:
         assert result == {"transformed_data": "Transformed data for task task1"}
         assert len(system._execution_history) == 1
 
-    @pytest.mark.asyncio
-    async def test_execute_task_execute_action(self):
         """Test executing task with execute action."""
         system = MockControlSystem()
 
@@ -298,8 +434,6 @@ class TestMockControlSystem:
         assert result == {"execution_result": "Execution result for task task1"}
         assert len(system._execution_history) == 1
 
-    @pytest.mark.asyncio
-    async def test_execute_task_unknown_action(self):
         """Test executing task with unknown action."""
         system = MockControlSystem()
 
@@ -311,8 +445,6 @@ class TestMockControlSystem:
         assert result == "Mock result for action 'unknown_action' in task task1"
         assert len(system._execution_history) == 1
 
-    @pytest.mark.asyncio
-    async def test_execute_task_with_parameters(self):
         """Test executing task with parameters."""
         system = MockControlSystem()
 
@@ -334,8 +466,6 @@ class TestMockControlSystem:
             "context_key": "context_value"
         }
 
-    @pytest.mark.asyncio
-    async def test_execute_pipeline_simple(self):
         """Test executing simple pipeline."""
         system = MockControlSystem()
 
@@ -357,8 +487,6 @@ class TestMockControlSystem:
         assert task1.status == TaskStatus.COMPLETED
         assert task2.status == TaskStatus.COMPLETED
 
-    @pytest.mark.asyncio
-    async def test_execute_pipeline_with_dependencies(self):
         """Test executing pipeline with task dependencies."""
         system = MockControlSystem()
 
@@ -382,8 +510,6 @@ class TestMockControlSystem:
         assert history[0]["task_id"] == "task1"  # Should execute first
         assert history[1]["task_id"] == "task2"  # Should execute after task1
 
-    @pytest.mark.asyncio
-    async def test_execute_pipeline_context_passing(self):
         """Test that pipeline context is passed to tasks."""
         system = MockControlSystem()
 
@@ -398,8 +524,6 @@ class TestMockControlSystem:
         assert history[0]["context"]["pipeline_id"] == "test_pipeline"
         assert "results" in history[0]["context"]
 
-    @pytest.mark.asyncio
-    async def test_execute_pipeline_results_accumulation(self):
         """Test that pipeline results accumulate across tasks."""
         system = MockControlSystem()
 
@@ -425,7 +549,6 @@ class TestMockControlSystem:
         assert history[0]["context"]["pipeline_id"] == "test_pipeline"
         assert history[1]["context"]["pipeline_id"] == "test_pipeline"
 
-    def test_get_capabilities(self):
         """Test getting capabilities."""
         system = MockControlSystem()
 
@@ -435,8 +558,6 @@ class TestMockControlSystem:
         assert "supported_actions" in capabilities
         assert "parallel_execution" in capabilities
 
-    @pytest.mark.asyncio
-    async def test_health_check(self):
         """Test health check."""
         system = MockControlSystem()
 
@@ -444,7 +565,6 @@ class TestMockControlSystem:
 
         assert health is True
 
-    def test_get_execution_history(self):
         """Test getting execution history."""
         system = MockControlSystem()
 
@@ -465,7 +585,6 @@ class TestMockControlSystem:
         history.append({"task_id": "task3"})
         assert len(system._execution_history) == 2
 
-    def test_clear_execution_history(self):
         """Test clearing execution history."""
         system = MockControlSystem()
 
@@ -480,7 +599,6 @@ class TestMockControlSystem:
 
         assert len(system._execution_history) == 0
 
-    def test_clear_task_results(self):
         """Test clearing task results."""
         system = MockControlSystem()
 
@@ -495,8 +613,6 @@ class TestMockControlSystem:
 
         assert len(system._task_results) == 0
 
-    @pytest.mark.asyncio
-    async def test_execute_task_exception_result(self):
         """Test executing task when canned result is an exception."""
         system = MockControlSystem()
         system.set_task_result("task1", Exception("Test exception"))
@@ -510,8 +626,6 @@ class TestMockControlSystem:
         assert isinstance(result, Exception)
         assert str(result) == "Test exception"
 
-    @pytest.mark.asyncio
-    async def test_execute_pipeline_empty(self):
         """Test executing empty pipeline."""
         system = MockControlSystem()
 
@@ -522,7 +636,6 @@ class TestMockControlSystem:
         assert results == {}
         assert len(system.get_execution_history()) == 0
 
-    def test_mock_control_system_inheritance(self):
         """Test that MockControlSystem properly inherits from ControlSystem."""
         system = MockControlSystem()
 
@@ -534,28 +647,3 @@ class TestMockControlSystem:
         assert hasattr(system, "can_execute_task")
         assert hasattr(system, "get_priority")
 
-    def test_complex_capabilities_configuration(self):
-        """Test complex capabilities configuration."""
-        config = {
-            "capabilities": {
-                "supported_actions": ["generate", "analyze", "transform"],
-                "parallel_execution": True,
-                "streaming": True,
-                "checkpoint_support": False,
-                "max_concurrent_tasks": 10,
-                "supported_models": ["gpt-4", "claude-3"],
-                "rate_limits": {"requests_per_minute": 100, "tokens_per_minute": 10000},
-            },
-            "base_priority": 75,
-        }
-        system = MockControlSystem("complex_system", config)
-
-        assert system.supports_capability("parallel_execution") is True
-        assert system.supports_capability("streaming") is True
-        # supports_capability checks if key exists in capabilities, not its value
-        assert system.supports_capability("checkpoint_support") is True
-        # The actual value is False
-        assert system._capabilities["checkpoint_support"] is False
-        assert system.supports_capability("max_concurrent_tasks") is True
-        assert system._capabilities["rate_limits"]["requests_per_minute"] == 100
-        assert system.config["base_priority"] == 75
