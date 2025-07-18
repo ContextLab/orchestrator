@@ -43,7 +43,7 @@ steps:
       3. Creation/modification dates
       4. Access permissions
       Return list of valid sources with metadata
-      timeout: 30.0
+    timeout: 30.0
     
     tags: ["discovery", "metadata"]
 
@@ -56,7 +56,7 @@ steps:
       3. Check for required fields
       4. Validate data types consistency
       Return schema validation report
-      depends_on: [discover_sources]
+    depends_on: [discover_sources]
     
     condition: "{{discover_sources.result.count}} > 0"
     tags: ["validation", "schema"]
@@ -71,20 +71,20 @@ steps:
       4. Measure uniqueness and cardinality
       5. Detect potential duplicates
       Return quality metrics and issues
-     depends_on: [validate_schema]
       1. Handle missing values (impute/remove based on context)
       2. Standardize formats (dates, phone numbers, addresses)
       3. Remove duplicates
       4. Fix data type inconsistencies
       5. Apply business rules and constraints
       Process in chunks of {{chunk_size}} records</AUTO>
+    depends_on: [validate_schema]
     depends_on: [profile_data]
     condition: "{{profile_data.result.average_quality_score}} >= {{quality_threshold}}"
     on_error:
       action: |
             log problematic records and continue with valid data      continue_on_error: true
             retry_count: 2
-    tags: ["cleaning", "transformation"]
+      tags: ["cleaning", "transformation"]
 
   # Step 5: Enrich data
   - id: enrich_data
@@ -95,7 +95,7 @@ steps:
       3. Applying ML predictions or classifications
       4. Adding timestamps and processing metadata
       Return enriched dataset
-      depends_on: [clean_data]
+    depends_on: [clean_data]
     
     condition: "{{clean_data.result.success}} == true"
     tags: ["enrichment", "feature-engineering"]
@@ -110,7 +110,7 @@ steps:
       4. Ensure output schema compliance
       5. Compare record counts and totals
       Return validation report
-      depends_on: [enrich_data]
+    depends_on: [enrich_data]
     
     tags: ["validation", "quality-assurance"]
 
@@ -125,7 +125,7 @@ steps:
       5. Validation results
       6. Processing performance metrics
       Format as markdown report
-      depends_on: [validate_output]
+    depends_on: [validate_output]
     
     tags: ["reporting", "documentation"]
 
@@ -138,7 +138,7 @@ steps:
       3. Create indexes if applicable
       4. Set appropriate permissions
       Return export details and location
-      depends_on: [validate_output]
+    depends_on: [validate_output]
     
     condition: "{{validate_output.result.passed}} == true"
     parallel: true  # Export different partitions in parallel
@@ -148,7 +148,7 @@ steps:
             retry with smaller chunk size or fallback format
             retry_count: 3
     
-    tags: ["export", "output"]
+      tags: ["export", "output"]
 
   # Step 9: Data lineage tracking
   - id: track_lineage
@@ -160,7 +160,7 @@ steps:
       4. Processing timestamps
       5. Version information
       Save lineage metadata
-      depends_on: [export_data]
+    depends_on: [export_data]
     
     tags: ["lineage", "metadata"]
 
@@ -174,7 +174,7 @@ steps:
       4. Check against SLAs
       5. Generate alerts for anomalies
       Return monitoring summary
-      depends_on: [track_lineage]
+    depends_on: [track_lineage]
     
     tags: ["monitoring", "performance"]
 

@@ -133,7 +133,7 @@ steps:
       5. Model confidence score
       Use ensemble of methods
       Return predictions with uncertainty
-      depends_on: [technical_analysis, sentiment_analysis]
+    depends_on: [technical_analysis, sentiment_analysis]
     
     condition: "{{include_predictions}} == true"
       
@@ -177,7 +177,7 @@ steps:
       5. Take profit targets
       6. Position sizing
       Return actionable trading signals
-     depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
+    depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
       
       Test parameters:
       1. Initial capital: $100,000
@@ -217,7 +217,7 @@ steps:
       2. Diversification opportunities
       3. Hedging possibilities
       Return correlation insights
-      depends_on: [collect_market_data]
+    depends_on: [collect_market_data]
     
     condition: "{{symbols|length}} > 1"
     tags: ["correlation", "relationships"]
@@ -239,7 +239,7 @@ steps:
       2. Time sensitivity
       3. Confidence level
       Return top 10 actionable insights
-      depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
+    depends_on: [technical_analysis, sentiment_analysis, risk_assessment]
     
     tags: ["insights", "synthesis"]
 
@@ -279,7 +279,7 @@ steps:
       Professional investment report
       Include charts and visualizations
       Return formatted report
-      depends_on: [generate_insights]
+    depends_on: [generate_insights]
     
     tags: ["report", "output"]
 
@@ -300,7 +300,7 @@ steps:
       Professional financial charts
       Interactive where possible
       Return visualization package
-      depends_on: [generate_report]
+    depends_on: [generate_report]
     
     tags: ["visualization", "charts"]
 

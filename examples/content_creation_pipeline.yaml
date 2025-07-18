@@ -1,6 +1,6 @@
 name: "Content Creation Pipeline"
 description: "Multi-format content creation with optimization and distribution using declarative YAML"
-model: "anthropic/claude-sonnet-4-20250514".2"
+model: "anthropic/claude-sonnet-4-20250514"
 
 inputs:
   topic:
@@ -49,7 +49,7 @@ steps:
       4. Competitor content analysis
       5. Target audience interests
       Return keywords, trending angles, and insights
-      timeout: 30.0
+    timeout: 30.0
     
     tags: ["research", "seo"]
 
@@ -63,7 +63,7 @@ steps:
       4. Plans for {{target_length}} words
       5. Includes engaging sections and CTAs
       Return structured outline with key points
-     depends_on: [research_topic]
+    depends_on: [research_topic]
     cache_results: true
     tags: ["planning", "structure"]
 
@@ -81,7 +81,7 @@ steps:
       3. Data and statistics where relevant
       4. Clear conclusions and CTAs
       5. Meta description and 3 title variations
-      depends_on: [generate_outline]
+    depends_on: [generate_outline]
     
     condition: "'blog' in {{formats}}"
     timeout: 60.0
@@ -98,7 +98,7 @@ steps:
       5. Add schema markup suggestions
       6. Calculate SEO score (0-100)
       Return optimized content with SEO metrics
-      depends_on: [create_blog_content]
+    depends_on: [create_blog_content]
     
     condition: "'blog' in {{formats}}"
     tags: ["seo", "optimization"]
@@ -116,7 +116,7 @@ steps:
       2. Relevant hashtags (5-10 per platform)
       3. CTAs appropriate for each platform
       4. Suggested posting times
-      depends_on: [create_blog_content]
+    depends_on: [create_blog_content]
     
     condition: "'social' in {{formats}}"
       1. Hero image for blog post (1200x628px)
@@ -142,7 +142,7 @@ steps:
       - 3 subject line variations
       - Preview text
       - Email body in HTML/text
-      depends_on: [create_blog_content]
+    depends_on: [create_blog_content]
     
     condition: "'email' in {{formats}}"
     tags: ["email", "newsletter"]
@@ -158,7 +158,7 @@ steps:
       5. CTA effectiveness
       6. Legal/compliance check
       Return quality scores and revision suggestions
-      depends_on: [optimize_seo, create_social_content, create_email_content]
+    depends_on: [optimize_seo, create_social_content, create_email_content]
     
     tags: ["review", "quality"]
 
@@ -171,7 +171,7 @@ steps:
       3. Social media CTAs
       4. Visual styles
       Set up test parameters and success metrics
-      depends_on: [quality_review]
+    depends_on: [quality_review]
     
     tags: ["testing", "optimization"]
 
@@ -185,7 +185,7 @@ steps:
       4. Set up content calendar entries
       5. Configure platform-specific scheduling
       Return publishing timeline
-      depends_on: [create_ab_tests]
+    depends_on: [create_ab_tests]
     
     condition: "{{auto_publish}} == true"
     tags: ["scheduling", "distribution"]
@@ -200,7 +200,7 @@ steps:
       4. Upload images to media library
       5. Configure tracking/analytics
       Return published URLs and campaign IDs
-      depends_on: [schedule_content]
+    depends_on: [schedule_content]
     
     condition: "{{auto_publish}} == true"
     on_error:
@@ -208,7 +208,7 @@ steps:
             save content locally and provide manual publishing instructions
             continue_on_error: true
     
-    tags: ["publishing", "distribution"]
+      tags: ["publishing", "distribution"]
 
   # Step 12: Set up monitoring
   - id: setup_monitoring
@@ -220,7 +220,7 @@ steps:
       4. Set up conversion tracking
       5. Schedule performance reports
       Return monitoring configuration
-      depends_on: [publish_content]
+    depends_on: [publish_content]
     
     condition: "{{auto_publish}} == true"
     tags: ["analytics", "monitoring"]

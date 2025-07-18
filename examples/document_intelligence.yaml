@@ -61,7 +61,7 @@ steps:
       4. File type
       5. Initial metadata
       Return document list with metadata
-      timeout: 10.0
+    timeout: 10.0
     
     tags: ["discovery", "files"]
 
@@ -78,7 +78,7 @@ steps:
       5. Document language
       6. Estimated complexity
       Return classification with confidence
-     depends_on: [discover_documents]
+    depends_on: [discover_documents]
       
       Extract:
       1. Full text content
@@ -221,7 +221,7 @@ steps:
       - Community detection
       - Important paths
       Return knowledge graph structure
-      depends_on: [extract_relationships]
+    depends_on: [extract_relationships]
     
     condition: "{{build_knowledge_graph}} == true"
     tags: ["knowledge-graph", "network"]
@@ -244,7 +244,7 @@ steps:
       7. Business opportunities
       8. Process improvements
       Return prioritized insights list
-      depends_on: [analyze_content, build_knowledge_graph]
+    depends_on: [analyze_content, build_knowledge_graph]
     
     tags: ["insights", "analytics"]
 
@@ -263,7 +263,7 @@ steps:
       5. Risk assessment
       6. Recommended actions
       Return compliance report
-      depends_on: [detect_pii, analyze_content]
+    depends_on: [detect_pii, analyze_content]
     
     tags: ["compliance", "reporting"]
 
@@ -283,7 +283,7 @@ steps:
       9. Recommendations
       Format: {{output_format}}
       Return complete intelligence report
-      depends_on: [generate_insights, create_compliance_report]
+    depends_on: [generate_insights, create_compliance_report]
     
     tags: ["reporting", "final"]
 
@@ -308,7 +308,7 @@ steps:
       - /data
       - /visualizations
       Return output locations
-      depends_on: [create_intelligence_report]
+    depends_on: [create_intelligence_report]
     
     tags: ["output", "save"]
 

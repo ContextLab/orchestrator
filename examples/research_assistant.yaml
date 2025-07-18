@@ -32,7 +32,7 @@ steps:
       2. Key research objectives
       3. Expected types of sources (academic, news, technical, etc.)
       4. Focus areas and subtopics to explore
-      cache_results: true
+    cache_results: true
     
     timeout: 10.0
     tags: ["analysis", "query-processing"]
@@ -41,20 +41,20 @@ steps:
   - id: web_search
     action: |
       search the web for information about {{query}} using the search terms from {{analyze_query.result}} and find up to {{max_sources}} high-quality sources
-      depends_on: [analyze_query]
+    depends_on: [analyze_query]
     
     on_error:
       action: |
             use alternative search strategies or reduce the number of sources      continue_on_error: true
             retry_count: 2
-    timeout: 30.0
+      timeout: 30.0
     tags: ["search", "data-collection"]
 
   # Step 3: Extract content from sources
   - id: extract_content
     action: |
       extract and clean the main content from the web sources found in the search results: {{web_search.result}}
-      depends_on: [web_search]
+    depends_on: [web_search]
     
     timeout: 20.0
     tags: ["extraction", "data-processing"]
@@ -70,7 +70,7 @@ steps:
       5. Citations and references
       Extracted content: {{extract_content.result}}
       Return a credibility score (0-1) for each source
-      depends_on: [extract_content]
+    depends_on: [extract_content]
     
     tags: ["analysis", "quality-control"]
 
@@ -78,7 +78,7 @@ steps:
   - id: filter_sources
     action: |
       filter sources with credibility score >= {{quality_threshold}} and organize by relevance to {{query}}
-     depends_on: [analyze_credibility]
+    depends_on: [analyze_credibility]
     cache_results: true
     tags: ["filtering", "quality-control"]
 
@@ -92,7 +92,7 @@ steps:
       4. Supporting evidence
       5. Knowledge gaps
       Organize findings by importance and relevance
-      depends_on: [filter_sources]
+    depends_on: [filter_sources]
     
     condition: "{{filter_sources.result}} != null"
     timeout: 60.0
@@ -111,13 +111,13 @@ steps:
       7. Recommendations for further research
       8. References in APA format
       Format as professional markdown
-      depends_on: [synthesize_findings]
+    depends_on: [synthesize_findings]
     
     on_error:
       action: |
             generate a simplified report with available information      continue_on_error: true
             fallback_value: "Unable to generate complete report - see partial results"
-    timeout: 45.0
+      timeout: 45.0
     tags: ["report", "output"]
 
   # Step 8: Generate PDF
@@ -129,7 +129,7 @@ steps:
       - Table of contents
       - Proper formatting and styling
       Save to reports/research_{{query}}_{{execution.timestamp}}.pdf
-      depends_on: [generate_report]
+    depends_on: [generate_report]
     
     condition: "{{generate_report.success}} == true"
     tags: ["export", "output"]
@@ -144,7 +144,7 @@ steps:
       4. Proper citation of sources
       5. Relevance to original query
       Return quality score (0-1) and improvement suggestions
-      depends_on: [generate_report]
+    depends_on: [generate_report]
     
     tags: ["validation", "quality-control"]
 

@@ -50,7 +50,7 @@ steps:
       5. Note required story elements
       6. Understand tone and pacing norms
       Return comprehensive genre analysis
-      timeout: 15.0
+    timeout: 15.0
     
     tags: ["analysis", "genre"]
 
@@ -69,7 +69,7 @@ steps:
       5. Hook that grabs attention
       6. What makes this story unique
       Balance familiarity with originality
-     depends_on: [analyze_genre]
+    depends_on: [analyze_genre]
     cache_results: true
     tags: ["creative", "premise"]
 
@@ -89,7 +89,7 @@ steps:
       7. Unique voice and speech patterns
       8. Relationships to other characters
       Create 3-5 main characters with depth
-      depends_on: [generate_premise]
+    depends_on: [generate_premise]
     
     timeout: 30.0
     tags: ["characters", "development"]
@@ -109,7 +109,7 @@ steps:
       7. Flora, fauna, and ecology
       8. Languages and naming conventions
       Ensure consistency and originality
-      depends_on: [generate_premise]
+    depends_on: [generate_premise]
     
     condition: "{{include_worldbuilding}} == true and {{genre}} in ['fantasy', 'sci-fi', 'dystopian']"
     tags: ["worldbuilding", "setting"]
@@ -140,7 +140,7 @@ steps:
       - Resolution
       - Denouement
       Include subplots and pacing
-     depends_on: [develop_characters]
+    depends_on: [develop_characters]
     cache_results: true
     tags: ["plot", "structure"]
 
@@ -160,7 +160,7 @@ steps:
       7. Cliffhanger or hook
       8. Word count target
       Ensure proper pacing and flow
-      depends_on: [design_plot]
+    depends_on: [design_plot]
     
     tags: ["outline", "chapters"]
 
@@ -179,7 +179,7 @@ steps:
       5. Hints at central conflict
       6. Uses vivid sensory details
       Write 500-1000 words
-      depends_on: [outline_chapters]
+    depends_on: [outline_chapters]
     
     timeout: 45.0
     tags: ["writing", "opening"]
@@ -201,7 +201,7 @@ steps:
       6. Emotional tension
       7. Scene resolution
       Maintain consistent voice
-     depends_on: [outline_chapters]
+    depends_on: [outline_chapters]
       
       For each conversation:
       1. Match character voice
@@ -245,7 +245,7 @@ steps:
       7. Name consistency
       8. Motivation alignment
       Return issues and fixes
-      depends_on: [enhance_descriptions]
+    depends_on: [enhance_descriptions]
     
     tags: ["consistency", "editing"]
 
@@ -256,7 +256,7 @@ steps:
       Content: {{enhance_descriptions.result}}
       Issues: {{check_consistency.result.issues}}
       Fix all identified problems while maintaining story flow
-      depends_on: [check_consistency]
+    depends_on: [check_consistency]
     
     condition: "{{check_consistency.result.issues_found}} > 0"
     tags: ["fixes", "editing"]
@@ -277,7 +277,7 @@ steps:
       6. Clarify ambiguities
       7. Enhance imagery
       Maintain author voice
-      depends_on: [apply_fixes, enhance_descriptions]
+    depends_on: [apply_fixes, enhance_descriptions]
     
     tags: ["polish", "style"]
 
@@ -293,7 +293,7 @@ steps:
       4. Emotional climax
       5. Promise of what's next
       Keep readers turning pages
-      depends_on: [polish_writing]
+    depends_on: [polish_writing]
     
     tags: ["cliffhangers", "pacing"]
 
@@ -313,7 +313,7 @@ steps:
       9. Subplot tracking
       10. Series potential
       Organize for easy reference
-      depends_on: [create_cliffhangers]
+    depends_on: [create_cliffhangers]
     
     tags: ["bible", "reference"]
 
@@ -332,7 +332,7 @@ steps:
       5. Back cover copy (250 words)
       6. Series name (if applicable)
       Make it irresistible
-      depends_on: [create_cliffhangers]
+    depends_on: [create_cliffhangers]
     
     tags: ["title", "marketing"]
 
