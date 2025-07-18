@@ -12,6 +12,16 @@ context:
 
 steps:
   - id: fetch_data
+
+      
+      
+      
+      
+      
+      
+      
+      ---
+
     name: Fetch Dataset
     action: fetch
     parameters:
@@ -34,7 +44,7 @@ steps:
     dependencies:
       - fetch_data
     metadata:
-      requires_model: gpt-4
+      requires_model: "openai/gpt-4o"
       priority: 1.0
       
   - id: statistical_analysis
@@ -48,7 +58,7 @@ steps:
     dependencies:
       - data_validation
     metadata:
-      requires_model: claude-3-5-sonnet
+      requires_model: "anthropic/claude-3-5-sonnet-20241022"
       cpu_cores: 4
       memory_mb: 2048
       priority: 0.9
@@ -72,7 +82,7 @@ steps:
     dependencies:
       - statistical_analysis
     metadata:
-      requires_model: gpt-4-turbo
+      requires_model: "openai/gpt-4o"
       priority: 0.8
       
   - id: create_visualizations
@@ -85,7 +95,7 @@ steps:
     dependencies:
       - statistical_analysis
     metadata:
-      requires_model: gemini-1.5-pro
+      requires_model: "google/gemini-2.0-flash-exp"
       gpu_required: true
       priority: 0.7
       
@@ -104,7 +114,7 @@ steps:
       - generate_insights
       - create_visualizations
     metadata:
-      requires_model: claude-3-haiku
+      requires_model: "anthropic/claude-3-5-sonnet-20241022"
       priority: 0.6
       on_failure: continue
       
@@ -118,6 +128,6 @@ steps:
     dependencies:
       - generate_reports
     metadata:
-      requires_model: gpt-3.5-turbo
+      requires_model: "openai/gpt-4o"
       priority: 1.0
       on_failure: skip

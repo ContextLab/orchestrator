@@ -11,6 +11,7 @@ context:
 
 steps:
   - id: generate_content
+
     name: Generate Content
     action: generate
     parameters:

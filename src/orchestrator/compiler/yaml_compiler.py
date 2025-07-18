@@ -11,8 +11,8 @@ from jinja2 import Environment, StrictUndefined
 from ..core.pipeline import Pipeline
 from ..core.task import Task
 from .ambiguity_resolver import AmbiguityResolver
-from .schema_validator import SchemaValidator
 from .auto_tag_yaml_parser import AutoTagYAMLParser
+from .schema_validator import SchemaValidator
 
 
 class YAMLCompilerError(Exception):
@@ -151,11 +151,33 @@ class YAMLCompiler:
                     # If template rendering fails due to undefined variables,
                     # preserve templates that reference runtime values
                     error_str = str(e).lower()
-                    if "undefined" in error_str and any(
-                        ref in value
-                        for ref in ["inputs.", "outputs.", "$results.", "steps."]
-                    ):
-                        return value  # Keep template for runtime resolution
+
+                    # Check if this is a runtime reference that should be preserved
+                    if "undefined" in error_str:
+                        # Check for explicit runtime reference patterns
+                        runtime_patterns = [
+                            "inputs.",
+                            "outputs.",
+                            "$results.",
+                            "steps.",
+                            ".result",
+                            ".output",
+                            ".value",
+                            ".data",
+                        ]
+
+                        # Also check if it references a step ID (pattern: word.word)
+                        import re
+
+                        step_ref_pattern = (
+                            r"\{\{[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*"
+                        )
+
+                        if any(ref in value for ref in runtime_patterns) or re.search(
+                            step_ref_pattern, value
+                        ):
+                            return value  # Keep template for runtime resolution
+
                     raise TemplateRenderError(
                         f"Failed to render template '{value}': {e}"
                     ) from e
@@ -295,7 +317,7 @@ class YAMLCompiler:
         task_name = task_def.get("name", task_id)
         action = task_def["action"]
         parameters = task_def.get("parameters", {})
-        dependencies = task_def.get("dependencies", [])
+        dependencies = task_def.get("depends_on", [])
         timeout = task_def.get("timeout")
         max_retries = task_def.get("max_retries", 3)
         metadata = task_def.get("metadata", {})

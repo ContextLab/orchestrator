@@ -1,0 +1,20 @@
+name: "Simple Test"
+description: "A simple test without loops"
+
+inputs:
+  message:
+    type: string
+    description: "Message to process"
+    required: true
+
+steps:
+  - id: process_message
+    action: <AUTO>Process this message and provide a summary: {{message}}</AUTO>
+    
+  - id: generate_response
+    action: <AUTO>Generate a friendly response based on the processed message: {{process_message.result}}</AUTO>
+    depends_on: [process_message]
+
+outputs:
+  processed: "{{process_message.result}}"
+  response: "{{generate_response.result}}"
