@@ -130,6 +130,9 @@ steps:
       - Proper formatting and styling
       Save to reports/research_{{query}}_{{execution.timestamp}}.pdf
     depends_on: [generate_report]
+    on_error:
+      action: skip
+      continue_on_error: true
     
     condition: "{{generate_report.success}} == true"
     tags: ["export", "output"]
