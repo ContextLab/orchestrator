@@ -1,9 +1,9 @@
 """Utility functions for model management."""
 
-import re
-from typing import Optional, Dict, Any
-import subprocess
 import os
+import re
+import subprocess
+from typing import Any, Dict, Optional
 
 
 def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
@@ -128,8 +128,9 @@ def install_ollama_model(model_name: str) -> bool:
 
 def load_model_config(config_path: str = "models.yaml") -> Dict[str, Any]:
     """Load model configuration from YAML file."""
-    import yaml
     from pathlib import Path
+
+    import yaml
 
     # Try multiple locations for the config file
     search_paths = [

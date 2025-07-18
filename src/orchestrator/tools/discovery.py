@@ -1,11 +1,11 @@
 """Smart tool discovery engine for automatic tool mapping."""
 
-import re
 import logging
-from typing import Dict, List, Set, Any, Optional
+import re
 from dataclasses import dataclass
+from typing import Any, Dict, List
 
-from .base import Tool, default_registry
+from .base import default_registry
 
 logger = logging.getLogger(__name__)
 

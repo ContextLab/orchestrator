@@ -1,15 +1,13 @@
 """Universal task executor for automatic execution of declarative tasks."""
 
-import asyncio
-import json
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List
 
-from .pipeline_spec import TaskSpec
-from .auto_resolver import EnhancedAutoResolver
-from ..tools.base import default_registry, Tool
 from ..core.model import Model
+from ..tools.base import Tool, default_registry
+from .auto_resolver import EnhancedAutoResolver
+from .pipeline_spec import TaskSpec
 
 logger = logging.getLogger(__name__)
 

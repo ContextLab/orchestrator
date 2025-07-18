@@ -1,6 +1,5 @@
 """Tools for report generation and PDF compilation."""
 
-import asyncio
 import logging
 import os
 import platform
@@ -8,7 +7,7 @@ import subprocess
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .base import Tool
 
@@ -484,8 +483,8 @@ class PDFCompilerTool(Tool):
     
     async def _download_and_install_pandoc(self, os_type: str) -> Dict[str, Any]:
         """Download and install pandoc from GitHub releases."""
-        import urllib.request
         import json
+        import urllib.request
         
         try:
             # Get latest release info

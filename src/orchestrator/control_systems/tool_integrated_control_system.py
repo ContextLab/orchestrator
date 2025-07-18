@@ -1,10 +1,10 @@
 """Control system with integrated tool support."""
 
+import os
+import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
-import sys
-import os
+from typing import Any, Dict
 
 # Add parent directory to path so we can import orchestrator
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))

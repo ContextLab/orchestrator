@@ -53,15 +53,16 @@ def init_models(config_path: str = "models.yaml") -> ModelRegistry:
     """Initialize the pool of available models by reading models.yaml and environment."""
     global _model_registry
 
-    from .utils.model_utils import (
-        load_model_config,
-        parse_model_size,
-        check_ollama_installed,
-    )
+    import os
+
     from .integrations.anthropic_model import AnthropicModel
     from .integrations.google_model import GoogleModel
     from .integrations.openai_model import OpenAIModel
-    import os
+    from .utils.model_utils import (
+        check_ollama_installed,
+        load_model_config,
+        parse_model_size,
+    )
 
     print(">> Initializing model pool...")
 

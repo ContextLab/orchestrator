@@ -2,13 +2,11 @@
 
 import asyncio
 import logging
-import time
-from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from .pipeline_spec import TaskSpec, ErrorHandling, LoopSpec
 from .enhanced_executor import EnhancedTaskExecutor
-from ..tools.base import Tool
+from .pipeline_spec import ErrorHandling, TaskSpec
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +152,7 @@ class LoopExecutor:
     def _resolve_loop_items(self, foreach_expression: str, context: Dict[str, Any]) -> List[Any]:
         """Resolve the items to iterate over."""
         import re
-        
+
         # Extract variable path from {{variable}} syntax
         match = re.search(r'\{\{([^}]+)\}\}', foreach_expression)
         if match:

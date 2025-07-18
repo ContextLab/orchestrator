@@ -2,13 +2,11 @@
 
 import asyncio
 import logging
-import re
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
-from urllib.parse import urljoin, urlparse
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from urllib.parse import urljoin
 
-import aiohttp
 import httpx
 import requests
 from bs4 import BeautifulSoup

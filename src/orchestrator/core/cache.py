@@ -890,7 +890,7 @@ class RedisCache(DistributedCache):
         import subprocess
         import time
         from urllib.parse import urlparse
-        
+
         # Parse Redis URL to get host and port
         parsed = urlparse(redis_url)
         host = parsed.hostname or "localhost"

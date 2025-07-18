@@ -1,8 +1,9 @@
 """Lazy loading wrapper for Ollama models."""
 
 from typing import Any, Dict, Optional
-from .ollama_model import OllamaModel
+
 from ..utils.model_utils import check_ollama_model, install_ollama_model
+from .ollama_model import OllamaModel
 
 
 class LazyOllamaModel(OllamaModel):

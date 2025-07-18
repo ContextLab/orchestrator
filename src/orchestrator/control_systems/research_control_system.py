@@ -1,9 +1,9 @@
 """Control system for research report generation following README design."""
 
-from datetime import datetime
 import json
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 from orchestrator.core.control_system import MockControlSystem
 from orchestrator.core.task import Task, TaskStatus

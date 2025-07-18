@@ -1,8 +1,8 @@
 """Pipeline and task specifications for declarative execution."""
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Union
 import re
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Union
 
 
 @dataclass

@@ -2,15 +2,14 @@
 
 import asyncio
 import logging
-from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
+from typing import Any, Dict, List
 
-from .pipeline_spec import TaskSpec
-from .auto_resolver import EnhancedAutoResolver
-from .task_executor import UniversalTaskExecutor
-from ..tools.discovery import ToolDiscoveryEngine, ToolMatch
-from ..tools.base import Tool, default_registry
 from ..core.model import Model
+from ..tools.base import Tool
+from ..tools.discovery import ToolDiscoveryEngine, ToolMatch
+from .pipeline_spec import TaskSpec
+from .task_executor import UniversalTaskExecutor
 
 logger = logging.getLogger(__name__)
 

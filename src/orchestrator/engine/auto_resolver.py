@@ -1,8 +1,9 @@
 """Enhanced AUTO tag resolution system using AI models."""
 
-import re
 import logging
-from typing import Dict, Any, List, Optional
+import re
+from typing import Any, Dict, List, Optional
+
 from ..core.model import Model
 
 logger = logging.getLogger(__name__)

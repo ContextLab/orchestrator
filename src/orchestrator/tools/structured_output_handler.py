@@ -1,12 +1,12 @@
 """Structured output handler using LangChain for consistent tool responses."""
 
-from typing import Any, Dict, List, Optional, Type, Union
-from pydantic import BaseModel, Field
+import re
+from typing import Any, Dict, List, Optional, Union
+
+from langchain.schema import BaseOutputParser
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain.schema import BaseOutputParser
-import json
-import re
+from pydantic import BaseModel, Field
 
 
 class ToolCallResponse(BaseModel):
