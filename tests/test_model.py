@@ -343,9 +343,9 @@ class TestModelMetrics:
 class TestModel:
     """Test cases for Model abstract class."""
 
-    def test_model_creation(self):
+    def test_model_creation(self, populated_model_registry):
         """Test basic model creation with a real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         
         # Try to get any real model
         model = None
@@ -364,23 +364,28 @@ class TestModel:
             assert isinstance(model.requirements, ModelRequirements)
             assert isinstance(model.metrics, ModelMetrics)
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
     def test_model_validation_empty_name(self):
         """Test model validation with empty name."""
         # We can't test this directly without MockModel
         # Real models from registry always have valid names
-        pytest.skip("Cannot test empty name validation without MockModel")
+        # This test is no longer applicable with real models only
+        pass
 
     def test_model_validation_empty_provider(self):
         """Test model validation with empty provider."""
         # We can't test this directly without MockModel
         # Real models from registry always have valid providers
-        pytest.skip("Cannot test empty provider validation without MockModel")
+        # This test is no longer applicable with real models only
+        pass
 
-    def test_model_defaults(self):
+    def test_model_defaults(self, populated_model_registry):
         """Test model default values with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b"]:
             try:
@@ -395,11 +400,14 @@ class TestModel:
             assert isinstance(model.requirements, ModelRequirements)
             assert isinstance(model.metrics, ModelMetrics)
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_can_handle_task(self):
+    def test_can_handle_task(self, populated_model_registry):
         """Test can_handle_task method with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
             try:
@@ -416,11 +424,14 @@ class TestModel:
             # Just check the method works
             model.can_handle_task("translate")
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_can_handle_language(self):
+    def test_can_handle_language(self, populated_model_registry):
         """Test can_handle_language method with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
             try:
@@ -437,11 +448,14 @@ class TestModel:
             model.can_handle_language("es")
             model.can_handle_language("fr")
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_meets_requirements_context_window(self):
+    def test_meets_requirements_context_window(self, populated_model_registry):
         """Test meets_requirements for context window with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
             try:
@@ -457,11 +471,14 @@ class TestModel:
             # Test with very large requirement (should fail for most models)
             assert not model.meets_requirements({"context_window": 1000000})
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_meets_requirements_function_calling(self):
+    def test_meets_requirements_function_calling(self, populated_model_registry):
         """Test meets_requirements for function calling with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         # Try to get GPT-4 which supports function calling
         model = registry.get_model("gpt-4o-mini")
         
@@ -471,11 +488,14 @@ class TestModel:
                 assert model.meets_requirements({"supports_function_calling": True})
             assert model.meets_requirements({"supports_function_calling": False})
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_meets_requirements_structured_output(self):
+    def test_meets_requirements_structured_output(self, populated_model_registry):
         """Test meets_requirements for structured output with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
             try:
@@ -491,11 +511,14 @@ class TestModel:
                 assert model.meets_requirements({"supports_structured_output": True})
             assert model.meets_requirements({"supports_structured_output": False})
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_meets_requirements_tasks(self):
+    def test_meets_requirements_tasks(self, populated_model_registry):
         """Test meets_requirements for tasks with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
             try:
@@ -512,11 +535,14 @@ class TestModel:
             # Check for unsupported task
             assert not model.meets_requirements({"tasks": ["impossible_task_xyz"]})
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_meets_requirements_languages(self):
+    def test_meets_requirements_languages(self, populated_model_registry):
         """Test meets_requirements for languages with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
             try:
@@ -532,11 +558,14 @@ class TestModel:
             # Check for unsupported language
             assert not model.meets_requirements({"languages": ["xyz_fake_language"]})
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_to_dict(self):
+    def test_to_dict(self, populated_model_registry):
         """Test to_dict method with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b"]:
             try:
@@ -555,11 +584,14 @@ class TestModel:
             assert "metrics" in model_dict
             assert "is_available" in model_dict
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_repr(self):
+    def test_repr(self, populated_model_registry):
         """Test string representation with real model."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b"]:
             try:
@@ -574,11 +606,14 @@ class TestModel:
             assert model.name in repr_str
             assert model.provider in repr_str
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_equality(self):
+    def test_equality(self, populated_model_registry):
         """Test model equality with real models."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         
         # Try to get the same model twice
         model1 = registry.get_model("gpt-4o-mini")
@@ -594,11 +629,14 @@ class TestModel:
             if model3:
                 assert model1 != model3  # Different models
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
-    def test_hash(self):
+    def test_hash(self, populated_model_registry):
         """Test model hashing with real models."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         
         # Get the same model twice
         model1 = registry.get_model("gpt-4o-mini")
@@ -619,7 +657,10 @@ class TestModel:
                 model_set.add(model3)
                 assert len(model_set) == 2
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
 
 # Remove TestMockModel class entirely as MockModel is gone
