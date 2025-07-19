@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 from orchestrator.compiler.yaml_compiler import YAMLCompiler
-from orchestrator.core.control_system import MockControlSystem
+from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.pipeline import Pipeline
 from orchestrator.core.task import Task, TaskStatus
 from orchestrator.models.model_registry import ModelRegistry
@@ -32,7 +32,19 @@ class TestOrchestrator:
     def test_orchestrator_with_custom_components(self):
         """Test orchestrator with custom components."""
         registry = ModelRegistry()
-        control_system = MockControlSystem()
+        
+        # Create a minimal concrete control system
+        class TestControlSystem(ControlSystem):
+            def __init__(self):
+                super().__init__("test-control", {})
+            
+            async def execute_task(self, task, context=None):
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        control_system = TestControlSystem()
         state_manager = StateManager()
         compiler = YAMLCompiler()
 
@@ -142,9 +154,19 @@ class TestOrchestrator:
         orchestrator = Orchestrator()
 
         # Create control system that fails specific tasks
-        control_system = MockControlSystem()
-        control_system.set_task_result("failing_task", Exception("Test failure"))
-        orchestrator.control_system = control_system
+        class FailingControlSystem(ControlSystem):
+            def __init__(self):
+                super().__init__("failing-control", {})
+            
+            async def execute_task(self, task, context=None):
+                if task.id == "failing_task":
+                    raise Exception("Test failure")
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        orchestrator.control_system = FailingControlSystem()
 
         # Create pipeline
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
@@ -483,9 +505,19 @@ class TestOrchestrator:
         orchestrator = Orchestrator()
 
         # Test "continue" policy
-        control_system = MockControlSystem()
-        control_system.set_task_result("failing_task", Exception("Test failure"))
-        orchestrator.control_system = control_system
+        class PolicyControlSystem(ControlSystem):
+            def __init__(self):
+                super().__init__("policy-control", {})
+            
+            async def execute_task(self, task, context=None):
+                if task.id == "failing_task":
+                    raise Exception("Test failure")
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        orchestrator.control_system = PolicyControlSystem()
 
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
         task1 = Task(id="task1", name="Task 1", action="generate")
@@ -515,9 +547,19 @@ class TestOrchestrator:
         orchestrator = Orchestrator()
 
         # Create control system that fails specific tasks
-        control_system = MockControlSystem()
-        control_system.set_task_result("failing_task", Exception("Test failure"))
-        orchestrator.control_system = control_system
+        class SkipControlSystem(ControlSystem):
+            def __init__(self):
+                super().__init__("skip-control", {})
+            
+            async def execute_task(self, task, context=None):
+                if task.id == "failing_task":
+                    raise Exception("Test failure")
+                return {"status": "completed"}
+            
+            async def health_check(self):
+                return True
+        
+        orchestrator.control_system = SkipControlSystem()
 
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
         task1 = Task(
@@ -684,7 +726,7 @@ class TestOrchestrator:
         # Task should complete
         assert task.status == TaskStatus.COMPLETED
         assert "retry_task" in results
-        assert task.retry_count == 0  # No retries needed with MockControlSystem
+        assert task.retry_count == 0  # No retries needed with default control system
 
 
 class TestOrchestratorAdvanced:
