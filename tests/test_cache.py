@@ -4,7 +4,6 @@ import asyncio
 import os
 import tempfile
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -73,31 +72,30 @@ class TestMultiLevelCache:
 
     @pytest.mark.asyncio
     async def test_cache_get_hit_disk(self):
-        """Test cache get with disk cache hit."""
+        """Test cache get with disk cache hit using real disk operations."""
+        # Create temporary directory for disk cache
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = {"disk_cache_path": temp_dir}
+            cache = MultiLevelCache(config)
 
-        cache = MultiLevelCache()
+            # Set value directly in disk cache
+            await cache.disk_cache.set("key3", "value_from_disk")
+            
+            # Clear memory and redis caches to ensure disk hit
+            await cache.memory_cache.clear()
+            await cache.redis_cache.clear()
 
-        # Mock cache misses for memory and redis
-        cache.memory_cache.get = AsyncMock(return_value=None)
-        cache.redis_cache.get = AsyncMock(return_value=None)
+            result = await cache.get("key3")
 
-        # Create proper CacheEntry for disk cache hit
-        disk_entry = CacheEntry(key="key3", value="value_from_disk")
-        cache.disk_cache.get = AsyncMock(return_value=disk_entry)
-
-        result = await cache.get("key3")
-
-        assert result == "value_from_disk"
+            assert result == "value_from_disk"
 
     @pytest.mark.asyncio
     async def test_cache_get_miss(self):
-        """Test cache get with complete miss."""
+        """Test cache get with complete miss using real cache operations."""
         cache = MultiLevelCache()
 
-        # Mock cache misses for all levels
-        cache.memory_cache.get = AsyncMock(return_value=None)
-        cache.redis_cache.get = AsyncMock(return_value=None)
-        cache.disk_cache.get = AsyncMock(return_value=None)
+        # Ensure caches are empty
+        await cache.clear()
 
         result = await cache.get("nonexistent_key")
 

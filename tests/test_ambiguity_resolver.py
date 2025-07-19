@@ -1,13 +1,12 @@
 """Comprehensive tests for ambiguity resolver functionality."""
 
-from unittest.mock import AsyncMock
-
 import pytest
 
 from orchestrator.compiler.ambiguity_resolver import (
     AmbiguityResolutionError,
     AmbiguityResolver,
 )
+from orchestrator.core.model import Model
 from orchestrator.models.model_registry import ModelRegistry
 
 
@@ -289,13 +288,33 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_generic_with_model_failure(self):
         """Test generic resolution with model failure."""
-        from unittest.mock import AsyncMock, MagicMock
+        # Create a custom model that fails
+        class FailingModel(Model):
+            def __init__(self):
+                super().__init__(
+                    name="failing-model",
+                    provider="test",
+                    capabilities={"supported_tasks": ["generate"]},
+                    metrics={}
+                )
+            
+            async def generate(self, prompt, **kwargs):
+                raise Exception("Model failure")
+            
+            async def generate_structured(self, prompt, schema, **kwargs):
+                raise Exception("Model failure")
+            
+            def estimate_cost(self, prompt, max_tokens=None):
+                return 0.0
+            
+            async def health_check(self):
+                return True
+            
+            def can_execute(self, task):
+                return True
         
-        # Create a mock model that fails
-        mock_model = MagicMock()
-        mock_model.generate = AsyncMock(side_effect=Exception("Model failure"))
-        
-        resolver = AmbiguityResolver(mock_model)
+        failing_model = FailingModel()
+        resolver = AmbiguityResolver(failing_model)
         result = await resolver.resolve("Some ambiguous content", "config.generic")
         
         # Should fallback to heuristic resolution
@@ -318,13 +337,33 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_with_resolution_error(self):
         """Test resolution with error handling."""
-        from unittest.mock import MagicMock
+        # Create a custom model that fails with unhandleable error
+        class ErrorModel(Model):
+            def __init__(self):
+                super().__init__(
+                    name="error-model",
+                    provider="test",
+                    capabilities={"supported_tasks": ["generate"]},
+                    metrics={}
+                )
+            
+            async def generate(self, prompt, **kwargs):
+                raise Exception("Unhandleable error")
+            
+            async def generate_structured(self, prompt, schema, **kwargs):
+                raise Exception("Unhandleable error")
+            
+            def estimate_cost(self, prompt, max_tokens=None):
+                return 0.0
+            
+            async def health_check(self):
+                return True
+            
+            def can_execute(self, task):
+                return True
         
-        # Create a mock model that fails
-        mock_model = MagicMock()
-        mock_model.generate = AsyncMock(side_effect=Exception("Unhandleable error"))
-        
-        resolver = AmbiguityResolver(mock_model)
+        error_model = ErrorModel()
+        resolver = AmbiguityResolver(error_model)
         
         # Should still work due to fallback
         result = await resolver.resolve("Choose format", "config.format")
@@ -566,9 +605,13 @@ class TestAmbiguityResolver:
 
         resolver.set_resolution_strategy("custom", custom_strategy)
 
-        # Mock the classify method to return our custom type
+        # Create a custom classifier function
+        def custom_classifier(content, context_path):
+            return "custom"
+        
+        # Replace the classify method temporarily
         original_classify = resolver._classify_ambiguity
-        resolver._classify_ambiguity = lambda content, context_path: "custom"
+        resolver._classify_ambiguity = custom_classifier
 
         result = await resolver.resolve("test content", "test.path")
 
@@ -582,15 +625,40 @@ class TestAmbiguityResolver:
         """Test resolving with unknown strategy type."""
         resolver = AmbiguityResolver()
 
-        # Mock the classify method to return unknown type
+        # Create a custom classifier function that returns unknown type
+        def unknown_classifier(content, context_path):
+            return "unknown_type"
+        
+        # Replace the classify method temporarily
         original_classify = resolver._classify_ambiguity
-        resolver._classify_ambiguity = lambda content, context_path: "unknown_type"
+        resolver._classify_ambiguity = unknown_classifier
 
-        # Create a mock model for this specific test
-        from unittest.mock import MagicMock
-        mock_model = MagicMock()
-        mock_model.generate = AsyncMock(return_value="generic_result")
-        resolver.model = mock_model
+        # Create a test model that returns generic result
+        class GenericModel(Model):
+            def __init__(self):
+                super().__init__(
+                    name="generic-model",
+                    provider="test",
+                    capabilities={"supported_tasks": ["generate"]},
+                    metrics={}
+                )
+            
+            async def generate(self, prompt, **kwargs):
+                return "generic_result"
+            
+            async def generate_structured(self, prompt, schema, **kwargs):
+                return {"result": "generic_result"}
+            
+            def estimate_cost(self, prompt, max_tokens=None):
+                return 0.0
+            
+            async def health_check(self):
+                return True
+            
+            def can_execute(self, task):
+                return True
+        
+        resolver.model = GenericModel()
 
         result = await resolver.resolve("test content", "test.path")
 
@@ -609,9 +677,13 @@ class TestAmbiguityResolver:
 
         resolver.set_resolution_strategy("failing", failing_strategy)
 
-        # Mock the classify method to return our failing type
+        # Create a custom classifier function that returns failing type
+        def failing_classifier(content, context_path):
+            return "failing"
+        
+        # Replace the classify method temporarily
         original_classify = resolver._classify_ambiguity
-        resolver._classify_ambiguity = lambda content, context_path: "failing"
+        resolver._classify_ambiguity = failing_classifier
 
         with pytest.raises(AmbiguityResolutionError):
             await resolver.resolve("test content", "test.path")
@@ -621,22 +693,14 @@ class TestAmbiguityResolver:
 
     def test_resolver_creation_no_model_available(self):
         """Test resolver creation when no model is available."""
-        from unittest.mock import MagicMock, patch
-
-        # Create a mock resolver that always fails model imports
-        mock_resolver = MagicMock()
-        mock_resolver._get_best_available_model.side_effect = RuntimeError(
-            "No AI model available for ambiguity resolution"
-        )
-
-        # Patch the _get_best_available_model method to simulate no models available
-        with patch.object(
-            AmbiguityResolver,
-            "_get_best_available_model",
-            side_effect=RuntimeError("No AI model available for ambiguity resolution"),
-        ):
-            with pytest.raises(RuntimeError, match="No AI model available"):
-                AmbiguityResolver(model=None, fallback_to_mock=False)
+        # Create a custom AmbiguityResolver subclass that simulates no models
+        class NoModelResolver(AmbiguityResolver):
+            def _get_best_available_model(self, model_registry=None):
+                raise RuntimeError("No AI model available for ambiguity resolution")
+        
+        # Try to create the resolver without fallback
+        with pytest.raises(RuntimeError, match="No AI model available"):
+            NoModelResolver(model=None, fallback_to_mock=False)
 
     def test_classify_ambiguity_choose_with_true_false(self):
         """Test classification of choose with true/false."""
