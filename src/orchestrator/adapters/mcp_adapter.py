@@ -2,13 +2,20 @@
 
 import json
 import logging
+import asyncio
+import aiohttp
+import subprocess
+import sys
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
+import uuid
 
 from ..core.control_system import ControlAction, ControlSystem
 from ..core.model import Model
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..models.model_registry import ModelRegistry
+from ..control_systems.model_based_control_system import ModelBasedControlSystem
 
 
 @dataclass
@@ -128,85 +135,102 @@ class MCPClient:
     async def disconnect(self):
         """Disconnect from MCP server."""
         if self._connection:
+            await self._cleanup_transport()
             self._connection = None
             self.session_id = None
             self.logger.info(f"Disconnected from MCP server at {self.server_url}")
 
     async def _send_message(self, message: MCPMessage) -> Optional[Dict[str, Any]]:
-        """Send message to MCP server."""
-        # Simplified implementation - would use actual transport
-        # For now, return mock responses based on method
-
-        if message.method == "initialize":
-            return {
-                "result": {
-                    "protocolVersion": "2024-11-05",
-                    "capabilities": {
-                        "resources": {"subscribe": True},
-                        "tools": {},
-                        "prompts": {},
-                    },
-                    "serverInfo": {"name": "mock-mcp-server", "version": "1.0.0"},
-                    "sessionId": "session_123",
-                }
-            }
-
-        elif message.method == "resources/list":
-            return {
-                "result": {
-                    "resources": [
-                        {
-                            "uri": "file:///data/documents.json",
-                            "name": "Documents",
-                            "description": "Company documents",
-                            "mimeType": "application/json",
-                        }
-                    ]
-                }
-            }
-
-        elif message.method == "tools/list":
-            return {
-                "result": {
-                    "tools": [
-                        {
-                            "name": "web_search",
-                            "description": "Search the web for information",
-                            "inputSchema": {
-                                "type": "object",
-                                "properties": {
-                                    "query": {
-                                        "type": "string",
-                                        "description": "Search query",
-                                    }
-                                },
-                                "required": ["query"],
-                            },
-                        }
-                    ]
-                }
-            }
-
-        elif message.method == "prompts/list":
-            return {
-                "result": {
-                    "prompts": [
-                        {
-                            "name": "analyze_data",
-                            "description": "Analyze data and provide insights",
-                            "arguments": [
-                                {
-                                    "name": "data",
-                                    "description": "Data to analyze",
-                                    "required": True,
-                                }
-                            ],
-                        }
-                    ]
-                }
-            }
-
-        return None
+        """Send message to MCP server using real transport."""
+        
+        # Check if using HTTP transport
+        if self.server_url.startswith(("http://", "https://")):
+            return await self._send_http_message(message)
+        else:
+            # For stdio-based servers, use subprocess
+            return await self._send_stdio_message(message)
+    
+    async def _send_http_message(self, message: MCPMessage) -> Optional[Dict[str, Any]]:
+        """Send message via HTTP transport."""
+        if not hasattr(self, '_http_session'):
+            self._http_session = aiohttp.ClientSession()
+        
+        # Prepare JSON-RPC message
+        json_rpc_message = {
+            "jsonrpc": "2.0",
+            "method": message.method,
+            "params": message.params,
+            "id": message.id or str(uuid.uuid4())
+        }
+        
+        try:
+            async with self._http_session.post(
+                self.server_url,
+                json=json_rpc_message,
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result
+                else:
+                    self.logger.error(f"HTTP error {response.status}: {await response.text()}")
+                    return None
+                    
+        except aiohttp.ClientError as e:
+            self.logger.error(f"HTTP transport error: {e}")
+            return None
+        except Exception as e:
+            self.logger.error(f"Unexpected error in HTTP transport: {e}")
+            return None
+    
+    async def _send_stdio_message(self, message: MCPMessage) -> Optional[Dict[str, Any]]:
+        """Send message via stdio transport to a subprocess."""
+        if not hasattr(self, '_process') or self._process is None:
+            # Start the MCP server process
+            try:
+                self._process = await asyncio.create_subprocess_exec(
+                    sys.executable, "-m", self.server_url,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to start MCP server process: {e}")
+                return None
+        
+        # Prepare JSON-RPC message
+        json_rpc_message = {
+            "jsonrpc": "2.0",
+            "method": message.method,
+            "params": message.params,
+            "id": message.id or str(uuid.uuid4())
+        }
+        
+        try:
+            # Send message
+            message_bytes = (json.dumps(json_rpc_message) + "\n").encode()
+            self._process.stdin.write(message_bytes)
+            await self._process.stdin.drain()
+            
+            # Read response
+            response_line = await self._process.stdout.readline()
+            if response_line:
+                return json.loads(response_line.decode())
+            else:
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Stdio transport error: {e}")
+            return None
+    
+    async def _cleanup_transport(self):
+        """Clean up transport resources."""
+        if hasattr(self, '_http_session') and self._http_session:
+            await self._http_session.close()
+        
+        if hasattr(self, '_process') and self._process:
+            self._process.terminate()
+            await self._process.wait()
 
     async def _discover_capabilities(self):
         """Discover server capabilities."""
@@ -348,7 +372,7 @@ class MCPModel(Model):
 class MCPAdapter(ControlSystem):
     """Adapter for integrating Orchestrator with MCP servers."""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Dict[str, Any] = None, model_registry: ModelRegistry = None):
         if config is None:
             config = {"name": "mcp_adapter"}
 
@@ -357,6 +381,10 @@ class MCPAdapter(ControlSystem):
         self.clients: Dict[str, MCPClient] = {}
         self.models: Dict[str, MCPModel] = {}
         self.logger = logging.getLogger("mcp_adapter")
+        
+        # Initialize model registry and control system for AI-enhanced execution
+        self.model_registry = model_registry or ModelRegistry()
+        self.ai_control = ModelBasedControlSystem(self.model_registry)
 
     async def add_server(self, server_name: str, server_url: str) -> bool:
         """Add and connect to an MCP server."""
@@ -371,9 +399,119 @@ class MCPAdapter(ControlSystem):
         return False
 
     async def execute_task(self, task: Task, context: Dict[str, Any] = None) -> Any:
-        """Execute a single task."""
-        # Mock execution for testing
-        return f"Executed task {task.id} via MCP"
+        """Execute a single task using MCP tools and AI models."""
+        context = context or {}
+        
+        # Determine the best approach based on task action
+        action = task.action.lower() if isinstance(task.action, str) else str(task.action).lower()
+        
+        # Check if this is an MCP tool invocation
+        if action.startswith("mcp:") or action.startswith("tool:"):
+            # Extract tool name and execute via MCP
+            tool_name = action.split(":", 1)[1] if ":" in action else action
+            return await self._execute_mcp_tool(task, tool_name, context)
+        
+        # Check if this is a resource read operation
+        elif action in ["read", "fetch", "get"] and "resource" in task.parameters:
+            return await self._execute_resource_read(task, context)
+        
+        # Check if this is a prompt-based operation
+        elif action in ["prompt", "generate"] and any(client.prompts for client in self.clients.values()):
+            return await self._execute_mcp_prompt(task, context)
+        
+        # Otherwise, use AI model with MCP context enhancement
+        else:
+            return await self._execute_with_ai_and_mcp(task, context)
+    
+    async def _execute_mcp_tool(self, task: Task, tool_name: str, context: Dict[str, Any]) -> Any:
+        """Execute a task using an MCP tool."""
+        # Find a client that has this tool
+        for server_name, client in self.clients.items():
+            tool = next((t for t in client.tools if t.name == tool_name), None)
+            if tool:
+                # Prepare arguments from task parameters
+                arguments = task.parameters.copy()
+                
+                # Call the tool
+                result = await client.call_tool(tool_name, arguments)
+                if result:
+                    return result
+                else:
+                    raise RuntimeError(f"MCP tool '{tool_name}' execution failed on server '{server_name}'")
+        
+        raise ValueError(f"MCP tool '{tool_name}' not found in any connected server")
+    
+    async def _execute_resource_read(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Execute a resource read operation."""
+        resource_uri = task.parameters.get("resource") or task.parameters.get("uri")
+        if not resource_uri:
+            raise ValueError("Resource URI not specified in task parameters")
+        
+        # Try to read from any connected server
+        for server_name, client in self.clients.items():
+            result = await client.read_resource(resource_uri)
+            if result:
+                return result
+        
+        raise RuntimeError(f"Failed to read resource '{resource_uri}' from any MCP server")
+    
+    async def _execute_mcp_prompt(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Execute a task using an MCP prompt template."""
+        prompt_name = task.parameters.get("prompt_name") or task.parameters.get("template")
+        
+        if prompt_name:
+            # Find a client with this prompt
+            for server_name, client in self.clients.items():
+                prompt = next((p for p in client.prompts if p.name == prompt_name), None)
+                if prompt:
+                    # Get the prompt with arguments
+                    prompt_result = await client.get_prompt(prompt_name, task.parameters)
+                    if prompt_result:
+                        # Use AI to process the prompt
+                        enhanced_task = Task(
+                            id=task.id,
+                            name=task.name,
+                            action="generate",
+                            parameters={"prompt": prompt_result.get("prompt", str(prompt_result))}
+                        )
+                        return await self.ai_control.execute_task(enhanced_task, context)
+        
+        # Fallback to AI execution
+        return await self._execute_with_ai_and_mcp(task, context)
+    
+    async def _execute_with_ai_and_mcp(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Execute task using AI model enhanced with MCP context."""
+        # Gather relevant MCP context
+        mcp_context = await self._gather_mcp_context(task, context)
+        
+        # Enhance the context with MCP information
+        enhanced_context = context.copy()
+        enhanced_context["mcp_resources"] = mcp_context.get("resources", [])
+        enhanced_context["mcp_tools"] = mcp_context.get("tools", [])
+        enhanced_context["mcp_capabilities"] = mcp_context.get("capabilities", {})
+        
+        # Execute using AI control system
+        return await self.ai_control.execute_task(task, enhanced_context)
+    
+    async def _gather_mcp_context(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Gather relevant MCP context for task execution."""
+        mcp_context = {
+            "resources": [],
+            "tools": [],
+            "capabilities": {}
+        }
+        
+        # Collect available resources and tools from all clients
+        for server_name, client in self.clients.items():
+            mcp_context["resources"].extend([
+                {"server": server_name, "resource": r} for r in client.resources
+            ])
+            mcp_context["tools"].extend([
+                {"server": server_name, "tool": t} for t in client.tools
+            ])
+            mcp_context["capabilities"][server_name] = client.capabilities
+        
+        return mcp_context
 
     async def execute_pipeline(self, pipeline: Pipeline) -> Dict[str, Any]:
         """Execute an entire pipeline."""
@@ -385,16 +523,42 @@ class MCPAdapter(ControlSystem):
 
     def get_capabilities(self) -> Dict[str, Any]:
         """Return system capabilities."""
-        return {
+        # Get base AI capabilities
+        ai_capabilities = self.ai_control.get_capabilities()
+        
+        # Add MCP-specific capabilities
+        mcp_capabilities = {
             "supports_tools": True,
             "supports_resources": True,
             "supports_prompts": True,
-            "supported_actions": ["analyze", "query", "search"],
+            "supports_mcp_protocol": True,
+            "mcp_servers": list(self.clients.keys()),
+            "mcp_tools": [tool.name for client in self.clients.values() for tool in client.tools],
+            "mcp_resources": [res.uri for client in self.clients.values() for res in client.resources],
         }
+        
+        # Merge capabilities
+        combined = ai_capabilities.copy()
+        combined.update(mcp_capabilities)
+        
+        # Add MCP actions to supported actions
+        mcp_actions = ["mcp:*", "tool:*", "read", "fetch", "prompt"]
+        if "supported_actions" in combined:
+            combined["supported_actions"].extend(mcp_actions)
+        else:
+            combined["supported_actions"] = mcp_actions
+        
+        return combined
 
     async def health_check(self) -> bool:
         """Check if the system is healthy."""
-        return True  # Simplified for testing
+        # Check if we have at least one connected MCP server
+        any_connected = any(client._connection for client in self.clients.values())
+        
+        # Check if AI control system is healthy
+        ai_healthy = await self.ai_control.health_check()
+        
+        return any_connected or ai_healthy  # Can work with either MCP or AI
 
     async def remove_server(self, server_name: str):
         """Remove and disconnect from an MCP server."""
