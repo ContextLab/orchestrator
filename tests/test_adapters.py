@@ -42,10 +42,10 @@ class TestLangGraphAdapter:
         assert is_healthy == expected_healthy
 
     @pytest.mark.asyncio
-    async def test_langgraph_adapter_task_execution(self):
+    async def test_langgraph_adapter_task_execution(self, populated_model_registry):
         """Test LangGraphAdapter task execution with real AI models."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
@@ -99,10 +99,10 @@ class TestMCPAdapter:
         assert is_healthy == (len(adapter.clients) > 0 or ai_healthy)
 
     @pytest.mark.asyncio
-    async def test_mcp_adapter_task_execution(self):
+    async def test_mcp_adapter_task_execution(self, populated_model_registry):
         """Test MCPAdapter task execution with real AI models."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
@@ -111,7 +111,7 @@ class TestMCPAdapter:
             )
             
         config = {"name": "mcp", "version": "1.0.0"}
-        adapter = MCPAdapter(config)
+        adapter = MCPAdapter(config, model_registry=registry)
 
         task = Task("test_task", "Test Task", "analyze")
         task.parameters = {"prompt": "Analyze the word 'hello' and list 3 characteristics"}
@@ -130,10 +130,10 @@ class TestAdapterIntegration:
     """Test adapter integration scenarios."""
 
     @pytest.mark.asyncio
-    async def test_adapter_pipeline_execution(self):
+    async def test_adapter_pipeline_execution(self, populated_model_registry):
         """Test adapters working with pipeline execution using real AI models."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
@@ -210,10 +210,10 @@ class TestAdapterIntegration:
             assert "Failed to execute task" in str(e) or "parameters" in str(e).lower()
     
     @pytest.mark.asyncio
-    async def test_langgraph_workflow_execution(self):
+    async def test_langgraph_workflow_execution(self, populated_model_registry):
         """Test LangGraph workflow functionality with real AI."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
@@ -254,9 +254,9 @@ class TestAdapterIntegration:
         assert len(final_state.data["analysis"]) > 10
     
     @pytest.mark.asyncio
-    async def test_mcp_adapter_capabilities(self):
+    async def test_mcp_adapter_capabilities(self, populated_model_registry):
         """Test MCP adapter capabilities reporting."""
-        adapter = MCPAdapter()
+        adapter = MCPAdapter(model_registry=populated_model_registry)
         
         capabilities = adapter.get_capabilities()
         

@@ -30,9 +30,9 @@ class TestOrchestrator:
         assert orchestrator.running_pipelines == {}
         assert orchestrator.execution_history == []
 
-    def test_orchestrator_with_custom_components(self):
+    def test_orchestrator_with_custom_components(self, populated_model_registry):
         """Test orchestrator with custom components."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         
         # Use real ModelBasedControlSystem with actual AI models
         control_system = ModelBasedControlSystem(model_registry=registry)
@@ -54,10 +54,10 @@ class TestOrchestrator:
         assert orchestrator.max_concurrent_tasks == 5
 
     @pytest.mark.asyncio
-    async def test_execute_simple_pipeline(self):
+    async def test_execute_simple_pipeline(self, populated_model_registry):
         """Test executing a simple pipeline with real AI model."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
@@ -94,10 +94,10 @@ class TestOrchestrator:
         assert len(results["test_task"]) > 10  # Should have actual content
 
     @pytest.mark.asyncio
-    async def test_execute_pipeline_with_dependencies(self):
+    async def test_execute_pipeline_with_dependencies(self, populated_model_registry):
         """Test executing pipeline with task dependencies using real AI."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
@@ -159,10 +159,10 @@ class TestOrchestrator:
         assert len(results["task3"]) > 10  # Outline created
 
     @pytest.mark.asyncio
-    async def test_execute_pipeline_parallel_tasks(self):
+    async def test_execute_pipeline_parallel_tasks(self, populated_model_registry):
         """Test executing pipeline with parallel tasks using real AI."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
@@ -218,9 +218,9 @@ class TestOrchestrator:
             assert len(result) > 10
 
     @pytest.mark.asyncio
-    async def test_execute_pipeline_with_failure(self):
+    async def test_execute_pipeline_with_failure(self, populated_model_registry):
         """Test executing pipeline with task failure."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         
         # Create a custom control system that extends ModelBasedControlSystem to fail on specific tasks
         class FailingModelControlSystem(ModelBasedControlSystem):
@@ -297,10 +297,10 @@ class TestOrchestrator:
             assert len(checkpoint_files) > 0
 
     @pytest.mark.asyncio
-    async def test_execute_yaml_simple(self):
+    async def test_execute_yaml_simple(self, populated_model_registry):
         """Test executing YAML pipeline with real AI model."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
@@ -582,9 +582,9 @@ class TestOrchestrator:
         assert "running_pipelines=1" in repr_str
 
     @pytest.mark.asyncio
-    async def test_execute_pipeline_task_failure_policies(self):
+    async def test_execute_pipeline_task_failure_policies(self, populated_model_registry):
         """Test different task failure policies."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         
         # Test "continue" policy with real model-based system
         class PolicyModelControlSystem(ModelBasedControlSystem):
@@ -630,9 +630,9 @@ class TestOrchestrator:
         assert task3.status == TaskStatus.COMPLETED
 
     @pytest.mark.asyncio
-    async def test_execute_pipeline_skip_dependent_tasks(self):
+    async def test_execute_pipeline_skip_dependent_tasks(self, populated_model_registry):
         """Test skipping dependent tasks when task fails."""
-        registry = ModelRegistry()
+        registry = populated_model_registry
         
         # Create control system that fails specific tasks
         class SkipModelControlSystem(ModelBasedControlSystem):
@@ -781,10 +781,10 @@ class TestOrchestrator:
         assert task.status == TaskStatus.COMPLETED
 
     @pytest.mark.asyncio
-    async def test_execute_pipeline_with_timeout(self):
+    async def test_execute_pipeline_with_timeout(self, populated_model_registry):
         """Test executing pipeline with task timeout."""
         # Skip if no AI models available
-        registry = ModelRegistry()
+        registry = populated_model_registry
         available_models = await registry.get_available_models()
         if not available_models:
             raise AssertionError(
