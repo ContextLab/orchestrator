@@ -7,6 +7,7 @@ import pytest
 
 from orchestrator.compiler.yaml_compiler import YAMLCompiler
 from orchestrator.core.control_system import ControlSystem
+from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
 from orchestrator.core.pipeline import Pipeline
 from orchestrator.core.task import Task, TaskStatus
 from orchestrator.models.model_registry import ModelRegistry
@@ -33,18 +34,8 @@ class TestOrchestrator:
         """Test orchestrator with custom components."""
         registry = ModelRegistry()
         
-        # Create a minimal concrete control system
-        class TestControlSystem(ControlSystem):
-            def __init__(self):
-                super().__init__("test-control", {})
-            
-            async def execute_task(self, task, context=None):
-                return {"status": "completed"}
-            
-            async def health_check(self):
-                return True
-        
-        control_system = TestControlSystem()
+        # Use real ModelBasedControlSystem with actual AI models
+        control_system = ModelBasedControlSystem(model_registry=registry)
         state_manager = StateManager()
         compiler = YAMLCompiler()
 
@@ -64,12 +55,25 @@ class TestOrchestrator:
 
     @pytest.mark.asyncio
     async def test_execute_simple_pipeline(self):
-        """Test executing a simple pipeline."""
-        orchestrator = Orchestrator()
+        """Test executing a simple pipeline with real AI model."""
+        # Skip if no AI models available
+        registry = ModelRegistry()
+        available_models = await registry.get_available_models()
+        if not available_models:
+            pytest.skip("No AI models available for testing")
+        
+        # Use real ModelBasedControlSystem
+        control_system = ModelBasedControlSystem(model_registry=registry)
+        orchestrator = Orchestrator(control_system=control_system)
 
-        # Create a simple pipeline
+        # Create a simple pipeline with real generation task
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
-        task = Task(id="test_task", name="Test Task", action="generate")
+        task = Task(
+            id="test_task", 
+            name="Test Task", 
+            action="generate",
+            parameters={"prompt": "Write a haiku about testing software"}
+        )
         pipeline.add_task(task)
 
         # Execute pipeline
@@ -81,20 +85,45 @@ class TestOrchestrator:
         assert task.status == TaskStatus.COMPLETED
         assert len(orchestrator.execution_history) == 1
         assert orchestrator.execution_history[0]["status"] == "completed"
+        
+        # Result should be actual generated text
+        assert isinstance(results["test_task"], str)
+        assert len(results["test_task"]) > 10  # Should have actual content
 
     @pytest.mark.asyncio
     async def test_execute_pipeline_with_dependencies(self):
-        """Test executing pipeline with task dependencies."""
-        orchestrator = Orchestrator()
+        """Test executing pipeline with task dependencies using real AI."""
+        # Skip if no AI models available
+        registry = ModelRegistry()
+        available_models = await registry.get_available_models()
+        if not available_models:
+            pytest.skip("No AI models available for testing")
+        
+        # Use real ModelBasedControlSystem
+        control_system = ModelBasedControlSystem(model_registry=registry)
+        orchestrator = Orchestrator(control_system=control_system)
 
-        # Create pipeline with dependencies
+        # Create pipeline with real dependent tasks
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
-        task1 = Task(id="task1", name="Task 1", action="generate")
+        task1 = Task(
+            id="task1", 
+            name="Generate Topic", 
+            action="generate",
+            parameters={"prompt": "Generate a topic for a technical blog post about AI"}
+        )
         task2 = Task(
-            id="task2", name="Task 2", action="analyze", dependencies=["task1"]
+            id="task2", 
+            name="Analyze Topic", 
+            action="analyze",
+            parameters={"prompt": "Analyze the generated topic and list 3 key points to cover"},
+            dependencies=["task1"]
         )
         task3 = Task(
-            id="task3", name="Task 3", action="transform", dependencies=["task2"]
+            id="task3", 
+            name="Create Outline", 
+            action="transform",
+            parameters={"prompt": "Transform the analysis into a structured blog post outline"},
+            dependencies=["task2"]
         )
 
         pipeline.add_task(task1)
@@ -117,18 +146,44 @@ class TestOrchestrator:
 
         # Check execution order was respected
         assert task1.completed_at < task2.completed_at < task3.completed_at
+        
+        # Verify results build on each other
+        assert len(results["task1"]) > 10  # Topic generated
+        assert len(results["task2"]) > 10  # Analysis done
+        assert len(results["task3"]) > 10  # Outline created
 
     @pytest.mark.asyncio
     async def test_execute_pipeline_parallel_tasks(self):
-        """Test executing pipeline with parallel tasks."""
-        orchestrator = Orchestrator()
+        """Test executing pipeline with parallel tasks using real AI."""
+        # Skip if no AI models available
+        registry = ModelRegistry()
+        available_models = await registry.get_available_models()
+        if not available_models:
+            pytest.skip("No AI models available for testing")
+        
+        control_system = ModelBasedControlSystem(model_registry=registry)
+        orchestrator = Orchestrator(control_system=control_system)
 
-        # Create pipeline with parallel tasks
+        # Create pipeline with parallel tasks that do real work
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
-        task1 = Task(id="task1", name="Task 1", action="generate")
-        task2 = Task(id="task2", name="Task 2", action="generate")  # Parallel to task1
+        task1 = Task(
+            id="task1", 
+            name="Task 1", 
+            action="generate",
+            parameters={"prompt": "List 3 programming languages"}
+        )
+        task2 = Task(
+            id="task2", 
+            name="Task 2", 
+            action="generate",
+            parameters={"prompt": "List 3 database systems"}
+        )  # Parallel to task1
         task3 = Task(
-            id="task3", name="Task 3", action="analyze", dependencies=["task1", "task2"]
+            id="task3", 
+            name="Task 3", 
+            action="analyze",
+            parameters={"prompt": "Analyze which programming languages work well with which databases"},
+            dependencies=["task1", "task2"]
         )
 
         pipeline.add_task(task1)
@@ -147,30 +202,36 @@ class TestOrchestrator:
         # Check that task3 ran after task1 and task2
         assert task3.completed_at > task1.completed_at
         assert task3.completed_at > task2.completed_at
+        
+        # Verify all results have content
+        for task_id, result in results.items():
+            assert isinstance(result, str)
+            assert len(result) > 10
 
     @pytest.mark.asyncio
     async def test_execute_pipeline_with_failure(self):
         """Test executing pipeline with task failure."""
-        orchestrator = Orchestrator()
-
-        # Create control system that fails specific tasks
-        class FailingControlSystem(ControlSystem):
-            def __init__(self):
-                super().__init__("failing-control", {})
-            
+        registry = ModelRegistry()
+        
+        # Create a custom control system that extends ModelBasedControlSystem to fail on specific tasks
+        class FailingModelControlSystem(ModelBasedControlSystem):
             async def execute_task(self, task, context=None):
                 if task.id == "failing_task":
-                    raise Exception("Test failure")
-                return {"status": "completed"}
-            
-            async def health_check(self):
-                return True
+                    raise Exception("Intentional test failure")
+                # Otherwise use real model execution
+                return await super().execute_task(task, context)
         
-        orchestrator.control_system = FailingControlSystem()
+        control_system = FailingModelControlSystem(model_registry=registry)
+        orchestrator = Orchestrator(control_system=control_system)
 
         # Create pipeline
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
-        task1 = Task(id="task1", name="Task 1", action="generate")
+        task1 = Task(
+            id="task1", 
+            name="Task 1", 
+            action="generate",
+            parameters={"prompt": "Say hello"}
+        )
         task2 = Task(id="failing_task", name="Failing Task", action="fail")
 
         pipeline.add_task(task1)
@@ -228,8 +289,15 @@ class TestOrchestrator:
 
     @pytest.mark.asyncio
     async def test_execute_yaml_simple(self):
-        """Test executing YAML pipeline."""
-        orchestrator = Orchestrator()
+        """Test executing YAML pipeline with real AI model."""
+        # Skip if no AI models available
+        registry = ModelRegistry()
+        available_models = await registry.get_available_models()
+        if not available_models:
+            pytest.skip("No AI models available for testing")
+        
+        control_system = ModelBasedControlSystem(model_registry=registry)
+        orchestrator = Orchestrator(control_system=control_system)
 
         yaml_content = """
         name: test_pipeline
@@ -239,13 +307,15 @@ class TestOrchestrator:
             name: Step 1
             action: generate
             parameters:
-              prompt: Hello World
+              prompt: Write a one-sentence greeting
         """
 
         results = await orchestrator.execute_yaml(yaml_content)
 
         assert isinstance(results, dict)
         assert "step1" in results
+        assert isinstance(results["step1"], str)
+        assert len(results["step1"]) > 5  # Should have actual generated content
 
     @pytest.mark.asyncio
     async def test_execute_yaml_with_context(self):
@@ -502,32 +572,38 @@ class TestOrchestrator:
     @pytest.mark.asyncio
     async def test_execute_pipeline_task_failure_policies(self):
         """Test different task failure policies."""
-        orchestrator = Orchestrator()
-
-        # Test "continue" policy
-        class PolicyControlSystem(ControlSystem):
-            def __init__(self):
-                super().__init__("policy-control", {})
-            
+        registry = ModelRegistry()
+        
+        # Test "continue" policy with real model-based system
+        class PolicyModelControlSystem(ModelBasedControlSystem):
             async def execute_task(self, task, context=None):
                 if task.id == "failing_task":
-                    raise Exception("Test failure")
-                return {"status": "completed"}
-            
-            async def health_check(self):
-                return True
+                    raise Exception("Intentional policy test failure")
+                # Otherwise use real model execution
+                return await super().execute_task(task, context)
         
-        orchestrator.control_system = PolicyControlSystem()
+        control_system = PolicyModelControlSystem(model_registry=registry)
+        orchestrator = Orchestrator(control_system=control_system)
 
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
-        task1 = Task(id="task1", name="Task 1", action="generate")
+        task1 = Task(
+            id="task1", 
+            name="Task 1", 
+            action="generate",
+            parameters={"prompt": "Generate a number between 1 and 10"}
+        )
         task2 = Task(
             id="failing_task",
             name="Failing Task",
             action="fail",
             metadata={"on_failure": "continue"},
         )
-        task3 = Task(id="task3", name="Task 3", action="generate")
+        task3 = Task(
+            id="task3", 
+            name="Task 3", 
+            action="generate",
+            parameters={"prompt": "Generate a color name"}
+        )
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
@@ -544,22 +620,18 @@ class TestOrchestrator:
     @pytest.mark.asyncio
     async def test_execute_pipeline_skip_dependent_tasks(self):
         """Test skipping dependent tasks when task fails."""
-        orchestrator = Orchestrator()
-
+        registry = ModelRegistry()
+        
         # Create control system that fails specific tasks
-        class SkipControlSystem(ControlSystem):
-            def __init__(self):
-                super().__init__("skip-control", {})
-            
+        class SkipModelControlSystem(ModelBasedControlSystem):
             async def execute_task(self, task, context=None):
                 if task.id == "failing_task":
-                    raise Exception("Test failure")
-                return {"status": "completed"}
-            
-            async def health_check(self):
-                return True
+                    raise Exception("Intentional skip test failure")
+                # Otherwise use real model execution
+                return await super().execute_task(task, context)
         
-        orchestrator.control_system = SkipControlSystem()
+        control_system = SkipModelControlSystem(model_registry=registry)
+        orchestrator = Orchestrator(control_system=control_system)
 
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
         task1 = Task(
@@ -569,10 +641,18 @@ class TestOrchestrator:
             metadata={"on_failure": "skip"},
         )
         task2 = Task(
-            id="task2", name="Task 2", action="generate", dependencies=["failing_task"]
+            id="task2", 
+            name="Task 2", 
+            action="generate",
+            parameters={"prompt": "This should be skipped"},
+            dependencies=["failing_task"]
         )
         task3 = Task(
-            id="task3", name="Task 3", action="generate", dependencies=["task2"]
+            id="task3", 
+            name="Task 3", 
+            action="generate",
+            parameters={"prompt": "This should also be skipped"},
+            dependencies=["task2"]
         )
 
         pipeline.add_task(task1)
@@ -691,23 +771,32 @@ class TestOrchestrator:
     @pytest.mark.asyncio
     async def test_execute_pipeline_with_timeout(self):
         """Test executing pipeline with task timeout."""
-        orchestrator = Orchestrator()
+        # Skip if no AI models available
+        registry = ModelRegistry()
+        available_models = await registry.get_available_models()
+        if not available_models:
+            pytest.skip("No AI models available for testing")
+        
+        control_system = ModelBasedControlSystem(model_registry=registry)
+        orchestrator = Orchestrator(control_system=control_system)
 
         pipeline = Pipeline(id="timeout_pipeline", name="Timeout Pipeline")
         task = Task(
             id="timeout_task",
             name="Timeout Task",
             action="generate",
-            timeout=1,  # 1 second timeout
+            parameters={"prompt": "Say 'test complete' in 3 words"},
+            timeout=30,  # 30 second timeout (reasonable for real AI)
         )
         pipeline.add_task(task)
 
         # Execute pipeline
         results = await orchestrator.execute_pipeline(pipeline)
 
-        # Task should complete normally (MockControlSystem is fast)
+        # Task should complete normally
         assert task.status == TaskStatus.COMPLETED
         assert "timeout_task" in results
+        assert isinstance(results["timeout_task"], str)
 
     @pytest.mark.asyncio
     async def test_execute_pipeline_max_retries(self):
@@ -726,7 +815,7 @@ class TestOrchestrator:
         # Task should complete
         assert task.status == TaskStatus.COMPLETED
         assert "retry_task" in results
-        assert task.retry_count == 0  # No retries needed with default control system
+        assert task.retry_count == 0  # No retries needed if model succeeds
 
 
 class TestOrchestratorAdvanced:
