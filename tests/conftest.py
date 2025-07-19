@@ -33,10 +33,10 @@ def populated_model_registry() -> ModelRegistry:
 
 
 @pytest.fixture(scope="session")
-def model_registry() -> ModelRegistry:
+def model_registry(populated_model_registry) -> ModelRegistry:
     """
     Alias for populated_model_registry for backward compatibility.
     
     Many tests expect a 'model_registry' fixture.
     """
-    return populated_model_registry()
+    return populated_model_registry

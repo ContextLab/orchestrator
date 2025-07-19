@@ -42,6 +42,40 @@ pip install py-orc[dev]          # Development tools
 pip install py-orc[all]          # Everything
 ```
 
+### API Key Configuration
+
+Orchestrator supports multiple AI providers. Configure your API keys using the interactive setup:
+
+```bash
+# Interactive setup for all providers
+orchestrator keys setup
+
+# Or add individual keys
+orchestrator keys add openai
+orchestrator keys add anthropic
+orchestrator keys add google
+orchestrator keys add huggingface
+
+# Check configured providers
+orchestrator keys list
+
+# Validate your configuration
+orchestrator keys validate
+```
+
+API keys are stored securely in `~/.orchestrator/.env` with file permissions set to 600 (owner read/write only).
+
+#### Required Environment Variables
+
+If you prefer to set environment variables manually:
+
+- `OPENAI_API_KEY` - OpenAI API key (for GPT models)
+- `ANTHROPIC_API_KEY` - Anthropic API key (for Claude models)
+- `GOOGLE_AI_API_KEY` - Google AI API key (for Gemini models)
+- `HF_TOKEN` - Hugging Face token (for HuggingFace models)
+
+**Note**: Ollama models run locally and don't require API keys. They will be downloaded automatically on first use.
+
 ### Basic Usage
 
 1. **Create a simple pipeline** (`hello_world.yaml`):
