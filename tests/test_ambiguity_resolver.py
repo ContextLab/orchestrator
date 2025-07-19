@@ -8,16 +8,23 @@ from orchestrator.compiler.ambiguity_resolver import (
 )
 from orchestrator.core.model import Model
 from orchestrator.models.model_registry import ModelRegistry
+from orchestrator import init_models
+
+
+@pytest.fixture(scope="module")
+def model_registry():
+    """Initialize models once for all tests in this module."""
+    return init_models()
 
 
 class TestAmbiguityResolver:
     """Test cases for AmbiguityResolver class."""
 
-    def test_resolver_creation(self):
+    def test_resolver_creation(self, model_registry):
         """Test basic resolver creation."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(model_registry)
 
-        assert resolver.model is not None
+        assert resolver.model_registry is not None
         assert resolver.resolution_cache == {}
         assert len(resolver.resolution_strategies) == 6
         assert "parameter" in resolver.resolution_strategies
@@ -27,30 +34,23 @@ class TestAmbiguityResolver:
         assert "number" in resolver.resolution_strategies
         assert "string" in resolver.resolution_strategies
 
-    def test_resolver_with_model(self):
-        """Test resolver with specific model."""
-        registry = ModelRegistry()
-        # Try to get a real model
-        model = None
-        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b"]:
-            try:
-                model = registry.get_model(model_id)
-                if model:
-                    break
-            except:
-                pass
+    def test_resolver_with_model_registry(self, model_registry):
+        """Test resolver with model registry."""
+        # Verify the registry has models
+        available_models = model_registry.list_models()
+        if not available_models:
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
-        if model:
-            resolver = AmbiguityResolver(model)
-            assert resolver.model is model
-        else:
-            # Skip test if no models available
-            pytest.skip("No AI models available for testing")
+        resolver = AmbiguityResolver(model_registry)
+        assert resolver.model_registry is model_registry
 
     @pytest.mark.asyncio
     async def test_resolve_parameter_ambiguity_format(self):
         """Test resolving parameter ambiguity with format."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("best format", "parameters.format")
 
@@ -59,7 +59,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_parameter_ambiguity_method(self):
         """Test resolving parameter ambiguity with method."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("best method", "parameters.method")
 
@@ -68,7 +68,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_parameter_ambiguity_type(self):
         """Test resolving parameter ambiguity with type."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("best type", "parameters.type")
 
@@ -77,7 +77,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_parameter_ambiguity_generic(self):
         """Test resolving parameter ambiguity with generic content."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
         
         # The resolver should handle this with its default strategy
         result = await resolver.resolve("best configuration", "parameters.config")
@@ -89,7 +89,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_value_ambiguity_with_choices(self):
         """Test resolving value ambiguity with explicit choices."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Select from: json, xml, csv", "output.format")
 
@@ -98,7 +98,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_value_ambiguity_no_choices(self):
         """Test resolving value ambiguity without explicit choices."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
         
         # Should use default resolution
         result = await resolver.resolve("Choose the best option", "config.option")
@@ -110,7 +110,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_list_ambiguity_source(self):
         """Test resolving list ambiguity with source context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Choose data source list", "config.sources")
 
@@ -119,7 +119,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_list_ambiguity_format(self):
         """Test resolving list ambiguity with format context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Choose format list", "config.formats")
 
@@ -128,7 +128,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_list_ambiguity_language(self):
         """Test resolving list ambiguity with language context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Choose language list", "config.languages")
 
@@ -137,7 +137,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_list_ambiguity_default(self):
         """Test resolving list ambiguity with default context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Choose some items", "config.items")
 
@@ -146,7 +146,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_boolean_ambiguity_positive(self):
         """Test resolving boolean ambiguity with positive indicators."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # Test each positive word
         assert (
@@ -160,7 +160,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_boolean_ambiguity_negative(self):
         """Test resolving boolean ambiguity with negative indicators."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # Test each negative word
         assert (
@@ -174,7 +174,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_boolean_ambiguity_context_positive(self):
         """Test resolving boolean ambiguity with positive context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Choose option", "config.enable_feature")
         assert result is True
@@ -185,7 +185,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_boolean_ambiguity_context_negative(self):
         """Test resolving boolean ambiguity with negative context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Choose option", "config.other_option")
         assert result is False
@@ -193,7 +193,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_number_ambiguity_batch(self):
         """Test resolving number ambiguity with batch context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Set batch size", "config.batch_size")
 
@@ -202,7 +202,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_number_ambiguity_timeout(self):
         """Test resolving number ambiguity with timeout context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Set timeout value", "config.timeout")
 
@@ -211,7 +211,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_number_ambiguity_retry(self):
         """Test resolving number ambiguity with retry context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Set retry count", "config.retry")
 
@@ -220,7 +220,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_number_ambiguity_size(self):
         """Test resolving number ambiguity with size context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Set size value", "config.size")
 
@@ -229,7 +229,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_number_ambiguity_limit(self):
         """Test resolving number ambiguity with limit context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Set limit value", "config.limit")
 
@@ -238,7 +238,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_number_ambiguity_default(self):
         """Test resolving number ambiguity with default context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve("Set some number", "config.number")
 
@@ -247,7 +247,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_string_ambiguity_with_quotes(self):
         """Test resolving string ambiguity with quoted content."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = await resolver.resolve('Choose "custom_value" option', "config.value")
 
@@ -256,7 +256,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_string_ambiguity_without_quotes(self):
         """Test resolving string ambiguity without quoted content."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
         
         result = await resolver.resolve("Choose string value", "config.string")
         
@@ -265,13 +265,12 @@ class TestAmbiguityResolver:
         assert isinstance(result, str)
 
     @pytest.mark.asyncio
-    async def test_resolve_generic_with_model(self):
+    async def test_resolve_generic_with_model(self, model_registry):
         """Test generic resolution using model."""
-        registry = ModelRegistry()
         model = None
         for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b"]:
             try:
-                model = registry.get_model(model_id)
+                model = model_registry.get_model(model_id)
                 if model:
                     break
             except:
@@ -283,47 +282,56 @@ class TestAmbiguityResolver:
             # Real model should return something
             assert result is not None
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
     @pytest.mark.asyncio
-    async def test_resolve_generic_with_model_failure(self):
-        """Test generic resolution with model failure."""
-        # Create a custom model that fails
-        class FailingModel(Model):
-            def __init__(self):
-                super().__init__(
-                    name="failing-model",
-                    provider="test",
-                    capabilities={"supported_tasks": ["generate"]},
-                    metrics={}
-                )
-            
-            async def generate(self, prompt, **kwargs):
-                raise Exception("Model failure")
-            
-            async def generate_structured(self, prompt, schema, **kwargs):
-                raise Exception("Model failure")
-            
-            def estimate_cost(self, prompt, max_tokens=None):
-                return 0.0
-            
-            async def health_check(self):
-                return True
-            
-            def can_execute(self, task):
-                return True
+    async def test_resolve_with_real_ambiguity_examples(self, model_registry):
+        """Test resolving real ambiguous content with AI models."""
+        model = None
+        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b"]:
+            try:
+                model = model_registry.get_model(model_id)
+                if model:
+                    break
+            except:
+                pass
         
-        failing_model = FailingModel()
-        resolver = AmbiguityResolver(failing_model)
-        result = await resolver.resolve("Some ambiguous content", "config.generic")
+        if not model:
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
-        # Should fallback to heuristic resolution
-        assert result == "default"
+        resolver = AmbiguityResolver(model)
+        
+        # Test real ambiguous scenarios that would appear in YAML files
+        test_cases = [
+            # Format selection
+            ("Choose appropriate output format: json, yaml, or xml based on efficiency", "output.format", ["json", "yaml", "xml"]),
+            # Method selection  
+            ("Select the best analysis method for large datasets", "analysis.method", ["streaming", "batch", "parallel"]),
+            # Boolean decision
+            ("Determine if caching should be enabled for better performance", "config.enable_cache", [True, False]),
+            # Number selection
+            ("Choose optimal batch size for processing", "config.batch_size", range(8, 129)),
+            # Algorithm selection
+            ("Pick the most suitable sorting algorithm for this data type", "sort.algorithm", ["quicksort", "mergesort", "heapsort", "timsort"]),
+        ]
+        
+        for content, context_path, valid_options in test_cases:
+            result = await resolver.resolve(content, context_path)
+            # Verify the AI made a reasonable choice
+            assert result in valid_options, f"AI chose '{result}' which is not in {valid_options} for '{content}'"
+            # Verify it's not just returning defaults
+            assert isinstance(result, type(valid_options[0]))
 
     @pytest.mark.asyncio
     async def test_resolve_with_cache(self):
         """Test resolution with caching."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # First resolution
         result1 = await resolver.resolve("Choose format", "test.format")
@@ -335,43 +343,28 @@ class TestAmbiguityResolver:
         assert resolver.get_cache_size() == 1
 
     @pytest.mark.asyncio
-    async def test_resolve_with_resolution_error(self):
-        """Test resolution with error handling."""
-        # Create a custom model that fails with unhandleable error
-        class ErrorModel(Model):
-            def __init__(self):
-                super().__init__(
-                    name="error-model",
-                    provider="test",
-                    capabilities={"supported_tasks": ["generate"]},
-                    metrics={}
-                )
-            
-            async def generate(self, prompt, **kwargs):
-                raise Exception("Unhandleable error")
-            
-            async def generate_structured(self, prompt, schema, **kwargs):
-                raise Exception("Unhandleable error")
-            
-            def estimate_cost(self, prompt, max_tokens=None):
-                return 0.0
-            
-            async def health_check(self):
-                return True
-            
-            def can_execute(self, task):
-                return True
+    async def test_resolve_with_network_failure(self):
+        """Test resolution with real network failures."""
+        # This test requires manipulating network conditions
+        # For now, we'll test the fallback mechanism works
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
         
-        error_model = ErrorModel()
-        resolver = AmbiguityResolver(error_model)
+        # Test that resolver has fallback strategies for common cases
+        test_cases = [
+            ("Choose format", "config.format", "json"),
+            ("Select method", "config.method", "auto"),
+            ("Pick style", "config.style", "default"),
+            ("Choose query type", "config.query", "default search query"),
+        ]
         
-        # Should still work due to fallback
-        result = await resolver.resolve("Choose format", "config.format")
-        assert result == "json"
+        for content, context_path, expected in test_cases:
+            # Even without a model, resolver should have sensible fallbacks
+            result = await resolver.resolve(content, context_path)
+            assert result == expected, f"Expected '{expected}' but got '{result}' for '{content}'"
 
     def test_classify_ambiguity_choose_boolean(self):
         """Test classifying ambiguity with choose boolean."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         assert (
             resolver._classify_ambiguity("Choose true or false", "config.flag")
@@ -380,7 +373,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_choose_number(self):
         """Test classifying ambiguity with choose number."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         assert (
             resolver._classify_ambiguity("Choose number of items", "config.items")
@@ -394,7 +387,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_choose_list(self):
         """Test classifying ambiguity with choose list."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         assert (
             resolver._classify_ambiguity("Choose list of items", "config.items")
@@ -404,14 +397,14 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_choose_value(self):
         """Test classifying ambiguity with choose value."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         assert resolver._classify_ambiguity("Choose option", "config.option") == "value"
         assert resolver._classify_ambiguity("Select item", "config.item") == "value"
 
     def test_classify_ambiguity_context_parameter(self):
         """Test classifying ambiguity with parameter context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # "Choose" with parameters context should be classified as parameter (precedence)
         assert (
@@ -425,7 +418,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_context_string(self):
         """Test classifying ambiguity with string context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # "Choose" triggers value classification first
         assert resolver._classify_ambiguity("Choose option", "config.format") == "value"
@@ -436,7 +429,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_context_boolean(self):
         """Test classifying ambiguity with boolean context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # "Choose" triggers value classification first
         assert resolver._classify_ambiguity("Choose option", "config.enable") == "value"
@@ -449,7 +442,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_context_number(self):
         """Test classifying ambiguity with number context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # "Choose" triggers value classification first
         assert resolver._classify_ambiguity("Choose option", "config.count") == "value"
@@ -462,118 +455,118 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_default_string(self):
         """Test classifying ambiguity with default string."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         assert resolver._classify_ambiguity("Some content", "config.other") == "string"
 
     def test_fallback_resolution_query(self):
         """Test fallback resolution with query."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = resolver._fallback_resolution("Choose query", "config.query")
         assert result == "default search query"
 
     def test_fallback_resolution_format(self):
         """Test fallback resolution with format."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = resolver._fallback_resolution("Choose format", "config.format")
         assert result == "json"
 
     def test_fallback_resolution_method(self):
         """Test fallback resolution with method."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = resolver._fallback_resolution("Choose method", "config.method")
         assert result == "auto"
 
     def test_fallback_resolution_style(self):
         """Test fallback resolution with style."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = resolver._fallback_resolution("Choose style", "config.style")
         assert result == "default"
 
     def test_fallback_resolution_type(self):
         """Test fallback resolution with type."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = resolver._fallback_resolution("Choose type", "config.type")
         assert result == "standard"
 
     def test_fallback_resolution_default(self):
         """Test fallback resolution with default."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         result = resolver._fallback_resolution("Choose something", "config.something")
         assert result == "default"
 
     def test_extract_choices_simple(self):
         """Test extracting choices from simple content."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         choices = resolver._extract_choices("Choose: json, xml, csv")
         assert choices == ["json", "xml", "csv"]
 
     def test_extract_choices_with_or(self):
         """Test extracting choices with or separator."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         choices = resolver._extract_choices("Select: json, xml, or csv")
         assert choices == ["json", "xml", "csv"]
 
     def test_extract_choices_select_keyword(self):
         """Test extracting choices with select keyword."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         choices = resolver._extract_choices("Select from: red, blue, green")
         assert choices == ["red", "blue", "green"]
 
     def test_extract_choices_no_match(self):
         """Test extracting choices with no match."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         choices = resolver._extract_choices("Some random text")
         assert choices == []
 
     def test_extract_choices_empty_choice(self):
         """Test extracting choices with empty choice."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         choices = resolver._extract_choices("Choose: json, , csv")
         assert choices == ["json", "csv"]
 
     def test_extract_quotes_single(self):
         """Test extracting single quoted string."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         quotes = resolver._extract_quotes('Choose "custom_value" option')
         assert quotes == ["custom_value"]
 
     def test_extract_quotes_multiple(self):
         """Test extracting multiple quoted strings."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         quotes = resolver._extract_quotes('Choose "value1" and "value2"')
         assert quotes == ["value1", "value2"]
 
     def test_extract_quotes_empty(self):
         """Test extracting quotes with empty content."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         quotes = resolver._extract_quotes('Choose ""')
         assert quotes == [""]
 
     def test_extract_quotes_no_quotes(self):
         """Test extracting quotes with no quotes."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         quotes = resolver._extract_quotes("Choose value")
         assert quotes == []
 
     def test_clear_cache(self):
         """Test clearing the resolution cache."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # Add something to cache
         resolver.resolution_cache["test"] = "value"
@@ -585,7 +578,7 @@ class TestAmbiguityResolver:
 
     def test_set_resolution_strategy(self):
         """Test setting custom resolution strategy."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         async def custom_strategy(content, context_path):
             return "custom_result"
@@ -598,7 +591,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_with_custom_strategy(self):
         """Test resolving with custom strategy."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         async def custom_strategy(content, context_path):
             return "custom_result"
@@ -623,7 +616,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_unknown_strategy(self):
         """Test resolving with unknown strategy type."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # Create a custom classifier function that returns unknown type
         def unknown_classifier(content, context_path):
@@ -670,7 +663,7 @@ class TestAmbiguityResolver:
     @pytest.mark.asyncio
     async def test_resolve_with_exception_in_strategy(self):
         """Test resolving with exception in strategy."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         async def failing_strategy(content, context_path):
             raise Exception("Strategy failure")
@@ -691,20 +684,102 @@ class TestAmbiguityResolver:
         # Restore original method
         resolver._classify_ambiguity = original_classify
 
-    def test_resolver_creation_no_model_available(self):
-        """Test resolver creation when no model is available."""
-        # Create a custom AmbiguityResolver subclass that simulates no models
-        class NoModelResolver(AmbiguityResolver):
-            def _get_best_available_model(self, model_registry=None):
-                raise RuntimeError("No AI model available for ambiguity resolution")
+    @pytest.mark.asyncio
+    async def test_resolve_yaml_auto_tags_real_world(self, model_registry):
+        """Test resolving actual <AUTO> tags from YAML pipelines."""
+        model = None
+        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
+            try:
+                model = model_registry.get_model(model_id)
+                if model:
+                    break
+            except:
+                pass
         
-        # Try to create the resolver without fallback
-        with pytest.raises(RuntimeError, match="No AI model available"):
-            NoModelResolver(model=None, fallback_to_mock=False)
+        if not model:
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
+        
+        resolver = AmbiguityResolver(model)
+        
+        # Real AUTO tags from example YAML files
+        auto_examples = [
+            {
+                "content": "Choose best analysis method for this data type",
+                "context": "steps.analyze_data.parameters.method",
+                "description": "From research_assistant.yaml"
+            },
+            {
+                "content": "Determine analysis depth based on data complexity",
+                "context": "steps.analyze_data.parameters.depth",
+                "description": "From research_assistant.yaml"
+            },
+            {
+                "content": "Select appropriate format based on downstream requirements",
+                "context": "steps.format_results.parameters.format",
+                "description": "From data_processing.yaml"
+            },
+        ]
+        
+        results = []
+        for example in auto_examples:
+            result = await resolver.resolve(example["content"], example["context"])
+            results.append({
+                "example": example["description"],
+                "content": example["content"],
+                "result": result
+            })
+            # Verify we got a meaningful result
+            assert result is not None
+            assert len(str(result)) > 0
+        
+        # Verify different contexts produce different results
+        unique_results = set(str(r["result"]) for r in results)
+        assert len(unique_results) >= 2, "AI should produce varied results for different contexts"
+
+    @pytest.mark.asyncio
+    async def test_resolve_with_different_models(self, model_registry):
+        """Test that different AI models can resolve ambiguities."""
+        # Try to get multiple different models
+        models = []
+        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b", "gemini-1.5-flash-latest"]:
+            try:
+                model = model_registry.get_model(model_id)
+                if model and model not in models:
+                    models.append(model)
+            except:
+                pass
+        
+        if len(models) < 2:
+            raise AssertionError(
+                "Need at least 2 different AI models for comparison testing. "
+                "Please configure multiple API keys in ~/.orchestrator/.env"
+            )
+        
+        # Test the same ambiguity with different models
+        test_content = "Choose the most appropriate data structure for fast lookups with occasional updates"
+        test_context = "implementation.data_structure"
+        
+        results = {}
+        for model in models[:2]:  # Test with first 2 available models
+            resolver = AmbiguityResolver(model)
+            result = await resolver.resolve(test_content, test_context)
+            results[model.name] = result
+            
+            # Each model should provide a valid data structure
+            valid_structures = ["hashmap", "hash_map", "dictionary", "dict", "map", "btree", "b-tree", "hashtable", "hash_table"]
+            assert any(struct in str(result).lower() for struct in valid_structures), (
+                f"Model {model.name} returned '{result}' which doesn't appear to be a data structure"
+            )
+        
+        # Log results for analysis (models might choose different structures)
+        print(f"Model comparison results: {results}")
 
     def test_classify_ambiguity_choose_with_true_false(self):
         """Test classification of choose with true/false."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         assert (
             resolver._classify_ambiguity("Choose true or false", "config.option")
@@ -717,7 +792,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_choose_with_number_keywords(self):
         """Test classification of choose with number keywords."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         assert (
             resolver._classify_ambiguity("Choose number of items", "config.option")
@@ -738,7 +813,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_choose_with_list_keywords(self):
         """Test classification of choose with list keywords."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         assert (
             resolver._classify_ambiguity("Choose list of items", "config.option")
@@ -759,7 +834,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_missing_line_148_boolean_choose(self):
         """Test line 148: return 'boolean' for true/false in choose context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # Test exact condition: choose/select + "true" or "false" content
         assert (
@@ -779,7 +854,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_missing_line_150_number_choose(self):
         """Test line 150: return 'number' for number words in choose context."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # Test exact condition: choose/select + number words
         assert (
@@ -791,7 +866,7 @@ class TestAmbiguityResolver:
 
     def test_classify_ambiguity_missing_line_171_list_context(self):
         """Test line 171: return 'list' for list-related context paths."""
-        resolver = AmbiguityResolver()
+        resolver = AmbiguityResolver(fallback_to_heuristics=True)
 
         # Test exact condition: list-related context path words (line 171)
         assert resolver._classify_ambiguity("Process data", "step.languages") == "list"

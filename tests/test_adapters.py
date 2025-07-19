@@ -48,7 +48,10 @@ class TestLangGraphAdapter:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         config = {"name": "langgraph", "version": "1.0.0"}
         adapter = LangGraphAdapter(config)
@@ -102,7 +105,10 @@ class TestMCPAdapter:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
             
         config = {"name": "mcp", "version": "1.0.0"}
         adapter = MCPAdapter(config)
@@ -130,7 +136,10 @@ class TestAdapterIntegration:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
             
         config = {"name": "test", "version": "1.0.0"}
 
@@ -207,7 +216,10 @@ class TestAdapterIntegration:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
             
         adapter = LangGraphAdapter()
         

@@ -14,33 +14,37 @@ from orchestrator.models.model_registry import (
 class TestModelRegistry:
     """Test cases for ModelRegistry class."""
 
+    def get_test_model(self, populated_model_registry):
+        """Helper to get a real test model from populated registry."""
+        # Try to get any real model
+        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b"]:
+            try:
+                model = populated_model_registry.get_model(model_id)
+                if model:
+                    return model
+            except:
+                pass
+        
+        raise AssertionError(
+            "No AI models available for testing. "
+            "Please configure API keys in ~/.orchestrator/.env"
+        )
+
     def test_registry_creation(self):
         """Test basic registry creation."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         assert len(registry.models) == 0
         assert isinstance(registry.model_selector, UCBModelSelector)
         assert registry._model_health_cache == {}
 
-    def test_register_model(self):
+    def test_register_model(self, populated_model_registry):
         """Test registering a model."""
+        # Get a real model from populated registry
+        model = self.get_test_model(populated_model_registry)
+        
+        # Create a new empty registry for testing registration
         registry = ModelRegistry()
-        
-        # Try to get a real model
-        model = None
-        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "llama3.2:1b"]:
-            try:
-                model = registry.get_model(model_id)
-                if model:
-                    break
-            except:
-                pass
-        
-        if not model:
-            pytest.skip("No AI models available for testing")
-        
-        # Clear registry and re-register
-        registry.models.clear()
         registry.register_model(model)
 
         assert len(registry.models) == 1
@@ -48,22 +52,14 @@ class TestModelRegistry:
         assert model_key in registry.models
         assert registry.models[model_key] == model
 
-    def test_register_model_duplicate(self):
+    def test_register_model_duplicate(self, populated_model_registry):
         """Test registering duplicate model."""
+        # Get a real model from populated registry
+        model = self.get_test_model(populated_model_registry)
+        
+        # Create a new empty registry and register the model
         registry = ModelRegistry()
-        
-        # Get a real model
-        model = None
-        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022"]:
-            try:
-                model = registry.get_model(model_id)
-                if model:
-                    break
-            except:
-                pass
-        
-        if not model:
-            pytest.skip("No AI models available for testing")
+        registry.register_model(model)
         
         # Try to register the same model again
         with pytest.raises(ValueError, match="already registered"):
@@ -71,7 +67,7 @@ class TestModelRegistry:
 
     def test_register_multiple_models(self):
         """Test registering multiple models."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Get count of pre-registered models
         initial_count = len(registry.models)
@@ -91,7 +87,7 @@ class TestModelRegistry:
 
     def test_unregister_model_by_name_and_provider(self):
         """Test unregistering model by name and provider."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Get a real model
         model = None
@@ -104,7 +100,10 @@ class TestModelRegistry:
                 pass
         
         if not model:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         initial_count = len(registry.models)
         registry.unregister_model(model.name, model.provider)
@@ -113,7 +112,7 @@ class TestModelRegistry:
 
     def test_unregister_model_by_name_only(self):
         """Test unregistering model by name only."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Create a test registry with a unique model
         from orchestrator.integrations.openai_model import OpenAIModel
@@ -153,18 +152,21 @@ class TestModelRegistry:
             assert len(registry.models) == 0
             
         except Exception:
-            pytest.skip("Could not create test model")
+            raise AssertionError(
+                "Could not create test model. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
     def test_unregister_model_not_found(self):
         """Test unregistering non-existent model."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         with pytest.raises(ModelNotFoundError):
             registry.unregister_model("nonexistent")
 
     def test_get_model_by_name_and_provider(self):
         """Test getting model by name and provider."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Get a real model
         model = None
@@ -182,7 +184,10 @@ class TestModelRegistry:
                 pass
         
         if not model:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         retrieved_model = registry.get_model(model_name, model_provider)
         assert retrieved_model.name == model_name
@@ -190,7 +195,7 @@ class TestModelRegistry:
 
     def test_get_model_by_name_only(self):
         """Test getting model by name only."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Test with known model names
         model = None
@@ -205,24 +210,27 @@ class TestModelRegistry:
         if model:
             assert model.name == model_id or model_id in model.name
         else:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
     def test_get_model_not_found(self):
         """Test getting non-existent model."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         with pytest.raises(ModelNotFoundError):
             registry.get_model("nonexistent")
 
     def test_get_model_ambiguous_name(self):
         """Test getting model with ambiguous name."""
-        # Skip this test as real models don't have ambiguous names
+        # This test is no longer applicable with real models only
         # Each provider has unique model names
-        pytest.skip("Real models don't have ambiguous names across providers")
+        pass
 
     def test_list_models_all(self):
         """Test listing all models."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         models = registry.list_models()
         
@@ -235,7 +243,7 @@ class TestModelRegistry:
 
     def test_list_models_by_provider(self):
         """Test listing models by provider."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Test with known providers
         for provider in ["openai", "anthropic", "ollama"]:
@@ -248,7 +256,7 @@ class TestModelRegistry:
 
     def test_list_providers(self):
         """Test listing providers."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         providers = registry.list_providers()
         
@@ -266,13 +274,16 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_filter_by_capabilities(self):
         """Test filtering models by capabilities."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Get all registered models
         all_models = list(registry.models.values())
         
         if not all_models:
-            pytest.skip("No models available for testing")
+            raise AssertionError(
+                "No models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
         # Test filtering for function calling
         requirements = {"supports_function_calling": True}
@@ -292,7 +303,7 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_filter_by_capabilities_context_window(self):
         """Test filtering models by context window."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Test filtering for different context windows
         requirements_small = {"context_window": 4096}
@@ -316,7 +327,7 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_filter_by_capabilities_tasks(self):
         """Test filtering models by supported tasks."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Test filtering for common tasks
         requirements_generate = {"tasks": ["generate"]}
@@ -337,13 +348,16 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_filter_by_health(self):
         """Test filtering models by health."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Get some real models
         all_models = list(registry.models.values())[:2]  # Get first 2 models
         
         if len(all_models) < 2:
-            pytest.skip("Need at least 2 models for health testing")
+            raise AssertionError(
+                "Need at least 2 models for health testing. "
+                "Please configure multiple API keys in ~/.orchestrator/.env"
+            )
 
         model1 = all_models[0]
         model2 = all_models[1]
@@ -360,13 +374,16 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_filter_by_health_all_healthy(self):
         """Test filtering when all models are healthy."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Get some real models
         all_models = list(registry.models.values())[:2]  # Get first 2 models
         
         if len(all_models) < 2:
-            pytest.skip("Need at least 2 models for health testing")
+            raise AssertionError(
+                "Need at least 2 models for health testing. "
+                "Please configure multiple API keys in ~/.orchestrator/.env"
+            )
 
         # Set all models as healthy
         for model in all_models:
@@ -381,13 +398,16 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_filter_by_health_none_healthy(self):
         """Test filtering when no models are healthy."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Get some real models
         all_models = list(registry.models.values())[:2]  # Get first 2 models
         
         if len(all_models) < 1:
-            pytest.skip("Need at least 1 model for health testing")
+            raise AssertionError(
+                "Need at least 1 model for health testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
         # Set all models as unhealthy
         for model in all_models:
@@ -400,7 +420,7 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_select_model_success(self):
         """Test successful model selection."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Try to find a model that supports function calling
         requirements = {"supports_function_calling": True}
@@ -417,7 +437,7 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_select_model_no_eligible(self):
         """Test model selection with no eligible models."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Use impossible requirements
         requirements = {
@@ -432,7 +452,7 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_select_model_no_healthy(self):
         """Test model selection with no healthy models."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Set all models as unhealthy
         for key in registry.models:
@@ -446,7 +466,7 @@ class TestModelRegistry:
     @pytest.mark.asyncio
     async def test_select_model_multiple_candidates(self):
         """Test model selection with multiple candidates."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Use minimal requirements to get multiple candidates
         requirements = {}
@@ -458,7 +478,10 @@ class TestModelRegistry:
                 healthy_models.append(model)
         
         if len(healthy_models) < 2:
-            pytest.skip("Need at least 2 healthy models for this test")
+            raise AssertionError(
+                "Need at least 2 healthy models for this test. "
+                "Please configure multiple API keys in ~/.orchestrator/.env"
+            )
 
         selected = await registry.select_model(requirements)
 
@@ -467,7 +490,7 @@ class TestModelRegistry:
 
     def test_update_model_performance_success(self):
         """Test updating model performance with success."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Get a real model
         model = None
@@ -476,7 +499,10 @@ class TestModelRegistry:
             break
         
         if not model:
-            pytest.skip("No models available for testing")
+            raise AssertionError(
+                "No models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
         initial_success_rate = model.metrics.success_rate
         initial_latency = model.metrics.latency_p50
@@ -494,7 +520,7 @@ class TestModelRegistry:
 
     def test_update_model_performance_failure(self):
         """Test updating model performance with failure."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Create a test model with known metrics
         from orchestrator.core.model import Model, ModelCapabilities, ModelMetrics
@@ -529,7 +555,7 @@ class TestModelRegistry:
 
     def test_calculate_reward_success(self):
         """Test reward calculation for successful operation."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         reward = registry._calculate_reward(success=True, latency=1.0, cost=0.001)
 
@@ -537,7 +563,7 @@ class TestModelRegistry:
 
     def test_calculate_reward_failure(self):
         """Test reward calculation for failed operation."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         reward = registry._calculate_reward(success=False, latency=1.0, cost=0.001)
 
@@ -545,7 +571,7 @@ class TestModelRegistry:
 
     def test_calculate_reward_high_latency(self):
         """Test reward calculation with high latency."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         reward_low = registry._calculate_reward(success=True, latency=0.1, cost=0.001)
         reward_high = registry._calculate_reward(success=True, latency=5.0, cost=0.001)
@@ -554,7 +580,7 @@ class TestModelRegistry:
 
     def test_calculate_reward_high_cost(self):
         """Test reward calculation with high cost."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         reward_low = registry._calculate_reward(success=True, latency=1.0, cost=0.001)
         reward_high = registry._calculate_reward(success=True, latency=1.0, cost=0.01)
@@ -563,7 +589,7 @@ class TestModelRegistry:
 
     def test_calculate_reward_edge_cases(self):
         """Test reward calculation edge cases."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Very high latency should cap penalty
         reward_extreme = registry._calculate_reward(
@@ -583,7 +609,7 @@ class TestModelRegistry:
 
     def test_update_model_metrics(self):
         """Test updating model metrics."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Create a test model
         from orchestrator.core.model import Model, ModelCapabilities, ModelMetrics
@@ -620,7 +646,7 @@ class TestModelRegistry:
 
     def test_update_model_metrics_failure(self):
         """Test updating model metrics with failure."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Create a test model with perfect success rate
         from orchestrator.core.model import Model, ModelCapabilities, ModelMetrics
@@ -653,7 +679,7 @@ class TestModelRegistry:
 
     def test_get_model_key(self):
         """Test getting model key."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Get a real model
         model = None
@@ -662,7 +688,10 @@ class TestModelRegistry:
             break
         
         if not model:
-            pytest.skip("No models available for testing")
+            raise AssertionError(
+                "No models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
         key = registry._get_model_key(model)
 
@@ -670,7 +699,7 @@ class TestModelRegistry:
 
     def test_get_model_statistics(self):
         """Test getting model statistics."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         # Get current statistics
         stats = registry.get_model_statistics()
@@ -688,7 +717,7 @@ class TestModelRegistry:
 
     def test_get_model_statistics_empty(self):
         """Test getting statistics for empty registry."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
 
         stats = registry.get_model_statistics()
 
@@ -699,7 +728,7 @@ class TestModelRegistry:
 
     def test_reset_statistics(self):
         """Test resetting statistics."""
-        registry = ModelRegistry()
+        registry = ModelRegistry()  # Create empty registry for this test
         
         # Set some health cache data
         if registry.models:

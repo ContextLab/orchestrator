@@ -63,8 +63,12 @@ def init_models(config_path: str = None) -> ModelRegistry:
         parse_model_size,
     )
     from .utils.model_config_loader import get_model_config_loader
+    from .utils.api_keys import load_api_keys
 
     print(">> Initializing model pool...")
+    
+    # Load API keys first - this will raise an error if keys are missing
+    load_api_keys()
 
     _model_registry = ModelRegistry()
 
@@ -79,23 +83,25 @@ def init_models(config_path: str = None) -> ModelRegistry:
         print(">> ⚠️  Ollama not found - Ollama models will not be available")
         print(">>    Install from: https://ollama.ai")
 
-    # Process each model in configuration
-    for model_id, model_config in models_config.items():
-        provider = model_config.get("provider")
-        model_type = model_config.get("type", provider)
-        size_billions = model_config.get("size_b", 1.0)
-        config_params = model_config.get("config", {})
+    # Process each model in configuration (list format)
+    if not isinstance(models_config, list):
+        print(">> ⚠️  Invalid models configuration format - expected list")
+        models_config = []
+    
+    # Process each model
+    for model_config in models_config:
+        provider = model_config.get("source")
+        name = model_config.get("name")
         
-        # Extract model name from config
-        name = config_params.get("model_name", model_id)
-        
-        # Default expertise based on model name or model_id
-        expertise = ["general"]
-        combined_name = f"{model_id} {name}".lower()
-        if "code" in combined_name or "coder" in combined_name:
-            expertise.append("code")
-        if "chat" in combined_name or "instruct" in combined_name:
-            expertise.append("chat")
+        # Parse size
+        size_str = str(model_config.get("size", "1b"))
+        if size_str.endswith('b'):
+            size_billions = float(size_str[:-1])
+        else:
+            size_billions = float(size_str)
+            
+        # Get expertise
+        expertise = model_config.get("expertise", ["general"])
         
         if not provider or not name:
             continue
@@ -167,7 +173,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
                     f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)"
                 )
 
-            elif provider == "google" and os.environ.get("GOOGLE_API_KEY"):
+            elif provider == "google" and (os.environ.get("GOOGLE_AI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
                 # Only register if API key is available
                 model = GoogleModel(model_name=name)
                 # Add dynamic attributes for model selection

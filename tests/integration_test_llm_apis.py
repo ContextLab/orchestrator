@@ -426,7 +426,10 @@ class TestLLMIntegrationConsistency:
     async def test_timeout_handling(self):
         """Test that API timeouts are handled gracefully."""
         if not HAS_OPENAI_KEY:
-            pytest.skip("OpenAI API key not available")
+            raise AssertionError(
+                "OpenAI API key not available. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
 
         model = OpenAIModel(os.getenv("OPENAI_API_KEY"))
 

@@ -291,9 +291,12 @@ class TestInitModelsReal:
     
     def test_init_models_with_openai_real(self):
         """Test model initialization with real OpenAI config."""
-        # Skip if no API key
+        # Require API key for real testing
         if not os.environ.get("OPENAI_API_KEY"):
-            pytest.skip("OpenAI API key not set")
+            raise AssertionError(
+                "OpenAI API key not set. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         # Create config with OpenAI models
         self.create_test_config({
@@ -439,9 +442,12 @@ class TestInitModelsReal:
     
     def test_init_models_expertise_detection_real(self):
         """Test expertise detection from model names."""
-        # Skip if no API key
+        # Require API key for real testing
         if not os.environ.get("OPENAI_API_KEY"):
-            pytest.skip("OpenAI API key not set")
+            raise AssertionError(
+                "OpenAI API key not set. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         # Create config with models that imply expertise
         self.create_test_config({

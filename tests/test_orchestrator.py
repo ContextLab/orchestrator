@@ -60,7 +60,10 @@ class TestOrchestrator:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         # Use real ModelBasedControlSystem
         control_system = ModelBasedControlSystem(model_registry=registry)
@@ -97,7 +100,10 @@ class TestOrchestrator:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         # Use real ModelBasedControlSystem
         control_system = ModelBasedControlSystem(model_registry=registry)
@@ -159,7 +165,10 @@ class TestOrchestrator:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         control_system = ModelBasedControlSystem(model_registry=registry)
         orchestrator = Orchestrator(control_system=control_system)
@@ -294,7 +303,10 @@ class TestOrchestrator:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         control_system = ModelBasedControlSystem(model_registry=registry)
         orchestrator = Orchestrator(control_system=control_system)
@@ -775,7 +787,10 @@ class TestOrchestrator:
         registry = ModelRegistry()
         available_models = await registry.get_available_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            raise AssertionError(
+                "No AI models available for testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         control_system = ModelBasedControlSystem(model_registry=registry)
         orchestrator = Orchestrator(control_system=control_system)

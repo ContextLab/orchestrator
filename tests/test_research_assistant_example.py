@@ -425,9 +425,12 @@ class TestResearchAssistant:
     @pytest.mark.asyncio
     async def test_real_api_integration(self, assistant, config):
         """Test integration with real APIs (if keys are available)."""
-        # Skip if no API keys
+        # Require API keys for real testing
         if not config.get("openai_api_key") and not config.get("anthropic_api_key"):
-            pytest.skip("No API keys available for real API testing")
+            raise AssertionError(
+                "No API keys available for real API testing. "
+                "Please configure API keys in ~/.orchestrator/.env"
+            )
         
         # Test with a simple query
         query = "Python programming best practices"
