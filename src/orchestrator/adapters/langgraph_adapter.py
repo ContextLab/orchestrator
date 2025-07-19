@@ -7,6 +7,8 @@ from typing import Any, Callable, Dict, List, Optional
 from ..core.control_system import ControlAction, ControlSystem
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..models.model_registry import ModelRegistry
+from ..control_systems.model_based_control_system import ModelBasedControlSystem
 
 
 @dataclass
@@ -157,7 +159,7 @@ class LangGraphWorkflow:
 class LangGraphAdapter(ControlSystem):
     """Adapter for integrating Orchestrator with LangGraph workflows."""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Dict[str, Any] = None, model_registry: ModelRegistry = None):
         if config is None:
             config = {"name": "langgraph_adapter"}
 
@@ -165,6 +167,10 @@ class LangGraphAdapter(ControlSystem):
         self.config = config
         self.workflows: Dict[str, LangGraphWorkflow] = {}
         self.active_executions: Dict[str, LangGraphState] = {}
+        
+        # Initialize model registry and control system for task execution
+        self.model_registry = model_registry or ModelRegistry()
+        self.execution_control = ModelBasedControlSystem(self.model_registry)
 
     def register_workflow(self, workflow: LangGraphWorkflow):
         """Register a LangGraph workflow."""
@@ -215,22 +221,68 @@ class LangGraphAdapter(ControlSystem):
 
     def get_capabilities(self) -> Dict[str, Any]:
         """Return system capabilities."""
-        return {
+        # Combine LangGraph capabilities with underlying execution capabilities
+        base_capabilities = self.execution_control.get_capabilities()
+        
+        langgraph_capabilities = {
             "supports_workflows": True,
             "supports_conditional_execution": True,
             "supports_parallel_execution": True,
-            "supported_actions": ["generate", "analyze", "transform"],
+            "supports_checkpointing": True,
+            "supports_state_management": True,
         }
+        
+        # Merge capabilities
+        combined = base_capabilities.copy()
+        combined.update(langgraph_capabilities)
+        
+        return combined
 
     async def health_check(self) -> bool:
         """Check if the system is healthy."""
-        return True  # Simplified for testing
+        try:
+            # Check underlying execution system health
+            execution_healthy = await self.execution_control.health_check()
+            
+            # Check if we have models available
+            models_available = len(await self.model_registry.get_available_models()) > 0
+            
+            return execution_healthy and models_available
+        except Exception:
+            return False
 
     async def _execute_task(self, task: Task, state_data: Dict[str, Any]) -> Any:
-        """Execute a task within LangGraph context."""
-        # This would integrate with the actual Orchestrator execution
-        # For now, return a placeholder result
-        return f"Executed {task.id} with state: {state_data}"
+        """Execute a task within LangGraph context using real execution."""
+        # Build context from state data and workflow context
+        context = {
+            "workflow_state": state_data,
+            "execution_id": state_data.get("execution_id"),
+            "workflow_name": state_data.get("workflow_name"),
+        }
+        
+        # Add any previous results from the state
+        if "previous_results" in state_data:
+            context["previous_results"] = state_data["previous_results"]
+        elif state_data:
+            # Use state data as previous results if not explicitly set
+            context["previous_results"] = {k: v for k, v in state_data.items() 
+                                          if k not in ["execution_id", "workflow_name"]}
+        
+        try:
+            # Execute the task using the model-based control system
+            result = await self.execution_control.execute_task(task, context)
+            
+            # Store result in state for downstream tasks
+            if "previous_results" not in state_data:
+                state_data["previous_results"] = {}
+            state_data["previous_results"][task.id] = result
+            
+            return result
+            
+        except Exception as e:
+            # Log the error and raise with context
+            error_msg = f"Failed to execute task {task.id} in LangGraph workflow: {str(e)}"
+            raise RuntimeError(error_msg) from e
 
     async def execute_workflow(
         self, workflow_name: str, initial_state: Dict[str, Any] = None
