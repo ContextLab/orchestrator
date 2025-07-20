@@ -680,13 +680,36 @@ class ResourceManager:
         self.monitoring_active = False
 
     def get_monitoring_data(self) -> Dict[str, Any]:
-        """Get monitoring data."""
-        return {
-            "timestamp": time.time(),
-            "cpu_usage": 25.0,  # Mock data
-            "memory_usage": 50.0,  # Mock data
-            "disk_usage": 15.0,  # Mock data
-        }
+        """Get real-time monitoring data."""
+        try:
+            import psutil
+            
+            # Get real CPU usage percentage
+            cpu_usage = psutil.cpu_percent(interval=0.1)
+            
+            # Get real memory usage percentage
+            memory = psutil.virtual_memory()
+            memory_usage = memory.percent
+            
+            # Get real disk usage percentage
+            disk = psutil.disk_usage('/')
+            disk_usage = disk.percent
+            
+            return {
+                "timestamp": time.time(),
+                "cpu_usage": cpu_usage,
+                "memory_usage": memory_usage,
+                "disk_usage": disk_usage,
+            }
+        except ImportError:
+            # If psutil is not available, return zeros instead of mock data
+            self.logger.warning("psutil not available, returning zero metrics")
+            return {
+                "timestamp": time.time(),
+                "cpu_usage": 0.0,
+                "memory_usage": 0.0,
+                "disk_usage": 0.0,
+            }
 
     def _can_allocate(self, requirements: Dict[str, Any]) -> bool:
         """Check if resources can be allocated."""
