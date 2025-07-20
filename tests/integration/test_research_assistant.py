@@ -8,11 +8,10 @@ import json
 import aiohttp
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.core.model import Model
-from src.orchestrator.tools.search_tool import DuckDuckGoSearchTool
-from src.orchestrator.tools.web_scraper import HeadlessBrowserTool
+from orchestrator.orchestrator import Orchestrator
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.core.model import Model
+from orchestrator.tools.web_tools import DuckDuckGoSearchBackend, HeadlessBrowserTool
 
 
 async def real_search(task):
@@ -22,7 +21,7 @@ async def real_search(task):
     
     try:
         # Use real DuckDuckGo search
-        search_tool = DuckDuckGoSearchTool()
+        search_tool = DuckDuckGoSearchBackend()
         results = await search_tool.search(query, max_results=5)
         
         # Extract URLs from results
@@ -199,7 +198,7 @@ async def real_verify(task):
     print(f"[Fact Check] Verifying {len(claims)} claims")
     
     verified_claims = []
-    search_tool = DuckDuckGoSearchTool()
+    search_tool = DuckDuckGoSearchBackend()
     
     for claim in claims[:3]:  # Limit to 3 claims for performance
         try:

@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.task import Task
-from orchestrator.tools.search_tool import DuckDuckGoSearchTool
+from orchestrator.tools.web_tools import DuckDuckGoSearchBackend
 from orchestrator.models.model_registry import ModelRegistry
 
 
@@ -21,7 +21,7 @@ async def real_search(task):
     print(f"[Search] Searching for: {query}")
     
     try:
-        search_tool = DuckDuckGoSearchTool()
+        search_tool = DuckDuckGoSearchBackend()
         results = await search_tool.search(query, max_results=5)
         
         # Format results

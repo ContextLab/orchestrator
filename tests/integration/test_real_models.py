@@ -71,8 +71,8 @@ class RealModelControlSystem(ControlSystem):
         
         # Use real web search if available
         try:
-            from orchestrator.tools.search_tool import DuckDuckGoSearchTool
-            search_tool = DuckDuckGoSearchTool()
+            from orchestrator.tools.web_tools import DuckDuckGoSearchBackend
+            search_tool = DuckDuckGoSearchBackend()
             search_results = await search_tool.search(query, max_results=5)
             
             # Convert to expected format

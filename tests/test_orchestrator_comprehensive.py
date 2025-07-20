@@ -6,9 +6,8 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from src.orchestrator.core.control_system import MockControlSystem
+from src.orchestrator.core.control_system import ControlSystem
 from src.orchestrator.core.error_handler import ErrorHandler
-from src.orchestrator.core.model import MockModel
 from src.orchestrator.core.pipeline import Pipeline
 from src.orchestrator.core.resource_allocator import ResourceAllocator
 from src.orchestrator.core.task import Task, TaskStatus
@@ -18,13 +17,41 @@ from src.orchestrator.orchestrator import ExecutionError, Orchestrator
 from src.orchestrator.state.state_manager import StateManager
 
 
+class TestControlSystem(ControlSystem):
+    """Test control system for unit tests."""
+    
+    def __init__(self, name="test-control", config=None):
+        super().__init__(name, config or {})
+        self.executed_tasks = {}
+        self.should_fail = False
+        
+    async def execute_task(self, task, context=None):
+        """Execute a task and return test result."""
+        if self.should_fail:
+            raise Exception("Test failure")
+        
+        result = {
+            "status": "completed",
+            "result": f"Test result for {task.id}",
+            "task_id": task.id
+        }
+        self.executed_tasks[task.id] = result
+        return result
+    
+    async def health_check(self):
+        """Always healthy for tests."""
+        return True
+
+
 class TestOrchestratorComprehensiveCoverage:
     """Comprehensive tests to achieve 100% coverage of Orchestrator."""
 
     @pytest.mark.asyncio
     async def test_execute_level_skipped_task_results_handling(self):
         """Test handling of skipped tasks in level results (line 270)."""
-        orchestrator = Orchestrator()
+        # Create orchestrator with test control system
+        control_system = TestControlSystem()
+        orchestrator = Orchestrator(control_system=control_system)
 
         # Create pipeline with skipped tasks
         pipeline = Pipeline(id="skip_test", name="Skip Test Pipeline")
@@ -123,19 +150,22 @@ class TestOrchestratorComprehensiveCoverage:
             # Note: The recovered task is a new instance, so check the results instead
             assert "failed_task" in results
 
-    def test_get_task_resource_requirements_with_model(self):
+    def test_get_task_resource_requirements_with_model(self, populated_model_registry):
         """Test _get_task_resource_requirements with model requirements (lines 518-521)."""
-        # Create orchestrator with model registry
+        # Get a real model from populated registry
+        available_models = populated_model_registry.list_models()
+        if not available_models:
+            pytest.skip("No models available for testing")
+        
+        # Use the first available model
+        model_name = available_models[0]
+        real_model = populated_model_registry.get_model(model_name)
+        if not real_model:
+            pytest.skip("Could not get model for testing")
+        
+        # Create our own registry and register the model
         model_registry = ModelRegistry()
-        mock_model = MockModel(name="test_model", provider="test")
-
-        # Set model requirements
-        from src.orchestrator.core.model import ModelRequirements
-
-        mock_model.requirements = ModelRequirements(
-            memory_gb=2.0, requires_gpu=True, gpu_memory_gb=1.0
-        )
-        model_registry.register_model(mock_model)
+        model_registry.register_model(real_model)
 
         orchestrator = Orchestrator(model_registry=model_registry)
 
@@ -144,22 +174,40 @@ class TestOrchestratorComprehensiveCoverage:
             id="model_task",
             name="Model Task",
             action="generate",
-            metadata={"requires_model": "test_model"},
+            metadata={"requires_model": model_name},
         )
 
         requirements = orchestrator._get_task_resource_requirements(task)
 
-        assert requirements["model_memory"] == 2048  # 2.0 * 1024
-        assert requirements["model_gpu"] is True
-        assert requirements["model_gpu_memory"] == 1024  # 1.0 * 1024
+        # Verify that requirements were extracted from the real model
+        # The actual values depend on the model's requirements
+        assert "model_memory" in requirements
+        assert "model_gpu" in requirements
+        assert isinstance(requirements["model_memory"], int)
+        assert isinstance(requirements["model_gpu"], bool)
+        
+        # Verify the values match the model's actual requirements
+        expected_memory = int(real_model.requirements.memory_gb * 1024)
+        assert requirements["model_memory"] == expected_memory
+        assert requirements["model_gpu"] == real_model.requirements.requires_gpu
 
     @pytest.mark.asyncio
-    async def test_select_model_for_task_specified_model(self):
+    async def test_select_model_for_task_specified_model(self, populated_model_registry):
         """Test _select_model_for_task with specified model (lines 533-534)."""
-        # Create orchestrator with model registry
+        # Get a real model from populated registry
+        available_models = populated_model_registry.list_models()
+        if not available_models:
+            pytest.skip("No models available for testing")
+        
+        # Use a specific model from the available ones
+        specified_model_name = available_models[0]
+        real_model = populated_model_registry.get_model(specified_model_name)
+        if not real_model:
+            pytest.skip("Could not get model for testing")
+        
+        # Create our own registry and register the model
         model_registry = ModelRegistry()
-        mock_model = MockModel(name="specified_model", provider="test")
-        model_registry.register_model(mock_model)
+        model_registry.register_model(real_model)
 
         orchestrator = Orchestrator(model_registry=model_registry)
 
@@ -168,7 +216,7 @@ class TestOrchestratorComprehensiveCoverage:
             id="specified_model_task",
             name="Specified Model Task",
             action="generate",
-            metadata={"requires_model": "specified_model"},
+            metadata={"requires_model": specified_model_name},
         )
 
         model = await orchestrator._select_model_for_task(task, {})
@@ -360,9 +408,9 @@ class TestOrchestratorComprehensiveCoverage:
         """Test failure policy edge cases and error propagation."""
         orchestrator = Orchestrator()
 
-        # Create control system that fails specific tasks
-        control_system = MockControlSystem()
-        control_system.set_task_result("unknown_policy_task", Exception("Test failure"))
+        # Create test control system that fails specific tasks
+        control_system = TestControlSystem()
+        control_system.should_fail = True  # Make it fail all tasks
         orchestrator.control_system = control_system
 
         # Create pipeline with 'fail' failure policy

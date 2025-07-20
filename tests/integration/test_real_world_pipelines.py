@@ -19,12 +19,12 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from orchestrator.orchestrator import Orchestrator
-from orchestrator.core.control_system import MockControlSystem
+from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.task import Task, TaskStatus
 from orchestrator.core.model import Model, ModelCapabilities
 
 
-class RealDataControlSystem(MockControlSystem):
+class RealDataControlSystem(ControlSystem):
     """Control system that processes real data files for testing."""
     
     def __init__(self):

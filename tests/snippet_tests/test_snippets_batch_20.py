@@ -145,7 +145,7 @@ def test_index_lines_118_128_3():
 def test_index_lines_134_151_4():
     """Test Python snippet from docs_sphinx/api/index.rst lines 134-151."""
     # Description: --------------
-    content = 'from orchestrator import Orchestrator\nfrom orchestrator.core.control_system import MockControlSystem\nfrom orchestrator.models.model_registry import ModelRegistry\n\n# Create custom orchestrator\ncontrol_system = MockControlSystem()\norchestrator = Orchestrator(control_system=control_system)\n\n# Use custom model registry\nregistry = ModelRegistry()\n# ... configure models\n\n# Compile with custom settings\npipeline = orchestrator.compile(\n    yaml_content,\n    config={"timeout": 3600}\n)'
+    content = 'from orchestrator import Orchestrator\nfrom orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem\nfrom orchestrator.models.model_registry import ModelRegistry\n\n# Create custom orchestrator\nregistry = ModelRegistry()\ncontrol_system = ModelBasedControlSystem(model_registry=registry)\norchestrator = Orchestrator(control_system=control_system)\n\n# Compile with custom settings\npipeline = orchestrator.compile(\n    yaml_content,\n    config={"timeout": 3600}\n)'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"

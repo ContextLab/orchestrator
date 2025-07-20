@@ -9,8 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
-from src.orchestrator.core.model import MockModel
 from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator import init_models
 from src.orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
 from src.orchestrator.orchestrator import Orchestrator
 
@@ -226,22 +226,34 @@ class SimpleControlSystem(ModelBasedControlSystem):
 
 async def main():
     """Run a simple example."""
-    print("🚀 Running Research Assistant Example (Minimal)")
+    print("🚀 Running Research Assistant Example (with Real Models)")
     print("=" * 60)
     
-    # Create a simple model registry with just a mock model
-    registry = ModelRegistry()
-    
-    # Create and register a mock model
-    mock_model = MockModel(name="test-model", provider="mock")
-    mock_model._is_available = True
-    
-    # Set up mock responses
-    mock_model.set_response("research", "# Research Results\n\nQuantum computing uses quantum mechanics principles...")
-    mock_model.set_response("analyze", "# Analysis\n\nKey findings about quantum cryptography...")
-    mock_model.set_response("report", "# Final Report\n\nComprehensive analysis of quantum computing...")
-    
-    registry.register_model(mock_model)
+    # Initialize real models from configuration
+    try:
+        registry = init_models()
+        available_models = registry.list_models()
+        
+        if not available_models:
+            print("\n⚠️  No models available!")
+            print("Please configure API keys in ~/.orchestrator/.env:")
+            print("  OPENAI_API_KEY=your-key-here")
+            print("  ANTHROPIC_API_KEY=your-key-here")
+            print("\nOr ensure Ollama is running for local models.")
+            return
+        
+        print(f"\n✅ Loaded {len(available_models)} models:")
+        for model_id in available_models[:5]:  # Show first 5
+            model = registry.get_model(model_id)
+            if model:
+                print(f"  - {model_id} ({model.provider})")
+        if len(available_models) > 5:
+            print(f"  ... and {len(available_models) - 5} more")
+            
+    except Exception as e:
+        print(f"\n❌ Failed to initialize models: {e}")
+        print("\nTrying to continue with any available models...")
+        registry = ModelRegistry()
     
     # Create control system and orchestrator
     control_system = SimpleControlSystem(registry)
