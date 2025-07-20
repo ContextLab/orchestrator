@@ -1,9 +1,18 @@
 """Control system for research report generation following README design."""
 
 import json
+import os
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
+
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
 
 from ..core.control_system import ControlSystem
 from ..core.task import Task, TaskStatus
@@ -142,52 +151,150 @@ class ResearchReportControlSystem(ControlSystem):
         print(f"   🔍 Searching: '{query}'")
         print(f"   📚 Sources: {sources}")
         
-        # Simulate comprehensive search results
+        # Perform real web searches
         results = []
         
-        if "web" in sources:
-            results.extend([
-                {
-                    "title": "Building AI Agents with LangChain",
-                    "url": "https://python.langchain.com/docs/modules/agents/",
-                    "snippet": "LangChain provides a framework for building AI agents that can use tools, make decisions, and execute complex workflows. Agents use an LLM as a reasoning engine to determine which actions to take and in what order.",
-                    "source": "web",
-                    "relevance": 0.95
-                },
-                {
-                    "title": "AutoGen: Enable Next-Gen Large Language Model Applications",
-                    "url": "https://microsoft.github.io/autogen/",
-                    "snippet": "AutoGen is a framework that enables development of LLM applications using multiple agents that can converse with each other to solve tasks. It simplifies the orchestration, automation, and optimization of complex LLM workflows.",
-                    "source": "web",
-                    "relevance": 0.93
-                }
-            ])
-        
-        if "documentation" in sources:
-            results.extend([
-                {
-                    "title": "OpenAI Assistants API Documentation",
-                    "url": "https://platform.openai.com/docs/assistants",
-                    "snippet": "The Assistants API allows you to build AI assistants within your own applications. An Assistant has instructions and can leverage models, tools, and knowledge to respond to user queries.",
-                    "source": "documentation",
-                    "relevance": 0.90
-                },
-                {
-                    "title": "Hugging Face Agents Documentation",
-                    "url": "https://huggingface.co/docs/transformers/transformers_agents",
-                    "snippet": "Transformers Agents provides a natural language API on top of transformers. It allows you to quickly create AI agents that can perform various tasks by leveraging the extensive collection of models on the Hugging Face Hub.",
-                    "source": "documentation",
-                    "relevance": 0.88
-                }
-            ])
-        
-        if "academic" in sources:
+        # Check if requests is available
+        if not REQUESTS_AVAILABLE:
+            print("   ⚠️  requests library not available, cannot perform web searches")
             results.append({
-                "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
-                "url": "https://arxiv.org/abs/2210.03629",
-                "snippet": "This paper presents ReAct, a paradigm for synergizing reasoning and acting in language models. ReAct prompts LLMs to generate both verbal reasoning traces and actions in an interleaved manner.",
-                "source": "academic",
-                "relevance": 0.92
+                "title": "Search unavailable",
+                "url": "",
+                "snippet": "The requests library is not installed. Install it with: pip install requests",
+                "source": "error",
+                "relevance": 0.0
+            })
+            
+            # Save error result and return
+            search_file = self.output_dir / "search_results.json"
+            with open(search_file, "w") as f:
+                json.dump({"query": query, "results": results}, f, indent=2)
+            
+            return {
+                "query": query,
+                "results": results,
+                "count": len(results),
+                "file": str(search_file)
+            }
+        
+        # Try to use real search APIs
+        if "web" in sources:
+            try:
+                # Try DuckDuckGo search first (no API key required)
+                search_url = f"https://api.duckduckgo.com/?q={quote(query)}&format=json"
+                response = requests.get(search_url, timeout=10)
+                
+                if response.status_code in [200, 202]:
+                    data = response.json()
+                    
+                    # Extract results from DuckDuckGo response
+                    if data.get("RelatedTopics"):
+                        for topic in data["RelatedTopics"][:5]:  # Get top 5 results
+                            if isinstance(topic, dict) and topic.get("Text"):
+                                results.append({
+                                    "title": topic.get("Text", "").split(" - ")[0][:100],
+                                    "url": topic.get("FirstURL", ""),
+                                    "snippet": topic.get("Text", ""),
+                                    "source": "web",
+                                    "relevance": 0.8  # DuckDuckGo doesn't provide relevance scores
+                                })
+                    
+                    # Also check for instant answer
+                    if data.get("Abstract"):
+                        results.insert(0, {
+                            "title": data.get("Heading", query),
+                            "url": data.get("AbstractURL", ""),
+                            "snippet": data.get("Abstract", ""),
+                            "source": "web",
+                            "relevance": 0.9
+                        })
+            except Exception as e:
+                print(f"   ⚠️  DuckDuckGo search failed: {e}")
+                
+                # Fallback to Google Search API if available
+                try:
+                    google_api_key = os.getenv("GOOGLE_API_KEY")
+                    google_cse_id = os.getenv("GOOGLE_CSE_ID")
+                    
+                    if google_api_key and google_cse_id:
+                        google_url = f"https://www.googleapis.com/customsearch/v1?key={google_api_key}&cx={google_cse_id}&q={quote(query)}"
+                        response = requests.get(google_url, timeout=10)
+                        
+                        if response.status_code in [200, 202]:
+                            data = response.json()
+                            for item in data.get("items", [])[:5]:
+                                results.append({
+                                    "title": item.get("title", ""),
+                                    "url": item.get("link", ""),
+                                    "snippet": item.get("snippet", ""),
+                                    "source": "web",
+                                    "relevance": 0.85
+                                })
+                except Exception as google_error:
+                    print(f"   ⚠️  Google search also failed: {google_error}")
+        
+        if "documentation" in sources and REQUESTS_AVAILABLE:
+            # Search specific documentation sites
+            doc_queries = [
+                ("OpenAI", f"site:platform.openai.com {query}"),
+                ("LangChain", f"site:python.langchain.com {query}"),
+                ("Hugging Face", f"site:huggingface.co {query}")
+            ]
+            
+            for doc_name, doc_query in doc_queries:
+                try:
+                    # Use DuckDuckGo for site-specific searches
+                    search_url = f"https://api.duckduckgo.com/?q={quote(doc_query)}&format=json"
+                    response = requests.get(search_url, timeout=5)
+                    
+                    if response.status_code in [200, 202]:
+                        data = response.json()
+                        if data.get("Abstract"):
+                            results.append({
+                                "title": f"{doc_name}: {data.get('Heading', query)}",
+                                "url": data.get("AbstractURL", ""),
+                                "snippet": data.get("Abstract", ""),
+                                "source": "documentation", 
+                                "relevance": 0.85
+                            })
+                except:
+                    pass  # Continue with other searches
+        
+        if "academic" in sources and REQUESTS_AVAILABLE:
+            # Search academic sources
+            try:
+                # Use arXiv API for academic papers
+                arxiv_url = f"http://export.arxiv.org/api/query?search_query=all:{quote(query)}&max_results=3"
+                response = requests.get(arxiv_url, timeout=10)
+                
+                if response.status_code in [200, 202]:
+                    root = ET.fromstring(response.content)
+                    
+                    # Parse arXiv XML response
+                    for entry in root.findall("{http://www.w3.org/2005/Atom}entry"):
+                        title_elem = entry.find("{http://www.w3.org/2005/Atom}title")
+                        summary_elem = entry.find("{http://www.w3.org/2005/Atom}summary")
+                        id_elem = entry.find("{http://www.w3.org/2005/Atom}id")
+                        
+                        if title_elem is not None and summary_elem is not None:
+                            results.append({
+                                "title": title_elem.text.strip().replace("\n", " "),
+                                "url": id_elem.text if id_elem is not None else "",
+                                "snippet": summary_elem.text.strip()[:300] + "...",
+                                "source": "academic",
+                                "relevance": 0.9
+                            })
+            except Exception as e:
+                print(f"   ⚠️  Academic search failed: {e}")
+        
+        # If no results were found, return at least a message
+        if not results:
+            results.append({
+                "title": "No results found",
+                "url": "",
+                "snippet": f"No search results were found for '{query}'. This may be due to network issues or API limitations.",
+                "source": "error",
+                "relevance": 0.0
             })
         
         # Save search results
