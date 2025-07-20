@@ -65,9 +65,9 @@ class TestModelRegistry:
         with pytest.raises(ValueError, match="already registered"):
             registry.register_model(model)
 
-    def test_register_multiple_models(self):
+    def test_register_multiple_models(self, populated_model_registry):
         """Test registering multiple models."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         # Get count of pre-registered models
         initial_count = len(registry.models)
@@ -85,9 +85,9 @@ class TestModelRegistry:
         if initial_count > 1:
             assert len(providers) >= 1
 
-    def test_unregister_model_by_name_and_provider(self):
+    def test_unregister_model_by_name_and_provider(self, populated_model_registry):
         """Test unregistering model by name and provider."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         # Get a real model
         model = None
@@ -164,9 +164,9 @@ class TestModelRegistry:
         with pytest.raises(ModelNotFoundError):
             registry.unregister_model("nonexistent")
 
-    def test_get_model_by_name_and_provider(self):
+    def test_get_model_by_name_and_provider(self, populated_model_registry):
         """Test getting model by name and provider."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         # Get a real model
         model = None
@@ -193,9 +193,9 @@ class TestModelRegistry:
         assert retrieved_model.name == model_name
         assert retrieved_model.provider == model_provider
 
-    def test_get_model_by_name_only(self):
+    def test_get_model_by_name_only(self, populated_model_registry):
         """Test getting model by name only."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         # Test with known model names
         model = None
@@ -228,9 +228,9 @@ class TestModelRegistry:
         # Each provider has unique model names
         pass
 
-    def test_list_models_all(self):
+    def test_list_models_all(self, populated_model_registry):
         """Test listing all models."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         models = registry.list_models()
         
@@ -241,9 +241,9 @@ class TestModelRegistry:
         for model_id in models:
             assert ":" in model_id  # Should be provider:model format
 
-    def test_list_models_by_provider(self):
+    def test_list_models_by_provider(self, populated_model_registry):
         """Test listing models by provider."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         # Test with known providers
         for provider in ["openai", "anthropic", "ollama"]:
@@ -254,9 +254,9 @@ class TestModelRegistry:
                 for model_id in provider_models:
                     assert model_id.startswith(f"{provider}:")
 
-    def test_list_providers(self):
+    def test_list_providers(self, populated_model_registry):
         """Test listing providers."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         providers = registry.list_providers()
         
@@ -272,9 +272,9 @@ class TestModelRegistry:
             pytest.skip("No known providers available")
 
     @pytest.mark.asyncio
-    async def test_filter_by_capabilities(self):
+    async def test_filter_by_capabilities(self, populated_model_registry):
         """Test filtering models by capabilities."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Get all registered models
         all_models = list(registry.models.values())
@@ -301,9 +301,9 @@ class TestModelRegistry:
         assert len(eligible) + len(non_eligible) <= len(all_models)
 
     @pytest.mark.asyncio
-    async def test_filter_by_capabilities_context_window(self):
+    async def test_filter_by_capabilities_context_window(self, populated_model_registry):
         """Test filtering models by context window."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Test filtering for different context windows
         requirements_small = {"context_window": 4096}
@@ -325,9 +325,9 @@ class TestModelRegistry:
             assert model.capabilities.context_window >= 8192
 
     @pytest.mark.asyncio
-    async def test_filter_by_capabilities_tasks(self):
+    async def test_filter_by_capabilities_tasks(self, populated_model_registry):
         """Test filtering models by supported tasks."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Test filtering for common tasks
         requirements_generate = {"tasks": ["generate"]}
@@ -346,9 +346,9 @@ class TestModelRegistry:
             assert "analyze" in model.capabilities.supported_tasks
 
     @pytest.mark.asyncio
-    async def test_filter_by_health(self):
+    async def test_filter_by_health(self, populated_model_registry):
         """Test filtering models by health."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Get some real models
         all_models = list(registry.models.values())[:2]  # Get first 2 models
@@ -372,9 +372,9 @@ class TestModelRegistry:
         assert healthy[0] == model1
 
     @pytest.mark.asyncio
-    async def test_filter_by_health_all_healthy(self):
+    async def test_filter_by_health_all_healthy(self, populated_model_registry):
         """Test filtering when all models are healthy."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Get some real models
         all_models = list(registry.models.values())[:2]  # Get first 2 models
@@ -396,9 +396,9 @@ class TestModelRegistry:
             assert model in healthy
 
     @pytest.mark.asyncio
-    async def test_filter_by_health_none_healthy(self):
+    async def test_filter_by_health_none_healthy(self, populated_model_registry):
         """Test filtering when no models are healthy."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Get some real models
         all_models = list(registry.models.values())[:2]  # Get first 2 models
@@ -418,9 +418,9 @@ class TestModelRegistry:
         assert len(healthy) == 0
 
     @pytest.mark.asyncio
-    async def test_select_model_success(self):
+    async def test_select_model_success(self, populated_model_registry):
         """Test successful model selection."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Try to find a model that supports function calling
         requirements = {"supports_function_calling": True}
@@ -435,9 +435,9 @@ class TestModelRegistry:
             assert selected is not None
 
     @pytest.mark.asyncio
-    async def test_select_model_no_eligible(self):
+    async def test_select_model_no_eligible(self, populated_model_registry):
         """Test model selection with no eligible models."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Use impossible requirements
         requirements = {
@@ -450,9 +450,9 @@ class TestModelRegistry:
             await registry.select_model(requirements)
 
     @pytest.mark.asyncio
-    async def test_select_model_no_healthy(self):
+    async def test_select_model_no_healthy(self, populated_model_registry):
         """Test model selection with no healthy models."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Set all models as unhealthy
         for key in registry.models:
@@ -464,9 +464,9 @@ class TestModelRegistry:
             await registry.select_model(requirements)
 
     @pytest.mark.asyncio
-    async def test_select_model_multiple_candidates(self):
+    async def test_select_model_multiple_candidates(self, populated_model_registry):
         """Test model selection with multiple candidates."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Use minimal requirements to get multiple candidates
         requirements = {}
@@ -488,9 +488,9 @@ class TestModelRegistry:
         # Should select one of the healthy models
         assert selected in healthy_models
 
-    def test_update_model_performance_success(self):
+    def test_update_model_performance_success(self, populated_model_registry):
         """Test updating model performance with success."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         # Get a real model
         model = None
@@ -677,9 +677,9 @@ class TestModelRegistry:
         # Success rate should decrease from 1.0
         assert model.metrics.success_rate < initial_success_rate
 
-    def test_get_model_key(self):
+    def test_get_model_key(self, populated_model_registry):
         """Test getting model key."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         # Get a real model
         model = None
@@ -697,9 +697,9 @@ class TestModelRegistry:
 
         assert key == f"{model.provider}:{model.name}"
 
-    def test_get_model_statistics(self):
+    def test_get_model_statistics(self, populated_model_registry):
         """Test getting model statistics."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
 
         # Get current statistics
         stats = registry.get_model_statistics()
@@ -726,9 +726,9 @@ class TestModelRegistry:
         assert stats["healthy_models"] == 0
         assert stats["provider_breakdown"] == {}
 
-    def test_reset_statistics(self):
+    def test_reset_statistics(self, populated_model_registry):
         """Test resetting statistics."""
-        registry = ModelRegistry()  # Create empty registry for this test
+        registry = populated_model_registry
         
         # Set some health cache data
         if registry.models:

@@ -17,10 +17,10 @@ class TestYAMLExamples:
     """Test all YAML examples to ensure they compile and execute correctly."""
     
     @pytest.fixture
-    def setup(self):
-        """Setup test environment with mock model."""
+    def setup(self, populated_model_registry):
+        """Setup test environment with real models."""
         compiler = YAMLCompiler()
-        model_registry = ModelRegistry()
+        model_registry = populated_model_registry
         
         # Create a mock model that returns predictable results
         model = Mock()
