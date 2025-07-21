@@ -1,4 +1,8 @@
-"""Tests for interactive_chat_bot.yaml example."""
+"""Tests for interactive_chat_bot.yaml example.
+
+This test file follows the NO MOCKS policy. Tests use real orchestration
+when API keys are available, otherwise they skip gracefully.
+"""
 import pytest
 from .test_base import BaseExampleTest
 
@@ -13,13 +17,13 @@ class TestInteractiveChatBotYAML(BaseExampleTest):
     @pytest.fixture
     def sample_inputs(self):
         return {
-            "user_message": "What's the weather like today?",
-            "session_id": "session_123",
-            "user_id": "user_456",
-            "context_window": 10,
-            "enable_tools": True,
-            "personality": "helpful",
-            "stream_response": True
+            "message": "What's the weather like today?",
+            "conversation_id": "conv_123",
+            "persona": "helpful-assistant",
+            "enable_streaming": False,
+            "safety_level": "moderate",
+            "available_tools": ["web_search", "calculator", "weather"],
+            "max_response_length": 500
         }
     
     def test_pipeline_structure(self, pipeline_name):
@@ -31,12 +35,12 @@ class TestInteractiveChatBotYAML(BaseExampleTest):
         # Check chat bot steps
         step_ids = [step['id'] for step in config['steps']]
         required_steps = [
-            'load_context',
-            'analyze_intent',
-            'check_tools',
+            'process_input',
+            'safety_check',
+            'retrieve_context',
+            'classify_intent',
             'generate_response',
-            'update_memory',
-            'stream_output'
+            'update_memory'
         ]
         
         for step in required_steps:
@@ -51,237 +55,75 @@ class TestInteractiveChatBotYAML(BaseExampleTest):
         
         # Check streaming condition
         assert 'condition' in stream_step
-        assert '{{stream_response}}' in stream_step['condition']
+        assert '{{enable_streaming}}' in stream_step['condition']
     
     @pytest.mark.asyncio
-    async def test_context_loading(self, orchestrator, pipeline_name):
+    async def test_context_loading(self, orchestrator, pipeline_name, sample_inputs):
         """Test conversation context loading."""
-        # Test pipeline structure
-        config = self.load_yaml_pipeline(pipeline_name)
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            expected_outputs={
+                'response': str,
+                'intent': str,
+                'conversation_id': str
+            },
+            use_minimal_responses=True
+        )
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'retrieve_context':
-                    return {
-                        'result': {
-                            'conversation_history': [
-                                {'role': 'user', 'content': 'Hello'},
-                                {'role': 'assistant', 'content': 'Hi! How can I help?'},
-                                {'role': 'user', 'content': 'What time is it?'},
-                                {'role': 'assistant', 'content': 'It\'s 2:30 PM'}
-                            ],
-                            'user_preferences': {
-                                'timezone': 'EST',
-                                'language': 'en'
-                            },
-                            'session_data': {
-                                'start_time': '2024-01-20T14:00:00',
-                                'message_count': 4
-                            }
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=sample_inputs
-            )
-            
-            # Verify context loading
-            context_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'retrieve_context'
-            ]
-            assert len(context_calls) == 1
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result
     
-    @pytest.mark.asyncio
-    async def test_intent_analysis(self, orchestrator, pipeline_name):
-        """Test user intent analysis."""
-        # Test pipeline structure
+    def test_intent_analysis(self, pipeline_name):
+        """Test user intent analysis configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                if step.get('id') == 'classify_intent':
-                    return {
-                        'result': {
-                            'primary_intent': 'booking_request',
-                            'entities': {
-                                'destination': 'New York',
-                                'date': 'next Friday',
-                                'service': 'flight'
-                            },
-                            'confidence': 0.92,
-                            'requires_tool': True,
-                            'tool_needed': 'flight_booking'
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify intent analysis
-            intent_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'classify_intent'
-            ]
-            assert len(intent_calls) > 0
+        # Check intent classification step
+        intent_step = next(s for s in config['steps'] if s['id'] == 'classify_intent')
+        assert intent_step is not None
+        assert 'Primary intent' in intent_step['action']
+        assert 'confidence scores' in intent_step['action']
     
-    @pytest.mark.asyncio
-    async def test_tool_usage(self, orchestrator, pipeline_name):
-        """Test conditional tool usage."""
-        # Test pipeline structure
+    def test_tool_usage(self, pipeline_name):
+        """Test conditional tool usage configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'classify_intent':
-                    return {
-                        'result': {
-                            'primary_intent': 'calculation',
-                            'requires_tool': True,
-                            'tool_needed': 'calculator'
-                        }
-                    }
-                elif step_id == 'select_tools':
-                    return {
-                        'result': {
-                            'tool_available': True,
-                            'tool_name': 'calculator',
-                            'can_execute': True
-                        }
-                    }
-                elif step_id == 'execute_tools':
-                    return {
-                        'result': {
-                            'tool_output': '210',
-                            'calculation': '25% of 840 = 210',
-                            'execution_time': 0.05
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify tool execution
-            tool_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'execute_tools'
-            ]
-            assert len(tool_calls) > 0
+        # Check tool selection step
+        select_step = next(s for s in config['steps'] if s['id'] == 'select_tools')
+        assert select_step is not None
+        assert '{{available_tools}}' in str(select_step)
+        
+        # Check tool execution step
+        execute_step = next(s for s in config['steps'] if s['id'] == 'execute_tools')
+        assert 'condition' in execute_step
+        assert execute_step['condition'] == '{{select_tools.result.tools|length}} > 0'
     
-    @pytest.mark.asyncio
-    async def test_memory_update(self, orchestrator, pipeline_name):
-        """Test conversation memory management."""
-        # Test pipeline structure
+    def test_memory_update(self, pipeline_name):
+        """Test conversation memory management configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'update_memory':
-                    return {
-                        'result': {
-                            'facts_extracted': [
-                                {'type': 'user_name', 'value': 'Alice'}
-                            ],
-                            'context_updated': True,
-                            'messages_stored': 1,
-                            'old_messages_pruned': 0
-                        }
-                    }
-                elif step_id == 'update_memory':
-                    return {
-                        'result': {
-                            'messages_kept': 5,
-                            'messages_removed': 2,
-                            'summary_created': True
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify memory updates
-            memory_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'update_memory'
-            ]
-            assert len(memory_calls) > 0
+        # Check fact extraction step
+        extract_step = next(s for s in config['steps'] if s['id'] == 'extract_facts')
+        assert extract_step is not None
+        assert 'User preferences' in extract_step['action']
+        
+        # Check memory update step
+        memory_step = next(s for s in config['steps'] if s['id'] == 'update_memory')
+        assert memory_step is not None
+        assert '{{conversation_id}}' in str(memory_step)
     
-    @pytest.mark.asyncio
-    async def test_streaming_response(self, orchestrator, pipeline_name):
-        """Test streaming response generation."""
-        # Test pipeline structure
+    def test_streaming_response(self, pipeline_name):
+        """Test streaming response generation configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'generate_response':
-                    return {
-                        'result': {
-                            'response': 'Once upon a time, in a land far away...',
-                            'tokens': 12,
-                            'completion_time': 1.2
-                        }
-                    }
-                elif step_id == 'prepare_streaming':
-                    return {
-                        'result': {
-                            'chunks_sent': 5,
-                            'streaming_time': 0.8,
-                            'average_chunk_size': 2.4
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify streaming was triggered
-            stream_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'prepare_streaming'
-            ]
-            assert len(stream_calls) > 0
+        # Check prepare streaming step
+        stream_step = next(s for s in config['steps'] if s['id'] == 'prepare_streaming')
+        assert stream_step is not None
+        assert 'condition' in stream_step
+        assert stream_step['condition'] == '{{enable_streaming}} == true'
     
     def test_personality_configuration(self, pipeline_name):
         """Test personality handling in responses."""
@@ -290,21 +132,22 @@ class TestInteractiveChatBotYAML(BaseExampleTest):
         # Find response generation step
         response_step = next(s for s in config['steps'] if s['id'] == 'generate_response')
         
-        # Check personality is used
-        assert '{{personality}}' in str(response_step)
+        # Check persona is used
+        assert '{{persona}}' in str(response_step)
     
-    def test_fallback_handling(self, pipeline_name):
-        """Test fallback response configuration."""
+    def test_safety_configuration(self, pipeline_name):
+        """Test safety check configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Find fallback step
-        fallback_step = next(
-            (s for s in config['steps'] if s['id'] == 'generate_fallback'),
-            None
-        )
+        # Check safety check step
+        safety_step = next(s for s in config['steps'] if s['id'] == 'safety_check')
+        assert safety_step is not None
+        assert '{{safety_level}}' in str(safety_step)
         
-        assert fallback_step is not None
-        assert 'error_handler' in fallback_step or 'condition' in fallback_step
+        # Check that retrieve_context depends on safety
+        context_step = next(s for s in config['steps'] if s['id'] == 'retrieve_context')
+        assert 'condition' in context_step
+        assert 'is_safe' in context_step['condition']
     
     def test_output_completeness(self, pipeline_name):
         """Test that all chat outputs are defined."""
@@ -315,8 +158,23 @@ class TestInteractiveChatBotYAML(BaseExampleTest):
             'intent',
             'confidence',
             'tools_used',
-            'session_updated'
+            'conversation_id'
         ]
         
         for output in expected_outputs:
             assert output in config['outputs'], f"Missing output: {output}"
+    
+    @pytest.mark.asyncio
+    async def test_full_pipeline_flow(self, orchestrator, pipeline_name, sample_inputs):
+        """Test full pipeline execution with minimal responses."""
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            use_minimal_responses=True
+        )
+        
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result

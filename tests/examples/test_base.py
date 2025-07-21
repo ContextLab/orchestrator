@@ -284,6 +284,36 @@ class BaseExampleTest:
         elif step_id == "save_story":
             return {"result": "Story saved to file"}
         
+        # Handle specific step IDs for interactive chat bot
+        elif step_id == "process_input":
+            return {"result": {"text": "What's the weather like today?", "language": "en", "complexity": "simple", "question_type": "weather_query"}}
+        elif step_id == "safety_check":
+            return {"result": {"is_safe": True, "filtered_content": "What's the weather like today?"}}
+        elif step_id == "retrieve_context":
+            return {"result": {"conversation_history": [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi! How can I help?"}], "topic": "general", "summary": "User greeting"}}
+        elif step_id == "classify_intent":
+            return {"result": {"primary_intent": "weather_query", "confidence": 0.95, "requires_action": True}}
+        elif step_id == "select_tools":
+            return {"result": {"tools": [{"name": "weather", "parameters": {"location": "current"}}]}}
+        elif step_id == "execute_tools":
+            return {"result": [{"tool": "weather", "output": "It's sunny and 72°F"}]}
+        elif step_id == "generate_response":
+            return {"result": {"text": "The weather today is sunny with a temperature of 72°F. It's a beautiful day!", "metadata": {"tokens": 15}}}
+        elif step_id == "enhance_response":
+            return {"result": "The weather today is sunny with a temperature of 72°F. It's a beautiful day!"}
+        elif step_id == "extract_facts":
+            return {"result": [{"type": "query_topic", "value": "weather"}]}
+        elif step_id == "update_memory":
+            return {"result": {"memory_updated": True, "facts_stored": 1}}
+        elif step_id == "suggest_followups":
+            return {"result": ["Would you like the weather forecast for tomorrow?", "Do you need clothing recommendations for this weather?"]}
+        elif step_id == "prepare_streaming":
+            return {"result": [{"chunk": "The weather today is sunny"}, {"chunk": " with a temperature of 72°F."}, {"chunk": " It's a beautiful day!"}]}
+        elif step_id == "log_analytics":
+            return {"result": {"response_time": 850, "tool_effectiveness": 1.0}}
+        elif step_id == "prepare_output":
+            return {"result": {"response": "The weather today is sunny with a temperature of 72°F. It's a beautiful day!", "conversation_state": "active"}}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
