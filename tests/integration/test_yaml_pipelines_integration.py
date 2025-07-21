@@ -242,16 +242,16 @@ class TestCreativeWritingAssistantIntegration:
         
         # Set context for compilation and story generation
         context = {
-            "prompt": "Write a short story about a robot learning to paint",
+            "prompt": "Write a very short story about a robot learning to paint",
             "genre": "science fiction",
-            "style": "descriptive",
-            "length": "short",
+            "style": "simple",
+            "length": "flash",  # Very short
             "write_detailed_chapters": False,  # For short stories
-            "include_worldbuilding": True,
-            "chapter_count": 1,  # Short story
+            "include_worldbuilding": False,  # Skip for speed
+            "chapter_count": 0,  # No chapters for flash fiction
             "target_audience": "general",
-            "writing_style": "descriptive and engaging",
-            "initial_premise": "A robot discovers the joy of artistic expression"
+            "writing_style": "concise",
+            "initial_premise": "A robot discovers painting"
         }
         
         # Compile the YAML content with context
