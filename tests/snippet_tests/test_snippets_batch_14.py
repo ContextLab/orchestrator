@@ -106,7 +106,7 @@ def test_quickstart_lines_153_175_2():
 def test_quickstart_lines_183_211_3():
     """Test Python snippet from docs/getting_started/quickstart.rst lines 183-211."""
     # Description: Let's use a real AI model instead of the mock:
-    content = 'from orchestrator.models.openai_model import OpenAIModel\n\n# Create OpenAI model\nopenai_model = OpenAIModel(\n    name="gpt-4",\n    api_key="your-api-key-here",\n    model="gpt-4"\n)\n\n# Register model\norchestrator.register_model(openai_model)\n\n# Execute pipeline (will use OpenAI)\nimport asyncio\n\n\n\nasync def run_pipeline():\n\n    result = await orchestrator.execute_pipeline(pipeline)\n\n    return result\n\n\n\n# Run the pipeline\n\nresult = asyncio.run(run_pipeline())'
+    content = 'import os\nfrom orchestrator.models.openai_model import OpenAIModel\n\n# API key should be set in environment variable or ~/.orchestrator/.env\n# Create OpenAI model\nopenai_model = OpenAIModel(\n    name="gpt-4",\n    api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment\n    model="gpt-4"\n)\n\n# Register model\norchestrator.register_model(openai_model)\n\n# Execute pipeline (will use OpenAI)\nimport asyncio\n\n\n\nasync def run_pipeline():\n\n    result = await orchestrator.execute_pipeline(pipeline)\n\n    return result\n\n\n\n# Run the pipeline\n\nresult = asyncio.run(run_pipeline())'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"

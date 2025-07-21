@@ -220,12 +220,14 @@ This tutorial covers production-ready model orchestration:
 .. code-block:: python
 
    # Example from Tutorial 03
+   import os
    from orchestrator.models.openai_model import OpenAIModel
    from orchestrator.models.anthropic_model import AnthropicModel
    
+   # API keys should be set in environment variables or ~/.orchestrator/.env
    # Register multiple models
-   gpt4 = OpenAIModel(name="gpt-4", api_key="your-key")
-   claude = AnthropicModel(name="claude-3", api_key="your-key")
+   gpt4 = OpenAIModel(name="gpt-4", api_key=os.environ.get("OPENAI_API_KEY"))
+   claude = AnthropicModel(name="claude-3", api_key=os.environ.get("ANTHROPIC_API_KEY"))
    
    orchestrator.register_model(gpt4)
    orchestrator.register_model(claude)

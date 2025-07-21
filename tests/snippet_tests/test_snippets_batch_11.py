@@ -40,10 +40,10 @@ def test_basic_concepts_lines_48_59_0():
             pytest.fail(f"Import failed: {e}")
 
 
-def test_basic_concepts_lines_71_78_1():
-    """Test Python snippet from docs/getting_started/basic_concepts.rst lines 71-78."""
+def test_basic_concepts_lines_71_80_1():
+    """Test Python snippet from docs/getting_started/basic_concepts.rst lines 71-80."""
     # Description: * **Custom models** (your own implementations)
-    content = 'from orchestrator.models import OpenAIModel\n\nmodel = OpenAIModel(\n    name="gpt-4",\n    api_key="your-api-key",\n    model="gpt-4"\n)'
+    content = 'import os\nfrom orchestrator.models import OpenAIModel\n\n# API key should be set in environment variable or ~/.orchestrator/.env\nmodel = OpenAIModel(\n    name="gpt-4",\n    api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment\n    model="gpt-4"\n)'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"

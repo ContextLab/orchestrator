@@ -238,10 +238,10 @@ def test_README_lines_79_81_7():
             pytest.fail(f"Import failed: {e}")
 
 
-def test_README_lines_109_115_8():
-    """Test Python snippet from notebooks/README.md lines 109-115."""
+def test_README_lines_109_117_8():
+    """Test Python snippet from notebooks/README.md lines 109-117."""
     # Description: The tutorials use mock models for demonstration. To work with real AI models:
-    content = 'from orchestrator.integrations.openai_model import OpenAIModel\n\nmodel = OpenAIModel(\n    name="gpt-4",\n    api_key="your-openai-api-key",\n    model="gpt-4"\n)'
+    content = 'import os\nfrom orchestrator.integrations.openai_model import OpenAIModel\n\n# API key should be set in environment variable or ~/.orchestrator/.env\nmodel = OpenAIModel(\n    name="gpt-4",\n    api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment\n    model="gpt-4"\n)'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"
@@ -267,10 +267,10 @@ def test_README_lines_109_115_8():
             pytest.fail(f"Import failed: {e}")
 
 
-def test_README_lines_120_126_9():
-    """Test Python snippet from notebooks/README.md lines 120-126."""
-    # Description: `
-    content = 'from orchestrator.integrations.anthropic_model import AnthropicModel\n\nmodel = AnthropicModel(\n    name="claude-3-sonnet",\n    api_key="your-anthropic-api-key",\n    model="claude-3-sonnet-20240229"\n)'
+def test_README_lines_121_130_9():
+    """Test Python snippet from notebooks/README.md lines 121-130."""
+    # Description: Anthropic Integration
+    content = 'import os\nfrom orchestrator.integrations.anthropic_model import AnthropicModel\n\n# API key should be set in environment variable or ~/.orchestrator/.env\nmodel = AnthropicModel(\n    name="claude-3-sonnet",\n    api_key=os.environ.get("ANTHROPIC_API_KEY"),  # Loaded from environment\n    model="claude-3-sonnet-20240229"\n)'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"

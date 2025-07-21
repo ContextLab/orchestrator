@@ -297,13 +297,15 @@ Replace mock model with real AI:
 
 .. code-block:: python
 
+   import os
    from orchestrator.models.openai_model import OpenAIModel
    
    async def run_with_real_ai():
+       # API key should be set in environment variable or ~/.orchestrator/.env
        # Create OpenAI model
        openai_model = OpenAIModel(
            name="gpt-4",
-           api_key="your-openai-api-key",
+           api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment
            model="gpt-4"
        )
        

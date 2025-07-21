@@ -135,7 +135,7 @@ def test_models_and_adapters_lines_82_85_5():
 def test_models_and_adapters_lines_96_103_6():
     """Test Python snippet from docs/user_guide/models_and_adapters.rst lines 96-103."""
     # Description: ~~~~~~~~~~~~~
-    content = 'from orchestrator.models.openai_model import OpenAIModel\n\nmodel = OpenAIModel(\n    name="gpt-4o",\n    api_key="your-api-key",\n    model="gpt-4o"\n)'
+    content = 'import os\nfrom orchestrator.models.openai_model import OpenAIModel\n\n# API key should be set in environment variable or ~/.orchestrator/.env\nmodel = OpenAIModel(\n    name="gpt-4o",\n    api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment\n    model="gpt-4o"\n)'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"
@@ -164,7 +164,7 @@ def test_models_and_adapters_lines_96_103_6():
 def test_models_and_adapters_lines_109_116_7():
     """Test Python snippet from docs/user_guide/models_and_adapters.rst lines 109-116."""
     # Description: ~~~~~~~~~~~~~~~~
-    content = 'from orchestrator.models.anthropic_model import AnthropicModel\n\nmodel = AnthropicModel(\n    name="claude-3.5-sonnet",\n    api_key="your-api-key",\n    model="claude-3.5-sonnet"\n)'
+    content = 'import os\nfrom orchestrator.models.anthropic_model import AnthropicModel\n\n# API key should be set in environment variable or ~/.orchestrator/.env\nmodel = AnthropicModel(\n    name="claude-3.5-sonnet",\n    api_key=os.environ.get("ANTHROPIC_API_KEY"),  # Loaded from environment\n    model="claude-3.5-sonnet"\n)'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"

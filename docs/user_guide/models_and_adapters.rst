@@ -93,11 +93,13 @@ OpenAI Models
 
 .. code-block:: python
 
+   import os
    from orchestrator.models.openai_model import OpenAIModel
    
+   # API key should be set in environment variable or ~/.orchestrator/.env
    model = OpenAIModel(
        name="gpt-4o",
-       api_key="your-api-key",
+       api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment
        model="gpt-4o"
    )
 
@@ -106,11 +108,13 @@ Anthropic Models
 
 .. code-block:: python
 
+   import os
    from orchestrator.models.anthropic_model import AnthropicModel
    
+   # API key should be set in environment variable or ~/.orchestrator/.env
    model = AnthropicModel(
        name="claude-3.5-sonnet",
-       api_key="your-api-key",
+       api_key=os.environ.get("ANTHROPIC_API_KEY"),  # Loaded from environment
        model="claude-3.5-sonnet"
    )
 

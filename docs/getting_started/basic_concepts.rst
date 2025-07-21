@@ -68,11 +68,13 @@ A **Model** represents an AI service that can execute tasks. Models can be:
 
 .. code-block:: python
 
+   import os
    from orchestrator.models import OpenAIModel
    
+   # API key should be set in environment variable or ~/.orchestrator/.env
    model = OpenAIModel(
        name="gpt-4",
-       api_key="your-api-key",
+       api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment
        model="gpt-4"
    )
 

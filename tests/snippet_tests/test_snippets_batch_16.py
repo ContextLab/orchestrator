@@ -125,7 +125,7 @@ def test_notebooks_lines_166_187_3():
 def test_notebooks_lines_222_236_4():
     """Test Python snippet from docs/tutorials/notebooks.rst lines 222-236."""
     # Description: * Optimize for cost and latency
-    content = '# Example from Tutorial 03\nfrom orchestrator.models.openai_model import OpenAIModel\nfrom orchestrator.models.anthropic_model import AnthropicModel\n\n# Register multiple models\ngpt4 = OpenAIModel(name="gpt-4", api_key="your-key")\nclaude = AnthropicModel(name="claude-3", api_key="your-key")\n\norchestrator.register_model(gpt4)\norchestrator.register_model(claude)\n\n# Orchestrator automatically selects best model\n# Note: This code is for Jupyter notebooks which support top-level await\nresult = await orchestrator.execute_pipeline(pipeline)'
+    content = '# Example from Tutorial 03\nimport os\nfrom orchestrator.models.openai_model import OpenAIModel\nfrom orchestrator.models.anthropic_model import AnthropicModel\n\n# API keys should be set in environment variables or ~/.orchestrator/.env\n# Register multiple models\ngpt4 = OpenAIModel(name="gpt-4", api_key=os.environ.get("OPENAI_API_KEY"))\nclaude = AnthropicModel(name="claude-3", api_key=os.environ.get("ANTHROPIC_API_KEY"))\n\norchestrator.register_model(gpt4)\norchestrator.register_model(claude)\n\n# Orchestrator automatically selects best model\n# Note: This code is for Jupyter notebooks which support top-level await\nresult = await orchestrator.execute_pipeline(pipeline)'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"
