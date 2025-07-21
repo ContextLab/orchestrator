@@ -393,20 +393,16 @@ class TestAnthropicModel:
     """Test AnthropicModel integration."""
 
     def test_anthropic_model_init(self):
-        """Test AnthropicModel initialization."""
-        # Set test API key
-        original_key = os.environ.get("ANTHROPIC_API_KEY")
-        os.environ["ANTHROPIC_API_KEY"] = "test-key"
+        """Test AnthropicModel initialization with real API key."""
+        from orchestrator.utils.api_keys import load_api_keys
         
         try:
+            load_api_keys()  # Load real API keys
             model = AnthropicModel(name="claude-3", model="claude-3")
             assert model.name == "claude-3"
             assert model.provider == "anthropic"
-        finally:
-            if original_key:
-                os.environ["ANTHROPIC_API_KEY"] = original_key
-            else:
-                os.environ.pop("ANTHROPIC_API_KEY", None)
+        except EnvironmentError as e:
+            pytest.skip(f"Skipping test - API keys not configured: {e}")
 
     @pytest.mark.asyncio
     async def test_anthropic_generate(self):
@@ -485,33 +481,17 @@ class TestGoogleModel:
     """Test GoogleModel integration."""
 
     def test_google_model_init(self):
-        """Test GoogleModel initialization."""
-        original_key = os.environ.get("GOOGLE_API_KEY")
-        os.environ["GOOGLE_API_KEY"] = "test-key"
-        
-        # Replace google.generativeai.configure temporarily
-        import orchestrator.integrations.google_model
-        original_configure = getattr(orchestrator.integrations.google_model, 'genai', None)
-        
-        class TestGenAI:
-            @staticmethod
-            def configure(api_key):
-                pass
-                
-        if hasattr(orchestrator.integrations.google_model, 'genai'):
-            orchestrator.integrations.google_model.genai = TestGenAI()
+        """Test GoogleModel initialization with real API key."""
+        from orchestrator.utils.api_keys import load_api_keys
         
         try:
+            load_api_keys()  # Load real API keys
+        
             model = GoogleModel(name="gemini-pro", model="gemini-pro")
             assert model.name == "gemini-pro"
             assert model.provider == "google"
-        finally:
-            if original_key:
-                os.environ["GOOGLE_API_KEY"] = original_key
-            else:
-                os.environ.pop("GOOGLE_API_KEY", None)
-            if original_configure:
-                orchestrator.integrations.google_model.genai = original_configure
+        except EnvironmentError as e:
+            pytest.skip(f"Skipping test - API keys not configured: {e}")
 
     @pytest.mark.asyncio
     async def test_google_generate(self):
