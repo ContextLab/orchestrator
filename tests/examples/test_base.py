@@ -346,6 +346,32 @@ class BaseExampleTest:
         elif step_id == "log_analytics":
             return {"result": {"response_time": 850}}
         
+        # Handle specific step IDs for multi-agent collaboration
+        elif step_id == "initialize_agents":
+            return {"result": {"agents": [{"name": "Researcher", "type": "researcher"}, {"name": "Analyst", "type": "analyst"}, {"name": "Creative", "type": "creative"}, {"name": "Critic", "type": "critic"}], "network_topology": "mesh"}}
+        elif step_id == "decompose_problem":
+            return {"result": {"sub_problems": ["Transportation infrastructure", "Energy efficiency", "Smart traffic management"], "dependencies": {"graph": "DAG"}, "complexity": "high"}}
+        elif step_id == "assign_tasks":
+            return {"result": {"assignments": [{"agent": "Researcher", "tasks": ["Infrastructure analysis"]}, {"agent": "Analyst", "tasks": ["Data processing"]}], "collaboration_pairs": [["Researcher", "Analyst"]]}}
+        elif step_id == "collaboration_round":
+            return {"result": {"solutions": ["Solution A", "Solution B"], "communication_log": ["Agent1: Proposal", "Agent2: Feedback"], "iteration": 1, "iteration_count": 1}}
+        elif step_id == "check_convergence":
+            return {"result": {"score": 0.75, "converged": False}}
+        elif step_id == "peer_review":
+            return {"result": {"reviews": [{"solution": "A", "score": 0.8}], "improvements": ["Add detail to section 2"], "conflicts": 0}}
+        elif step_id == "resolve_conflicts":
+            return {"result": {"consensus": "Modified Solution A", "consensus_level": 0.9}}
+        elif step_id == "integrate_solutions":
+            return {"result": {"integrated_solution": "Complete solution architecture", "confidence": 0.88, "agent_contributions": [{"agent": "Researcher", "contribution": "Key insights"}]}}
+        elif step_id == "final_review":
+            return {"result": {"quality_score": 0.92, "risks": ["Implementation complexity"], "improvements": []}}
+        elif step_id == "generate_report":
+            return {"result": "# Solution Report\n\n## Executive Summary\n\nComprehensive solution for smart city transportation..."}
+        elif step_id == "analyze_emergence":
+            return {"result": {"communication_patterns": ["Hub-spoke", "Peer-to-peer"], "efficiency_score": 0.85, "collective_intelligence": 0.9}}
+        elif step_id == "agent_learning":
+            return {"result": {"knowledge_items": ["Pattern A effective for complex problems", "Trust improved between agents"], "updates": 5}}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
