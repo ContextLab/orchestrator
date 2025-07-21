@@ -578,19 +578,16 @@ class TestOpenAIModel:
     """Test OpenAIModel integration."""
 
     def test_openai_model_init(self):
-        """Test OpenAIModel initialization."""
-        original_key = os.environ.get("OPENAI_API_KEY")
-        os.environ["OPENAI_API_KEY"] = "test-key"
+        """Test OpenAIModel initialization with real API key."""
+        from orchestrator.utils.api_keys import load_api_keys
         
         try:
+            load_api_keys()  # Load real API keys
             model = OpenAIModel(name="gpt-4", model="gpt-4")
             assert model.name == "gpt-4"
             assert model.provider == "openai"
-        finally:
-            if original_key:
-                os.environ["OPENAI_API_KEY"] = original_key
-            else:
-                os.environ.pop("OPENAI_API_KEY", None)
+        except EnvironmentError as e:
+            pytest.skip(f"Skipping test - API keys not configured: {e}")
 
     @pytest.mark.asyncio
     async def test_openai_generate(self):
