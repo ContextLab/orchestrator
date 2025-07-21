@@ -1,6 +1,5 @@
 """Tests for automated_testing_system.yaml example."""
 import pytest
-from unittest.mock import AsyncMock, patch
 from .test_base import BaseExampleTest
 
 

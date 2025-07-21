@@ -1,6 +1,5 @@
 """Tests for scalable_customer_service_agent.yaml example."""
 import pytest
-from unittest.mock import AsyncMock, patch
 from .test_base import BaseExampleTest
 
 

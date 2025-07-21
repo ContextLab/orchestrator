@@ -1,6 +1,5 @@
 """Tests for code_analysis_suite.yaml example."""
 import pytest
-from unittest.mock import AsyncMock, patch
 from .test_base import BaseExampleTest
 
 
