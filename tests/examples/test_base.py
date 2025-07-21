@@ -134,6 +134,36 @@ class BaseExampleTest:
         elif step_id == "clean_data":
             return {"result": {"issues_fixed": 150}}
         
+        # Handle specific step IDs for content creation
+        elif step_id == "research_topic":
+            return {"result": {"keywords": ["AI", "healthcare", "medical", "technology"], "insights": "AI is transforming healthcare"}}
+        elif step_id == "generate_outline":
+            return {"result": "1. Introduction\n2. AI in Diagnostics\n3. AI in Treatment\n4. Conclusion"}
+        elif step_id == "create_blog_content":
+            return {"result": {"content": "AI in Healthcare: A comprehensive blog post...", "titles": ["AI Revolutionizes Healthcare", "The Future of Medical AI", "Healthcare's AI Transformation"]}}
+        elif step_id == "optimize_seo":
+            return {"result": {"content": "SEO-optimized content about AI in Healthcare...", "seo_score": 85}}
+        elif step_id == "create_social_content":
+            return {"result": "Twitter: AI is transforming healthcare! #AI #Healthcare\nLinkedIn: Detailed post about AI in healthcare..."}
+        elif step_id == "generate_visuals":
+            return {"result": "Generated hero image, social cards, and infographic"}
+        elif step_id == "create_email_content":
+            return {"result": "Subject: AI in Healthcare Newsletter\nBody: Dear reader, AI is revolutionizing healthcare..."}
+        elif step_id == "quality_review":
+            return {"result": {"scores": {"grammar": 95, "brand_voice": 90, "accuracy": 92}}}
+        elif step_id == "create_ab_tests":
+            return {"result": "A/B test variations created for titles and CTAs"}
+        elif step_id == "schedule_content":
+            return {"result": "Publishing schedule: Blog - Monday 10am, Social - Throughout week"}
+        elif step_id == "publish_content":
+            return {"result": {"urls": ["https://blog.example.com/ai-healthcare"], "campaign_id": "CAMP-12345"}}
+        elif step_id == "setup_monitoring":
+            return {"result": {"dashboard_url": "https://analytics.example.com/dashboard/12345"}}
+        elif step_id == "save_content_to_file":
+            return {"result": "Content saved to file"}
+        elif step_id == "save_output":
+            return {"result": "Output saved successfully"}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
