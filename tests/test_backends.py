@@ -5,7 +5,6 @@ import json
 import os
 import tempfile
 from datetime import datetime
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -16,6 +15,12 @@ from src.orchestrator.state.backends import (
     RedisBackend,
     StateBackend,
     create_backend,
+)
+from tests.test_helpers.backend_helpers import (
+    TestableDateTime,
+    TestableRedisClient,
+    TestableAsyncpgPool,
+    TestableAsyncpgConnection,
 )
 
 
@@ -127,27 +132,31 @@ class TestMemoryBackend:
         """Test cleaning up expired checkpoints."""
         backend = MemoryBackend()
 
-        # Mock datetime for controlled testing
-        with patch("src.orchestrator.state.backends.datetime") as mock_datetime:
-            base_time = 1000000000.0
-            mock_datetime.now.return_value.timestamp.return_value = base_time
+        # Use testable datetime for controlled testing
+        import src.orchestrator.state.backends
+        original_datetime = src.orchestrator.state.backends.datetime
+        test_datetime = TestableDateTime(base_time=1000000000.0)
+        
+        try:
+            # Replace datetime temporarily
+            src.orchestrator.state.backends.datetime = test_datetime
 
             # Save checkpoint with old timestamp
             checkpoint_id = await backend.save_state("old_execution", {"data": "old"})
 
             # Manually set old timestamp
-            backend._checkpoints[checkpoint_id]["timestamp"] = base_time - (
+            backend._checkpoints[checkpoint_id]["timestamp"] = test_datetime._base_time - (
                 10 * 24 * 3600
             )  # 10 days old
-
-            # Set current time to later
-            mock_datetime.now.return_value.timestamp.return_value = base_time
 
             # Clean up with 7-day retention
             deleted_count = await backend.cleanup_expired(retention_days=7)
 
             assert deleted_count == 1
             assert checkpoint_id not in backend._checkpoints
+        finally:
+            # Restore original datetime
+            src.orchestrator.state.backends.datetime = original_datetime
 
     @pytest.mark.asyncio
     async def test_memory_backend_compatibility_methods(self):
@@ -391,61 +400,91 @@ class TestPostgresBackend:
         """Test PostgreSQL backend without asyncpg dependency."""
         backend = PostgresBackend("postgresql://localhost/test")
 
-        with patch(
-            "builtins.__import__", side_effect=ImportError("No module named 'asyncpg'")
-        ):
+        # Store original __import__
+        original_import = __builtins__['__import__']
+        
+        def mock_import(name, *args, **kwargs):
+            if name == 'asyncpg':
+                raise ImportError("No module named 'asyncpg'")
+            return original_import(name, *args, **kwargs)
+        
+        try:
+            __builtins__['__import__'] = mock_import
             with pytest.raises(ImportError, match="asyncpg is required"):
                 await backend._get_pool()
+        finally:
+            __builtins__['__import__'] = original_import
 
     @pytest.mark.asyncio
     async def test_postgres_backend_save_state_mocked(self):
-        """Test saving state with mocked PostgreSQL connection."""
+        """Test saving state with testable PostgreSQL connection."""
         backend = PostgresBackend("postgresql://localhost/test")
 
-        # Mock the entire save_state method to avoid complex asyncpg mocking
-        original_save_state = backend.save_state
+        # Use testable connection
+        test_connection = TestableAsyncpgConnection()
+        
+        # Replace _get_pool to return our test pool
+        async def get_test_pool():
+            return test_connection.pool
+            
+        backend._get_pool = get_test_pool
 
-        async def mock_save_state(execution_id, state, metadata=None):
-            timestamp = int(datetime.now().timestamp())
-            return f"{execution_id}_{timestamp}"
+        checkpoint_id = await backend.save_state(
+            "exec1", {"data": "test"}, {"meta": "data"}
+        )
 
-        with patch.object(backend, "save_state", side_effect=mock_save_state):
-            checkpoint_id = await backend.save_state(
-                "exec1", {"data": "test"}, {"meta": "data"}
-            )
-
-            assert checkpoint_id.startswith("exec1_")
+        assert checkpoint_id.startswith("exec1_")
+        
+        # Verify the data was stored
+        assert len(test_connection.pool.call_history) > 0
+        execute_calls = [c for c in test_connection.pool.call_history if c[0] == 'execute']
+        assert len(execute_calls) >= 1  # At least table creation and insert
 
     @pytest.mark.asyncio
     async def test_postgres_backend_load_state_mocked(self):
-        """Test loading state with mocked PostgreSQL connection."""
+        """Test loading state with testable PostgreSQL connection."""
         backend = PostgresBackend("postgresql://localhost/test")
 
-        # Mock the entire load_state method to avoid complex asyncpg mocking
-        async def mock_load_state(checkpoint_id):
-            if checkpoint_id == "test_checkpoint":
-                return {"data": "test"}
-            return None
+        # Use testable connection with pre-populated data
+        test_connection = TestableAsyncpgConnection()
+        test_connection.pool._data["checkpoints"] = {
+            "test_checkpoint": {
+                "checkpoint_id": "test_checkpoint",
+                "execution_id": "test",
+                "state": json.dumps({"data": "test"}),
+                "metadata": json.dumps({}),
+                "timestamp": 1234567890
+            }
+        }
+        
+        # Replace _get_pool to return our test pool
+        async def get_test_pool():
+            return test_connection.pool
+            
+        backend._get_pool = get_test_pool
 
-        with patch.object(backend, "load_state", side_effect=mock_load_state):
-            result = await backend.load_state("test_checkpoint")
+        result = await backend.load_state("test_checkpoint")
 
-            assert result is not None
-            assert result == {"data": "test"}
+        assert result is not None
+        assert result == {"data": "test"}
 
     @pytest.mark.asyncio
     async def test_postgres_backend_load_state_not_found(self):
         """Test loading non-existent state from PostgreSQL."""
         backend = PostgresBackend("postgresql://localhost/test")
 
-        # Mock the entire load_state method to avoid complex asyncpg mocking
-        async def mock_load_state(checkpoint_id):
-            return None  # Simulate not found
+        # Use testable connection with no data
+        test_connection = TestableAsyncpgConnection()
+        
+        # Replace _get_pool to return our test pool
+        async def get_test_pool():
+            return test_connection.pool
+            
+        backend._get_pool = get_test_pool
 
-        with patch.object(backend, "load_state", side_effect=mock_load_state):
-            result = await backend.load_state("nonexistent")
+        result = await backend.load_state("nonexistent")
 
-            assert result is None
+        assert result is None
 
 
 class TestRedisBackend:
@@ -467,46 +506,72 @@ class TestRedisBackend:
         """Test Redis backend without redis dependency."""
         backend = RedisBackend("redis://localhost:6379")
 
-        with patch(
-            "builtins.__import__", side_effect=ImportError("No module named 'redis'")
-        ):
+        # Store original __import__
+        original_import = __builtins__['__import__']
+        
+        def mock_import(name, *args, **kwargs):
+            if name == 'redis':
+                raise ImportError("No module named 'redis'")
+            return original_import(name, *args, **kwargs)
+        
+        try:
+            __builtins__['__import__'] = mock_import
             with pytest.raises(ImportError, match="redis is required"):
                 await backend._get_redis()
+        finally:
+            __builtins__['__import__'] = original_import
 
     @pytest.mark.asyncio
     async def test_redis_backend_save_state_mocked(self):
-        """Test saving state with mocked Redis connection."""
+        """Test saving state with testable Redis connection."""
         backend = RedisBackend("redis://localhost:6379")
 
-        # Mock Redis client
-        mock_redis = AsyncMock()
+        # Use testable Redis client
+        test_redis = TestableRedisClient()
+        
+        # Replace _get_redis to return our test client
+        async def get_test_redis():
+            return test_redis
+            
+        backend._get_redis = get_test_redis
 
-        with patch.object(backend, "_get_redis", return_value=mock_redis):
-            checkpoint_id = await backend.save_state(
-                "exec1", {"data": "test"}, {"meta": "data"}
-            )
+        checkpoint_id = await backend.save_state(
+            "exec1", {"data": "test"}, {"meta": "data"}
+        )
 
-            assert checkpoint_id.startswith("exec1_")
-            mock_redis.hset.assert_called()
-            mock_redis.zadd.assert_called()
+        assert checkpoint_id.startswith("exec1_")
+        
+        # Verify calls were made
+        hset_calls = [c for c in test_redis.call_history if c[0] == 'hset']
+        zadd_calls = [c for c in test_redis.call_history if c[0] == 'zadd']
+        assert len(hset_calls) > 0
+        assert len(zadd_calls) > 0
 
     @pytest.mark.asyncio
     async def test_redis_backend_load_state_mocked(self):
-        """Test loading state with mocked Redis connection."""
+        """Test loading state with testable Redis connection."""
         backend = RedisBackend("redis://localhost:6379")
 
-        # Mock Redis response
-        mock_redis = AsyncMock()
-        mock_redis.hget.return_value = (
-            '{"state": {"data": "test"}, "metadata": {"meta": "data"}}'
-        )
+        # Use testable Redis client with pre-populated data
+        test_redis = TestableRedisClient()
+        test_redis._data["checkpoints"] = {
+            "test_checkpoint": '{"state": {"data": "test"}, "metadata": {"meta": "data"}}'
+        }
+        
+        # Replace _get_redis to return our test client
+        async def get_test_redis():
+            return test_redis
+            
+        backend._get_redis = get_test_redis
 
-        with patch.object(backend, "_get_redis", return_value=mock_redis):
-            result = await backend.load_state("test_checkpoint")
+        result = await backend.load_state("test_checkpoint")
 
-            assert result is not None
-            assert result == {"data": "test"}
-            mock_redis.hget.assert_called_once()
+        assert result is not None
+        assert result == {"data": "test"}
+        
+        # Verify the call was made
+        hget_calls = [c for c in test_redis.call_history if c[0] == 'hget']
+        assert len(hget_calls) == 1
 
 
 class TestCreateBackend:
