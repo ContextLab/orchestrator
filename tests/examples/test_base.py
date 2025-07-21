@@ -164,6 +164,30 @@ class BaseExampleTest:
         elif step_id == "save_output":
             return {"result": "Output saved successfully"}
         
+        # Handle specific step IDs for code analysis
+        elif step_id == "discover_code":
+            return {"result": {"total_files": 42, "total_lines": 5432, "test_files_count": 10}}
+        elif step_id == "static_analysis":
+            return {"result": {"issues": [{"severity": "high", "type": "syntax"}, {"severity": "medium", "type": "style"}]}}
+        elif step_id == "ai_code_review":
+            return {"result": {"suggestions": ["Use more descriptive variable names", "Add error handling"]}}
+        elif step_id == "documentation_check":
+            return {"result": {"coverage_percentage": 75, "missing_docs": 25}}
+        elif step_id == "performance_analysis":
+            return {"result": {"bottlenecks": ["Inefficient loop in module.py", "N+1 query in database.py"]}}
+        elif step_id == "dependency_check":
+            return {"result": {"outdated": 5, "vulnerabilities": 2}}
+        elif step_id == "test_coverage":
+            return {"result": {"coverage_percentage": 82, "uncovered_lines": 234}}
+        elif step_id == "architecture_review":
+            return {"result": {"issues": ["Circular dependency between modules A and B"]}}
+        elif step_id == "generate_insights":
+            return {"result": {"action_items": ["Fix security vulnerabilities", "Improve test coverage"], "total_fix_time": "16 hours"}}
+        elif step_id == "generate_report":
+            return {"result": {"quality_score": 85, "security_score": 90, "total_issues": 47, "critical_issues": 3, "report_path": "/output/report.md"}}
+        elif step_id == "generate_artifacts":
+            return {"result": {"artifacts": ["/output/report.json", "/output/badges.svg"]}}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
@@ -229,6 +253,10 @@ class BaseExampleTest:
                     # Check type when a type is provided
                     assert isinstance(result['outputs'][key], expected_value), \
                         f"Expected {key} to be {expected_value}, got {type(result['outputs'][key])}"
+                elif isinstance(expected_value, tuple) and all(isinstance(t, type) for t in expected_value):
+                    # Check if it's one of multiple allowed types
+                    assert isinstance(result['outputs'][key], expected_value), \
+                        f"Expected {key} to be one of {expected_value}, got {type(result['outputs'][key])}"
                 elif isinstance(expected_value, dict):
                     # For complex objects, check structure
                     assert isinstance(result['outputs'][key], dict)

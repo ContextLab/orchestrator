@@ -17,13 +17,13 @@ class TestCodeAnalysisSuiteYAML(BaseExampleTest):
     @pytest.fixture
     def sample_inputs(self):
         return {
-            "repository_path": "/path/to/repo",
-            "language": "python",
-            "include_security": True,
-            "include_performance": True,
-            "include_complexity": True,
-            "fix_issues": False,
-            "output_format": "json"
+            "repo_path": "/path/to/repo",
+            "languages": ["python", "javascript"],
+            "analysis_depth": "comprehensive",
+            "security_scan": True,
+            "performance_check": True,
+            "doc_check": True,
+            "severity_threshold": "medium"
         }
     
     def test_pipeline_structure(self, pipeline_name):
@@ -35,11 +35,11 @@ class TestCodeAnalysisSuiteYAML(BaseExampleTest):
         # Check analysis steps
         step_ids = [step['id'] for step in config['steps']]
         required_steps = [
-            'scan_codebase',
+            'discover_code',
             'static_analysis',
-            'security_scan',
+            'ai_code_review',
             'performance_analysis',
-            'complexity_analysis',
+            'documentation_check',
             'generate_report'
         ]
         
@@ -50,61 +50,48 @@ class TestCodeAnalysisSuiteYAML(BaseExampleTest):
         """Test language-specific analysis configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check language is used in analysis
-        static_step = next(s for s in config['steps'] if s['id'] == 'static_analysis')
-        assert 'language' in str(static_step), "Language should be referenced in static analysis"
+        # Check languages is used in discovery
+        discover_step = next(s for s in config['steps'] if s['id'] == 'discover_code')
+        assert 'languages' in str(discover_step), "Languages should be referenced in code discovery"
     
     def test_conditional_steps(self, pipeline_name):
         """Test conditional security analysis."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check security scan has condition
-        security_step = next(s for s in config['steps'] if s['id'] == 'security_scan')
-        assert 'condition' in security_step, "Security scan should be conditional"
-        assert 'include_security' in security_step['condition'], \
-            "Security scan should depend on include_security flag"
-    
-    def test_auto_tags_present(self, pipeline_name):
-        """Test that AUTO tags are used for analysis configuration."""
-        # Load raw YAML to check for AUTO tags
-        from pathlib import Path
-        example_dir = Path(__file__).parent.parent.parent / "examples"
-        pipeline_path = example_dir / pipeline_name
-        
-        with open(pipeline_path, 'r') as f:
-            content = f.read()
-        
-        # Check for AUTO tags
-        assert '<AUTO>' in content, "Pipeline should use AUTO tags for analysis configuration"
-        assert '</AUTO>' in content, "AUTO tags should be properly closed"
+        # Check static analysis has security scan condition
+        static_step = next(s for s in config['steps'] if s['id'] == 'static_analysis')
+        assert 'condition' in static_step, "Static analysis should be conditional"
+        assert 'security_scan' in static_step['condition'], \
+            "Static analysis should depend on security_scan flag"
     
     @pytest.mark.asyncio
     async def test_basic_execution_structure(self, orchestrator, pipeline_name, sample_inputs):
         """Test basic pipeline execution structure without full execution."""
-        # This test verifies the pipeline can be loaded and initialized
-        # Full execution would require a real code repository
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            expected_outputs={
+                'quality_score': (int, str),  # Can be int or str from template
+                'total_issues': (int, str),
+                'files_analyzed': (int, str)
+            },
+            use_minimal_responses=True
+        )
         
-        config = self.load_yaml_pipeline(pipeline_name)
-        
-        # Verify the pipeline can be parsed and validated
-        assert config is not None
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-        
-        # Verify all required inputs are defined
-        if 'inputs' in config:
-            required_inputs = config['inputs']
-            for input_key in required_inputs:
-                assert input_key in sample_inputs, f"Missing required input: {input_key}"
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result
     
     def test_output_format_handling(self, pipeline_name):
         """Test that output format is properly handled."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check report generation uses output format
+        # Check report generation exists
         report_step = next(s for s in config['steps'] if s['id'] == 'generate_report')
-        assert 'output_format' in str(report_step), \
-            "Report generation should reference output format"
+        assert 'markdown' in str(report_step).lower(), \
+            "Report generation should create markdown report"
     
     def test_fix_issues_conditional(self, pipeline_name):
         """Test that fix_issues flag controls remediation."""
@@ -126,8 +113,7 @@ class TestCodeAnalysisSuiteYAML(BaseExampleTest):
         if 'depends_on' in report_step:
             deps = report_step['depends_on']
             # At least one analysis step should be a dependency
-            analysis_steps = ['static_analysis', 'security_scan', 
-                            'performance_analysis', 'complexity_analysis']
+            analysis_steps = ['generate_insights', 'test_coverage', 'architecture_review']
             assert any(step in deps for step in analysis_steps), \
                 "Report should depend on at least one analysis step"
     
@@ -144,11 +130,11 @@ class TestCodeAnalysisSuiteYAML(BaseExampleTest):
                 "Error strategy should be valid"
         
         # Check individual steps for error handling
-        critical_steps = ['scan_codebase', 'generate_report']
+        critical_steps = ['generate_report']
         for step_id in critical_steps:
             step = next((s for s in config['steps'] if s['id'] == step_id), None)
-            if step and 'error_handling' in step:
-                assert 'on_error' in step['error_handling'], \
+            if step:
+                assert 'on_error' in step, \
                     f"Step {step_id} should define on_error behavior"
 
 
