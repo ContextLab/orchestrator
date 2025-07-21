@@ -126,9 +126,9 @@ Models added to `models.yaml` through this tool are automatically available for 
 ## Example Workflow
 
 ```bash
-# 1. Set API keys
-export OPENAI_API_KEY="your-key"
-export GOOGLE_API_KEY="your-key"
+# 1. Set API keys (or add to ~/.orchestrator/.env)
+export OPENAI_API_KEY="sk-..."  # Get from https://platform.openai.com/api-keys
+export GOOGLE_API_KEY="..."      # Get from https://makersuite.google.com/app/apikey
 
 # 2. Update models
 python -m src.orchestrator.tools.update_models

@@ -106,22 +106,26 @@ The tutorials use mock models for demonstration. To work with real AI models:
 
 ### OpenAI Integration
 ```python
+import os
 from orchestrator.integrations.openai_model import OpenAIModel
 
+# API key should be set in environment variable or ~/.orchestrator/.env
 model = OpenAIModel(
     name="gpt-4",
-    api_key="your-openai-api-key",
+    api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment
     model="gpt-4"
 )
 ```
 
 ### Anthropic Integration
 ```python
+import os
 from orchestrator.integrations.anthropic_model import AnthropicModel
 
+# API key should be set in environment variable or ~/.orchestrator/.env
 model = AnthropicModel(
     name="claude-3-sonnet",
-    api_key="your-anthropic-api-key", 
+    api_key=os.environ.get("ANTHROPIC_API_KEY"),  # Loaded from environment 
     model="claude-3-sonnet-20240229"
 )
 ```
