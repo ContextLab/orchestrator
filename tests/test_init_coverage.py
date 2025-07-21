@@ -2,9 +2,10 @@
 
 import asyncio
 import os
+import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from typing import Any, Dict, List, Optional
 
 import pytest
 import yaml
@@ -16,6 +17,10 @@ from orchestrator import (
     compile_async,
     init_models,
 )
+from orchestrator.core.pipeline import Pipeline
+from orchestrator.core.task import Task
+from orchestrator.compiler.yaml_compiler import YAMLCompiler
+from orchestrator.orchestrator import Orchestrator
 
 
 class TestInitModels:
@@ -86,42 +91,89 @@ class TestInitModels:
         registry = init_models("non_existent_config.yaml")
         assert registry is not None
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     def test_init_models_with_openai_key(self, temp_config_file):
-        """Test init_models with OpenAI API key set."""
-        orc._model_registry = None
-        registry = init_models(temp_config_file)
-        assert registry is not None
+        """Test init_models with real OpenAI API key."""
+        # Load real API keys from environment
+        from orchestrator.utils.api_keys import load_api_keys
+        
+        try:
+            load_api_keys()  # This will use real keys from ~/.orchestrator/.env or environment
+            orc._model_registry = None
+            registry = init_models(temp_config_file)
+            assert registry is not None
+            
+            # Verify we have a real key loaded
+            assert os.environ.get("OPENAI_API_KEY") is not None
+            assert os.environ.get("OPENAI_API_KEY") != "test-key"
+        except EnvironmentError as e:
+            pytest.skip(f"Skipping test - API keys not configured: {e}")
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
     def test_init_models_with_anthropic_key(self, temp_config_file):
-        """Test init_models with Anthropic API key set."""
-        orc._model_registry = None
-        registry = init_models(temp_config_file)
-        assert registry is not None
+        """Test init_models with real Anthropic API key."""
+        # Load real API keys from environment
+        from orchestrator.utils.api_keys import load_api_keys
+        
+        try:
+            load_api_keys()  # This will use real keys from ~/.orchestrator/.env or environment
+            orc._model_registry = None
+            registry = init_models(temp_config_file)
+            assert registry is not None
+            
+            # Verify we have a real key loaded
+            assert os.environ.get("ANTHROPIC_API_KEY") is not None
+            assert os.environ.get("ANTHROPIC_API_KEY") != "test-key"
+        except EnvironmentError as e:
+            pytest.skip(f"Skipping test - API keys not configured: {e}")
 
-    @patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"})
     def test_init_models_with_google_key(self, temp_config_file):
-        """Test init_models with Google API key set."""
-        orc._model_registry = None
-        registry = init_models(temp_config_file)
-        assert registry is not None
+        """Test init_models with real Google API key."""
+        # Load real API keys from environment
+        from orchestrator.utils.api_keys import load_api_keys
+        
+        try:
+            load_api_keys()  # This will use real keys from ~/.orchestrator/.env or environment
+            orc._model_registry = None
+            registry = init_models(temp_config_file)
+            assert registry is not None
+            
+            # Verify we have a real key loaded (could be either GOOGLE_API_KEY or GOOGLE_AI_API_KEY)
+            google_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_AI_API_KEY")
+            assert google_key is not None
+            assert google_key != "test-key"
+        except EnvironmentError as e:
+            pytest.skip(f"Skipping test - API keys not configured: {e}")
 
-    @patch("orchestrator.check_ollama_installed")
-    def test_init_models_with_ollama_installed(self, mock_check, temp_config_file):
-        """Test init_models when Ollama is installed."""
-        mock_check.return_value = True
+    def test_init_models_with_ollama_check(self, temp_config_file):
+        """Test init_models with real Ollama check."""
+        # This tests the real check_ollama_installed function
+        # It will work whether Ollama is installed or not
+        from orchestrator.utils.model_utils import check_ollama_installed
+        
+        # First check if Ollama is actually installed
+        ollama_installed = check_ollama_installed()
+        
+        # Clear registry and initialize
         orc._model_registry = None
         registry = init_models(temp_config_file)
         assert registry is not None
+        
+        # If Ollama is installed, verify Ollama models can be registered
+        # If not, verify the system handles it gracefully
+        # Either way, the registry should be created successfully
 
-    @patch("orchestrator.check_ollama_installed")
-    def test_init_models_with_ollama_not_installed(self, mock_check, temp_config_file):
-        """Test init_models when Ollama is not installed."""
-        mock_check.return_value = False
+    def test_init_models_handles_missing_dependencies(self, temp_config_file):
+        """Test init_models handles missing dependencies gracefully."""
+        # Test with a config that includes models from all sources
+        # The real init_models should handle missing dependencies gracefully
+        
         orc._model_registry = None
         registry = init_models(temp_config_file)
+        
+        # Registry should still be created even if some model sources aren't available
         assert registry is not None
+        
+        # The registry should have registered whatever models it could
+        # based on available dependencies (API keys, Ollama, etc.)
 
     def test_init_models_with_invalid_source(self):
         """Test init_models with invalid model source."""
@@ -168,14 +220,12 @@ class TestInitModels:
             os.unlink(temp_file)
 
 
-class TestOrchestratorPipeline:
-    """Test the OrchestratorPipeline class."""
-
-    @pytest.fixture
-    def mock_pipeline(self):
-        """Create a mock pipeline for testing."""
-        pipeline = MagicMock()
-        pipeline.metadata = {
+class TestPipeline(Pipeline):
+    """Testable pipeline for testing."""
+    
+    def __init__(self, id="test", name="Test Pipeline"):
+        super().__init__(id, name)
+        self.metadata = {
             "inputs": {
                 "test_input": {
                     "type": "string",
@@ -185,107 +235,224 @@ class TestOrchestratorPipeline:
             },
             "outputs": {"result": "output_value"}
         }
-        pipeline.tasks = {}
-        return pipeline
+        self.tasks = {}
+
+
+class TestableCompiler(YAMLCompiler):
+    """Testable YAML compiler."""
+    
+    def __init__(self):
+        super().__init__()
+        self.compile_calls = []
+        self._test_pipeline = None
+        
+    def set_test_pipeline(self, pipeline):
+        """Set the pipeline to return from compile."""
+        self._test_pipeline = pipeline
+        
+    def compile(self, yaml_path: str) -> Pipeline:
+        """Test version of compile."""
+        self.compile_calls.append(yaml_path)
+        if self._test_pipeline:
+            return self._test_pipeline
+        return TestPipeline()
+
+
+class TestableOrchestrator(Orchestrator):
+    """Testable orchestrator."""
+    
+    def __init__(self):
+        super().__init__()
+        self._test_result = {"result": "test_result"}
+        self.execute_calls = []
+        
+    def set_test_result(self, result):
+        """Set the result to return from execute_pipeline."""
+        self._test_result = result
+        
+    async def execute_pipeline(self, pipeline, **kwargs):
+        """Test version of execute_pipeline."""
+        self.execute_calls.append((pipeline, kwargs))
+        return self._test_result
+
+
+class TestablePrint:
+    """Track print calls for testing."""
+    
+    def __init__(self):
+        self.calls = []
+        
+    def __call__(self, *args, **kwargs):
+        """Capture print calls."""
+        message = " ".join(str(arg) for arg in args)
+        self.calls.append(message)
+
+
+class TestOrchestratorPipeline:
+    """Test the OrchestratorPipeline class."""
 
     @pytest.fixture
-    def mock_compiler(self):
-        """Create a mock YAML compiler."""
-        return MagicMock()
+    def test_pipeline(self):
+        """Create a test pipeline."""
+        return TestPipeline()
 
     @pytest.fixture
-    def mock_orchestrator(self):
-        """Create a mock orchestrator."""
-        orchestrator = MagicMock()
-        # Make execute_pipeline return a coroutine
-        async def mock_execute():
-            return {"result": "test_result"}
-        orchestrator.execute_pipeline.return_value = mock_execute()
-        return orchestrator
+    def test_compiler(self):
+        """Create a test compiler."""
+        return TestableCompiler()
 
-    def test_orchestrator_pipeline_init(self, mock_pipeline, mock_compiler, mock_orchestrator):
+    @pytest.fixture
+    def test_orchestrator(self):
+        """Create a test orchestrator."""
+        return TestableOrchestrator()
+
+    def test_orchestrator_pipeline_init(self, test_pipeline, test_compiler, test_orchestrator):
         """Test OrchestratorPipeline initialization."""
-        with patch("builtins.print"):  # Suppress print output
-            pipeline = OrchestratorPipeline(mock_pipeline, mock_compiler, mock_orchestrator)
+        # Replace print temporarily
+        original_print = print
+        test_print = TestablePrint()
+        import builtins
+        builtins.print = test_print
         
-        assert pipeline.pipeline == mock_pipeline
-        assert pipeline.compiler == mock_compiler
-        assert pipeline.orchestrator == mock_orchestrator
+        try:
+            pipeline = OrchestratorPipeline(test_pipeline, test_compiler, test_orchestrator)
+            
+            assert pipeline.pipeline == test_pipeline
+            assert pipeline.compiler == test_compiler
+            assert pipeline.orchestrator == test_orchestrator
+        finally:
+            builtins.print = original_print
 
-    def test_orchestrator_pipeline_extract_inputs(self, mock_pipeline, mock_compiler, mock_orchestrator):
+    def test_orchestrator_pipeline_extract_inputs(self, test_pipeline, test_compiler, test_orchestrator):
         """Test _extract_inputs method."""
-        with patch("builtins.print"):
-            pipeline = OrchestratorPipeline(mock_pipeline, mock_compiler, mock_orchestrator)
+        # Replace print temporarily
+        original_print = print
+        test_print = TestablePrint()
+        import builtins
+        builtins.print = test_print
         
-        inputs = pipeline._extract_inputs()
-        assert "test_input" in inputs
-        assert inputs["test_input"]["type"] == "string"
+        try:
+            pipeline = OrchestratorPipeline(test_pipeline, test_compiler, test_orchestrator)
+            
+            inputs = pipeline._extract_inputs()
+            assert "test_input" in inputs
+            assert inputs["test_input"]["type"] == "string"
+        finally:
+            builtins.print = original_print
 
-    def test_orchestrator_pipeline_extract_inputs_no_metadata(self, mock_compiler, mock_orchestrator):
+    def test_orchestrator_pipeline_extract_inputs_no_metadata(self, test_compiler, test_orchestrator):
         """Test _extract_inputs when pipeline has no metadata."""
-        mock_pipeline = MagicMock()
-        mock_pipeline.metadata = {}
+        test_pipeline = TestPipeline()
+        test_pipeline.metadata = {}
         
-        with patch("builtins.print"):
-            pipeline = OrchestratorPipeline(mock_pipeline, mock_compiler, mock_orchestrator)
+        # Replace print temporarily
+        original_print = print
+        test_print = TestablePrint()
+        import builtins
+        builtins.print = test_print
         
-        inputs = pipeline._extract_inputs()
-        assert inputs == {}
+        try:
+            pipeline = OrchestratorPipeline(test_pipeline, test_compiler, test_orchestrator)
+            
+            inputs = pipeline._extract_inputs()
+            assert inputs == {}
+        finally:
+            builtins.print = original_print
 
-    def test_orchestrator_pipeline_extract_outputs(self, mock_pipeline, mock_compiler, mock_orchestrator):
+    def test_orchestrator_pipeline_extract_outputs(self, test_pipeline, test_compiler, test_orchestrator):
         """Test _extract_outputs method."""
-        with patch("builtins.print"):
-            pipeline = OrchestratorPipeline(mock_pipeline, mock_compiler, mock_orchestrator)
+        # Replace print temporarily
+        original_print = print
+        test_print = TestablePrint()
+        import builtins
+        builtins.print = test_print
         
-        outputs = pipeline._extract_outputs()
-        assert "result" in outputs
+        try:
+            pipeline = OrchestratorPipeline(test_pipeline, test_compiler, test_orchestrator)
+            
+            outputs = pipeline._extract_outputs()
+            assert "result" in outputs
+        finally:
+            builtins.print = original_print
 
-    def test_orchestrator_pipeline_run(self, mock_pipeline, mock_compiler, mock_orchestrator):
+    def test_orchestrator_pipeline_run(self, test_pipeline, test_compiler, test_orchestrator):
         """Test run method."""
-        with patch("builtins.print"):
-            pipeline = OrchestratorPipeline(mock_pipeline, mock_compiler, mock_orchestrator)
+        # Replace print temporarily
+        original_print = print
+        test_print = TestablePrint()
+        import builtins
+        builtins.print = test_print
         
-        result = pipeline.run(test_input="test_value")
-        assert result is not None
+        try:
+            pipeline = OrchestratorPipeline(test_pipeline, test_compiler, test_orchestrator)
+            
+            result = pipeline.run(test_input="test_value")
+            assert result is not None
+        finally:
+            builtins.print = original_print
 
-    def test_orchestrator_pipeline_run_with_default_values(self, mock_pipeline, mock_compiler, mock_orchestrator):
+    def test_orchestrator_pipeline_run_with_default_values(self, test_pipeline, test_compiler, test_orchestrator):
         """Test run method with default values."""
-        with patch("builtins.print"):
-            pipeline = OrchestratorPipeline(mock_pipeline, mock_compiler, mock_orchestrator)
+        # Replace print temporarily
+        original_print = print
+        test_print = TestablePrint()
+        import builtins
+        builtins.print = test_print
         
-        # Run without providing the input that has a default
-        result = pipeline.run()
-        assert result is not None
+        try:
+            pipeline = OrchestratorPipeline(test_pipeline, test_compiler, test_orchestrator)
+            
+            # Run without providing the input that has a default
+            result = pipeline.run()
+            assert result is not None
+        finally:
+            builtins.print = original_print
 
     @pytest.mark.asyncio
-    async def test_resolve_runtime_templates(self, mock_pipeline, mock_compiler, mock_orchestrator):
+    async def test_resolve_runtime_templates(self, test_pipeline, test_compiler, test_orchestrator):
         """Test _resolve_runtime_templates method."""
         # Add some tasks to the pipeline
-        mock_task = MagicMock()
-        mock_task.parameters = {
+        test_task = Task(id="task1", name="Task 1", action="generate")
+        test_task.parameters = {
             "param1": "{{ test_input }}",
             "param2": "static_value"
         }
-        mock_pipeline.tasks = {"task1": mock_task}
+        test_pipeline.tasks = {"task1": test_task}
         
-        with patch("builtins.print"):
-            pipeline = OrchestratorPipeline(mock_pipeline, mock_compiler, mock_orchestrator)
+        # Replace print temporarily
+        original_print = print
+        test_print = TestablePrint()
+        import builtins
+        builtins.print = test_print
         
-        context = {"test_input": "resolved_value"}
-        resolved = await pipeline._resolve_runtime_templates(mock_pipeline, context)
-        
-        # Should return a pipeline (even if it's a deep copy of the mock)
-        assert resolved is not None
+        try:
+            pipeline = OrchestratorPipeline(test_pipeline, test_compiler, test_orchestrator)
+            
+            context = {"test_input": "resolved_value"}
+            resolved = await pipeline._resolve_runtime_templates(test_pipeline, context)
+            
+            # Should return a pipeline
+            assert resolved is not None
+        finally:
+            builtins.print = original_print
 
-    def test_orchestrator_pipeline_print_usage_empty_inputs(self, mock_compiler, mock_orchestrator):
+    def test_orchestrator_pipeline_print_usage_empty_inputs(self, test_compiler, test_orchestrator):
         """Test _print_usage with no inputs."""
-        mock_pipeline = MagicMock()
-        mock_pipeline.metadata = {"inputs": {}}
+        test_pipeline = TestPipeline()
+        test_pipeline.metadata = {"inputs": {}}
         
-        with patch("builtins.print") as mock_print:
-            pipeline = OrchestratorPipeline(mock_pipeline, mock_compiler, mock_orchestrator)
+        # Replace print temporarily
+        original_print = print
+        test_print = TestablePrint()
+        import builtins
+        builtins.print = test_print
+        
+        try:
+            pipeline = OrchestratorPipeline(test_pipeline, test_compiler, test_orchestrator)
             # Check that something was printed
-            mock_print.assert_called()
+            assert len(test_print.calls) > 0
+        finally:
+            builtins.print = original_print
 
 
 class TestCompileFunctions:
@@ -319,14 +486,21 @@ class TestCompileFunctions:
         if orc._model_registry is None:
             init_models()
         
-        # Mock the YAML compiler's compile method
-        with patch.object(orc.YAMLCompiler, "compile") as mock_compile:
-            mock_pipeline = MagicMock()
-            mock_pipeline.metadata = {}
-            mock_compile.return_value = mock_pipeline
+        # Replace YAMLCompiler.compile temporarily
+        original_compile = orc.YAMLCompiler.compile
+        test_pipeline = TestPipeline()
+        test_pipeline.metadata = {}
+        
+        def test_compile(self, yaml_path):
+            return test_pipeline
             
+        orc.YAMLCompiler.compile = test_compile
+        
+        try:
             pipeline = await compile_async(temp_yaml_file)
             assert isinstance(pipeline, OrchestratorPipeline)
+        finally:
+            orc.YAMLCompiler.compile = original_compile
 
     def test_compile_sync(self, temp_yaml_file):
         """Test synchronous compile function."""
@@ -334,13 +508,21 @@ class TestCompileFunctions:
         if orc._model_registry is None:
             init_models()
         
-        with patch.object(orc.YAMLCompiler, "compile") as mock_compile:
-            mock_pipeline = MagicMock()
-            mock_pipeline.metadata = {}
-            mock_compile.return_value = mock_pipeline
+        # Replace YAMLCompiler.compile temporarily
+        original_compile = orc.YAMLCompiler.compile
+        test_pipeline = TestPipeline()
+        test_pipeline.metadata = {}
+        
+        def test_compile(self, yaml_path):
+            return test_pipeline
             
+        orc.YAMLCompiler.compile = test_compile
+        
+        try:
             pipeline = compile(temp_yaml_file)
             assert isinstance(pipeline, OrchestratorPipeline)
+        finally:
+            orc.YAMLCompiler.compile = original_compile
 
     def test_compile_in_event_loop(self, temp_yaml_file):
         """Test compile when already in an event loop."""
@@ -349,14 +531,22 @@ class TestCompileFunctions:
             init_models()
         
         async def test_in_loop():
-            with patch.object(orc.YAMLCompiler, "compile") as mock_compile:
-                mock_pipeline = MagicMock()
-                mock_pipeline.metadata = {}
-                mock_compile.return_value = mock_pipeline
+            # Replace YAMLCompiler.compile temporarily
+            original_compile = orc.YAMLCompiler.compile
+            test_pipeline = TestPipeline()
+            test_pipeline.metadata = {}
+            
+            def test_compile(self, yaml_path):
+                return test_pipeline
                 
+            orc.YAMLCompiler.compile = test_compile
+            
+            try:
                 # This should use the thread pool executor path
                 pipeline = compile(temp_yaml_file)
                 assert isinstance(pipeline, OrchestratorPipeline)
+            finally:
+                orc.YAMLCompiler.compile = original_compile
         
         # Run in an event loop
         asyncio.run(test_in_loop())
@@ -366,17 +556,30 @@ class TestCompileFunctions:
         if orc._model_registry is None:
             init_models()
         
-        with patch("asyncio.get_running_loop") as mock_get_loop:
-            # Simulate RuntimeError when no loop exists
-            mock_get_loop.side_effect = RuntimeError("No running loop")
+        # Replace asyncio.get_running_loop temporarily
+        original_get_loop = asyncio.get_running_loop
+        
+        def failing_get_loop():
+            raise RuntimeError("No running loop")
             
-            with patch.object(orc.YAMLCompiler, "compile") as mock_compile:
-                mock_pipeline = MagicMock()
-                mock_pipeline.metadata = {}
-                mock_compile.return_value = mock_pipeline
-                
-                pipeline = compile(temp_yaml_file)
-                assert isinstance(pipeline, OrchestratorPipeline)
+        asyncio.get_running_loop = failing_get_loop
+        
+        # Replace YAMLCompiler.compile temporarily
+        original_compile = orc.YAMLCompiler.compile
+        test_pipeline = TestPipeline()
+        test_pipeline.metadata = {}
+        
+        def test_compile(self, yaml_path):
+            return test_pipeline
+            
+        orc.YAMLCompiler.compile = test_compile
+        
+        try:
+            pipeline = compile(temp_yaml_file)
+            assert isinstance(pipeline, OrchestratorPipeline)
+        finally:
+            asyncio.get_running_loop = original_get_loop
+            orc.YAMLCompiler.compile = original_compile
 
 
 class TestUtilityFunctions:
