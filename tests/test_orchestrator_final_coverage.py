@@ -1,12 +1,157 @@
 """Final tests for Orchestrator to achieve 100% coverage."""
 
-from unittest.mock import AsyncMock, Mock, patch
+import asyncio
+from typing import Dict, Any, Optional, List
 
 import pytest
 
 from src.orchestrator.core.pipeline import Pipeline
 from src.orchestrator.core.task import Task, TaskStatus
 from src.orchestrator.orchestrator import Orchestrator
+from src.orchestrator.core.control_system import ControlSystem
+from src.orchestrator.core.resource_allocator import ResourceAllocator
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.models.base import BaseModel
+from src.orchestrator.state.state_manager import StateManager
+from src.orchestrator.executor.parallel_executor import ParallelExecutor
+
+
+class TestableControlSystem(ControlSystem):
+    """Testable control system with configurable behavior."""
+    
+    def __init__(self, name="test-control", config=None):
+        super().__init__(name, config)
+        self._test_results = {}
+        self._test_errors = {}
+        self._test_capabilities = {"action": "generate"}
+        self.call_history = []
+        
+    def set_test_result(self, task_id: str, result: Dict[str, Any]):
+        """Set test result for a task."""
+        self._test_results[task_id] = result
+        
+    def set_test_error(self, task_id: str, error: Exception):
+        """Set test error for a task."""
+        self._test_errors[task_id] = error
+        
+    def set_capabilities(self, capabilities: Dict[str, Any]):
+        """Set test capabilities."""
+        self._test_capabilities = capabilities
+        
+    async def execute_task(self, task: Task, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Test version of execute_task."""
+        self.call_history.append(('execute_task', task.id, context))
+        
+        # Check for errors
+        if task.id in self._test_errors:
+            raise self._test_errors[task.id]
+            
+        # Return configured result
+        if task.id in self._test_results:
+            return self._test_results[task.id]
+            
+        # Default result
+        return {"status": "completed", "output": f"Output for {task.id}"}
+        
+    def get_capabilities(self) -> Dict[str, Any]:
+        """Return test capabilities."""
+        return self._test_capabilities
+
+
+class TestableResourceAllocator(ResourceAllocator):
+    """Testable resource allocator."""
+    
+    def __init__(self):
+        super().__init__()
+        self._test_allocation_results = {}
+        self._test_utilization = {"cpu_usage": 0.3}
+        self.allocation_calls = []
+        self.release_calls = []
+        
+    def set_allocation_result(self, task_id: str, result: bool):
+        """Set allocation result for a task."""
+        self._test_allocation_results[task_id] = result
+        
+    def set_utilization(self, utilization: Dict[str, float]):
+        """Set test utilization metrics."""
+        self._test_utilization = utilization
+        
+    async def request_resources(self, task_id: str, requirements: Dict[str, Any] = None) -> bool:
+        """Test version of request_resources."""
+        self.allocation_calls.append((task_id, requirements))
+        return self._test_allocation_results.get(task_id, True)
+        
+    async def release_resources(self, task_id: str):
+        """Test version of release_resources."""
+        self.release_calls.append(task_id)
+        
+    async def get_utilization(self) -> Dict[str, float]:
+        """Test version of get_utilization."""
+        return self._test_utilization
+
+
+class TestableModelRegistry(ModelRegistry):
+    """Testable model registry."""
+    
+    def __init__(self):
+        super().__init__()
+        self._test_models = ["model1", "model2"]
+        self.call_history = []
+        
+    def set_test_models(self, models: List[str]):
+        """Set test models."""
+        self._test_models = models
+        
+    async def get_available_models(self) -> List[str]:
+        """Test version of get_available_models."""
+        self.call_history.append('get_available_models')
+        return self._test_models
+
+
+class TestableStateManager(StateManager):
+    """Testable state manager."""
+    
+    def __init__(self):
+        super().__init__()
+        self._test_healthy = True
+        self.call_history = []
+        
+    def set_healthy(self, healthy: bool):
+        """Set health status."""
+        self._test_healthy = healthy
+        
+    async def is_healthy(self) -> bool:
+        """Test version of is_healthy."""
+        self.call_history.append('is_healthy')
+        return self._test_healthy
+        
+    async def shutdown(self):
+        """Test version of shutdown."""
+        self.call_history.append('shutdown')
+
+
+class TestableParallelExecutor(ParallelExecutor):
+    """Testable parallel executor."""
+    
+    def __init__(self):
+        super().__init__()
+        self._is_async_shutdown = False
+        self.shutdown_calls = []
+        
+    def set_async_shutdown(self, is_async: bool):
+        """Set whether shutdown is async."""
+        self._is_async_shutdown = is_async
+        
+    def shutdown(self):
+        """Sync shutdown."""
+        if self._is_async_shutdown:
+            # This shouldn't be called for async
+            raise RuntimeError("Sync shutdown called for async executor")
+        self.shutdown_calls.append('sync_shutdown')
+        
+    async def async_shutdown(self):
+        """Async shutdown."""
+        self.shutdown_calls.append('async_shutdown')
 
 
 class TestOrchestratorFinalCoverage:
@@ -15,7 +160,14 @@ class TestOrchestratorFinalCoverage:
     @pytest.mark.asyncio
     async def test_execute_level_skipped_task_not_in_results(self):
         """Test line 270: handling skipped tasks not already in results."""
-        orchestrator = Orchestrator()
+        # Create testable components
+        test_control = TestableControlSystem()
+        test_allocator = TestableResourceAllocator()
+        
+        orchestrator = Orchestrator(
+            control_system=test_control,
+            resource_allocator=test_allocator
+        )
 
         # Create pipeline with a task that will be marked as skipped but not executed
         pipeline = Pipeline(id="skip_test", name="Skip Test Pipeline")
@@ -28,14 +180,8 @@ class TestOrchestratorFinalCoverage:
         # Mark task as skipped BEFORE execution
         skipped_task.skip("Pre-skipped for testing")
 
-        # Mock resource allocation to ensure tasks get allocated
-        orchestrator.resource_allocator.request_resources = AsyncMock(return_value=True)
-        orchestrator.resource_allocator.release_resources = AsyncMock()
-
-        # Mock control system to return a result with status
-        orchestrator.control_system.execute_task = AsyncMock(
-            return_value={"status": "completed", "output": "test output"}
-        )
+        # Configure test results
+        test_control.set_test_result("normal_task", {"status": "completed", "output": "test output"})
 
         # Execute level
         context = {"execution_id": "test_123", "current_level": 0}
@@ -60,20 +206,24 @@ class TestOrchestratorFinalCoverage:
     @pytest.mark.asyncio
     async def test_health_check_overall_warning_status(self):
         """Test lines 641-642: health check overall warning status."""
-        orchestrator = Orchestrator()
-
-        # Mock components to have warning status but no unhealthy components
-        orchestrator.model_registry.get_available_models = AsyncMock(
-            return_value=["model1"]
-        )
-        orchestrator.control_system.get_capabilities = Mock(
-            return_value={"action": "generate"}
-        )
-        orchestrator.state_manager.is_healthy = AsyncMock(return_value=True)
-
-        # Mock resource allocator to return warning status (high CPU but not critical)
-        orchestrator.resource_allocator.get_utilization = AsyncMock(
-            return_value={"cpu_usage": 0.95}  # 95% - warning level (> 0.9)
+        # Create testable components
+        test_registry = TestableModelRegistry()
+        test_registry.set_test_models(["model1"])  # Only one model - could be warning
+        
+        test_control = TestableControlSystem()
+        test_control.set_capabilities({"action": "generate"})
+        
+        test_state = TestableStateManager()
+        test_state.set_healthy(True)
+        
+        test_allocator = TestableResourceAllocator()
+        test_allocator.set_utilization({"cpu_usage": 0.95})  # 95% - warning level
+        
+        orchestrator = Orchestrator(
+            model_registry=test_registry,
+            control_system=test_control,
+            state_manager=test_state,
+            resource_allocator=test_allocator
         )
 
         health = await orchestrator.health_check()
@@ -89,20 +239,24 @@ class TestOrchestratorFinalCoverage:
     @pytest.mark.asyncio
     async def test_health_check_overall_healthy_status(self):
         """Test lines 643-644: health check overall healthy status."""
-        orchestrator = Orchestrator()
-
-        # Mock all components to be healthy
-        orchestrator.model_registry.get_available_models = AsyncMock(
-            return_value=["model1", "model2"]
-        )
-        orchestrator.control_system.get_capabilities = Mock(
-            return_value={"action": "generate"}
-        )
-        orchestrator.state_manager.is_healthy = AsyncMock(return_value=True)
-
-        # Mock resource allocator to return good utilization
-        orchestrator.resource_allocator.get_utilization = AsyncMock(
-            return_value={"cpu_usage": 0.3}  # 30% - healthy level
+        # Create all healthy components
+        test_registry = TestableModelRegistry()
+        test_registry.set_test_models(["model1", "model2"])  # Multiple models - healthy
+        
+        test_control = TestableControlSystem()
+        test_control.set_capabilities({"action": "generate"})
+        
+        test_state = TestableStateManager()
+        test_state.set_healthy(True)
+        
+        test_allocator = TestableResourceAllocator()
+        test_allocator.set_utilization({"cpu_usage": 0.3})  # 30% - healthy level
+        
+        orchestrator = Orchestrator(
+            model_registry=test_registry,
+            control_system=test_control,
+            state_manager=test_state,
+            resource_allocator=test_allocator
         )
 
         health = await orchestrator.health_check()
@@ -117,29 +271,42 @@ class TestOrchestratorFinalCoverage:
     @pytest.mark.asyncio
     async def test_shutdown_async_parallel_executor(self):
         """Test line 662: async shutdown of parallel executor."""
-        orchestrator = Orchestrator()
+        # Create testable components
+        test_allocator = TestableResourceAllocator()
+        test_state = TestableStateManager()
+        test_executor = TestableParallelExecutor()
+        
+        # Make parallel executor's shutdown async
+        test_executor.set_async_shutdown(True)
+        
+        # Replace sync shutdown with async version
+        async def async_shutdown_impl():
+            test_executor.shutdown_calls.append('async_shutdown')
+            
+        test_executor.shutdown = async_shutdown_impl
+        
+        orchestrator = Orchestrator(
+            resource_allocator=test_allocator,
+            state_manager=test_state,
+            parallel_executor=test_executor
+        )
 
-        # Mock parallel executor with async shutdown method
-        mock_parallel_executor = Mock()
-        mock_parallel_executor.shutdown = AsyncMock()
+        await orchestrator.shutdown()
 
-        # Ensure the shutdown method is detected as a coroutine function
-        with patch("asyncio.iscoroutinefunction", return_value=True):
-            orchestrator.parallel_executor = mock_parallel_executor
-
-            # Mock other components
-            orchestrator.resource_allocator.shutdown = AsyncMock()
-            orchestrator.state_manager.shutdown = AsyncMock()
-
-            await orchestrator.shutdown()
-
-            # Should call the async shutdown method (line 662)
-            mock_parallel_executor.shutdown.assert_called_once()
+        # Should call the async shutdown method (line 662)
+        assert 'async_shutdown' in test_executor.shutdown_calls
 
     @pytest.mark.asyncio
     async def test_comprehensive_orchestrator_edge_cases(self):
         """Test comprehensive edge cases for final coverage."""
-        orchestrator = Orchestrator()
+        # Create testable components
+        test_control = TestableControlSystem()
+        test_allocator = TestableResourceAllocator()
+        
+        orchestrator = Orchestrator(
+            control_system=test_control,
+            resource_allocator=test_allocator
+        )
 
         # Test with complex pipeline that exercises multiple edge cases
         pipeline = Pipeline(id="edge_case_test", name="Edge Case Test Pipeline")
@@ -154,10 +321,8 @@ class TestOrchestratorFinalCoverage:
         pipeline.add_task(skip_task)
         pipeline.add_task(normal_task)
 
-        # Mock control system for pipeline execution
-        orchestrator.control_system.execute_task = AsyncMock(
-            return_value={"status": "completed", "output": "test output"}
-        )
+        # Configure control system results
+        test_control.set_test_result("normal_task", {"status": "completed", "output": "test output"})
 
         # Execute pipeline to test skipped task handling
         results = await orchestrator.execute_pipeline(pipeline)
@@ -169,9 +334,7 @@ class TestOrchestratorFinalCoverage:
         assert results["normal_task"]["status"] == "completed"
 
         # Test health check with mixed component statuses
-        orchestrator.resource_allocator.get_utilization = AsyncMock(
-            return_value={"cpu_usage": 0.95}  # Warning level (> 0.9)
-        )
+        test_allocator.set_utilization({"cpu_usage": 0.95})  # Warning level
 
         health = await orchestrator.health_check()
         # Should handle warning status correctly
@@ -187,7 +350,11 @@ class TestOrchestratorImplementationGuidance:
     @pytest.mark.asyncio
     async def test_orchestrator_follows_design_patterns(self):
         """Verify orchestrator implements design patterns correctly."""
-        orchestrator = Orchestrator()
+        # Create testable control system
+        test_control = TestableControlSystem()
+        test_control.set_test_result("test_task", {"status": "completed", "output": "test output"})
+        
+        orchestrator = Orchestrator(control_system=test_control)
 
         # Test core abstractions exist as per design
         assert hasattr(orchestrator, "model_registry")
@@ -202,11 +369,6 @@ class TestOrchestratorImplementationGuidance:
         task = Task(id="test_task", name="Test Task", action="generate")
         pipeline.add_task(task)
 
-        # Mock control system
-        orchestrator.control_system.execute_task = AsyncMock(
-            return_value={"status": "completed", "output": "test output"}
-        )
-
         # Should execute successfully following design patterns
         results = await orchestrator.execute_pipeline(pipeline)
         assert "test_task" in results
@@ -214,7 +376,11 @@ class TestOrchestratorImplementationGuidance:
     @pytest.mark.asyncio
     async def test_error_handling_strategy_implementation(self):
         """Test error handling follows design document strategy."""
-        orchestrator = Orchestrator()
+        # Create testable control system that fails
+        test_control = TestableControlSystem()
+        test_control.set_test_error("failing_task", Exception("Test failure"))
+        
+        orchestrator = Orchestrator(control_system=test_control)
 
         # Create pipeline with task that will fail
         pipeline = Pipeline(id="error_test", name="Error Test Pipeline")
@@ -226,11 +392,6 @@ class TestOrchestratorImplementationGuidance:
         )
         pipeline.add_task(failing_task)
 
-        # Mock control system to fail the task
-        orchestrator.control_system.execute_task = AsyncMock(
-            side_effect=Exception("Test failure")
-        )
-
         # Should handle error gracefully as per design
         results = await orchestrator.execute_pipeline(pipeline)
 
@@ -241,7 +402,16 @@ class TestOrchestratorImplementationGuidance:
     @pytest.mark.asyncio
     async def test_resource_management_design_compliance(self):
         """Test resource management follows design patterns."""
-        orchestrator = Orchestrator()
+        # Create testable components
+        test_control = TestableControlSystem()
+        test_control.set_test_result("resource_task", {"status": "completed", "output": "test output"})
+        
+        test_allocator = TestableResourceAllocator()
+        
+        orchestrator = Orchestrator(
+            control_system=test_control,
+            resource_allocator=test_allocator
+        )
 
         # Test resource allocation/deallocation pattern
         pipeline = Pipeline(id="resource_test", name="Resource Test Pipeline")
@@ -253,31 +423,12 @@ class TestOrchestratorImplementationGuidance:
         )
         pipeline.add_task(resource_task)
 
-        # Mock resource allocator to track allocations
-        allocation_calls = []
-        release_calls = []
-
-        async def mock_request(task_id, requirements=None):
-            allocation_calls.append((task_id, requirements))
-            return True
-
-        async def mock_release(task_id):
-            release_calls.append(task_id)
-
-        orchestrator.resource_allocator.request_resources = mock_request
-        orchestrator.resource_allocator.release_resources = mock_release
-
-        # Mock control system
-        orchestrator.control_system.execute_task = AsyncMock(
-            return_value={"status": "completed", "output": "test output"}
-        )
-
         # Execute pipeline
         results = await orchestrator.execute_pipeline(pipeline)
 
         # Verify resource management pattern
-        assert len(allocation_calls) > 0  # Resources were allocated
-        assert len(release_calls) > 0  # Resources were released
+        assert len(test_allocator.allocation_calls) > 0  # Resources were allocated
+        assert len(test_allocator.release_calls) > 0  # Resources were released
         assert "resource_task" in results
 
     def test_model_selection_algorithm_design(self):
