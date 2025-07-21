@@ -5,12 +5,69 @@ import os
 import yaml
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock, Mock
+# No mock imports - using real test implementations
 import shutil
+import importlib
 
 from src.orchestrator import init_models
 from src.orchestrator.utils.model_config_loader import ModelConfigLoader, get_model_config_loader
 from src.orchestrator.models.model_registry import ModelRegistry
+
+
+class TestableModelConfigLoader:
+    """A testable model config loader for testing."""
+    
+    def __init__(self, config_data=None):
+        self.config_data = config_data or {
+            "models": {},
+            "preferences": {},
+            "cost_optimized": [],
+            "performance_optimized": []
+        }
+        self.load_config_calls = []
+        
+    def load_config(self, force_reload=False):
+        """Return configured test data."""
+        self.load_config_calls.append(force_reload)
+        return self.config_data.copy()
+        
+    def get_models_by_provider(self, provider):
+        """Get models by provider."""
+        return {
+            name: config 
+            for name, config in self.config_data.get("models", {}).items()
+            if config.get("provider") == provider
+        }
+        
+    def get_model_config(self, model_name):
+        """Get model configuration."""
+        return self.config_data.get("models", {}).get(model_name)
+        
+    def add_model(self, name, config):
+        """Add a model to the configuration."""
+        if "models" not in self.config_data:
+            self.config_data["models"] = {}
+        self.config_data["models"][name] = config
+        
+    def model_exists(self, model_name):
+        """Check if model exists."""
+        return model_name in self.config_data.get("models", {})
+        
+    def get_preferences(self):
+        """Get preferences."""
+        return self.config_data.get("preferences", {})
+
+
+class TestableOllamaChecker:
+    """A testable ollama checker."""
+    
+    def __init__(self, is_installed=False):
+        self.is_installed = is_installed
+        self.check_calls = 0
+        
+    def __call__(self):
+        self.check_calls += 1
+        return self.is_installed
 
 
 class TestModelConfigLoader:
@@ -43,11 +100,19 @@ class TestModelConfigLoader:
         with open(self.user_config_path, 'w') as f:
             yaml.dump(user_config, f)
         
-        # Mock Path.home() to return our temp directory
-        with patch('pathlib.Path.home', return_value=Path(self.temp_dir)):
+        # Store original home method
+        original_home = Path.home
+        
+        # Replace home method temporarily
+        Path.home = lambda: Path(self.temp_dir)
+        
+        try:
             loader = ModelConfigLoader()
             # The loader should prefer user config
             assert str(loader.config_path).endswith(".orchestrator/models.yaml")
+        finally:
+            # Restore original home method
+            Path.home = original_home
     
     def test_find_config_path_repo_config(self):
         """Test finding repo config when user config doesn't exist."""
@@ -59,14 +124,31 @@ class TestModelConfigLoader:
         with open(self.repo_config_path, 'w') as f:
             yaml.dump(repo_config, f)
         
-        # Mock paths
-        with patch('pathlib.Path.home', return_value=Path(self.temp_dir)):
-            with patch('pathlib.Path', side_effect=lambda x: Path(x) if isinstance(x, str) else x):
-                with patch('src.orchestrator.utils.model_config_loader.__file__', 
-                          str(self.temp_dir / "src" / "orchestrator" / "utils" / "model_config_loader.py")):
-                    loader = ModelConfigLoader()
-                    # Should fall back to repo config
-                    assert "config/models.yaml" in str(loader.config_path)
+        # Store original home method
+        original_home = Path.home
+        
+        # Create temporary module structure
+        module_dir = self.temp_dir / "src" / "orchestrator" / "utils"
+        module_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Replace home method temporarily
+        Path.home = lambda: Path(self.temp_dir)
+        
+        # Store original __file__
+        import src.orchestrator.utils.model_config_loader
+        original_file = src.orchestrator.utils.model_config_loader.__file__
+        
+        try:
+            # Update __file__ to point to test location
+            src.orchestrator.utils.model_config_loader.__file__ = str(module_dir / "model_config_loader.py")
+            
+            loader = ModelConfigLoader()
+            # Should fall back to repo config
+            assert "config/models.yaml" in str(loader.config_path)
+        finally:
+            # Restore originals
+            Path.home = original_home
+            src.orchestrator.utils.model_config_loader.__file__ = original_file
     
     def test_find_config_path_custom(self):
         """Test using custom config path."""
@@ -314,16 +396,18 @@ class TestInitModels:
             yaml.dump(config, f)
         return self.config_path
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_basic(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_basic(self):
         """Test basic model initialization."""
-        # Mock Ollama as not installed
-        mock_ollama_check.return_value = False
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
         
-        # Mock config loader
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=False)
+        test_loader = TestableModelConfigLoader({
             "models": {
                 "gpt-4": {
                     "provider": "openai",
@@ -333,28 +417,39 @@ class TestInitModels:
                 }
             },
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        # Set API key
-        os.environ["OPENAI_API_KEY"] = "test-key"
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
         
-        # Initialize models
-        registry = init_models()
-        
-        assert isinstance(registry, ModelRegistry)
-        assert len(registry.list_models()) == 1
-        assert "openai:gpt-4" in registry.list_models()
+        try:
+            # Set API key
+            os.environ["OPENAI_API_KEY"] = "test-key"
+            
+            # Initialize models
+            registry = init_models()
+            
+            assert isinstance(registry, ModelRegistry)
+            assert len(registry.list_models()) == 1
+            assert "openai:gpt-4" in registry.list_models()
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_multiple_providers(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_multiple_providers(self):
         """Test initialization with multiple providers."""
-        mock_ollama_check.return_value = True
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
         
-        # Mock config with multiple providers
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=True)
+        test_loader = TestableModelConfigLoader({
             "models": {
                 "gpt-4": {
                     "provider": "openai",
@@ -376,35 +471,41 @@ class TestInitModels:
                 }
             },
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        # Set API keys
-        os.environ["OPENAI_API_KEY"] = "test-openai-key"
-        os.environ["ANTHROPIC_API_KEY"] = "test-anthropic-key"
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
         
-        registry = init_models()
-        
-        # Should register OpenAI and Anthropic models (and Ollama if available)
-        models = registry.list_models()
-        assert len(models) >= 2  # At least OpenAI and Anthropic
-        assert any("openai:" in m for m in models)
-        assert any("anthropic:" in m for m in models)
+        try:
+            # Set API keys
+            os.environ["OPENAI_API_KEY"] = "test-openai-key"
+            os.environ["ANTHROPIC_API_KEY"] = "test-anthropic-key"
+            
+            registry = init_models()
+            
+            # Should register OpenAI and Anthropic models (and Ollama if available)
+            models = registry.list_models()
+            assert len(models) >= 2  # At least OpenAI and Anthropic
+            assert any("openai:" in m for m in models)
+            assert any("anthropic:" in m for m in models)
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_no_api_keys(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_no_api_keys(self):
         """Test initialization without API keys."""
-        mock_ollama_check.return_value = False
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
         
-        # Remove API keys
-        os.environ.pop("OPENAI_API_KEY", None)
-        os.environ.pop("ANTHROPIC_API_KEY", None)
-        os.environ.pop("GOOGLE_API_KEY", None)
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
         
-        # Mock config
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=False)
+        test_loader = TestableModelConfigLoader({
             "models": {
                 "gpt-4": {
                     "provider": "openai",
@@ -414,23 +515,39 @@ class TestInitModels:
                 }
             },
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        registry = init_models()
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
         
-        # Should not register any models without API keys
-        assert len(registry.list_models()) == 0
+        try:
+            # Remove API keys
+            os.environ.pop("OPENAI_API_KEY", None)
+            os.environ.pop("ANTHROPIC_API_KEY", None)
+            os.environ.pop("GOOGLE_API_KEY", None)
+            
+            registry = init_models()
+            
+            # Should not register any models without API keys
+            assert len(registry.list_models()) == 0
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_ollama_available(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_ollama_available(self):
         """Test initialization with Ollama available."""
-        mock_ollama_check.return_value = True
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
         
-        # Mock config with Ollama models
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=True)
+        test_loader = TestableModelConfigLoader({
             "models": {
                 "llama2": {
                     "provider": "ollama",
@@ -446,25 +563,38 @@ class TestInitModels:
                 }
             },
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        registry = init_models()
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
         
-        # Should register Ollama models
-        models = registry.list_models()
-        assert len(models) == 2
-        assert all("ollama:" in m for m in models)
+        try:
+            registry = init_models()
+            
+            # Should register Ollama models
+            models = registry.list_models()
+            assert len(models) == 2
+            assert all("ollama:" in m for m in models)
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_huggingface(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_huggingface(self):
         """Test initialization with HuggingFace models."""
-        mock_ollama_check.return_value = False
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
+        import importlib.util
         
-        # Mock config with HuggingFace models
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        original_find_spec = importlib.util.find_spec
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=False)
+        test_loader = TestableModelConfigLoader({
             "models": {
                 "tiny-llama": {
                     "provider": "huggingface",
@@ -474,48 +604,72 @@ class TestInitModels:
                 }
             },
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        # Mock transformers availability
-        with patch('importlib.util.find_spec') as mock_find_spec:
-            mock_find_spec.return_value = MagicMock()  # Transformers is available
-            
+        class TestSpec:
+            """Test spec to simulate module availability."""
+            pass
+        
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
+        importlib.util.find_spec = lambda name: TestSpec() if name == "transformers" else None
+        
+        try:
             registry = init_models()
             
             # Should register HuggingFace model
             models = registry.list_models()
             assert len(models) == 1
             assert "huggingface:" in models[0]
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
+            importlib.util.find_spec = original_find_spec
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_auto_registration_enabled(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_auto_registration_enabled(self):
         """Test that auto-registration is enabled."""
-        mock_ollama_check.return_value = False
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
         
-        # Mock empty config
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=False)
+        test_loader = TestableModelConfigLoader({
             "models": {},
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        registry = init_models()
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
         
-        # Auto-registration should be enabled
-        assert registry._auto_registrar is not None
+        try:
+            registry = init_models()
+            
+            # Auto-registration should be enabled
+            assert registry._auto_registrar is not None
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_expertise_detection(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_expertise_detection(self):
         """Test expertise detection from model names."""
-        mock_ollama_check.return_value = False
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
         
-        # Mock config with models that should have expertise detected
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=False)
+        test_loader = TestableModelConfigLoader({
             "models": {
                 "gpt-4-code": {
                     "provider": "openai",
@@ -531,33 +685,44 @@ class TestInitModels:
                 }
             },
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        # Set API keys
-        os.environ["OPENAI_API_KEY"] = "test-key"
-        os.environ["ANTHROPIC_API_KEY"] = "test-key"
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
         
-        registry = init_models()
-        
-        # Get models and check expertise
-        openai_model = registry.get_model("gpt-4-code", "openai")
-        assert hasattr(openai_model, "_expertise")
-        assert "code" in openai_model._expertise
-        
-        anthropic_model = registry.get_model("claude-3-chat", "anthropic")
-        assert hasattr(anthropic_model, "_expertise")
-        assert "chat" in anthropic_model._expertise
+        try:
+            # Set API keys
+            os.environ["OPENAI_API_KEY"] = "test-key"
+            os.environ["ANTHROPIC_API_KEY"] = "test-key"
+            
+            registry = init_models()
+            
+            # Get models and check expertise
+            openai_model = registry.get_model("gpt-4-code", "openai")
+            assert hasattr(openai_model, "_expertise")
+            assert "code" in openai_model._expertise
+            
+            anthropic_model = registry.get_model("claude-3-chat", "anthropic")
+            assert hasattr(anthropic_model, "_expertise")
+            assert "chat" in anthropic_model._expertise
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_size_setting(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_size_setting(self):
         """Test that model sizes are properly set."""
-        mock_ollama_check.return_value = False
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
         
-        # Mock config with specific sizes
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=False)
+        test_loader = TestableModelConfigLoader({
             "models": {
                 "small-model": {
                     "provider": "openai",
@@ -573,31 +738,44 @@ class TestInitModels:
                 }
             },
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        os.environ["OPENAI_API_KEY"] = "test-key"
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
         
-        registry = init_models()
-        
-        # Check sizes
-        small_model = registry.get_model("small-model", "openai")
-        assert hasattr(small_model, "_size_billions")
-        assert small_model._size_billions == 7
-        
-        large_model = registry.get_model("large-model", "openai")
-        assert hasattr(large_model, "_size_billions")
-        assert large_model._size_billions == 175
+        try:
+            os.environ["OPENAI_API_KEY"] = "test-key"
+            
+            registry = init_models()
+            
+            # Check sizes
+            small_model = registry.get_model("small-model", "openai")
+            assert hasattr(small_model, "_size_billions")
+            assert small_model._size_billions == 7
+            
+            large_model = registry.get_model("large-model", "openai")
+            assert hasattr(large_model, "_size_billions")
+            assert large_model._size_billions == 175
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
     
-    @patch('src.orchestrator.utils.model_config_loader.get_model_config_loader')
-    @patch('src.orchestrator.utils.model_utils.check_ollama_installed')
-    def test_init_models_error_handling(self, mock_ollama_check, mock_get_loader):
+    def test_init_models_error_handling(self):
         """Test error handling during model registration."""
-        mock_ollama_check.return_value = False
+        # Store original functions
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
+        import src.orchestrator.integrations.openai_model
         
-        # Mock config
-        mock_loader = MagicMock()
-        mock_loader.load_config.return_value = {
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        original_openai_model = src.orchestrator.integrations.openai_model.OpenAIModel
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=False)
+        test_loader = TestableModelConfigLoader({
             "models": {
                 "error-model": {
                     "provider": "openai",
@@ -607,29 +785,55 @@ class TestInitModels:
                 }
             },
             "defaults": {}
-        }
-        mock_get_loader.return_value = mock_loader
+        })
         
-        os.environ["OPENAI_API_KEY"] = "test-key"
+        def failing_openai_model(*args, **kwargs):
+            raise Exception("Registration error")
         
-        # Mock OpenAIModel to raise error
-        with patch('src.orchestrator.integrations.openai_model.OpenAIModel') as mock_openai:
-            mock_openai.side_effect = Exception("Registration error")
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
+        src.orchestrator.integrations.openai_model.OpenAIModel = failing_openai_model
+        
+        try:
+            os.environ["OPENAI_API_KEY"] = "test-key"
             
             # Should not crash, just skip the model
             registry = init_models()
             assert len(registry.list_models()) == 0
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
+            src.orchestrator.integrations.openai_model.OpenAIModel = original_openai_model
     
     def test_init_models_global_registry(self):
         """Test that init_models sets global registry."""
         import src.orchestrator
+        import src.orchestrator.utils.model_config_loader
+        import src.orchestrator.utils.model_utils
         
         # Initially should be None
         assert src.orchestrator._model_registry is None
         
-        with patch('src.orchestrator.utils.model_config_loader.get_model_config_loader'):
-            with patch('src.orchestrator.utils.model_utils.check_ollama_installed'):
-                registry = init_models()
-                
-                # Global registry should be set
-                assert src.orchestrator._model_registry is registry
+        # Store original functions
+        original_get_loader = src.orchestrator.utils.model_config_loader.get_model_config_loader
+        original_ollama_check = src.orchestrator.utils.model_utils.check_ollama_installed
+        
+        # Create test implementations
+        ollama_checker = TestableOllamaChecker(is_installed=False)
+        test_loader = TestableModelConfigLoader()
+        
+        # Replace functions
+        src.orchestrator.utils.model_config_loader.get_model_config_loader = lambda: test_loader
+        src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
+        
+        try:
+            registry = init_models()
+            
+            # Global registry should be set
+            assert src.orchestrator._model_registry is registry
+        finally:
+            # Restore original functions
+            src.orchestrator.utils.model_config_loader.get_model_config_loader = original_get_loader
+            src.orchestrator.utils.model_utils.check_ollama_installed = original_ollama_check
