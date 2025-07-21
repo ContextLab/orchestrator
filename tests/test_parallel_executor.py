@@ -3,7 +3,7 @@
 import asyncio
 import time
 from collections import defaultdict
-from unittest.mock import patch
+from typing import Dict, Any, Optional, Callable
 
 import pytest
 
@@ -17,6 +17,32 @@ from src.orchestrator.executor.parallel_executor import (
     ResourceMonitor,
     WorkerPool,
 )
+
+
+class TestableResourceMonitor(ResourceMonitor):
+    """A testable resource monitor that can be controlled for testing."""
+    
+    def __init__(self, config: ExecutionConfig):
+        super().__init__(config)
+        self._test_memory_usage = 100.0
+        self._test_cpu_usage = 25.0
+        self._memory_calls = 0
+        self._cpu_calls = 0
+        
+    def _get_memory_usage(self) -> float:
+        """Return test memory usage."""
+        self._memory_calls += 1
+        return self._test_memory_usage
+        
+    def _get_cpu_usage(self) -> float:
+        """Return test CPU usage."""
+        self._cpu_calls += 1
+        return self._test_cpu_usage
+        
+    def set_test_usage(self, memory: float, cpu: float):
+        """Set test usage values."""
+        self._test_memory_usage = memory
+        self._test_cpu_usage = cpu
 
 
 class TestExecutionMode:
@@ -117,23 +143,21 @@ class TestResourceMonitor:
 
     def test_resource_monitor_start_monitoring(self):
         """Test starting task monitoring."""
-        monitor = ResourceMonitor()
+        config = ExecutionConfig()
+        monitor = TestableResourceMonitor(config)
+        monitor.set_test_usage(memory=100.0, cpu=25.0)
 
-        with (
-            patch.object(monitor, "_get_memory_usage", return_value=100.0),
-            patch.object(monitor, "_get_cpu_usage", return_value=25.0),
-        ):
+        monitor.start_monitoring("task1")
 
-            monitor.start_monitoring("task1")
-
-            assert "task1" in monitor.active_tasks
-            assert "start_time" in monitor.active_tasks["task1"]
-            assert monitor.active_tasks["task1"]["memory_start"] == 100.0
-            assert monitor.active_tasks["task1"]["cpu_start"] == 25.0
+        assert "task1" in monitor.active_tasks
+        assert "start_time" in monitor.active_tasks["task1"]
+        assert monitor.active_tasks["task1"]["memory_start"] == 100.0
+        assert monitor.active_tasks["task1"]["cpu_start"] == 25.0
 
     def test_resource_monitor_stop_monitoring(self):
         """Test stopping task monitoring."""
-        monitor = ResourceMonitor()
+        config = ExecutionConfig()
+        monitor = TestableResourceMonitor(config)
 
         # Start monitoring first
         start_time = time.time()
@@ -143,22 +167,20 @@ class TestResourceMonitor:
             "cpu_start": 25.0,
         }
 
-        with (
-            patch.object(monitor, "_get_memory_usage", return_value=120.0),
-            patch.object(monitor, "_get_cpu_usage", return_value=30.0),
-        ):
+        # Set ending values
+        monitor.set_test_usage(memory=120.0, cpu=30.0)
 
-            # Allow some time to pass
-            time.sleep(0.1)
-            usage = monitor.stop_monitoring("task1")
+        # Allow some time to pass
+        time.sleep(0.1)
+        usage = monitor.stop_monitoring("task1")
 
-            assert "task1" not in monitor.active_tasks
-            assert "execution_time" in usage
-            assert "memory_used" in usage
-            assert "cpu_used" in usage
-            assert usage["memory_used"] == 20.0  # 120 - 100
-            assert usage["cpu_used"] == 5.0  # 30 - 25
-            assert usage["execution_time"] > 0
+        assert "task1" not in monitor.active_tasks
+        assert "execution_time" in usage
+        assert "memory_used" in usage
+        assert "cpu_used" in usage
+        assert usage["memory_used"] == 20.0  # 120 - 100
+        assert usage["cpu_used"] == 5.0  # 30 - 25
+        assert usage["execution_time"] > 0
 
     def test_resource_monitor_stop_monitoring_nonexistent(self):
         """Test stopping monitoring for non-existent task."""
@@ -171,21 +193,39 @@ class TestResourceMonitor:
         """Test memory usage when psutil is not available."""
         monitor = ResourceMonitor()
 
-        with patch(
-            "builtins.__import__", side_effect=ImportError("No module named 'psutil'")
-        ):
+        # Store original __import__
+        original_import = __builtins__['__import__']
+        
+        def mock_import(name, *args, **kwargs):
+            if name == 'psutil':
+                raise ImportError("No module named 'psutil'")
+            return original_import(name, *args, **kwargs)
+        
+        try:
+            __builtins__['__import__'] = mock_import
             usage = monitor._get_memory_usage()
             assert usage == 0.0
+        finally:
+            __builtins__['__import__'] = original_import
 
     def test_resource_monitor_get_cpu_usage_without_psutil(self):
         """Test CPU usage when psutil is not available."""
         monitor = ResourceMonitor()
 
-        with patch(
-            "builtins.__import__", side_effect=ImportError("No module named 'psutil'")
-        ):
+        # Store original __import__
+        original_import = __builtins__['__import__']
+        
+        def mock_import(name, *args, **kwargs):
+            if name == 'psutil':
+                raise ImportError("No module named 'psutil'")
+            return original_import(name, *args, **kwargs)
+        
+        try:
+            __builtins__['__import__'] = mock_import
             usage = monitor._get_cpu_usage()
             assert usage == 0.0
+        finally:
+            __builtins__['__import__'] = original_import
 
     def test_resource_monitor_get_statistics_empty(self):
         """Test getting statistics when no data exists."""
@@ -475,9 +515,19 @@ class TestParallelExecutor:
         """Test parallel executor initialization."""
         executor = ParallelExecutor()
 
-        with patch.object(executor.worker_pool, "initialize") as mock_init:
-            executor.initialize()
-            mock_init.assert_called_once()
+        # Track whether initialize was called
+        initialized = False
+        original_init = executor.worker_pool.initialize
+        
+        def track_init():
+            nonlocal initialized
+            initialized = True
+            return original_init()
+        
+        executor.worker_pool.initialize = track_init
+        executor.initialize()
+        
+        assert initialized is True
 
     @pytest.mark.asyncio
     async def test_parallel_executor_execute_pipeline_simple(self):
@@ -719,11 +769,18 @@ class TestParallelExecutor:
             "worker_id": "worker1",
         }
 
-        # Mock worker pool statistics
-        with patch.object(
-            executor.worker_pool, "get_statistics", return_value={"test": "data"}
-        ):
+        # Replace get_statistics temporarily
+        original_get_stats = executor.worker_pool.get_statistics
+        
+        def test_get_statistics():
+            return {"test": "data"}
+            
+        executor.worker_pool.get_statistics = test_get_statistics
+        
+        try:
             stats = executor.get_execution_statistics()
+        finally:
+            executor.worker_pool.get_statistics = original_get_stats
 
         assert stats["total_tasks"] == 3
         assert stats["successful_tasks"] == 2
@@ -744,9 +801,19 @@ class TestParallelExecutor:
         """Test parallel executor shutdown."""
         executor = ParallelExecutor()
 
-        with patch.object(executor.worker_pool, "shutdown") as mock_shutdown:
-            executor.shutdown()
-            mock_shutdown.assert_called_once()
+        # Track whether shutdown was called
+        shutdown_called = False
+        original_shutdown = executor.worker_pool.shutdown
+        
+        def track_shutdown():
+            nonlocal shutdown_called
+            shutdown_called = True
+            return original_shutdown()
+        
+        executor.worker_pool.shutdown = track_shutdown
+        executor.shutdown()
+        
+        assert shutdown_called is True
 
 
 class TestParallelExecutorIntegration:
