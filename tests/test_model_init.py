@@ -482,9 +482,12 @@ class TestInitModels:
         src.orchestrator.utils.model_utils.check_ollama_installed = ollama_checker
         
         try:
-            # Set API keys
-            os.environ["OPENAI_API_KEY"] = "test-openai-key"
-            os.environ["ANTHROPIC_API_KEY"] = "test-anthropic-key"
+            # Load real API keys
+            from orchestrator.utils.api_keys import load_api_keys
+            try:
+                load_api_keys()
+            except EnvironmentError:
+                pytest.skip("API keys not configured")
             
             registry = init_models()
             
