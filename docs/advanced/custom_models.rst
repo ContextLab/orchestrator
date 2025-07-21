@@ -136,13 +136,14 @@ OpenAI Integration
 
 .. code-block:: python
 
+    import os
     from orchestrator.integrations.openai_model import OpenAIModel
     
     # Initialize OpenAI model
     openai_model = OpenAIModel(
         name="gpt-4",
-        api_key="your-api-key",
-        organization="your-org-id"
+        api_key=os.environ.get("OPENAI_API_KEY"),
+        organization=os.environ.get("OPENAI_ORG_ID")
     )
     
     # Register with model registry
@@ -153,12 +154,13 @@ Anthropic Integration
 
 .. code-block:: python
 
+    import os
     from orchestrator.integrations.anthropic_model import AnthropicModel
     
     # Initialize Anthropic model
     anthropic_model = AnthropicModel(
         name="claude-3-opus",
-        api_key="your-api-key"
+        api_key=os.environ.get("ANTHROPIC_API_KEY")
     )
     
     registry.register_model(anthropic_model)
@@ -342,6 +344,7 @@ Create comprehensive tests for your custom models:
 
 .. code-block:: python
 
+    import os
     import pytest
     from orchestrator.models.model_registry import ModelRegistry
     
@@ -353,7 +356,7 @@ Create comprehensive tests for your custom models:
         # Initialize custom model
         custom_model = CustomModel(
             name="test-model",
-            api_key="test-key",
+            api_key=os.environ.get("CUSTOM_API_KEY", "default-test-key"),
             endpoint="http://localhost:8000"
         )
         
@@ -538,7 +541,7 @@ Here's a complete example of a custom model integration:
         custom_model = MyCustomModel(
             name="my-custom-model",
             config={
-                "api_key": "your-api-key",
+                "api_key": os.environ.get("CUSTOM_API_KEY"),
                 "endpoint": "https://api.example.com"
             }
         )

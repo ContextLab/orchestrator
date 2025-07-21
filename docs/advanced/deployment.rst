@@ -358,12 +358,12 @@ Environment Variables
     export REDIS_URL=redis://localhost:6379
     
     # API Keys
-    export OPENAI_API_KEY=your-openai-key
-    export ANTHROPIC_API_KEY=your-anthropic-key
+    export OPENAI_API_KEY=<your-openai-key>
+    export ANTHROPIC_API_KEY=<your-anthropic-key>
     
     # Security
-    export ORCHESTRATOR_API_KEY=your-secure-api-key
-    export ORCHESTRATOR_SECRET_KEY=your-secret-key
+    export ORCHESTRATOR_API_KEY=<your-secure-api-key>
+    export ORCHESTRATOR_SECRET_KEY=<your-secret-key>
     
     # Monitoring
     export SENTRY_DSN=https://your-sentry-dsn
