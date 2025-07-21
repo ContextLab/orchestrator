@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from typing import Any, Dict, List, Optional
 
@@ -83,6 +84,9 @@ class Orchestrator:
         self.running_pipelines: Dict[str, Pipeline] = {}
         self.execution_semaphore = asyncio.Semaphore(max_concurrent_tasks)
         self.execution_history: List[Dict[str, Any]] = []
+        
+        # Logger
+        self.logger = logging.getLogger(__name__)
 
     async def execute_pipeline(
         self,

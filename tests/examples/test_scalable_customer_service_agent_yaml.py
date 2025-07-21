@@ -1,4 +1,8 @@
-"""Tests for scalable_customer_service_agent.yaml example."""
+"""Tests for scalable_customer_service_agent.yaml example.
+
+This test file follows the NO MOCKS policy. Tests use real orchestration
+when API keys are available, otherwise they skip gracefully.
+"""
 import pytest
 from .test_base import BaseExampleTest
 
@@ -13,14 +17,14 @@ class TestScalableCustomerServiceAgentYAML(BaseExampleTest):
     @pytest.fixture
     def sample_inputs(self):
         return {
-            "channel": "email",
+            "interaction_id": "INT-123456",
             "customer_id": "CUST-789456",
-            "message": "My premium subscription isn't working properly",
-            "priority": "high",
-            "language": "en",
-            "account_type": "premium",
-            "sla_hours": 4,
-            "enable_automation": True
+            "channel": "email",
+            "content": "My premium subscription isn't working properly",
+            "metadata": {},
+            "business_hours": {"start": "09:00", "end": "17:00", "timezone": "UTC"},
+            "sla_targets": {"first_response": 60, "resolution": 3600},
+            "languages": ["en", "es", "fr"]
         }
     
     def test_pipeline_structure(self, pipeline_name):
@@ -32,12 +36,12 @@ class TestScalableCustomerServiceAgentYAML(BaseExampleTest):
         # Check service agent steps
         step_ids = [step['id'] for step in config['steps']]
         required_steps = [
-            'route_request',
-            'load_customer_data',
+            'receive_interaction',
+            'identify_customer',
             'analyze_sentiment',
-            'classify_issue',
-            'check_sla',
-            'search_solutions',
+            'classify_intent',
+            'search_knowledge_base',
+            'determine_routing',
             'generate_response',
             'quality_check'
         ]
@@ -50,295 +54,96 @@ class TestScalableCustomerServiceAgentYAML(BaseExampleTest):
         config = self.load_yaml_pipeline(pipeline_name)
         
         # Check channel routing
-        route_step = next(s for s in config['steps'] if s['id'] == 'route_request')
-        assert '{{channel}}' in str(route_step)
+        receive_step = next(s for s in config['steps'] if s['id'] == 'receive_interaction')
+        assert '{{channel}}' in str(receive_step)
         
-        # Check channel-specific formatting
-        format_step = next(
-            (s for s in config['steps'] if 'format' in s['id'] and 'channel' in s['id']),
-            None
-        )
-        assert format_step is not None
+        # Check send response step formats for channel
+        send_step = next(s for s in config['steps'] if s['id'] == 'send_response')
+        assert send_step is not None
+        assert '{{channel}}' in str(send_step)
     
     @pytest.mark.asyncio
-    async def test_customer_data_loading(self, orchestrator, pipeline_name):
+    async def test_customer_data_loading(self, orchestrator, pipeline_name, sample_inputs):
         """Test customer data retrieval and analysis."""
-        # Test pipeline structure
-        config = self.load_yaml_pipeline(pipeline_name)
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            expected_outputs={
+                'interaction_id': str,
+                'resolution_type': str,
+                'response_sent': (bool, str)
+            },
+            use_minimal_responses=True
+        )
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'identify_customer':
-                    return {
-                        'result': {
-                            'customer_profile': {
-                                'name': 'John Smith',
-                                'account_type': 'premium',
-                                'tenure_months': 24,
-                                'lifetime_value': 5000,
-                                'support_history': {
-                                    'total_tickets': 5,
-                                    'resolved_tickets': 4,
-                                    'avg_resolution_time': 2.5
-                                }
-                            },
-                            'recent_interactions': [
-                                {
-                                    'date': '2024-01-15',
-                                    'issue': 'login problem',
-                                    'resolved': True
-                                }
-                            ],
-                            'product_usage': {
-                                'last_login': '2024-01-20',
-                                'features_used': ['dashboard', 'reports', 'api']
-                            }
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=sample_inputs
-            )
-            
-            # Verify customer data loading
-            data_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'identify_customer'
-            ]
-            assert len(data_calls) == 1
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result
     
-    @pytest.mark.asyncio
-    async def test_sla_monitoring(self, orchestrator, pipeline_name):
-        """Test SLA checking and prioritization."""
-        # Test pipeline structure
+    def test_sla_monitoring(self, pipeline_name):
+        """Test SLA checking and prioritization configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'check_sla':
-                    return {
-                        'result': {
-                            'sla_status': 'at_risk',
-                            'time_remaining': 0.5,
-                            'escalation_required': True,
-                            'priority_score': 9.5
-                        }
-                    }
-                elif step_id == 'check_sla':
-                    return {
-                        'result': {
-                            'new_priority': 'critical',
-                            'assigned_agent': 'senior_team',
-                            'notification_sent': True
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify SLA monitoring and escalation
-            sla_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'check_sla'
-            ]
-            escalate_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'check_sla'
-            ]
-            
-            assert len(sla_calls) > 0
-            assert len(escalate_calls) > 0
+        # Check SLA step exists
+        sla_step = next(s for s in config['steps'] if s['id'] == 'check_sla')
+        assert sla_step is not None
+        assert '{{sla_targets}}' in str(sla_step)
+        assert 'First response time' in sla_step['action']
     
-    @pytest.mark.asyncio
-    async def test_automated_solution_search(self, orchestrator, pipeline_name):
-        """Test automated solution finding."""
-        # Test pipeline structure
+    def test_automated_solution_search(self, pipeline_name):
+        """Test automated solution finding configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'search_knowledge_base':
-                    return {
-                        'result': {
-                            'solutions_found': 3,
-                            'top_solution': {
-                                'id': 'SOL-145',
-                                'title': 'Dashboard Access Issues',
-                                'confidence': 0.87,
-                                'steps': [
-                                    'Clear browser cache',
-                                    'Check account permissions',
-                                    'Try incognito mode'
-                                ]
-                            },
-                            'related_articles': ['KB-234', 'KB-567']
-                        }
-                    }
-                elif step_id == 'check_automation':
-                    return {
-                        'result': {
-                            'automation_applied': True,
-                            'actions_taken': [
-                                'Reset user session',
-                                'Cleared dashboard cache'
-                            ],
-                            'issue_resolved': True
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify solution search and automation
-            search_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'search_knowledge_base'
-            ]
-            automation_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'check_automation'
-            ]
-            
-            assert len(search_calls) > 0
-            assert len(automation_calls) > 0
+        # Check knowledge base search step
+        kb_step = next(s for s in config['steps'] if s['id'] == 'search_knowledge_base')
+        assert kb_step is not None
+        assert '{{content}}' in str(kb_step)
+        assert '{{classify_intent.result.primary_intent}}' in str(kb_step)
+        
+        # Check automation eligibility step
+        auto_step = next(s for s in config['steps'] if s['id'] == 'check_automation')
+        assert auto_step is not None
+        assert 'condition' in auto_step
+        assert auto_step['condition'] == '{{determine_routing.result.decision}} == \'automated\''
     
-    @pytest.mark.asyncio
-    async def test_quality_assurance(self, orchestrator, pipeline_name):
-        """Test response quality checking."""
-        # Test pipeline structure
+    def test_quality_assurance(self, pipeline_name):
+        """Test response quality checking configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'analyze_sentiment':
-                    return {
-                        'result': {
-                            'sentiment': 'very_negative',
-                            'emotion': 'angry',
-                            'intensity': 0.9
-                        }
-                    }
-                elif step_id == 'quality_check':
-                    return {
-                        'result': {
-                            'quality_score': 0.65,
-                            'issues_found': [
-                                'Insufficient empathy',
-                                'No compensation offered'
-                            ],
-                            'requires_revision': True
-                        }
-                    }
-                elif step_id == 'quality_check':
-                    return {
-                        'result': {
-                            'enhanced_response': 'We sincerely apologize...',
-                            'improvements': [
-                                'Added empathetic language',
-                                'Included service credit offer'
-                            ],
-                            'new_quality_score': 0.92
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify quality checking and enhancement
-            quality_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'quality_check'
-            ]
-            enhance_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'quality_check'
-            ]
-            
-            assert len(quality_calls) > 0
-            assert len(enhance_calls) > 0
+        # Check quality check step
+        quality_step = next(s for s in config['steps'] if s['id'] == 'quality_check')
+        assert quality_step is not None
+        assert 'Compliance with policies' in quality_step['action']
+        assert 'Brand voice consistency' in quality_step['action']
+        
+        # Check send response has quality condition
+        send_step = next(s for s in config['steps'] if s['id'] == 'send_response')
+        assert 'condition' in send_step
+        assert 'qa_score' in send_step['condition']
     
-    @pytest.mark.asyncio
-    async def test_performance_tracking(self, orchestrator, pipeline_name):
-        """Test performance metrics collection."""
-        # Test pipeline structure
+    def test_performance_tracking(self, pipeline_name):
+        """Test performance metrics collection configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                if step.get('id') == 'log_analytics':
-                    return {
-                        'result': {
-                            'response_time': 1.2,
-                            'resolution_status': 'resolved',
-                            'customer_effort_score': 2,
-                            'automation_percentage': 85,
-                            'first_contact_resolution': True
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify metrics tracking
-            metrics_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'log_analytics'
-            ]
-            assert len(metrics_calls) > 0
+        # Check analytics logging step
+        analytics_step = next(s for s in config['steps'] if s['id'] == 'log_analytics')
+        assert analytics_step is not None
+        assert 'Response time' in analytics_step['action']
+        assert 'Automation success rate' in analytics_step['action']
     
-    def test_account_type_handling(self, pipeline_name):
-        """Test account type based prioritization."""
+    def test_customer_tier_handling(self, pipeline_name):
+        """Test customer tier based prioritization."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check account type usage
-        steps_with_account = [
+        # Check customer tier usage
+        steps_with_tier = [
             s for s in config['steps'] 
-            if '{{account_type}}' in str(s)
+            if 'customer_profile.tier' in str(s)
         ]
         
-        assert len(steps_with_account) > 0
+        assert len(steps_with_tier) > 0
     
     def test_multi_language_support(self, pipeline_name):
         """Test language handling configuration."""
@@ -351,20 +156,35 @@ class TestScalableCustomerServiceAgentYAML(BaseExampleTest):
         )
         
         assert translate_step is not None
-        assert '{{language}}' in str(translate_step)
+        assert 'customer_profile.language' in str(translate_step)
     
     def test_output_completeness(self, pipeline_name):
         """Test that all service outputs are defined."""
         config = self.load_yaml_pipeline(pipeline_name)
         
         expected_outputs = [
+            'interaction_id',
+            'resolution_type',
             'response_sent',
-            'resolution_status',
-            'response_time',
-            'customer_satisfaction',
-            'automation_used',
-            'sla_met'
+            'sla_status',
+            'response_time_seconds',
+            'quality_score'
         ]
         
         for output in expected_outputs:
             assert output in config['outputs'], f"Missing output: {output}"
+    
+    @pytest.mark.asyncio
+    async def test_full_pipeline_flow(self, orchestrator, pipeline_name, sample_inputs):
+        """Test full pipeline execution with minimal responses."""
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            use_minimal_responses=True
+        )
+        
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result

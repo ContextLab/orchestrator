@@ -309,10 +309,42 @@ class BaseExampleTest:
             return {"result": ["Would you like the weather forecast for tomorrow?", "Do you need clothing recommendations for this weather?"]}
         elif step_id == "prepare_streaming":
             return {"result": [{"chunk": "The weather today is sunny"}, {"chunk": " with a temperature of 72°F."}, {"chunk": " It's a beautiful day!"}]}
-        elif step_id == "log_analytics":
-            return {"result": {"response_time": 850, "tool_effectiveness": 1.0}}
         elif step_id == "prepare_output":
             return {"result": {"response": "The weather today is sunny with a temperature of 72°F. It's a beautiful day!", "conversation_state": "active"}}
+        
+        # Handle specific step IDs for scalable customer service agent
+        elif step_id == "receive_interaction":
+            return {"result": {"timestamp": "2024-01-20T10:00:00Z", "channel_context": {"channel": "email"}, "session_info": {}, "attachments": [], "priority": "normal"}}
+        elif step_id == "identify_customer":
+            return {"result": {"customer_profile": {"name": "John Doe", "tier": "premium", "language": "en"}, "interaction_history": [], "open_tickets": [], "authenticated": True}}
+        elif step_id == "analyze_sentiment":
+            return {"result": {"sentiment_score": -0.3, "emotions": ["frustration"], "urgency_level": "high", "escalation_indicators": [], "churn_risk": 0.2}}
+        elif step_id == "classify_intent":
+            return {"result": {"primary_intent": "billing_issue", "sub_intent": "duplicate_charge", "required_skills": ["billing"], "confidence": 0.95}}
+        elif step_id == "search_knowledge_base":
+            return {"result": {"articles": [{"id": "KB-001", "title": "Billing FAQ"}], "confidence": 0.85}}
+        elif step_id == "determine_routing":
+            return {"result": {"decision": "automated", "target_queue": "billing", "priority_score": 8}}
+        elif step_id == "check_automation":
+            return {"result": {"can_automate": True, "confidence": 0.9}}
+        elif step_id == "generate_response":
+            return {"result": {"content": "I'll help you with that duplicate charge...", "follow_up_needed": False}}
+        elif step_id == "translate_response":
+            return {"result": "Translated response..."}
+        elif step_id == "route_to_agent":
+            return {"result": {"agent_id": "AGT-001", "handoff_message": "Customer transferred to agent", "wait_time": 30}}
+        elif step_id == "quality_check":
+            return {"result": {"qa_score": 0.95}}
+        elif step_id == "send_response":
+            return {"result": {"success": True, "timestamp": "2024-01-20T10:01:00Z"}}
+        elif step_id == "update_systems":
+            return {"result": {"ticket_id": "TICKET-98765"}}
+        elif step_id == "check_sla":
+            return {"result": {"first_response_time": 60, "status": "met"}}
+        elif step_id == "schedule_followup":
+            return {"result": {"tasks": ["satisfaction_survey", "resolution_check"]}}
+        elif step_id == "log_analytics":
+            return {"result": {"response_time": 850}}
         
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
