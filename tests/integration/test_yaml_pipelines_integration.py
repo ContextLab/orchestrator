@@ -177,14 +177,19 @@ function complexFunction() {
         with open(pipeline_path, 'r') as f:
             yaml_content = f.read()
         
-        # Compile the YAML content
-        pipeline = await yaml_compiler.compile(yaml_content)
+        # Create context with required inputs
+        context = {
+            "repo_path": sample_code_repo,
+            "languages": ["python", "javascript"],
+            "analysis_depth": "standard",
+            "security_scan": True,
+            "performance_check": False,
+            "doc_check": True,
+            "severity_threshold": "medium"
+        }
         
-        # Set context with our test repository
-        pipeline.set_context("project_path", sample_code_repo)
-        pipeline.set_context("output_format", "markdown")
-        pipeline.set_context("analyze_security", True)
-        pipeline.set_context("fix_issues", False)  # Don't modify code in test
+        # Compile the YAML content with context
+        pipeline = await yaml_compiler.compile(yaml_content, context=context)
         
         # Execute pipeline
         try:

@@ -45,15 +45,6 @@ def orchestrator(setup_environment):
     
     print(f"\nUsing {len(api_models)} API models for testing")
     
-    # Debug: check model capabilities
-    for model_key in api_models[:3]:  # Check first 3 models
-        model = model_registry.models.get(model_key)
-        if model:
-            print(f"\nModel {model_key}:")
-            print(f"  Provider: {model.provider}")
-            print(f"  Supported tasks: {model.capabilities.supported_tasks}")
-            break
-    
     control_system = ModelBasedControlSystem(model_registry=model_registry)
     # Pass the model registry to the orchestrator
     return Orchestrator(control_system=control_system, model_registry=model_registry)

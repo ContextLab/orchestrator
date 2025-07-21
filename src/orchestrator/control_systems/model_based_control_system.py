@@ -85,7 +85,6 @@ class ModelBasedControlSystem(ControlSystem):
         # If no model in context, select one based on task
         if not model:
             requirements = self._get_task_requirements(task)
-            print(f">> Task requirements for '{task.action}': {requirements}")
             model = await self.model_registry.select_model(requirements)
         
         # Extract the actual action/prompt from the task
@@ -101,18 +100,12 @@ class ModelBasedControlSystem(ControlSystem):
         prompt = self._build_prompt(task, action_text, context)
         
         try:
-            # Debug: print model info
-            print(f">> Using model: {model.name} from {model.provider}")
-            print(f">> Prompt: {prompt[:200]}...")
-            
             # Use the model to generate result
             result = await model.generate(
                 prompt=prompt,
                 temperature=0.7,
                 max_tokens=1000,
             )
-            
-            print(f">> Model response: {result[:200]}...")
             
             # Parse the result based on expected format
             return self._parse_result(result, task)
