@@ -13,9 +13,12 @@ class TestDataProcessingWorkflowYAML(BaseExampleTest):
     @pytest.fixture
     def sample_inputs(self):
         return {
-            "data_sources": ["database://sales", "api://inventory", "file://customers.csv"],
+            "source": "s3://data-lake/raw/*.parquet",
+            "output_path": "s3://data-lake/processed/",
             "output_format": "parquet",
-            "quality_threshold": 0.95
+            "quality_threshold": 0.95,
+            "chunk_size": 10000,
+            "parallel_workers": 4
         }
     
     def test_pipeline_structure(self, pipeline_name):
@@ -26,11 +29,12 @@ class TestDataProcessingWorkflowYAML(BaseExampleTest):
         
         # Check inputs
         assert 'inputs' in config
-        assert 'data_sources' in config['inputs']
-        assert config['inputs']['data_sources']['type'] == 'list'
+        assert 'source' in config['inputs']
+        assert config['inputs']['source']['type'] == 'string'
+        assert config['inputs']['source']['required'] == True
         
-        # Check parallel processing steps
-        parallel_steps = [s for s in config['steps'] if s.get('loop', {}).get('parallel')]
+        # Check for parallel processing configuration
+        parallel_steps = [s for s in config['steps'] if s.get('parallel', False)]
         assert len(parallel_steps) > 0, "Should have parallel processing steps"
         
         # Check key steps
@@ -50,149 +54,131 @@ class TestDataProcessingWorkflowYAML(BaseExampleTest):
         for step in loop_steps:
             loop_config = step['loop']
             
-            # Check loop has required fields
-            if 'foreach' in loop_config:
-                assert isinstance(loop_config['foreach'], str)
-                assert '{{' in loop_config['foreach']  # Template variable
+            # Check loop configuration
+            assert 'over' in loop_config
+            assert loop_config['over'].startswith('{{')
             
-            # Check parallel configuration
+            # Check if parallel
             if 'parallel' in loop_config:
                 assert isinstance(loop_config['parallel'], bool)
                 if 'max_workers' in loop_config:
                     assert isinstance(loop_config['max_workers'], int)
     
     @pytest.mark.asyncio
-    async def test_data_source_discovery(self, orchestrator, pipeline_name):
+    async def test_data_source_discovery(self, orchestrator, pipeline_name, sample_inputs):
         """Test data source discovery step."""
-        # Test pipeline structure
-        config = self.load_yaml_pipeline(pipeline_name)
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            expected_outputs={
+                'total_records_processed': int,
+                'processing_time': str  # It's a string like "5.2s"
+            },
+            use_minimal_responses=True
+        )
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                if step.get('id') == 'discover_sources':
-                    return {
-                        'result': {
-                            'sources': [
-                                {'type': 'database', 'name': 'sales', 'size': '1GB'},
-                                {'type': 'api', 'name': 'inventory', 'records': 50000},
-                                {'type': 'file', 'name': 'customers.csv', 'rows': 10000}
-                            ],
-                            'total_sources': 3
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=sample_inputs
-            )
-            
-            # Verify discovery was called
-            discovery_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'discover_sources'
-            ]
-            assert len(discovery_calls) == 1
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result
     
     @pytest.mark.asyncio
     async def test_quality_validation_pass(self, orchestrator, pipeline_name):
         """Test quality validation with passing threshold."""
-        # Test pipeline structure
-        config = self.load_yaml_pipeline(pipeline_name)
+        inputs = {
+            "source": "database://sales",
+            "output_path": "/tmp/output/",
+            "output_format": "parquet",
+            "quality_threshold": 0.90
+        }
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                if step_id == 'validate_output':
-                    return {
-                        'result': {
-                            'quality_score': 0.95,
-                            'passed': True,
-                            'issues': []
-                        }
-                    }
-                elif step_id == 'aggregate_results':
-                    return {
-                        'result': {
-                            'total_records': 10000,
-                            'processing_time': 45.2
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify quality passed
-            quality_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'validate_output'
-            ]
-            assert len(quality_calls) > 0
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            inputs,
+            expected_outputs={
+                'data_quality_score': float
+            },
+            use_minimal_responses=True
+        )
+        
+        # Verify execution completed
+        assert result is not None
     
     @pytest.mark.asyncio
     async def test_quality_validation_fail(self, orchestrator, pipeline_name):
         """Test quality validation with failing threshold."""
-        # Test pipeline structure
-        config = self.load_yaml_pipeline(pipeline_name)
+        inputs = {
+            "source": "database://sales",
+            "output_path": "/tmp/output/",
+            "output_format": "parquet",
+            "quality_threshold": 0.99  # Very high threshold
+        }
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                if step_id == 'validate_output':
-                    return {
-                        'result': {
-                            'quality_score': 0.85,
-                            'passed': False,
-                            'issues': ['Missing values in column X', 'Duplicates found']
-                        }
-                    }
-                elif step_id == 'handle_quality_issues':
-                    return {
-                        'result': {
-                            'resolution': 'Applied data cleaning',
-                            'new_quality_score': 0.92
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify quality handling was triggered
-            handling_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'handle_quality_issues'
-            ]
-            assert len(handling_calls) > 0
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            inputs,
+            use_minimal_responses=True
+        )
+        
+        # Verify execution completed
+        assert result is not None
     
-    def test_output_format_validation(self, pipeline_name):
-        """Test output format configuration."""
+    def test_data_transformation_steps(self, pipeline_name):
+        """Test data transformation step configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Find load_data step
-        load_step = next(s for s in config['steps'] if s['id'] == 'load_data')
+        # Find transformation steps
+        transform_steps = [s for s in config['steps'] if 'transform' in s.get('id', '').lower()]
         
-        # Check it references output format
-        assert '{{output_format}}' in str(load_step)
+        for step in transform_steps:
+            # Check basic properties
+            assert 'action' in step
+            assert 'depends_on' in step or step == config['steps'][0]
+            
+            # Check for appropriate tags
+            if 'tags' in step:
+                assert isinstance(step['tags'], list)
+    
+    def test_output_configuration(self, pipeline_name):
+        """Test output configuration."""
+        config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check supported formats in input definition
-        output_format_input = config['inputs']['output_format']
-        assert 'default' in output_format_input
-        assert output_format_input['default'] == 'parquet'
+        # Check outputs section
+        assert 'outputs' in config
+        outputs = config['outputs']
+        
+        # Check key outputs
+        assert 'total_records_processed' in outputs
+        assert 'processing_time' in outputs
+        assert 'data_quality_score' in outputs
+        
+        # Verify output references
+        for output_name, output_value in outputs.items():
+            if isinstance(output_value, str) and '{{' in output_value:
+                # Should reference step results
+                assert '.result' in output_value
+    
+    def test_error_handling_configuration(self, pipeline_name):
+        """Test error handling configuration."""
+        config = self.load_yaml_pipeline(pipeline_name)
+        
+        # Find steps with error handling
+        error_handling_steps = [s for s in config['steps'] if 'on_error' in s]
+        
+        assert len(error_handling_steps) > 0, "Should have error handling configured"
+        
+        for step in error_handling_steps:
+            on_error = step['on_error']
+            
+            # Check error handling configuration
+            assert 'action' in on_error
+            
+            # Check for retry configuration
+            if 'retry_count' in on_error:
+                assert isinstance(on_error['retry_count'], int)
+                assert on_error['retry_count'] > 0

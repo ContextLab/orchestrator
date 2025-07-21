@@ -103,6 +103,37 @@ class BaseExampleTest:
         elif step_id == "save_outputs":
             return {"result": {"report_path": "/output/report.pdf", "total_time": "5.2s"}}
         
+        # Handle specific step IDs for data processing workflow
+        elif step_id == "discover_sources":
+            return {"result": {
+                "sources": [
+                    {"type": "database", "name": "sales", "size": "1GB"},
+                    {"type": "api", "name": "inventory", "records": 50000},
+                    {"type": "file", "name": "customers.csv", "rows": 10000}
+                ],
+                "total_sources": 3
+            }}
+        elif step_id == "profile_data":
+            return {"result": {"completeness": 0.95, "quality_score": 0.92}}
+        elif step_id == "validate_output":
+            return {"result": {"quality_score": 0.95, "passed": True, "issues": []}}
+        elif step_id == "aggregate_results":
+            return {"result": {"total_records": 10000, "processing_time": 45.2}}
+        elif step_id == "enrich_data":
+            return {"result": {"enriched_count": 8500, "enrichment_rate": 0.85}}
+        elif step_id == "export_data":
+            return {"result": {"output_path": "/output/data.parquet", "record_count": 10000}}
+        elif step_id == "track_lineage":
+            return {"result": {"status": "completed"}}
+        elif step_id == "monitor_pipeline":
+            return {"result": {"total_time": "45.2s"}}
+        elif step_id == "save_processing_report":
+            return {"result": {"report_path": "/output/processing_report.md"}}
+        elif step_id == "generate_report":
+            return {"result": "Quality report generated successfully"}
+        elif step_id == "clean_data":
+            return {"result": {"issues_fixed": 150}}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
