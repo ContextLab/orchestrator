@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import gzip
 import json
 import os
@@ -639,6 +640,28 @@ class StateManager:
             "backend_type": backend_type_name,
             **storage_info,
         }
+
+    async def is_healthy(self) -> bool:
+        """Check if the state manager is healthy and operational."""
+        try:
+            # Check if backend is available
+            if not hasattr(self, 'backend') or self.backend is None:
+                return False
+            
+            # Try to perform a simple operation to verify backend is working
+            # List checkpoints with a small limit to test connectivity
+            await self.backend.list_checkpoints(limit=1)
+            
+            # Check if the storage path exists for file backend
+            if hasattr(self.backend, '__class__') and self.backend.__class__.__name__ == 'FileBackend':
+                if hasattr(self, 'storage_path') and not os.path.exists(self.storage_path):
+                    return False
+            
+            return True
+            
+        except Exception:
+            # Any exception means the state manager is not healthy
+            return False
 
     async def shutdown(self) -> None:
         """Shutdown state manager and clean up resources."""

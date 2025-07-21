@@ -476,6 +476,47 @@ class ResourceAllocator:
             "allocation_history_size": len(self.allocation_history),
             "strategy": type(self.strategy).__name__,
         }
+    
+    async def get_utilization(self) -> Dict[str, Any]:
+        """Get current resource utilization metrics."""
+        async with self._lock:
+            # Calculate CPU usage
+            cpu_usage = 0.0
+            if ResourceType.CPU in self.pools:
+                cpu_pool = self.pools[ResourceType.CPU]
+                cpu_stats = cpu_pool.get_statistics()
+                cpu_usage = cpu_stats.get("utilization", 0.0)
+            
+            # Calculate memory usage
+            memory_usage = 0.0
+            if ResourceType.MEMORY in self.pools:
+                memory_pool = self.pools[ResourceType.MEMORY]
+                memory_stats = memory_pool.get_statistics()
+                memory_usage = memory_stats.get("utilization", 0.0)
+            
+            # Calculate GPU usage if available
+            gpu_usage = 0.0
+            if ResourceType.GPU in self.pools:
+                gpu_pool = self.pools[ResourceType.GPU]
+                gpu_stats = gpu_pool.get_statistics()
+                gpu_usage = gpu_stats.get("utilization", 0.0)
+            
+            # Calculate API quota usage
+            api_usage = 0.0
+            if ResourceType.API_QUOTA in self.pools:
+                api_pool = self.pools[ResourceType.API_QUOTA]
+                api_stats = api_pool.get_statistics()
+                api_usage = api_stats.get("utilization", 0.0)
+            
+            return {
+                "cpu_usage": cpu_usage,
+                "memory_usage": memory_usage,
+                "gpu_usage": gpu_usage,
+                "api_usage": api_usage,
+                "active_tasks": len(self.task_allocations),
+                "pending_requests": len(self.pending_requests),
+                "timestamp": time.time(),
+            }
 
     def set_allocation_strategy(self, strategy: ResourceAllocationStrategy):
         """Change the allocation strategy."""

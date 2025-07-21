@@ -2,7 +2,7 @@
 
 import os
 import tempfile
-from unittest.mock import AsyncMock, Mock
+# Real implementations used instead of mocks
 
 import pytest
 
@@ -15,32 +15,25 @@ from src.orchestrator.executor.parallel_executor import ParallelExecutor
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.orchestrator import ExecutionError, Orchestrator
 from src.orchestrator.state.state_manager import StateManager
+from tests.test_control_system_real import RealTestControlSystem
 
 
-class TestControlSystem(ControlSystem):
-    """Test control system for unit tests."""
+class TestControlSystem(RealTestControlSystem):
+    """Test control system for unit tests with configurable behavior."""
     
     def __init__(self, name="test-control", config=None):
-        super().__init__(name, config or {})
-        self.executed_tasks = {}
-        self.should_fail = False
+        super().__init__(name, config)
+        self._override_capabilities = None
         
-    async def execute_task(self, task, context=None):
-        """Execute a task and return test result."""
-        if self.should_fail:
-            raise Exception("Test failure")
+    def set_capabilities(self, capabilities: Dict[str, Any]):
+        """Set custom capabilities for testing."""
+        self._override_capabilities = capabilities
         
-        result = {
-            "status": "completed",
-            "result": f"Test result for {task.id}",
-            "task_id": task.id
-        }
-        self.executed_tasks[task.id] = result
-        return result
-    
-    async def health_check(self):
-        """Always healthy for tests."""
-        return True
+    def get_capabilities(self) -> Dict[str, Any]:
+        """Return capabilities - can be overridden for tests."""
+        if self._override_capabilities is not None:
+            return self._override_capabilities
+        return super().get_capabilities()
 
 
 class TestOrchestratorComprehensiveCoverage:
@@ -232,10 +225,8 @@ class TestOrchestratorComprehensiveCoverage:
         # Clear any existing history
         orchestrator.execution_history.clear()
 
-        # Mock resource allocator get_utilization
-        orchestrator.resource_allocator.get_utilization = AsyncMock(
-            return_value={"cpu_usage": 0.1}
-        )
+        # Resource allocator will return real utilization values
+        # No mocking needed - the real get_utilization method now exists
 
         metrics = await orchestrator.get_performance_metrics()
 
@@ -250,8 +241,14 @@ class TestOrchestratorComprehensiveCoverage:
         """Test health_check when control system returns empty capabilities (line 614)."""
         orchestrator = Orchestrator()
 
-        # Mock control system to return empty capabilities
-        orchestrator.control_system.get_capabilities = Mock(return_value={})
+        # Configure control system to return empty capabilities
+        if isinstance(orchestrator.control_system, TestControlSystem):
+            orchestrator.control_system.set_capabilities({})
+        else:
+            # For other control systems, create a new TestControlSystem with empty capabilities
+            test_control = TestControlSystem()
+            test_control.set_capabilities({})
+            orchestrator.control_system = test_control
 
         health = await orchestrator.health_check()
 
@@ -262,8 +259,9 @@ class TestOrchestratorComprehensiveCoverage:
         """Test health_check when state manager is unhealthy (line 621)."""
         orchestrator = Orchestrator()
 
-        # Mock state manager health check to return False
-        orchestrator.state_manager.is_healthy = AsyncMock(return_value=False)
+        # Configure state manager to be unhealthy by using an invalid backend
+        # This will cause is_healthy() to return False when it tries to list checkpoints
+        orchestrator.state_manager.backend = None
 
         health = await orchestrator.health_check()
 
@@ -274,10 +272,23 @@ class TestOrchestratorComprehensiveCoverage:
         """Test health_check with high CPU usage warning (lines 628-629)."""
         orchestrator = Orchestrator()
 
-        # Mock resource allocator to return high CPU usage
-        orchestrator.resource_allocator.get_utilization = AsyncMock(
-            return_value={"cpu_usage": 0.95}  # 95% CPU usage
+        # Configure resource allocator to have high CPU usage
+        # Add a CPU pool with high utilization
+        from src.orchestrator.core.resource_allocator import ResourceType, ResourceQuota
+        
+        orchestrator.resource_allocator.add_resource_pool(
+            ResourceType.CPU,
+            ResourceQuota(ResourceType.CPU, limit=1.0, unit="cores", renewable=False)
         )
+        
+        # Allocate most of the CPU to simulate high usage
+        from src.orchestrator.core.resource_allocator import ResourceRequest
+        request = ResourceRequest(
+            task_id="high_cpu_task",
+            resources={ResourceType.CPU: 0.95},
+            priority=1
+        )
+        await orchestrator.resource_allocator.request_resources(request)
 
         health = await orchestrator.health_check()
 
@@ -288,13 +299,18 @@ class TestOrchestratorComprehensiveCoverage:
         """Test health_check overall status when components are unhealthy (lines 641-644)."""
         orchestrator = Orchestrator()
 
-        # Mock multiple components as unhealthy
-        orchestrator.model_registry.get_available_models = AsyncMock(
-            side_effect=Exception("Registry failed")
-        )
-        orchestrator.control_system.get_capabilities = Mock(
-            side_effect=Exception("Control failed")
-        )
+        # Configure multiple components to be unhealthy using real implementations
+        from tests.test_failing_components import FailingModelRegistry, FailingControlSystem
+        
+        # Replace with failing model registry
+        failing_registry = FailingModelRegistry()
+        failing_registry.set_failure_mode(True, "Registry failed")
+        orchestrator.model_registry = failing_registry
+        
+        # Replace with failing control system
+        failing_control = FailingControlSystem()
+        failing_control.set_failure_mode(True, "Control failed")
+        orchestrator.control_system = failing_control
 
         health = await orchestrator.health_check()
 
@@ -307,8 +323,8 @@ class TestOrchestratorComprehensiveCoverage:
         """Test shutdown when parallel executor has sync shutdown method (line 662)."""
         orchestrator = Orchestrator()
 
-        # Mock parallel executor with sync shutdown method
-        orchestrator.parallel_executor.shutdown = Mock()  # Sync method
+        # The parallel executor already has a sync shutdown method
+        # No mocking needed - the real implementation is synchronous
 
         await orchestrator.shutdown()
 
@@ -504,21 +520,23 @@ class TestOrchestratorComprehensiveCoverage:
         """Test error handling during level execution with resource cleanup."""
         orchestrator = Orchestrator()
 
-        # Mock resource allocator to track allocations
-        mock_allocator = Mock()
-        mock_allocator.request_resources = AsyncMock(return_value=True)
-        mock_allocator.release_resources = AsyncMock()
-        orchestrator.resource_allocator = mock_allocator
+        # Use tracking resource allocator to verify cleanup
+        from tests.test_failing_components import TrackingResourceAllocator
+        
+        tracking_allocator = TrackingResourceAllocator()
+        orchestrator.resource_allocator = tracking_allocator
 
         # Create pipeline with failing task
         pipeline = Pipeline(id="error_level_test", name="Error Level Test")
         task = Task(id="error_task", name="Error Task", action="generate")
         pipeline.add_task(task)
 
-        # Mock control system to fail
-        orchestrator.control_system.execute_task = AsyncMock(
-            side_effect=Exception("Task failed")
-        )
+        # Configure control system to fail
+        from tests.test_failing_components import FailingControlSystem
+        
+        failing_control = FailingControlSystem()
+        failing_control.set_failure_mode(True, "Task failed")
+        orchestrator.control_system = failing_control
 
         # Execute level
         context = {"execution_id": "error_test_123"}
@@ -529,7 +547,7 @@ class TestOrchestratorComprehensiveCoverage:
         # Should handle error and clean up resources
         assert "error_task" in results
         assert "error" in results["error_task"]
-        mock_allocator.release_resources.assert_called_once_with("error_task")
+        assert tracking_allocator.was_released("error_task")
 
     @pytest.mark.asyncio
     async def test_yaml_file_execution_error_handling(self):
@@ -650,10 +668,8 @@ class TestOrchestratorComprehensiveCoverage:
             checkpoint_files = os.listdir(temp_dir)
             assert len(checkpoint_files) > 0
 
-            # Mock get_utilization for performance metrics
-            orchestrator.resource_allocator.get_utilization = AsyncMock(
-                return_value={"cpu_usage": 0.1}
-            )
+            # The resource allocator now has real get_utilization method
+            # No mocking needed
 
             # Test performance metrics
             metrics = await orchestrator.get_performance_metrics()
