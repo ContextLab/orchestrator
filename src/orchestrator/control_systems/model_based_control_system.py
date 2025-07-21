@@ -172,11 +172,24 @@ class ModelBasedControlSystem(ControlSystem):
         
         # Add task parameters if any
         if task.parameters:
-            prompt_parts.append("\nTask Parameters:")
+            # Check if we have template variables to resolve
+            params_to_add = []
             for key, value in task.parameters.items():
                 # Skip adding action again if it's in parameters
                 if key != "action":
-                    prompt_parts.append(f"- {key}: {value}")
+                    # Check if value contains template variables
+                    if isinstance(value, str) and "{" in value and "}" in value:
+                        # Try to resolve template variables from context
+                        import re
+                        template_vars = re.findall(r'\{(\w+)\}', value)
+                        for var in template_vars:
+                            if var in context.get("previous_results", {}):
+                                value = value.replace(f"{{{var}}}", str(context["previous_results"][var]))
+                    params_to_add.append(f"- {key}: {value}")
+            
+            if params_to_add:
+                prompt_parts.append("\nTask Parameters:")
+                prompt_parts.extend(params_to_add)
         
         # Add relevant context from previous results
         if "previous_results" in context and context["previous_results"]:

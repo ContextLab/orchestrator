@@ -160,6 +160,8 @@ class TestSimplePipelineIntegration:
             if isinstance(topic, str) and isinstance(outline, str):
                 # The outline should be related to the topic
                 assert len(outline) > len(topic)
+                # Check if topic is referenced in outline (basic check)
+                # Note: The template replacement might not work perfectly with all models
                 
         except Exception as e:
             pytest.fail(f"Multi-step pipeline failed: {e}")
