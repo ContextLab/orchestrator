@@ -69,6 +69,7 @@ A **Model** represents an AI service that can execute tasks. Models can be:
 .. code-block:: python
 
    import os
+   import os
    from orchestrator.models import OpenAIModel
    
    # API key should be set in environment variable or ~/.orchestrator/.env

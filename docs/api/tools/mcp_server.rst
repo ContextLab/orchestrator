@@ -459,6 +459,7 @@ AI Model Integration
 .. code-block:: python
 
    async def ai_model_with_tools():
+       import os
        from orchestrator.integrations.openai_model import OpenAIModel
        
        # Setup MCP server
@@ -468,7 +469,7 @@ AI Model Integration
        # Setup AI model with tool access
        model = OpenAIModel(
            model_name="gpt-4",
-           api_key="your-api-key"
+           api_key=os.environ.get("OPENAI_API_KEY")
        )
        
        # Model can now discover and use tools

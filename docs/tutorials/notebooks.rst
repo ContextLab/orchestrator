@@ -221,6 +221,7 @@ This tutorial covers production-ready model orchestration:
 
    # Example from Tutorial 03
    import os
+   import os
    from orchestrator.models.openai_model import OpenAIModel
    from orchestrator.models.anthropic_model import AnthropicModel
    

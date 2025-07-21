@@ -107,6 +107,7 @@ The tutorials use mock models for demonstration. To work with real AI models:
 ### OpenAI Integration
 ```python
 import os
+import os
 from orchestrator.integrations.openai_model import OpenAIModel
 
 # API key should be set in environment variable or ~/.orchestrator/.env
@@ -119,6 +120,7 @@ model = OpenAIModel(
 
 ### Anthropic Integration
 ```python
+import os
 import os
 from orchestrator.integrations.anthropic_model import AnthropicModel
 

@@ -178,6 +178,7 @@ model = await registry.select_model({
 #### OpenAIModel
 
 ```python
+import os
 from orchestrator.integrations.openai_model import OpenAIModel
 
 model = OpenAIModel(
@@ -191,6 +192,7 @@ model = OpenAIModel(
 #### AnthropicModel
 
 ```python
+import os
 from orchestrator.integrations.anthropic_model import AnthropicModel
 
 model = AnthropicModel(
@@ -202,6 +204,7 @@ model = AnthropicModel(
 #### GoogleModel
 
 ```python
+import os
 from orchestrator.integrations.google_model import GoogleModel
 
 model = GoogleModel(

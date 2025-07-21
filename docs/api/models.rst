@@ -24,6 +24,7 @@ The Orchestrator model system provides a unified interface for working with diff
 
 .. code-block:: python
 
+    import os
     from orchestrator.models.model_registry import ModelRegistry
     from orchestrator.integrations.openai_model import OpenAIModel
     
@@ -31,7 +32,7 @@ The Orchestrator model system provides a unified interface for working with diff
     registry = ModelRegistry()
     
     # Register models
-    gpt4 = OpenAIModel(name="gpt-4", api_key="your-key")
+    gpt4 = OpenAIModel(name="gpt-4", api_key=os.environ.get("OPENAI_API_KEY"))
     registry.register_model(gpt4)
     
     # Select best model for task
@@ -59,6 +60,7 @@ The ModelRegistry manages all available models and provides intelligent selectio
 
 .. code-block:: python
 
+    import os
     from orchestrator.models.model_registry import ModelRegistry
     from orchestrator.integrations.openai_model import OpenAIModel
     from orchestrator.integrations.anthropic_model import AnthropicModel
@@ -72,9 +74,9 @@ The ModelRegistry manages all available models and provides intelligent selectio
     
     # Register multiple models
     models = [
-        OpenAIModel(name="gpt-4", api_key="openai-key"),
-        OpenAIModel(name="gpt-3.5-turbo", api_key="openai-key"),
-        AnthropicModel(name="claude-3-opus", api_key="anthropic-key")
+        OpenAIModel(name="gpt-4", api_key=os.environ.get("OPENAI_API_KEY")),
+        OpenAIModel(name="gpt-3.5-turbo", api_key=os.environ.get("OPENAI_API_KEY")),
+        AnthropicModel(name="claude-3-opus", api_key=os.environ.get("ANTHROPIC_API_KEY"))
     ]
     
     for model in models:

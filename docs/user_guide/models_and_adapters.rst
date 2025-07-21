@@ -94,6 +94,7 @@ OpenAI Models
 .. code-block:: python
 
    import os
+   import os
    from orchestrator.models.openai_model import OpenAIModel
    
    # API key should be set in environment variable or ~/.orchestrator/.env
@@ -108,6 +109,7 @@ Anthropic Models
 
 .. code-block:: python
 
+   import os
    import os
    from orchestrator.models.anthropic_model import AnthropicModel
    
