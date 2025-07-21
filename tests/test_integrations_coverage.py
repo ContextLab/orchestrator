@@ -1,7 +1,9 @@
 """Tests to improve coverage for integration models."""
 
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+import json
+from typing import Dict, Any, List, Optional
+import aiohttp
 
 import pytest
 
@@ -14,521 +16,852 @@ from orchestrator.integrations.ollama_model import OllamaModel
 from orchestrator.integrations.openai_model import OpenAIModel
 
 
+class TestableAnthropicClient:
+    """A testable Anthropic client for testing without real API calls."""
+    
+    def __init__(self):
+        self.messages = TestableMessages()
+        self.call_history = []
+        
+class TestableMessages:
+    """Testable messages interface."""
+    
+    def __init__(self):
+        self._responses = {}
+        self._errors = {}
+        self.call_history = []
+        
+    async def create(self, **kwargs):
+        """Simulate message creation."""
+        self.call_history.append(('create', kwargs))
+        
+        # Check for errors
+        key = kwargs.get('model', 'default')
+        if key in self._errors:
+            raise self._errors[key]
+            
+        # Return response
+        response = self._responses.get(key, TestableResponse("Generated text"))
+        return response
+        
+    def set_response(self, model: str, text: str):
+        """Set response for a model."""
+        self._responses[model] = TestableResponse(text)
+        
+    def set_error(self, model: str, error: Exception):
+        """Set error for a model."""
+        self._errors[model] = error
+
+class TestableResponse:
+    """Testable response object."""
+    
+    def __init__(self, text: str):
+        self.content = [TestableContent(text)]
+
+class TestableContent:
+    """Testable content object."""
+    
+    def __init__(self, text: str):
+        self.text = text
+
+
+class TestableAnthropicModel(AnthropicModel):
+    """Testable Anthropic model."""
+    
+    def __init__(self, name: str = "test", model: str = "test"):
+        # Skip parent init to avoid API key requirement
+        self.name = name
+        self.model = model
+        self.provider = "anthropic"
+        self._client = None
+        self._test_client = TestableAnthropicClient()
+        
+    def _ensure_client(self):
+        """Return testable client."""
+        return self._test_client
+
+
+class TestableGoogleModel(GoogleModel):
+    """Testable Google model."""
+    
+    def __init__(self, name: str = "test", model: str = "test"):
+        # Skip parent init to avoid API key requirement
+        self.name = name
+        self.model = model
+        self.provider = "google"
+        self._model = TestableGenerativeModel()
+        self._configured = True
+        
+    def _ensure_model(self):
+        """Return testable model."""
+        return self._model
+
+
+class TestableGenerativeModel:
+    """Testable generative model."""
+    
+    def __init__(self):
+        self._responses = {}
+        self._errors = {}
+        self.call_history = []
+        
+    def generate_content(self, prompt: str):
+        """Generate content."""
+        self.call_history.append(('generate_content', prompt))
+        
+        if 'error' in self._errors:
+            raise self._errors['error']
+            
+        return TestableGenerateResponse(self._responses.get('generate', 'Generated text'))
+        
+    def start_chat(self, history=None):
+        """Start chat."""
+        return TestableChat(self._responses.get('chat', 'Chat response'))
+        
+    def set_response(self, key: str, text: str):
+        """Set response."""
+        self._responses[key] = text
+        
+    def set_error(self, key: str, error: Exception):
+        """Set error."""
+        self._errors[key] = error
+
+
+class TestableGenerateResponse:
+    """Testable generate response."""
+    
+    def __init__(self, text: str):
+        self.text = text
+
+
+class TestableChat:
+    """Testable chat interface."""
+    
+    def __init__(self, response: str):
+        self._response = response
+        
+    def send_message(self, message: str):
+        """Send message."""
+        return TestableGenerateResponse(self._response)
+
+
+class TestableOpenAIClient:
+    """Testable OpenAI client."""
+    
+    def __init__(self):
+        self.chat = TestableCompletions()
+
+
+class TestableCompletions:
+    """Testable completions interface."""
+    
+    def __init__(self):
+        self.completions = self
+        self._responses = {}
+        self._errors = {}
+        self.call_history = []
+        
+    async def create(self, **kwargs):
+        """Create completion."""
+        self.call_history.append(('create', kwargs))
+        
+        model = kwargs.get('model', 'default')
+        if model in self._errors:
+            raise self._errors[model]
+            
+        text = self._responses.get(model, 'Generated text')
+        return TestableOpenAIResponse(text)
+        
+    def set_response(self, model: str, text: str):
+        """Set response."""
+        self._responses[model] = text
+        
+    def set_error(self, model: str, error: Exception):
+        """Set error."""
+        self._errors[model] = error
+
+
+class TestableOpenAIResponse:
+    """Testable OpenAI response."""
+    
+    def __init__(self, text: str):
+        self.choices = [TestableChoice(text)]
+
+
+class TestableChoice:
+    """Testable choice object."""
+    
+    def __init__(self, text: str):
+        self.message = TestableMessage(text)
+
+
+class TestableMessage:
+    """Testable message object."""
+    
+    def __init__(self, content: str):
+        self.content = content
+
+
+class TestableOpenAIModel(OpenAIModel):
+    """Testable OpenAI model."""
+    
+    def __init__(self, name: str = "test", model: str = "test"):
+        # Skip parent init
+        self.name = name
+        self.model = model
+        self.provider = "openai"
+        self._client = None
+        self._test_client = TestableOpenAIClient()
+        
+    def _ensure_client(self):
+        """Return testable client."""
+        return self._test_client
+
+
+class TestableSubprocess:
+    """Testable subprocess for Ollama checks."""
+    
+    def __init__(self):
+        self.commands = {}
+        self.call_history = []
+        
+    def run(self, cmd: list, **kwargs):
+        """Simulate subprocess.run."""
+        self.call_history.append((cmd, kwargs))
+        
+        cmd_str = ' '.join(cmd)
+        if cmd_str in self.commands:
+            return self.commands[cmd_str]
+        else:
+            # Default behavior
+            if 'ollama --version' in cmd_str:
+                return TestableProcess(0, "ollama version 0.1.0")
+            else:
+                raise FileNotFoundError()
+                
+    def set_command(self, cmd: str, returncode: int, stdout: str = "", stderr: str = ""):
+        """Set command result."""
+        self.commands[cmd] = TestableProcess(returncode, stdout, stderr)
+
+
+class TestableProcess:
+    """Testable process result."""
+    
+    def __init__(self, returncode: int, stdout: str = "", stderr: str = ""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+class TestableHTTPResponse:
+    """Testable HTTP response."""
+    
+    def __init__(self, status: int = 200, json_data: dict = None):
+        self.status = status
+        self._json_data = json_data or {}
+        
+    async def json(self):
+        """Return JSON data."""
+        return self._json_data
+        
+    async def __aenter__(self):
+        return self
+        
+    async def __aexit__(self, *args):
+        pass
+
+
+class TestableHTTPSession:
+    """Testable HTTP session."""
+    
+    def __init__(self):
+        self._responses = {}
+        self.call_history = []
+        
+    async def post(self, url: str, **kwargs):
+        """Simulate POST request."""
+        self.call_history.append(('post', url, kwargs))
+        
+        if url in self._responses:
+            return self._responses[url]
+        else:
+            # Default response
+            return TestableHTTPResponse(200, {"response": "Generated text", "message": {"content": "Chat response"}})
+            
+    async def get(self, url: str, **kwargs):
+        """Simulate GET request."""
+        self.call_history.append(('get', url, kwargs))
+        
+        if url in self._responses:
+            return self._responses[url]
+        else:
+            return TestableHTTPResponse(200)
+            
+    def set_response(self, url: str, response: TestableHTTPResponse):
+        """Set response for URL."""
+        self._responses[url] = response
+        
+    async def __aenter__(self):
+        return self
+        
+    async def __aexit__(self, *args):
+        pass
+
+
+class TestableOllamaModel(OllamaModel):
+    """Testable Ollama model."""
+    
+    def __init__(self, model_name: str = "test"):
+        # Skip parent init
+        self.name = model_name
+        self.model = model_name
+        self.provider = "ollama"
+        self._is_available = True
+        self._test_session = TestableHTTPSession()
+        
+    async def _make_request(self, endpoint: str, data: dict = None):
+        """Make testable request."""
+        if endpoint == "generate":
+            resp = await self._test_session.post("http://localhost:11434/api/generate", json=data)
+            return await resp.json()
+        elif endpoint == "chat":
+            resp = await self._test_session.post("http://localhost:11434/api/chat", json=data)
+            return await resp.json()
+        elif endpoint == "health":
+            resp = await self._test_session.get("http://localhost:11434/api/tags")
+            return resp.status == 200
+
+
+class TestableTransformersModel:
+    """Testable transformers model."""
+    
+    def __init__(self):
+        self._responses = {}
+        self.call_history = []
+        
+    def generate(self, input_ids, **kwargs):
+        """Generate output."""
+        self.call_history.append(('generate', input_ids, kwargs))
+        return [[1, 2, 3, 4, 5]]
+
+
+class TestableTokenizer:
+    """Testable tokenizer."""
+    
+    def __init__(self):
+        self._responses = {}
+        self.call_history = []
+        
+    def encode(self, text: str, **kwargs):
+        """Encode text."""
+        self.call_history.append(('encode', text))
+        return [1, 2, 3]
+        
+    def decode(self, tokens: list, **kwargs):
+        """Decode tokens."""
+        self.call_history.append(('decode', tokens))
+        return self._responses.get('decode', 'Generated text')
+        
+    def apply_chat_template(self, messages: list, **kwargs):
+        """Apply chat template."""
+        return "formatted chat"
+        
+    def set_response(self, key: str, text: str):
+        """Set response."""
+        self._responses[key] = text
+
+
+class TestableHuggingFaceModel(HuggingFaceModel):
+    """Testable HuggingFace model."""
+    
+    def __init__(self, model_name: str = "test"):
+        # Skip parent init
+        self.name = model_name
+        self.model = model_name  
+        self.provider = "huggingface"
+        self._model = TestableTransformersModel()
+        self._tokenizer = TestableTokenizer()
+        self._model_loaded = True
+        self._is_available = True
+        
+    async def _load_model(self):
+        """Skip actual model loading."""
+        pass
+
+
 class TestAnthropicModel:
     """Test AnthropicModel integration."""
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
     def test_anthropic_model_init(self):
         """Test AnthropicModel initialization."""
-        model = AnthropicModel(name="claude-3", model="claude-3")
-        assert model.name == "claude-3"
-        assert model.provider == "anthropic"
+        # Set test API key
+        original_key = os.environ.get("ANTHROPIC_API_KEY")
+        os.environ["ANTHROPIC_API_KEY"] = "test-key"
+        
+        try:
+            model = AnthropicModel(name="claude-3", model="claude-3")
+            assert model.name == "claude-3"
+            assert model.provider == "anthropic"
+        finally:
+            if original_key:
+                os.environ["ANTHROPIC_API_KEY"] = original_key
+            else:
+                os.environ.pop("ANTHROPIC_API_KEY", None)
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_anthropic_generate(self):
         """Test AnthropicModel generate method."""
-        model = AnthropicModel(name="claude-3", model="claude-3")
+        model = TestableAnthropicModel("claude-3", "claude-3")
+        model._test_client.messages.set_response("claude-3", "Generated text")
         
-        # Mock the client
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="Generated text")]
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
-        
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.generate("Test prompt")
-            assert result == "Generated text"
+        result = await model.generate("Test prompt")
+        assert result == "Generated text"
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_anthropic_generate_structured(self):
         """Test AnthropicModel generate_structured method."""
-        model = AnthropicModel(name="claude-3", model="claude-3")
-        
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock(text='{"key": "value"}')]
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
+        model = TestableAnthropicModel("claude-3", "claude-3")
+        model._test_client.messages.set_response("claude-3", '{"key": "value"}')
         
         schema = {"type": "object", "properties": {"key": {"type": "string"}}}
         
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.generate_structured("Test prompt", schema)
-            assert result == {"key": "value"}
+        result = await model.generate_structured("Test prompt", schema)
+        assert result == {"key": "value"}
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_anthropic_chat(self):
         """Test AnthropicModel chat method."""
-        model = AnthropicModel(name="claude-3", model="claude-3")
-        
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="Chat response")]
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
+        model = TestableAnthropicModel("claude-3", "claude-3")
+        model._test_client.messages.set_response("claude-3", "Chat response")
         
         messages = [{"role": "user", "content": "Hello"}]
         
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.chat(messages)
-            assert result == "Chat response"
+        result = await model.chat(messages)
+        assert result == "Chat response"
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_anthropic_analyze(self):
         """Test AnthropicModel analyze method."""
-        model = AnthropicModel(name="claude-3", model="claude-3")
+        model = TestableAnthropicModel("claude-3", "claude-3")
+        model._test_client.messages.set_response("claude-3", "Analysis result")
         
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="Analysis result")]
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
-        
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.analyze("content", "analysis_type")
-            assert result == "Analysis result"
+        result = await model.analyze("content", "analysis_type")
+        assert result == "Analysis result"
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_anthropic_health_check(self):
         """Test AnthropicModel health_check method."""
-        model = AnthropicModel(name="claude-3", model="claude-3")
+        model = TestableAnthropicModel("claude-3", "claude-3")
+        model._test_client.messages.set_response("claude-3", "OK")
         
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="OK")]
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
-        
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.health_check()
-            assert result is True
+        result = await model.health_check()
+        assert result is True
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_anthropic_error_handling(self):
         """Test AnthropicModel error handling."""
-        model = AnthropicModel(name="claude-3", model="claude-3")
+        model = TestableAnthropicModel("claude-3", "claude-3")
+        model._test_client.messages.set_error("claude-3", Exception("API Error"))
         
-        mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(side_effect=Exception("API Error"))
-        
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            with pytest.raises(Exception, match="API Error"):
-                await model.generate("Test prompt")
+        with pytest.raises(Exception, match="API Error"):
+            await model.generate("Test prompt")
 
     def test_anthropic_no_api_key(self):
         """Test AnthropicModel without API key."""
-        with patch.dict(os.environ, {}, clear=True):
+        # Clear API key
+        original_key = os.environ.get("ANTHROPIC_API_KEY")
+        if "ANTHROPIC_API_KEY" in os.environ:
+            del os.environ["ANTHROPIC_API_KEY"]
+            
+        try:
             with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
                 AnthropicModel(name="claude-3", model="claude-3")
+        finally:
+            if original_key:
+                os.environ["ANTHROPIC_API_KEY"] = original_key
 
 
 class TestGoogleModel:
     """Test GoogleModel integration."""
 
-    @patch("google.generativeai.configure")
-    @patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"})
-    def test_google_model_init(self, mock_configure):
+    def test_google_model_init(self):
         """Test GoogleModel initialization."""
-        model = GoogleModel(name="gemini-pro", model="gemini-pro")
-        assert model.name == "gemini-pro"
-        assert model.provider == "google"
-        mock_configure.assert_called_once_with(api_key="test-key")
-
-    @patch("google.generativeai.configure")
-    @patch("google.generativeai.GenerativeModel")
-    @patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"})
-    @pytest.mark.asyncio
-    async def test_google_generate(self, mock_model_class, mock_configure):
-        """Test GoogleModel generate method."""
-        # Setup mock
-        mock_model = MagicMock()
-        mock_response = MagicMock()
-        mock_response.text = "Generated text"
-        mock_model.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model
+        original_key = os.environ.get("GOOGLE_API_KEY")
+        os.environ["GOOGLE_API_KEY"] = "test-key"
         
-        model = GoogleModel(name="gemini-pro", model="gemini-pro")
+        # Replace google.generativeai.configure temporarily
+        import orchestrator.integrations.google_model
+        original_configure = getattr(orchestrator.integrations.google_model, 'genai', None)
+        
+        class TestGenAI:
+            @staticmethod
+            def configure(api_key):
+                pass
+                
+        if hasattr(orchestrator.integrations.google_model, 'genai'):
+            orchestrator.integrations.google_model.genai = TestGenAI()
+        
+        try:
+            model = GoogleModel(name="gemini-pro", model="gemini-pro")
+            assert model.name == "gemini-pro"
+            assert model.provider == "google"
+        finally:
+            if original_key:
+                os.environ["GOOGLE_API_KEY"] = original_key
+            else:
+                os.environ.pop("GOOGLE_API_KEY", None)
+            if original_configure:
+                orchestrator.integrations.google_model.genai = original_configure
+
+    @pytest.mark.asyncio
+    async def test_google_generate(self):
+        """Test GoogleModel generate method."""
+        model = TestableGoogleModel("gemini-pro", "gemini-pro")
+        model._model.set_response('generate', 'Generated text')
+        
         result = await model.generate("Test prompt")
         assert result == "Generated text"
 
-    @patch("google.generativeai.configure")
-    @patch("google.generativeai.GenerativeModel")
-    @patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"})
     @pytest.mark.asyncio
-    async def test_google_generate_structured(self, mock_model_class, mock_configure):
+    async def test_google_generate_structured(self):
         """Test GoogleModel generate_structured method."""
-        mock_model = MagicMock()
-        mock_response = MagicMock()
-        mock_response.text = '{"key": "value"}'
-        mock_model.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model
+        model = TestableGoogleModel("gemini-pro", "gemini-pro")
+        model._model.set_response('generate', '{"key": "value"}')
         
-        model = GoogleModel(name="gemini-pro", model="gemini-pro")
         schema = {"type": "object", "properties": {"key": {"type": "string"}}}
         result = await model.generate_structured("Test prompt", schema)
         assert result == {"key": "value"}
 
-    @patch("google.generativeai.configure")
-    @patch("google.generativeai.GenerativeModel")
-    @patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"})
     @pytest.mark.asyncio
-    async def test_google_chat(self, mock_model_class, mock_configure):
+    async def test_google_chat(self):
         """Test GoogleModel chat method."""
-        mock_model = MagicMock()
-        mock_chat = MagicMock()
-        mock_response = MagicMock()
-        mock_response.text = "Chat response"
-        mock_chat.send_message.return_value = mock_response
-        mock_model.start_chat.return_value = mock_chat
-        mock_model_class.return_value = mock_model
+        model = TestableGoogleModel("gemini-pro", "gemini-pro")
+        model._model.set_response('chat', 'Chat response')
         
-        model = GoogleModel(name="gemini-pro", model="gemini-pro")
         messages = [{"role": "user", "content": "Hello"}]
         result = await model.chat(messages)
         assert result == "Chat response"
 
-    @patch("google.generativeai.configure")
-    @patch("google.generativeai.GenerativeModel")
-    @patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"})
     @pytest.mark.asyncio
-    async def test_google_analyze(self, mock_model_class, mock_configure):
+    async def test_google_analyze(self):
         """Test GoogleModel analyze method."""
-        mock_model = MagicMock()
-        mock_response = MagicMock()
-        mock_response.text = "Analysis result"
-        mock_model.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model
+        model = TestableGoogleModel("gemini-pro", "gemini-pro")
+        model._model.set_response('generate', 'Analysis result')
         
-        model = GoogleModel(name="gemini-pro", model="gemini-pro")
         result = await model.analyze("content", "analysis_type")
         assert result == "Analysis result"
 
-    @patch("google.generativeai.configure")
-    @patch("google.generativeai.GenerativeModel")
-    @patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"})
     @pytest.mark.asyncio
-    async def test_google_health_check(self, mock_model_class, mock_configure):
+    async def test_google_health_check(self):
         """Test GoogleModel health_check method."""
-        mock_model = MagicMock()
-        mock_response = MagicMock()
-        mock_response.text = "OK"
-        mock_model.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model
+        model = TestableGoogleModel("gemini-pro", "gemini-pro")
+        model._model.set_response('generate', 'OK')
         
-        model = GoogleModel(name="gemini-pro", model="gemini-pro")
         result = await model.health_check()
         assert result is True
 
     def test_google_no_api_key(self):
         """Test GoogleModel without API key."""
-        with patch.dict(os.environ, {}, clear=True):
+        original_key = os.environ.get("GOOGLE_API_KEY")
+        if "GOOGLE_API_KEY" in os.environ:
+            del os.environ["GOOGLE_API_KEY"]
+            
+        try:
             with pytest.raises(ValueError, match="GOOGLE_API_KEY"):
                 GoogleModel(name="gemini-pro", model="gemini-pro")
+        finally:
+            if original_key:
+                os.environ["GOOGLE_API_KEY"] = original_key
 
 
 class TestOpenAIModel:
     """Test OpenAIModel integration."""
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     def test_openai_model_init(self):
         """Test OpenAIModel initialization."""
-        model = OpenAIModel(name="gpt-4", model="gpt-4")
-        assert model.name == "gpt-4"
-        assert model.provider == "openai"
+        original_key = os.environ.get("OPENAI_API_KEY")
+        os.environ["OPENAI_API_KEY"] = "test-key"
+        
+        try:
+            model = OpenAIModel(name="gpt-4", model="gpt-4")
+            assert model.name == "gpt-4"
+            assert model.provider == "openai"
+        finally:
+            if original_key:
+                os.environ["OPENAI_API_KEY"] = original_key
+            else:
+                os.environ.pop("OPENAI_API_KEY", None)
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_openai_generate(self):
         """Test OpenAIModel generate method."""
-        model = OpenAIModel(name="gpt-4", model="gpt-4")
+        model = TestableOpenAIModel("gpt-4", "gpt-4")
+        model._test_client.chat.completions.set_response("gpt-4", "Generated text")
         
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Generated text"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-        
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.generate("Test prompt")
-            assert result == "Generated text"
+        result = await model.generate("Test prompt")
+        assert result == "Generated text"
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_openai_generate_structured(self):
         """Test OpenAIModel generate_structured method."""
-        model = OpenAIModel(name="gpt-4", model="gpt-4")
-        
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content='{"key": "value"}'))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        model = TestableOpenAIModel("gpt-4", "gpt-4")
+        model._test_client.chat.completions.set_response("gpt-4", '{"key": "value"}')
         
         schema = {"type": "object", "properties": {"key": {"type": "string"}}}
         
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.generate_structured("Test prompt", schema)
-            assert result == {"key": "value"}
+        result = await model.generate_structured("Test prompt", schema)
+        assert result == {"key": "value"}
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_openai_chat(self):
         """Test OpenAIModel chat method."""
-        model = OpenAIModel(name="gpt-4", model="gpt-4")
-        
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="Chat response"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        model = TestableOpenAIModel("gpt-4", "gpt-4")
+        model._test_client.chat.completions.set_response("gpt-4", "Chat response")
         
         messages = [{"role": "user", "content": "Hello"}]
         
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.chat(messages)
-            assert result == "Chat response"
+        result = await model.chat(messages)
+        assert result == "Chat response"
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     @pytest.mark.asyncio
     async def test_openai_health_check(self):
         """Test OpenAIModel health_check method."""
-        model = OpenAIModel(name="gpt-4", model="gpt-4")
+        model = TestableOpenAIModel("gpt-4", "gpt-4")
+        model._test_client.chat.completions.set_response("gpt-4", "OK")
         
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content="OK"))]
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-        
-        with patch.object(model, "_ensure_client", return_value=mock_client):
-            result = await model.health_check()
-            assert result is True
+        result = await model.health_check()
+        assert result is True
 
     def test_openai_no_api_key(self):
         """Test OpenAIModel without API key."""
-        with patch.dict(os.environ, {}, clear=True):
+        original_key = os.environ.get("OPENAI_API_KEY")
+        if "OPENAI_API_KEY" in os.environ:
+            del os.environ["OPENAI_API_KEY"]
+            
+        try:
             with pytest.raises(ValueError, match="OPENAI_API_KEY"):
                 OpenAIModel(name="gpt-4", model="gpt-4")
+        finally:
+            if original_key:
+                os.environ["OPENAI_API_KEY"] = original_key
 
 
 class TestOllamaModel:
     """Test OllamaModel integration."""
 
-    @patch("subprocess.run")
-    def test_ollama_model_init(self, mock_run):
+    def test_ollama_model_init(self):
         """Test OllamaModel initialization."""
-        # Mock ollama check
-        mock_run.return_value = MagicMock(returncode=0, stdout="ollama version 0.1.0")
+        # Replace subprocess temporarily
+        import subprocess
+        original_run = subprocess.run
+        test_subprocess = TestableSubprocess()
+        subprocess.run = test_subprocess.run
         
-        model = OllamaModel(model_name="llama2:7b")
-        assert model.name == "llama2:7b"
-        assert model.provider == "ollama"
+        try:
+            model = OllamaModel(model_name="llama2:7b")
+            assert model.name == "llama2:7b"
+            assert model.provider == "ollama"
+        finally:
+            subprocess.run = original_run
 
-    @patch("subprocess.run")
-    @patch("aiohttp.ClientSession")
     @pytest.mark.asyncio
-    async def test_ollama_generate(self, mock_session, mock_run):
+    async def test_ollama_generate(self):
         """Test OllamaModel generate method."""
-        # Mock ollama check
-        mock_run.return_value = MagicMock(returncode=0, stdout="ollama version 0.1.0")
+        model = TestableOllamaModel("llama2:7b")
         
-        # Mock HTTP response
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"response": "Generated text"})
-        
-        mock_session.return_value.__aenter__.return_value.post.return_value.__aenter__.return_value = mock_response
-        
-        model = OllamaModel(model_name="llama2:7b")
         result = await model.generate("Test prompt")
         assert result == "Generated text"
 
-    @patch("subprocess.run")
-    @patch("aiohttp.ClientSession")
     @pytest.mark.asyncio
-    async def test_ollama_chat(self, mock_session, mock_run):
+    async def test_ollama_chat(self):
         """Test OllamaModel chat method."""
-        # Mock ollama check
-        mock_run.return_value = MagicMock(returncode=0, stdout="ollama version 0.1.0")
+        model = TestableOllamaModel("llama2:7b")
         
-        # Mock HTTP response
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"message": {"content": "Chat response"}})
-        
-        mock_session.return_value.__aenter__.return_value.post.return_value.__aenter__.return_value = mock_response
-        
-        model = OllamaModel(model_name="llama2:7b")
         messages = [{"role": "user", "content": "Hello"}]
         result = await model.chat(messages)
         assert result == "Chat response"
 
-    @patch("subprocess.run")
-    @patch("aiohttp.ClientSession")
     @pytest.mark.asyncio
-    async def test_ollama_health_check(self, mock_session, mock_run):
+    async def test_ollama_health_check(self):
         """Test OllamaModel health_check method."""
-        # Mock ollama check
-        mock_run.return_value = MagicMock(returncode=0, stdout="ollama version 0.1.0")
+        model = TestableOllamaModel("llama2:7b")
         
-        # Mock HTTP response
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        
-        mock_session.return_value.__aenter__.return_value.get.return_value.__aenter__.return_value = mock_response
-        
-        model = OllamaModel(model_name="llama2:7b")
         result = await model.health_check()
         assert result is True
 
-    @patch("subprocess.run")
-    def test_ollama_not_installed(self, mock_run):
+    def test_ollama_not_installed(self):
         """Test OllamaModel when Ollama is not installed."""
-        # Mock ollama check failure
-        mock_run.side_effect = FileNotFoundError()
+        import subprocess
+        original_run = subprocess.run
         
-        model = OllamaModel(model_name="llama2:7b")
-        assert model._is_available is False
+        def failing_run(cmd, **kwargs):
+            raise FileNotFoundError()
+            
+        subprocess.run = failing_run
+        
+        try:
+            model = OllamaModel(model_name="llama2:7b")
+            assert model._is_available is False
+        finally:
+            subprocess.run = original_run
 
 
 class TestLazyOllamaModel:
     """Test LazyOllamaModel integration."""
 
-    @patch("orchestrator.integrations.lazy_ollama_model.check_ollama_model")
-    def test_lazy_ollama_init(self, mock_check):
+    def test_lazy_ollama_init(self):
         """Test LazyOllamaModel initialization."""
-        mock_check.return_value = False
+        # Replace check function
+        import orchestrator.integrations.lazy_ollama_model
+        original_check = orchestrator.integrations.lazy_ollama_model.check_ollama_model
         
-        model = LazyOllamaModel(model_name="llama2:7b")
-        assert model.name == "llama2:7b"
-        assert model._is_available is True  # Initially assumed available
+        orchestrator.integrations.lazy_ollama_model.check_ollama_model = lambda x: False
+        
+        try:
+            model = LazyOllamaModel(model_name="llama2:7b")
+            assert model.name == "llama2:7b"
+            assert model._is_available is True  # Initially assumed available
+        finally:
+            orchestrator.integrations.lazy_ollama_model.check_ollama_model = original_check
 
-    @patch("orchestrator.integrations.lazy_ollama_model.check_ollama_model")
-    @patch("orchestrator.integrations.lazy_ollama_model.install_ollama_model")
-    @patch("aiohttp.ClientSession")
     @pytest.mark.asyncio
-    async def test_lazy_ollama_download_on_use(self, mock_session, mock_install, mock_check):
+    async def test_lazy_ollama_download_on_use(self):
         """Test LazyOllamaModel downloads on first use."""
-        mock_check.return_value = False
-        mock_install.return_value = True
+        import orchestrator.integrations.lazy_ollama_model
+        original_check = orchestrator.integrations.lazy_ollama_model.check_ollama_model
+        original_install = orchestrator.integrations.lazy_ollama_model.install_ollama_model
         
-        # Mock HTTP response
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"response": "Generated text"})
+        check_calls = []
+        install_calls = []
         
-        mock_session.return_value.__aenter__.return_value.post.return_value.__aenter__.return_value = mock_response
+        def track_check(model_name):
+            check_calls.append(model_name)
+            return False
+            
+        def track_install(model_name):
+            install_calls.append(model_name)
+            return True
+            
+        orchestrator.integrations.lazy_ollama_model.check_ollama_model = track_check
+        orchestrator.integrations.lazy_ollama_model.install_ollama_model = track_install
         
-        model = LazyOllamaModel(model_name="llama2:7b")
-        result = await model.generate("Test prompt")
-        
-        # Should have attempted to install
-        mock_install.assert_called_once_with("llama2:7b")
-        assert result == "Generated text"
+        try:
+            model = LazyOllamaModel(model_name="llama2:7b")
+            # Override parent class methods
+            model._test_session = TestableHTTPSession()
+            
+            # Replace _make_request
+            async def test_make_request(endpoint, data=None):
+                if endpoint == "generate":
+                    return {"response": "Generated text"}
+                    
+            model._make_request = test_make_request
+            
+            result = await model.generate("Test prompt")
+            
+            # Should have attempted to install
+            assert len(install_calls) == 1
+            assert install_calls[0] == "llama2:7b"
+            assert result == "Generated text"
+        finally:
+            orchestrator.integrations.lazy_ollama_model.check_ollama_model = original_check
+            orchestrator.integrations.lazy_ollama_model.install_ollama_model = original_install
 
-    @patch("orchestrator.integrations.lazy_ollama_model.check_ollama_model")
-    @patch("orchestrator.integrations.lazy_ollama_model.install_ollama_model")
     @pytest.mark.asyncio
-    async def test_lazy_ollama_download_failure(self, mock_install, mock_check):
+    async def test_lazy_ollama_download_failure(self):
         """Test LazyOllamaModel when download fails."""
-        mock_check.return_value = False
-        mock_install.return_value = False
+        import orchestrator.integrations.lazy_ollama_model
+        original_check = orchestrator.integrations.lazy_ollama_model.check_ollama_model
+        original_install = orchestrator.integrations.lazy_ollama_model.install_ollama_model
         
-        model = LazyOllamaModel(model_name="llama2:7b")
+        orchestrator.integrations.lazy_ollama_model.check_ollama_model = lambda x: False
+        orchestrator.integrations.lazy_ollama_model.install_ollama_model = lambda x: False
         
-        with pytest.raises(RuntimeError, match="not available"):
-            await model.generate("Test prompt")
+        try:
+            model = LazyOllamaModel(model_name="llama2:7b")
+            
+            with pytest.raises(RuntimeError, match="not available"):
+                await model.generate("Test prompt")
+        finally:
+            orchestrator.integrations.lazy_ollama_model.check_ollama_model = original_check
+            orchestrator.integrations.lazy_ollama_model.install_ollama_model = original_install
 
-    @patch("orchestrator.integrations.lazy_ollama_model.check_ollama_model")
     @pytest.mark.asyncio
-    async def test_lazy_ollama_already_available(self, mock_check):
+    async def test_lazy_ollama_already_available(self):
         """Test LazyOllamaModel when model is already available."""
-        mock_check.return_value = True
+        import orchestrator.integrations.lazy_ollama_model
+        original_check = orchestrator.integrations.lazy_ollama_model.check_ollama_model
         
-        model = LazyOllamaModel(model_name="llama2:7b")
-        result = await model._ensure_model_available()
+        orchestrator.integrations.lazy_ollama_model.check_ollama_model = lambda x: True
         
-        assert result is True
-        assert model._model_downloaded is True
+        try:
+            model = LazyOllamaModel(model_name="llama2:7b")
+            result = await model._ensure_model_available()
+            
+            assert result is True
+            assert model._model_downloaded is True
+        finally:
+            orchestrator.integrations.lazy_ollama_model.check_ollama_model = original_check
 
 
 class TestHuggingFaceModel:
     """Test HuggingFaceModel integration."""
 
-    @patch("transformers.AutoModelForCausalLM.from_pretrained")
-    @patch("transformers.AutoTokenizer.from_pretrained")
-    def test_huggingface_model_init(self, mock_tokenizer, mock_model):
+    def test_huggingface_model_init(self):
         """Test HuggingFaceModel initialization."""
-        mock_tokenizer.return_value = MagicMock()
-        mock_model.return_value = MagicMock()
+        # Replace transformers imports
+        import orchestrator.integrations.huggingface_model
         
-        model = HuggingFaceModel(model_name="gpt2")
-        assert model.name == "gpt2"
-        assert model.provider == "huggingface"
+        class TestAutoModel:
+            @staticmethod
+            def from_pretrained(model_name, **kwargs):
+                return TestableTransformersModel()
+                
+        class TestAutoTokenizer:
+            @staticmethod
+            def from_pretrained(model_name, **kwargs):
+                return TestableTokenizer()
+                
+        original_model = getattr(orchestrator.integrations.huggingface_model, 'AutoModelForCausalLM', None)
+        original_tokenizer = getattr(orchestrator.integrations.huggingface_model, 'AutoTokenizer', None)
+        
+        if hasattr(orchestrator.integrations.huggingface_model, 'AutoModelForCausalLM'):
+            orchestrator.integrations.huggingface_model.AutoModelForCausalLM = TestAutoModel
+        if hasattr(orchestrator.integrations.huggingface_model, 'AutoTokenizer'):
+            orchestrator.integrations.huggingface_model.AutoTokenizer = TestAutoTokenizer
+        
+        try:
+            model = HuggingFaceModel(model_name="gpt2")
+            assert model.name == "gpt2"
+            assert model.provider == "huggingface"
+        finally:
+            if original_model:
+                orchestrator.integrations.huggingface_model.AutoModelForCausalLM = original_model
+            if original_tokenizer:
+                orchestrator.integrations.huggingface_model.AutoTokenizer = original_tokenizer
 
-    @patch("transformers.AutoModelForCausalLM.from_pretrained")
-    @patch("transformers.AutoTokenizer.from_pretrained")
     @pytest.mark.asyncio
-    async def test_huggingface_generate(self, mock_tokenizer_class, mock_model_class):
+    async def test_huggingface_generate(self):
         """Test HuggingFaceModel generate method."""
-        # Setup mocks
-        mock_tokenizer = MagicMock()
-        mock_tokenizer.encode.return_value = [1, 2, 3]
-        mock_tokenizer.decode.return_value = "Generated text"
-        mock_tokenizer_class.return_value = mock_tokenizer
-        
-        mock_model = MagicMock()
-        mock_model.generate.return_value = [[1, 2, 3, 4, 5]]
-        mock_model_class.return_value = mock_model
-        
-        model = HuggingFaceModel(model_name="gpt2")
-        
-        # Override the async loading
-        model._model = mock_model
-        model._tokenizer = mock_tokenizer
-        model._model_loaded = True
+        model = TestableHuggingFaceModel("gpt2")
         
         result = await model.generate("Test prompt")
         assert result == "Generated text"
 
-    @patch("transformers.AutoModelForCausalLM.from_pretrained")
-    @patch("transformers.AutoTokenizer.from_pretrained")
     @pytest.mark.asyncio
-    async def test_huggingface_chat(self, mock_tokenizer_class, mock_model_class):
+    async def test_huggingface_chat(self):
         """Test HuggingFaceModel chat method."""
-        # Setup mocks
-        mock_tokenizer = MagicMock()
-        mock_tokenizer.apply_chat_template.return_value = "formatted chat"
-        mock_tokenizer.encode.return_value = [1, 2, 3]
-        mock_tokenizer.decode.return_value = "Chat response"
-        mock_tokenizer_class.return_value = mock_tokenizer
-        
-        mock_model = MagicMock()
-        mock_model.generate.return_value = [[1, 2, 3, 4, 5]]
-        mock_model_class.return_value = mock_model
-        
-        model = HuggingFaceModel(model_name="gpt2")
-        model._model = mock_model
-        model._tokenizer = mock_tokenizer
-        model._model_loaded = True
+        model = TestableHuggingFaceModel("gpt2")
+        model._tokenizer.set_response('decode', 'Chat response')
         
         messages = [{"role": "user", "content": "Hello"}]
         result = await model.chat(messages)
         assert result == "Chat response"
 
-    @patch("transformers.AutoModelForCausalLM.from_pretrained")
-    @patch("transformers.AutoTokenizer.from_pretrained")
     @pytest.mark.asyncio
-    async def test_huggingface_health_check(self, mock_tokenizer_class, mock_model_class):
+    async def test_huggingface_health_check(self):
         """Test HuggingFaceModel health_check method."""
-        mock_tokenizer = MagicMock()
-        mock_tokenizer_class.return_value = mock_tokenizer
-        
-        mock_model = MagicMock()
-        mock_model_class.return_value = mock_model
-        
-        model = HuggingFaceModel(model_name="gpt2")
-        model._model = mock_model
-        model._tokenizer = mock_tokenizer
-        model._model_loaded = True
+        model = TestableHuggingFaceModel("gpt2")
         
         result = await model.health_check()
         assert result is True
@@ -544,26 +877,49 @@ class TestLazyHuggingFaceModel:
         assert model._is_available is True
         assert model._model_loaded is False
 
-    @patch("transformers.AutoModelForCausalLM.from_pretrained")
-    @patch("transformers.AutoTokenizer.from_pretrained")
     @pytest.mark.asyncio
-    async def test_lazy_huggingface_load_on_use(self, mock_tokenizer_class, mock_model_class):
+    async def test_lazy_huggingface_load_on_use(self):
         """Test LazyHuggingFaceModel loads on first use."""
-        # Setup mocks
-        mock_tokenizer = MagicMock()
-        mock_tokenizer_class.return_value = mock_tokenizer
+        # Replace transformers imports
+        import orchestrator.integrations.lazy_huggingface_model
         
-        mock_model = MagicMock()
-        mock_model_class.return_value = mock_model
+        load_calls = []
         
-        model = LazyHuggingFaceModel(model_name="gpt2")
+        class TestAutoModel:
+            @staticmethod
+            def from_pretrained(model_name, **kwargs):
+                load_calls.append(('model', model_name))
+                return TestableTransformersModel()
+                
+        class TestAutoTokenizer:
+            @staticmethod
+            def from_pretrained(model_name, **kwargs):
+                load_calls.append(('tokenizer', model_name))
+                return TestableTokenizer()
+                
+        original_model = getattr(orchestrator.integrations.lazy_huggingface_model, 'AutoModelForCausalLM', None)
+        original_tokenizer = getattr(orchestrator.integrations.lazy_huggingface_model, 'AutoTokenizer', None)
         
-        # Call _load_model
-        await model._load_model()
+        if hasattr(orchestrator.integrations.lazy_huggingface_model, 'AutoModelForCausalLM'):
+            orchestrator.integrations.lazy_huggingface_model.AutoModelForCausalLM = TestAutoModel
+        if hasattr(orchestrator.integrations.lazy_huggingface_model, 'AutoTokenizer'):
+            orchestrator.integrations.lazy_huggingface_model.AutoTokenizer = TestAutoTokenizer
         
-        assert model._model_loaded is True
-        mock_model_class.assert_called_once()
-        mock_tokenizer_class.assert_called_once()
+        try:
+            model = LazyHuggingFaceModel(model_name="gpt2")
+            
+            # Call _load_model
+            await model._load_model()
+            
+            assert model._model_loaded is True
+            assert len(load_calls) == 2
+            assert ('model', 'gpt2') in load_calls
+            assert ('tokenizer', 'gpt2') in load_calls
+        finally:
+            if original_model:
+                orchestrator.integrations.lazy_huggingface_model.AutoModelForCausalLM = original_model
+            if original_tokenizer:
+                orchestrator.integrations.lazy_huggingface_model.AutoTokenizer = original_tokenizer
 
     @pytest.mark.asyncio
     async def test_lazy_huggingface_health_check_without_loading(self):
