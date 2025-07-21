@@ -33,6 +33,7 @@ class ModelBasedControlSystem(ControlSystem):
                 "capabilities": {
                     "supported_actions": [
                         "generate",
+                        "generate_text",
                         "analyze",
                         "transform",
                         "execute",
@@ -44,6 +45,9 @@ class ModelBasedControlSystem(ControlSystem):
                         "validate",
                         "optimize",
                         "review",
+                        "write",
+                        "compile",
+                        "process",
                     ],
                     "parallel_execution": True,
                     "streaming": True,
@@ -81,6 +85,7 @@ class ModelBasedControlSystem(ControlSystem):
         # If no model in context, select one based on task
         if not model:
             requirements = self._get_task_requirements(task)
+            print(f">> Task requirements for '{task.action}': {requirements}")
             model = await self.model_registry.select_model(requirements)
         
         # Extract the actual action/prompt from the task
@@ -123,7 +128,11 @@ class ModelBasedControlSystem(ControlSystem):
         task_types = []
         action_lower = str(task.action).lower()  # Convert to string first
         
-        if any(word in action_lower for word in ["generate", "create", "write"]):
+        # Map action to supported task types
+        if "generate_text" in action_lower:
+            # Special case for generate_text action
+            task_types.append("generate")
+        elif any(word in action_lower for word in ["generate", "create", "write"]):
             task_types.append("generate")
         if any(word in action_lower for word in ["analyze", "extract", "identify"]):
             task_types.append("analyze")

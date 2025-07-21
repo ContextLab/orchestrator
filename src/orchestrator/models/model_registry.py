@@ -224,6 +224,8 @@ class ModelRegistry:
     ) -> List[Model]:
         """Filter models by capabilities and expertise."""
         eligible = []
+        print(f">> Filtering models with requirements: {requirements}")
+        print(f">> Total models in registry: {len(self.models)}")
 
         # Extract expertise and size requirements
         required_expertise = requirements.get("expertise", [])
@@ -238,6 +240,7 @@ class ModelRegistry:
         for model in self.models.values():
             # Check basic requirements first
             if not model.meets_requirements(requirements):
+                print(f">> Model {model.name} failed meets_requirements check")
                 continue
 
             # Check expertise if specified

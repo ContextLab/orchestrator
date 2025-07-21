@@ -151,7 +151,19 @@ class OpenAIModel(Model):
             )
 
         # Get model configuration
-        config = self.MODEL_CONFIGS.get(model_name, self.MODEL_CONFIGS["gpt-3.5-turbo"])
+        config = self.MODEL_CONFIGS.get(model_name)
+        if not config:
+            # Try to find a matching base config
+            if model_name.startswith("gpt-4"):
+                config = self.MODEL_CONFIGS["gpt-4"]
+            elif model_name.startswith("gpt-3.5"):
+                config = self.MODEL_CONFIGS["gpt-3.5-turbo"]
+            elif model_name.startswith("o1") or model_name.startswith("o3") or model_name.startswith("o4"):
+                # New reasoning models - use GPT-4 config as base
+                config = self.MODEL_CONFIGS["gpt-4"]
+            else:
+                # Default to gpt-3.5-turbo config
+                config = self.MODEL_CONFIGS["gpt-3.5-turbo"]
 
         super().__init__(
             name=model_name,

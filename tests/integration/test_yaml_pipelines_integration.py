@@ -240,7 +240,13 @@ class TestCreativeWritingAssistantIntegration:
             "prompt": "Write a short story about a robot learning to paint",
             "genre": "science fiction",
             "style": "descriptive",
-            "length": "short"
+            "length": "short",
+            "write_detailed_chapters": False,  # For short stories
+            "include_worldbuilding": True,
+            "chapter_count": 1,  # Short story
+            "target_audience": "general",
+            "writing_style": "descriptive and engaging",
+            "initial_premise": "A robot discovers the joy of artistic expression"
         }
         
         # Compile the YAML content with context
@@ -297,7 +303,13 @@ class TestCreativeWritingAssistantIntegration:
                 "prompt": f"Write a {genre} story opening",
                 "genre": genre,
                 "style": "engaging",
-                "length": "short"
+                "length": "short",
+                "write_detailed_chapters": False,
+                "include_worldbuilding": True,
+                "chapter_count": 1,
+                "target_audience": "general",
+                "writing_style": f"engaging {genre} style",
+                "initial_premise": f"A compelling {genre} story opening"
             }
             
             # Compile the YAML content with context
