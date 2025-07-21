@@ -4,37 +4,99 @@ Tests for ModelBasedControlSystem.
 
 import pytest
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch
 from typing import Dict, Any
 
 from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.core.pipeline import Pipeline
 from orchestrator.core.task import Task, TaskStatus
+from orchestrator.core.model import Model, ModelCapabilities
 
 
 class TestModelBasedControlSystem:
     """Test the ModelBasedControlSystem implementation."""
     
     @pytest.fixture
-    def mock_model(self):
-        """Create a mock AI model."""
-        model = Mock()
-        model.name = "test-model"
-        model.generate = AsyncMock(return_value="Test result")
-        model.capabilities = {
-            "tasks": ["generate", "analyze", "transform"],
-            "context_window": 8192,
-            "output_tokens": 4096,
-            "expertise": ["general", "reasoning"]
-        }
-        return model
+    def test_model(self):
+        """Create a test AI model."""
+        class TestModel(Model):
+            def __init__(self):
+                capabilities = ModelCapabilities(
+                    supported_tasks=["generate", "analyze", "transform"],
+                    context_window=8192,
+                    languages=["en"]
+                )
+                super().__init__(
+                    name="test-model",
+                    provider="test",
+                    capabilities=capabilities
+                )
+                self._generate_calls = []
+                self._next_result = "Test result"
+                self._should_fail = False
+                self._fail_message = "Model error"
+                self._fail_count = 0
+                self._current_fails = 0
+                
+            async def generate(self, prompt, **kwargs):
+                self._generate_calls.append((prompt, kwargs))
+                
+                if self._should_fail:
+                    if self._fail_count == 0 or self._current_fails < self._fail_count:
+                        self._current_fails += 1
+                        raise Exception(self._fail_message)
+                    else:
+                        # Stop failing after fail_count reached
+                        self._current_fails = 0
+                        return "Success after retries"
+                
+                # Check for specific prompts to return different results
+                if "check condition" in prompt.lower():
+                    return "false"
+                
+                return self._next_result
+            
+            def set_next_result(self, result):
+                self._next_result = result
+                
+            def set_failure_mode(self, should_fail, message="Model error", fail_count=0):
+                self._should_fail = should_fail
+                self._fail_message = message
+                self._fail_count = fail_count
+                self._current_fails = 0
+                
+            def get_calls(self):
+                return self._generate_calls
+                
+            def was_called(self):
+                return len(self._generate_calls) > 0
+                
+            def call_count(self):
+                return len(self._generate_calls)
+                
+            async def generate_structured(self, prompt, schema, **kwargs):
+                result = await self.generate(prompt, **kwargs)
+                return {"value": result}
+                
+            async def validate_response(self, response, schema):
+                return True
+                
+            def estimate_tokens(self, text):
+                return len(text.split())
+                
+            def estimate_cost(self, input_tokens, output_tokens):
+                return 0.0
+                
+            async def health_check(self):
+                return True
+                
+        return TestModel()
     
     @pytest.fixture
-    def model_registry(self, mock_model):
-        """Create a model registry with mock model."""
+    def model_registry(self, test_model):
+        """Create a model registry with test model."""
         registry = ModelRegistry()
-        registry.register_model(mock_model)
+        registry.register_model(test_model)
         return registry
     
     @pytest.fixture
@@ -67,7 +129,7 @@ class TestModelBasedControlSystem:
         assert control_system.config == config
     
     @pytest.mark.asyncio
-    async def test_execute_simple_task(self, control_system, mock_model):
+    async def test_execute_simple_task(self, control_system, test_model):
         """Test executing a simple task."""
         task = Task(
             id="test_task",
@@ -80,10 +142,11 @@ class TestModelBasedControlSystem:
         assert result == "Test result"
         assert task.status == TaskStatus.COMPLETED
         assert task.result == "Test result"
-        mock_model.generate.assert_called_once()
+        assert test_model.was_called()
+        assert test_model.call_count() == 1
     
     @pytest.mark.asyncio
-    async def test_execute_task_with_context(self, control_system, mock_model):
+    async def test_execute_task_with_context(self, control_system, test_model):
         """Test executing task with context."""
         task = Task(
             id="context_task",
@@ -98,15 +161,16 @@ class TestModelBasedControlSystem:
         
         assert result == "Test result"
         # Verify context was included in prompt
-        call_args = mock_model.generate.call_args
-        prompt = call_args[0][0]
+        calls = test_model.get_calls()
+        assert len(calls) > 0
+        prompt = calls[0][0]
         assert "Some previous data" in prompt
         assert "json" in prompt
     
     @pytest.mark.asyncio
-    async def test_execute_task_with_error(self, control_system, mock_model):
+    async def test_execute_task_with_error(self, control_system, test_model):
         """Test task execution with error."""
-        mock_model.generate.side_effect = Exception("Model error")
+        test_model.set_failure_mode(True, "Model error")
         
         task = Task(
             id="error_task",
@@ -121,19 +185,10 @@ class TestModelBasedControlSystem:
         assert task.error is not None
     
     @pytest.mark.asyncio
-    async def test_execute_task_with_retry(self, control_system, mock_model):
+    async def test_execute_task_with_retry(self, control_system, test_model):
         """Test task execution with retry logic."""
         # Fail twice, succeed on third try
-        call_count = 0
-        
-        async def mock_generate_with_retry(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count < 3:
-                raise Exception("Temporary failure")
-            return "Success after retries"
-        
-        mock_model.generate = mock_generate_with_retry
+        test_model.set_failure_mode(True, "Temporary failure", fail_count=2)
         
         task = Task(
             id="retry_task",
@@ -144,13 +199,13 @@ class TestModelBasedControlSystem:
         result = await control_system.execute_task(task, {})
         
         assert result == "Success after retries"
-        assert call_count == 3
+        assert test_model.call_count() == 3
         assert task.status == TaskStatus.COMPLETED
     
     @pytest.mark.asyncio
-    async def test_execute_task_with_fallback(self, control_system, mock_model):
+    async def test_execute_task_with_fallback(self, control_system, test_model):
         """Test task execution with fallback value."""
-        mock_model.generate.side_effect = Exception("Permanent failure")
+        test_model.set_failure_mode(True, "Permanent failure")
         
         task = Task(
             id="fallback_task",
@@ -168,13 +223,17 @@ class TestModelBasedControlSystem:
         assert task.result == "fallback result"
     
     @pytest.mark.asyncio
-    async def test_execute_task_with_timeout(self, control_system, mock_model):
+    async def test_execute_task_with_timeout(self, control_system, test_model):
         """Test task execution with timeout."""
-        async def slow_generate(*args, **kwargs):
-            await asyncio.sleep(5)
-            return "Too late"
+        # Create a slow model for timeout testing
+        class SlowTestModel(test_model.__class__):
+            async def generate(self, prompt, **kwargs):
+                await asyncio.sleep(5)
+                return "Too late"
         
-        mock_model.generate = slow_generate
+        # Replace the model in registry
+        slow_model = SlowTestModel()
+        control_system.model_registry.register_model(slow_model)
         
         task = Task(
             id="timeout_task",
@@ -239,18 +298,11 @@ class TestModelBasedControlSystem:
         assert task3.status == TaskStatus.COMPLETED
     
     @pytest.mark.asyncio
-    async def test_execute_pipeline_with_conditional(self, control_system, mock_model):
+    async def test_execute_pipeline_with_conditional(self, control_system, test_model):
         """Test pipeline execution with conditional tasks."""
         pipeline = Pipeline(name="Conditional Pipeline")
         
-        # Setup mock to return specific values
-        async def mock_generate_conditional(*args, **kwargs):
-            prompt = args[0]
-            if "check condition" in prompt.lower():
-                return "false"
-            return "Default result"
-        
-        mock_model.generate = mock_generate_conditional
+        # The test model already returns "false" for "check condition" prompts
         
         task1 = Task(id="check", action="Check condition")
         task2 = Task(
@@ -281,21 +333,25 @@ class TestModelBasedControlSystem:
         assert task3.status == TaskStatus.COMPLETED
     
     @pytest.mark.asyncio
-    async def test_execute_pipeline_with_error_propagation(self, control_system, mock_model):
+    async def test_execute_pipeline_with_error_propagation(self, control_system, test_model):
         """Test pipeline execution with error propagation."""
         pipeline = Pipeline(name="Error Pipeline")
         
-        # Make second task fail
-        call_count = 0
+        # Create a special model that fails on second call
+        class FailOnSecondModel(test_model.__class__):
+            def __init__(self):
+                super().__init__()
+                self._call_count = 0
+                
+            async def generate(self, prompt, **kwargs):
+                self._call_count += 1
+                if self._call_count == 2:
+                    raise Exception("Task 2 failed")
+                return f"Result {self._call_count}"
         
-        async def mock_generate_with_error(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 2:
-                raise Exception("Task 2 failed")
-            return f"Result {call_count}"
-        
-        mock_model.generate = mock_generate_with_error
+        # Replace model in registry
+        fail_model = FailOnSecondModel()
+        control_system.model_registry.register_model(fail_model)
         
         task1 = Task(id="task1", action="First task")
         task2 = Task(id="task2", action="Second task (will fail)")
@@ -369,14 +425,40 @@ class TestModelBasedControlSystem:
     async def test_model_selection(self, control_system, model_registry):
         """Test model selection based on task requirements."""
         # Add a specialized model
-        specialized_model = Mock()
-        specialized_model.name = "specialized-model"
-        specialized_model.generate = AsyncMock(return_value="Specialized result")
-        specialized_model.capabilities = {
-            "tasks": ["code", "programming"],
-            "expertise": ["code", "programming"],
-            "context_window": 16384
-        }
+        class SpecializedModel(Model):
+            def __init__(self):
+                capabilities = ModelCapabilities(
+                    supported_tasks=["code", "programming"],
+                    context_window=16384,
+                    languages=["en"]
+                )
+                super().__init__(
+                    name="specialized-model",
+                    provider="test",
+                    capabilities=capabilities
+                )
+                self.was_used = False
+                
+            async def generate(self, prompt, **kwargs):
+                self.was_used = True
+                return "Specialized result"
+                
+            async def generate_structured(self, prompt, schema, **kwargs):
+                return {"value": await self.generate(prompt, **kwargs)}
+                
+            async def validate_response(self, response, schema):
+                return True
+                
+            def estimate_tokens(self, text):
+                return len(text.split())
+                
+            def estimate_cost(self, input_tokens, output_tokens):
+                return 0.0
+                
+            async def health_check(self):
+                return True
+        
+        specialized_model = SpecializedModel()
         model_registry.register_model(specialized_model)
         
         # Task requiring code expertise
@@ -389,37 +471,40 @@ class TestModelBasedControlSystem:
         result = await control_system.execute_task(task, {})
         
         # Should use the specialized model
-        specialized_model.generate.assert_called()
+        assert specialized_model.was_used
     
     @pytest.mark.asyncio
     async def test_register_tool(self, control_system):
         """Test tool registration."""
-        mock_tool = Mock()
-        mock_tool.name = "test_tool"
+        # Create a real tool instead of mock
+        from orchestrator.tools.base import Tool
+        
+        class TestTool(Tool):
+            def __init__(self):
+                super().__init__(name="test_tool", description="Test tool")
+                
+            async def execute(self, **kwargs):
+                return {"result": "tool executed"}
+        
+        test_tool = TestTool()
         
         # If tools are not implemented, skip this test
         if not hasattr(control_system, 'register_tool'):
             pytest.skip("Tool registration not implemented")
         
-        control_system.register_tool(mock_tool)
+        control_system.register_tool(test_tool)
         
         assert "test_tool" in control_system.tools
-        assert control_system.tools["test_tool"] == mock_tool
+        assert control_system.tools["test_tool"] == test_tool
     
     @pytest.mark.asyncio
-    async def test_execute_with_tools(self, control_system, mock_model):
+    async def test_execute_with_tools(self, control_system, test_model):
         """Test task execution with tools."""
-        # Register a mock tool
-        mock_tool = Mock()
-        mock_tool.name = "calculator"
-        mock_tool.execute = AsyncMock(return_value={"result": 42})
-        control_system.register_tool(mock_tool)
-        
         # Skip this test if tools are not implemented
         pytest.skip("Tool execution not implemented in current version")
     
     @pytest.mark.asyncio
-    async def test_context_size_management(self, control_system, mock_model):
+    async def test_context_size_management(self, control_system, test_model):
         """Test context size management for large contexts."""
         # Create a large context
         large_context = {
@@ -439,8 +524,9 @@ class TestModelBasedControlSystem:
         assert result == "Test result"
         
         # Check that prompt was built (context might be truncated)
-        call_args = mock_model.generate.call_args
-        prompt = call_args[0][0]
+        calls = test_model.get_calls()
+        assert len(calls) > 0
+        prompt = calls[0][0]
         assert len(prompt) > 0
     
     @pytest.mark.asyncio
