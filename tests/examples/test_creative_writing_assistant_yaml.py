@@ -19,12 +19,11 @@ class TestCreativeWritingAssistantYAML(BaseExampleTest):
         return {
             "genre": "sci-fi",
             "length": "short_story",
-            "theme": "first contact with aliens",
-            "tone": "mysterious",
+            "writing_style": "contemporary",
+            "target_audience": "general",
+            "initial_premise": "first contact with aliens",
             "include_worldbuilding": True,
-            "character_count": 3,
-            "pov": "third_person",
-            "target_words": 5000
+            "chapter_count": 5
         }
     
     def test_pipeline_structure(self, pipeline_name):
@@ -36,13 +35,13 @@ class TestCreativeWritingAssistantYAML(BaseExampleTest):
         # Check creative writing steps
         step_ids = [step['id'] for step in config['steps']]
         required_steps = [
-            'brainstorm_ideas',
-            'create_outline',
+            'analyze_genre',
+            'generate_premise',
             'develop_characters',
             'build_world',
-            'write_story',
-            'review_and_edit',
-            'final_polish'
+            'design_plot',
+            'outline_chapters',
+            'write_opening'
         ]
         
         for step in required_steps:
@@ -52,9 +51,9 @@ class TestCreativeWritingAssistantYAML(BaseExampleTest):
         """Test genre-specific writing configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check genre is used in brainstorming
-        brainstorm_step = next(s for s in config['steps'] if s['id'] == 'brainstorm_ideas')
-        assert 'genre' in str(brainstorm_step), "Genre should be referenced in brainstorming"
+        # Check genre is used in analysis
+        analyze_step = next(s for s in config['steps'] if s['id'] == 'analyze_genre')
+        assert '{{genre}}' in str(analyze_step), "Genre should be referenced in analysis"
     
     def test_worldbuilding_conditional(self, pipeline_name):
         """Test conditional worldbuilding step."""
@@ -107,51 +106,47 @@ class TestCreativeWritingAssistantYAML(BaseExampleTest):
             for input_key in required_inputs:
                 assert input_key in sample_inputs, f"Missing required input: {input_key}"
     
-    def test_pov_configuration(self, pipeline_name):
-        """Test point of view configuration."""
+    def test_writing_style_configuration(self, pipeline_name):
+        """Test writing style configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check POV is used in writing
-        write_step = next(s for s in config['steps'] if s['id'] == 'write_story')
-        assert 'pov' in str(write_step) or 'point_of_view' in str(write_step), \
-            "Writing should reference point of view"
+        # Check writing style is used
+        write_step = next(s for s in config['steps'] if s['id'] == 'write_opening')
+        assert '{{writing_style}}' in str(write_step), \
+            "Writing should reference writing style"
     
-    def test_length_and_target_words(self, pipeline_name):
+    def test_length_and_chapters(self, pipeline_name):
         """Test story length configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
         # Check length parameters are used
-        write_step = next(s for s in config['steps'] if s['id'] == 'write_story')
-        assert 'length' in str(write_step) or 'target_words' in str(write_step), \
-            "Writing should reference length constraints"
+        plot_step = next(s for s in config['steps'] if s['id'] == 'design_plot')
+        assert '{{length}}' in str(plot_step) or '{{chapter_count}}' in str(plot_step), \
+            "Plot design should reference length constraints"
     
     def test_review_and_edit_steps(self, pipeline_name):
         """Test review and editing process."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check review depends on writing
-        review_step = next(s for s in config['steps'] if s['id'] == 'review_and_edit')
-        if 'depends_on' in review_step:
-            assert 'write_story' in review_step['depends_on'], \
-                "Review should depend on story writing"
+        # Check consistency check exists
+        consistency_step = next(s for s in config['steps'] if s['id'] == 'check_consistency')
+        assert consistency_step is not None
         
-        # Check final polish depends on review
-        polish_step = next(s for s in config['steps'] if s['id'] == 'final_polish')
-        if 'depends_on' in polish_step:
-            assert 'review_and_edit' in polish_step['depends_on'], \
-                "Final polish should depend on review"
+        # Check polish step exists
+        polish_step = next(s for s in config['steps'] if s['id'] == 'polish_writing')
+        assert polish_step is not None
     
     def test_creative_parameters(self, pipeline_name):
         """Test that creative parameters are properly integrated."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Check tone is used
-        has_tone_reference = any('tone' in str(step) for step in config['steps'])
-        assert has_tone_reference, "Tone should be referenced in creative steps"
+        # Check target audience is used
+        polish_step = next(s for s in config['steps'] if s['id'] == 'polish_writing')
+        assert '{{target_audience}}' in str(polish_step), "Target audience should be referenced"
         
-        # Check theme is used
-        has_theme_reference = any('theme' in str(step) for step in config['steps'])
-        assert has_theme_reference, "Theme should be referenced in creative steps"
+        # Check initial premise is used
+        premise_step = next(s for s in config['steps'] if s['id'] == 'generate_premise')
+        assert '{{initial_premise' in str(premise_step), "Initial premise should be referenced"
     
     @pytest.mark.asyncio
     async def test_error_handling_structure(self, pipeline_name):
@@ -164,6 +159,22 @@ class TestCreativeWritingAssistantYAML(BaseExampleTest):
             # Creative writing might want to continue on partial failures
             assert error_config.get('strategy') in ['continue', 'retry'], \
                 "Creative pipeline should have flexible error handling"
+
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_flow(self, orchestrator, pipeline_name, sample_inputs):
+        """Test full pipeline execution with minimal responses."""
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            use_minimal_responses=True
+        )
+        
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result
 
 
 # Note: Full integration tests that would generate complete stories

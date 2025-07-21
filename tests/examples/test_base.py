@@ -248,6 +248,42 @@ class BaseExampleTest:
         elif step_id == "generate_ci_config":
             return {"result": {"config_path": ".github/workflows/test.yml"}}
         
+        # Handle specific step IDs for creative writing assistant
+        elif step_id == "analyze_genre":
+            return {"result": {"key_elements": ["advanced technology", "space exploration", "alien contact"], "tone": "mysterious", "pacing": "steady"}}
+        elif step_id == "generate_premise":
+            return {"result": {"premise": "First contact with an alien species reveals humanity's true origins", "themes": ["identity", "belonging"], "setting": "near-future Earth"}}
+        elif step_id == "develop_characters":
+            return {"result": [{"name": "Dr. Sarah Chen", "role": "protagonist", "arc": "skeptic to believer"}, {"name": "Zyx", "role": "alien ambassador"}]}
+        elif step_id == "build_world":
+            return {"result": {"locations": ["Earth Space Station Alpha", "Alien mothership"], "technology": ["quantum communicators", "FTL drives"], "rules": ["No faster-than-light communication"]}}
+        elif step_id == "design_plot":
+            return {"result": {"acts": {"act1": "Setup and first contact", "act2": "Building trust and conflict", "act3": "Resolution and revelation"}, "midpoint": "Discovery of shared ancestry"}}
+        elif step_id == "outline_chapters":
+            return {"result": {"chapters": [{"title": "The Signal", "pov": "Sarah", "events": ["Signal detection", "Team assembly"]}, {"title": "First Contact", "pov": "Sarah", "events": ["Meeting Zyx"]}]}}
+        elif step_id == "write_opening":
+            return {"result": "The signal came at 3:47 AM, Eastern Standard Time. Dr. Sarah Chen was the only one awake in the lab..."}
+        elif step_id == "write_key_scenes":
+            return {"result": "Scene content for key dramatic moments..."}
+        elif step_id == "generate_dialogue":
+            return {"result": "Character dialogue with distinct voices..."}
+        elif step_id == "enhance_descriptions":
+            return {"result": "Enhanced scene with sensory details..."}
+        elif step_id == "check_consistency":
+            return {"result": {"issues_found": 0, "issues": []}}
+        elif step_id == "apply_fixes":
+            return {"result": "Content with fixes applied..."}
+        elif step_id == "polish_writing":
+            return {"result": "Polished prose with improved flow..."}
+        elif step_id == "create_cliffhangers":
+            return {"result": {"chapters": {"length": 5}, "total_words": 5000}}
+        elif step_id == "create_story_bible":
+            return {"result": {"characters": "Character profiles...", "world": "World details...", "timeline": "Event timeline..."}}
+        elif step_id == "generate_title":
+            return {"result": {"title": "The Origin Signal", "subtitle": "A First Contact Novel", "pitch": "When aliens arrive, they bring a shocking truth", "synopsis": "A 100-word synopsis...", "back_cover": "Back cover copy..."}}
+        elif step_id == "save_story":
+            return {"result": "Story saved to file"}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
