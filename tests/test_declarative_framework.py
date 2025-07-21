@@ -12,14 +12,14 @@ Tests cover:
 import pytest
 import asyncio
 from pathlib import Path
-from typing import Dict, Any
-from unittest.mock import Mock, AsyncMock, patch
+from typing import Dict, Any, List, Optional
 
 from orchestrator.compiler.yaml_compiler import YAMLCompiler, YAMLCompilerError
 from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.core.pipeline import Pipeline
 from orchestrator.core.task import Task, TaskStatus
+from orchestrator.core.model import Model, ModelCapabilities
 
 
 class TestYAMLCompilation:
@@ -241,25 +241,87 @@ Threshold check: High"""
         assert list(pipeline.tasks.values())[0].action.strip() == expected_action.strip()
 
 
+class TestableDeclarativeModel(Model):
+    """A testable model for declarative framework tests."""
+    
+    def __init__(self, name="test-model", provider="test"):
+        capabilities = ModelCapabilities(
+            supported_tasks=["generate", "analyze"],
+            context_window=8192,
+            languages=["en"]
+        )
+        super().__init__(name=name, provider=provider, capabilities=capabilities)
+        self.generate_calls: List[tuple] = []
+        self.generate_return_value = "Test result"
+        self.generate_side_effect: Optional[Exception] = None
+        self.generate_delay: float = 0.0
+        self.call_count = 0
+        
+    async def generate(self, prompt, **kwargs):
+        """Generate response."""
+        self.generate_calls.append((prompt, kwargs))
+        self.call_count += 1
+        
+        # Simulate delay if configured
+        if self.generate_delay > 0:
+            await asyncio.sleep(self.generate_delay)
+        
+        # Raise exception if configured
+        if self.generate_side_effect:
+            raise self.generate_side_effect
+            
+        # Return configured value or callable result
+        if callable(self.generate_return_value):
+            return self.generate_return_value(self.call_count)
+        return self.generate_return_value
+        
+    async def generate_structured(self, prompt, schema, **kwargs):
+        """Generate structured output."""
+        result = await self.generate(prompt, **kwargs)
+        if isinstance(result, dict):
+            return result
+        return {"result": result}
+        
+    async def validate_response(self, response, schema):
+        """Validate response."""
+        return True
+        
+    def estimate_tokens(self, text):
+        """Estimate tokens."""
+        return len(text.split())
+        
+    def estimate_cost(self, input_tokens, output_tokens):
+        """Estimate cost."""
+        return 0.001
+        
+    async def health_check(self):
+        """Health check."""
+        return True
+        
+    def set_generate_return(self, value):
+        """Set the return value for generate."""
+        self.generate_return_value = value
+        
+    def set_generate_side_effect(self, exception):
+        """Set side effect (exception) for generate."""
+        self.generate_side_effect = exception
+        
+    def set_generate_delay(self, delay):
+        """Set delay for generate (in seconds)."""
+        self.generate_delay = delay
+
+
 class TestModelBasedControlSystem:
     """Test ModelBasedControlSystem execution."""
     
     @pytest.fixture
     def mock_model(self):
-        """Create a mock AI model."""
-        model = Mock()
-        model.name = "test-model"
-        model.generate = AsyncMock(return_value="Test result")
-        model.capabilities = {
-            "tasks": ["generate", "analyze"],
-            "context_window": 8192,
-            "output_tokens": 4096
-        }
-        return model
+        """Create a testable AI model."""
+        return TestableDeclarativeModel()
     
     @pytest.fixture
     def model_registry(self, mock_model):
-        """Create a model registry with mock model."""
+        """Create a model registry with test model."""
         registry = ModelRegistry()
         registry.register_model(mock_model)
         return registry
@@ -312,7 +374,7 @@ class TestModelBasedControlSystem:
     async def test_error_handling(self, control_system, mock_model):
         """Test error handling during task execution."""
         # Configure model to raise error
-        mock_model.generate.side_effect = Exception("Model error")
+        mock_model.set_generate_side_effect(Exception("Model error"))
         
         task = Task(
             id="error_task",
@@ -334,16 +396,12 @@ class TestModelBasedControlSystem:
     async def test_retry_mechanism(self, control_system, mock_model):
         """Test retry mechanism on failure."""
         # Configure model to fail twice then succeed
-        call_count = 0
-        
-        async def mock_generate(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
+        def generate_with_retry(call_count):
             if call_count < 3:
                 raise Exception("Temporary failure")
             return "Success after retries"
         
-        mock_model.generate = mock_generate
+        mock_model.set_generate_return(generate_with_retry)
         
         task = Task(
             id="retry_task",
@@ -354,17 +412,14 @@ class TestModelBasedControlSystem:
         result = await control_system.execute_task(task, {})
         
         assert result == "Success after retries"
-        assert call_count == 3
+        assert mock_model.call_count == 3
     
     @pytest.mark.asyncio
     async def test_timeout_handling(self, control_system, mock_model):
         """Test timeout handling."""
         # Configure model to take too long
-        async def slow_generate(*args, **kwargs):
-            await asyncio.sleep(5)
-            return "Too late"
-        
-        mock_model.generate = slow_generate
+        mock_model.set_generate_delay(5)  # 5 second delay
+        mock_model.set_generate_return("Too late")
         
         task = Task(
             id="timeout_task",
@@ -410,27 +465,26 @@ class TestIntegration:
         compiler = YAMLCompiler()
         model_registry = ModelRegistry()
         
-        # Mock model that returns predictable results
-        model = Mock()
-        model.name = "test-model"
+        # Create testable model that returns predictable results
+        class IntegrationTestModel(TestableDeclarativeModel):
+            async def generate(self, prompt, **kwargs):
+                # Track the call
+                self.generate_calls.append((prompt, kwargs))
+                self.call_count += 1
+                
+                # Return specific responses based on prompt
+                prompt_lower = prompt.lower()
+                if "research plan" in prompt_lower:
+                    return "Research plan: 1. Gather data 2. Analyze 3. Report"
+                elif "gather information" in prompt_lower:
+                    return "Information: Key facts about the topic"
+                elif "analyze" in prompt_lower:
+                    return "Analysis: Important insights discovered"
+                elif "report" in prompt_lower:
+                    return "Report: Comprehensive summary of findings"
+                return "Generic result"
         
-        async def mock_generate(prompt, **kwargs):
-            if "research plan" in prompt.lower():
-                return "Research plan: 1. Gather data 2. Analyze 3. Report"
-            elif "gather information" in prompt.lower():
-                return "Information: Key facts about the topic"
-            elif "analyze" in prompt.lower():
-                return "Analysis: Important insights discovered"
-            elif "report" in prompt.lower():
-                return "Report: Comprehensive summary of findings"
-            return "Generic result"
-        
-        model.generate = mock_generate
-        model.capabilities = {
-            "tasks": ["generate", "analyze"],
-            "context_window": 8192
-        }
-        
+        model = IntegrationTestModel()
         model_registry.register_model(model)
         control_system = ModelBasedControlSystem(model_registry)
         
@@ -525,16 +579,21 @@ outputs:
   result: "{{process_data.result}}"
 """
         
-        # Mock the model to fail for primary source
+        # Configure the model to fail for primary source
         model = list(control_system.model_registry._models.values())[0]
+        
+        # Store original generate method
         original_generate = model.generate
         
-        async def mock_generate_with_error(prompt, **kwargs):
+        # Create a new bound method that includes error handling
+        async def generate_with_error(prompt, **kwargs):
             if "primary source" in prompt:
                 raise Exception("Primary source unavailable")
+            # Call the original method bound to the model instance
             return await original_generate(prompt, **kwargs)
         
-        model.generate = mock_generate_with_error
+        # Replace the generate method
+        model.generate = generate_with_error
         
         pipeline = await compiler.compile(yaml_content, {})
         results = await control_system.execute_pipeline(pipeline)
