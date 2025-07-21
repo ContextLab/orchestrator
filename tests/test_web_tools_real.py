@@ -1,9 +1,9 @@
-"""Tests for real web tools functionality."""
+"""Tests for real web tools functionality - uses actual web requests."""
 
 import pytest
 import asyncio
-from unittest.mock import patch, MagicMock
 import yaml
+import os
 from src.orchestrator.tools.web_tools import (
     HeadlessBrowserTool,
     WebSearchTool,
@@ -72,41 +72,45 @@ class TestDuckDuckGoSearchBackend:
 
     @pytest.mark.asyncio
     async def test_duckduckgo_search_success(self, web_config):
-        """Test successful DuckDuckGo search."""
+        """Test successful DuckDuckGo search with real API."""
         backend_config = web_config['web_tools']['search']['backends']['duckduckgo']
         backend = DuckDuckGoSearchBackend(backend_config)
         
-        # Mock the DDGS search to avoid real API calls
-        with patch('src.orchestrator.tools.web_tools.DDGS') as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = [
-                {
-                    'title': 'Test Result',
-                    'href': 'https://example.com',
-                    'body': 'Test snippet content'
-                }
-            ]
+        # Perform real search
+        results = await backend.search('Python programming language', 3)
+        
+        # Verify we got real results
+        assert isinstance(results, list)
+        assert len(results) > 0  # Should get at least some results
+        
+        # Check the structure of results
+        for result in results:
+            assert 'title' in result
+            assert 'url' in result
+            assert 'snippet' in result
+            assert 'source' in result
+            assert result['source'] == 'duckduckgo'
             
-            results = await backend.search('test query', 5)
+            # Verify these are real URLs
+            assert result['url'].startswith('http')
             
-            assert len(results) == 1
-            assert results[0]['title'] == 'Test Result'
-            assert results[0]['url'] == 'https://example.com'
-            assert results[0]['snippet'] == 'Test snippet content'
-            assert results[0]['source'] == 'duckduckgo'
+            # Title and snippet should not be empty
+            assert len(result['title']) > 0
+            assert len(result['snippet']) > 0
 
     @pytest.mark.asyncio
-    async def test_duckduckgo_search_error(self, web_config):
-        """Test DuckDuckGo search error handling."""
+    async def test_duckduckgo_search_empty_query(self, web_config):
+        """Test DuckDuckGo search with empty query."""
         backend_config = web_config['web_tools']['search']['backends']['duckduckgo']
         backend = DuckDuckGoSearchBackend(backend_config)
         
-        # Mock the DDGS search to raise an exception
-        with patch('src.orchestrator.tools.web_tools.DDGS') as mock_ddgs:
-            mock_ddgs.side_effect = Exception("Search failed")
-            
-            results = await backend.search('test query', 5)
-            
-            assert results == []
+        # Search with empty query should return no results or handle gracefully
+        results = await backend.search('', 5)
+        
+        # Should either return empty list or handle the empty query gracefully
+        assert isinstance(results, list)
+        # Empty query typically returns no results
+        assert len(results) == 0
 
 
 class TestWebScraper:
@@ -114,57 +118,61 @@ class TestWebScraper:
 
     @pytest.mark.asyncio
     async def test_scrape_url_success(self, web_config):
-        """Test successful URL scraping."""
+        """Test successful URL scraping with real website."""
         scraper_config = web_config['web_tools']['scraping']
         scraper = WebScraper(scraper_config)
         
-        # Mock the requests session
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.headers = {'content-type': 'text/html'}
-        mock_response.content = b'<html><head><title>Test Page</title></head><body><h1>Test Content</h1><p>This is a test page.</p></body></html>'
+        # Use httpbin.org for testing - it's designed for HTTP testing
+        result = await scraper.scrape_url('https://httpbin.org/html')
         
-        with patch.object(scraper.session, 'get', return_value=mock_response):
-            result = await scraper.scrape_url('https://example.com')
-            
-            assert result['url'] == 'https://example.com'
-            assert result['status_code'] == 200
-            assert result['title'] == 'Test Page'
-            assert 'Test Content' in result['text']
-            assert 'This is a test page.' in result['text']
+        # Verify the result structure
+        assert result['url'] == 'https://httpbin.org/html'
+        assert result['status_code'] == 200
+        assert 'text' in result
+        assert len(result['text']) > 0
+        
+        # httpbin.org/html returns a sample HTML page
+        # Check that we got actual HTML content
+        assert 'Herman Melville' in result['text']  # This page contains Moby Dick text
+        
+        # If title extraction is supported
+        if 'title' in result:
+            assert isinstance(result['title'], str)
 
     @pytest.mark.asyncio
     async def test_scrape_url_error(self, web_config):
-        """Test URL scraping error handling."""
+        """Test URL scraping error handling with invalid URL."""
         scraper_config = web_config['web_tools']['scraping']
         scraper = WebScraper(scraper_config)
         
-        # Mock the requests session to raise an exception
-        with patch.object(scraper.session, 'get', side_effect=Exception("Network error")):
-            result = await scraper.scrape_url('https://example.com')
-            
-            assert result['url'] == 'https://example.com'
-            assert 'error' in result
-            assert result['error'] == 'Network error'
+        # Use an invalid URL that will cause a real error
+        result = await scraper.scrape_url('https://this-domain-definitely-does-not-exist-12345.com')
+        
+        # Should handle the error gracefully
+        assert result['url'] == 'https://this-domain-definitely-does-not-exist-12345.com'
+        assert 'error' in result
+        # The error message will vary but should indicate connection failure
+        assert len(result['error']) > 0
 
     @pytest.mark.asyncio
     async def test_verify_url_success(self, web_config):
-        """Test successful URL verification."""
+        """Test successful URL verification with real URL."""
         scraper_config = web_config['web_tools']['scraping']
         scraper = WebScraper(scraper_config)
         
-        # Mock the requests session
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.headers = {'content-type': 'text/html', 'content-length': '1000'}
+        # Use a reliable URL for testing
+        result = await scraper.verify_url('https://httpbin.org/')
         
-        with patch.object(scraper.session, 'head', return_value=mock_response):
-            result = await scraper.verify_url('https://example.com')
-            
-            assert result['url'] == 'https://example.com'
-            assert result['accessible'] is True
-            assert result['status_code'] == 200
-            assert result['content_type'] == 'text/html'
+        # Verify the result
+        assert result['url'] == 'https://httpbin.org/'
+        assert result['accessible'] is True
+        assert result['status_code'] == 200
+        
+        # Check content type if provided
+        if 'content_type' in result:
+            assert isinstance(result['content_type'], str)
+            # httpbin.org typically returns HTML
+            assert 'text/html' in result['content_type'] or 'application/json' in result['content_type']
 
 
 class TestHeadlessBrowserTool:
@@ -172,65 +180,62 @@ class TestHeadlessBrowserTool:
 
     @pytest.mark.asyncio
     async def test_web_search_duckduckgo(self, web_config):
-        """Test web search using DuckDuckGo."""
+        """Test web search using DuckDuckGo with real search."""
         tool = HeadlessBrowserTool(web_config)
         
-        # Mock the DuckDuckGo search
-        with patch('src.orchestrator.tools.web_tools.DDGS') as mock_ddgs:
-            mock_ddgs.return_value.__enter__.return_value.text.return_value = [
-                {
-                    'title': 'Test Result',
-                    'href': 'https://example.com',
-                    'body': 'Test snippet content'
-                }
-            ]
-            
-            result = await tool.execute(action='search', query='test query', max_results=5)
-            
-            assert result['query'] == 'test query'
-            assert result['total_results'] == 1
-            assert len(result['results']) == 1
-            assert result['results'][0]['title'] == 'Test Result'
+        # Perform real search
+        result = await tool.execute(action='search', query='OpenAI GPT', max_results=3)
+        
+        # Verify real results
+        assert result['query'] == 'OpenAI GPT'
+        assert result['total_results'] > 0
+        assert len(result['results']) > 0
+        
+        # Check result structure
+        for res in result['results']:
+            assert 'title' in res
+            assert 'url' in res
+            assert 'snippet' in res
+            assert res['url'].startswith('http')
+            assert len(res['title']) > 0
+            assert len(res['snippet']) > 0
 
     @pytest.mark.asyncio
     async def test_verify_url(self, web_config):
-        """Test URL verification."""
+        """Test URL verification with real URL."""
         tool = HeadlessBrowserTool(web_config)
         
-        # Mock the scraper's verify_url method
-        mock_result = {
-            'url': 'https://example.com',
-            'accessible': True,
-            'status_code': 200
-        }
+        # Verify a real, reliable URL
+        result = await tool.execute(action='verify', url='https://www.google.com')
         
-        with patch.object(tool.scraper, 'verify_url', return_value=mock_result):
-            result = await tool.execute(action='verify', url='https://example.com')
-            
-            assert result['url'] == 'https://example.com'
-            assert result['accessible'] is True
-            assert result['status_code'] == 200
+        # Check results
+        assert result['url'] == 'https://www.google.com'
+        assert result['accessible'] is True
+        assert result['status_code'] == 200
 
     @pytest.mark.asyncio
     async def test_scrape_page(self, web_config):
-        """Test page scraping."""
+        """Test page scraping with real URL."""
         tool = HeadlessBrowserTool(web_config)
         
-        # Mock the scraper's scrape_url method
-        mock_result = {
-            'url': 'https://example.com',
-            'title': 'Test Page',
-            'text': 'Test content',
-            'links': [],
-            'images': []
-        }
+        # Scrape a real page
+        result = await tool.execute(action='scrape', url='https://httpbin.org/html')
         
-        with patch.object(tool.scraper, 'scrape_url', return_value=mock_result):
-            result = await tool.execute(action='scrape', url='https://example.com')
-            
-            assert result['url'] == 'https://example.com'
-            assert result['title'] == 'Test Page'
-            assert result['text'] == 'Test content'
+        # Verify results
+        assert result['url'] == 'https://httpbin.org/html'
+        assert 'text' in result
+        assert len(result['text']) > 0
+        
+        # httpbin.org/html contains Herman Melville's Moby Dick text
+        assert 'Herman Melville' in result['text']
+        
+        # Check other fields if present
+        if 'title' in result:
+            assert isinstance(result['title'], str)
+        if 'links' in result:
+            assert isinstance(result['links'], list)
+        if 'images' in result:
+            assert isinstance(result['images'], list)
 
     @pytest.mark.asyncio
     async def test_error_handling(self, web_config):
@@ -281,22 +286,23 @@ class TestWebSearchTool:
 
     @pytest.mark.asyncio
     async def test_web_search_tool(self, web_config):
-        """Test web search tool."""
+        """Test web search tool with real search."""
         tool = WebSearchTool(web_config)
         
-        # Mock the browser tool's _web_search method
-        mock_result = {
-            'query': 'test query',
-            'results': [{'title': 'Test Result', 'url': 'https://example.com'}],
-            'total_results': 1
-        }
+        # Perform real search
+        result = await tool.execute(query='artificial intelligence', max_results=2)
         
-        with patch.object(tool.browser_tool, '_web_search', return_value=mock_result):
-            result = await tool.execute(query='test query', max_results=5)
-            
-            assert result['query'] == 'test query'
-            assert result['total_results'] == 1
-            assert len(result['results']) == 1
+        # Verify real results
+        assert result['query'] == 'artificial intelligence'
+        assert result['total_results'] > 0
+        assert len(result['results']) > 0
+        
+        # Check each result
+        for res in result['results']:
+            assert 'title' in res
+            assert 'url' in res
+            assert res['url'].startswith('http')
+            assert len(res['title']) > 0
 
 
 class TestRateLimiter:
