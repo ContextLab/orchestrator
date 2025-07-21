@@ -159,7 +159,7 @@ def test_index_lines_343_356_4():
 def test_index_lines_364_381_5():
     """Test Python snippet from docs_sphinx/api/index.rst lines 364-381."""
     # Description: Testing utilities and patterns:
-    content = 'from orchestrator.testing import MockModel, TestRunner\n\ndef test_my_pipeline():\n    # Use mock model for testing\n    with MockModel() as mock:\n        mock.set_response("test response")\n\n        pipeline = orc.compile("test_pipeline.yaml")\n        result = pipeline.run(input="test")\n\n        assert result == "expected"\n\n# Test runner for pipeline validation\nrunner = TestRunner("pipelines/")\nrunner.validate_all()  # Validates all YAML files\nrunner.test_compilation()  # Tests compilation\nrunner.run_smoke_tests()  # Basic execution tests'
+    content = 'import os\nfrom orchestrator.testing import TestRunner\nfrom orchestrator.models.openai_model import OpenAIModel\nfrom orchestrator.utils.api_keys import load_api_keys\n\ndef test_my_pipeline():\n    # Load API keys from environment\n    load_api_keys()\n    \n    # Use real model for testing\n    model = OpenAIModel(\n        name="gpt-3.5-turbo",\n        api_key=os.environ.get("OPENAI_API_KEY"),\n    )\n\n    pipeline = orc.compile("test_pipeline.yaml")\n    result = pipeline.run(input="test")\n\n    assert result == "expected"\n\n# Test runner for pipeline validation\nrunner = TestRunner("pipelines/")\nrunner.validate_all()  # Validates all YAML files\nrunner.test_compilation()  # Tests compilation\nrunner.run_smoke_tests()  # Basic execution tests'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"

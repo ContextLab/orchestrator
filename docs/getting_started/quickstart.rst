@@ -3,26 +3,50 @@ Quickstart Guide
 
 This guide will get you up and running with Orchestrator in 5 minutes. We'll create a simple AI workflow that demonstrates the core concepts.
 
+Prerequisites
+-------------
+
+Before you begin, make sure you have:
+
+1. Installed Orchestrator: ``pip install orchestrator``
+2. Set up your API keys as environment variables:
+
+   .. code-block:: bash
+
+      export OPENAI_API_KEY="your-openai-api-key"
+      # or
+      export ANTHROPIC_API_KEY="your-anthropic-api-key"
+
 Your First Pipeline
 -------------------
 
-Let's create a simple text generation pipeline:
+Let's create a simple text generation pipeline with a real AI model:
 
 .. code-block:: python
 
+   import os
    from orchestrator import Orchestrator, Task, Pipeline
-   from orchestrator.models.mock_model import MockModel
+   from orchestrator.models.openai_model import OpenAIModel
+   from orchestrator.utils.api_keys import load_api_keys
    
-   # Create a mock model for testing
-   model = MockModel("gpt-test")
-   model.set_response("Hello, world!", "Hello! How can I help you today?")
+   # Load API keys from environment
+   load_api_keys()
+   
+   # Create a real OpenAI model
+   model = OpenAIModel(
+       name="gpt-3.5-turbo",
+       api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment
+   )
    
    # Create a task
    task = Task(
        id="greeting",
        name="Generate Greeting",
        action="generate_text",
-       parameters={"prompt": "Hello, world!"}
+       parameters={
+           "prompt": "Say hello and ask how you can help today",
+           "max_tokens": 50
+       }
    )
    
    # Create a pipeline
@@ -35,118 +59,134 @@ Let's create a simple text generation pipeline:
    
    # Execute pipeline
    import asyncio
-
    
-
    async def run_pipeline():
-
        result = await orchestrator.execute_pipeline(pipeline)
-
+       print(f"AI Response: {result['greeting']}")
        return result
-
    
-
    # Run the pipeline
-
    result = asyncio.run(run_pipeline())
-   print(f"Result: {result['greeting']}")
 
-Multi-Task Pipeline
--------------------
+That's it! You've just executed your first AI pipeline with a real model.
 
-Let's create a more complex pipeline with multiple tasks:
+Using Different Models
+----------------------
+
+You can easily switch between different AI providers:
+
+**Using Anthropic's Claude:**
 
 .. code-block:: python
 
-   from orchestrator import Task, Pipeline
+   from orchestrator.models.anthropic_model import AnthropicModel
    
-   # Task 1: Generate story outline
-   outline_task = Task(
-       id="outline",
-       name="Generate Story Outline",
+   model = AnthropicModel(
+       name="claude-2",
+       api_key=os.environ.get("ANTHROPIC_API_KEY"),
+   )
+
+**Using OpenAI's GPT-4:**
+
+.. code-block:: python
+
+   model = OpenAIModel(
+       name="gpt-4",
+       api_key=os.environ.get("OPENAI_API_KEY"),
+   )
+
+Building More Complex Pipelines
+-------------------------------
+
+Let's create a pipeline with multiple tasks:
+
+.. code-block:: python
+
+   # Task 1: Generate a story idea
+   idea_task = Task(
+       id="generate_idea",
+       name="Generate Story Idea",
        action="generate_text",
-       parameters={"prompt": "Create a story outline about space exploration"}
+       parameters={
+           "prompt": "Generate a creative story idea in one sentence",
+           "max_tokens": 100
+       }
    )
    
-   # Task 2: Write story (depends on outline)
-   story_task = Task(
-       id="story",
-       name="Write Story",
+   # Task 2: Expand the idea
+   expand_task = Task(
+       id="expand_story",
+       name="Expand Story",
        action="generate_text",
-       parameters={"prompt": "Write a story based on: {outline}"},
-       dependencies=["outline"]
+       parameters={
+           "prompt": "Expand this idea into a short story: {generate_idea}",
+           "max_tokens": 300
+       },
+       dependencies=["generate_idea"]  # This task depends on the first one
    )
    
-   # Task 3: Summarize story (depends on story)
-   summary_task = Task(
-       id="summary",
-       name="Summarize Story",
-       action="generate_text",
-       parameters={"prompt": "Summarize this story: {story}"},
-       dependencies=["story"]
-   )
+   # Create pipeline with both tasks
+   story_pipeline = Pipeline(id="story_creator", name="Story Creation Pipeline")
+   story_pipeline.add_task(idea_task)
+   story_pipeline.add_task(expand_task)
    
-   # Create pipeline with all tasks
-   pipeline = Pipeline(id="story_pipeline", name="Story Creation Pipeline")
-   pipeline.add_task(outline_task)
-   pipeline.add_task(story_task)
-   pipeline.add_task(summary_task)
-   
-   # Execute pipeline
-   import asyncio
-
-   
-
-   async def run_pipeline():
-
-       result = await orchestrator.execute_pipeline(pipeline)
-
+   # Execute the pipeline
+   async def create_story():
+       result = await orchestrator.execute_pipeline(story_pipeline)
+       print(f"Story Idea: {result['generate_idea']}")
+       print(f"\nFull Story: {result['expand_story']}")
        return result
-
    
+   result = asyncio.run(create_story())
 
-   # Run the pipeline
+Error Handling
+--------------
 
-   result = asyncio.run(run_pipeline())
-   print(f"Outline: {result['outline']}")
-   print(f"Story: {result['story']}")
-   print(f"Summary: {result['summary']}")
+Add error handling to make your pipelines robust:
 
-YAML Configuration
------------------
+.. code-block:: python
+
+   from orchestrator.core.error_handler import ErrorHandler, ExponentialBackoffRetry
+   
+   # Create error handler with retry strategy
+   error_handler = ErrorHandler()
+   error_handler.register_retry_strategy(
+       "default",
+       ExponentialBackoffRetry(max_retries=3, base_delay=1.0)
+   )
+   
+   # Create orchestrator with error handling
+   orchestrator = Orchestrator(error_handler=error_handler)
+   orchestrator.register_model(model)
+   
+   try:
+       result = await orchestrator.execute_pipeline(pipeline)
+       print("Success!")
+   except Exception as e:
+       print(f"Pipeline failed after retries: {e}")
+
+Working with YAML Pipelines
+---------------------------
 
 You can also define pipelines in YAML:
 
 .. code-block:: yaml
 
-   # story_pipeline.yaml
-   id: story_pipeline
-   name: Story Creation Pipeline
+   # hello_pipeline.yaml
+   name: Hello Pipeline
+   description: A simple greeting pipeline
    
-   tasks:
-     - id: outline
-       name: Generate Story Outline
+   steps:
+     - id: greeting
        action: generate_text
        parameters:
-         prompt: "Create a story outline about space exploration"
-     
-     - id: story
-       name: Write Story
-       action: generate_text
-       parameters:
-         prompt: "Write a story based on: {outline}"
-       dependencies:
-         - outline
-     
-     - id: summary
-       name: Summarize Story
-       action: generate_text
-       parameters:
-         prompt: "Summarize this story: {story}"
-       dependencies:
-         - story
+         prompt: "Say hello and offer assistance"
+         max_tokens: 50
+   
+   outputs:
+     message: "{{ greeting }}"
 
-Load and execute the YAML pipeline:
+Load and execute YAML pipelines:
 
 .. code-block:: python
 
@@ -154,206 +194,33 @@ Load and execute the YAML pipeline:
    
    # Load pipeline from YAML
    compiler = YAMLCompiler()
-   pipeline = compiler.compile_file("story_pipeline.yaml")
+   pipeline = compiler.compile_from_file("hello_pipeline.yaml")
    
-   # Execute pipeline
-   import asyncio
-
-   
-
-   async def run_pipeline():
-
-       result = await orchestrator.execute_pipeline(pipeline)
-
-       return result
-
-   
-
-   # Run the pipeline
-
-   result = asyncio.run(run_pipeline())
-
-Real AI Models
---------------
-
-Let's use a real AI model instead of the mock:
-
-.. code-block:: python
-
-   import os
-   from orchestrator.models.openai_model import OpenAIModel
-   
-   # API key should be set in environment variable or ~/.orchestrator/.env
-   # Create OpenAI model
-   openai_model = OpenAIModel(
-       name="gpt-4",
-       api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment
-       model="gpt-4"
-   )
-   
-   # Register model
-   orchestrator.register_model(openai_model)
-   
-   # Execute pipeline (will use OpenAI)
-   import asyncio
-
-   
-
-   async def run_pipeline():
-
-       result = await orchestrator.execute_pipeline(pipeline)
-
-       return result
-
-   
-
-   # Run the pipeline
-
-   result = asyncio.run(run_pipeline())
-
-Error Handling
---------------
-
-Orchestrator provides built-in error handling:
-
-.. code-block:: python
-
-   from orchestrator.core.error_handler import ErrorHandler
-   
-   # Create error handler with retry strategy
-   error_handler = ErrorHandler()
-   
-   # Configure orchestrator with error handling
-   orchestrator = Orchestrator(error_handler=error_handler)
-   
-   # Execute pipeline with automatic retry on failures
-   try:
-       import asyncio
-
-       
-
-       async def run_pipeline():
-
-           result = await orchestrator.execute_pipeline(pipeline)
-
-           return result
-
-       
-
-       # Run the pipeline
-
-       result = asyncio.run(run_pipeline())
-   except Exception as e:
-       print(f"Pipeline failed: {e}")
-
-State Management
----------------
-
-Enable checkpointing for long-running pipelines:
-
-.. code-block:: python
-
-   from orchestrator.state import StateManager
-   
-   # Create state manager
-   state_manager = StateManager(storage_path="./checkpoints")
-   
-   # Configure orchestrator with state management
-   orchestrator = Orchestrator(state_manager=state_manager)
-   
-   # Execute pipeline with automatic checkpointing
-   import asyncio
-
-   
-
-   async def run_pipeline():
-
-       result = await orchestrator.execute_pipeline(pipeline)
-
-       return result
-
-   
-
-   # Run the pipeline
-
-   result = asyncio.run(run_pipeline())
-
-Monitoring & Logging
---------------------
-
-Enable monitoring to track pipeline execution:
-
-.. code-block:: python
-
-   import logging
-   
-   # Enable debug logging
-   logging.basicConfig(level=logging.DEBUG)
-   
-   # Execute pipeline with logging
-   import asyncio
-
-   
-
-   async def run_pipeline():
-
-       result = await orchestrator.execute_pipeline(pipeline)
-
-       return result
-
-   
-
-   # Run the pipeline
-
-   result = asyncio.run(run_pipeline())
-   
-   # Get execution statistics
-   stats = orchestrator.get_execution_stats()
-   print(f"Execution time: {stats['total_time']:.2f}s")
-   print(f"Tasks completed: {stats['completed_tasks']}")
+   # Execute as before
+   result = await orchestrator.execute_pipeline(pipeline)
 
 Next Steps
 ----------
 
-Now that you've created your first pipeline, explore these topics:
+Now that you've created your first pipelines:
 
-**Core Concepts**
-   Learn about :doc:`basic_concepts` like Tasks, Pipelines, and Models
+1. **Explore Advanced Features:**
+   
+   - :doc:`Conditional task execution <../tutorials/conditional_execution>`
+   - :doc:`Parallel task processing <../tutorials/parallel_processing>`
+   - :doc:`State management and checkpointing <../tutorials/state_management>`
 
-**YAML Configuration**
-   Deep dive into :doc:`../user_guide/yaml_configuration`
+2. **Build Real Applications:**
+   
+   - Content generation systems
+   - Data analysis pipelines
+   - Multi-agent workflows
+   - Research automation tools
 
-**Model Integration**
-   Connect real AI models in :doc:`../user_guide/models_and_adapters`
+3. **Learn Best Practices:**
+   
+   - :doc:`Error handling strategies <../best_practices/error_handling>`
+   - :doc:`Performance optimization <../best_practices/performance>`
+   - :doc:`Security considerations <../best_practices/security>`
 
-**Advanced Features**
-   Explore :doc:`../advanced/performance_optimization` and :doc:`../advanced/custom_models`
-
-**Interactive Tutorials**
-   Try the :doc:`../tutorials/notebooks` for hands-on learning
-
-Common Patterns
----------------
-
-Here are some common patterns to get you started:
-
-**Sequential Processing**
-   Tasks that depend on previous results
-
-**Parallel Processing**
-   Independent tasks that can run simultaneously
-
-**Conditional Logic**
-   Tasks that execute based on conditions
-
-**Data Transformation**
-   Tasks that process and transform data
-
-**Multi-Model Orchestration**
-   Using different models for different tasks
-
-.. tip::
-   Start with simple pipelines and gradually add complexity as you learn the framework. The mock models are perfect for testing and development before switching to real AI models.
-
-.. note::
-   Remember to set up your API keys when using real AI models. See :doc:`installation` for configuration details.
+Remember: Always use real API keys and models to ensure your pipelines work with actual AI services!

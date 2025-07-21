@@ -17,32 +17,27 @@ This pipeline demonstrates task dependencies, parameter passing, and real-world 
 Step 1: Setup
 -------------
 
-First, let's set up our environment:
+First, let's set up our environment with a real AI model:
 
 .. code-block:: python
 
    import asyncio
+   import os
    from orchestrator import Orchestrator, Task, Pipeline
-   from orchestrator.models.mock_model import MockModel
+   from orchestrator.models.openai_model import OpenAIModel
+   from orchestrator.utils.api_keys import load_api_keys
    
-   # Create a mock model for testing
-   model = MockModel("research_assistant")
+   # Load API keys from environment
+   load_api_keys()
    
-   # Set up responses for our mock model
-   model.set_response(
-       "Generate 3 research questions about: artificial intelligence",
-       "1. How does AI impact job markets?\n2. What are the ethical implications of AI?\n3. How can AI be made more accessible?"
+   # Create a real OpenAI model
+   model = OpenAIModel(
+       name="gpt-3.5-turbo",
+       api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment
    )
    
-   model.set_response(
-       "Analyze these questions and identify key themes: 1. How does AI impact job markets?\n2. What are the ethical implications of AI?\n3. How can AI be made more accessible?",
-       "Key themes identified: Economic Impact, Ethics and Responsibility, Accessibility and Democratization"
-   )
-   
-   model.set_response(
-       "Write a comprehensive report on artificial intelligence covering these themes: Economic Impact, Ethics and Responsibility, Accessibility and Democratization",
-       "# AI Research Report\n\n## Economic Impact\nAI is reshaping job markets...\n\n## Ethics and Responsibility\nAI systems must be developed responsibly...\n\n## Accessibility and Democratization\nMaking AI tools accessible to all..."
-   )
+   # Note: Make sure you have set your OPENAI_API_KEY environment variable
+   # You can also use AnthropicModel with ANTHROPIC_API_KEY if preferred
 
 Step 2: Create Tasks
 --------------------
@@ -115,7 +110,7 @@ Combine tasks into a pipeline:
 Step 4: Execute Pipeline
 ------------------------
 
-Now let's execute our pipeline:
+Now let's execute our pipeline with real API calls:
 
 .. code-block:: python
 
@@ -128,7 +123,7 @@ Now let's execute our pipeline:
        
        print("Starting pipeline execution...")
        
-       # Execute pipeline
+       # Execute pipeline with real API calls
        result = await orchestrator.execute_pipeline(pipeline)
        
        print("\n=== Pipeline Results ===")
@@ -197,243 +192,86 @@ For longer pipelines, add checkpointing:
    
    async def run_stateful_pipeline():
        # Create state manager
-       state_manager = StateManager(storage_path="./checkpoints")
+       state_manager = StateManager(checkpoint_dir="./pipeline_checkpoints")
        
        # Create orchestrator with state management
        orchestrator = Orchestrator(state_manager=state_manager)
        orchestrator.register_model(model)
        
-       print("Starting stateful pipeline execution...")
+       # Enable checkpointing
+       orchestrator.enable_checkpointing(interval_steps=1)
        
-       # Execute with automatic checkpointing
-       result = await orchestrator.execute_pipeline(pipeline)
-       
-       print("✅ Pipeline completed with checkpointing!")
-       
-       # List checkpoints created
-       checkpoints = await state_manager.list_checkpoints("research_assistant")
-       print(f"Checkpoints created: {len(checkpoints)}")
-       
-       return result
+       try:
+           print("Starting stateful pipeline execution...")
+           result = await orchestrator.execute_pipeline(pipeline)
+           print("✅ Pipeline completed with checkpointing!")
+           return result
+           
+       except Exception as e:
+           print(f"❌ Pipeline failed: {e}")
+           print("You can resume from the last checkpoint")
+           return None
    
    # Run stateful pipeline
-   # In Jupyter notebooks: result = await run_stateful_pipeline()
-   # In regular Python scripts:
    result = asyncio.run(run_stateful_pipeline())
-
-Step 7: YAML Configuration
---------------------------
-
-Let's convert our pipeline to YAML:
-
-.. code-block:: yaml
-
-   # research_pipeline.yaml
-   id: research_assistant
-   name: Research Assistant Pipeline
-   description: Generates research questions, analyzes themes, and writes a report
-   
-   context:
-     topic: artificial intelligence
-   
-   tasks:
-     - id: research_questions
-       name: Generate Research Questions
-       action: generate_text
-       parameters:
-         prompt: "Generate 3 research questions about: {topic}"
-         max_tokens: 200
-     
-     - id: analyze_themes
-       name: Analyze Key Themes
-       action: generate_text
-       parameters:
-         prompt: "Analyze these questions and identify key themes: {research_questions}"
-         max_tokens: 150
-       dependencies:
-         - research_questions
-     
-     - id: write_report
-       name: Write Research Report
-       action: generate_text
-       parameters:
-         prompt: "Write a comprehensive report on {topic} covering these themes: {analyze_themes}"
-         max_tokens: 500
-       dependencies:
-         - analyze_themes
-
-Load and execute the YAML pipeline:
-
-.. code-block:: python
-
-   from orchestrator.compiler import YAMLCompiler
-   
-   async def run_yaml_pipeline():
-       # Create compiler and load pipeline
-       compiler = YAMLCompiler()
-       pipeline = compiler.compile_file("research_pipeline.yaml")
-       
-       # Create orchestrator
-       orchestrator = Orchestrator()
-       orchestrator.register_model(model)
-       
-       print("Starting YAML pipeline execution...")
-       
-       # Execute pipeline
-       result = await orchestrator.execute_pipeline(pipeline)
-       
-       print("✅ YAML pipeline completed!")
-       return result
-   
-   # Run YAML pipeline
-   # In Jupyter notebooks: result = await run_yaml_pipeline()
-   # In regular Python scripts:
-   result = asyncio.run(run_yaml_pipeline())
-
-Step 8: Real AI Models
-----------------------
-
-Replace mock model with real AI:
-
-.. code-block:: python
-
-   import os
-   from orchestrator.models.openai_model import OpenAIModel
-   
-   async def run_with_real_ai():
-       # API key should be set in environment variable or ~/.orchestrator/.env
-       # Create OpenAI model
-       openai_model = OpenAIModel(
-           name="gpt-4",
-           api_key=os.environ.get("OPENAI_API_KEY"),  # Loaded from environment
-           model="gpt-4"
-       )
-       
-       # Create orchestrator with real AI
-       orchestrator = Orchestrator()
-       orchestrator.register_model(openai_model)
-       
-       print("Starting pipeline with real AI...")
-       
-       # Execute pipeline with real AI
-       result = await orchestrator.execute_pipeline(pipeline)
-       
-       print("✅ Real AI pipeline completed!")
-       return result
-   
-   # Run with real AI (uncomment when you have API keys)
-   # In Jupyter notebooks: result = await run_with_real_ai()
-   # In regular Python scripts: result = asyncio.run(run_with_real_ai())
-
-Step 9: Monitoring and Analytics
---------------------------------
-
-Add monitoring to track performance:
-
-.. code-block:: python
-
-   import time
-   from orchestrator.core.resource_allocator import ResourceAllocator
-   
-   async def run_monitored_pipeline():
-       # Create resource allocator for monitoring
-       allocator = ResourceAllocator()
-       
-       # Create orchestrator with monitoring
-       orchestrator = Orchestrator(resource_allocator=allocator)
-       orchestrator.register_model(model)
-       
-       print("Starting monitored pipeline execution...")
-       start_time = time.time()
-       
-       # Execute pipeline
-       result = await orchestrator.execute_pipeline(pipeline)
-       
-       end_time = time.time()
-       execution_time = end_time - start_time
-       
-       print(f"✅ Pipeline completed in {execution_time:.2f} seconds")
-       
-       # Get resource statistics
-       stats = allocator.get_overall_statistics()
-       print(f"Resource utilization: {stats['overall_utilization']:.2f}")
-       
-       return result
-   
-   # Run monitored pipeline
-   # In Jupyter notebooks: result = await run_monitored_pipeline()
-   # In regular Python scripts:
-   result = asyncio.run(run_monitored_pipeline())
 
 Complete Example
 ----------------
 
-Here's the complete, production-ready pipeline:
+Here's the complete code in one place:
 
 .. code-block:: python
 
    import asyncio
-   import logging
+   import os
    from orchestrator import Orchestrator, Task, Pipeline
-   from orchestrator.models.mock_model import MockModel
-   from orchestrator.core.error_handler import ErrorHandler
+   from orchestrator.models.openai_model import OpenAIModel
+   from orchestrator.utils.api_keys import load_api_keys
+   from orchestrator.core.error_handler import ErrorHandler, ExponentialBackoffRetry
    from orchestrator.state import StateManager
-   from orchestrator.core.resource_allocator import ResourceAllocator
-   
-   # Configure logging
-   logging.basicConfig(level=logging.INFO)
-   logger = logging.getLogger(__name__)
    
    async def create_research_pipeline():
-       """Create a production-ready research assistant pipeline."""
+       # Load API keys
+       load_api_keys()
        
-       # Create mock model with responses
-       model = MockModel("research_assistant")
-       model.set_response(
-           "Generate 3 research questions about: artificial intelligence",
-           "1. How does AI impact job markets?\n2. What are the ethical implications of AI?\n3. How can AI be made more accessible?"
-       )
-       model.set_response(
-           "Analyze these questions and identify key themes: 1. How does AI impact job markets?\n2. What are the ethical implications of AI?\n3. How can AI be made more accessible?",
-           "Key themes: Economic Impact, Ethics and Responsibility, Accessibility"
-       )
-       model.set_response(
-           "Write a comprehensive report on artificial intelligence covering these themes: Economic Impact, Ethics and Responsibility, Accessibility",
-           "# AI Research Report\n\n## Economic Impact\nAI is transforming industries...\n\n## Ethics\nResponsible AI development...\n\n## Accessibility\nDemocratizing AI tools..."
+       # Create model with real API
+       model = OpenAIModel(
+           name="gpt-3.5-turbo",
+           api_key=os.environ.get("OPENAI_API_KEY"),
        )
        
        # Create tasks
-       tasks = [
-           Task(
-               id="research_questions",
-               name="Generate Research Questions",
-               action="generate_text",
-               parameters={
-                   "prompt": "Generate 3 research questions about: {topic}",
-                   "max_tokens": 200
-               }
-           ),
-           Task(
-               id="analyze_themes",
-               name="Analyze Key Themes",
-               action="generate_text",
-               parameters={
-                   "prompt": "Analyze these questions and identify key themes: {research_questions}",
-                   "max_tokens": 150
-               },
-               dependencies=["research_questions"]
-           ),
-           Task(
-               id="write_report",
-               name="Write Research Report",
-               action="generate_text",
-               parameters={
-                   "prompt": "Write a comprehensive report on {topic} covering these themes: {analyze_themes}",
-                   "max_tokens": 500
-               },
-               dependencies=["analyze_themes"]
-           )
-       ]
+       research_task = Task(
+           id="research_questions",
+           name="Generate Research Questions",
+           action="generate_text",
+           parameters={
+               "prompt": "Generate 3 research questions about: artificial intelligence",
+               "max_tokens": 200
+           }
+       )
+       
+       analysis_task = Task(
+           id="analyze_themes",
+           name="Analyze Key Themes",
+           action="generate_text",
+           parameters={
+               "prompt": "Analyze these questions and identify key themes: {research_questions}",
+               "max_tokens": 150
+           },
+           dependencies=["research_questions"]
+       )
+       
+       report_task = Task(
+           id="write_report",
+           name="Write Research Report",
+           action="generate_text",
+           parameters={
+               "prompt": "Write a comprehensive report on artificial intelligence covering these themes: {analyze_themes}",
+               "max_tokens": 500
+           },
+           dependencies=["analyze_themes"]
+       )
        
        # Create pipeline
        pipeline = Pipeline(
@@ -441,78 +279,59 @@ Here's the complete, production-ready pipeline:
            name="Research Assistant Pipeline"
        )
        
-       for task in tasks:
-           pipeline.add_task(task)
+       # Add tasks
+       pipeline.add_task(research_task)
+       pipeline.add_task(analysis_task)
+       pipeline.add_task(report_task)
        
-       pipeline.set_context("topic", "artificial intelligence")
-       
-       # Create components
+       # Set up orchestrator with error handling and state management
        error_handler = ErrorHandler()
-       state_manager = StateManager(storage_path="./checkpoints")
-       resource_allocator = ResourceAllocator()
-       
-       # Create orchestrator
-       orchestrator = Orchestrator(
-           error_handler=error_handler,
-           state_manager=state_manager,
-           resource_allocator=resource_allocator
+       error_handler.register_retry_strategy(
+           "default",
+           ExponentialBackoffRetry(max_retries=3)
        )
        
+       state_manager = StateManager(checkpoint_dir="./checkpoints")
+       
+       orchestrator = Orchestrator(
+           error_handler=error_handler,
+           state_manager=state_manager
+       )
        orchestrator.register_model(model)
+       orchestrator.enable_checkpointing(interval_steps=1)
        
-       return orchestrator, pipeline
+       # Execute pipeline
+       print("Starting AI research pipeline...")
+       result = await orchestrator.execute_pipeline(pipeline)
+       
+       print("\n=== Results ===")
+       for task_id, output in result.items():
+           print(f"\n{task_id}:\n{output}")
+       
+       return result
    
-   async def main():
-       """Main execution function."""
-       logger.info("Creating research assistant pipeline...")
-       
-       orchestrator, pipeline = await create_research_pipeline()
-       
-       logger.info("Executing pipeline...")
-       
-       try:
-           result = await orchestrator.execute_pipeline(pipeline)
-           
-           logger.info("Pipeline completed successfully!")
-           
-           print("\n=== Results ===")
-           for task_id, output in result.items():
-               print(f"\n{task_id}:")
-               print(f"{output}")
-           
-       except Exception as e:
-           logger.error(f"Pipeline failed: {e}")
-           raise
-   
-   # Run the complete example
+   # Run the complete pipeline
    if __name__ == "__main__":
-       asyncio.run(main())
+       asyncio.run(create_research_pipeline())
 
-What You've Learned
--------------------
+Key Takeaways
+-------------
 
-Congratulations! You've built a complete AI pipeline with:
+You've learned how to:
 
-✅ **Task Creation** - Defined individual work units  
-✅ **Dependencies** - Managed task execution order  
-✅ **Parameter Passing** - Connected task outputs to inputs  
-✅ **Error Handling** - Added retry strategies and circuit breakers  
-✅ **State Management** - Enabled checkpointing for reliability  
-✅ **YAML Configuration** - Declarative pipeline definition  
-✅ **Monitoring** - Resource tracking and performance analytics  
+1. **Create tasks** with parameters and dependencies
+2. **Build pipelines** that orchestrate multiple tasks
+3. **Use real AI models** with proper API key management
+4. **Add error handling** for robust execution
+5. **Enable checkpointing** for long-running pipelines
 
 Next Steps
 ----------
 
-Now you're ready to:
+- Try modifying the prompts to research different topics
+- Add more tasks to create a deeper analysis
+- Experiment with different models (GPT-4, Claude, etc.)
+- Explore conditional task execution based on results
+- Build your own custom pipelines for your use cases
 
-* **Explore Advanced Features** - :doc:`../advanced/performance_optimization`
-* **Learn YAML Configuration** - :doc:`../user_guide/yaml_configuration`
-* **Integrate Real Models** - :doc:`../user_guide/models_and_adapters`
-* **Try Interactive Tutorials** - :doc:`../tutorials/notebooks`
-
-.. tip::
-   Start building your own pipelines! The framework is designed to be flexible - you can adapt this pattern to any AI workflow you need to create.
-
-.. note::
-   Remember to replace mock models with real AI models for production use. See the :doc:`../user_guide/models_and_adapters` guide for integration details.
+Remember to always use real API keys and models - this ensures your pipelines work with actual AI services and produce real results!

@@ -89,7 +89,7 @@ This tutorial introduces you to the Orchestrator Framework fundamentals:
 **What You'll Learn:**
    * Core concepts: Tasks, Pipelines, Models, Orchestrator
    * Creating and executing your first pipeline
-   * Working with mock models for development
+   * Working with real AI models (OpenAI, Anthropic)
    * State management and checkpointing
    * Pipeline progress monitoring
    * Basic serialization and deserialization
@@ -110,8 +110,19 @@ This tutorial introduces you to the Orchestrator Framework fundamentals:
 .. code-block:: python
 
    # Example from Tutorial 01
+   import os
    from orchestrator import Orchestrator, Task, Pipeline
-   from orchestrator.models.mock_model import MockModel
+   from orchestrator.models.openai_model import OpenAIModel
+   from orchestrator.utils.api_keys import load_api_keys
+   
+   # Load API keys from environment
+   load_api_keys()
+   
+   # Create a real AI model
+   model = OpenAIModel(
+       name="gpt-3.5-turbo",
+       api_key=os.environ.get("OPENAI_API_KEY"),
+   )
    
    # Create your first task
    task = Task(
@@ -126,6 +137,7 @@ This tutorial introduces you to the Orchestrator Framework fundamentals:
    pipeline.add_task(task)
    
    orchestrator = Orchestrator()
+   orchestrator.register_model(model)
    # Note: This code is for Jupyter notebooks which support top-level await
    result = await orchestrator.execute_pipeline(pipeline)
 

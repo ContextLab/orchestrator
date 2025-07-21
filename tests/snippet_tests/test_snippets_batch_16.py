@@ -62,7 +62,7 @@ def test_notebooks_lines_70_75_1():
 def test_notebooks_lines_112_131_2():
     """Test Python snippet from docs/tutorials/notebooks.rst lines 112-131."""
     # Description: * Add state management for reliability
-    content = '# Example from Tutorial 01\nfrom orchestrator import Orchestrator, Task, Pipeline\nfrom orchestrator.models.mock_model import MockModel\n\n# Create your first task\ntask = Task(\n    id="hello_world",\n    name="Hello World Task",\n    action="generate_text",\n    parameters={"prompt": "Hello, Orchestrator!"}\n)\n\n# Build and execute pipeline\npipeline = Pipeline(id="first_pipeline", name="First Pipeline")\npipeline.add_task(task)\n\norchestrator = Orchestrator()\n# Note: This code is for Jupyter notebooks which support top-level await\nresult = await orchestrator.execute_pipeline(pipeline)'
+    content = '# Example from Tutorial 01\nimport os\nfrom orchestrator import Orchestrator, Task, Pipeline\nfrom orchestrator.models.openai_model import OpenAIModel\nfrom orchestrator.utils.api_keys import load_api_keys\n\n# Load API keys from environment\nload_api_keys()\n\n# Create a real AI model\nmodel = OpenAIModel(\n    name="gpt-3.5-turbo",\n    api_key=os.environ.get("OPENAI_API_KEY"),\n)\n\n# Create your first task\ntask = Task(\n    id="hello_world",\n    name="Hello World Task",\n    action="generate_text",\n    parameters={"prompt": "Hello, Orchestrator!"}\n)\n\n# Build and execute pipeline\npipeline = Pipeline(id="first_pipeline", name="First Pipeline")\npipeline.add_task(task)\n\norchestrator = Orchestrator()\norchestrator.register_model(model)\n# Note: This code is for Jupyter notebooks which support top-level await\nresult = await orchestrator.execute_pipeline(pipeline)'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"
@@ -211,8 +211,8 @@ def test_notebooks_lines_321_326_7():
 
 def test_notebooks_lines_330_332_8():
     """Test Python snippet from docs/tutorials/notebooks.rst lines 330-332."""
-    # Description: **Mock Model Issues**
-    content = '# Mock models need explicit responses\nmodel.set_response("your prompt", "expected response")'
+    # Description: **API Key Issues**
+    content = '# Make sure API keys are set in environment\nexport OPENAI_API_KEY="your-api-key"\n# or\nexport ANTHROPIC_API_KEY="your-api-key"'
     
     # Basic validation
     assert content.strip(), "Content should not be empty"
