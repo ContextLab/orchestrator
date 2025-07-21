@@ -69,7 +69,24 @@ class BaseExampleTest:
         # These are not mocks - they're minimal valid responses
         action_lower = action.lower()
         
-        if "market_data" in action_lower or "collect" in action_lower:
+        # Handle specific step IDs for research assistant
+        if step_id == "analyze_query":
+            return {"result": {"search_terms": ["quantum computing", "recent advances"], "objectives": ["review latest research"]}}
+        elif step_id == "web_search":
+            return {"result": {"results": [], "count": 0}}
+        elif step_id == "filter_sources":
+            return {"result": {"sources": [], "count": 0}}
+        elif step_id == "synthesize_findings":
+            return {"result": {"key_findings": ["Finding 1", "Finding 2"], "synthesis": "Sample synthesis"}}
+        elif step_id == "generate_report":
+            return {"result": "# Research Report\n\nSample report content"}
+        elif step_id == "quality_check":
+            return {"result": {"score": 0.8, "suggestions": ["Add more sources"]}}
+        elif step_id == "export_pdf":
+            return {"result": "/path/to/report.pdf"}
+        
+        # Generic responses based on action
+        elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
         elif "analyze" in action_lower:
             return {"result": {"analysis": "sample analysis"}}
@@ -99,9 +116,10 @@ class BaseExampleTest:
             original_execute_step = getattr(orchestrator, '_execute_step', None)
             
             # Create a minimal response execute_step
-            async def minimal_execute_step(step, context):
-                step_id = step.get('id', 'unknown')
-                action = step.get('action', '')
+            async def minimal_execute_step(task, context):
+                # Handle Task object properly
+                step_id = task.id if hasattr(task, 'id') else 'unknown'
+                action = task.action if hasattr(task, 'action') else ''
                 return self.get_minimal_test_response(step_id, action)
             
             # Temporarily use minimal responses
@@ -128,7 +146,11 @@ class BaseExampleTest:
         if expected_outputs:
             for key, expected_value in expected_outputs.items():
                 assert key in result.get('outputs', {})
-                if isinstance(expected_value, dict):
+                if isinstance(expected_value, type):
+                    # Check type when a type is provided
+                    assert isinstance(result['outputs'][key], expected_value), \
+                        f"Expected {key} to be {expected_value}, got {type(result['outputs'][key])}"
+                elif isinstance(expected_value, dict):
                     # For complex objects, check structure
                     assert isinstance(result['outputs'][key], dict)
                     for sub_key in expected_value:

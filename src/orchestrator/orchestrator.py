@@ -128,18 +128,27 @@ class Orchestrator:
             # Execute pipeline
             results = await self._execute_pipeline_internal(pipeline, context)
 
+            # Extract outputs if defined in pipeline metadata
+            final_result = results
+            if pipeline.metadata.get("outputs"):
+                outputs = self._extract_outputs(pipeline, results)
+                final_result = {
+                    "steps": results,
+                    "outputs": outputs
+                }
+
             # Record successful execution
             execution_record = {
                 "execution_id": execution_id,
                 "pipeline_id": pipeline.id,
                 "status": "completed",
-                "results": results,
+                "results": final_result,
                 "execution_time": time.time() - context["start_time"],
                 "completed_at": time.time(),
             }
             self.execution_history.append(execution_record)
 
-            return results
+            return final_result
 
         except Exception as e:
             # Record failed execution
@@ -160,68 +169,19 @@ class Orchestrator:
             if execution_id in self.running_pipelines:
                 del self.running_pipelines[execution_id]
 
-    async def execute_yaml(
-        self,
-        yaml_content: str,
-        context: Optional[Dict[str, Any]] = None,
-        checkpoint_enabled: bool = False,
-        max_retries: int = 3,
-    ) -> Dict[str, Any]:
-        """
-        Execute a pipeline from YAML content.
-
-        Args:
-            yaml_content: YAML pipeline definition as string
-            context: Context variables for the pipeline
-            checkpoint_enabled: Whether to enable checkpointing
-            max_retries: Maximum retry attempts for failed tasks
-
-        Returns:
-            Execution results
-
-        Raises:
-            ExecutionError: If execution fails
-        """
-        # Compile YAML into pipeline
-        if self.yaml_compiler is None:
-            self.yaml_compiler = YAMLCompiler(model_registry=self.model_registry)
-        
-        # Compile the YAML content
-        pipeline = await self.yaml_compiler.compile(yaml_content, context=context or {})
-        
-        # Execute the compiled pipeline
-        return await self.execute_pipeline(
-            pipeline,
-            checkpoint_enabled=checkpoint_enabled,
-            max_retries=max_retries
-        )
-
-    async def _execute_step(self, step: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_step(self, task, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute a single step/task.
         
         This method is used by tests to override behavior for minimal responses.
         
         Args:
-            step: Step/task definition
+            task: Task object to execute
             context: Execution context
             
         Returns:
             Step execution result
         """
-        # Convert step dict to Task if needed
-        from .core.task import Task
-        
-        if isinstance(step, dict):
-            task = Task(
-                id=step.get('id', 'unknown'),
-                type=step.get('type', 'generate'),
-                parameters=step.get('parameters', {}),
-                dependencies=step.get('dependencies', [])
-            )
-        else:
-            task = step
-            
         # Execute task using control system
         result = await self.control_system.execute_task(task, context)
         return result
@@ -376,8 +336,8 @@ class Orchestrator:
             if model:
                 context["model"] = model
 
-            # Execute task using control system
-            result = await self.control_system.execute_task(task, context)
+            # Execute task using _execute_step (allows test override)
+            result = await self._execute_step(task, context)
 
             # Mark task as completed
             task.complete(result)
@@ -461,6 +421,44 @@ class Orchestrator:
             "version": pipeline.version,
             "description": pipeline.description,
         }
+
+    def _extract_outputs(self, pipeline: Pipeline, results: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract outputs from pipeline results based on output definitions.
+        
+        Args:
+            pipeline: Pipeline with output definitions in metadata
+            results: Step execution results
+            
+        Returns:
+            Extracted outputs
+        """
+        outputs = {}
+        output_defs = pipeline.metadata.get("outputs", {})
+        
+        for output_name, output_expr in output_defs.items():
+            # Simple extraction logic - parse expressions like "{{step_id.result.field}}"
+            if isinstance(output_expr, str) and output_expr.startswith("{{") and output_expr.endswith("}}"):
+                # Extract the path from the expression
+                path = output_expr[2:-2].strip()
+                parts = path.split(".")
+                
+                # Navigate through the results
+                value = results
+                for part in parts:
+                    if isinstance(value, dict) and part in value:
+                        value = value[part]
+                    else:
+                        # If path not found, use a default value
+                        value = None
+                        break
+                
+                outputs[output_name] = value
+            else:
+                # Direct value assignment
+                outputs[output_name] = output_expr
+        
+        return outputs
 
     async def execute_yaml(
         self,
