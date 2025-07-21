@@ -20,8 +20,11 @@ class BaseExampleTest:
             # Load real API keys
             load_api_keys()
             # Initialize real models
-            init_models()
-            return Orchestrator()
+            model_registry = init_models()
+            # Create control system with the model registry
+            from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
+            control_system = ModelBasedControlSystem(model_registry=model_registry)
+            return Orchestrator(control_system=control_system, model_registry=model_registry)
         except EnvironmentError as e:
             pytest.skip(f"Skipping test - API keys not configured: {e}")
     

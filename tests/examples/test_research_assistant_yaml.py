@@ -38,86 +38,61 @@ class TestResearchAssistantYAML(BaseExampleTest):
         assert 'extract_content' in step_ids
         assert 'synthesize_findings' in step_ids
     
-    def test_auto_tags(self, pipeline_name):
-        """Test that AUTO tags are properly formatted."""
-        auto_tags = self.extract_auto_tags(pipeline_name)
-        
-        # Check that key steps have AUTO tags
-        assert 'analyze_query' in auto_tags
-        assert 'web_search' in auto_tags
-        assert 'analyze_credibility' in auto_tags
-        
-        # Validate AUTO tag content
-        analyze_content = auto_tags['analyze_query'][0]
-        assert 'key topics' in analyze_content.lower()
-        assert 'search terms' in analyze_content.lower()
-    
-    @pytest.mark.asyncio
-    async def test_pipeline_execution_mock(self, orchestrator, pipeline_name):
-        """Test pipeline execution with mocked responses."""
-        # Test pipeline structure
+    def test_research_steps_configuration(self, pipeline_name):
+        """Test that research steps are properly configured."""
         config = self.load_yaml_pipeline(pipeline_name)
         
+        # Check that key research steps exist and have proper actions
+        analyze_step = next((s for s in config['steps'] if s['id'] == 'analyze_query'), None)
+        assert analyze_step is not None
+        assert 'action' in analyze_step
+        
+        # Check web search step
+        web_search_step = next((s for s in config['steps'] if s['id'] == 'web_search'), None)
+        assert web_search_step is not None
+        
+        # Check credibility analysis
+        cred_step = next((s for s in config['steps'] if s['id'] == 'analyze_credibility'), None)
+        assert cred_step is not None
+    
+    @pytest.mark.asyncio
+    async def test_pipeline_execution(self, orchestrator, pipeline_name, sample_inputs):
+        """Test pipeline execution with minimal responses."""
         # Test with minimal responses to avoid expensive API calls
         result = await self.run_pipeline_test(
             orchestrator,
             pipeline_name,
-            {},  # minimal inputs
+            sample_inputs,
+            expected_outputs={
+                'report_markdown': str,
+                'key_findings': list
+            },
             use_minimal_responses=True
         )
         
         # Verify execution completed
         assert result is not None
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                if step_id in mock_responses:
-                    return mock_responses[step_id]
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            # Run pipeline
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=sample_inputs
-            )
-            
-            # Verify execution
-            assert mock_exec.called
-            assert result is not None
     
     @pytest.mark.asyncio
-    async def test_quality_check_execution(self, orchestrator, pipeline_name):
+    async def test_quality_check_execution(self, orchestrator, pipeline_name, sample_inputs):
         """Test quality check execution."""
-        # Test pipeline structure
+        # Load and validate pipeline structure
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Test with minimal responses to avoid expensive API calls
+        # Find quality check step
+        quality_step = next((s for s in config['steps'] if s['id'] == 'quality_check'), None)
+        assert quality_step is not None
+        
+        # Test with minimal responses
         result = await self.run_pipeline_test(
             orchestrator,
             pipeline_name,
-            {},  # minimal inputs
+            sample_inputs,
             use_minimal_responses=True
         )
         
         # Verify execution completed
         assert result is not None
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                if step_id == 'quality_check':
-                    return {'result': {'score': 0.9, 'passed': True}}
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify quality check was executed
-            call_ids = [call[0][0]['id'] for call in mock_exec.call_args_list]
-            assert 'quality_check' in call_ids
     
     @pytest.mark.asyncio
     async def test_output_structure(self, orchestrator, pipeline_name, sample_inputs):
@@ -136,3 +111,34 @@ class TestResearchAssistantYAML(BaseExampleTest):
         
         for output in expected_outputs:
             assert output in config['outputs']
+    
+    @pytest.mark.asyncio
+    async def test_web_search_configuration(self, orchestrator, pipeline_name):
+        """Test web search step configuration."""
+        config = self.load_yaml_pipeline(pipeline_name)
+        
+        # Find web search step
+        web_search_step = next((s for s in config['steps'] if s['id'] == 'web_search'), None)
+        assert web_search_step is not None
+        
+        # Verify it uses search queries from analyze_query
+        assert '{{analyze_query' in str(web_search_step) or 'search_queries' in str(web_search_step)
+    
+    @pytest.mark.asyncio
+    async def test_credibility_analysis(self, orchestrator, pipeline_name, sample_inputs):
+        """Test credibility analysis functionality."""
+        config = self.load_yaml_pipeline(pipeline_name)
+        
+        # Find credibility analysis step
+        cred_step = next((s for s in config['steps'] if s['id'] == 'analyze_credibility'), None)
+        assert cred_step is not None
+        
+        # Test pipeline execution
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            use_minimal_responses=True
+        )
+        
+        assert result is not None

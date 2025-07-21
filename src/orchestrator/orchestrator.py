@@ -160,6 +160,72 @@ class Orchestrator:
             if execution_id in self.running_pipelines:
                 del self.running_pipelines[execution_id]
 
+    async def execute_yaml(
+        self,
+        yaml_content: str,
+        context: Optional[Dict[str, Any]] = None,
+        checkpoint_enabled: bool = False,
+        max_retries: int = 3,
+    ) -> Dict[str, Any]:
+        """
+        Execute a pipeline from YAML content.
+
+        Args:
+            yaml_content: YAML pipeline definition as string
+            context: Context variables for the pipeline
+            checkpoint_enabled: Whether to enable checkpointing
+            max_retries: Maximum retry attempts for failed tasks
+
+        Returns:
+            Execution results
+
+        Raises:
+            ExecutionError: If execution fails
+        """
+        # Compile YAML into pipeline
+        if self.yaml_compiler is None:
+            self.yaml_compiler = YAMLCompiler(model_registry=self.model_registry)
+        
+        # Compile the YAML content
+        pipeline = await self.yaml_compiler.compile(yaml_content, context=context or {})
+        
+        # Execute the compiled pipeline
+        return await self.execute_pipeline(
+            pipeline,
+            checkpoint_enabled=checkpoint_enabled,
+            max_retries=max_retries
+        )
+
+    async def _execute_step(self, step: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a single step/task.
+        
+        This method is used by tests to override behavior for minimal responses.
+        
+        Args:
+            step: Step/task definition
+            context: Execution context
+            
+        Returns:
+            Step execution result
+        """
+        # Convert step dict to Task if needed
+        from .core.task import Task
+        
+        if isinstance(step, dict):
+            task = Task(
+                id=step.get('id', 'unknown'),
+                type=step.get('type', 'generate'),
+                parameters=step.get('parameters', {}),
+                dependencies=step.get('dependencies', [])
+            )
+        else:
+            task = step
+            
+        # Execute task using control system
+        result = await self.control_system.execute_task(task, context)
+        return result
+
     async def _execute_pipeline_internal(
         self,
         pipeline: Pipeline,
