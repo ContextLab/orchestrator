@@ -3,7 +3,7 @@
 import os
 import tempfile
 import time
-from unittest.mock import AsyncMock, Mock
+from typing import Any, Optional, Dict
 
 import pytest
 
@@ -393,36 +393,78 @@ class TestCacheStrategyBasic:
         assert strategy is not None
 
 
+class TestableAsyncCache:
+    """Testable async cache for wrapper tests."""
+    
+    def __init__(self):
+        self._data = {}
+        self.call_history = []
+        
+    async def get(self, key: str) -> Optional[Any]:
+        """Test version of async get."""
+        self.call_history.append(('get', key))
+        return self._data.get(key)
+        
+    async def set(self, key: str, value: Any, ttl: Optional[float] = None):
+        """Test version of async set."""
+        self.call_history.append(('set', key, value, ttl))
+        self._data[key] = value
+
+
 class TestAsyncCacheWrapper:
     """Test async cache wrapper functionality."""
 
     @pytest.mark.asyncio
     async def test_async_cache_wrapper_basic(self):
         """Test basic async cache wrapper."""
-        mock_cache = AsyncMock()
-        mock_cache.get.return_value = None
-        mock_cache.set = AsyncMock()
+        test_cache = TestableAsyncCache()
 
-        @async_cache_wrapper(cache=mock_cache, ttl=300)
+        @async_cache_wrapper(cache=test_cache, ttl=300)
         async def test_func(x):
             return f"result_{x}"
 
         result = await test_func("test")
         assert result == "result_test"
+        
+        # Verify cache was called
+        assert len(test_cache.call_history) == 2  # get and set
+        assert test_cache.call_history[0][0] == 'get'
+        assert test_cache.call_history[1][0] == 'set'
+
+
+class TestableSyncCache:
+    """Testable sync cache for wrapper tests."""
+    
+    def __init__(self):
+        self._data = {}
+        self.call_history = []
+        
+    def get(self, key: str) -> Optional[Any]:
+        """Test version of sync get."""
+        self.call_history.append(('get', key))
+        return self._data.get(key)
+        
+    def set(self, key: str, value: Any, ttl: Optional[float] = None):
+        """Test version of sync set."""
+        self.call_history.append(('set', key, value, ttl))
+        self._data[key] = value
 
 
 def test_sync_cache_wrapper_basic():
     """Test basic sync cache wrapper."""
-    mock_cache = Mock()
-    mock_cache.get.return_value = None
-    mock_cache.set = Mock()
+    test_cache = TestableSyncCache()
 
-    @sync_cache_wrapper(cache=mock_cache, ttl=300)
+    @sync_cache_wrapper(cache=test_cache, ttl=300)
     def test_func(x):
         return f"result_{x}"
 
     result = test_func("test")
     assert result == "result_test"
+    
+    # Verify cache was called
+    assert len(test_cache.call_history) == 2  # get and set
+    assert test_cache.call_history[0][0] == 'get'
+    assert test_cache.call_history[1][0] == 'set'
 
 
 class TestDiskCacheBasic:
