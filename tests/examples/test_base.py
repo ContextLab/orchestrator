@@ -85,6 +85,24 @@ class BaseExampleTest:
         elif step_id == "export_pdf":
             return {"result": "/path/to/report.pdf"}
         
+        # Handle specific step IDs for document intelligence
+        elif step_id == "discover_documents":
+            return {"result": {"document_list": ["doc1.pdf", "doc2.txt"], "count": 2}}
+        elif step_id == "classify_documents":
+            return {"result": {"doc1.pdf": "contract", "doc2.txt": "report"}}
+        elif step_id == "extract_entities":
+            return {"result": [5, 3]}  # Entity counts per document
+        elif step_id == "detect_pii":
+            return {"result": ["doc1.pdf"]}  # Documents with PII
+        elif step_id == "generate_insights":
+            return {"result": {"top_5": ["Insight 1", "Insight 2", "Insight 3", "Insight 4", "Insight 5"]}}
+        elif step_id == "build_knowledge_graph":
+            return {"result": {"node_count": 15, "edge_count": 22, "graph": "graph_data"}}
+        elif step_id == "create_compliance_report":
+            return {"result": {"overall_status": "compliant", "report": "compliance details"}}
+        elif step_id == "save_outputs":
+            return {"result": {"report_path": "/output/report.pdf", "total_time": "5.2s"}}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}

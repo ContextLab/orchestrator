@@ -192,19 +192,23 @@ class YAMLCompiler:
                     error_str = str(e).lower()
 
                     # Check if this is a runtime reference that should be preserved
-                    if "undefined" in error_str:
-                        # Check for explicit runtime reference patterns
-                        runtime_patterns = [
-                            "inputs.",
-                            "outputs.",
-                            "$results.",
-                            "steps.",
-                            ".result",
-                            ".output",
-                            ".value",
-                            ".data",
-                        ]
+                    runtime_patterns = [
+                        "inputs.",
+                        "outputs.",
+                        "$results.",
+                        "steps.",
+                        ".result",
+                        ".output",
+                        ".value",
+                        ".data",
+                    ]
+                    
+                    # Check if any runtime pattern is in the original template
+                    if any(ref in value for ref in runtime_patterns):
+                        return value  # Keep template for runtime resolution
 
+                    # Check for specific error patterns that indicate runtime references
+                    if "undefined" in error_str or "has no attribute" in error_str:
                         # Also check if it references a step ID (pattern: word or word.word)
                         import re
 
@@ -213,9 +217,7 @@ class YAMLCompiler:
                             r"\{\{[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?\}\}"
                         )
 
-                        if any(ref in value for ref in runtime_patterns) or re.search(
-                            step_ref_pattern, value
-                        ):
+                        if re.search(step_ref_pattern, value):
                             return value  # Keep template for runtime resolution
 
                     raise TemplateRenderError(

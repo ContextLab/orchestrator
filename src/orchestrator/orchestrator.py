@@ -436,27 +436,54 @@ class Orchestrator:
         outputs = {}
         output_defs = pipeline.metadata.get("outputs", {})
         
+        # Use Jinja2 for template rendering to support filters
+        from jinja2 import Template, TemplateError
+        
         for output_name, output_expr in output_defs.items():
-            # Simple extraction logic - parse expressions like "{{step_id.result.field}}"
-            if isinstance(output_expr, str) and output_expr.startswith("{{") and output_expr.endswith("}}"):
-                # Extract the path from the expression
-                path = output_expr[2:-2].strip()
-                parts = path.split(".")
-                
-                # Navigate through the results
-                value = results
-                for part in parts:
-                    if isinstance(value, dict) and part in value:
-                        value = value[part]
-                    else:
-                        # If path not found, use a default value
-                        value = None
-                        break
-                
-                outputs[output_name] = value
-            else:
-                # Direct value assignment
-                outputs[output_name] = output_expr
+            try:
+                if isinstance(output_expr, str) and "{{" in output_expr:
+                    # Render template with results context
+                    template = Template(output_expr)
+                    # Create a context that includes all step results
+                    context = results.copy()
+                    # Render the template
+                    value = template.render(**context)
+                    
+                    # Try to convert to appropriate type
+                    if isinstance(value, str):
+                        if value.isdigit():
+                            value = int(value)
+                        elif value.replace('.', '', 1).isdigit():
+                            value = float(value)
+                        elif value.lower() in ('true', 'false'):
+                            value = value.lower() == 'true'
+                        elif value.startswith('{') and value.endswith('}'):
+                            # Try to parse as dict
+                            try:
+                                import ast
+                                value = ast.literal_eval(value)
+                            except:
+                                pass  # Keep as string if parsing fails
+                        elif value.startswith('[') and value.endswith(']'):
+                            # Try to parse as list
+                            try:
+                                import ast
+                                value = ast.literal_eval(value)
+                            except:
+                                pass  # Keep as string if parsing fails
+                    
+                    outputs[output_name] = value
+                else:
+                    # Direct value assignment
+                    outputs[output_name] = output_expr
+            except TemplateError as e:
+                # If template rendering fails, set to None
+                self.logger.warning(f"Failed to extract output '{output_name}': {e}")
+                outputs[output_name] = None
+            except Exception as e:
+                # Catch any other errors
+                self.logger.warning(f"Error extracting output '{output_name}': {e}")
+                outputs[output_name] = None
         
         return outputs
 
