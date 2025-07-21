@@ -6,7 +6,6 @@ import os
 import tempfile
 import time
 from datetime import datetime
-from unittest.mock import patch
 
 import pytest
 
@@ -495,13 +494,23 @@ class TestStateManager:
             with open(problem_file, "w") as f:
                 f.write("{}")
 
-            # Mock os.path.getmtime to raise OSError
-            with patch("os.path.getmtime", side_effect=OSError("Permission denied")):
+            # Replace os.path.getmtime temporarily
+            original_getmtime = os.path.getmtime
+            
+            def failing_getmtime(path):
+                raise OSError("Permission denied")
+            
+            os.path.getmtime = failing_getmtime
+            
+            try:
                 # Should handle error gracefully
                 deleted_count = await manager.cleanup_old_checkpoints(30)
 
                 # Should return 0 since file couldn't be processed
                 assert deleted_count == 0
+            finally:
+                # Restore original function
+                os.path.getmtime = original_getmtime
 
     @pytest.mark.asyncio
     async def test_cleanup_old_checkpoints_custom_age(self):
@@ -587,13 +596,23 @@ class TestStateManager:
             with open(json_file, "w") as f:
                 json.dump({"test": "data"}, f)
 
-            # Mock os.path.getsize to raise OSError
-            with patch("os.path.getsize", side_effect=OSError("Permission denied")):
+            # Replace os.path.getsize temporarily
+            original_getsize = os.path.getsize
+            
+            def failing_getsize(path):
+                raise OSError("Permission denied")
+            
+            os.path.getsize = failing_getsize
+            
+            try:
                 info = manager.get_storage_info()
 
                 # Should handle error gracefully
                 assert info["total_checkpoints"] == 0
                 assert info["total_size_bytes"] == 0
+            finally:
+                # Restore original function
+                os.path.getsize = original_getsize
 
     @pytest.mark.asyncio
     async def test_checkpoint_id_format(self):
