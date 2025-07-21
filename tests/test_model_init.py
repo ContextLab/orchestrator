@@ -796,7 +796,12 @@ class TestInitModels:
         src.orchestrator.integrations.openai_model.OpenAIModel = failing_openai_model
         
         try:
-            os.environ["OPENAI_API_KEY"] = "test-key"
+            # Load real API keys
+            from orchestrator.utils.api_keys import load_api_keys
+            try:
+                load_api_keys()
+            except EnvironmentError:
+                pytest.skip("API keys not configured")
             
             # Should not crash, just skip the model
             registry = init_models()
