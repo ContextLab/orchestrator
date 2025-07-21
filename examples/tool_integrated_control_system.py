@@ -467,9 +467,9 @@ See compiled research results for detailed source citations.
                     "error": str(e)
                 }
         
-        # Fallback - simulate PDF creation
-        return {
-            "pdf_file": output,
-            "compilation_successful": True,
-            "message": "PDF compilation simulated (pandoc not available)"
-        }
+        # No simulation - raise error if PDF cannot be created
+        raise RuntimeError(
+            "PDF generation failed: pandoc is not available. "
+            "Please install pandoc to generate PDFs: "
+            "https://pandoc.org/installing.html"
+        )
