@@ -7,13 +7,55 @@ Targeting:
 - Lines 351-352: unexpected result type handling
 """
 
-from unittest.mock import AsyncMock
-
 import pytest
 
 from orchestrator.core.pipeline import Pipeline
 from orchestrator.core.task import Task, TaskStatus
-from orchestrator.executor.parallel_executor import ParallelExecutor, ResourceMonitor
+from orchestrator.executor.parallel_executor import (
+    ParallelExecutor,
+    ResourceMonitor,
+    WorkerPool,
+    ExecutionConfig,
+    ExecutionResult,
+)
+
+
+class TestableWorkerPool(WorkerPool):
+    """Testable worker pool with controllable behavior."""
+    
+    def __init__(self, config=None):
+        super().__init__(config or ExecutionConfig())
+        self._test_results = {}
+        self._test_exceptions = {}
+        self.call_history = []
+        
+    def set_test_result(self, task_id: str, result):
+        """Set what execute_task should return for a task."""
+        self._test_results[task_id] = result
+        
+    def set_test_exception(self, task_id: str, exception: Exception):
+        """Set exception to raise for a task."""
+        self._test_exceptions[task_id] = exception
+        
+    async def execute_task(self, task, executor_func):
+        """Test version of execute_task."""
+        self.call_history.append(('execute_task', task.id, executor_func))
+        
+        # Check for exceptions
+        if task.id in self._test_exceptions:
+            raise self._test_exceptions[task.id]
+            
+        # Return configured result
+        if task.id in self._test_results:
+            return self._test_results[task.id]
+            
+        # Default behavior - return ExecutionResult
+        return ExecutionResult(
+            task_id=task.id,
+            success=True,
+            result=f"Result for {task.id}",
+            execution_time=0.1
+        )
 
 
 class TestParallelExecutorFinalLines:
@@ -56,16 +98,18 @@ class TestParallelExecutorFinalLines:
     async def test_execute_level_unexpected_result_lines_351_352(self):
         """Test lines 351-352: handling unexpected result type."""
         executor = ParallelExecutor()
+        
+        # Replace worker pool with testable version
+        test_worker_pool = TestableWorkerPool()
+        executor.worker_pool = test_worker_pool
 
         # Create pipeline with task
         pipeline = Pipeline(id="test_pipeline", name="Test Pipeline")
         task = Task(id="task1", name="Task 1", action="generate")
         pipeline.add_task(task)
 
-        # Mock worker pool to return unexpected type
-        executor.worker_pool.execute_task = AsyncMock(
-            return_value="unexpected_string_result"
-        )
+        # Configure worker pool to return unexpected type (not ExecutionResult)
+        test_worker_pool.set_test_result("task1", "unexpected_string_result")
 
         # Execute level
         result = await executor._execute_level(
