@@ -220,6 +220,34 @@ class BaseExampleTest:
         elif step_id == "log_analytics":
             return {"result": {"response_time": 120, "automation_success": True}}
         
+        # Handle specific step IDs for automated testing system
+        elif step_id == "analyze_codebase":
+            return {"result": {"functions": [{"name": "calculate_total", "params": ["items", "tax_rate"]}, {"name": "validate_email", "params": ["email"]}], "classes": [{"name": "OrderProcessor", "methods": 5}], "complexity_metrics": {"average_complexity": 4.5, "max_complexity": 12}}}
+        elif step_id == "analyze_existing_tests":
+            return {"result": {"existing_tests": ["test_calculate_total"], "test_count": 2, "coverage": 45, "current_coverage": 45}}
+        elif step_id == "generate_test_plan":
+            return {"result": {"test_targets": [{"function": "func1", "priority": "high"}], "priority_matrix": ["func1", "func2"]}}
+        elif step_id == "generate_unit_tests":
+            return {"result": {"count": 5, "files": ["test_unit.py"], "generated_test": "test_func", "test_cases": 5}}
+        elif step_id == "generate_integration_tests":
+            return {"result": {"count": 3, "files": ["test_integration.py"]}}
+        elif step_id == "generate_fixtures":
+            return {"result": {"fixtures_created": 4}}
+        elif step_id == "generate_performance_tests":
+            return {"result": {"benchmarks_created": 2}}
+        elif step_id == "execute_tests":
+            return {"result": {"total_tests": 50, "passed": 48, "failed": 2, "coverage": 85.5, "passed_count": 48, "failed_count": 2, "total_time": "12.5s", "failures": [{"test": "test_edge_case", "reason": "AssertionError"}]}}
+        elif step_id == "analyze_failures":
+            return {"result": {"failure_analysis": "2 tests failed due to edge cases"}}
+        elif step_id == "optimize_test_suite":
+            return {"result": {"redundant_count": 3, "slow_tests": ["test_heavy_computation"]}}
+        elif step_id == "mutation_testing":
+            return {"result": {"score": 0.92}}
+        elif step_id == "generate_report":
+            return {"result": {"report_path": "/output/test_report.html"}}
+        elif step_id == "generate_ci_config":
+            return {"result": {"config_path": ".github/workflows/test.yml"}}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
