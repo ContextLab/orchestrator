@@ -496,13 +496,18 @@ class TestDataProcessingWorkflowIntegration:
         with open(pipeline_path, 'r') as f:
             yaml_content = f.read()
         
-        # Compile the YAML content
-        pipeline = await yaml_compiler.compile(yaml_content)
+        # Create context with required inputs
+        context = {
+            "source": sample_dataset,
+            "output_path": str(Path(temp_workspace) / "processed_data"),
+            "output_format": "json",
+            "chunk_size": 100,  # Small for testing
+            "quality_threshold": 0.8,
+            "parallel_workers": 1  # Single worker for testing
+        }
         
-        # Set context for data processing
-        pipeline.set_context("input_file", sample_dataset)
-        pipeline.set_context("output_dir", temp_workspace)
-        pipeline.set_context("processing_steps", ["validate", "transform", "analyze"])
+        # Compile the YAML content with context
+        pipeline = await yaml_compiler.compile(yaml_content, context=context)
         
         # Execute pipeline
         try:

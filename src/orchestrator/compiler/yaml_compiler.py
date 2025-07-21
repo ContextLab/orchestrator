@@ -205,11 +205,12 @@ class YAMLCompiler:
                             ".data",
                         ]
 
-                        # Also check if it references a step ID (pattern: word.word)
+                        # Also check if it references a step ID (pattern: word or word.word)
                         import re
 
+                        # Match both simple step references ({{step_id}}) and dotted ones ({{step_id.result}})
                         step_ref_pattern = (
-                            r"\{\{[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*"
+                            r"\{\{[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?\}\}"
                         )
 
                         if any(ref in value for ref in runtime_patterns) or re.search(
