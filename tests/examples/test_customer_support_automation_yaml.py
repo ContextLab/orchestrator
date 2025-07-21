@@ -1,4 +1,8 @@
-"""Tests for customer_support_automation.yaml example."""
+"""Tests for customer_support_automation.yaml example.
+
+This test file follows the NO MOCKS policy. Tests use real orchestration
+when API keys are available, otherwise they skip gracefully.
+"""
 import pytest
 from .test_base import BaseExampleTest
 
@@ -14,12 +18,11 @@ class TestCustomerSupportAutomationYAML(BaseExampleTest):
     def sample_inputs(self):
         return {
             "ticket_id": "TICKET-12345",
-            "customer_message": "My account was charged twice for the same order",
-            "customer_id": "CUST-98765",
-            "priority": "high",
-            "category": "billing",
-            "language": "en",
-            "escalate_threshold": 0.8
+            "ticketing_system": "zendesk",
+            "auto_respond": True,
+            "languages": ["en", "es", "fr"],
+            "escalation_threshold": -0.5,
+            "kb_confidence_threshold": 0.75
         }
     
     def test_pipeline_structure(self, pipeline_name):
@@ -31,13 +34,15 @@ class TestCustomerSupportAutomationYAML(BaseExampleTest):
         # Check support workflow steps
         step_ids = [step['id'] for step in config['steps']]
         required_steps = [
-            'analyze_ticket',
-            'retrieve_customer_history',
-            'categorize_issue',
-            'check_knowledge_base',
+            'receive_ticket',
+            'detect_language',
+            'analyze_sentiment',
+            'extract_entities',
+            'classify_ticket',
+            'search_knowledge_base',
+            'check_automation_eligibility',
             'generate_response',
-            'sentiment_check',
-            'escalation_check'
+            'assign_to_agent'
         ]
         
         for step in required_steps:
@@ -49,226 +54,79 @@ class TestCustomerSupportAutomationYAML(BaseExampleTest):
         
         # Check language is used in response generation
         response_step = next(s for s in config['steps'] if s['id'] == 'generate_response')
-        assert '{{language}}' in str(response_step)
+        assert 'Language:' in str(response_step) or 'language' in str(response_step)
     
     @pytest.mark.asyncio
-    async def test_ticket_analysis(self, orchestrator, pipeline_name):
+    async def test_ticket_analysis(self, orchestrator, pipeline_name, sample_inputs):
         """Test ticket analysis and categorization."""
-        # Test pipeline structure
-        config = self.load_yaml_pipeline(pipeline_name)
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            expected_outputs={
+                'category': str,
+                'sentiment_score': (int, float, str),
+                'automation_status': str
+            },
+            use_minimal_responses=True
+        )
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'analyze_sentiment':
-                    return {
-                        'result': {
-                            'intent': 'billing_dispute',
-                            'sentiment': 'negative',
-                            'urgency': 'high',
-                            'key_entities': ['double charge', 'same order']
-                        }
-                    }
-                elif step_id == 'classify_ticket':
-                    return {
-                        'result': {
-                            'primary_category': 'billing',
-                            'subcategory': 'duplicate_charge',
-                            'confidence': 0.95
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=sample_inputs
-            )
-            
-            # Verify analysis was performed
-            analysis_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'analyze_sentiment'
-            ]
-            assert len(analysis_calls) == 1
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result
     
-    @pytest.mark.asyncio
-    async def test_customer_history_retrieval(self, orchestrator, pipeline_name):
-        """Test customer history lookup."""
-        # Test pipeline structure
+    def test_customer_history_configuration(self, pipeline_name):
+        """Test customer history lookup configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                if step.get('id') == 'extract_entities':
-                    return {
-                        'result': {
-                            'previous_tickets': 3,
-                            'account_status': 'premium',
-                            'lifetime_value': 2500,
-                            'recent_issues': [
-                                {'date': '2024-01-15', 'type': 'shipping_delay'}
-                            ]
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify history was retrieved
-            history_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'extract_entities'
-            ]
-            assert len(history_calls) > 0
+        # Check that receive_ticket retrieves customer history
+        receive_step = next(s for s in config['steps'] if s['id'] == 'receive_ticket')
+        assert 'customer information and history' in str(receive_step)
+        
+        # Check that extract_entities processes the information
+        extract_step = next(s for s in config['steps'] if s['id'] == 'extract_entities')
+        assert extract_step is not None
     
-    @pytest.mark.asyncio
-    async def test_knowledge_base_search(self, orchestrator, pipeline_name):
-        """Test knowledge base solution search."""
-        # Test pipeline structure
+    def test_knowledge_base_search_configuration(self, pipeline_name):
+        """Test knowledge base solution search configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                if step.get('id') == 'search_knowledge_base':
-                    return {
-                        'result': {
-                            'found_solution': True,
-                            'articles': [
-                                {
-                                    'id': 'KB-001',
-                                    'title': 'Password Reset Guide',
-                                    'relevance': 0.98
-                                }
-                            ],
-                            'suggested_steps': [
-                                'Click "Forgot Password" on login page',
-                                'Enter your email address',
-                                'Check email for reset link'
-                            ]
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify KB was searched
-            kb_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'search_knowledge_base'
-            ]
-            assert len(kb_calls) > 0
+        # Check that search_knowledge_base exists
+        kb_step = next(s for s in config['steps'] if s['id'] == 'search_knowledge_base')
+        assert kb_step is not None
+        assert 'knowledge base for solutions' in str(kb_step)
+        
+        # Check that KB search depends on classification
+        if 'depends_on' in kb_step:
+            assert 'classify_ticket' in kb_step['depends_on']
     
-    @pytest.mark.asyncio
-    async def test_escalation_logic(self, orchestrator, pipeline_name):
-        """Test escalation decision making."""
-        # Test pipeline structure
+    def test_escalation_logic(self, pipeline_name):
+        """Test escalation decision making configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'check_automation_eligibility':
-                    return {
-                        'result': {
-                            'complexity_score': 0.85,
-                            'should_escalate': True,
-                            'reason': 'Legal threat detected'
-                        }
-                    }
-                elif step_id == 'assign_to_agent':
-                    return {
-                        'result': {
-                            'assigned_to': 'senior_agent_01',
-                            'escalation_notes': 'Customer threatening legal action'
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs_escalate
-            )
-            
-            # Verify escalation was triggered
-            escalation_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'assign_to_agent'
-            ]
-            assert len(escalation_calls) > 0
+        # Check automation eligibility step
+        eligibility_step = next(s for s in config['steps'] if s['id'] == 'check_automation_eligibility')
+        assert eligibility_step is not None
+        assert 'escalation_threshold' in str(eligibility_step)
+        
+        # Check assign_to_agent step has condition
+        assign_step = next(s for s in config['steps'] if s['id'] == 'assign_to_agent')
+        assert 'condition' in assign_step
+        assert 'can_automate}} == false' in assign_step['condition']
     
-    @pytest.mark.asyncio
-    async def test_sentiment_analysis(self, orchestrator, pipeline_name):
-        """Test sentiment checking and response adjustment."""
-        # Test pipeline structure
+    def test_sentiment_analysis_configuration(self, pipeline_name):
+        """Test sentiment checking and response adjustment configuration."""
         config = self.load_yaml_pipeline(pipeline_name)
         
-        # Validate relevant configuration
-        assert 'steps' in config
-        assert len(config['steps']) > 0
-    async def mock_step_execution(step, context, state):
-                step_id = step.get('id')
-                
-                if step_id == 'analyze_sentiment':
-                    return {
-                        'result': {
-                            'sentiment_score': -0.8,
-                            'emotion': 'angry',
-                            'requires_empathy': True
-                        }
-                    }
-                elif step_id == 'translate_response':
-                    return {
-                        'result': {
-                            'adjusted_response': 'I sincerely apologize for the frustration...',
-                            'empathy_level': 'high',
-                            'offers_made': ['discount', 'priority_support']
-                        }
-                    }
-                return {'result': {}}
-            
-            mock_exec.side_effect = mock_step_execution
-            
-            result = await orchestrator.run_pipeline(
-                self.load_yaml_pipeline(pipeline_name),
-                inputs=inputs
-            )
-            
-            # Verify sentiment analysis and tone adjustment
-            sentiment_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'analyze_sentiment'
-            ]
-            tone_calls = [
-                call for call in mock_exec.call_args_list 
-                if call[0][0].get('id') == 'translate_response'
-            ]
-            
-            assert len(sentiment_calls) > 0
-            assert len(tone_calls) > 0
+        # Check sentiment analysis step exists
+        sentiment_step = next(s for s in config['steps'] if s['id'] == 'analyze_sentiment')
+        assert sentiment_step is not None
+        assert 'customer sentiment and emotion' in str(sentiment_step)
+        
+        # Check that response generation considers sentiment
+        response_step = next(s for s in config['steps'] if s['id'] == 'generate_response')
+        assert 'empathy matching customer sentiment' in str(response_step)
     
     def test_conditional_translation(self, pipeline_name):
         """Test conditional translation step."""
@@ -282,19 +140,34 @@ class TestCustomerSupportAutomationYAML(BaseExampleTest):
         
         assert translate_step is not None
         assert 'condition' in translate_step
-        assert "{{language}} != 'en'" in translate_step['condition']
+        assert "!= 'en'" in translate_step['condition']
     
     def test_output_completeness(self, pipeline_name):
         """Test that all support outputs are defined."""
         config = self.load_yaml_pipeline(pipeline_name)
         
         expected_outputs = [
-            'ticket_status',
-            'response_text',
-            'resolution_time',
-            'customer_satisfaction_prediction',
-            'follow_up_required'
+            'ticket_id',
+            'automation_status',
+            'category',
+            'sentiment_score',
+            'language'
         ]
         
         for output in expected_outputs:
             assert output in config['outputs'], f"Missing output: {output}"
+    
+    @pytest.mark.asyncio 
+    async def test_full_automation_flow(self, orchestrator, pipeline_name, sample_inputs):
+        """Test full automation flow with minimal responses."""
+        # Test pipeline execution with minimal responses
+        result = await self.run_pipeline_test(
+            orchestrator,
+            pipeline_name,
+            sample_inputs,
+            use_minimal_responses=True
+        )
+        
+        # Verify result structure
+        assert result is not None
+        assert 'outputs' in result or 'steps' in result

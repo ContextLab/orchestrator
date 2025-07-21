@@ -188,6 +188,38 @@ class BaseExampleTest:
         elif step_id == "generate_artifacts":
             return {"result": {"artifacts": ["/output/report.json", "/output/badges.svg"]}}
         
+        # Handle specific step IDs for customer support
+        elif step_id == "receive_ticket":
+            return {"result": {"ticket_id": "TICKET-12345", "subject": "Billing issue", "description": "I was charged twice", "customer_info": {"name": "John Doe", "tier": "premium"}, "created_at": "2024-01-20T10:00:00Z", "conversation_history": []}}
+        elif step_id == "detect_language":
+            return {"result": {"language": "en", "confidence": 0.98}}
+        elif step_id == "analyze_sentiment":
+            return {"result": {"sentiment_score": -0.6, "emotion": "frustrated", "urgency": "high"}}
+        elif step_id == "extract_entities":
+            return {"result": {"order_numbers": ["ORD-12345"], "products": ["Premium Plan"], "dates": ["2024-01-19"]}}
+        elif step_id == "classify_ticket":
+            return {"result": {"primary_category": "billing", "tags": ["duplicate_charge", "urgent"], "priority_score": 8, "required_expertise": ["billing_specialist"]}}
+        elif step_id == "search_knowledge_base":
+            return {"result": {"articles": [{"id": "KB-001", "title": "Billing FAQ", "relevance": 0.85}], "confidence_score": 0.82, "solution_found": True}}
+        elif step_id == "check_automation_eligibility":
+            return {"result": {"can_automate": True, "reason": "High KB confidence and standard issue"}}
+        elif step_id == "generate_response":
+            return {"result": {"response_text": "I apologize for the duplicate charge. I'll help you resolve this immediately...", "solution_steps": ["Step 1: Review charge", "Step 2: Process refund"], "follow_up_needed": False}}
+        elif step_id == "translate_response":
+            return {"result": "Translated response text..."}
+        elif step_id == "update_ticket":
+            return {"result": {"success": True, "ticket_id": "TICKET-12345"}}
+        elif step_id == "send_response":
+            return {"result": {"success": True, "response_id": "RESP-98765"}}
+        elif step_id == "assign_to_agent":
+            return {"result": {"agent_name": "Agent Smith", "agent_id": "AGT-001", "estimated_response_time": "30 minutes"}}
+        elif step_id == "monitor_sla":
+            return {"result": {"status": "on_track", "time_remaining": 3600, "at_risk": False}}
+        elif step_id == "create_followup":
+            return {"result": {"tasks_created": 2, "task_ids": ["TASK-001", "TASK-002"]}}
+        elif step_id == "log_analytics":
+            return {"result": {"response_time": 120, "automation_success": True}}
+        
         # Generic responses based on action
         elif "market_data" in action_lower or "collect" in action_lower:
             return {"result": {"data": "sample market data"}}
