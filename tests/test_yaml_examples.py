@@ -5,12 +5,72 @@ Tests for YAML example files in the examples directory.
 import pytest
 import asyncio
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock
 
 from orchestrator.compiler.yaml_compiler import YAMLCompiler
 from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.compiler.yaml_compiler import YAMLCompilerError
+from orchestrator.core.model import Model, ModelCapabilities
+
+
+class TestableYAMLModel(Model):
+    """A testable model for YAML example tests."""
+    
+    def __init__(self):
+        capabilities = ModelCapabilities(
+            supported_tasks=["generate", "analyze", "transform"],
+            context_window=8192,
+            languages=["en"]
+        )
+        super().__init__(name="test-model", provider="test", capabilities=capabilities)
+        self.generate_calls = []
+        
+    async def generate(self, prompt, **kwargs):
+        """Generate response based on prompt content."""
+        self.generate_calls.append((prompt, kwargs))
+        
+        # Return different results based on prompt content
+        prompt_lower = prompt.lower()
+        
+        if "research" in prompt_lower or "plan" in prompt_lower:
+            return "Research plan: 1. Gather data 2. Analyze 3. Report"
+        elif "gather" in prompt_lower or "collect" in prompt_lower:
+            return "Data collected: Various sources analyzed"
+        elif "analyze" in prompt_lower or "process" in prompt_lower:
+            return "Analysis complete: Key insights identified"
+        elif "report" in prompt_lower or "summary" in prompt_lower:
+            return "Report: Comprehensive findings documented"
+        elif "generate" in prompt_lower or "create" in prompt_lower:
+            return "Generated content based on requirements"
+        elif "validate" in prompt_lower or "check" in prompt_lower:
+            return {"valid": True, "score": 0.95}
+        elif "transform" in prompt_lower or "convert" in prompt_lower:
+            return "Data transformed successfully"
+        else:
+            return "Task completed successfully"
+            
+    async def generate_structured(self, prompt, schema, **kwargs):
+        """Generate structured output."""
+        result = await self.generate(prompt, **kwargs)
+        if isinstance(result, dict):
+            return result
+        return {"result": result}
+        
+    async def validate_response(self, response, schema):
+        """Validate response against schema."""
+        return True
+        
+    def estimate_tokens(self, text):
+        """Estimate token count."""
+        return len(text.split())
+        
+    def estimate_cost(self, input_tokens, output_tokens):
+        """Estimate generation cost."""
+        return 0.001
+        
+    async def health_check(self):
+        """Health check."""
+        return True
 
 
 class TestYAMLExamples:
@@ -22,37 +82,8 @@ class TestYAMLExamples:
         compiler = YAMLCompiler()
         model_registry = populated_model_registry
         
-        # Create a mock model that returns predictable results
-        model = Mock()
-        model.name = "test-model"
-        
-        async def mock_generate(prompt, **kwargs):
-            # Return different results based on prompt content
-            prompt_lower = prompt.lower()
-            
-            if "research" in prompt_lower or "plan" in prompt_lower:
-                return "Research plan: 1. Gather data 2. Analyze 3. Report"
-            elif "gather" in prompt_lower or "collect" in prompt_lower:
-                return "Data collected: Various sources analyzed"
-            elif "analyze" in prompt_lower or "process" in prompt_lower:
-                return "Analysis complete: Key insights identified"
-            elif "report" in prompt_lower or "summary" in prompt_lower:
-                return "Report: Comprehensive findings documented"
-            elif "generate" in prompt_lower or "create" in prompt_lower:
-                return "Generated content based on requirements"
-            elif "validate" in prompt_lower or "check" in prompt_lower:
-                return {"valid": True, "score": 0.95}
-            elif "transform" in prompt_lower or "convert" in prompt_lower:
-                return "Data transformed successfully"
-            else:
-                return "Task completed successfully"
-        
-        model.generate = mock_generate
-        model.capabilities = {
-            "tasks": ["generate", "analyze", "transform"],
-            "context_window": 8192,
-            "output_tokens": 4096
-        }
+        # Create a testable model that returns predictable results
+        model = TestableYAMLModel()
         
         model_registry.register_model(model)
         control_system = ModelBasedControlSystem(model_registry)
