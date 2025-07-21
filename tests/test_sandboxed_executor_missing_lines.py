@@ -1,6 +1,9 @@
 """Tests to cover specific missing lines in Sandboxed Executor."""
 
-from unittest.mock import AsyncMock, Mock, patch
+import asyncio
+import os
+import tempfile
+from typing import Any, Dict, Optional, Tuple
 
 import pytest
 
@@ -10,7 +13,93 @@ from src.orchestrator.executor.sandboxed_executor import (
     ResourceManager,
     SandboxConfig,
     SandboxManager,
+    ExecutionResult,
 )
+
+
+class TestableDockerClient:
+    """Testable Docker client that simulates failures."""
+    
+    def __init__(self):
+        self.should_fail = False
+        self.failure_message = "Docker execution failed"
+        self.call_history = []
+        
+    def ping(self):
+        """Simulate ping."""
+        self.call_history.append('ping')
+        return True
+        
+    class containers:
+        def __init__(self, parent):
+            self.parent = parent
+            
+        def run(self, *args, **kwargs):
+            self.parent.call_history.append(('run', args, kwargs))
+            if self.parent.should_fail:
+                raise Exception(self.parent.failure_message)
+            # Return mock container with logs
+            class MockContainer:
+                def logs(self):
+                    return b"Test output"
+            return MockContainer()
+
+
+class TestableDockerExecutor(DockerSandboxExecutor):
+    """Testable Docker executor with injectable client."""
+    
+    def __init__(self, config, docker_client=None):
+        super().__init__(config)
+        self._test_docker_client = docker_client
+        self._docker_available = docker_client is not None
+        
+    def _check_docker_availability(self):
+        """Override to use test client."""
+        return self._docker_available
+        
+    def _get_docker_client(self):
+        """Return test client instead of real Docker client."""
+        return self._test_docker_client
+
+
+class TestableProcessExecutor(ProcessSandboxExecutor):
+    """Testable process executor with controllable behavior."""
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self._test_process = None
+        self._test_exception = None
+        
+    def set_test_process(self, stdout: bytes, stderr: bytes, returncode: int):
+        """Set test process output."""
+        self._test_process = (stdout, stderr, returncode)
+        
+    def set_test_exception(self, exception: Exception):
+        """Set exception to raise."""
+        self._test_exception = exception
+        
+    async def _create_subprocess(self, *args, **kwargs):
+        """Override to return test process."""
+        if self._test_exception:
+            raise self._test_exception
+            
+        class TestProcess:
+            def __init__(self, stdout, stderr, returncode):
+                self._stdout = stdout
+                self._stderr = stderr
+                self.returncode = returncode
+                
+            async def communicate(self):
+                return (self._stdout, self._stderr)
+                
+            async def wait(self):
+                pass
+                
+        if self._test_process:
+            return TestProcess(*self._test_process)
+        else:
+            # Default successful execution
+            return TestProcess(b"test output", b"", 0)
 
 
 class TestSandboxedExecutorMissingLines:
@@ -20,102 +109,147 @@ class TestSandboxedExecutorMissingLines:
     async def test_docker_executor_exception_handling_lines_175_177(self):
         """Test lines 175-177: exception handling in Docker execute."""
         config = SandboxConfig()
-        executor = DockerSandboxExecutor(config)
-        executor._docker_available = True
-
-        # Test the actual exception handling by forcing Docker to fail after import
-        # We'll manually invoke the docker execution and inject an exception
-
-        # First, let's test by setting a mock that raises exception in container execution
-        with patch("docker.from_env") as mock_from_env:
-            mock_client = Mock()
-            mock_from_env.return_value = mock_client
-            # Make container creation raise exception to trigger lines 175-177
-            mock_client.containers.run.side_effect = Exception(
-                "Docker execution failed"
-            )
-
+        
+        # Create testable Docker client
+        docker_client = TestableDockerClient()
+        docker_client.should_fail = True
+        docker_client.failure_message = "Docker execution failed"
+        
+        # Create executor with test client
+        executor = TestableDockerExecutor(config, docker_client)
+        
+        # Replace the actual docker module import
+        import sys
+        if 'docker' in sys.modules:
+            original_docker = sys.modules['docker']
+        else:
+            original_docker = None
+            
+        # Create fake docker module
+        class FakeDockerModule:
+            @staticmethod
+            def from_env():
+                return docker_client
+                
+        sys.modules['docker'] = FakeDockerModule
+        
+        try:
             result = await executor.execute("print('test')", "python")
 
             # Should handle exception and return failed result (lines 175-177)
             assert result.success is False
             assert "Docker execution failed" in result.error
             assert result.execution_time > 0  # Should still record execution time
+        finally:
+            # Restore original docker module
+            if original_docker:
+                sys.modules['docker'] = original_docker
+            else:
+                sys.modules.pop('docker', None)
 
     @pytest.mark.asyncio
     async def test_docker_executor_file_cleanup_exception_lines_189_190(self):
         """Test lines 189-190: file cleanup exception handling in Docker."""
         config = SandboxConfig()
-        executor = DockerSandboxExecutor(config)
-        executor._docker_available = True
+        
+        # Create working Docker client
+        docker_client = TestableDockerClient()
+        executor = TestableDockerExecutor(config, docker_client)
+        
+        # Replace os.unlink temporarily
+        original_unlink = os.unlink
+        unlink_calls = []
+        
+        def failing_unlink(path):
+            unlink_calls.append(path)
+            raise OSError("Permission denied")
+            
+        os.unlink = failing_unlink
+        
+        # Replace the actual docker module import
+        import sys
+        if 'docker' in sys.modules:
+            original_docker = sys.modules['docker']
+        else:
+            original_docker = None
+            
+        class FakeDockerModule:
+            @staticmethod
+            def from_env():
+                return docker_client
+                
+        sys.modules['docker'] = FakeDockerModule
+        
+        try:
+            result = await executor.execute("print('test')", "python")
 
-        with patch("builtins.__import__") as mock_import:
-            mock_docker = Mock()
-            mock_docker.from_env.return_value.ping.return_value = True
-            mock_import.return_value = mock_docker
-
-            # Mock tempfile to create a file that will fail to delete
-            with patch("tempfile.NamedTemporaryFile") as mock_temp:
-                mock_file = Mock()
-                mock_file.name = "/nonexistent/path/temp_file.py"
-                mock_file.__enter__ = Mock(return_value=mock_file)
-                mock_file.__exit__ = Mock(return_value=None)
-                mock_temp.return_value = mock_file
-
-                # Mock os.unlink to raise exception (line 189)
-                with patch("os.unlink", side_effect=OSError("Permission denied")):
-                    result = await executor.execute("print('test')", "python")
-
-                    # Should handle file cleanup exception gracefully (line 190: pass)
-                    # The execution itself might fail due to mocking, but cleanup exception should be handled
-                    assert isinstance(
-                        result.success, bool
-                    )  # Should complete without raising exception
+            # Should handle file cleanup exception gracefully (line 190: pass)
+            # The execution should complete despite cleanup failure
+            assert isinstance(result.success, bool)  # Should complete without raising exception
+            # Verify unlink was attempted
+            assert len(unlink_calls) > 0
+        finally:
+            # Restore originals
+            os.unlink = original_unlink
+            if original_docker:
+                sys.modules['docker'] = original_docker
+            else:
+                sys.modules.pop('docker', None)
 
     @pytest.mark.asyncio
     async def test_process_executor_file_cleanup_exception_lines_303_304(self):
         """Test lines 303-304: file cleanup exception handling in Process executor."""
         config = SandboxConfig()
-        executor = ProcessSandboxExecutor(config)
+        executor = TestableProcessExecutor(config)
+        
+        # Set successful process execution
+        executor.set_test_process(b"test output", b"", 0)
+        
+        # Replace asyncio.create_subprocess_exec temporarily
+        original_create = asyncio.create_subprocess_exec
+        
+        async def test_create(*args, **kwargs):
+            return await executor._create_subprocess(*args, **kwargs)
+            
+        asyncio.create_subprocess_exec = test_create
+        
+        # Replace os.unlink temporarily
+        original_unlink = os.unlink
+        unlink_calls = []
+        
+        def failing_unlink(path):
+            unlink_calls.append(path)
+            raise OSError("File not found")
+            
+        os.unlink = failing_unlink
+        
+        try:
+            result = await executor.execute("print('test')", "python")
 
-        # Mock asyncio.create_subprocess_exec to simulate successful execution
-        mock_process = Mock()
-        mock_process.communicate = AsyncMock(return_value=(b"test output", b""))
-        mock_process.returncode = 0
-        mock_process.wait = AsyncMock()
-
-        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
-            # Mock tempfile to create a file
-            with patch("tempfile.NamedTemporaryFile") as mock_temp:
-                mock_file = Mock()
-                mock_file.name = "/tmp/test_file.py"
-                mock_file.__enter__ = Mock(return_value=mock_file)
-                mock_file.__exit__ = Mock(return_value=None)
-                mock_temp.return_value = mock_file
-
-                # Mock os.unlink to raise exception during cleanup (line 303)
-                with patch("os.unlink", side_effect=OSError("File not found")):
-                    result = await executor.execute("print('test')", "python")
-
-                    # Should handle file cleanup exception gracefully (line 304: pass)
-                    assert (
-                        result.success is True
-                    )  # Execution should succeed despite cleanup failure
-                    assert "test output" in result.output
+            # Should handle file cleanup exception gracefully (line 304: pass)
+            assert result.success is True  # Execution should succeed despite cleanup failure
+            assert "test output" in result.output
+            # Verify unlink was attempted
+            assert len(unlink_calls) > 0
+        finally:
+            # Restore originals
+            asyncio.create_subprocess_exec = original_create
+            os.unlink = original_unlink
 
     def test_sandbox_manager_fallback_to_process_executor_line_342(self):
         """Test line 342: fallback to ProcessSandboxExecutor."""
         config = SandboxConfig()
         manager = SandboxManager(config)
 
-        # Mock all executors as unavailable to force fallback
+        # Make all executors unavailable to force fallback
         for executor in manager.executors:
             if hasattr(executor, "_docker_available"):
                 executor._docker_available = False
 
-        # Override is_available for all executors to return False
+        # Replace is_available method for all executors
         for executor in manager.executors:
-            executor.is_available = Mock(return_value=False)
+            original_is_available = executor.is_available
+            executor.is_available = lambda: False
 
         available_executor = manager.get_available_executor()
 
