@@ -88,6 +88,13 @@ steps:
       6. Maintainability assessment
       7. Suggested refactoring improvements
       Provide specific, actionable suggestions
+    depends_on: [static_analysis]
+    tags: ["ai-review", "code-quality"]
+
+  # Step 5: Documentation check
+  - id: documentation_check
+    action: |
+      analyze documentation coverage and quality:
       1. Check for missing function/class docstrings
       2. Verify README completeness
       3. Analyze inline comment quality
