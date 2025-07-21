@@ -42,7 +42,29 @@ steps:
   # Step 1: Collect market data
   - id: collect_market_data
     action: |
-      fetch market data for symbol {{loop_item}}:            Timeframe: {{timeframe}}                        Collect:            1. Price data (OHLCV)            2. Volume statistics            3. Market cap and shares outstanding            4. Fundamental data (if equity)            5. Recent splits and dividends            6. Sector and industry info                        Use best available data source            Handle missing data appropriately                        Return complete market dataset
+      fetch market data for symbol {{loop_item}}:
+      Timeframe: {{timeframe}}
+      Collect:
+      1. Price data (OHLCV)
+      2. Volume statistics
+      3. Market cap and shares outstanding
+      4. Fundamental data (if equity)
+      5. Recent splits and dividends
+      6. Sector and industry info
+      Use best available data source
+      Handle missing data appropriately
+      Return complete market dataset
+    loop:
+      over: "{{symbols}}"
+      as: "loop_item"
+    timeout: 30.0
+    tags: ["data", "market"]
+  
+  # Step 2: Technical analysis
+  - id: technical_analysis
+    action: |
+      <AUTO>perform technical analysis for {{loop_item}}:
+      Market data: {{collect_market_data.result[loop_item]}}
       Calculate indicators:
       1. Trend: SMA(20,50,200), EMA(12,26), MACD
       2. Momentum: RSI(14), Stochastic, Williams %R
@@ -56,6 +78,9 @@ steps:
       4. Trend lines and channels
       Return indicators and patterns with signals</AUTO>
     depends_on: [collect_market_data]
+    loop:
+      over: "{{symbols}}"
+      as: "loop_item"
     tags: ["technical", "indicators"]
     
   # Step 3: Fundamental analysis
@@ -400,7 +425,7 @@ outputs:
   predictions: "{{predictive_modeling.result | default({})}}"
   optimal_portfolio: "{{portfolio_optimization.result | default({})}}"
   trading_signals: "{{generate_signals.result}}"
-  backtest_results: "{{backtest_strategies.result | default({})}}"
+  backtest_results: "{{backtest_strategy.result | default({})}}"
   correlations: "{{correlation_analysis.result | default({})}}"
   key_insights: "{{generate_insights.result}}"
   report: "{{generate_report.result}}"
