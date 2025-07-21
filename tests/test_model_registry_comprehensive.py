@@ -5,12 +5,63 @@ import time
 
 import pytest
 
-from orchestrator.core.model import ModelMetrics
+from orchestrator.core.model import Model, ModelCapabilities, ModelMetrics
 from orchestrator.models.model_registry import (
     ModelRegistry,
     NoEligibleModelsError,
     UCBModelSelector,
 )
+
+
+class TestModel(Model):
+    """Test model implementation for registry tests."""
+    
+    def __init__(self, name, provider="test", supports_function_calling=True):
+        capabilities = ModelCapabilities(
+            supported_tasks=["generate", "analyze", "transform"],
+            context_window=8192,
+            languages=["en"]
+        )
+        super().__init__(name=name, provider=provider, capabilities=capabilities)
+        self.supports_function_calling = supports_function_calling
+        self._health_check_result = True
+        self._health_check_exception = None
+        self._health_check_calls = 0
+        
+    async def generate(self, prompt, **kwargs):
+        return f"Response from {self.name}"
+        
+    async def generate_structured(self, prompt, schema, **kwargs):
+        return {"value": await self.generate(prompt, **kwargs)}
+        
+    async def validate_response(self, response, schema):
+        return True
+        
+    def estimate_tokens(self, text):
+        return len(text.split())
+        
+    def estimate_cost(self, input_tokens, output_tokens):
+        return 0.001
+        
+    async def health_check(self):
+        """Health check that can be configured to return specific results."""
+        self._health_check_calls += 1
+        if self._health_check_exception:
+            raise self._health_check_exception
+        return self._health_check_result
+        
+    def set_health_check_result(self, result, exception=None):
+        """Configure health check behavior."""
+        self._health_check_result = result
+        self._health_check_exception = exception
+        
+    def get_health_check_calls(self):
+        """Get number of times health_check was called."""
+        return self._health_check_calls
+        
+    def reset_health_check_calls(self):
+        """Reset health check call counter."""
+        self._health_check_calls = 0
 
 
 class TestModelRegistryComprehensiveCoverage:
@@ -47,20 +98,18 @@ class TestModelRegistryComprehensiveCoverage:
         registry._model_health_cache[model2_key] = False
         # model3 is missing from cache
 
-        # Mock _refresh_health_cache to track calls
+        # Track refresh calls by replacing the method
         refresh_calls = []
+        original_refresh = registry._refresh_health_cache
 
-        async def mock_refresh(models_to_refresh):
+        async def track_refresh(models_to_refresh):
             refresh_calls.append(
                 [registry._get_model_key(model) for model in models_to_refresh]
             )
-            # Add the missing model to cache
-            for model in models_to_refresh:
-                model_key = registry._get_model_key(model)
-                if model_key not in registry._model_health_cache:
-                    registry._model_health_cache[model_key] = True
+            # Call the original method
+            await original_refresh(models_to_refresh)
 
-        registry._refresh_health_cache = mock_refresh
+        registry._refresh_health_cache = track_refresh
 
         healthy = await registry._filter_by_health([model1, model2, model3])
 
@@ -106,17 +155,16 @@ class TestModelRegistryComprehensiveCoverage:
         registry._last_health_check = loop_time - 400  # Make it stale (> 300s TTL)
 
         refresh_calls = []
+        original_refresh = registry._refresh_health_cache
 
-        async def mock_refresh(models_to_refresh):
+        async def track_refresh(models_to_refresh):
             refresh_calls.append(
                 [registry._get_model_key(model) for model in models_to_refresh]
             )
-            # Update cache with fresh data
-            for model in models_to_refresh:
-                model_key = registry._get_model_key(model)
-                registry._model_health_cache[model_key] = True
+            # Call the original method
+            await original_refresh(models_to_refresh)
 
-        registry._refresh_health_cache = mock_refresh
+        registry._refresh_health_cache = track_refresh
 
         # Should refresh all models due to stale cache
         healthy = await registry._filter_by_health([model1, model2])
@@ -297,20 +345,20 @@ class TestModelRegistryHealthCacheEdgeCases:
         """Test filter_by_health when cache has never been checked."""
         registry = ModelRegistry()
 
-        model1 = MockModel(name="model1", provider="provider1")
+        model1 = TestModel(name="model1", provider="provider1")
         registry.register_model(model1)
 
         # _last_health_check should be 0 (never checked)
         assert registry._last_health_check == 0
 
-        # Mock health check
-        model1.health_check = AsyncMock(return_value=True)
+        # Configure health check to return True
+        model1.set_health_check_result(True)
 
         # Should refresh because model is missing from cache
         healthy = await registry._filter_by_health([model1])
 
         # Should call health check and update cache
-        model1.health_check.assert_called_once()
+        assert model1.get_health_check_calls() == 1
         assert registry._model_health_cache["provider1:model1"] is True
         assert len(healthy) == 1
         assert healthy[0] == model1
@@ -320,8 +368,8 @@ class TestModelRegistryHealthCacheEdgeCases:
         """Test filter_by_health with fresh cache and no missing models."""
         registry = ModelRegistry()
 
-        model1 = MockModel(name="model1", provider="provider1")
-        model2 = MockModel(name="model2", provider="provider2")
+        model1 = TestModel(name="model1", provider="provider1")
+        model2 = TestModel(name="model2", provider="provider2")
         registry.register_model(model1)
         registry.register_model(model2)
 
@@ -331,16 +379,16 @@ class TestModelRegistryHealthCacheEdgeCases:
         registry._model_health_cache["provider1:model1"] = True
         registry._model_health_cache["provider2:model2"] = False
 
-        # Mock health checks (should NOT be called)
-        model1.health_check = AsyncMock()
-        model2.health_check = AsyncMock()
+        # Reset health check counters
+        model1.reset_health_check_calls()
+        model2.reset_health_check_calls()
 
         # Should NOT refresh cache
         healthy = await registry._filter_by_health([model1, model2])
 
         # Health checks should NOT be called
-        model1.health_check.assert_not_called()
-        model2.health_check.assert_not_called()
+        assert model1.get_health_check_calls() == 0
+        assert model2.get_health_check_calls() == 0
 
         # Should return only healthy models
         assert len(healthy) == 1
@@ -351,9 +399,9 @@ class TestModelRegistryHealthCacheEdgeCases:
         """Test filter_by_health with both stale cache and missing models."""
         registry = ModelRegistry()
 
-        model1 = MockModel(name="model1", provider="provider1")
-        model2 = MockModel(name="model2", provider="provider2")
-        model3 = MockModel(name="model3", provider="provider3")
+        model1 = TestModel(name="model1", provider="provider1")
+        model2 = TestModel(name="model2", provider="provider2")
+        model3 = TestModel(name="model3", provider="provider3")
 
         registry.register_model(model1)
         registry.register_model(model2)
@@ -367,14 +415,13 @@ class TestModelRegistryHealthCacheEdgeCases:
         # model3 missing from cache
 
         refresh_calls = []
+        original_refresh = registry._refresh_health_cache
 
-        async def mock_refresh(models_to_refresh):
+        async def track_refresh(models_to_refresh):
             refresh_calls.append(models_to_refresh)
-            for model in models_to_refresh:
-                model_key = registry._get_model_key(model)
-                registry._model_health_cache[model_key] = True
+            await original_refresh(models_to_refresh)
 
-        registry._refresh_health_cache = mock_refresh
+        registry._refresh_health_cache = track_refresh
 
         # Should refresh ALL models because cache is stale (not just missing ones)
         healthy = await registry._filter_by_health([model1, model2, model3])
@@ -389,16 +436,14 @@ class TestModelRegistryHealthCacheEdgeCases:
         registry = ModelRegistry()
 
         # Create models with different health behaviors
-        healthy_model = MockModel(name="healthy", provider="test")
-        unhealthy_model = MockModel(name="unhealthy", provider="test")
-        failing_model = MockModel(name="failing", provider="test")
+        healthy_model = TestModel(name="healthy", provider="test")
+        unhealthy_model = TestModel(name="unhealthy", provider="test")
+        failing_model = TestModel(name="failing", provider="test")
 
         # Set up health check behaviors
-        healthy_model.health_check = AsyncMock(return_value=True)
-        unhealthy_model.health_check = AsyncMock(return_value=False)
-        failing_model.health_check = AsyncMock(
-            side_effect=Exception("Health check error")
-        )
+        healthy_model.set_health_check_result(True)
+        unhealthy_model.set_health_check_result(False)
+        failing_model.set_health_check_result(False, Exception("Health check error"))
 
         # Register all models
         registry.register_model(healthy_model)
