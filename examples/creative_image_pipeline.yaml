@@ -1,0 +1,137 @@
+# Creative Image Generation Pipeline
+# Demonstrates AI-powered image generation and analysis
+id: creative_image_pipeline
+name: Creative Image Generation Pipeline
+description: Generate and analyze images based on creative prompts
+version: "1.0.0"
+
+parameters:
+  base_prompt:
+    type: string
+    default: "A serene landscape with mountains and a lake"
+  num_variations:
+    type: integer
+    default: 3
+  art_styles:
+    type: array
+    default: ["photorealistic", "impressionist", "cyberpunk"]
+
+steps:
+  - id: generate_base_image
+    tool: image-generation
+    action: execute
+    parameters:
+      prompt: "{{ parameters.base_prompt }}"
+      size: "1024x1024"
+      style: "high quality, detailed"
+      output_format: "file"
+      output_path: "creative_output/base"
+    
+  - id: analyze_base
+    tool: image-analysis
+    action: execute
+    parameters:
+      image: "{{ generate_base_image.images[0].path }}"
+      analysis_type: "describe"
+      detail_level: "high"
+    dependencies:
+      - generate_base_image
+    
+  - id: generate_style_variations
+    tool: image-generation
+    action: execute
+    parameters:
+      prompt: "{{ parameters.base_prompt }}, {{ item }} style"
+      size: "512x512"
+      style: "{{ item }}"
+      output_format: "file"
+      output_path: "creative_output/{{ item | replace(' ', '_') }}"
+    for_each:
+      items: "{{ parameters.art_styles }}"
+      as: item
+    dependencies:
+      - analyze_base
+    
+  - id: enhance_prompt
+    tool: prompt-optimization
+    action: execute
+    parameters:
+      prompt: "{{ parameters.base_prompt }}"
+      task: "image-generation"
+      optimization_goal: "artistic_quality"
+      include_style_suggestions: true
+    dependencies:
+      - analyze_base
+    
+  - id: generate_enhanced
+    tool: image-generation
+    action: execute
+    parameters:
+      prompt: "{{ enhance_prompt.optimized_prompt }}"
+      size: "1024x1024"
+      num_images: "{{ parameters.num_variations }}"
+      output_format: "file"
+      output_path: "creative_output/enhanced"
+    dependencies:
+      - enhance_prompt
+    
+  - id: analyze_all_variations
+    tool: image-analysis
+    action: execute
+    parameters:
+      image: "{{ item.path }}"
+      analysis_type: "classify"
+      output_format: "structured"
+    for_each:
+      items: "{{ generate_enhanced.images }}"
+      as: item
+    dependencies:
+      - generate_enhanced
+    
+  - id: create_gallery_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "AI Art Generation Gallery"
+      content: |
+        # Creative Image Generation Results
+        
+        ## Original Prompt
+        "{{ parameters.base_prompt }}"
+        
+        ## Base Image Analysis
+        {{ analyze_base.analysis.result }}
+        
+        ## Style Variations Generated
+        {% for style in parameters.art_styles %}
+        - {{ style }} style
+        {% endfor %}
+        
+        ## Enhanced Prompt
+        Original: "{{ parameters.base_prompt }}"
+        Enhanced: "{{ enhance_prompt.optimized_prompt }}"
+        
+        Optimization suggestions:
+        {{ enhance_prompt.suggestions | json }}
+        
+        ## Generated Variations Analysis
+        {% for analysis in analyze_all_variations %}
+        ### Variation {{ loop.index }}
+        {{ analysis.analysis | json }}
+        {% endfor %}
+        
+        ## File Locations
+        - Base image: {{ generate_base_image.images[0].path }}
+        - Style variations: creative_output/[style_name]/
+        - Enhanced variations: creative_output/enhanced/
+        
+        Total images generated: {{ 1 + parameters.art_styles | length + parameters.num_variations }}
+    dependencies:
+      - analyze_all_variations
+      - generate_style_variations
+
+outputs:
+  base_image: "{{ generate_base_image.images[0] }}"
+  enhanced_prompt: "{{ enhance_prompt.optimized_prompt }}"
+  total_generated: "{{ 1 + parameters.art_styles | length + parameters.num_variations }}"
+  gallery_report: "{{ create_gallery_report.report }}"

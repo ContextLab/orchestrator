@@ -1,0 +1,173 @@
+# Multimodal Processing Pipeline
+# Demonstrates image, audio, and video processing capabilities
+id: multimodal_processing
+name: Multimodal Content Processing Pipeline
+description: Process various media types with AI-powered analysis
+version: "1.0.0"
+
+parameters:
+  input_image:
+    type: string
+    default: "samples/test_image.jpg"
+  input_audio:
+    type: string
+    default: "samples/test_audio.wav"
+  input_video:
+    type: string
+    default: "samples/test_video.mp4"
+  output_dir:
+    type: string
+    default: "multimodal_output"
+
+steps:
+  # Image Processing Section
+  - id: analyze_image
+    tool: image-analysis
+    action: execute
+    parameters:
+      image: "{{ parameters.input_image }}"
+      analysis_type: "describe"
+      detail_level: "high"
+      output_format: "json"
+    
+  - id: detect_objects
+    tool: image-analysis
+    action: execute
+    parameters:
+      image: "{{ parameters.input_image }}"
+      analysis_type: "detect_objects"
+      confidence_threshold: 0.7
+    dependencies:
+      - analyze_image
+    
+  - id: generate_variations
+    tool: image-generation
+    action: execute
+    parameters:
+      prompt: <AUTO>Based on {{ analyze_image.analysis.result }}, create an artistic variation</AUTO>
+      size: "512x512"
+      style: "digital art"
+      num_images: 3
+      output_format: "file"
+      output_path: "{{ parameters.output_dir }}/generated_images"
+    dependencies:
+      - analyze_image
+    
+  # Audio Processing Section
+  - id: transcribe_audio
+    tool: audio-processing
+    action: execute
+    parameters:
+      audio: "{{ parameters.input_audio }}"
+      operation: "transcribe"
+      language: "en"
+    
+  - id: analyze_audio
+    tool: audio-processing
+    action: execute
+    parameters:
+      audio: "{{ parameters.input_audio }}"
+      operation: "analyze"
+    dependencies:
+      - transcribe_audio
+    
+  # Video Processing Section
+  - id: analyze_video
+    tool: video-processing
+    action: execute
+    parameters:
+      video: "{{ parameters.input_video }}"
+      operation: "analyze"
+    
+  - id: extract_key_frames
+    tool: video-processing
+    action: execute
+    parameters:
+      video: "{{ parameters.input_video }}"
+      operation: "extract_frames"
+      frame_interval: 5.0
+      output_path: "{{ parameters.output_dir }}/video_frames"
+    dependencies:
+      - analyze_video
+    
+  - id: analyze_key_frames
+    tool: image-analysis
+    action: execute
+    parameters:
+      image: "{{ extract_key_frames.frames[0] }}"
+      analysis_type: "describe"
+      detail_level: "medium"
+    dependencies:
+      - extract_key_frames
+    condition: "{{ extract_key_frames.frames | length > 0 }}"
+    
+  # Combined Analysis
+  - id: generate_summary_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "Multimodal Content Analysis Report"
+      content: |
+        # Multimodal Analysis Results
+        
+        ## Image Analysis
+        
+        ### Description
+        {{ analyze_image.analysis.result }}
+        
+        ### Detected Objects
+        {{ detect_objects.analysis.result }}
+        
+        ### Generated Variations
+        - Created {{ generate_variations.images | length }} artistic variations
+        - Saved to: {{ generate_variations.metadata.output_path }}
+        
+        ## Audio Analysis
+        
+        ### Transcription
+        {{ transcribe_audio.transcription }}
+        
+        ### Audio Properties
+        {{ analyze_audio.analysis | json }}
+        
+        ## Video Analysis
+        
+        ### Video Summary
+        {{ analyze_video.analysis.summary }}
+        
+        ### Key Information
+        - Duration: {{ analyze_video.analysis.video_info.duration }}s
+        - Resolution: {{ analyze_video.analysis.video_info.resolution }}
+        - FPS: {{ analyze_video.analysis.video_info.fps }}
+        
+        ### Scene Analysis
+        - Detected objects: {{ analyze_video.analysis.detected_objects | join(', ') }}
+        - Scene changes at: {{ analyze_video.analysis.scene_changes | join('s, ') }}s
+        
+        ### Key Frame Analysis
+        {{ analyze_key_frames.analysis.result | default('No frames analyzed') }}
+        
+        ## Processing Summary
+        - Total media files processed: 3
+        - Generated images: {{ generate_variations.images | length }}
+        - Extracted video frames: {{ extract_key_frames.metadata.num_frames }}
+    dependencies:
+      - generate_variations
+      - analyze_audio
+      - analyze_key_frames
+    
+  - id: save_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ parameters.output_dir }}/analysis_report.md"
+      content: "{{ generate_summary_report.report }}"
+    dependencies:
+      - generate_summary_report
+
+outputs:
+  image_analysis: "{{ analyze_image.analysis }}"
+  audio_transcription: "{{ transcribe_audio.transcription }}"
+  video_summary: "{{ analyze_video.analysis.summary }}"
+  generated_images: "{{ generate_variations.images }}"
+  report_location: "{{ parameters.output_dir }}/analysis_report.md"

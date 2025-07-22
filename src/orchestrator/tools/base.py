@@ -111,6 +111,7 @@ def register_default_tools():
     from .llm_tools import TaskDelegationTool, MultiModelRoutingTool, PromptOptimizationTool
     from .user_interaction_tools import UserPromptTool, ApprovalGateTool, FeedbackCollectionTool
     from .pipeline_recursion_tools import PipelineExecutorTool, RecursionControlTool
+    from .multimodal_tools import ImageAnalysisTool, ImageGenerationTool, AudioProcessingTool, VideoProcessingTool
     
     tools = [
         HeadlessBrowserTool(),
@@ -129,6 +130,10 @@ def register_default_tools():
         FeedbackCollectionTool(),
         PipelineExecutorTool(),
         RecursionControlTool(),
+        ImageAnalysisTool(),
+        ImageGenerationTool(),
+        AudioProcessingTool(),
+        VideoProcessingTool(),
     ]
     
     for tool in tools:
