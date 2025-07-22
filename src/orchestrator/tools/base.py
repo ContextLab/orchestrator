@@ -104,7 +104,7 @@ default_registry = ToolRegistry()
 def register_default_tools():
     """Register all default tools with the global registry."""
     # Import here to avoid circular imports
-    from .data_tools import DataProcessingTool, ValidationTool
+    from .data_tools import DataProcessingTool
     from .report_tools import PDFCompilerTool, ReportGeneratorTool
     from .system_tools import FileSystemTool, TerminalTool
     from .web_tools import HeadlessBrowserTool, WebSearchTool
@@ -120,7 +120,6 @@ def register_default_tools():
         TerminalTool(),
         FileSystemTool(),
         DataProcessingTool(),
-        ValidationTool(),
         ReportGeneratorTool(),
         PDFCompilerTool(),
         TaskDelegationTool(),

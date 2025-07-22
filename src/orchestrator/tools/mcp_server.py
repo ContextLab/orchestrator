@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .base import ToolRegistry, default_registry
-from .data_tools import DataProcessingTool, ValidationTool
+from .data_tools import DataProcessingTool
 from .system_tools import FileSystemTool, TerminalTool
 from .web_tools import HeadlessBrowserTool, WebSearchTool
 
@@ -32,7 +32,6 @@ class MCPToolServer:
             TerminalTool(),
             FileSystemTool(),
             DataProcessingTool(),
-            ValidationTool(),
         ]
 
         for tool in tools:
@@ -258,7 +257,6 @@ class ToolDetector:
             "terminal": TerminalTool,
             "filesystem": FileSystemTool,
             "data-processing": DataProcessingTool,
-            "validation": ValidationTool,
         }
 
         if tool_name in tool_mapping:
