@@ -11,9 +11,14 @@ import httpx
 import requests
 from bs4 import BeautifulSoup
 from ddgs import DDGS
-from playwright.async_api import async_playwright
 
 from .base import Tool
+
+# Optional import for playwright - will be installed on demand
+try:
+    from playwright.async_api import async_playwright
+except ImportError:
+    async_playwright = None
 
 
 class WebSearchBackend:
@@ -353,6 +358,11 @@ class BrowserAutomation:
         
     async def start(self):
         """Start browser automation."""
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            raise ImportError("Playwright not available. The tool should have installed it automatically.")
+        
         self.playwright = await async_playwright().start()
         
         browser_type = self.config.get('browser_type', 'chromium')
@@ -803,10 +813,43 @@ class HeadlessBrowserTool(Tool):
                 self.logger.info(f"Returning cached JS scraping results for: {url}")
                 return cached_result
         
+        # Try to import playwright and install if needed
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError:
+            self.logger.info("Playwright not installed. Installing now...")
+            try:
+                import subprocess
+                import sys
+                
+                # Install playwright package
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright"])
+                
+                # Install browser binaries
+                subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])
+                
+                # Try importing again
+                from playwright.async_api import async_playwright
+                self.logger.info("Playwright installed successfully")
+            except Exception as e:
+                return {
+                    "url": url,
+                    "error": f"Failed to install Playwright: {str(e)}. Please install manually with: pip install playwright && playwright install chromium",
+                    "timestamp": datetime.now().isoformat()
+                }
+        
         # Scrape page with browser automation
         browser_config = self.web_config.get('browser', {})
-        async with BrowserAutomation(browser_config) as browser:
-            result = await browser.scrape_with_js(url)
+        try:
+            async with BrowserAutomation(browser_config) as browser:
+                result = await browser.scrape_with_js(url)
+        except Exception as e:
+            # If browser automation fails, provide helpful error
+            return {
+                "url": url,
+                "error": f"Browser automation failed: {str(e)}",
+                "timestamp": datetime.now().isoformat()
+            }
         
         # Cache results
         if self.cache:
