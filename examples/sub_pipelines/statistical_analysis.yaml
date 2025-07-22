@@ -1,0 +1,91 @@
+# Statistical Analysis Sub-Pipeline
+# Reusable pipeline for statistical analysis
+id: statistical_analysis
+name: Statistical Analysis Sub-Pipeline
+description: Perform comprehensive statistical analysis on data
+version: "1.0.0"
+
+parameters:
+  data:
+    type: object
+    required: true
+  confidence_level:
+    type: number
+    default: 0.95
+
+steps:
+  - id: descriptive_stats
+    tool: data-processing
+    action: analyze
+    parameters:
+      data: "{{ parameters.data }}"
+      analysis_type: "descriptive"
+      include_metrics: ["mean", "median", "std", "min", "max", "quartiles"]
+    
+  - id: distribution_analysis
+    tool: data-processing
+    action: analyze
+    parameters:
+      data: "{{ parameters.data }}"
+      analysis_type: "distribution"
+      tests: ["normality", "skewness", "kurtosis"]
+    dependencies:
+      - descriptive_stats
+    
+  - id: correlation_analysis
+    tool: data-processing
+    action: analyze
+    parameters:
+      data: "{{ parameters.data }}"
+      analysis_type: "correlation"
+      method: "pearson"
+      threshold: 0.5
+    dependencies:
+      - descriptive_stats
+    
+  - id: outlier_detection
+    tool: data-processing
+    action: detect_outliers
+    parameters:
+      data: "{{ parameters.data }}"
+      method: "iqr"
+      threshold: 1.5
+    dependencies:
+      - descriptive_stats
+    
+  - id: hypothesis_testing
+    tool: data-processing
+    action: hypothesis_test
+    parameters:
+      data: "{{ parameters.data }}"
+      test_type: <AUTO>Based on data distribution, select appropriate test (t-test, chi-square, etc.)</AUTO>
+      confidence_level: "{{ parameters.confidence_level }}"
+    dependencies:
+      - distribution_analysis
+    
+  - id: compile_statistics
+    tool: data-processing
+    action: merge
+    parameters:
+      datasets:
+        - descriptive: "{{ descriptive_stats.result }}"
+        - distribution: "{{ distribution_analysis.result }}"
+        - correlation: "{{ correlation_analysis.result }}"
+        - outliers: "{{ outlier_detection.result }}"
+        - hypothesis: "{{ hypothesis_testing.result }}"
+      merge_strategy: "nested"
+    dependencies:
+      - hypothesis_testing
+      - outlier_detection
+      - correlation_analysis
+
+outputs:
+  statistics: "{{ compile_statistics.result }}"
+  summary: |
+    Statistical Analysis Summary:
+    - Sample Size: {{ descriptive_stats.result.count }}
+    - Mean: {{ descriptive_stats.result.mean }}
+    - Std Dev: {{ descriptive_stats.result.std }}
+    - Normality: {{ distribution_analysis.result.is_normal }}
+    - Outliers: {{ outlier_detection.result.outlier_count }}
+    - Significant Correlations: {{ correlation_analysis.result.significant_pairs | length }}

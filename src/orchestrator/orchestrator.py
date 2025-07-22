@@ -830,6 +830,57 @@ class Orchestrator:
 
         return health_status
 
+    async def execute_pipeline_from_dict(
+        self,
+        pipeline_dict: Dict[str, Any],
+        inputs: Optional[Dict[str, Any]] = None,
+        context: Optional[Any] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """
+        Execute pipeline from dictionary definition.
+        
+        This method is used by PipelineExecutorTool for recursive execution.
+        
+        Args:
+            pipeline_dict: Pipeline definition as dictionary
+            inputs: Input parameters for the pipeline
+            context: Recursion context or other context data
+            **kwargs: Additional execution parameters
+            
+        Returns:
+            Execution results
+        """
+        # Import here to avoid circular import
+        import yaml
+        
+        # Convert dict to YAML for compilation
+        yaml_content = yaml.dump(pipeline_dict)
+        
+        # Create compilation context with inputs
+        compile_context = inputs or {}
+        
+        # Store recursion context if provided
+        if context and hasattr(context, 'shared_state'):
+            # This is a RecursionContext object
+            kwargs['recursion_context'] = context
+        
+        # Compile and execute
+        pipeline = await self.yaml_compiler.compile(yaml_content, compile_context)
+        
+        # Execute with inputs merged into pipeline context
+        if inputs:
+            pipeline.context.update(inputs)
+        
+        # Execute pipeline
+        result = await self.execute_pipeline(pipeline, **kwargs)
+        
+        # Return with outputs key for consistency
+        if isinstance(result, dict) and "outputs" in result:
+            return result
+        else:
+            return {"outputs": result, "steps_executed": len(pipeline.tasks)}
+
     async def shutdown(self) -> None:
         """Shutdown orchestrator and clean up resources."""
         # Wait for running pipelines to complete
