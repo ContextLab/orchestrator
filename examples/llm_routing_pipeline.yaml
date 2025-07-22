@@ -1,0 +1,109 @@
+# LLM Routing and Optimization Pipeline
+# Demonstrates intelligent model selection and prompt optimization
+id: llm_routing_pipeline
+name: Smart LLM Routing Pipeline
+description: Automatically selects the best model and optimizes prompts for tasks
+version: "1.0.0"
+
+parameters:
+  task:
+    type: string
+    default: "Write a comprehensive analysis of renewable energy trends"
+  optimization_goals:
+    type: array
+    default: ["clarity", "model_specific"]
+  routing_strategy:
+    type: string
+    default: "capability_based"
+
+steps:
+  - id: analyze_task
+    tool: task-delegation
+    action: execute
+    parameters:
+      task: "{{ parameters.task }}"
+      requirements:
+        complexity: <AUTO>Analyze the task and determine if it's simple, moderate, or complex</AUTO>
+      cost_weight: 0.3
+      quality_weight: 0.7
+    
+  - id: optimize_prompt
+    tool: prompt-optimization
+    action: execute
+    parameters:
+      prompt: "{{ parameters.task }}"
+      model: "{{ analyze_task.selected_model }}"
+      optimization_goals: "{{ parameters.optimization_goals }}"
+      preserve_intent: true
+    dependencies:
+      - analyze_task
+    
+  - id: route_request
+    tool: multi-model-routing
+    action: execute
+    parameters:
+      request: "{{ optimize_prompt.optimized_prompt }}"
+      models: "{{ analyze_task.fallback_models | default([analyze_task.selected_model]) }}"
+      strategy: "{{ parameters.routing_strategy }}"
+      max_concurrent: 10
+    dependencies:
+      - optimize_prompt
+    
+  - id: generate_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "LLM Routing Report"
+      content: |
+        # LLM Task Routing and Optimization Report
+        
+        ## Task Analysis
+        - **Original Task**: {{ parameters.task }}
+        - **Task Type**: {{ analyze_task.task_analysis.task_type }}
+        - **Complexity**: {{ analyze_task.task_analysis.complexity }}
+        
+        ## Model Selection
+        - **Selected Model**: {{ analyze_task.selected_model }}
+        - **Score**: {{ analyze_task.score }}
+        - **Reasons**: {{ analyze_task.reasons | join(', ') }}
+        - **Estimated Cost**: ${{ analyze_task.estimated_cost | round(3) }}
+        - **Estimated Latency**: {{ analyze_task.estimated_latency }}s
+        
+        ## Prompt Optimization
+        - **Original Length**: {{ optimize_prompt.metrics.original_tokens }} tokens
+        - **Optimized Length**: {{ optimize_prompt.metrics.optimized_tokens }} tokens
+        - **Reduction**: {{ optimize_prompt.metrics.reduction_percentage | round(1) }}%
+        - **Applied Optimizations**: {{ optimize_prompt.applied_optimizations | join(', ') }}
+        
+        ### Optimized Prompt
+        ```
+        {{ optimize_prompt.optimized_prompt }}
+        ```
+        
+        ## Routing Decision
+        - **Final Model**: {{ route_request.selected_model }}
+        - **Strategy**: {{ route_request.strategy }}
+        - **Routing Reason**: {{ route_request.routing_reason }}
+        - **Current Load**: {{ route_request.current_load }}
+        
+        ## Recommendations
+        {% for rec in optimize_prompt.recommendations %}
+        - {{ rec }}
+        {% endfor %}
+        
+        ## Alternative Models
+        {% for score in analyze_task.all_scores[:3] %}
+        - **{{ score.model }}** (Score: {{ score.score }})
+          - {{ score.reasons | join(', ') }}
+        {% endfor %}
+    dependencies:
+      - route_request
+    
+  - id: save_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "reports/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
+      content: "{{ generate_report.markdown }}"
+    dependencies:
+      - generate_report

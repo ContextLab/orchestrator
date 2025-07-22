@@ -108,6 +108,7 @@ def register_default_tools():
     from .report_tools import PDFCompilerTool, ReportGeneratorTool
     from .system_tools import FileSystemTool, TerminalTool
     from .web_tools import HeadlessBrowserTool, WebSearchTool
+    from .llm_tools import TaskDelegationTool, MultiModelRoutingTool, PromptOptimizationTool
     
     tools = [
         HeadlessBrowserTool(),
@@ -118,6 +119,9 @@ def register_default_tools():
         ValidationTool(),
         ReportGeneratorTool(),
         PDFCompilerTool(),
+        TaskDelegationTool(),
+        MultiModelRoutingTool(),
+        PromptOptimizationTool(),
     ]
     
     for tool in tools:
