@@ -51,6 +51,8 @@ dependencies = [
     # CLI
     "click>=8.0.0",
     "python-dotenv>=0.19.0",
+    # Multimodal tools
+    "pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]
