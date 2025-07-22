@@ -1,0 +1,262 @@
+# Web Research Pipeline
+# Automated research workflow with search, analysis, and reporting
+
+name: web-research-pipeline
+description: Comprehensive web research automation
+version: "1.0.0"
+
+inputs:
+  research_topic: "artificial intelligence in healthcare"
+  max_sources: 10
+  output_format: "pdf"
+  research_depth: "comprehensive"  # quick, standard, comprehensive
+
+steps:
+  # Step 1: Initial web search
+  - id: initial_search
+    tool: web-search
+    action: search
+    parameters:
+      query: "{{ research_topic }} latest developments 2024"
+      max_results: "{{ max_sources }}"
+      region: "us-en"
+      safesearch: "moderate"
+      
+  # Step 2: Extract key themes from search results
+  - id: identify_themes
+    tool: llm-analyze
+    action: analyze
+    parameters:
+      content: |
+        Search results for "{{ research_topic }}":
+        {% for result in initial_search.results %}
+        {{ loop.index }}. {{ result.title }}
+        {{ result.snippet }}
+        URL: {{ result.url }}
+        
+        {% endfor %}
+      analysis_type: "theme_extraction"
+      schema:
+        type: object
+        properties:
+          main_themes:
+            type: array
+            items:
+              type: string
+          key_organizations:
+            type: array
+            items:
+              type: string
+          trending_subtopics:
+            type: array
+            items:
+              type: string
+              
+  # Step 3: Deep search on identified themes
+  - id: themed_searches
+    tool: web-search
+    action: search
+    condition: "{{ research_depth in ['standard', 'comprehensive'] }}"
+    parallel: true  # Run searches in parallel
+    foreach: "{{ identify_themes.result.trending_subtopics[:3] }}"
+    parameters:
+      query: "{{ research_topic }} {{ item }}"
+      max_results: 5
+      
+  # Step 4: Fetch and analyze top sources
+  - id: fetch_content
+    tool: headless-browser
+    action: extract
+    foreach: "{{ initial_search.results[:5] }}"  # Top 5 results
+    parameters:
+      url: "{{ item.url }}"
+      extract_main_content: true
+      include_metadata: true
+      timeout: 10000
+    on_failure: continue  # Skip failed fetches
+    
+  # Step 5: Analyze each source
+  - id: analyze_sources
+    tool: llm-analyze
+    action: analyze
+    foreach: "{{ fetch_content.results }}"
+    parameters:
+      content: "{{ item.content | truncate(5000) }}"
+      analysis_type: "research_extraction"
+      context: "Researching {{ research_topic }}"
+      schema:
+        type: object
+        properties:
+          key_findings:
+            type: array
+            items:
+              type: string
+          data_points:
+            type: array
+            items:
+              type: object
+              properties:
+                metric:
+                  type: string
+                value:
+                  type: string
+                context:
+                  type: string
+          credibility_score:
+            type: number
+            minimum: 0
+            maximum: 1
+          relevant_quotes:
+            type: array
+            items:
+              type: string
+              
+  # Step 6: Cross-reference and validate findings
+  - id: validate_findings
+    tool: llm-analyze
+    action: analyze
+    condition: "{{ research_depth == 'comprehensive' }}"
+    parameters:
+      content: |
+        Research findings from multiple sources:
+        {% for analysis in analyze_sources.results %}
+        Source {{ loop.index }}:
+        {{ analysis.result | json_encode }}
+        {% endfor %}
+      analysis_type: "fact_checking"
+      cross_reference: true
+      identify_conflicts: true
+      
+  # Step 7: Generate research summary
+  - id: research_summary
+    tool: llm-generate
+    action: generate
+    parameters:
+      prompt: |
+        Create a comprehensive research summary on "{{ research_topic }}" based on these findings:
+        
+        Main themes: {{ identify_themes.result.main_themes | join(', ') }}
+        
+        Key findings from sources:
+        {% for analysis in analyze_sources.results %}
+        {% for finding in analysis.result.key_findings %}
+        - {{ finding }}
+        {% endfor %}
+        {% endfor %}
+        
+        Include sections for:
+        1. Executive Summary
+        2. Current State of {{ research_topic }}
+        3. Key Players and Organizations  
+        4. Recent Developments
+        5. Data and Statistics
+        6. Future Outlook
+        7. Recommendations
+      temperature: 0.3  # More factual
+      max_tokens: 2000
+      
+  # Step 8: Create bibliography
+  - id: create_bibliography
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "References"
+      format: "markdown"
+      content: |
+        # Bibliography
+        
+        ## Primary Sources
+        {% for result in initial_search.results[:max_sources] %}
+        {{ loop.index }}. {{ result.title }}
+           - URL: {{ result.url }}
+           - Accessed: {{ current_date }}
+           - Relevance: {{ result.relevance_score }}
+        {% endfor %}
+        
+        ## Additional Sources
+        {% for search in themed_searches.results %}
+        ### {{ search.query }}
+        {% for result in search.results %}
+        - {{ result.title }} ({{ result.url }})
+        {% endfor %}
+        {% endfor %}
+        
+  # Step 9: Generate final report
+  - id: generate_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "Research Report: {{ research_topic | title }}"
+      format: "{{ output_format }}"
+      template: |
+        # Research Report: {{ research_topic | title }}
+        
+        **Date:** {{ current_date }}
+        **Research Depth:** {{ research_depth }}
+        **Sources Analyzed:** {{ analyze_sources.results | length }}
+        
+        ---
+        
+        {{ research_summary.result }}
+        
+        ---
+        
+        ## Detailed Findings by Source
+        
+        {% for analysis in analyze_sources.results %}
+        ### Source {{ loop.index }}
+        
+        **Credibility Score:** {{ analysis.result.credibility_score }}/1.0
+        
+        **Key Findings:**
+        {% for finding in analysis.result.key_findings %}
+        - {{ finding }}
+        {% endfor %}
+        
+        **Notable Quotes:**
+        {% for quote in analysis.result.relevant_quotes[:2] %}
+        > "{{ quote }}"
+        {% endfor %}
+        
+        {% endfor %}
+        
+        ---
+        
+        {{ create_bibliography.content }}
+        
+        ---
+        
+        ## Appendix: Research Methodology
+        
+        This report was generated using automated web research with the following approach:
+        1. Initial broad search for "{{ research_topic }}"
+        2. Theme identification and focused searches
+        3. Content extraction and analysis
+        4. Cross-referencing and validation
+        5. Synthesis and report generation
+      metadata:
+        author: "Orchestrator Research Pipeline"
+        keywords: "{{ identify_themes.result.main_themes | join(', ') }}"
+        research_date: "{{ current_date }}"
+        
+  # Step 10: Create executive brief (optional)
+  - id: executive_brief
+    tool: llm-generate
+    action: generate
+    condition: "{{ output_format == 'pdf' }}"
+    parameters:
+      prompt: |
+        Create a one-page executive brief for "{{ research_topic }}" with:
+        - 3 key takeaways
+        - 2 critical statistics
+        - 1 main recommendation
+        
+        Base it on: {{ research_summary.result | truncate(1000) }}
+      max_tokens: 500
+
+outputs:
+  report_path: "{{ generate_report.filepath }}"
+  sources_analyzed: "{{ analyze_sources.results | length }}"
+  key_themes: "{{ identify_themes.result.main_themes }}"
+  executive_brief: "{{ executive_brief.result if executive_brief else 'N/A' }}"
+  total_sources_found: "{{ initial_search.total_results }}"

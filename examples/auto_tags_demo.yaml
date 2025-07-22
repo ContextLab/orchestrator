@@ -1,0 +1,122 @@
+# AUTO Tags Demonstration Pipeline
+# This example showcases various AUTO tag features for dynamic intelligence
+
+name: auto-tags-demonstration
+description: Demonstrates AUTO tags for dynamic parameter resolution
+version: "1.0.0"
+
+# Input parameters that will be used by AUTO tags
+inputs:
+  data_file: "sales_data.csv"
+  analysis_goal: "identify trends and anomalies"
+  output_format_preference: "executive_summary"
+
+steps:
+  # Step 1: Analyze data characteristics
+  - id: analyze_data_type
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ data_file }}"
+      
+  # Step 2: Choose analysis method dynamically
+  - id: select_analysis
+    tool: llm-generate
+    action: generate
+    parameters:
+      prompt: |
+        Given this data sample:
+        {{ analyze_data_type.content | truncate(500) }}
+        
+        The analysis goal is: {{ analysis_goal }}
+      analysis_method: <AUTO>Based on the data structure and analysis goal, choose the best method: 'statistical', 'ml_clustering', 'time_series', or 'correlation'</AUTO>
+      confidence_threshold: <AUTO>What confidence threshold (0.0-1.0) is appropriate for this analysis?</AUTO>
+      
+  # Step 3: Determine processing requirements
+  - id: assess_complexity
+    tool: llm-analyze
+    action: analyze
+    parameters:
+      content: "{{ analyze_data_type.content }}"
+      analysis_type: "complexity"
+      processing_power: <AUTO>Based on data size and complexity, what processing tier is needed: 'light', 'standard', or 'heavy'?</AUTO>
+      parallel_tasks: <AUTO>How many parallel tasks would optimize this analysis? Choose between 1-10</AUTO>
+      
+  # Step 4: Dynamic error handling
+  - id: process_data
+    tool: data-processing
+    action: transform
+    parameters:
+      input_data: "{{ analyze_data_type.content }}"
+      input_format: "csv"
+      output_format: "json"
+      error_strategy: <AUTO>For financial data, should we 'skip_errors', 'fix_errors', or 'fail_on_error'?</AUTO>
+      validation_level: <AUTO>What validation strictness is appropriate: 'permissive', 'moderate', or 'strict'?</AUTO>
+      
+  # Step 5: Generate insights with dynamic depth
+  - id: generate_insights
+    tool: llm-analyze
+    action: analyze
+    parameters:
+      content: "{{ process_data.result }}"
+      analysis_type: "{{ select_analysis.analysis_method }}"
+      insight_depth: <AUTO>Given the executive summary preference, how detailed should insights be: 'high_level', 'balanced', or 'detailed'?</AUTO>
+      visualization_needed: <AUTO>Would visualizations enhance this analysis? Answer 'yes' or 'no'</AUTO>
+      key_metrics: <AUTO>List 3-5 key metrics to highlight based on the data</AUTO>
+      
+  # Step 6: Conditional visualization
+  - id: create_charts
+    tool: report-generator
+    action: generate
+    condition: "{{ generate_insights.visualization_needed == 'yes' }}"
+    parameters:
+      title: "Data Visualizations"
+      format: "html"
+      chart_types: <AUTO>What chart types best represent this data? List up to 3 from: 'line', 'bar', 'scatter', 'pie', 'heatmap'</AUTO>
+      color_scheme: <AUTO>Choose appropriate color scheme: 'professional', 'colorful', 'monochrome'</AUTO>
+      
+  # Step 7: Format output based on preference
+  - id: create_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "Analysis Report: {{ analysis_goal }}"
+      format: <AUTO>Given output preference '{{ output_format_preference }}', choose format: 'markdown', 'pdf', or 'html'</AUTO>
+      sections: <AUTO>What sections should this report include? Provide as comma-separated list</AUTO>
+      tone: <AUTO>What tone is appropriate for an executive summary: 'formal', 'conversational', or 'technical'?</AUTO>
+      length: <AUTO>Target length in words for executive summary: choose between 200-1000</AUTO>
+      content: |
+        # Analysis Results
+        
+        ## Summary
+        Method: {{ select_analysis.analysis_method }}
+        Confidence: {{ select_analysis.confidence_threshold }}
+        
+        ## Key Insights
+        {{ generate_insights.result }}
+        
+        ## Metrics
+        {{ generate_insights.key_metrics }}
+        
+        {% if create_charts.result %}
+        ## Visualizations
+        {{ create_charts.result }}
+        {% endif %}
+        
+  # Step 8: Determine distribution list
+  - id: distribution_plan
+    tool: llm-generate
+    action: generate
+    parameters:
+      prompt: "Based on the analysis of {{ analysis_goal }}"
+      recipients: <AUTO>Who should receive this report? List stakeholder groups</AUTO>
+      priority: <AUTO>What priority level: 'urgent', 'high', 'normal', or 'low'?</AUTO>
+      follow_up: <AUTO>What follow-up actions are recommended? List 2-3 items</AUTO>
+
+# Output definition
+outputs:
+  report_path: "{{ create_report.filepath }}"
+  analysis_method: "{{ select_analysis.analysis_method }}"
+  confidence_level: "{{ select_analysis.confidence_threshold }}"
+  distribution_list: "{{ distribution_plan.recipients }}"
+  next_steps: "{{ distribution_plan.follow_up }}"

@@ -1,0 +1,212 @@
+# Model Routing Demonstration Pipeline
+# Shows intelligent model selection and routing strategies
+
+name: model-routing-demonstration
+description: Demonstrates intelligent model routing capabilities
+version: "1.0.0"
+
+inputs:
+  task_budget: 10.00  # Dollar budget for this pipeline
+  priority: "balanced"  # cost, speed, or quality
+  
+steps:
+  # Step 1: Analyze task complexity to route appropriately
+  - id: assess_requirements
+    tool: llm-router
+    action: analyze_requirements
+    parameters:
+      tasks:
+        - name: "document_summary"
+          input_size: 5000
+          output_size: 200
+          complexity: "simple"
+        - name: "code_generation"
+          input_size: 500
+          output_size: 1000
+          complexity: "complex"
+        - name: "data_analysis"
+          input_size: 10000
+          output_size: 500
+          complexity: "moderate"
+      budget: "{{ task_budget }}"
+      priority: "{{ priority }}"
+      
+  # Step 2: Simple task with cheap model
+  - id: summarize_document
+    tool: llm-generate
+    action: generate
+    parameters:
+      prompt: |
+        Summarize this document in 2-3 sentences:
+        
+        Artificial intelligence continues to revolutionize industries worldwide.
+        From healthcare to finance, AI applications are becoming increasingly sophisticated.
+        Machine learning models can now process vast amounts of data in real-time,
+        enabling predictive analytics and automated decision-making at unprecedented scales.
+      # Let router choose based on requirements
+    requires_model:
+      cost_tier: "low"
+      task_type: "summarization"
+      max_cost_per_1k_tokens: 0.002
+      
+  # Step 3: Complex task requiring powerful model
+  - id: generate_code
+    tool: llm-generate
+    action: generate
+    parameters:
+      prompt: |
+        Write a Python class for a binary search tree with the following methods:
+        - insert(value)
+        - search(value) 
+        - delete(value)
+        - in_order_traversal()
+        Include proper error handling and docstrings.
+    requires_model:
+      expertise: ["coding", "algorithms"]
+      capabilities: ["code_generation"]
+      min_quality_score: 0.9
+      
+  # Step 4: Parallel analysis with different models
+  - id: analyze_financial
+    tool: llm-analyze
+    action: analyze
+    parameters:
+      content: |
+        Q3 Financial Results:
+        - Revenue: $45.2M (up 23% YoY)
+        - Operating costs: $32.1M (up 18% YoY)  
+        - Net profit: $13.1M
+        - Customer acquisition cost: $127 (down from $145)
+      analysis_type: "financial_metrics"
+    requires_model:
+      expertise: ["finance", "analysis"]
+      response_format: "json"
+      
+  - id: analyze_technical
+    tool: llm-analyze
+    action: analyze  
+    parameters:
+      content: |
+        System Performance Metrics:
+        - API latency: 45ms average (p99: 120ms)
+        - Error rate: 0.02%
+        - Uptime: 99.97%
+        - Database queries/sec: 10,000
+      analysis_type: "technical_performance"
+    requires_model:
+      expertise: ["technical", "devops"]
+      structured_output: true
+      
+  # Step 5: Ensemble approach for critical decision
+  - id: investment_decision
+    tool: llm-router
+    action: ensemble
+    parameters:
+      prompt: |
+        Based on the financial and technical analysis:
+        Financial: {{ analyze_financial.result }}
+        Technical: {{ analyze_technical.result }}
+        
+        Should we increase investment in this product? Consider ROI and scalability.
+      ensemble_size: 3  # Use 3 different models
+      consensus_threshold: 0.66  # 2/3 must agree
+      model_diversity: "high"  # Use different model families
+      
+  # Step 6: Fallback strategy for unreliable task
+  - id: market_prediction
+    tool: llm-analyze
+    action: analyze
+    parameters:
+      content: "Predict market trends for next quarter based on current data"
+      analysis_type: "prediction"
+    requires_model:
+      capabilities: ["forecasting", "market_analysis"]
+      preference: "specialized"
+    on_failure: continue
+    
+  - id: fallback_prediction
+    condition: "{{ market_prediction.status == 'failed' }}"
+    tool: llm-generate
+    action: generate
+    parameters:
+      prompt: "Provide general market outlook based on historical patterns"
+    requires_model:
+      cost_tier: "low"  # Use cheaper model for fallback
+      basic_capability: "text_generation"
+      
+  # Step 7: Local model for sensitive data
+  - id: process_private_data
+    tool: llm-analyze
+    action: analyze
+    parameters:
+      content: "{{ sensitive_customer_data }}"
+      analysis_type: "pii_detection"
+    requires_model:
+      deployment: "local"  # Force local model
+      max_model_size_gb: 8  # Fit in available RAM
+      no_external_api: true
+      
+  # Step 8: Show routing decisions
+  - id: routing_report
+    tool: llm-router
+    action: get_metrics
+    parameters:
+      pipeline_id: "{{ pipeline.id }}"
+      include_model_selection: true
+      include_costs: true
+      include_performance: true
+      
+  - id: generate_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "Model Routing Demonstration Results"
+      format: "markdown"
+      content: |
+        # Model Routing Report
+        
+        ## Models Selected
+        
+        | Task | Model Used | Cost | Latency | Reason |
+        |------|------------|------|---------|---------|
+        {% for task, info in routing_report.model_selections.items() %}
+        | {{ task }} | {{ info.model }} | ${{ info.cost }} | {{ info.latency_ms }}ms | {{ info.selection_reason }} |
+        {% endfor %}
+        
+        ## Performance Summary
+        
+        - Total Cost: ${{ routing_report.total_cost }}
+        - Average Latency: {{ routing_report.avg_latency_ms }}ms
+        - Success Rate: {{ routing_report.success_rate }}%
+        
+        ## Key Results
+        
+        ### Document Summary
+        {{ summarize_document.result }}
+        
+        ### Generated Code
+        ```python
+        {{ generate_code.result }}
+        ```
+        
+        ### Investment Decision (Ensemble)
+        {{ investment_decision.result }}
+        - Consensus Level: {{ investment_decision.consensus_score }}
+        - Models Used: {{ investment_decision.models_used | join(', ') }}
+        
+        ## Cost Optimization
+        
+        Budget: ${{ task_budget }}
+        Actual Spend: ${{ routing_report.total_cost }}
+        Savings: ${{ task_budget - routing_report.total_cost }}
+        
+        ## Recommendations
+        
+        Based on routing performance:
+        {{ routing_report.optimization_suggestions }}
+
+outputs:
+  total_cost: "{{ routing_report.total_cost }}"
+  models_used: "{{ routing_report.unique_models }}"
+  routing_efficiency: "{{ routing_report.routing_efficiency_score }}"
+  report_location: "{{ generate_report.filepath }}"

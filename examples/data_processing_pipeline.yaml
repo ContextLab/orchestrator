@@ -1,0 +1,331 @@
+# Data Processing Pipeline
+# Demonstrates data transformation, validation, and analysis
+
+name: data-processing-pipeline
+description: Comprehensive data processing workflow
+version: "1.0.0"
+
+inputs:
+  input_file: "sales_data.csv"
+  output_format: "parquet"
+  quality_threshold: 0.95
+  enable_profiling: true
+
+steps:
+  # Step 1: Read input data
+  - id: read_data
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ input_file }}"
+      
+  # Step 2: Profile data quality
+  - id: profile_data
+    tool: data-processing
+    action: profile
+    condition: "{{ enable_profiling }}"
+    parameters:
+      input_data: "{{ read_data.content }}"
+      input_format: "csv"
+      profiling_options:
+        - missing_values
+        - data_types
+        - statistical_summary
+        - outlier_detection
+        - duplicate_detection
+        
+  # Step 3: Validate data schema
+  - id: validate_schema
+    tool: validation
+    action: validate
+    parameters:
+      data: "{{ read_data.content }}"
+      schema:
+        type: object
+        properties:
+          order_id:
+            type: string
+            pattern: "^ORD-[0-9]{6}$"
+          customer_id:
+            type: string
+          product_name:
+            type: string
+          quantity:
+            type: integer
+            minimum: 1
+          unit_price:
+            type: number
+            minimum: 0
+          order_date:
+            type: string
+            format: date
+          status:
+            type: string
+            enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
+        required: ["order_id", "customer_id", "product_name", "quantity", "unit_price"]
+      mode: "LENIENT"  # Try to fix minor issues
+      
+  # Step 4: Clean and transform data
+  - id: clean_data
+    tool: data-processing
+    action: transform
+    parameters:
+      input_data: "{{ validate_schema.result.data if validate_schema.result.is_valid else read_data.content }}"
+      input_format: "csv"
+      output_format: "json"
+      operations:
+        # Remove duplicates
+        - type: deduplicate
+          columns: ["order_id"]
+          keep: "first"
+          
+        # Fix data types
+        - type: cast
+          columns:
+            quantity: "integer"
+            unit_price: "float"
+            order_date: "datetime"
+            
+        # Handle missing values
+        - type: fill_missing
+          strategy:
+            status: "pending"  # Default status
+            quantity: 1        # Default quantity
+            
+        # Create calculated fields
+        - type: calculate
+          expressions:
+            total_amount: "quantity * unit_price"
+            order_month: "DATE_FORMAT(order_date, '%Y-%m')"
+            
+        # Filter out cancelled orders for analysis
+        - type: filter
+          condition: "status != 'cancelled'"
+          
+  # Step 5: Aggregate data for analysis
+  - id: aggregate_monthly
+    tool: data-processing
+    action: aggregate
+    parameters:
+      input_data: "{{ clean_data.result }}"
+      input_format: "json"
+      output_format: "json"
+      group_by: ["order_month", "product_name"]
+      aggregations:
+        total_quantity:
+          column: "quantity"
+          function: "sum"
+        total_revenue:
+          column: "total_amount"
+          function: "sum"
+        average_price:
+          column: "unit_price"
+          function: "mean"
+        order_count:
+          column: "order_id"
+          function: "count"
+        unique_customers:
+          column: "customer_id"
+          function: "count_distinct"
+          
+  # Step 6: Statistical analysis
+  - id: analyze_trends
+    tool: llm-analyze
+    action: analyze
+    parameters:
+      content: "{{ aggregate_monthly.result }}"
+      analysis_type: "statistical_trends"
+      schema:
+        type: object
+        properties:
+          growth_rate:
+            type: number
+          top_products:
+            type: array
+            items:
+              type: object
+              properties:
+                product:
+                  type: string
+                revenue:
+                  type: number
+          seasonal_patterns:
+            type: array
+            items:
+              type: string
+          anomalies:
+            type: array
+            items:
+              type: object
+              properties:
+                month:
+                  type: string
+                metric:
+                  type: string
+                description:
+                  type: string
+                  
+  # Step 7: Create pivot table
+  - id: pivot_analysis
+    tool: data-processing
+    action: pivot
+    parameters:
+      input_data: "{{ clean_data.result }}"
+      input_format: "json"
+      output_format: "json"
+      index: ["product_name"]
+      columns: ["status"]
+      values: ["quantity"]
+      aggfunc: "sum"
+      fill_value: 0
+      
+  # Step 8: Quality check
+  - id: quality_check
+    tool: llm-analyze
+    action: analyze
+    parameters:
+      content: |
+        Original data profile: {{ profile_data.result }}
+        Validation results: {{ validate_schema.result }}
+        Rows processed: {{ clean_data.row_count }}
+      analysis_type: "quality_assessment"
+      schema:
+        type: object
+        properties:
+          quality_score:
+            type: number
+            minimum: 0
+            maximum: 1
+          issues_found:
+            type: array
+            items:
+              type: string
+          recommendations:
+            type: array
+            items:
+              type: string
+              
+  # Step 9: Export processed data
+  - id: export_data
+    tool: data-processing
+    action: transform
+    parameters:
+      input_data: "{{ clean_data.result }}"
+      input_format: "json"
+      output_format: "{{ output_format }}"
+      compression: "snappy"  # For parquet
+      
+  - id: save_processed
+    tool: filesystem
+    action: write
+    parameters:
+      path: "processed_data.{{ output_format }}"
+      content: "{{ export_data.result }}"
+      mode: "wb"  # Binary write for parquet
+      
+  # Step 10: Generate data report
+  - id: generate_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "Data Processing Report"
+      format: "html"
+      template: |
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Data Processing Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #4CAF50; color: white; }
+                .metric { background-color: #f2f2f2; padding: 10px; margin: 10px 0; }
+                .warning { color: #ff9800; }
+                .error { color: #f44336; }
+                .success { color: #4CAF50; }
+            </style>
+        </head>
+        <body>
+            <h1>Data Processing Report</h1>
+            
+            <div class="metric">
+                <h2>Processing Summary</h2>
+                <p><strong>Input File:</strong> {{ input_file }}</p>
+                <p><strong>Output Format:</strong> {{ output_format }}</p>
+                <p><strong>Rows Processed:</strong> {{ clean_data.row_count }}</p>
+                <p><strong>Quality Score:</strong> 
+                    <span class="{% if quality_check.result.quality_score >= quality_threshold %}success{% else %}warning{% endif %}">
+                        {{ quality_check.result.quality_score | round(2) }}
+                    </span>
+                </p>
+            </div>
+            
+            <h2>Data Quality Issues</h2>
+            <ul>
+            {% for issue in quality_check.result.issues_found %}
+                <li class="warning">{{ issue }}</li>
+            {% endfor %}
+            </ul>
+            
+            <h2>Monthly Revenue Trends</h2>
+            <table>
+                <tr>
+                    <th>Month</th>
+                    <th>Total Revenue</th>
+                    <th>Order Count</th>
+                    <th>Unique Customers</th>
+                </tr>
+                {% for row in aggregate_monthly.result %}
+                <tr>
+                    <td>{{ row.order_month }}</td>
+                    <td>${{ row.total_revenue | round(2) }}</td>
+                    <td>{{ row.order_count }}</td>
+                    <td>{{ row.unique_customers }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            
+            <h2>Top Products</h2>
+            <ol>
+            {% for product in analyze_trends.result.top_products %}
+                <li>{{ product.product }} - ${{ product.revenue | round(2) }}</li>
+            {% endfor %}
+            </ol>
+            
+            <h2>Order Status Distribution</h2>
+            <table>
+                <tr>
+                    <th>Product</th>
+                    {% for status in ['pending', 'processing', 'shipped', 'delivered'] %}
+                    <th>{{ status | title }}</th>
+                    {% endfor %}
+                </tr>
+                {% for row in pivot_analysis.result %}
+                <tr>
+                    <td>{{ row.product_name }}</td>
+                    {% for status in ['pending', 'processing', 'shipped', 'delivered'] %}
+                    <td>{{ row[status] or 0 }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+            
+            <h2>Recommendations</h2>
+            <ul>
+            {% for rec in quality_check.result.recommendations %}
+                <li>{{ rec }}</li>
+            {% endfor %}
+            </ul>
+            
+            <hr>
+            <p><em>Report generated on {{ current_date }}</em></p>
+        </body>
+        </html>
+
+outputs:
+  processed_file: "processed_data.{{ output_format }}"
+  quality_score: "{{ quality_check.result.quality_score }}"
+  rows_processed: "{{ clean_data.row_count }}"
+  report_path: "{{ generate_report.filepath }}"
+  growth_rate: "{{ analyze_trends.result.growth_rate }}"
