@@ -1,0 +1,149 @@
+# MCP Memory Workflow
+# Demonstrates using MCP memory for context management
+id: mcp_memory_workflow
+name: MCP Memory Context Management
+description: Use MCP memory to maintain context across pipeline steps
+version: "1.0.0"
+
+parameters:
+  user_name:
+    type: string
+    default: "User"
+  task_description:
+    type: string
+    default: "Analyze sales data and create visualizations"
+
+steps:
+  # Initialize conversation context
+  - id: init_context
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "store"
+      namespace: "conversation"
+      key: "user_profile"
+      value:
+        name: "{{ parameters.user_name }}"
+        task: "{{ parameters.task_description }}"
+        started_at: "{{ now() }}"
+      ttl: 7200  # 2 hours
+    
+  # Store task breakdown
+  - id: store_task_steps
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "store"
+      namespace: "conversation"
+      key: "task_steps"
+      value:
+        - "Load and validate data"
+        - "Perform statistical analysis"
+        - "Create visualizations"
+        - "Generate report"
+      ttl: 7200
+    dependencies:
+      - init_context
+    
+  # Simulate processing first step
+  - id: process_step_1
+    tool: task-delegation
+    action: execute
+    parameters:
+      task: <AUTO>Based on {{ parameters.task_description }}, what specific data should we load?</AUTO>
+      requirements:
+        capabilities: ["data-analysis"]
+    dependencies:
+      - store_task_steps
+    
+  # Store progress
+  - id: update_progress
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "store"
+      namespace: "conversation"
+      key: "progress"
+      value:
+        current_step: 1
+        completed_steps: ["Data loading plan created"]
+        next_action: "Execute data loading"
+      ttl: 7200
+    dependencies:
+      - process_step_1
+    
+  # Retrieve all context
+  - id: get_full_context
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "list"
+      namespace: "conversation"
+    dependencies:
+      - update_progress
+    
+  # Build context summary
+  - id: build_context_summary
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "Context Summary"
+      content: |
+        ## Current Context State
+        
+        **Namespace**: conversation
+        **Active Keys**: {{ get_full_context.keys | join(', ') }}
+        
+        ### Details:
+        {% for key in get_full_context.keys %}
+        - **{{ key }}**: Stored in memory
+        {% endfor %}
+    dependencies:
+      - get_full_context
+    
+  # Create persistent memory export
+  - id: export_memory
+    tool: filesystem
+    action: write
+    parameters:
+      path: "mcp_memory_export.json"
+      content: |
+        {
+          "namespace": "conversation",
+          "exported_at": "{{ now() }}",
+          "keys": {{ get_full_context.keys | json }},
+          "metadata": {
+            "user": "{{ parameters.user_name }}",
+            "task": "{{ parameters.task_description }}"
+          }
+        }
+    dependencies:
+      - get_full_context
+    
+  # Demonstrate TTL expiration check
+  - id: check_expiration
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "retrieve"
+      namespace: "conversation"
+      key: "user_profile"
+    dependencies:
+      - export_memory
+    
+  # Clean up namespace (optional)
+  - id: cleanup_memory
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "clear"
+      namespace: "temporary_workspace"
+    dependencies:
+      - export_memory
+    condition: "false"  # Disabled by default
+
+outputs:
+  context_keys: "{{ get_full_context.keys }}"
+  user_profile_found: "{{ check_expiration.found }}"
+  memory_export_path: "mcp_memory_export.json"
+  context_summary: "{{ build_context_summary.report }}"

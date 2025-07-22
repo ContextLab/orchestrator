@@ -112,6 +112,7 @@ def register_default_tools():
     from .user_interaction_tools import UserPromptTool, ApprovalGateTool, FeedbackCollectionTool
     from .pipeline_recursion_tools import PipelineExecutorTool, RecursionControlTool
     from .multimodal_tools import ImageAnalysisTool, ImageGenerationTool, AudioProcessingTool, VideoProcessingTool
+    from .mcp_tools import MCPServerTool, MCPMemoryTool, MCPResourceTool
     
     tools = [
         HeadlessBrowserTool(),
@@ -134,6 +135,9 @@ def register_default_tools():
         ImageGenerationTool(),
         AudioProcessingTool(),
         VideoProcessingTool(),
+        MCPServerTool(),
+        MCPMemoryTool(),
+        MCPResourceTool(),
     ]
     
     for tool in tools:

@@ -1,0 +1,199 @@
+# MCP Integration Pipeline
+# Demonstrates using MCP servers, memory, and resources
+id: mcp_integration
+name: MCP Integration Pipeline
+description: Connect to MCP servers and utilize their capabilities
+version: "1.0.0"
+
+parameters:
+  mcp_server_config:
+    type: object
+    default:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-brave-search"]
+      env:
+        BRAVE_API_KEY: "${BRAVE_API_KEY}"
+  search_query:
+    type: string
+    default: "AI orchestration frameworks"
+
+steps:
+  # Connect to MCP server
+  - id: connect_mcp
+    tool: mcp-server
+    action: execute
+    parameters:
+      action: "connect"
+      server_name: "brave-search"
+      server_config: "{{ parameters.mcp_server_config }}"
+    
+  # List available tools
+  - id: list_tools
+    tool: mcp-server
+    action: execute
+    parameters:
+      action: "list_tools"
+      server_name: "brave-search"
+    dependencies:
+      - connect_mcp
+    condition: "{{ connect_mcp.connected }}"
+    
+  # Store search context in memory
+  - id: store_context
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "store"
+      namespace: "search_session"
+      key: "query"
+      value: "{{ parameters.search_query }}"
+      ttl: 3600  # 1 hour
+    dependencies:
+      - connect_mcp
+    
+  # Execute search using MCP tool
+  - id: search_web
+    tool: mcp-server
+    action: execute
+    parameters:
+      action: "execute_tool"
+      server_name: "brave-search"
+      tool_name: "search"
+      tool_params:
+        query: "{{ parameters.search_query }}"
+        max_results: 5
+    dependencies:
+      - list_tools
+    
+  # Store search results
+  - id: store_results
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "store"
+      namespace: "search_session"
+      key: "results"
+      value: "{{ search_web.result }}"
+      ttl: 3600
+    dependencies:
+      - search_web
+    
+  # List available resources
+  - id: list_resources
+    tool: mcp-resource
+    action: execute
+    parameters:
+      action: "list"
+      server_name: "brave-search"
+    dependencies:
+      - connect_mcp
+    
+  # Read a configuration resource
+  - id: read_config
+    tool: mcp-resource
+    action: execute
+    parameters:
+      action: "read"
+      server_name: "brave-search"
+      uri: "file:///data/config.json"
+    dependencies:
+      - list_resources
+    
+  # Subscribe to updates
+  - id: subscribe_updates
+    tool: mcp-resource
+    action: execute
+    parameters:
+      action: "subscribe"
+      server_name: "brave-search"
+      uri: "api://weather/current"
+    dependencies:
+      - list_resources
+    
+  # Process search results
+  - id: analyze_results
+    tool: data-processing
+    action: analyze
+    parameters:
+      data: "{{ search_web.result }}"
+      analysis_type: "summarize"
+      format: "json"
+    dependencies:
+      - search_web
+    condition: "{{ search_web.success }}"
+    
+  # Retrieve all stored data
+  - id: list_memory
+    tool: mcp-memory
+    action: execute
+    parameters:
+      action: "list"
+      namespace: "search_session"
+    dependencies:
+      - store_results
+    
+  # Generate report
+  - id: generate_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "MCP Integration Results"
+      content: |
+        # MCP Server Integration Report
+        
+        ## Connection Status
+        - Server: {{ connect_mcp.server_name }}
+        - Connected: {{ connect_mcp.connected }}
+        - Capabilities: {{ connect_mcp.capabilities | json }}
+        
+        ## Available Tools
+        {% for tool in list_tools.tools %}
+        - **{{ tool.name }}**: {{ tool.description }}
+        {% endfor %}
+        
+        ## Search Results
+        Query: "{{ parameters.search_query }}"
+        
+        {% if search_web.success %}
+        ### Results Summary
+        {{ analyze_results.result | json }}
+        
+        ### Raw Results
+        Total found: {{ search_web.result.total | default(0) }}
+        {% else %}
+        Search failed: {{ search_web.error }}
+        {% endif %}
+        
+        ## Resources
+        Available resources: {{ list_resources.count }}
+        {% for resource in list_resources.resources %}
+        - {{ resource.name }} ({{ resource.uri }})
+        {% endfor %}
+        
+        ## Memory State
+        Stored keys: {{ list_memory.keys | join(', ') }}
+        
+        ## Subscriptions
+        {% if subscribe_updates.success %}
+        Active subscription: {{ subscribe_updates.subscription_id }}
+        {% endif %}
+    dependencies:
+      - analyze_results
+      - list_memory
+      - subscribe_updates
+    
+  # Clean up - disconnect
+  - id: disconnect_mcp
+    tool: mcp-server
+    action: execute
+    parameters:
+      action: "disconnect"
+      server_name: "brave-search"
+    dependencies:
+      - generate_report
+
+outputs:
+  search_results: "{{ search_web.result }}"
+  analysis: "{{ analyze_results.result }}"
+  report: "{{ generate_report.report }}"
+  subscription_id: "{{ subscribe_updates.subscription_id }}"
