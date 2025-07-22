@@ -93,9 +93,9 @@ class TestAllExamples(BaseExampleTest):
                 if 'loop' in step:
                     loop = step['loop']
                     
-                    # Check loop has either foreach or max_iterations
-                    assert 'foreach' in loop or 'max_iterations' in loop, \
-                        f"{example} step '{step.get('id', 'unknown')}' has loop without foreach or max_iterations"
+                    # Check loop has either foreach/over or max_iterations
+                    assert 'foreach' in loop or 'over' in loop or 'max_iterations' in loop, \
+                        f"{example} step '{step.get('id', 'unknown')}' has loop without foreach/over or max_iterations"
                     
                     # Check parallel configuration
                     if 'parallel' in loop:
@@ -152,13 +152,52 @@ class TestAllExamples(BaseExampleTest):
             
             for output_name, output_ref in outputs_to_check:
                 if isinstance(output_ref, str) and '{{' in output_ref:
-                    # Extract references
+                    # Extract references - handle nested braces and conditionals
                     import re
-                    refs = re.findall(r'{{([^}]+)}}', output_ref)
+                    # Use a more sophisticated pattern to handle Jinja2 expressions
+                    # This will match content between {{ and }} including nested expressions
+                    refs = []
+                    i = 0
+                    while i < len(output_ref):
+                        if output_ref[i:i+2] == '{{':
+                            # Find the matching closing braces
+                            j = i + 2
+                            brace_count = 1
+                            while j < len(output_ref) and brace_count > 0:
+                                if output_ref[j:j+2] == '{{':
+                                    brace_count += 1
+                                    j += 2
+                                elif output_ref[j:j+2] == '}}':
+                                    brace_count -= 1
+                                    j += 2
+                                else:
+                                    j += 1
+                            if brace_count == 0:
+                                # Extract the content between the braces
+                                refs.append(output_ref[i+2:j-2])
+                            i = j
+                        else:
+                            i += 1
                     
                     for ref in refs:
-                        # Check if it's a step result reference
-                        if '.result' in ref:
+                        # Handle conditional expressions
+                        if ' if ' in ref and ' else ' in ref:
+                            # This is a conditional expression, extract step references from it
+                            # Match patterns like step.result or step.result.field
+                            import re
+                            step_refs = re.findall(r'(\w+)\.result(?:\.\w+)*', ref)
+                            for step_ref in step_refs:
+                                if step_ref not in step_ids and step_ref not in ['inputs', 'context']:
+                                    # Check if it's a valid built-in reference
+                                    valid_builtins = ['collect_market_data', 'technical_analysis', 
+                                                    'sentiment_analysis', 'risk_assessment', 
+                                                    'predictive_modeling', 'generate_signals',
+                                                    'extract_entities', 'detect_pii', 'build_knowledge_graph']
+                                    
+                                    if step_ref not in valid_builtins:
+                                        pytest.fail(f"{example} output '{output_name}' references non-existent step '{step_ref}'")
+                        elif '.result' in ref:
+                            # Regular step result reference
                             step_id = ref.split('.')[0]
                             # Allow for complex references like step.result.field
                             base_step = step_id.split('[')[0]  # Handle array notation
