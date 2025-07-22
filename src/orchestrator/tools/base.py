@@ -109,6 +109,7 @@ def register_default_tools():
     from .system_tools import FileSystemTool, TerminalTool
     from .web_tools import HeadlessBrowserTool, WebSearchTool
     from .llm_tools import TaskDelegationTool, MultiModelRoutingTool, PromptOptimizationTool
+    from .user_interaction_tools import UserPromptTool, ApprovalGateTool, FeedbackCollectionTool
     
     tools = [
         HeadlessBrowserTool(),
@@ -122,6 +123,9 @@ def register_default_tools():
         TaskDelegationTool(),
         MultiModelRoutingTool(),
         PromptOptimizationTool(),
+        UserPromptTool(),
+        ApprovalGateTool(),
+        FeedbackCollectionTool(),
     ]
     
     for tool in tools:
