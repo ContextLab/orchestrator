@@ -43,7 +43,7 @@ class DuckDuckGoSearchBackend(WebSearchBackend):
                         query,
                         region=self.config.get('region', 'us-en'),
                         safesearch=self.config.get('safe_search', 'moderate'),
-                        timelimit=self.config.get('time_range', 'all'),
+                        timelimit=self.config.get('time_range', None),
                         max_results=max_results
                     ))
                 return results
