@@ -584,24 +584,26 @@ DataProcessingTool
 ValidationTool
 --------------
 
-**Purpose**: Validate data against schemas and business rules
+**Purpose**: Validate data against JSON schemas with format validation and type coercion
 
-**Action Names**:
-- ``validate_data``
-- ``validate_schema``
-- ``check_quality``
-- ``validate_report``
+**Tool Name**: ``validation``
+
+**Actions**:
+- ``validate`` - Validate data against a JSON Schema
+- ``infer_schema`` - Automatically infer a schema from sample data
+- ``extract_structured`` - Extract structured data from text (coming soon)
 
 **Parameters**:
 
 .. code-block:: yaml
 
-   # Validate against schema
+   # Validate against JSON Schema
    - id: validate_structure
-     action: validate_schema
+     tool: validation
+     action: validate
      parameters:
        data: "$results.processed_data"          # Required: Data to validate
-       schema:                                  # Required: Validation schema
+       schema:                                  # Required: JSON Schema (Draft 7)
          type: "object"
          required: ["id", "name", "email"]
          properties:
@@ -619,98 +621,85 @@ ValidationTool
              type: "integer"
              minimum: 0
              maximum: 150
-       strict: false                            # Optional: Strict mode (default: false)
+           model_id:
+             type: "string"
+             format: "model-id"                 # Built-in format validator
+       mode: "strict"                           # Optional: strict|lenient|report_only
    
-   # Business rule validation
-   - id: validate_rules
-     action: validate_data
+   # Infer schema from data
+   - id: analyze_structure
+     tool: validation
+     action: infer_schema
      parameters:
-       data: "$results.transactions"            # Required: Data to validate
-       rules:                                   # Required: Validation rules
-         - name: "positive_amounts"
-           field: "amount"
-           condition: "value > 0"
-           severity: "error"                    # error|warning|info
-           message: "Transaction amounts must be positive"
-         
-         - name: "valid_date_range"
-           field: "transaction_date"
-           condition: "value >= '2024-01-01' and value <= today()"
-           severity: "error"
-         
-         - name: "customer_exists"
-           field: "customer_id"
-           condition: "value in valid_customers"
-           severity: "warning"
-           context:
-             valid_customers: "$results.customer_list"
-       
-       stop_on_error: false                     # Optional: Stop on first error (default: false)
+       data: "$results.sample_data"             # Required: Sample data
    
-   # Data quality checks
-   - id: quality_check
-     action: check_quality
+   # Lenient validation with type coercion
+   - id: validate_with_coercion
+     tool: validation
+     action: validate
      parameters:
-       data: "$results.dataset"                 # Required: Data to check
-       checks:                                  # Required: Quality checks
-         - type: "completeness"
-           threshold: 0.95                      # 95% non-null required
-           columns: ["id", "name", "email"]
-         
-         - type: "uniqueness"
-           columns: ["id", "email"]
-         
-         - type: "consistency"
-           rules:
-             - "start_date <= end_date"
-             - "total == sum(line_items)"
-         
-         - type: "accuracy"
-           validations:
-             email: "regex:^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
-             phone: "regex:^\\+?1?\\d{9,15}$"
-         
-         - type: "timeliness"
-           field: "last_updated"
-           max_age_days: 30
-   
-   # Report validation
-   - id: validate_report
-     action: validate_report
-     parameters:
-       report: "$results.generated_report"      # Required: Report to validate
-       checks:                                  # Required: Report checks
-         - "completeness"                       # All sections present
-         - "accuracy"                           # Facts are accurate
-         - "consistency"                        # No contradictions
-         - "readability"                        # Appropriate reading level
-         - "citations"                          # Sources properly cited
-       requirements:                            # Optional: Specific requirements
-         min_words: 1000
-         max_words: 5000
-         required_sections: ["intro", "analysis", "conclusion"]
-         citation_style: "APA"
+       data:
+         count: "42"                            # Will be coerced to integer
+         active: "true"                         # Will be coerced to boolean
+         price: "19.99"                         # Will be coerced to number
+       schema:
+         type: "object"
+         properties:
+           count: {type: "integer"}
+           active: {type: "boolean"}
+           price: {type: "number"}
+       mode: "lenient"                          # Enable type coercion
+
+**Built-in Format Validators**:
+
+- ``model-id``: AI model identifiers (e.g., ``openai/gpt-4``, ``anthropic/claude-3``)
+- ``tool-name``: Tool names (e.g., ``web-search``, ``file_system``)
+- ``file-path``: Valid file system paths
+- ``yaml-path``: JSONPath expressions (e.g., ``$.data.items[0]``)
+- ``pipeline-ref``: Pipeline identifiers
+- ``task-ref``: Task output references (e.g., ``task1.output``)
+
+**Validation Modes**:
+
+- ``strict``: Fail on any validation error (default)
+- ``lenient``: Attempt type coercion, warn on minor issues
+- ``report_only``: Never fail, only report issues
+
+**Type Coercion in Lenient Mode**:
+
+- String to integer: ``"42"`` → ``42``
+- String to number: ``"3.14"`` → ``3.14``
+- String to boolean: ``"true"`` → ``true``, ``"false"`` → ``false``
+- Number to string: ``42`` → ``"42"``
 
 **Example Pipeline**:
 
 .. code-block:: yaml
 
    name: data-quality-pipeline
-   description: Comprehensive data validation and quality assurance
+   description: Comprehensive data validation with the ValidationTool
    
    steps:
      # Load data
      - id: load
-       action: read_file
+       tool: file-system
+       action: read
        parameters:
          path: "{{ inputs.data_file }}"
-         parse: true
      
-     # Schema validation
-     - id: validate_schema
-       action: validate_schema
+     # Infer schema from sample
+     - id: analyze
+       tool: validation
+       action: infer_schema
        parameters:
-         data: "$results.load"
+         data: "{{ load.content[0] }}"  # First record as sample
+     
+     # Validate full dataset
+     - id: validate_strict
+       tool: validation
+       action: validate
+       parameters:
+         data: "{{ load.content }}"
          schema:
            type: "array"
            items:
@@ -729,59 +718,45 @@ ValidationTool
                date:
                  type: "string"
                  format: "date"
+               model_id:
+                 type: "string"
+                 format: "model-id"
+         mode: "strict"
      
-     # Business rules
-     - id: validate_business
-       action: validate_data
+     # Try lenient validation if strict fails
+     - id: validate_lenient
+       tool: validation
+       action: validate
        parameters:
-         data: "$results.load"
-         rules:
-           - name: "valid_amounts"
-             field: "amount"
-             condition: "value > 0 and value < 10000"
-             severity: "error"
-           
-           - name: "recent_orders"
-             field: "date"
-             condition: "days_between(value, today()) <= 365"
-             severity: "warning"
-             message: "Order is older than 1 year"
-     
-     # Quality assessment
-     - id: quality_report
-       action: check_quality
-       parameters:
-         data: "$results.load"
-         checks:
-           - type: "completeness"
-             threshold: 0.98
-           - type: "uniqueness"
-             columns: ["order_id"]
-           - type: "consistency"
-             rules:
-               - "item_total == quantity * unit_price"
-           - type: "accuracy"
-             validations:
-               email: "regex:^[\\w.-]+@[\\w.-]+\\.\\w+$"
+         data: "{{ load.content }}"
+         schema: "{{ validate_strict.schema_used }}"
+         mode: "lenient"
+       condition: "{{ validate_strict.valid == false }}"
      
      # Generate validation report
      - id: create_report
-       action: generate_content
+       tool: report-generator
+       action: generate
        parameters:
-         template: |
+         title: "Data Validation Report"
+         content: |
            # Data Validation Report
            
-           ## Schema Validation
-           {{ results.validate_schema.summary }}
+           ## Schema Analysis
+           Inferred schema has {{ analyze.schema.properties | length }} properties
            
-           ## Business Rules
-           {{ results.validate_business.summary }}
+           ## Validation Results
            
-           ## Quality Metrics
-           {{ results.quality_report | format_quality_metrics }}
+           ### Strict Mode
+           - Valid: {{ validate_strict.valid }}
+           - Errors: {{ validate_strict.errors | length }}
            
-           ## Recommendations
-           <AUTO>Based on the validation results, provide recommendations</AUTO>
+           {% if validate_lenient %}
+           ### Lenient Mode
+           - Valid: {{ validate_lenient.valid }}
+           - Warnings: {{ validate_lenient.warnings | length }}
+           - Data coerced: {{ validate_lenient.warnings | selectattr("coerced_to") | list | length }} fields
+           {% endif %}
 
 Report Tools
 ============

@@ -1,0 +1,274 @@
+{
+  "tools": [
+    {
+      "name": "headless-browser",
+      "description": "Perform web browsing, search, and verification tasks using a headless browser",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action to perform: 'search', 'verify', 'scrape', 'scrape_js'"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL to visit (for verify/scrape)"
+          },
+          "query": {
+            "type": "string",
+            "description": "Search query (for search)"
+          },
+          "sources": {
+            "type": "array",
+            "description": "List of sources to search"
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum number of search results"
+          },
+          "backend": {
+            "type": "string",
+            "description": "Search backend to use (duckduckgo, bing, google)"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "web-search",
+      "description": "Perform web search and return results",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query"
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum number of results"
+          },
+          "backend": {
+            "type": "string",
+            "description": "Search backend to use (duckduckgo, bing, google)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "terminal",
+      "description": "Execute terminal commands in a sandboxed environment",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "Command to execute"
+          },
+          "working_dir": {
+            "type": "string",
+            "description": "Working directory"
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Timeout in seconds"
+          },
+          "capture_output": {
+            "type": "boolean",
+            "description": "Capture command output"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      }
+    },
+    {
+      "name": "filesystem",
+      "description": "Perform file system operations like read, write, copy, move",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action: 'read', 'write', 'copy', 'move', 'delete', 'list'"
+          },
+          "path": {
+            "type": "string",
+            "description": "File or directory path"
+          },
+          "content": {
+            "type": "string",
+            "description": "Content to write (for write action)"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Destination path (for copy/move)"
+          }
+        },
+        "required": [
+          "action",
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "data-processing",
+      "description": "Process and transform data in various formats",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action: 'convert', 'filter', 'aggregate', 'transform'"
+          },
+          "data": {
+            "type": "object",
+            "description": "Input data or file path"
+          },
+          "format": {
+            "type": "string",
+            "description": "Data format: 'json', 'csv', 'yaml'"
+          },
+          "operation": {
+            "type": "object",
+            "description": "Operation details"
+          }
+        },
+        "required": [
+          "action",
+          "data"
+        ]
+      }
+    },
+    {
+      "name": "validation",
+      "description": "Validate data against schemas with structured output support",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action: 'validate', 'extract_structured', 'infer_schema'"
+          },
+          "data": {
+            "type": "any",
+            "description": "Data to validate or text to extract from"
+          },
+          "schema": {
+            "type": "object",
+            "description": "JSON Schema for validation"
+          },
+          "mode": {
+            "type": "string",
+            "description": "Validation mode: 'strict', 'lenient', 'report_only'"
+          },
+          "model": {
+            "type": "string",
+            "description": "Model to use for structured extraction"
+          },
+          "text": {
+            "type": "string",
+            "description": "Text to extract structured data from"
+          },
+          "pydantic_model": {
+            "type": "string",
+            "description": "Pydantic model class name for validation"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "report-generator",
+      "description": "Generate structured markdown reports from research data",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Report title"
+          },
+          "query": {
+            "type": "string",
+            "description": "Research query"
+          },
+          "context": {
+            "type": "string",
+            "description": "Research context"
+          },
+          "search_results": {
+            "type": "object",
+            "description": "Search results data"
+          },
+          "extraction_results": {
+            "type": "object",
+            "description": "Content extraction data"
+          },
+          "findings": {
+            "type": "array",
+            "description": "Key findings"
+          },
+          "recommendations": {
+            "type": "array",
+            "description": "Recommendations"
+          },
+          "quality_score": {
+            "type": "number",
+            "description": "Quality score"
+          }
+        },
+        "required": [
+          "title",
+          "query",
+          "search_results",
+          "extraction_results"
+        ]
+      }
+    },
+    {
+      "name": "pdf-compiler",
+      "description": "Compile markdown reports to PDF using pandoc",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "markdown_content": {
+            "type": "string",
+            "description": "Markdown content to compile"
+          },
+          "output_path": {
+            "type": "string",
+            "description": "Output PDF file path"
+          },
+          "title": {
+            "type": "string",
+            "description": "Document title"
+          },
+          "author": {
+            "type": "string",
+            "description": "Document author"
+          },
+          "install_if_missing": {
+            "type": "boolean",
+            "description": "Install pandoc if not found"
+          }
+        },
+        "required": [
+          "markdown_content",
+          "output_path"
+        ]
+      }
+    }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+    "tools": {
+      "listChanged": true
+    }
+  }
+}

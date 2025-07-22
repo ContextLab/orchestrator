@@ -17,6 +17,7 @@ Tool Categories
    web_tools
    system_tools
    data_tools
+   validation_tools
    report_tools
    mcp_server
 

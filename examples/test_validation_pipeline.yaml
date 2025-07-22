@@ -1,0 +1,99 @@
+id: test-validation-pipeline
+name: Test Validation Pipeline
+description: Test pipeline for validating data with AUTO tags
+
+# Model specification for validation
+models:
+  default: openai/gpt-4
+  validation: anthropic/claude-3-sonnet
+
+steps:
+  - id: generate_data
+    tool: data-processing
+    action: transform
+    parameters:
+      data:
+        users:
+          - name: Alice
+            email: alice@example.com
+            age: "25"  # String that should be integer
+            active: "true"  # String that should be boolean
+          - name: Bob
+            email: invalid-email  # Invalid format
+            age: 30
+            active: false
+      operation:
+        transformations:
+          - type: add_field
+            field: model_id
+            value: "openai/gpt-4"
+
+  - id: validate_strict
+    tool: validation
+    action: validate
+    parameters:
+      data: "{{ generate_data.result }}"
+      schema:
+        type: object
+        properties:
+          users:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                age:
+                  type: integer
+                active:
+                  type: boolean
+                model_id:
+                  type: string
+                  format: model-id
+              required: ["name", "email"]
+      mode: strict
+
+  - id: validate_lenient
+    tool: validation
+    action: validate
+    parameters:
+      data: "{{ generate_data.result }}"
+      schema:
+        type: object
+        properties:
+          users:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                age:
+                  type: integer
+                active:
+                  type: boolean
+                model_id:
+                  type: string
+                  format: model-id
+              required: ["name", "email"]
+      mode: lenient
+
+  - id: infer_schema
+    tool: validation
+    action: infer_schema
+    parameters:
+      data: "{{ generate_data.result }}"
+
+  - id: validate_with_auto
+    tool: validation
+    action: validate
+    parameters:
+      data: "{{ generate_data.result }}"
+      schema: <AUTO>Infer an appropriate schema for user data with name, email, age, and active status</AUTO>
+      mode: <AUTO>Choose the most appropriate validation mode based on the data quality</AUTO>
