@@ -19,6 +19,17 @@ class ModelCapabilities:
     languages: List[str] = field(default_factory=lambda: ["en"])
     max_tokens: Optional[int] = None
     temperature_range: tuple[float, float] = (0.0, 2.0)
+    
+    # Enhanced capabilities for intelligent routing
+    domains: List[str] = field(default_factory=list)  # e.g., ["medical", "legal", "creative"]
+    vision_capable: bool = False
+    audio_capable: bool = False
+    code_specialized: bool = False
+    supports_tools: bool = False  # Tool/function calling
+    supports_json_mode: bool = False  # Native JSON output mode
+    supports_multimodal: bool = False  # Multiple input/output modalities
+    accuracy_score: float = 0.85  # 0-1 score for general accuracy
+    speed_rating: str = "medium"  # "fast", "medium", "slow"
 
     def __post_init__(self) -> None:
         """Validate capabilities after initialization."""
@@ -52,6 +63,15 @@ class ModelCapabilities:
             "languages": self.languages,
             "max_tokens": self.max_tokens,
             "temperature_range": self.temperature_range,
+            "domains": self.domains,
+            "vision_capable": self.vision_capable,
+            "audio_capable": self.audio_capable,
+            "code_specialized": self.code_specialized,
+            "supports_tools": self.supports_tools,
+            "supports_json_mode": self.supports_json_mode,
+            "supports_multimodal": self.supports_multimodal,
+            "accuracy_score": self.accuracy_score,
+            "speed_rating": self.speed_rating,
         }
 
     @classmethod
@@ -97,6 +117,48 @@ class ModelRequirements:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ModelRequirements:
+        """Create from dictionary representation."""
+        return cls(**data)
+
+
+@dataclass
+class ModelCost:
+    """Cost information for a model."""
+    
+    input_cost_per_1k_tokens: float = 0.0  # Cost per 1000 input tokens in USD
+    output_cost_per_1k_tokens: float = 0.0  # Cost per 1000 output tokens in USD
+    base_cost_per_request: float = 0.0  # Fixed cost per request in USD
+    is_free: bool = False  # True for local/self-hosted models
+    
+    def __post_init__(self) -> None:
+        """Validate cost information."""
+        if self.input_cost_per_1k_tokens < 0:
+            raise ValueError("Input cost must be non-negative")
+        if self.output_cost_per_1k_tokens < 0:
+            raise ValueError("Output cost must be non-negative")
+        if self.base_cost_per_request < 0:
+            raise ValueError("Base cost must be non-negative")
+    
+    def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
+        """Calculate total cost for a request."""
+        if self.is_free:
+            return 0.0
+        
+        input_cost = (input_tokens / 1000) * self.input_cost_per_1k_tokens
+        output_cost = (output_tokens / 1000) * self.output_cost_per_1k_tokens
+        return self.base_cost_per_request + input_cost + output_cost
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary representation."""
+        return {
+            "input_cost_per_1k_tokens": self.input_cost_per_1k_tokens,
+            "output_cost_per_1k_tokens": self.output_cost_per_1k_tokens,
+            "base_cost_per_request": self.base_cost_per_request,
+            "is_free": self.is_free,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> ModelCost:
         """Create from dictionary representation."""
         return cls(**data)
 
@@ -154,6 +216,7 @@ class Model(ABC):
         capabilities: Optional[ModelCapabilities] = None,
         requirements: Optional[ModelRequirements] = None,
         metrics: Optional[ModelMetrics] = None,
+        cost: Optional[ModelCost] = None,
     ) -> None:
         """
         Initialize model.
@@ -164,6 +227,7 @@ class Model(ABC):
             capabilities: Model capabilities
             requirements: Resource requirements
             metrics: Performance metrics
+            cost: Cost information
         """
         if not name:
             raise ValueError("Model name cannot be empty")
@@ -175,6 +239,7 @@ class Model(ABC):
         self.capabilities = capabilities or ModelCapabilities()
         self.requirements = requirements or ModelRequirements()
         self.metrics = metrics or ModelMetrics()
+        self.cost = cost or ModelCost()
         self._is_available = False
 
     @abstractmethod
@@ -309,6 +374,7 @@ class Model(ABC):
             "capabilities": self.capabilities.to_dict(),
             "requirements": self.requirements.to_dict(),
             "metrics": self.metrics.to_dict(),
+            "cost": self.cost.to_dict(),
             "is_available": self.is_available,
         }
 

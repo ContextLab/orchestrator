@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 import openai
 from openai import AsyncOpenAI
 
-from ..core.model import Model, ModelCapabilities, ModelRequirements
+from ..core.model import Model, ModelCapabilities, ModelRequirements, ModelCost
 
 
 class OpenAIModel(Model):
@@ -47,11 +47,15 @@ class OpenAIModel(Model):
                 disk_space_gb=0.1,
             )
 
+        # Set cost information
+        cost = self._get_model_cost(name)
+
         super().__init__(
             name=name,
             provider="openai",
             capabilities=capabilities,
             requirements=requirements,
+            cost=cost,
         )
 
         # Initialize OpenAI client
@@ -121,6 +125,13 @@ class OpenAIModel(Model):
                 languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
                 max_tokens=4096,
                 temperature_range=(0.0, 2.0),
+                domains=["general", "technical", "creative", "business"],
+                vision_capable="vision" in name_lower or "gpt-4-turbo" in name_lower,
+                code_specialized=True,
+                supports_tools=True,
+                supports_json_mode=True,
+                accuracy_score=0.95,
+                speed_rating="medium",
             )
 
         # GPT-3.5 models
@@ -139,6 +150,12 @@ class OpenAIModel(Model):
                 languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
                 max_tokens=4096,
                 temperature_range=(0.0, 2.0),
+                domains=["general", "technical"],
+                code_specialized=True,
+                supports_tools=True,
+                supports_json_mode=True,
+                accuracy_score=0.85,
+                speed_rating="fast",
             )
 
         # Default capabilities
@@ -173,6 +190,41 @@ class OpenAIModel(Model):
             return 175.0
         
         return 1.0
+    
+    def _get_model_cost(self, name: str) -> ModelCost:
+        """Get cost information for model."""
+        name_lower = name.lower()
+        
+        # GPT-4 pricing (as of 2024)
+        if "gpt-4" in name_lower:
+            if "turbo" in name_lower or "preview" in name_lower:
+                return ModelCost(
+                    input_cost_per_1k_tokens=0.01,
+                    output_cost_per_1k_tokens=0.03,
+                    is_free=False
+                )
+            else:
+                return ModelCost(
+                    input_cost_per_1k_tokens=0.03,
+                    output_cost_per_1k_tokens=0.06,
+                    is_free=False
+                )
+        
+        # GPT-3.5 pricing
+        elif "gpt-3.5" in name_lower:
+            return ModelCost(
+                input_cost_per_1k_tokens=0.0005,
+                output_cost_per_1k_tokens=0.0015,
+                is_free=False
+            )
+        
+        # Default pricing for unknown models
+        else:
+            return ModelCost(
+                input_cost_per_1k_tokens=0.002,
+                output_cost_per_1k_tokens=0.002,
+                is_free=False
+            )
 
     async def generate(
         self,

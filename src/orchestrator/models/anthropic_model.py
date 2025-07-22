@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 import anthropic
 from anthropic import AsyncAnthropic
 
-from ..core.model import Model, ModelCapabilities, ModelRequirements
+from ..core.model import Model, ModelCapabilities, ModelRequirements, ModelCost
 
 
 class AnthropicModel(Model):

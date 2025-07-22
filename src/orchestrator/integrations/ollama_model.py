@@ -20,6 +20,7 @@ from orchestrator.core.model import (
     ModelCapabilities,
     ModelMetrics,
     ModelRequirements,
+    ModelCost,
 )
 
 
