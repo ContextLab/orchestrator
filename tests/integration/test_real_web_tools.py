@@ -19,12 +19,15 @@ from orchestrator.tools.web_tools import HeadlessBrowserTool, WebSearchTool
 
 
 async def load_config():
-    """Load configuration from orchestrator.yaml."""
-    config_path = Path(__file__).parent.parent / 'config' / 'orchestrator.yaml'
-    
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
-    
+    """Load configuration or use defaults."""
+    # Use default config for testing
+    config = {
+        'web_search': {
+            'enabled': True,
+            'max_results': 5,
+            'timeout': 30
+        }
+    }
     return config
 
 

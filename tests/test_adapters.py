@@ -54,7 +54,7 @@ class TestLangGraphAdapter:
             )
         
         config = {"name": "langgraph", "version": "1.0.0"}
-        adapter = LangGraphAdapter(config)
+        adapter = LangGraphAdapter(config, model_registry=registry)
 
         task = Task("test_task", "Test Task", "generate")
         task.parameters = {"prompt": "Say 'Hello, LangGraph!' in exactly 3 words"}
