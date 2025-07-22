@@ -1,0 +1,105 @@
+# For Loop Example
+# Demonstrates dynamic iteration with AUTO-resolved collections
+name: Multi-Task Processing Pipeline
+description: Process multiple subtasks dynamically
+version: "1.0.0"
+
+parameters:
+  main_task:
+    type: string
+    description: Main task description
+  max_subtasks:
+    type: integer
+    default: 5
+
+steps:
+  # Analyze main task
+  - id: analyze_task
+    action: task-delegation
+    parameters:
+      task: "Analyze the following task and identify key components: {{ main_task }}"
+      requirements:
+        capabilities: ["analysis", "planning"]
+        
+  # Generate subtasks dynamically
+  - id: generate_subtasks
+    action: task-delegation
+    parameters:
+      task: <AUTO>Based on the task analysis {{ analyze_task.result }}, generate {{ max_subtasks }} specific subtasks. Return as a JSON array of task descriptions.</AUTO>
+      output_format: "json"
+    depends_on: [analyze_task]
+    
+  # Process each subtask
+  - id: process_subtasks
+    for_each: "{{ generate_subtasks.result }}"
+    max_parallel: 3
+    steps:
+      # Determine strategy for each subtask
+      - id: determine_strategy
+        action: task-delegation
+        parameters:
+          task: <AUTO>What's the best approach for subtask: {{$item}}? Choose one: research, implement, validate</AUTO>
+          
+      # Execute subtask based on strategy
+      - id: execute_subtask
+        action: task-delegation
+        parameters:
+          task: "Execute subtask: {{$item}}"
+          strategy: "{{ determine_strategy.result }}"
+          context:
+            subtask_index: "{{$index}}"
+            is_first: "{{$is_first}}"
+            is_last: "{{$is_last}}"
+        depends_on: [determine_strategy]
+        
+      # Validate subtask results
+      - id: validate_result
+        action: validation
+        parameters:
+          data: "{{ execute_subtask.result }}"
+          criteria: <AUTO>Define validation criteria for this subtask type</AUTO>
+        depends_on: [execute_subtask]
+    depends_on: [generate_subtasks]
+    
+  # Aggregate all results
+  - id: aggregate_results
+    action: data-processing
+    parameters:
+      action: aggregate
+      data: "{{ process_subtasks.*.validate_result.result }}"
+      aggregation_method: <AUTO>Choose best aggregation method based on result types</AUTO>
+    depends_on: [process_subtasks]
+    
+  # Generate summary report
+  - id: generate_summary
+    action: report-generator
+    parameters:
+      title: "Task Processing Summary"
+      content: |
+        # Main Task
+        {{ main_task }}
+        
+        ## Task Analysis
+        {{ analyze_task.result.summary }}
+        
+        ## Subtasks Processed
+        Total: {{ generate_subtasks.result | length }}
+        
+        ### Subtask Details
+        {% for i in range(generate_subtasks.result | length) %}
+        #### Subtask {{ i + 1 }}: {{ generate_subtasks.result[i] }}
+        - Strategy: {{ process_subtasks[i].determine_strategy.result }}
+        - Status: {{ process_subtasks[i].validate_result.status }}
+        - Score: {{ process_subtasks[i].validate_result.score }}
+        {% endfor %}
+        
+        ## Aggregated Results
+        {{ aggregate_results.result.summary }}
+      format: "markdown"
+    depends_on: [aggregate_results]
+
+outputs:
+  subtasks: "{{ generate_subtasks.result }}"
+  processed_count: "{{ generate_subtasks.result | length }}"
+  aggregated_results: "{{ aggregate_results.result }}"
+  summary_report: "{{ generate_summary.report }}"

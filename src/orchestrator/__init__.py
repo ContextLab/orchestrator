@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .compiler.yaml_compiler import YAMLCompiler
+from .compiler.control_flow_compiler import ControlFlowCompiler
 from .core.control_system import ControlSystem
 from .core.model import Model, ModelCapabilities, ModelRequirements
 from .core.pipeline import Pipeline
@@ -23,6 +24,14 @@ from .models.registry_singleton import get_model_registry, set_model_registry
 from .orchestrator import Orchestrator
 from .state.state_manager import StateManager
 from .tools.mcp_server import default_mcp_server, default_tool_detector
+from .control_flow import (
+    ConditionalHandler,
+    ForLoopHandler,
+    WhileLoopHandler,
+    DynamicFlowHandler,
+    ControlFlowAutoResolver
+)
+from .engine.control_flow_engine import ControlFlowEngine
 
 __version__ = "0.1.0"
 
@@ -34,6 +43,7 @@ __all__ = [
     "Model",
     "ModelRegistry",
     "YAMLCompiler",
+    "ControlFlowCompiler",
     "ControlSystem",
     "ErrorHandler",
     "ResourceAllocator",
@@ -46,6 +56,12 @@ __all__ = [
     "PipelineStatusTracker",
     "PipelineResumeManager",
     "ResumeStrategy",
+    "ConditionalHandler",
+    "ForLoopHandler",
+    "WhileLoopHandler",
+    "DynamicFlowHandler",
+    "ControlFlowAutoResolver",
+    "ControlFlowEngine",
 ]
 __author__ = "Contextual Dynamics Lab"
 __email__ = "contextualdynamics@gmail.com"
@@ -491,9 +507,16 @@ __all__ = [
     "ModelRequirements",
     "ControlSystem",
     "YAMLCompiler",
+    "ControlFlowCompiler",
     "ModelRegistry",
     "StateManager",
     "Orchestrator",
     "init_models",
     "compile",
+    "ConditionalHandler",
+    "ForLoopHandler",
+    "WhileLoopHandler",
+    "DynamicFlowHandler",
+    "ControlFlowAutoResolver",
+    "ControlFlowEngine",
 ]

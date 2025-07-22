@@ -1,0 +1,97 @@
+# Conditional Execution Example
+# Demonstrates conditional branching with AUTO resolution
+name: Adaptive Processing Pipeline
+description: Process data with different strategies based on analysis
+version: "1.0.0"
+
+parameters:
+  input_data:
+    type: object
+    description: Input data to process
+  quality_threshold:
+    type: number
+    default: 0.8
+    
+steps:
+  # Analyze input data
+  - id: analyze_data
+    action: data-processing
+    parameters:
+      action: analyze
+      data: "{{ input_data }}"
+      analysis_type: "comprehensive"
+      
+  # Determine processing strategy
+  - id: determine_strategy
+    action: task-delegation
+    parameters:
+      task: <AUTO>Based on the analysis results {{ analyze_data.result }}, should we use advanced processing (true) or simple processing (false)?</AUTO>
+      requirements:
+        capabilities: ["decision-making"]
+    depends_on: [analyze_data]
+    
+  # Advanced processing branch
+  - id: advanced_processing
+    action: data-processing
+    if: "{{ determine_strategy.result == true }}"
+    parameters:
+      action: process
+      data: "{{ input_data }}"
+      method: <AUTO>Select the best advanced processing method for this data type</AUTO>
+      optimization_level: "high"
+    depends_on: [determine_strategy]
+    
+  # Simple processing branch  
+  - id: simple_processing
+    action: data-processing
+    if: "{{ determine_strategy.result == false }}"
+    parameters:
+      action: process
+      data: "{{ input_data }}"
+      method: "basic"
+      optimization_level: "low"
+    depends_on: [determine_strategy]
+    
+  # Quality check with conditional retry
+  - id: quality_check
+    action: validation
+    parameters:
+      data: "{{ advanced_processing.result or simple_processing.result }}"
+      threshold: "{{ quality_threshold }}"
+    depends_on: [advanced_processing, simple_processing]
+    
+  # Conditional enhancement
+  - id: enhance_results
+    action: data-processing
+    if: <AUTO>Based on quality check {{ quality_check.result }}, do the results need enhancement?</AUTO>
+    parameters:
+      action: enhance
+      data: "{{ quality_check.data }}"
+      enhancement_level: <AUTO>Determine enhancement level needed</AUTO>
+    depends_on: [quality_check]
+    
+  # Final output
+  - id: prepare_output
+    action: report-generator
+    parameters:
+      title: "Processing Results"
+      content: |
+        ## Analysis Summary
+        {{ analyze_data.result.summary }}
+        
+        ## Processing Method
+        Strategy: {{ determine_strategy.result ? 'Advanced' : 'Simple' }}
+        
+        ## Quality Score
+        {{ quality_check.result.score }}
+        
+        ## Enhancements Applied
+        {{ enhance_results.result.enhancements | default('None') }}
+      format: "markdown"
+    depends_on: [quality_check, enhance_results]
+
+outputs:
+  processed_data: "{{ quality_check.data }}"
+  quality_score: "{{ quality_check.result.score }}"
+  processing_method: "{{ determine_strategy.result ? 'advanced' : 'simple' }}"
+  report: "{{ prepare_output.report }}"

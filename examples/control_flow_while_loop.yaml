@@ -1,0 +1,126 @@
+# While Loop Example
+# Demonstrates iterative improvement with AUTO-resolved conditions
+name: Iterative Refinement Pipeline
+description: Refine results until quality threshold is met
+version: "1.0.0"
+
+parameters:
+  initial_content:
+    type: string
+    description: Initial content to refine
+  target_quality:
+    type: number
+    default: 0.9
+    description: Target quality score (0-1)
+
+steps:
+  # Initialize refinement process
+  - id: initialize
+    action: data-processing
+    parameters:
+      action: initialize
+      content: "{{ initial_content }}"
+      metadata:
+        target_quality: "{{ target_quality }}"
+        iteration: 0
+        
+  # Iterative improvement loop
+  - id: improvement_loop
+    while: <AUTO>Based on current quality score {{current_result.quality_score | default(0)}}, do we need more iterations to reach target quality {{ target_quality }}? (true/false)</AUTO>
+    max_iterations: 10
+    steps:
+      # Analyze current state
+      - id: analyze_quality
+        action: validation
+        parameters:
+          data: "{{ current_result.content | default(initial_content) }}"
+          validation_type: "quality_assessment"
+          criteria: <AUTO>What quality criteria should we check for iteration {{$iteration}}?</AUTO>
+          
+      # Determine improvement method
+      - id: select_method
+        action: task-delegation
+        parameters:
+          task: <AUTO>Based on quality analysis {{ analyze_quality.result }}, what improvement method should we use: grammar_fix, clarity_enhance, structure_improve, or fact_check?</AUTO>
+          context:
+            current_score: "{{ analyze_quality.result.score }}"
+            iteration: "{{$iteration}}"
+            previous_methods: "{{$loop_state.used_methods | default([]) }}"
+            
+      # Apply improvement
+      - id: improve
+        action: data-processing
+        parameters:
+          action: refine
+          content: "{{ analyze_quality.data }}"
+          method: "{{ select_method.result }}"
+          intensity: <AUTO>Based on how far we are from target (current: {{ analyze_quality.result.score }}, target: {{ target_quality }}), choose intensity: light, moderate, or aggressive</AUTO>
+        depends_on: [select_method]
+        
+      # Validate improvement
+      - id: validate_improvement
+        action: validation
+        parameters:
+          data: "{{ improve.result.content }}"
+          validation_type: "quality_assessment"
+          compare_with: "{{ analyze_quality.data }}"
+        depends_on: [improve]
+        
+      # Update loop state
+      - id: update_state
+        action: data-processing
+        parameters:
+          action: update_state
+          loop_state:
+            quality_score: "{{ validate_improvement.result.score }}"
+            content: "{{ improve.result.content }}"
+            used_methods: "{{ ($loop_state.used_methods | default([])) + [select_method.result] }}"
+            improvement_delta: "{{ validate_improvement.result.score - analyze_quality.result.score }}"
+        depends_on: [validate_improvement]
+    depends_on: [initialize]
+    
+  # Final quality check
+  - id: final_check
+    action: validation
+    parameters:
+      data: "{{ improvement_loop.final_result.content | default(initial_content) }}"
+      validation_type: "comprehensive"
+      threshold: "{{ target_quality }}"
+    depends_on: [improvement_loop]
+    
+  # Generate improvement report
+  - id: generate_report
+    action: report-generator
+    parameters:
+      title: "Iterative Refinement Report"
+      content: |
+        # Refinement Summary
+        
+        ## Initial State
+        - Content Length: {{ initial_content | length }} characters
+        - Initial Quality: {{ initialize.result.initial_score | default('N/A') }}
+        
+        ## Refinement Process
+        - Total Iterations: {{ improvement_loop.iterations_completed }}
+        - Final Quality Score: {{ final_check.result.score }}
+        - Target Achieved: {{ final_check.result.score >= target_quality ? 'Yes' : 'No' }}
+        
+        ## Methods Applied
+        {{ improvement_loop.final_state.used_methods | join(', ') }}
+        
+        ## Quality Progression
+        {% for iteration in improvement_loop.iteration_results %}
+        - Iteration {{ loop.index }}: {{ iteration.quality_score }} ({{ iteration.improvement_delta > 0 ? '+' : '' }}{{ iteration.improvement_delta }})
+        {% endfor %}
+        
+        ## Final Content Preview
+        {{ final_check.data | truncate(200) }}...
+      format: "markdown"
+    depends_on: [final_check]
+
+outputs:
+  refined_content: "{{ final_check.data }}"
+  final_quality: "{{ final_check.result.score }}"
+  iterations_used: "{{ improvement_loop.iterations_completed }}"
+  quality_achieved: "{{ final_check.result.score >= target_quality }}"
+  improvement_report: "{{ generate_report.report }}"

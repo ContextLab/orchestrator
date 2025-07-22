@@ -59,7 +59,18 @@ class YAMLCompiler:
             model_registry: Model registry for ambiguity resolution
         """
         self.schema_validator = schema_validator or SchemaValidator()
-        self.ambiguity_resolver = ambiguity_resolver or AmbiguityResolver(model_registry)
+        
+        # Try to create ambiguity resolver, fall back to mock if no model
+        if ambiguity_resolver:
+            self.ambiguity_resolver = ambiguity_resolver
+        else:
+            try:
+                self.ambiguity_resolver = AmbiguityResolver(model_registry)
+            except ValueError:
+                # No model available, use mock resolver
+                from .mock_ambiguity_resolver import MockAmbiguityResolver
+                self.ambiguity_resolver = MockAmbiguityResolver()
+                
         self.template_engine = Environment(undefined=StrictUndefined)
         
         # Add custom filters to Jinja2 environment
@@ -201,6 +212,10 @@ class YAMLCompiler:
                         ".output",
                         ".value",
                         ".data",
+                        "$item",
+                        "$index",
+                        "$iteration",
+                        "$loop",
                     ]
                     
                     # Check if any runtime pattern is in the original template
@@ -213,8 +228,9 @@ class YAMLCompiler:
                         import re
 
                         # Match both simple step references ({{step_id}}) and dotted ones ({{step_id.result}})
+                        # Also match expressions with operators like > < == etc
                         step_ref_pattern = (
-                            r"\{\{[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?\}\}"
+                            r"\{\{[^}]*[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*[^}]*\}\}"
                         )
 
                         if re.search(step_ref_pattern, value):

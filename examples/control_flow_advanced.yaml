@@ -1,0 +1,199 @@
+# Advanced Control Flow Example
+# Combines conditionals, loops, and dynamic flow control
+name: Adaptive Research Pipeline
+description: Research pipeline that adapts based on findings
+version: "1.0.0"
+
+parameters:
+  research_topic:
+    type: string
+    description: Main research topic
+  time_budget:
+    type: integer
+    default: 3600  # seconds
+    description: Time budget for research
+  quality_target:
+    type: number
+    default: 0.85
+
+steps:
+  # Initial research planning
+  - id: initial_research
+    action: web-search
+    parameters:
+      query: "{{ research_topic }}"
+      max_results: 10
+      
+  # Analyze initial findings
+  - id: analyze_findings
+    action: task-delegation
+    parameters:
+      task: "Analyze these search results and identify key themes: {{ initial_research.results }}"
+      output_format: "structured"
+    depends_on: [initial_research]
+    
+  # Determine research branches
+  - id: plan_branches
+    action: task-delegation
+    parameters:
+      task: <AUTO>Based on findings {{ analyze_findings.result }}, how many research branches should we pursue? (1-5)</AUTO>
+      output_format: "number"
+    depends_on: [analyze_findings]
+    
+  # Generate branch topics
+  - id: generate_branches
+    action: task-delegation
+    parameters:
+      task: <AUTO>Generate {{ plan_branches.result }} specific research directions based on the analysis. Return as JSON array.</AUTO>
+      output_format: "json"
+    depends_on: [plan_branches]
+    
+  # Research each branch
+  - id: research_branches
+    for_each: "{{ generate_branches.result }}"
+    max_parallel: 2
+    steps:
+      # Evaluate branch importance
+      - id: evaluate_importance
+        action: task-delegation
+        parameters:
+          task: <AUTO>Rate the importance of researching '{{$item}}' for our main topic '{{ research_topic }}' (1-10)</AUTO>
+          
+      # Conditional deep research
+      - id: should_deep_research
+        action: task-delegation
+        parameters:
+          task: <AUTO>Given importance score {{ evaluate_importance.result }} and remaining time budget, should we do deep research? (true/false)</AUTO>
+        depends_on: [evaluate_importance]
+        
+      # Deep research branch
+      - id: deep_research
+        action: web-search
+        if: "{{ should_deep_research.result == true }}"
+        parameters:
+          query: "{{$item}} detailed analysis"
+          max_results: <AUTO>Based on importance {{ evaluate_importance.result }}, how many results to fetch? (5-20)</AUTO>
+        depends_on: [should_deep_research]
+        
+      # Surface research branch
+      - id: surface_research
+        action: web-search
+        if: "{{ should_deep_research.result == false }}"
+        parameters:
+          query: "{{$item}} overview"
+          max_results: 5
+        depends_on: [should_deep_research]
+        
+      # Synthesize branch findings
+      - id: synthesize_branch
+        action: task-delegation
+        parameters:
+          task: "Synthesize findings for branch '{{$item}}'"
+          deep_results: "{{ deep_research.results | default([]) }}"
+          surface_results: "{{ surface_research.results | default([]) }}"
+        depends_on: [deep_research, surface_research]
+    depends_on: [generate_branches]
+    
+  # Quality improvement loop
+  - id: quality_loop
+    while: <AUTO>Is our research quality {{ current_result.quality | default(0) }} below target {{ quality_target }} and do we have time remaining?</AUTO>
+    max_iterations: 3
+    steps:
+      # Assess current quality
+      - id: assess_quality
+        action: validation
+        parameters:
+          data: "{{ research_branches.*.synthesize_branch.result }}"
+          validation_type: "research_quality"
+          criteria:
+            completeness: <AUTO>Define completeness criteria for iteration {{$iteration}}</AUTO>
+            depth: <AUTO>Define depth criteria based on topic complexity</AUTO>
+            
+      # Identify gaps
+      - id: identify_gaps
+        action: task-delegation
+        parameters:
+          task: <AUTO>What are the main gaps in our research based on {{ assess_quality.result }}?</AUTO>
+        depends_on: [assess_quality]
+        
+      # Fill gaps with targeted research
+      - id: gap_research
+        action: web-search
+        parameters:
+          query: <AUTO>Generate search query to fill gap: {{ identify_gaps.result }}</AUTO>
+          max_results: 10
+        depends_on: [identify_gaps]
+        
+      # Update research quality
+      - id: update_quality
+        action: data-processing
+        parameters:
+          action: merge
+          existing_research: "{{ research_branches.*.synthesize_branch.result }}"
+          new_findings: "{{ gap_research.results }}"
+          quality_score: "{{ assess_quality.result.score }}"
+        depends_on: [gap_research]
+    depends_on: [research_branches]
+    
+  # Decision point for report generation
+  - id: check_completion
+    action: validation
+    parameters:
+      research_quality: "{{ quality_loop.final_quality | default(0.5) }}"
+      time_used: "{{ execution_time }}"
+      time_budget: "{{ time_budget }}"
+    depends_on: [quality_loop]
+    
+  # Dynamic report type selection
+  - id: select_report_type
+    action: task-delegation
+    parameters:
+      task: <AUTO>Based on research quality {{ check_completion.research_quality }} and completeness, what report type should we generate: 'executive_summary', 'detailed_analysis', or 'preliminary_findings'?</AUTO>
+    goto: "{{ select_report_type.result }}_report"
+    depends_on: [check_completion]
+    
+  # Executive summary report
+  - id: executive_summary_report
+    action: report-generator
+    parameters:
+      title: "Executive Summary: {{ research_topic }}"
+      content: <AUTO>Create a concise executive summary of all research findings</AUTO>
+      style: "executive"
+    goto: "finalize"
+    
+  # Detailed analysis report
+  - id: detailed_analysis_report
+    action: report-generator
+    parameters:
+      title: "Detailed Analysis: {{ research_topic }}"
+      content: <AUTO>Create a comprehensive analysis including all branch findings and gap research</AUTO>
+      style: "academic"
+    goto: "finalize"
+    
+  # Preliminary findings report
+  - id: preliminary_findings_report
+    action: report-generator
+    parameters:
+      title: "Preliminary Findings: {{ research_topic }}"
+      content: <AUTO>Create a preliminary report noting areas needing further research</AUTO>
+      style: "informal"
+    goto: "finalize"
+    
+  # Finalize output
+  - id: finalize
+    action: data-processing
+    parameters:
+      action: finalize
+      report: "{{ executive_summary_report.report or detailed_analysis_report.report or preliminary_findings_report.report }}"
+      metadata:
+        total_sources: "{{ initial_research.results | length + research_branches.*.deep_research.results | sum + research_branches.*.surface_research.results | sum }}"
+        branches_researched: "{{ generate_branches.result | length }}"
+        quality_iterations: "{{ quality_loop.iterations | default(0) }}"
+        final_quality: "{{ check_completion.research_quality }}"
+
+outputs:
+  final_report: "{{ finalize.result.report }}"
+  research_quality: "{{ check_completion.research_quality }}"
+  branches_explored: "{{ generate_branches.result }}"
+  total_sources: "{{ finalize.result.metadata.total_sources }}"
+  report_type: "{{ select_report_type.result }}"
