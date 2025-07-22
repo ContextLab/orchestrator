@@ -224,7 +224,7 @@ class ReportGeneratorTool(Tool):
     
     def _extract_content_insights(self, snippet: str, content_insights: List[str], key_concepts: set):
         """Extract meaningful content insights from a snippet."""
-        snippet_lower = snippet.lower()
+        snippet.lower()
         
         # Look for actionable insights and concrete information
         sentences = snippet.split('. ')

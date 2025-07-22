@@ -3,7 +3,6 @@
 
 import asyncio
 from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
-from src.orchestrator.core.pipeline import Pipeline
 from src.orchestrator.core.task import Task
 
 

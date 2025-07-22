@@ -3,10 +3,7 @@
 This test creates a minimal pipeline to verify the integration works correctly.
 """
 
-import asyncio
-import os
 import pytest
-from pathlib import Path
 
 from orchestrator import Orchestrator, Task, Pipeline, init_models
 from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem

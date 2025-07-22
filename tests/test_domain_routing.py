@@ -248,7 +248,7 @@ async def test_multi_domain_handling(router: DomainRouter):
     
     # Detect all domains
     detected = router.detect_domains(multi_domain_text, threshold=0.2)
-    print(f"\nDetected domains:")
+    print("\nDetected domains:")
     for domain, confidence in detected:
         print(f"  - {domain}: {confidence:.2f}")
     

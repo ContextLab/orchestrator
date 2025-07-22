@@ -1,6 +1,5 @@
 """Utility functions for model management."""
 
-import os
 import re
 import subprocess
 from typing import Any, Dict, Optional
@@ -147,7 +146,6 @@ def load_model_config(config_path: str = "models.yaml") -> Dict[str, Any]:
     
     This is a compatibility wrapper that uses the new ModelConfigLoader.
     """
-    from pathlib import Path
     
     # Use the new config loader
     loader = get_model_config_loader()

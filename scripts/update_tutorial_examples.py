@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Update all tutorial examples to use the new declarative YAML framework."""
 
-import os
-import re
 
 # Template for updated tutorial documentation
 TUTORIAL_TEMPLATE = """
@@ -177,7 +175,7 @@ EXAMPLES = {
 def create_yaml_examples():
     """Create YAML files for each example."""
     for example_key, config in EXAMPLES.items():
-        yaml_content = f"""name: "{config['title']}"
+        f"""name: "{config['title']}"
 description: "{config['details']}"
 
 inputs:

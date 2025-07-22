@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 from ..core.model import Model
 from ..models.model_registry import ModelRegistry

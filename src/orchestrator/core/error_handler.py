@@ -755,7 +755,7 @@ class ErrorHandler:
                     return func(*args, **kwargs)
 
             except Exception as e:
-                error_result = await self.handle_error(e, context)
+                await self.handle_error(e, context)
 
                 # Create ErrorInfo for strategy compatibility
                 error_info = self.classifier.create_error_info(e, context)

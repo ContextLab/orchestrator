@@ -2,7 +2,6 @@
 
 import re
 from typing import Any, Dict, List, Optional, Union
-import asyncio
 import json
 
 from ..compiler.ambiguity_resolver import AmbiguityResolver

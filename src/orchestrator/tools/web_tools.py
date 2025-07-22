@@ -829,7 +829,6 @@ class HeadlessBrowserTool(Tool):
                 subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])
                 
                 # Try importing again
-                from playwright.async_api import async_playwright
                 self.logger.info("Playwright installed successfully")
             except Exception as e:
                 return {

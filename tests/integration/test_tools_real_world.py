@@ -8,19 +8,15 @@ Each test:
 4. Ensures tools integrate properly with the orchestrator
 """
 
-import asyncio
 import json
-import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, Any
 
 import pytest
 
 from orchestrator import init_models, Orchestrator
 from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
-from orchestrator.tools.base import default_registry
 from orchestrator.tools.web_tools import HeadlessBrowserTool, WebSearchTool
 from orchestrator.tools.system_tools import TerminalTool, FileSystemTool
 from orchestrator.tools.data_tools import DataProcessingTool, ValidationTool

@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Optional
 
-import openai
 from openai import AsyncOpenAI
 
 from ..core.model import Model, ModelCapabilities, ModelRequirements, ModelCost

@@ -6,7 +6,6 @@ import json
 from typing import Dict, Any
 
 from src.orchestrator.engine.control_flow_engine import ControlFlowEngine
-from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.tools.base import Tool, ToolRegistry
 
 
@@ -84,7 +83,7 @@ class DemoReportTool(Tool):
     async def execute(self, **kwargs) -> Dict[str, Any]:
         title = kwargs.get('title', 'Report')
         content = kwargs.get('content', '')
-        format_type = kwargs.get('format', 'markdown')
+        kwargs.get('format', 'markdown')
         
         # Simple template processing
         if '{{' in content:

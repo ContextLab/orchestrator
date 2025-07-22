@@ -12,7 +12,6 @@ import sys
 import os
 import json
 import csv
-import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -201,8 +200,8 @@ class RealDataControlSystem(ControlSystem):
         # Analyze each result
         for result in results:
             url = result.get("url", "")
-            title = result.get("title", "")
-            snippet = result.get("snippet", "")
+            result.get("title", "")
+            result.get("snippet", "")
             
             # Determine source type based on URL
             if "arxiv.org" in url:
@@ -312,7 +311,7 @@ Format as a markdown report with Key Findings and Insights sections."""
     # Code optimization actions
     async def _analyze_code(self, task):
         """Analyze real code files."""
-        path = task.parameters.get("path", "")
+        task.parameters.get("path", "")
         language = task.parameters.get("language", "python")
         
         # Read actual file if it exists
@@ -644,7 +643,7 @@ class RealAutoResolver(Model):
                 # Use the real model
                 response = await self.actual_model.generate(prompt, **kwargs)
                 return response
-            except Exception as e:
+            except Exception:
                 # If real model fails, provide sensible defaults
                 pass
         

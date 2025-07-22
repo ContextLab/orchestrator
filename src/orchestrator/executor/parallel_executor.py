@@ -167,7 +167,7 @@ class WorkerPool:
                 )
 
             execution_time = time.time() - start_time
-            resource_usage = self.resource_monitor.stop_monitoring(task.id)
+            self.resource_monitor.stop_monitoring(task.id)
 
             return ExecutionResult(
                 task_id=task.id,

@@ -1,7 +1,6 @@
 """Tests for control flow features."""
 
 import pytest
-import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 
 from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
@@ -9,9 +8,8 @@ from src.orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
 from src.orchestrator.control_flow.conditional import ConditionalHandler, ConditionalTask
 from src.orchestrator.control_flow.loops import ForLoopHandler, WhileLoopHandler
 from src.orchestrator.control_flow.dynamic_flow import DynamicFlowHandler
-from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
 from src.orchestrator.engine.control_flow_engine import ControlFlowEngine
-from src.orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task
 from src.orchestrator.models.model_registry import ModelRegistry
 
 

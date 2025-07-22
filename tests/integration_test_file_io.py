@@ -311,8 +311,8 @@ class TestFileIOBasics:
         assert os.path.isdir(dir_path)
 
         # Create files in directory
-        file1 = file_manager.create_file("file1.txt", "Content 1", "test_dir")
-        file2 = file_manager.create_file("file2.txt", "Content 2", "test_dir")
+        file_manager.create_file("file1.txt", "Content 1", "test_dir")
+        file_manager.create_file("file2.txt", "Content 2", "test_dir")
 
         # List directory contents
         contents = file_manager.list_directory(dir_path)
@@ -514,7 +514,7 @@ class TestFileIOAdvanced:
                 executor.submit(read_write_task, file_paths[i], i)
                 for i in range(len(file_paths))
             ]
-            expected_contents = [
+            [
                 future.result() for future in concurrent.futures.as_completed(futures)
             ]
 

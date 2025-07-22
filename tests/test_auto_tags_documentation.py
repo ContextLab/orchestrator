@@ -4,15 +4,12 @@
 import asyncio
 import os
 import sys
-import yaml
 import tempfile
-from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from orchestrator import Orchestrator
 from orchestrator.models.openai_model import OpenAIModel
-from orchestrator.models.anthropic_model import AnthropicModel
 from orchestrator.integrations.ollama_model import OllamaModel
 
 
@@ -127,9 +124,9 @@ steps:
             inputs={"data_file": test_file}
         )
         
-        print(f"✓ Pipeline executed successfully")
+        print("✓ Pipeline executed successfully")
         print(f"  Analysis type chosen: {result.get('analyze_data', {}).get('analysis_type', 'N/A')}")
-        print(f"  Analysis saved to: /tmp/analysis_report.md")
+        print("  Analysis saved to: /tmp/analysis_report.md")
         
         # Verify output file exists
         if os.path.exists("/tmp/analysis_report.md"):
@@ -185,7 +182,7 @@ steps:
         orchestrator, _ = await setup_orchestrator()
         result = await orchestrator.execute_yaml(pipeline_file)
         
-        print(f"✓ Pipeline executed successfully")
+        print("✓ Pipeline executed successfully")
         print(f"  Web search status: {result.get('risky_operation', {}).get('status', 'N/A')}")
         
         return True
@@ -256,11 +253,11 @@ steps:
             inputs={"topic": "artificial general intelligence"}
         )
         
-        print(f"✓ Pipeline executed successfully")
+        print("✓ Pipeline executed successfully")
         print(f"  Approach chosen: {result.get('determine_approach', {}).get('approach', 'N/A')}")
         print(f"  Include visuals: {result.get('determine_approach', {}).get('include_visuals', 'N/A')}")
         if 'web_research' in result:
-            print(f"  Web search performed: Yes")
+            print("  Web search performed: Yes")
         
         return True
         
@@ -340,7 +337,7 @@ steps:
             inputs={"data_file": test_file}
         )
         
-        print(f"✓ Pipeline executed successfully")
+        print("✓ Pipeline executed successfully")
         print(f"  Should process decision: {result.get('decide_processing', {}).get('should_process', 'N/A')}")
         if 'process_data' in result:
             print(f"  Processing method: {result.get('process_data', {}).get('method', 'N/A')}")
@@ -410,7 +407,7 @@ steps:
         orchestrator, _ = await setup_orchestrator()
         result = await orchestrator.execute_yaml(pipeline_file)
         
-        print(f"✓ Pipeline executed successfully")
+        print("✓ Pipeline executed successfully")
         print(f"  Format chosen: {result.get('good_specific_choice', {}).get('format', 'N/A')}")
         print(f"  Analysis depth: {result.get('good_context_aware', {}).get('analysis_depth', 'N/A')}")
         print(f"  Num retries: {result.get('good_type_hints', {}).get('num_retries', 'N/A')}")
@@ -478,8 +475,8 @@ steps:
         orchestrator, _ = await setup_orchestrator()
         result = await orchestrator.execute_yaml(pipeline_file)
         
-        print(f"✓ Pipeline executed successfully")
-        print(f"  Batched decisions made:")
+        print("✓ Pipeline executed successfully")
+        print("  Batched decisions made:")
         print(f"    - Format: {result.get('batch_decisions', {}).get('output_format', 'N/A')}")
         print(f"    - Include summary: {result.get('batch_decisions', {}).get('include_summary', 'N/A')}")
         print(f"    - Detail level: {result.get('batch_decisions', {}).get('detail_level', 'N/A')}")

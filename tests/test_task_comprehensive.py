@@ -436,7 +436,7 @@ class TestTask:
 
         assert task != "not_a_task"
         assert task != 123
-        assert task != None
+        assert task is not None
 
     def test_task_hash(self):
         """Test task hash function."""

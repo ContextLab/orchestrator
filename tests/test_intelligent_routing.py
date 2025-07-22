@@ -3,10 +3,8 @@
 
 import asyncio
 import os
-from typing import Dict, Any
 
 import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from orchestrator.models.model_registry import ModelRegistry
@@ -14,7 +12,7 @@ from orchestrator.models.model_selector import ModelSelector, ModelSelectionCrit
 from orchestrator.models.openai_model import OpenAIModel
 from orchestrator.models.anthropic_model import AnthropicModel
 from orchestrator.integrations.ollama_model import OllamaModel
-from orchestrator.core.model import ModelCapabilities, ModelCost
+from orchestrator.core.model import ModelCost
 
 
 async def setup_test_registry() -> ModelRegistry:
@@ -292,7 +290,7 @@ async def main():
     
     # Show final statistics
     stats = registry.get_model_statistics()
-    print(f"\n=== Final Statistics ===")
+    print("\n=== Final Statistics ===")
     print(f"Total models: {stats['total_models']}")
     print(f"Healthy models: {stats['healthy_models']}")
     print(f"Selection stats: {stats['selection_stats']}")

@@ -698,7 +698,6 @@ class AdaptiveCheckpointStrategy(CheckpointStrategy):
         avg_duration = self._get_average_duration(pipeline_id)
 
         # Store original interval for comparison
-        original_interval = self.checkpoint_interval
 
         # Adjust interval based on stability
         if failure_rate < 0.05:  # Very stable (< 5% failure rate)

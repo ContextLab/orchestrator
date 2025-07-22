@@ -51,7 +51,7 @@ def main():
                     f.write(fixed_content)
                 print(f"  ✅ Fixed {filename}")
             else:
-                print(f"  ⏭️  No changes needed")
+                print("  ⏭️  No changes needed")
 
 if __name__ == "__main__":
     main()

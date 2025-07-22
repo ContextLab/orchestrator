@@ -23,13 +23,13 @@ def fix_broken_action_blocks(filepath):
             if 'depends_on:' in line and i + 1 < len(lines):
                 # Check if the next line looks like it should be part of an action block
                 next_line = lines[i + 1]
-                if re.match(r'^\s+\d+\.', next_line) or (next_line.strip() and not ':' in next_line and not next_line.strip().startswith('-')):
+                if re.match(r'^\s+\d+\.', next_line) or (next_line.strip() and ':' not in next_line and not next_line.strip().startswith('-')):
                     # This content should come before depends_on
                     # Find where the action block should end
                     action_lines = []
                     j = i + 1
                     while j < len(lines) and (re.match(r'^\s+\d+\.', lines[j]) or 
-                                              (lines[j].strip() and not ':' in lines[j] and not lines[j].strip().startswith('-'))):
+                                              (lines[j].strip() and ':' not in lines[j] and not lines[j].strip().startswith('-'))):
                         action_lines.append(lines[j])
                         j += 1
                     
@@ -54,7 +54,7 @@ def fix_broken_action_blocks(filepath):
             print(f"  ✅ Fixed {filepath.name}")
             return True
         else:
-            print(f"  ⏭️  No changes needed")
+            print("  ⏭️  No changes needed")
             return False
             
     except Exception as e:

@@ -1,10 +1,9 @@
 """Dynamic flow control for goto and dynamic dependencies."""
 
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set
 from dataclasses import dataclass
-import asyncio
 
-from ..core.task import Task, TaskStatus
+from ..core.task import Task
 from .auto_resolver import ControlFlowAutoResolver
 
 

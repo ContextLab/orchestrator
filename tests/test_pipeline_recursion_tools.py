@@ -5,17 +5,13 @@ import os
 import pytest
 import tempfile
 import yaml
-from pathlib import Path
 
 from src.orchestrator.tools.pipeline_recursion_tools import (
     PipelineExecutorTool,
     RecursionControlTool,
-    RecursionContext,
 )
-from src.orchestrator.orchestrator import Orchestrator
 from src.orchestrator.models.registry_singleton import get_model_registry, reset_model_registry
 from src.orchestrator.models.anthropic_model import AnthropicModel
-import os
 
 
 @pytest.fixture(autouse=True)

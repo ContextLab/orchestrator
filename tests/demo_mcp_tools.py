@@ -51,7 +51,7 @@ async def demo_mcp_server():
     )
     
     if result["success"]:
-        print(f"\n✓ Tool execution result:")
+        print("\n✓ Tool execution result:")
         print(f"  Results found: {result['result'].get('total', 0)}")
     
     # Disconnect
@@ -113,7 +113,7 @@ async def demo_mcp_memory():
     )
     
     if result["found"]:
-        print(f"\n✓ Retrieved context:")
+        print("\n✓ Retrieved context:")
         print(f"  User: {result['value']['user']}")
         print(f"  Task: {result['value']['task']}")
         print(f"  Language: {result['value']['preferences']['language']}")
@@ -144,7 +144,7 @@ async def demo_mcp_resources():
     )
     
     if result["success"]:
-        print(f"\n✓ Resource content:")
+        print("\n✓ Resource content:")
         print(f"  {json.dumps(result['resource']['content'], indent=2)}")
     
     # Subscribe to updates
@@ -155,7 +155,7 @@ async def demo_mcp_resources():
     )
     
     if result["success"]:
-        print(f"\n✓ Subscribed to updates")
+        print("\n✓ Subscribed to updates")
         print(f"  Subscription ID: {result['subscription_id']}")
         
         # Unsubscribe

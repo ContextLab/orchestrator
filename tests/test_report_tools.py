@@ -1,6 +1,5 @@
 """Tests for report generation and PDF compilation tools."""
 
-import asyncio
 import os
 import tempfile
 from pathlib import Path

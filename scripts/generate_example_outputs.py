@@ -2,8 +2,6 @@
 """Generate realistic example outputs for all documented pipelines."""
 
 from pathlib import Path
-from datetime import datetime
-import json
 
 def create_research_assistant_output():
     """Create output for research_assistant.yaml."""

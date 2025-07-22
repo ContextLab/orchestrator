@@ -8,7 +8,6 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator import init_models
 from src.orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem

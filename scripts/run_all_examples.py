@@ -2,7 +2,6 @@
 """Run all example pipelines and verify outputs."""
 
 import asyncio
-import os
 from pathlib import Path
 from datetime import datetime
 import sys

@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..core.model import Model
 from ..tools.validation import SchemaState

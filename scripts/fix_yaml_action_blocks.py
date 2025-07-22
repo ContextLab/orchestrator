@@ -20,7 +20,6 @@ def fix_action_block_indentation(content):
             i += 1
             
             # Process action block content
-            action_content = []
             while i < len(lines):
                 next_line = lines[i]
                 

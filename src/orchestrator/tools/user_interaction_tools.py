@@ -4,10 +4,9 @@ import asyncio
 import json
 import logging
 import os
-import sys
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 import hashlib
 
@@ -241,7 +240,7 @@ class UserPromptTool(Tool):
                     # Validate pattern
                     if validation_pattern and not self._validate_input(str(response.value), validation_pattern):
                         if retry_on_invalid and retries < max_retries:
-                            print(f"Input does not match required pattern. Please try again.")
+                            print("Input does not match required pattern. Please try again.")
                             retries += 1
                             continue
                         else:
@@ -394,7 +393,7 @@ class ApprovalGateTool(Tool):
         # Check auto-approval
         content_hash = self._hash_content(content)
         if auto_approve_hash and content_hash == auto_approve_hash:
-            self.logger.info(f"Auto-approving content with matching hash")
+            self.logger.info("Auto-approving content with matching hash")
             return {
                 "success": True,
                 "approved": True,

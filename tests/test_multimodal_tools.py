@@ -5,7 +5,6 @@ import base64
 import os
 import pytest
 import tempfile
-from pathlib import Path
 from PIL import Image
 import io
 
@@ -15,8 +14,7 @@ from src.orchestrator.tools.multimodal_tools import (
     AudioProcessingTool,
     VideoProcessingTool,
     ImageData,
-    AudioData,
-    VideoData
+    AudioData
 )
 from src.orchestrator.models.registry_singleton import get_model_registry, reset_model_registry
 

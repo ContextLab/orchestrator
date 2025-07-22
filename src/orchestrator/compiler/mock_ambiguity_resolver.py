@@ -1,7 +1,6 @@
 """Mock ambiguity resolver for testing without models."""
 
-from typing import Any, Dict, Optional
-from .ambiguity_resolver import AmbiguityResolver
+from typing import Any
 
 
 class MockAmbiguityResolver:

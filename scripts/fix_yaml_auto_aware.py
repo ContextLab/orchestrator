@@ -65,7 +65,6 @@ def fix_on_error_structure(content):
             i += 1
             
             # Collect the on_error block content
-            on_error_content = []
             while i < len(lines):
                 next_line = lines[i]
                 
@@ -125,7 +124,7 @@ def validate_yaml_with_auto_tags(filepath):
         with open(filepath, 'r') as f:
             content = f.read()
         
-        parsed = parser.parse(content)
+        parser.parse(content)
         return True, None
     except Exception as e:
         return False, str(e)
@@ -163,7 +162,7 @@ def fix_yaml_file(filepath):
                 return True  # We made progress
         else:
             if is_valid:
-                print(f"  ✅ Already valid")
+                print("  ✅ Already valid")
             else:
                 print(f"  ⚠️  No automatic fix available: {error[:100]}...")
             return False
@@ -215,7 +214,7 @@ def main():
     print(f"✅ {valid_count}/{len(documented_examples)} files are valid")
     
     # Final validation report
-    print(f"\n📊 Final Validation Report:")
+    print("\n📊 Final Validation Report:")
     for example in documented_examples:
         filepath = examples_dir / example
         if filepath.exists():

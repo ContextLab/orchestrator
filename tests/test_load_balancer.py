@@ -190,12 +190,12 @@ async def test_concurrent_limits(load_balancer: LoadBalancer):
         else:
             model_counts[result] = model_counts.get(result, 0) + 1
     
-    print(f"\nConcurrent request distribution:")
+    print("\nConcurrent request distribution:")
     for model, count in model_counts.items():
         print(f"  {model}: {count}")
     
     print(f"\nWith max_concurrent={max_concurrent} for {model_id},")
-    print(f"excess requests should spill over to other models.")
+    print("excess requests should spill over to other models.")
 
 
 async def test_failover(load_balancer: LoadBalancer):
@@ -215,7 +215,7 @@ async def test_failover(load_balancer: LoadBalancer):
     try:
         model = await load_balancer.select_from_pool("primary")
         print(f"✓ Failover successful! Selected: {model.provider}:{model.name}")
-        print(f"  (This should be from the emergency pool)")
+        print("  (This should be from the emergency pool)")
     except Exception as e:
         print(f"✗ Failover failed: {e}")
     

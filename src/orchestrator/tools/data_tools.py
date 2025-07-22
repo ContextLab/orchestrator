@@ -4,10 +4,9 @@ import csv
 import io
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from .base import Tool
-from .validation import ValidationTool  # Import new comprehensive ValidationTool
 
 
 class DataProcessingTool(Tool):
@@ -120,7 +119,7 @@ class DataProcessingTool(Tool):
 
     async def _aggregate_data(self, data: Any, operation: Dict) -> Dict[str, Any]:
         """Aggregate data."""
-        group_by = operation.get("group_by", [])
+        operation.get("group_by", [])
         aggregations = operation.get("aggregations", {})
 
         if not isinstance(data, list):

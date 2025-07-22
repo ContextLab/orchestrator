@@ -6,9 +6,6 @@ This script shows how to use the updated web tools with real web search and cont
 """
 
 import asyncio
-import json
-import yaml
-from pathlib import Path
 import sys
 import os
 
@@ -114,7 +111,7 @@ async def test_web_scraping():
         content = result.get('text', '')
         if content:
             lines = content.split('\n')[:3]
-            print(f"   Content preview:")
+            print("   Content preview:")
             for line in lines:
                 if line.strip():
                     print(f"     {line.strip()[:80]}...")
@@ -230,7 +227,7 @@ async def test_error_handling():
         if 'error' in result:
             print(f"   ✓ Error handled correctly: {result['error']}")
         else:
-            print(f"   ⚠️ No error reported for invalid URL")
+            print("   ⚠️ No error reported for invalid URL")
             
     except Exception as e:
         print(f"   ✓ Exception handled: {e}")
@@ -243,7 +240,7 @@ async def test_error_handling():
         if 'error' in result:
             print(f"   ✓ Error handled correctly: {result['error']}")
         else:
-            print(f"   ⚠️ No error reported for empty query")
+            print("   ⚠️ No error reported for empty query")
             
     except Exception as e:
         print(f"   ✓ Exception handled: {e}")
@@ -256,7 +253,7 @@ async def test_error_handling():
         if 'error' in result:
             print(f"   ✓ Error handled correctly: {result['error']}")
         else:
-            print(f"   ⚠️ No error reported for invalid action")
+            print("   ⚠️ No error reported for invalid action")
             
     except Exception as e:
         print(f"   ✓ Exception handled: {e}")

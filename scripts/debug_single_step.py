@@ -14,7 +14,6 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from orchestrator import Orchestrator
 from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.integrations.anthropic_model import AnthropicModel
 from orchestrator.integrations.openai_model import OpenAIModel
 from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
 

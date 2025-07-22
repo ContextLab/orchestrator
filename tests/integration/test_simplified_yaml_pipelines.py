@@ -1,7 +1,6 @@
 """Integration tests for simplified versions of complex YAML pipelines."""
 
 import pytest
-from pathlib import Path
 
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler

@@ -156,7 +156,7 @@ def generate_checklist(mock_files, categories):
     # Summary
     total_files = sum(len(files) for files in categories.values())
     total_mentions = sum(len(mentions) for mentions in mock_files.values())
-    checklist.append(f"\n### 📊 Summary")
+    checklist.append("\n### 📊 Summary")
     checklist.append(f"- Total files with mock mentions: {total_files}")
     checklist.append(f"- Total mock mentions: {total_mentions}")
     checklist.append(f"- Production code files: {len(categories['production_core']) + len(categories['production_other'])}")

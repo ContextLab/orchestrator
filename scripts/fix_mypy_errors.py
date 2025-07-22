@@ -3,7 +3,6 @@
 
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 
 def fix_missing_return_type(content: str) -> str:

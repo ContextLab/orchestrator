@@ -307,7 +307,7 @@ class AnthropicModel(Model):
         """
         try:
             # Simple test request
-            response = self.client.messages.create(
+            self.client.messages.create(
                 model=self.model_name,
                 max_tokens=1,
                 temperature=0.0,

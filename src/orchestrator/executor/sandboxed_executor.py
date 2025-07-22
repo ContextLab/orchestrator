@@ -150,7 +150,7 @@ class DockerSandboxExecutor(SandboxExecutor):
                     )
 
                 # Get logs (both stdout and stderr)
-                logs = container.logs(stdout=True, stderr=True).decode("utf-8")
+                container.logs(stdout=True, stderr=True).decode("utf-8")
 
                 # Get stdout and stderr separately
                 stdout_logs = container.logs(stdout=True, stderr=False).decode("utf-8")
@@ -558,11 +558,6 @@ class SecurityManager:
     def check_resource_limits(self, limits: Dict[str, Any]) -> bool:
         """Check if resource limits are within safe bounds."""
         # Define safe limits
-        safe_limits = {
-            "memory": "10g",  # 10GB max
-            "cpu": "100%",  # 100% max
-            "processes": 1000,  # 1000 processes max
-        }
 
         # Check memory limit
         if "memory" in limits:

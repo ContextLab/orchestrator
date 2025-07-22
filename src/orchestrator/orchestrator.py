@@ -11,7 +11,7 @@ from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem
 from .core.error_handler import ErrorHandler
 from .core.pipeline import Pipeline
-from .core.pipeline_status_tracker import PipelineStatusTracker, PipelineStatus
+from .core.pipeline_status_tracker import PipelineStatusTracker
 from .core.pipeline_resume_manager import PipelineResumeManager, ResumeStrategy
 from .core.resource_allocator import ResourceAllocator
 from .core.task import Task, TaskStatus

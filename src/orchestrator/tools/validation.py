@@ -1,7 +1,6 @@
 """Comprehensive validation tool with JSON Schema and structured output support."""
 
 import copy
-import json
 import re
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Type, Union
@@ -428,7 +427,7 @@ class ValidationTool(Tool):
         
         try:
             # Convert JSON Schema to Pydantic model dynamically
-            pydantic_model = self._json_schema_to_pydantic(schema)
+            self._json_schema_to_pydantic(schema)
             
             # Build extraction prompt
             prompt = f"""Extract structured data from the following text according to the provided schema.

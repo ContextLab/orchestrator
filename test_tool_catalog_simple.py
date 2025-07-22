@@ -5,9 +5,7 @@ import asyncio
 import json
 import os
 import sys
-import tempfile
 from pathlib import Path
-from datetime import datetime
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -57,7 +55,7 @@ steps:
         result = await orchestrator.execute_yaml(pipeline_yaml)
         
         # Verify
-        assert result['check_exists']['exists'] == True
+        assert result['check_exists']['exists'] is True
         assert test_content in result['read_file']['content']
         
         print("✅ FileSystem operations test passed")
@@ -193,7 +191,7 @@ steps:
         assert len(generated) > 0
         assert len(generated) < 200  # Should be concise
         
-        print(f"✅ LLM generation test passed")
+        print("✅ LLM generation test passed")
         print(f"   Generated: {generated}")
         return True
         
@@ -249,7 +247,7 @@ steps:
         
         # Verify
         validation = result['validate_data']
-        assert validation['is_valid'] == True
+        assert validation['is_valid'] is True
         
         print("✅ Data validation test passed")
         return True

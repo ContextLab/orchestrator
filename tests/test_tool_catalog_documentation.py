@@ -2,10 +2,8 @@
 """Test all examples from the tool catalog documentation with real execution."""
 
 import asyncio
-import json
 import os
 import sys
-import tempfile
 from pathlib import Path
 from datetime import datetime
 
@@ -31,7 +29,7 @@ async def test_filesystem_tool():
     print("\n=== Testing FileSystemTool ===")
     
     # Create temporary test content
-    test_content = """# Test Report
+    """# Test Report
 This is a test report generated for documentation validation.
 Generated at: """ + datetime.now().isoformat()
     
@@ -75,7 +73,7 @@ steps:
         result = await orchestrator.execute_yaml(pipeline_yaml)
         
         # Verify results
-        assert result.get('verify_write', {}).get('exists') == True, "File should exist after write"
+        assert result.get('verify_write', {}).get('exists') is True, "File should exist after write"
         assert "Test Report" in result.get('read_report', {}).get('content', ''), "Content should match"
         
         print("✅ FileSystemTool test passed")
@@ -581,10 +579,10 @@ steps:
         
         # Verify results
         valid_result = result.get('validate_input', {})
-        assert valid_result.get('is_valid') == True, "Valid data should pass"
+        assert valid_result.get('is_valid') is True, "Valid data should pass"
         
         invalid_result = result.get('test_invalid', {})
-        assert invalid_result.get('is_valid') == False, "Invalid data should fail"
+        assert invalid_result.get('is_valid') is False, "Invalid data should fail"
         assert len(invalid_result.get('errors', [])) > 0, "Should report validation errors"
         
         print("✅ ValidationTool test passed")

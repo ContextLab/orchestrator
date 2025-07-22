@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Optional
 
 from .utils.api_keys import (
-    load_api_keys, 
     get_configured_providers,
     add_api_key,
     validate_api_keys

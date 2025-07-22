@@ -309,7 +309,7 @@ async def test_load_balanced_generation(registry: ModelRegistry):
     
     # Show pool statistics
     stats = load_balancer.get_pool_status("local")
-    print(f"\nLocal Pool Statistics:")
+    print("\nLocal Pool Statistics:")
     for model_stat in stats["models"]:
         print(f"  {model_stat['model']}: " +
               f"{model_stat['successful_requests']}/{model_stat['total_requests']} successful, " +

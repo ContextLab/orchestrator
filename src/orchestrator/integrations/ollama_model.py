@@ -20,7 +20,6 @@ from orchestrator.core.model import (
     ModelCapabilities,
     ModelMetrics,
     ModelRequirements,
-    ModelCost,
 )
 
 
@@ -398,7 +397,7 @@ Return only the JSON object, no additional text.
                 return False
 
             # Simple test generation
-            test_output = await self.generate("Test", max_tokens=1, temperature=0.0)
+            await self.generate("Test", max_tokens=1, temperature=0.0)
             self._is_available = True
             return True
 

@@ -187,7 +187,7 @@ def fix_yaml_file(filepath):
         # Try to parse to validate
         try:
             yaml.safe_load(content)
-            print(f"  ✅ Valid YAML structure")
+            print("  ✅ Valid YAML structure")
         except yaml.YAMLError as e:
             print(f"  ⚠️  YAML validation warning: {str(e)[:100]}...")
         
@@ -197,7 +197,7 @@ def fix_yaml_file(filepath):
             print(f"  ✅ Fixed and saved {filepath.name}")
             return True
         else:
-            print(f"  ⏭️  No changes needed")
+            print("  ⏭️  No changes needed")
             return False
             
     except Exception as e:
@@ -239,7 +239,7 @@ def main():
     print(f"✨ Fixed {fixed_count} files")
     
     # Validate all files
-    print(f"\n🔍 Validating all files...")
+    print("\n🔍 Validating all files...")
     validation_errors = []
     
     for example in documented_examples:
@@ -259,7 +259,7 @@ def main():
             print(f"\n{filename}:")
             print(f"  {error[:200]}...")
     else:
-        print(f"\n✅ All files are valid YAML!")
+        print("\n✅ All files are valid YAML!")
 
 if __name__ == "__main__":
     main()

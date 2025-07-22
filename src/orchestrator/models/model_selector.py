@@ -6,7 +6,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 
-from ..core.model import Model, ModelCapabilities, ModelCost
+from ..core.model import Model
 from .model_registry import ModelRegistry, NoEligibleModelsError
 
 

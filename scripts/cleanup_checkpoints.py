@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Clean up old checkpoint files."""
 
-import os
-import json
 import time
-from datetime import datetime, timedelta
 from pathlib import Path
 
 def cleanup_checkpoints(days_to_keep=7, dry_run=True):

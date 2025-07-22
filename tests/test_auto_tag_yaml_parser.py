@@ -1,8 +1,6 @@
 """Test the AUTO tag parser with complex YAML cases."""
 
-import pytest
 from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser, parse_yaml_with_auto_tags
-import yaml
 
 
 class TestAutoTagYAMLParser:

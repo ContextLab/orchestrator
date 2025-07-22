@@ -33,7 +33,7 @@ async def test_input_agnostic_pipeline():
     
     # Initialize models
     print("\n1️⃣ Initializing model pool...")
-    model_registry = orc.init_models()
+    orc.init_models()
     
     # Replace default control system with tool-integrated one
     pipeline_file = Path(__file__).parent / "pipelines" / "research-report-template.yaml"

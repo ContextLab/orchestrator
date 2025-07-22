@@ -8,17 +8,13 @@ with real API keys and produces high-quality outputs.
 import asyncio
 import os
 import pytest
-import tempfile
-import json
-from datetime import datetime
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 # Import the research assistant components
 import sys
 sys.path.append('/Users/jmanning/orchestrator/docs/tutorials/examples')
 
 from orchestrator import Orchestrator
-from orchestrator.compiler.yaml_compiler import YAMLCompiler
 from orchestrator.integrations.openai_model import OpenAIModel
 from orchestrator.integrations.anthropic_model import AnthropicModel
 from orchestrator.state.state_manager import StateManager
@@ -26,7 +22,6 @@ from orchestrator.tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from orchestrator.tools.data_tools import DataProcessingTool
 from orchestrator.core.cache import MemoryCache
 import yaml
-import os
 
 
 class ResearchAssistant:
@@ -532,7 +527,7 @@ class TestResearchAssistantIntegration:
         extraction_results = result["extraction_results"]
         assert isinstance(extraction_results, dict)
         
-        print(f"End-to-end test completed successfully")
+        print("End-to-end test completed successfully")
         print(f"Query: {query}")
         print(f"Quality Score: {result['quality_score']:.2f}")
         print(f"Execution Time: {result['execution_time']:.2f}s")
@@ -571,7 +566,7 @@ class TestResearchAssistantIntegration:
         avg_quality = sum(quality_scores) / len(quality_scores)
         assert avg_quality >= 0.5  # Average quality should be reasonable
         
-        print(f"Quality validation completed")
+        print("Quality validation completed")
         print(f"Average quality score: {avg_quality:.2f}")
         print(f"Individual scores: {quality_scores}")
 

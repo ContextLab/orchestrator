@@ -2,11 +2,9 @@
 """Test examples from the model routing documentation."""
 
 import asyncio
-import json
 import os
 import sys
 from pathlib import Path
-from datetime import datetime
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -269,7 +267,7 @@ steps:
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
         
         # Verify cost optimization worked
-        classification = result.get('filter_relevant', {}).get('result', {})
+        result.get('filter_relevant', {}).get('result', {})
         analysis = result.get('analyze_important', {}).get('result', '')
         
         assert len(analysis) > 0, "Should analyze important items"

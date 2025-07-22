@@ -72,7 +72,7 @@ class AutoTagYAMLParser:
 
         # Find all positions
         open_positions = [(m.start(), m.end()) for m in open_pattern.finditer(content)]
-        close_positions = [
+        [
             (m.start(), m.end()) for m in close_pattern.finditer(content)
         ]
 

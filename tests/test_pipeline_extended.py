@@ -31,7 +31,7 @@ class TestPipelineExtended:
         pipeline.add_task(task3)
 
         # This should create a circular dependency
-        task_circular = Task(
+        Task(
             id="task1_circular",
             name="Task 1 Circular",
             action="action1",
@@ -249,11 +249,11 @@ class TestPipelineExtended:
 
     def test_validate_dependencies_edge_cases(self):
         """Test dependency validation edge cases."""
-        pipeline = Pipeline(id="test", name="Test Pipeline")
+        Pipeline(id="test", name="Test Pipeline")
 
         # Task with self-dependency should be caught by Task validation
         with pytest.raises(ValueError, match="cannot depend on itself"):
-            task1 = Task(
+            Task(
                 id="task1", name="Task 1", action="action1", dependencies=["task1"]
             )
 
@@ -338,8 +338,8 @@ class TestPipelineExtended:
         assert pipeline.get_failed_tasks() == []
         assert pipeline.get_completed_tasks() == []
         assert pipeline.get_running_tasks() == []
-        assert pipeline.is_complete() == True  # Empty pipeline is considered complete
-        assert pipeline.is_failed() == False
+        assert pipeline.is_complete() is True  # Empty pipeline is considered complete
+        assert pipeline.is_failed() is False
         assert pipeline.get_critical_path() == []
 
         progress = pipeline.get_progress()

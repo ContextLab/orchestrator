@@ -2,14 +2,12 @@
 
 import pytest
 import asyncio
-import os
 import json
 from src.orchestrator.engine.control_flow_engine import ControlFlowEngine
-from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.tools.base import Tool, default_registry
 from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
 from src.orchestrator.control_flow.conditional import ConditionalHandler
-from src.orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task
 
 
 class RealTestTool(Tool):

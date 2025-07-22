@@ -4,9 +4,7 @@ These tests focus on verifying that YAML pipelines can be compiled and executed
 with real models, making actual API calls to generate content.
 """
 
-import os
 import pytest
-from pathlib import Path
 
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler

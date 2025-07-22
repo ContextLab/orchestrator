@@ -423,7 +423,7 @@ print("Task {task_id} completed")
         """Test error handling when container operations fail."""
         # Test with non-existent image
         try:
-            container = docker_executor.docker.containers.create(
+            docker_executor.docker.containers.create(
                 "nonexistent-image-12345", command=["echo", "hello"]
             )
             pytest.fail("Should have raised exception for non-existent image")

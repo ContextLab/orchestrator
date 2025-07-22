@@ -5,7 +5,7 @@ import os
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 from urllib.parse import quote
 
 try:
@@ -395,7 +395,7 @@ Further analysis should explore:
             
             print(f"   📝 Generating report on: {topic}")
             
-            compiled_text = content.get("content", "") if isinstance(content, dict) else str(content)
+            content.get("content", "") if isinstance(content, dict) else str(content)
         
             # Generate comprehensive report
             topic_title = topic.title() if topic else "AI Agents"
@@ -751,7 +751,7 @@ The field of AI agents is rapidly evolving with trends including:
         """Finalize the report with improvements."""
         draft = task.parameters.get("draft", {})
         validation = task.parameters.get("validation", {})
-        improvements = task.parameters.get("improvements", [])
+        task.parameters.get("improvements", [])
         
         print("   📄 Finalizing report")
         

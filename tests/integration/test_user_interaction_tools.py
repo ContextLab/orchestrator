@@ -3,12 +3,8 @@
 These tests verify the user interaction tools work with real user input simulation.
 """
 
-import asyncio
 import pytest
 from unittest import mock
-import time
-import io
-import sys
 
 from src.orchestrator.tools.user_interaction_tools import (
     UserPromptTool,

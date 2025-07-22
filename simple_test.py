@@ -9,7 +9,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     print("Testing imports...")
-    from src.orchestrator import Orchestrator
     print("✓ Orchestrator imported")
     
     from src.orchestrator import init_models

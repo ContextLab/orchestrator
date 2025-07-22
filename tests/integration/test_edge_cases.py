@@ -5,14 +5,11 @@ import asyncio
 import sys
 import os
 import tempfile
-import json
-from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.task import Task
-from orchestrator.models.model_registry import ModelRegistry
 
 
 async def test_edge_cases():

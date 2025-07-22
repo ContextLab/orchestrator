@@ -1,15 +1,12 @@
 """LLM interaction tools for managing model routing, delegation, and optimization."""
 
-import asyncio
-import json
 import logging
-import time
 from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 
 from .base import Tool
-from ..models import get_model_registry, ModelNotFoundError
-from ..core.model import Model, ModelCapabilities
+from ..models import get_model_registry
+from ..core.model import Model
 
 
 @dataclass
@@ -381,7 +378,7 @@ class MultiModelRoutingTool(Tool):
         models = kwargs.get("models")
         strategy = kwargs.get("strategy", "capability_based")
         max_concurrent = kwargs.get("max_concurrent", 5)
-        timeout = kwargs.get("timeout", 30.0)
+        kwargs.get("timeout", 30.0)
         
         # Get available models if not specified
         if not models:

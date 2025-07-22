@@ -5,10 +5,9 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Optional
 
-import anthropic
 from anthropic import AsyncAnthropic
 
-from ..core.model import Model, ModelCapabilities, ModelRequirements, ModelCost
+from ..core.model import Model, ModelCapabilities, ModelRequirements
 
 
 class AnthropicModel(Model):

@@ -30,7 +30,7 @@ def check_postgres_available():
             "TEST_POSTGRES_URL",
             "postgresql://postgres:password@localhost:5432/test_orchestrator",
         )
-        with psycopg2.connect(conn_string) as conn:
+        with psycopg2.connect(conn_string):
             return True
     except (ImportError, Exception):
         return False

@@ -621,7 +621,7 @@ class DiskCache(CacheBackend):
     async def cleanup_expired(self):
         """Remove expired entries from cache."""
         with self._lock:
-            current_time = time.time()
+            time.time()
             expired_keys = []
 
             for key, entry_meta in self._index.items():
@@ -1035,7 +1035,7 @@ class MultiLevelCache:
         metadata: Dict[str, Any] = None,
     ):
         """Set value in cache, starting from highest level."""
-        entry = CacheEntry(key=key, value=value, ttl=ttl, metadata=metadata or {})
+        CacheEntry(key=key, value=value, ttl=ttl, metadata=metadata or {})
 
         # Start from highest priority level
         for level in self.level_order:

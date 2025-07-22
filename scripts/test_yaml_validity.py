@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Test that all YAML examples can be loaded and have valid structure."""
 
-import yaml
 from pathlib import Path
 import sys
 

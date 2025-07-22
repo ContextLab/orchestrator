@@ -2,7 +2,6 @@
 """Remove loop constructs from YAML files."""
 
 import re
-import sys
 from pathlib import Path
 
 def remove_loop_constructs(yaml_content):

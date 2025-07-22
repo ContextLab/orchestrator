@@ -4,7 +4,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 # Add parent directory to path so we can import orchestrator
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -398,7 +398,7 @@ See compiled research results for detailed source citations.
     async def _finalize_report(self, task: Task) -> Dict[str, Any]:
         """Finalize the report."""
         draft = task.parameters.get("draft", {})
-        validation = task.parameters.get("validation", {})
+        task.parameters.get("validation", {})
         
         print("   📄 Finalizing report")
         

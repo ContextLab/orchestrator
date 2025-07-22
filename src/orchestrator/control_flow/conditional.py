@@ -1,7 +1,7 @@
 """Conditional execution handler for pipelines."""
 
 from typing import Any, Dict, List, Optional, Set
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from ..core.task import Task, TaskStatus
 from .auto_resolver import ControlFlowAutoResolver

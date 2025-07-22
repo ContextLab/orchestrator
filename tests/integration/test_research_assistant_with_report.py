@@ -1,6 +1,5 @@
 """Integration tests for Research Assistant with PDF report generation."""
 
-import asyncio
 import os
 import tempfile
 from pathlib import Path

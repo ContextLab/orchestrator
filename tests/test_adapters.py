@@ -6,7 +6,6 @@ from src.orchestrator.adapters.langgraph_adapter import LangGraphAdapter, LangGr
 from src.orchestrator.adapters.mcp_adapter import MCPAdapter
 from src.orchestrator.core.pipeline import Pipeline
 from src.orchestrator.core.task import Task
-from src.orchestrator.models.model_registry import ModelRegistry
 
 # Skip BaseAdapter and CustomMLAdapter tests for now since they're not implemented
 

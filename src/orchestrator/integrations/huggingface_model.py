@@ -440,7 +440,7 @@ class HuggingFaceModel(Model):
             await self._load_model()
 
             # Simple test generation
-            test_output = await self.generate("Test", max_tokens=1, temperature=0.0)
+            await self.generate("Test", max_tokens=1, temperature=0.0)
             self._is_available = True
             return True
 

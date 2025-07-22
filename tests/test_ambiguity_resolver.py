@@ -6,8 +6,6 @@ from orchestrator.compiler.ambiguity_resolver import (
     AmbiguityResolutionError,
     AmbiguityResolver,
 )
-from orchestrator.core.model import Model
-from orchestrator.models.model_registry import ModelRegistry
 from orchestrator import init_models
 
 

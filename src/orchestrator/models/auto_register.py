@@ -1,8 +1,7 @@
 """Automatic model registration for new models not in models.yaml."""
 
-import asyncio
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional
 from ..core.model import Model
 from ..utils.model_config_loader import get_model_config_loader
 from ..utils.model_utils import parse_model_size
@@ -195,7 +194,7 @@ class AutoModelRegistrar:
             size_b = getattr(model, "_size_billions", 1.0)
             
             # Determine expertise
-            expertise = getattr(model, "_expertise", ["general"])
+            getattr(model, "_expertise", ["general"])
             
             # Create model configuration
             model_config = {

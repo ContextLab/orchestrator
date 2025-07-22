@@ -4,7 +4,6 @@
 import os
 import sys
 import json
-import asyncio
 import subprocess
 from pathlib import Path
 from datetime import datetime

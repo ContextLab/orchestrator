@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Interactive setup script for orchestrator API keys."""
 
-import os
 import sys
 from pathlib import Path
 from getpass import getpass

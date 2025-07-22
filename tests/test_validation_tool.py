@@ -1,8 +1,6 @@
 """Tests for the comprehensive ValidationTool."""
 
 import pytest
-import json
-from typing import Dict, Any
 
 from orchestrator.tools.validation import (
     ValidationTool, 

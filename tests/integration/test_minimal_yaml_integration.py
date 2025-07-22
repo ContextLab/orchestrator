@@ -1,7 +1,6 @@
 """Minimal integration test to verify basic YAML pipeline functionality."""
 
 import pytest
-from pathlib import Path
 
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler

@@ -317,7 +317,7 @@ class GoogleModel(Model):
                 "max_output_tokens": 1,
             }
 
-            response = self.model.generate_content(
+            self.model.generate_content(
                 "Test",
                 generation_config=generation_config,
             )

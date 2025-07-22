@@ -1,6 +1,5 @@
 """Load model configurations from models.yaml."""
 
-import os
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional, List

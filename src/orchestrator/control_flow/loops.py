@@ -1,12 +1,10 @@
 """Loop handlers for for-each and while loops in pipelines."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
-import asyncio
 import copy
 
-from ..core.task import Task, TaskStatus
-from ..core.pipeline import Pipeline
+from ..core.task import Task
 from .auto_resolver import ControlFlowAutoResolver
 
 
@@ -65,7 +63,7 @@ class ForLoopHandler:
         # Extract loop configuration
         loop_id = loop_def.get('id', 'loop')
         for_each_expr = loop_def.get('for_each', [])
-        loop_var = loop_def.get('loop_var', '$item')
+        loop_def.get('loop_var', '$item')
         max_parallel = loop_def.get('max_parallel', 1)
         
         # Resolve iterator

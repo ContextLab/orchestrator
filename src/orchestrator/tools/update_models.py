@@ -11,7 +11,6 @@ This tool fetches the current list of models from:
 """
 
 import os
-import json
 import yaml
 import asyncio
 import aiohttp
@@ -98,7 +97,7 @@ class ModelUpdater:
         if api_key:
             try:
                 import anthropic
-                client = anthropic.Anthropic(api_key=api_key)
+                anthropic.Anthropic(api_key=api_key)
                 # Note: As of now, Anthropic doesn't have a models.list() endpoint
                 # This is for future compatibility
                 pass

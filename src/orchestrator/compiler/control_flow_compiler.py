@@ -1,8 +1,6 @@
 """Enhanced YAML compiler with control flow support."""
 
-from typing import Any, Dict, List, Optional, Set
-import asyncio
-import copy
+from typing import Any, Dict, List, Optional
 
 from .yaml_compiler import YAMLCompiler, YAMLCompilerError
 from ..core.pipeline import Pipeline

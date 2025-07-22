@@ -7,7 +7,7 @@ import aiohttp
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 import uuid
 
 from ..core.control_system import ControlAction, ControlSystem

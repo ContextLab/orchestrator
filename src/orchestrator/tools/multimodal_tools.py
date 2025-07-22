@@ -1,17 +1,13 @@
 """Multimodal tools for image, audio, and video processing."""
 
-import asyncio
 import base64
 import io
 import json
 import logging
-import mimetypes
 import os
-import tempfile
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Union
 from PIL import Image
 import numpy as np
 
@@ -196,7 +192,7 @@ class ImageAnalysisTool(Tool):
         model_name = kwargs.get("model")
         detail_level = kwargs.get("detail_level", "medium")
         output_format = kwargs.get("output_format", "json")
-        confidence_threshold = kwargs.get("confidence_threshold", 0.5)
+        kwargs.get("confidence_threshold", 0.5)
         
         # Validate analysis type
         valid_types = ["describe", "detect_objects", "extract_text", "detect_faces", "classify"]
@@ -307,7 +303,7 @@ class ImageGenerationTool(Tool):
             }
             try:
                 model = await registry.select_model(requirements)
-            except Exception as e:
+            except Exception:
                 model = None
                 
             if not model:
@@ -495,7 +491,6 @@ class AudioProcessingTool(Tool):
             # Check if it's a file path
             if os.path.exists(audio_input):
                 # Get audio info using wave or other library
-                import wave
                 
                 # For now, create placeholder metadata
                 # In production, use proper audio libraries
@@ -531,7 +526,7 @@ class AudioProcessingTool(Tool):
         """Transcribe audio to text."""
         # Get model registry
         from ..models.registry_singleton import get_model_registry
-        registry = get_model_registry()
+        get_model_registry()
         
         # For now, return a placeholder
         # In production, would use speech-to-text models

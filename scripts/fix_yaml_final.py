@@ -2,7 +2,6 @@
 """Final fix for YAML files with broken step structures."""
 
 from pathlib import Path
-import re
 
 def fix_automated_testing_yaml():
     """Fix automated_testing_system.yaml specifically."""

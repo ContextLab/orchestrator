@@ -130,7 +130,7 @@ class MCPToolServer:
                         if self.path == "/tools/call":
                             content_length = int(self.headers['Content-Length'])
                             post_data = self.rfile.read(content_length)
-                            data = json.loads(post_data.decode())
+                            json.loads(post_data.decode())
                             
                             # Simple synchronous handling for basic server
                             self.send_response(200)

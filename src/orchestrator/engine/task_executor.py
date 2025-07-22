@@ -296,7 +296,7 @@ class UniversalTaskExecutor:
         
         if task_spec.on_error.startswith("<AUTO>"):
             # Execute error handling as another AUTO task
-            error_content = task_spec.on_error[6:-7]  # Remove <AUTO> tags
+            task_spec.on_error[6:-7]  # Remove <AUTO> tags
             error_context = context.copy()
             error_context["error"] = str(error)
             error_context["failed_task"] = task_spec.id

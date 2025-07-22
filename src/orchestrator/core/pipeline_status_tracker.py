@@ -6,7 +6,6 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
-from collections import defaultdict
 import asyncio
 import logging
 

@@ -1,10 +1,8 @@
 """Tests for MCP tools configuration examples."""
 
-import pytest
 import json
 import yaml
 from pathlib import Path
-from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
 
 
 class TestMCPToolsExamples:

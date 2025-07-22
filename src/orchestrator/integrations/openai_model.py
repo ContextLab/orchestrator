@@ -313,7 +313,7 @@ class OpenAIModel(Model):
         """
         try:
             # Simple test request
-            response = self.client.chat.completions.create(
+            self.client.chat.completions.create(
                 model=self.model_name,
                 messages=[{"role": "user", "content": "Test"}],
                 max_tokens=1,
