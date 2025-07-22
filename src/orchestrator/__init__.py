@@ -13,6 +13,8 @@ from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem
 from .core.model import Model, ModelCapabilities, ModelRequirements
 from .core.pipeline import Pipeline
+from .core.pipeline_status_tracker import PipelineStatusTracker
+from .core.pipeline_resume_manager import PipelineResumeManager, ResumeStrategy
 from .core.task import Task, TaskStatus
 from .integrations.huggingface_model import HuggingFaceModel
 from .integrations.ollama_model import OllamaModel
@@ -41,6 +43,9 @@ __all__ = [
     "init_models",
     "compile",
     "compile_async",
+    "PipelineStatusTracker",
+    "PipelineResumeManager",
+    "ResumeStrategy",
 ]
 __author__ = "Contextual Dynamics Lab"
 __email__ = "contextualdynamics@gmail.com"

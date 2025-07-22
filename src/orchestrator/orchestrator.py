@@ -12,6 +12,7 @@ from .core.control_system import ControlSystem
 from .core.error_handler import ErrorHandler
 from .core.pipeline import Pipeline
 from .core.pipeline_status_tracker import PipelineStatusTracker, PipelineStatus
+from .core.pipeline_resume_manager import PipelineResumeManager, ResumeStrategy
 from .core.resource_allocator import ResourceAllocator
 from .core.task import Task, TaskStatus
 from .executor.parallel_executor import ParallelExecutor
@@ -87,8 +88,9 @@ class Orchestrator:
         self.execution_semaphore = asyncio.Semaphore(max_concurrent_tasks)
         self.execution_history: List[Dict[str, Any]] = []  # Keep for backward compatibility
         
-        # New status tracker
+        # New status tracker and resume manager
         self.status_tracker = PipelineStatusTracker()
+        self.resume_manager = PipelineResumeManager(self.state_manager)
         
         # Logger
         self.logger = logging.getLogger(__name__)
@@ -623,6 +625,37 @@ class Orchestrator:
     def clear_execution_history(self) -> None:
         """Clear execution history."""
         self.execution_history.clear()
+    
+    async def resume_pipeline(self, execution_id: str, 
+                            resume_strategy: Optional[ResumeStrategy] = None) -> Dict[str, Any]:
+        """
+        Resume a failed or interrupted pipeline execution.
+        
+        Args:
+            execution_id: ID of the execution to resume
+            resume_strategy: Optional custom resume strategy
+            
+        Returns:
+            Execution result
+            
+        Raises:
+            ExecutionError: If resume fails
+        """
+        # Check if resumable
+        if not await self.resume_manager.can_resume(execution_id):
+            raise ExecutionError(f"No resume checkpoint found for execution {execution_id}")
+        
+        # Get resume state
+        result = await self.resume_manager.resume_pipeline(execution_id, resume_strategy)
+        if not result:
+            raise ExecutionError(f"Failed to load resume state for execution {execution_id}")
+        
+        pipeline, context = result
+        
+        self.logger.info(f"Resuming execution {execution_id} for pipeline {pipeline.id}")
+        
+        # Execute with resume context
+        return await self.execute_pipeline(pipeline, context=context)
 
     def _get_task_resource_requirements(self, task: Task) -> Dict[str, Any]:
         """Get resource requirements for a task."""
