@@ -445,9 +445,9 @@ class TestValidationTool:
         )
         
         assert result["success"] is True
-        assert "result" in result
-        assert result["result"]["valid"] is True
-        assert len(result["result"]["errors"]) == 0
+        assert "valid" in result
+        assert result["valid"] is True
+        assert len(result["errors"]) == 0
     
     @pytest.mark.asyncio
     async def test_invalid_data_validation(self, validation_tool):
@@ -473,9 +473,9 @@ class TestValidationTool:
         )
         
         assert result["success"] is True
-        assert "result" in result
-        assert result["result"]["valid"] is False
-        assert len(result["result"]["errors"]) > 0
+        assert "valid" in result
+        assert result["valid"] is False
+        assert len(result["errors"]) > 0
 
 
 class TestReportGeneratorTool:

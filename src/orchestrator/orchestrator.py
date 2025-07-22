@@ -116,6 +116,15 @@ class Orchestrator:
             ExecutionError: If execution fails
         """
         execution_id = f"{pipeline.id}_{int(time.time())}"
+        
+        # Create execution context early to avoid UnboundLocalError
+        context = {
+            "pipeline_id": pipeline.id,
+            "execution_id": execution_id,
+            "checkpoint_enabled": checkpoint_enabled,
+            "max_retries": max_retries,
+            "start_time": time.time(),
+        }
 
         try:
             # Register pipeline as running
@@ -123,15 +132,6 @@ class Orchestrator:
             
             # Register with new status tracker
             await self.status_tracker.start_execution(execution_id, pipeline, context)
-
-            # Create execution context
-            context = {
-                "pipeline_id": pipeline.id,
-                "execution_id": execution_id,
-                "checkpoint_enabled": checkpoint_enabled,
-                "max_retries": max_retries,
-                "start_time": time.time(),
-            }
 
             # Save initial checkpoint if enabled
             if checkpoint_enabled:
