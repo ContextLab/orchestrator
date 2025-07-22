@@ -1,0 +1,33 @@
+# Working example that uses real tools
+id: web_search_example
+name: Web Search and Summary Pipeline
+description: Search the web and summarize findings
+version: "1.0.0"
+
+steps:
+  - id: search_web
+    tool: web-search
+    action: search
+    parameters:
+      query: "artificial intelligence trends 2024"
+      max_results: 5
+    
+  - id: generate_summary
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "AI Trends Summary"
+      content: |
+        # Search Results Summary
+        
+        Based on web search for "artificial intelligence trends 2024":
+        
+        {% for result in search_web.results %}
+        ## {{ result.title }}
+        {{ result.snippet }}
+        
+        Source: {{ result.url }}
+        
+        {% endfor %}
+    dependencies:
+      - search_web

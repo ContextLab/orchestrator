@@ -3,7 +3,7 @@
 id: simple_example
 name: Simple Text Processing Pipeline
 description: A basic pipeline that generates and processes text
-version: "1.0"
+version: "1.0.0"
 
 context:
   input_topic: "artificial intelligence"
