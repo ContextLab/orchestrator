@@ -11,10 +11,12 @@ from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem
 from .core.error_handler import ErrorHandler
 from .core.pipeline import Pipeline
+from .core.pipeline_status_tracker import PipelineStatusTracker, PipelineStatus
 from .core.resource_allocator import ResourceAllocator
 from .core.task import Task, TaskStatus
 from .executor.parallel_executor import ParallelExecutor
 from .models.model_registry import ModelRegistry
+from .models.registry_singleton import get_model_registry
 from .state.state_manager import StateManager
 
 
@@ -56,7 +58,7 @@ class Orchestrator:
             parallel_executor: Parallel executor for concurrent execution
             max_concurrent_tasks: Maximum concurrent tasks
         """
-        self.model_registry = model_registry or ModelRegistry()
+        self.model_registry = model_registry or get_model_registry()
         
         # Use a proper control system if none provided
         if control_system is None:
@@ -81,9 +83,12 @@ class Orchestrator:
         self.max_concurrent_tasks = max_concurrent_tasks
 
         # Execution state
-        self.running_pipelines: Dict[str, Pipeline] = {}
+        self.running_pipelines: Dict[str, Pipeline] = {}  # Keep for backward compatibility
         self.execution_semaphore = asyncio.Semaphore(max_concurrent_tasks)
-        self.execution_history: List[Dict[str, Any]] = []
+        self.execution_history: List[Dict[str, Any]] = []  # Keep for backward compatibility
+        
+        # New status tracker
+        self.status_tracker = PipelineStatusTracker()
         
         # Logger
         self.logger = logging.getLogger(__name__)
@@ -113,6 +118,9 @@ class Orchestrator:
         try:
             # Register pipeline as running
             self.running_pipelines[execution_id] = pipeline
+            
+            # Register with new status tracker
+            await self.status_tracker.start_execution(execution_id, pipeline, context)
 
             # Create execution context
             context = {

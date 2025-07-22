@@ -8,6 +8,7 @@ from ..core.control_system import ControlAction, ControlSystem
 from ..core.pipeline import Pipeline
 from ..core.task import Task
 from ..models.model_registry import ModelRegistry
+from ..models.registry_singleton import get_model_registry
 from ..control_systems.model_based_control_system import ModelBasedControlSystem
 
 
@@ -169,7 +170,7 @@ class LangGraphAdapter(ControlSystem):
         self.active_executions: Dict[str, LangGraphState] = {}
         
         # Initialize model registry and control system for task execution
-        self.model_registry = model_registry or ModelRegistry()
+        self.model_registry = model_registry or get_model_registry()
         self.execution_control = ModelBasedControlSystem(self.model_registry)
 
     def register_workflow(self, workflow: LangGraphWorkflow):

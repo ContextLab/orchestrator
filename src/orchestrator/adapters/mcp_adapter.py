@@ -15,6 +15,7 @@ from ..core.model import Model
 from ..core.pipeline import Pipeline
 from ..core.task import Task
 from ..models.model_registry import ModelRegistry
+from ..models.registry_singleton import get_model_registry
 from ..control_systems.model_based_control_system import ModelBasedControlSystem
 
 
@@ -383,7 +384,7 @@ class MCPAdapter(ControlSystem):
         self.logger = logging.getLogger("mcp_adapter")
         
         # Initialize model registry and control system for AI-enhanced execution
-        self.model_registry = model_registry or ModelRegistry()
+        self.model_registry = model_registry or get_model_registry()
         self.ai_control = ModelBasedControlSystem(self.model_registry)
 
     async def add_server(self, server_name: str, server_url: str) -> bool:

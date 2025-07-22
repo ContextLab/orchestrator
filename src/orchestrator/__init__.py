@@ -17,6 +17,7 @@ from .core.task import Task, TaskStatus
 from .integrations.huggingface_model import HuggingFaceModel
 from .integrations.ollama_model import OllamaModel
 from .models.model_registry import ModelRegistry
+from .models.registry_singleton import get_model_registry, set_model_registry
 from .orchestrator import Orchestrator
 from .state.state_manager import StateManager
 from .tools.mcp_server import default_mcp_server, default_tool_detector
@@ -70,7 +71,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
     # Load API keys first - this will raise an error if keys are missing
     load_api_keys()
 
-    _model_registry = ModelRegistry()
+    _model_registry = get_model_registry()
 
     # Load model configuration using the new loader
     loader = get_model_config_loader()

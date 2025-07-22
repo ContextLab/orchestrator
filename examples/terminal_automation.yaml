@@ -1,0 +1,72 @@
+# Terminal Automation Pipeline
+# Uses terminal tool for command execution
+id: terminal_automation
+name: System Information and Setup Pipeline
+description: Gather system info and perform setup tasks
+version: "1.0.0"
+
+steps:
+  - id: check_python
+    tool: terminal
+    action: execute
+    parameters:
+      command: "python --version"
+      capture_output: true
+    
+  - id: check_packages
+    tool: terminal
+    action: execute
+    parameters:
+      command: "pip list | grep -E '(numpy|pandas|matplotlib)'"
+      capture_output: true
+    dependencies:
+      - check_python
+    
+  - id: system_info
+    tool: terminal
+    action: execute
+    parameters:
+      command: "uname -a"
+      capture_output: true
+    
+  - id: disk_usage
+    tool: terminal
+    action: execute
+    parameters:
+      command: "df -h | head -5"
+      capture_output: true
+    
+  - id: create_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "system_report.md"
+      content: |
+        # System Information Report
+        
+        ## Python Environment
+        ```
+        {{ check_python.output }}
+        ```
+        
+        ## Installed Packages
+        ```
+        {{ check_packages.output | default('No data science packages found') }}
+        ```
+        
+        ## System Details
+        ```
+        {{ system_info.output }}
+        ```
+        
+        ## Disk Usage
+        ```
+        {{ disk_usage.output }}
+        ```
+        
+        Generated on: {{ now() }}
+    dependencies:
+      - check_python
+      - check_packages
+      - system_info
+      - disk_usage

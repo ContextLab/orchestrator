@@ -1,0 +1,36 @@
+# Simple Data Processing Pipeline
+# Uses real tools: filesystem and data-processing
+id: simple_data_processing
+name: Simple Data Processing Pipeline
+description: Read a CSV file, process it, and save results
+version: "1.0.0"
+
+steps:
+  - id: read_data
+    tool: filesystem
+    action: read
+    parameters:
+      path: "data/input.csv"
+    
+  - id: process_data
+    tool: data-processing
+    action: transform
+    parameters:
+      data: "{{ read_data.content }}"
+      format: "csv"
+      operation:
+        type: "filter"
+        criteria:
+          column: "status"
+          value: "active"
+    dependencies:
+      - read_data
+    
+  - id: save_results
+    tool: filesystem
+    action: write
+    parameters:
+      path: "data/output.csv"
+      content: "{{ process_data.result }}"
+    dependencies:
+      - process_data

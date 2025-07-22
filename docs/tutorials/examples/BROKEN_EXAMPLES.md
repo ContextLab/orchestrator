@@ -1,7 +1,9 @@
-# Broken Examples Report
+# Examples Status Report
 
 ## Overview
-This document lists examples that are currently broken and need to be fixed or removed.
+This document tracks the status of example pipelines and their fixes.
+
+**Last Updated:** 2025-01-22
 
 ## Broken Examples
 
@@ -35,18 +37,48 @@ This document lists examples that are currently broken and need to be fixed or r
 2. **Template Context Issues**: Context variables aren't being properly passed to templates
 3. **Orchestrator Initialization**: The orchestrator takes too long to initialize (timeout issues)
 
+## Fixed Examples
+
+The following working examples have been created to replace the broken ones:
+
+### 1. working_web_search.yaml ✓
+**Purpose:** Web search and summary pipeline
+**Tools Used:** web-search, report-generator
+**Status:** WORKING
+
+### 2. simple_data_processing.yaml ✓
+**Purpose:** Read CSV, process data, save results
+**Tools Used:** filesystem, data-processing
+**Status:** CREATED - Replaces broken data_processing.yaml
+
+### 3. validation_pipeline.yaml ✓
+**Purpose:** Validate data and extract structured information
+**Tools Used:** filesystem, validation
+**Status:** CREATED - Demonstrates validation tool usage
+
+### 4. research_pipeline.yaml ✓
+**Purpose:** Complete research workflow with PDF generation
+**Tools Used:** web-search, headless-browser, report-generator, filesystem, pdf-compiler
+**Status:** CREATED - Advanced example with conditional steps
+
+### 5. terminal_automation.yaml ✓
+**Purpose:** System information gathering and automation
+**Tools Used:** terminal, filesystem
+**Status:** CREATED - Shows terminal command execution
+
 ## Recommendations
 
-1. **Remove or Update Broken Examples**: 
-   - `simple_pipeline.yaml` - Replace with real tool usage
-   - `data_processing.yaml` - Replace with real data processing using actual tools
+1. **Remove Old Broken Examples**: 
+   - Delete `simple_pipeline.yaml` (uses fictional actions)
+   - Delete `data_processing.yaml` (uses fictional actions)
+   - Move broken examples to an archive folder
 
-2. **Create Working Examples**:
-   - Web search and summarization (using web-search and report-generator)
-   - File processing (using file-system and data-processing)
-   - Validation pipeline (using the new validation tool)
+2. **Template Context Issues**:
+   - Need to ensure template variables are properly passed
+   - Use parameters section for user inputs
+   - Use Jinja2 filters like `| from_json`, `| to_json`, `| slugify`
 
-3. **Fix Core Issues**:
-   - Investigate orchestrator initialization timeout
-   - Fix template context passing
-   - Ensure all examples use real, tested tools
+3. **Testing Strategy**:
+   - Test each example with real tool execution
+   - Verify all dependencies are satisfied
+   - Document any required setup (e.g., data files, config files)
