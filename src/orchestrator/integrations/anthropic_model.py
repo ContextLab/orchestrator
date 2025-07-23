@@ -294,9 +294,7 @@ class AnthropicModel(Model):
                     raise ValueError("Could not parse JSON from response")
 
         except Exception as e:
-            raise RuntimeError(
-                f"Anthropic structured generation error: {str(e)}"
-            ) from e
+            raise RuntimeError(f"Anthropic structured generation error: {str(e)}") from e
 
     async def health_check(self) -> bool:
         """

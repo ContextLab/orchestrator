@@ -156,9 +156,7 @@ class GoogleModel(Model):
             )
 
         # Get model configuration
-        config = self.MODEL_CONFIGS.get(
-            model_name, self.MODEL_CONFIGS["gemini-1.5-flash"]
-        )
+        config = self.MODEL_CONFIGS.get(model_name, self.MODEL_CONFIGS["gemini-1.5-flash"])
 
         super().__init__(
             name=model_name,
@@ -299,9 +297,7 @@ class GoogleModel(Model):
                     raise ValueError("Could not parse JSON from response")
 
         except Exception as e:
-            raise RuntimeError(
-                f"Google AI structured generation error: {str(e)}"
-            ) from e
+            raise RuntimeError(f"Google AI structured generation error: {str(e)}") from e
 
     async def health_check(self) -> bool:
         """

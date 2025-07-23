@@ -51,9 +51,7 @@ class HuggingFaceModelManager:
         os.environ["HF_HOME"] = self.cache_dir
         os.environ["TRANSFORMERS_CACHE"] = self.cache_dir
 
-    def download_model(
-        self, model_name: str, model_type: str = "text-generation"
-    ) -> bool:
+    def download_model(self, model_name: str, model_type: str = "text-generation") -> bool:
         """Download and cache a model from HuggingFace Hub."""
         try:
 
@@ -79,9 +77,7 @@ class HuggingFaceModelManager:
                     AutoTokenizer,
                 )
 
-                tokenizer = AutoTokenizer.from_pretrained(
-                    model_name, cache_dir=self.cache_dir
-                )
+                tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=self.cache_dir)
                 model = AutoModelForSequenceClassification.from_pretrained(
                     model_name, cache_dir=self.cache_dir
                 )
@@ -89,9 +85,7 @@ class HuggingFaceModelManager:
             elif model_type == "embedding":
                 from transformers import AutoModel, AutoTokenizer
 
-                tokenizer = AutoTokenizer.from_pretrained(
-                    model_name, cache_dir=self.cache_dir
-                )
+                tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=self.cache_dir)
                 model = AutoModel.from_pretrained(model_name, cache_dir=self.cache_dir)
 
             else:
@@ -269,9 +263,7 @@ class TestHuggingFaceIntegration:
 
     def test_model_download_invalid_model(self, model_manager):
         """Test error handling for invalid model names."""
-        result = model_manager.download_model(
-            "nonexistent-model-12345", "text-generation"
-        )
+        result = model_manager.download_model("nonexistent-model-12345", "text-generation")
 
         assert result is False
 
@@ -283,9 +275,7 @@ class TestHuggingFaceIntegration:
 
         # Generate text
         prompt = "The weather today is"
-        generated = model_manager.generate_text(
-            self.SMALL_TEXT_MODEL, prompt, max_length=20
-        )
+        generated = model_manager.generate_text(self.SMALL_TEXT_MODEL, prompt, max_length=20)
 
         assert isinstance(generated, str)
         assert len(generated) > 0
@@ -317,16 +307,12 @@ class TestHuggingFaceIntegration:
         assert isinstance(prediction["score"], (int, float))
         assert 0 <= prediction["score"] <= 1
 
-    @pytest.mark.skipif(
-        not HAS_HUGGINGFACE, reason="sentence-transformers not available"
-    )
+    @pytest.mark.skipif(not HAS_HUGGINGFACE, reason="sentence-transformers not available")
     def test_text_embeddings(self, model_manager):
         """Test text embedding generation."""
         try:
             # Download embedding model
-            success = model_manager.download_model(
-                self.SMALL_EMBEDDING_MODEL, "embedding"
-            )
+            success = model_manager.download_model(self.SMALL_EMBEDDING_MODEL, "embedding")
             assert success is True
 
             # Get embeddings
@@ -393,9 +379,7 @@ class TestHuggingFaceIntegration:
     def test_multiple_model_loading(self, model_manager):
         """Test loading multiple models simultaneously."""
         # Download text generation model
-        success1 = model_manager.download_model(
-            self.SMALL_TEXT_MODEL, "text-generation"
-        )
+        success1 = model_manager.download_model(self.SMALL_TEXT_MODEL, "text-generation")
         assert success1 is True
 
         # Download classification model
@@ -409,12 +393,8 @@ class TestHuggingFaceIntegration:
         assert self.SMALL_CLASSIFICATION_MODEL in model_manager.models
 
         # Both should work
-        generated = model_manager.generate_text(
-            self.SMALL_TEXT_MODEL, "Test", max_length=10
-        )
-        classified = model_manager.classify_text(
-            self.SMALL_CLASSIFICATION_MODEL, "Great!"
-        )
+        generated = model_manager.generate_text(self.SMALL_TEXT_MODEL, "Test", max_length=10)
+        classified = model_manager.classify_text(self.SMALL_CLASSIFICATION_MODEL, "Great!")
 
         assert isinstance(generated, str)
         assert "predictions" in classified
@@ -426,9 +406,7 @@ class TestHuggingFaceIntegration:
         assert success is True
 
         # Test with valid parameters
-        result = model_manager.generate_text(
-            self.SMALL_TEXT_MODEL, "Hello", max_length=10
-        )
+        result = model_manager.generate_text(self.SMALL_TEXT_MODEL, "Hello", max_length=10)
         assert isinstance(result, str)
 
         # Test with edge case parameters
@@ -443,9 +421,7 @@ class TestHuggingFaceIntegration:
         # If GPU is available, model should use it
         if has_gpu:
             # Download model
-            success = model_manager.download_model(
-                self.SMALL_TEXT_MODEL, "text-generation"
-            )
+            success = model_manager.download_model(self.SMALL_TEXT_MODEL, "text-generation")
             assert success is True
 
             info = model_manager.get_model_info(self.SMALL_TEXT_MODEL)
@@ -481,9 +457,7 @@ class TestHuggingFaceIntegration:
         # Generate multiple times with same prompt
         results = []
         for _ in range(3):
-            result = model_manager.generate_text(
-                self.SMALL_TEXT_MODEL, prompt, max_length=15
-            )
+            result = model_manager.generate_text(self.SMALL_TEXT_MODEL, prompt, max_length=15)
             results.append(result)
 
         # All results should be strings
@@ -514,9 +488,7 @@ class TestHuggingFaceIntegration:
 class TestHuggingFaceIntegrationAdvanced:
     """Advanced integration tests for HuggingFace functionality."""
 
-    @pytest.mark.skipif(
-        not HAS_HUGGINGFACE, reason="HuggingFace libraries not available"
-    )
+    @pytest.mark.skipif(not HAS_HUGGINGFACE, reason="HuggingFace libraries not available")
     def test_model_size_validation(self):
         """Test validation of model sizes before download."""
         # This is a conceptual test - in practice you'd check model size
@@ -527,14 +499,10 @@ class TestHuggingFaceIntegrationAdvanced:
             manager = HuggingFaceModelManager(cache_dir=temp_dir)
 
             # Small model should be acceptable
-            info = manager.get_model_info(
-                "gpt2"
-            )  # This will show error since not loaded
+            info = manager.get_model_info("gpt2")  # This will show error since not loaded
             assert "error" in info  # Expected since model not loaded
 
-    @pytest.mark.skipif(
-        not HAS_HUGGINGFACE, reason="HuggingFace libraries not available"
-    )
+    @pytest.mark.skipif(not HAS_HUGGINGFACE, reason="HuggingFace libraries not available")
     def test_concurrent_model_downloads(self):
         """Test handling of concurrent model downloads."""
         import threading

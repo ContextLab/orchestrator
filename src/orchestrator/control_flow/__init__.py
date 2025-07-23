@@ -7,7 +7,7 @@ from .auto_resolver import ControlFlowAutoResolver
 
 __all__ = [
     "ConditionalHandler",
-    "ForLoopHandler", 
+    "ForLoopHandler",
     "WhileLoopHandler",
     "DynamicFlowHandler",
     "ControlFlowAutoResolver",

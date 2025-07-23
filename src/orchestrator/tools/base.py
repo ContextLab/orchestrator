@@ -111,9 +111,14 @@ def register_default_tools():
     from .llm_tools import TaskDelegationTool, MultiModelRoutingTool, PromptOptimizationTool
     from .user_interaction_tools import UserPromptTool, ApprovalGateTool, FeedbackCollectionTool
     from .pipeline_recursion_tools import PipelineExecutorTool, RecursionControlTool
-    from .multimodal_tools import ImageAnalysisTool, ImageGenerationTool, AudioProcessingTool, VideoProcessingTool
+    from .multimodal_tools import (
+        ImageAnalysisTool,
+        ImageGenerationTool,
+        AudioProcessingTool,
+        VideoProcessingTool,
+    )
     from .mcp_tools import MCPServerTool, MCPMemoryTool, MCPResourceTool
-    
+
     tools = [
         HeadlessBrowserTool(),
         WebSearchTool(),
@@ -138,10 +143,10 @@ def register_default_tools():
         MCPMemoryTool(),
         MCPResourceTool(),
     ]
-    
+
     for tool in tools:
         default_registry.register(tool)
-    
+
     return len(tools)
 
 

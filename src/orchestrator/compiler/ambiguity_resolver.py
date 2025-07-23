@@ -29,16 +29,14 @@ class AmbiguityResolutionError(Exception):
 class AmbiguityResolver:
     """
     Resolves ambiguous specifications using AI models.
-    
+
     This resolver uses real AI models to intelligently resolve ambiguities
     in YAML configurations, making actual API calls to determine the best
     choices based on context and requirements.
     """
 
     def __init__(
-        self, 
-        model: Optional[Model] = None,
-        model_registry: Optional[ModelRegistry] = None
+        self, model: Optional[Model] = None, model_registry: Optional[ModelRegistry] = None
     ) -> None:
         """
         Initialize ambiguity resolver.
@@ -46,14 +44,14 @@ class AmbiguityResolver:
         Args:
             model: Specific model to use for resolution
             model_registry: Model registry to select models from
-            
+
         Raises:
             ValueError: If no model is provided and registry has no models
         """
         self.model = model
         self.model_registry = model_registry
         self.resolution_cache: Dict[str, Any] = {}
-        
+
         # If no model provided, try to get one from registry
         if not model and model_registry:
             available_models = model_registry.list_models()
@@ -64,12 +62,11 @@ class AmbiguityResolver:
                 except Exception:
                     # If selection fails, just get the first available
                     self.model = model_registry.get_model(available_models[0])
-        
+
         # Verify we have a model for AI resolution
         if not self.model:
             raise ValueError(
-                "No AI model available for ambiguity resolution. "
-                "A real model must be provided."
+                "No AI model available for ambiguity resolution. " "A real model must be provided."
             )
 
     async def resolve(self, content: str, context_path: str) -> Any:
@@ -96,9 +93,7 @@ class AmbiguityResolver:
             if self.model:
                 result = await self._resolve_with_ai(content, context_path)
             else:
-                raise AmbiguityResolutionError(
-                    "No AI model available for ambiguity resolution"
-                )
+                raise AmbiguityResolutionError("No AI model available for ambiguity resolution")
 
             # Cache result
             self.resolution_cache[cache_key] = result
@@ -113,32 +108,37 @@ class AmbiguityResolver:
         """Use AI model to intelligently resolve ambiguity."""
         # Determine the expected type from context
         expected_type = self._infer_type_from_context(content, context_path)
-        
+
         # Build a prompt that guides the AI to return the right type
         prompt = self._build_resolution_prompt(content, context_path, expected_type)
-        
+
         # Get AI response
         response = await self.model.generate(prompt, temperature=0.1, max_tokens=100)
-        
+
         # Parse the response based on expected type
         return self._parse_ai_response(response, expected_type, content)
 
     def _infer_type_from_context(self, content: str, context_path: str) -> str:
         """Infer the expected return type from context."""
         content_lower = content.lower()
-        
+
         # Check for explicit type indicators
-        if any(word in content_lower for word in ["true", "false", "enable", "disable", "yes", "no"]):
+        if any(
+            word in content_lower for word in ["true", "false", "enable", "disable", "yes", "no"]
+        ):
             return "boolean"
-        elif any(word in content_lower for word in ["number", "count", "size", "batch", "timeout", "limit"]):
+        elif any(
+            word in content_lower
+            for word in ["number", "count", "size", "batch", "timeout", "limit"]
+        ):
             return "number"
         elif "list" in content_lower or "array" in content_lower:
             return "list"
-        elif re.search(r'\b(json|yaml|xml|csv|text)\b', content_lower):
+        elif re.search(r"\b(json|yaml|xml|csv|text)\b", content_lower):
             return "format"
         elif "algorithm" in content_lower or "method" in content_lower:
             return "choice"
-        
+
         # Check context path
         if any(word in context_path.lower() for word in ["enable", "disable", "support"]):
             return "boolean"
@@ -146,7 +146,7 @@ class AmbiguityResolver:
             return "number"
         elif "format" in context_path.lower():
             return "format"
-        
+
         return "string"
 
     def _build_resolution_prompt(self, content: str, context_path: str, expected_type: str) -> str:
@@ -157,11 +157,11 @@ class AmbiguityResolver:
             "list": "Respond with a JSON array of strings.",
             "format": "Respond with only one of: json, yaml, xml, csv, text.",
             "choice": "Respond with only the chosen option.",
-            "string": "Respond with a short string value."
+            "string": "Respond with a short string value.",
         }
-        
+
         instruction = type_instructions.get(expected_type, type_instructions["string"])
-        
+
         prompt = f"""You are resolving an ambiguous configuration value.
 
 Context: {context_path}
@@ -177,15 +177,15 @@ Respond with only the value, no explanation."""
     def _parse_ai_response(self, response: str, expected_type: str, original_content: str) -> Any:
         """Parse AI response into the expected type."""
         response = response.strip()
-        
+
         if expected_type == "boolean":
             return response.lower() in ["true", "yes", "1", "enable", "on"]
-        
+
         elif expected_type == "number":
             # Try to extract a number from the response
-            numbers = re.findall(r'-?\d+(?:\.\d+)?', response)
+            numbers = re.findall(r"-?\d+(?:\.\d+)?", response)
             if numbers:
-                return float(numbers[0]) if '.' in numbers[0] else int(numbers[0])
+                return float(numbers[0]) if "." in numbers[0] else int(numbers[0])
             # Default numbers based on context
             if "batch" in original_content.lower():
                 return 32
@@ -196,7 +196,7 @@ Respond with only the value, no explanation."""
             elif "limit" in original_content.lower():
                 return 1000
             return 10
-        
+
         elif expected_type == "list":
             # Try to parse as JSON array
             try:
@@ -206,10 +206,10 @@ Respond with only the value, no explanation."""
             except Exception:
                 pass
             # Try to split by common delimiters
-            if ',' in response:
-                return [item.strip() for item in response.split(',')]
+            if "," in response:
+                return [item.strip() for item in response.split(",")]
             return [response]
-        
+
         elif expected_type == "format":
             # Extract format keyword
             formats = ["json", "yaml", "xml", "csv", "text"]
@@ -218,15 +218,14 @@ Respond with only the value, no explanation."""
                 if fmt in response_lower:
                     return fmt
             return "json"  # Default
-        
+
         elif expected_type == "choice":
             # Return the response as-is for choices
             return response
-        
+
         else:
             # String - clean up the response
-            return response.strip('"\'')
-
+            return response.strip("\"'")
 
     def clear_cache(self) -> None:
         """Clear the resolution cache."""

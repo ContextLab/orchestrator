@@ -39,10 +39,7 @@ def model_registry():
 def orchestrator(model_registry):
     """Create orchestrator with real control system."""
     control_system = HybridControlSystem(model_registry)
-    return Orchestrator(
-        model_registry=model_registry,
-        control_system=control_system
-    )
+    return Orchestrator(model_registry=model_registry, control_system=control_system)
 
 
 @pytest.fixture
@@ -56,79 +53,69 @@ def temp_workspace():
 
 class TestHeadlessBrowserTool:
     """Real-world tests for HeadlessBrowserTool."""
-    
+
     @pytest.fixture
     def browser_tool(self):
         """Create browser tool instance."""
         return HeadlessBrowserTool()
-    
+
     @pytest.mark.asyncio
     @pytest.mark.timeout(60)
     async def test_scrape_real_website(self, browser_tool):
         """Test scraping a real website."""
         # Use example.com - it's stable and simple
-        result = await browser_tool.execute(
-            url="https://example.com",
-            action="scrape"
-        )
-        
+        result = await browser_tool.execute(url="https://example.com", action="scrape")
+
         # Check if there was an error
         if "error" in result:
             pytest.fail(f"Scraping failed: {result['error']}")
-        
+
         # Should have scraped content
         assert "url" in result
         assert result["url"] == "https://example.com"
         assert "title" in result
         assert "Example Domain" in result["title"]
-        
+
         # Check for text content (if extracted)
         if "text" in result:
             assert "Example Domain" in result["text"]
             assert "More information" in result["text"]
-        
+
         # Check for other metadata
         if "status_code" in result:
             assert result["status_code"] == 200
-    
-    @pytest.mark.asyncio  
+
+    @pytest.mark.asyncio
     @pytest.mark.timeout(30)
     async def test_verify_real_website(self, browser_tool):
         """Test verifying a real website."""
-        result = await browser_tool.execute(
-            url="https://example.com",
-            action="verify"
-        )
-        
+        result = await browser_tool.execute(url="https://example.com", action="verify")
+
         # Check if there was an error
         if "error" in result:
             pytest.fail(f"Verification failed: {result['error']}")
-        
+
         assert "url" in result
         assert "accessible" in result
         assert result["accessible"] is True
-    
+
     @pytest.mark.asyncio
     async def test_invalid_url_handling(self, browser_tool):
         """Test handling of invalid URLs."""
         result = await browser_tool.execute(
-            url="https://this-domain-definitely-does-not-exist-12345.com",
-            action="scrape"
+            url="https://this-domain-definitely-does-not-exist-12345.com", action="scrape"
         )
-        
+
         # Should have an error for invalid URL
         assert "error" in result
         assert "url" in result
-    
+
     @pytest.mark.asyncio
     @pytest.mark.timeout(30)
     async def test_scrape_with_javascript(self, browser_tool):
         """Test scraping with JavaScript support."""
-        result = await browser_tool.execute(
-            url="https://example.com",
-            action="scrape_js"
-        )
-        
+        result = await browser_tool.execute(url="https://example.com", action="scrape_js")
+
         # scrape_js might fail if playwright is not installed
         if "error" in result:
             # Check if it's a playwright error
@@ -136,7 +123,7 @@ class TestHeadlessBrowserTool:
                 pytest.skip("Playwright not installed")
             else:
                 pytest.fail(f"JS scraping failed: {result['error']}")
-        
+
         # Should have scraped content
         assert "url" in result
         assert "title" in result
@@ -144,26 +131,25 @@ class TestHeadlessBrowserTool:
 
 class TestWebSearchTool:
     """Real-world tests for WebSearchTool."""
-    
+
     @pytest.fixture
     def search_tool(self):
         """Create search tool instance."""
         return WebSearchTool()
-    
+
     @pytest.mark.asyncio
     @pytest.mark.timeout(30)
     async def test_real_web_search(self, search_tool):
         """Test real web search functionality."""
         result = await search_tool.execute(
-            query="Python programming language official documentation",
-            max_results=5
+            query="Python programming language official documentation", max_results=5
         )
-        
+
         # WebSearchTool returns different format - no "success" key
         assert "results" in result
         assert "query" in result
         assert result["query"] == "Python programming language official documentation"
-        
+
         # Check if we got results (may be empty if search fails)
         if result.get("error"):
             # Search failed, but should still have proper structure
@@ -172,7 +158,7 @@ class TestWebSearchTool:
             # Should have some results
             assert len(result["results"]) > 0
             assert len(result["results"]) <= 5
-            
+
             # Check result structure
             for item in result["results"]:
                 assert "title" in item
@@ -180,15 +166,12 @@ class TestWebSearchTool:
                 assert "snippet" in item
                 if item["url"]:  # URL might be empty in some cases
                     assert item["url"].startswith("http")
-    
+
     @pytest.mark.asyncio
     async def test_empty_query_handling(self, search_tool):
         """Test handling of empty search query."""
-        result = await search_tool.execute(
-            query="",
-            max_results=5
-        )
-        
+        result = await search_tool.execute(query="", max_results=5)
+
         # Should have error for empty query
         assert "error" in result
         assert result["total_results"] == 0
@@ -196,158 +179,130 @@ class TestWebSearchTool:
 
 class TestTerminalTool:
     """Real-world tests for TerminalTool."""
-    
+
     @pytest.fixture
     def terminal_tool(self):
         """Create terminal tool instance."""
         return TerminalTool()
-    
+
     @pytest.mark.asyncio
     async def test_simple_command_execution(self, terminal_tool):
         """Test executing simple shell commands."""
         # Test echo command
-        result = await terminal_tool.execute(
-            command="echo 'Hello from terminal tool'"
-        )
-        
+        result = await terminal_tool.execute(command="echo 'Hello from terminal tool'")
+
         assert result["success"] is True
         assert result["stdout"].strip() == "Hello from terminal tool"
         assert result["return_code"] == 0
-    
+
     @pytest.mark.asyncio
     async def test_command_with_error(self, terminal_tool):
         """Test handling command that returns error."""
-        result = await terminal_tool.execute(
-            command="ls /nonexistent/directory/path"
-        )
-        
+        result = await terminal_tool.execute(command="ls /nonexistent/directory/path")
+
         assert result["success"] is False
         assert result["return_code"] != 0
         assert result["stderr"] != ""  # Should have error message
-    
+
     @pytest.mark.asyncio
     async def test_command_timeout(self, terminal_tool):
         """Test command timeout handling."""
-        result = await terminal_tool.execute(
-            command="sleep 10",
-            timeout=1
-        )
-        
+        result = await terminal_tool.execute(command="sleep 10", timeout=1)
+
         assert result["success"] is False
         assert "timed out" in result["error"].lower()
-    
+
     @pytest.mark.asyncio
     async def test_working_directory(self, terminal_tool, temp_workspace):
         """Test command execution in specific directory."""
         # Create a test file in temp workspace
         test_file = temp_workspace / "test.txt"
         test_file.write_text("test content")
-        
-        result = await terminal_tool.execute(
-            command="ls test.txt",
-            working_dir=str(temp_workspace)
-        )
-        
+
+        result = await terminal_tool.execute(command="ls test.txt", working_dir=str(temp_workspace))
+
         assert result["success"] is True
         assert "test.txt" in result["stdout"]
 
 
 class TestFileSystemTool:
     """Real-world tests for FileSystemTool."""
-    
+
     @pytest.fixture
     def fs_tool(self):
         """Create filesystem tool instance."""
         return FileSystemTool()
-    
+
     @pytest.mark.asyncio
     async def test_file_operations(self, fs_tool, temp_workspace):
         """Test file read/write operations."""
         test_file = temp_workspace / "test.txt"
         test_content = "This is a test file\nWith multiple lines\n"
-        
+
         # Test write
         write_result = await fs_tool.execute(
-            action="write",
-            path=str(test_file),
-            content=test_content
+            action="write", path=str(test_file), content=test_content
         )
-        
+
         assert write_result["success"] is True
         assert test_file.exists()
-        
+
         # Test read
-        read_result = await fs_tool.execute(
-            action="read",
-            path=str(test_file)
-        )
-        
+        read_result = await fs_tool.execute(action="read", path=str(test_file))
+
         assert read_result["success"] is True
         assert read_result["content"] == test_content
-        
+
         # Test delete
-        delete_result = await fs_tool.execute(
-            action="delete",
-            path=str(test_file)
-        )
-        
+        delete_result = await fs_tool.execute(action="delete", path=str(test_file))
+
         assert delete_result["success"] is True
         assert not test_file.exists()
-    
+
     @pytest.mark.asyncio
     async def test_directory_operations(self, fs_tool, temp_workspace):
         """Test directory operations."""
         test_dir = temp_workspace / "test_dir"
-        
+
         # Create directory using write action (it creates parent dirs)
         dummy_file = test_dir / "dummy.txt"
-        create_result = await fs_tool.execute(
-            action="write",
-            path=str(dummy_file),
-            content="test"
-        )
-        
+        create_result = await fs_tool.execute(action="write", path=str(dummy_file), content="test")
+
         assert create_result["success"] is True
         assert test_dir.exists()
         assert test_dir.is_dir()
-        
+
         # Test list directory
         # Create some files
         (test_dir / "file1.txt").write_text("content1")
         (test_dir / "file2.txt").write_text("content2")
-        
-        list_result = await fs_tool.execute(
-            action="list",
-            path=str(test_dir)
-        )
-        
+
+        list_result = await fs_tool.execute(action="list", path=str(test_dir))
+
         assert list_result["success"] is True
         assert len(list_result["items"]) == 3  # dummy.txt, file1.txt, file2.txt
         file_names = [item["name"] for item in list_result["items"]]
         assert "file1.txt" in file_names
         assert "file2.txt" in file_names
         assert "dummy.txt" in file_names
-    
+
     @pytest.mark.asyncio
     async def test_file_not_found(self, fs_tool):
         """Test handling of non-existent files."""
-        result = await fs_tool.execute(
-            action="read",
-            path="/nonexistent/file/path.txt"
-        )
-        
+        result = await fs_tool.execute(action="read", path="/nonexistent/file/path.txt")
+
         assert result["success"] is False
         assert "error" in result
 
 
 class TestDataProcessingTool:
     """Real-world tests for DataProcessingTool."""
-    
+
     @pytest.fixture
     def data_tool(self):
         """Create data processing tool instance."""
         return DataProcessingTool()
-    
+
     @pytest.mark.asyncio
     async def test_json_processing(self, data_tool, temp_workspace):
         """Test JSON data processing."""
@@ -355,29 +310,27 @@ class TestDataProcessingTool:
             "users": [
                 {"name": "Alice", "age": 30, "city": "New York"},
                 {"name": "Bob", "age": 25, "city": "London"},
-                {"name": "Charlie", "age": 35, "city": "Tokyo"}
+                {"name": "Charlie", "age": 35, "city": "Tokyo"},
             ]
         }
-        
+
         json_file = temp_workspace / "test_data.json"
         json_file.write_text(json.dumps(test_data, indent=2))
-        
+
         # Test filtering - the tool uses simple equality matching
         result = await data_tool.execute(
             action="filter",
             data=test_data["users"],  # Pass the users list directly
-            operation={
-                "criteria": {"city": "New York"}  # Simple equality filter
-            }
+            operation={"criteria": {"city": "New York"}},  # Simple equality filter
         )
-        
+
         assert result["success"] is True
         assert "result" in result
         assert result["original_count"] == 3
         assert result["filtered_count"] == 1
         assert len(result["result"]) == 1
         assert result["result"][0]["name"] == "Alice"
-    
+
     @pytest.mark.asyncio
     async def test_csv_processing(self, data_tool, temp_workspace):
         """Test CSV data processing."""
@@ -386,21 +339,19 @@ Alice,30,New York
 Bob,25,London
 Charlie,35,Tokyo
 """
-        
+
         csv_file = temp_workspace / "test_data.csv"
         csv_file.write_text(csv_content)
-        
+
         # Test format conversion
         result = await data_tool.execute(
-            action="convert",
-            data=str(csv_file),
-            format="json"  # Convert CSV to JSON
+            action="convert", data=str(csv_file), format="json"  # Convert CSV to JSON
         )
-        
+
         assert result["success"] is True
         assert "result" in result
         assert result["target_format"] == "json"
-        
+
         # Parse the JSON result
         converted_data = json.loads(result["result"])
         assert len(converted_data) == 3
@@ -411,12 +362,12 @@ Charlie,35,Tokyo
 # ValidationTool tests commented out - tool is not fully implemented
 # class TestValidationTool:
 #     """Real-world tests for ValidationTool."""
-#     
+#
 #     @pytest.fixture
 #     def validation_tool(self):
 #         """Create validation tool instance."""
 #         return ValidationTool()
-#     
+#
 #     @pytest.mark.asyncio
 #     async def test_schema_validation(self, validation_tool):
 #         """Test JSON schema validation."""
@@ -425,7 +376,7 @@ Charlie,35,Tokyo
 #             "email": "test@example.com",
 #             "age": 25
 #         }
-#         
+#
 #         schema = {
 #             "type": "object",
 #             "properties": {
@@ -435,17 +386,17 @@ Charlie,35,Tokyo
 #             },
 #             "required": ["name", "email"]
 #         }
-#         
+#
 #         result = await validation_tool.execute(
 #             data=test_data,
 #             schema=schema
 #         )
-#         
+#
 #         assert result["success"] is True
 #         assert "valid" in result
 #         assert result["valid"] is True
 #         assert len(result["errors"]) == 0
-#     
+#
 #     @pytest.mark.asyncio
 #     async def test_invalid_data_validation(self, validation_tool):
 #         """Test validation of invalid data."""
@@ -454,7 +405,7 @@ Charlie,35,Tokyo
 #             "email": "invalid-email",
 #             "age": -5
 #         }
-#         
+#
 #         schema = {
 #             "type": "object",
 #             "properties": {
@@ -463,12 +414,12 @@ Charlie,35,Tokyo
 #                 "age": {"type": "integer", "minimum": 0}
 #             }
 #         }
-#         
+#
 #         result = await validation_tool.execute(
 #             data=test_data,
 #             schema=schema
 #         )
-#         
+#
 #         assert result["success"] is True
 #         assert "valid" in result
 #         assert result["valid"] is False
@@ -477,12 +428,12 @@ Charlie,35,Tokyo
 
 class TestReportGeneratorTool:
     """Real-world tests for ReportGeneratorTool."""
-    
+
     @pytest.fixture
     def report_tool(self):
         """Create report generator tool instance."""
         return ReportGeneratorTool()
-    
+
     @pytest.mark.asyncio
     async def test_markdown_report_generation(self, report_tool, temp_workspace):
         """Test generating a real markdown report."""
@@ -492,27 +443,27 @@ class TestReportGeneratorTool:
                 {
                     "title": "AI in Healthcare",
                     "url": "https://example.com/ai-health",
-                    "snippet": "AI is revolutionizing healthcare..."
+                    "snippet": "AI is revolutionizing healthcare...",
                 },
                 {
                     "title": "AI in Finance",
                     "url": "https://example.com/ai-finance",
-                    "snippet": "Financial institutions use AI..."
-                }
-            ]
+                    "snippet": "Financial institutions use AI...",
+                },
+            ],
         }
-        
+
         result = await report_tool.execute(
             title="AI Applications Report",
             query="artificial intelligence applications",
             search_results=search_results,
             extraction_results={},
-            output_path=str(temp_workspace / "report.md")
+            output_path=str(temp_workspace / "report.md"),
         )
-        
+
         assert result["success"] is True
         assert "markdown" in result
-        
+
         # Verify content structure
         content = result["markdown"]
         assert "# AI Applications Report" in content
@@ -524,12 +475,12 @@ class TestReportGeneratorTool:
 
 class TestPDFCompilerTool:
     """Real-world tests for PDFCompilerTool."""
-    
+
     @pytest.fixture
     def pdf_tool(self):
         """Create PDF compiler tool instance."""
         return PDFCompilerTool()
-    
+
     @pytest.mark.asyncio
     async def test_pdf_generation(self, pdf_tool, temp_workspace):
         """Test generating a real PDF from markdown."""
@@ -549,16 +500,16 @@ This is a test report for PDF generation.
 
 The PDF generation tool should create a properly formatted document.
 """
-        
+
         output_path = temp_workspace / "test_report.pdf"
-        
+
         result = await pdf_tool.execute(
             markdown_content=markdown_content,
             output_path=str(output_path),
             title="Test Report",
-            author="Test Suite"
+            author="Test Suite",
         )
-        
+
         if result["success"]:
             # Pandoc is installed
             assert output_path.exists()
@@ -571,7 +522,7 @@ The PDF generation tool should create a properly formatted document.
 
 class TestToolIntegration:
     """Test tools working together in orchestrator pipelines."""
-    
+
     @pytest.mark.asyncio
     @pytest.mark.timeout(60)
     async def test_web_scraping_pipeline(self, orchestrator, temp_workspace):
@@ -615,31 +566,25 @@ outputs:
   report_path: "{{output_dir}}/report.md"
   search_count: "{{search_web.total_results}}"
 """
-        
+
         # Execute pipeline
-        context = {
-            "topic": "artificial intelligence",
-            "output_dir": str(temp_workspace)
-        }
-        
-        result = await orchestrator.execute_yaml(
-            yaml_content=yaml_content,
-            context=context
-        )
-        
+        context = {"topic": "artificial intelligence", "output_dir": str(temp_workspace)}
+
+        result = await orchestrator.execute_yaml(yaml_content=yaml_content, context=context)
+
         # Verify results
         assert "search_web" in result
         assert result["search_web"]["success"] is True
-        
+
         assert "generate_report" in result
         assert result["generate_report"]["success"] is True
-        
+
         # Check report was created
         report_path = temp_workspace / "report.md"
         assert report_path.exists()
         content = report_path.read_text()
         assert "artificial intelligence" in content.lower()
-    
+
     @pytest.mark.asyncio
     async def test_file_processing_pipeline(self, orchestrator, temp_workspace):
         """Test a pipeline that creates, processes, and validates files."""
@@ -648,13 +593,13 @@ outputs:
             "items": [
                 {"id": 1, "name": "Item A", "price": 10.50},
                 {"id": 2, "name": "Item B", "price": 25.00},
-                {"id": 3, "name": "Item C", "price": 15.75}
+                {"id": 3, "name": "Item C", "price": 15.75},
             ]
         }
-        
+
         input_file = temp_workspace / "input_data.json"
         input_file.write_text(json.dumps(test_data, indent=2))
-        
+
         yaml_content = """
 name: "File Processing Pipeline"
 description: "Read, process, and validate JSON data"
@@ -713,18 +658,15 @@ outputs:
   validation_passed: "{{validate_results.valid}}"
   total_price: "{{process_data.processed_data.total_price}}"
 """
-        
+
         # Execute pipeline
         context = {
             "input_file": str(input_file),
-            "output_file": str(temp_workspace / "output_data.json")
+            "output_file": str(temp_workspace / "output_data.json"),
         }
-        
-        result = await orchestrator.execute_yaml(
-            yaml_content=yaml_content,
-            context=context
-        )
-        
+
+        result = await orchestrator.execute_yaml(yaml_content=yaml_content, context=context)
+
         # Verify results
         assert result["validate_results"]["valid"] is True
         assert (temp_workspace / "output_data.json").exists()

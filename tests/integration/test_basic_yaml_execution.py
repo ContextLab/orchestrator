@@ -32,18 +32,20 @@ def orchestrator(setup_environment):
         model_registry = init_models()
     except Exception as e:
         pytest.skip(f"Failed to initialize models: {e}")
-    
+
     # Check for API models
     available_models = model_registry.list_models()
-    api_models = [m for m in available_models if any(
-        provider in m.lower() for provider in ['gpt', 'claude', 'gemini']
-    )]
-    
+    api_models = [
+        m
+        for m in available_models
+        if any(provider in m.lower() for provider in ["gpt", "claude", "gemini"])
+    ]
+
     if not api_models:
         pytest.skip("No API models available")
-    
+
     print(f"\nUsing {len(api_models)} API models for testing")
-    
+
     control_system = ModelBasedControlSystem(model_registry=model_registry)
     return Orchestrator(control_system=control_system, model_registry=model_registry)
 
@@ -51,13 +53,17 @@ def orchestrator(setup_environment):
 @pytest.fixture
 def yaml_compiler(orchestrator):
     """Create YAML compiler with model registry."""
-    model_registry = orchestrator.control_system.model_registry if hasattr(orchestrator.control_system, 'model_registry') else None
+    model_registry = (
+        orchestrator.control_system.model_registry
+        if hasattr(orchestrator.control_system, "model_registry")
+        else None
+    )
     return YAMLCompiler(model_registry=model_registry)
 
 
 class TestBasicYAMLExecution:
     """Test basic YAML pipeline execution."""
-    
+
     @pytest.mark.timeout(60)
     async def test_simple_yaml_pipeline(self, orchestrator, yaml_compiler):
         """Test a very simple YAML pipeline with one step."""
@@ -72,19 +78,19 @@ steps:
       prompt: "Write one sentence about the color blue."
       max_tokens: 30
 """
-        
+
         # Compile and execute
         pipeline = await yaml_compiler.compile(yaml_content)
         result = await orchestrator.execute_pipeline(pipeline)
-        
+
         # Verify result
         assert result is not None
         assert "generate_text" in result
         assert isinstance(result["generate_text"], str)
         assert len(result["generate_text"]) > 0
-        
+
         print(f"\nGenerated text: {result['generate_text']}")
-    
+
     @pytest.mark.timeout(90)
     async def test_yaml_pipeline_with_context(self, orchestrator, yaml_compiler):
         """Test YAML pipeline with context variables."""
@@ -110,25 +116,22 @@ steps:
       prompt: "Write about {{topic}} in exactly {{max_words}} words."
       max_tokens: 50
 """
-        
+
         # Compile with context
-        context = {
-            "topic": "artificial intelligence",
-            "max_words": 15
-        }
-        
+        context = {"topic": "artificial intelligence", "max_words": 15}
+
         pipeline = await yaml_compiler.compile(yaml_content, context=context)
         result = await orchestrator.execute_pipeline(pipeline)
-        
+
         # Verify result
         assert result is not None
         assert "write_about_topic" in result
         text = result["write_about_topic"]
         assert isinstance(text, str)
         assert "artificial intelligence" in text.lower() or "ai" in text.lower()
-        
+
         print(f"\nGenerated text about {context['topic']}: {text}")
-    
+
     @pytest.mark.timeout(120)
     async def test_yaml_pipeline_with_dependencies(self, orchestrator, yaml_compiler):
         """Test YAML pipeline with dependent steps."""
@@ -150,24 +153,24 @@ steps:
       max_tokens: 50
     depends_on: [generate_topic]
 """
-        
+
         # Compile and execute
         pipeline = await yaml_compiler.compile(yaml_content)
         result = await orchestrator.execute_pipeline(pipeline)
-        
+
         # Verify both steps executed
         assert result is not None
         assert "generate_topic" in result
         assert "write_intro" in result
-        
+
         topic = result["generate_topic"]
         intro = result["write_intro"]
-        
+
         assert isinstance(topic, str)
         assert isinstance(intro, str)
         assert len(topic) > 0
         assert len(intro) > 0
-        
+
         print(f"\nGenerated topic: {topic}")
         print(f"Generated intro: {intro}")
 

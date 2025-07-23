@@ -19,26 +19,24 @@ async def setup_models():
     """Setup models for testing."""
     # Clear any existing models
     reset_model_registry()
-    
+
     # Get registry and register a minimal model
     registry = get_model_registry()
-    
+
     # Use environment variable to control if we use real models
     if os.environ.get("USE_REAL_MODELS", "false").lower() == "true":
         # Initialize real models (requires API keys)
         from orchestrator import init_models
+
         init_models()
     else:
         # Create a minimal anthropic model for testing
         # This will work without API key for basic orchestration
-        model = AnthropicModel(
-            name="claude-3-haiku-20240307",
-            api_key="test-key-for-recursion"
-        )
+        model = AnthropicModel(name="claude-3-haiku-20240307", api_key="test-key-for-recursion")
         registry.register_model(model)
-    
+
     yield
-    
+
     # Cleanup
     reset_model_registry()
 
@@ -57,29 +55,31 @@ steps:
       prompt: "Say hello from sub-pipeline"
       model: "claude-3-haiku-20240307"
 """
-    
+
     # Save to temporary file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(sub_pipeline)
         pipeline_path = f.name
-    
+
     try:
         tool = PipelineExecutorTool()
-        
+
         # Skip if no real models available
         try:
             result = await tool.execute(
-                pipeline=pipeline_path,
-                inputs={"message": "test"},
-                wait_for_completion=True
+                pipeline=pipeline_path, inputs={"message": "test"}, wait_for_completion=True
             )
-            
+
             assert result["success"] is True
             assert result["pipeline_id"] == "sub_pipeline"
             assert "outputs" in result
             assert result["recursion_depth"] == 1
         except Exception as e:
-            if "No models available" in str(e) or "test-key-for-recursion" in str(e) or "No models meet the specified requirements" in str(e):
+            if (
+                "No models available" in str(e)
+                or "test-key-for-recursion" in str(e)
+                or "No models meet the specified requirements" in str(e)
+            ):
                 pytest.skip("No real models available for testing")
             raise
     finally:
@@ -103,21 +103,21 @@ steps:
       prompt: "Say hello to {{ parameters.name }}"
       model: "claude-3-haiku-20240307"
 """
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(sub_pipeline)
         pipeline_path = f.name
-    
+
     try:
         tool = PipelineExecutorTool()
-        
+
         try:
             result = await tool.execute(
                 pipeline=pipeline_path,
                 inputs={"parameters": {"name": "Alice"}},
-                wait_for_completion=True
+                wait_for_completion=True,
             )
-            
+
             assert result["success"] is True
             assert result["pipeline_id"] == "parameterized_pipeline"
         except Exception as e:
@@ -132,7 +132,7 @@ steps:
 async def test_pipeline_executor_inline_yaml():
     """Test execution with inline YAML."""
     tool = PipelineExecutorTool()
-    
+
     inline_yaml = """
 id: inline_pipeline
 name: Inline Test
@@ -143,13 +143,10 @@ steps:
       prompt: "Say that inline pipeline works"
       model: "claude-3-haiku-20240307"
 """
-    
+
     try:
-        result = await tool.execute(
-            pipeline=inline_yaml,
-            wait_for_completion=True
-        )
-        
+        result = await tool.execute(pipeline=inline_yaml, wait_for_completion=True)
+
         assert result["success"] is True
         assert result["pipeline_id"] == "inline_pipeline"
     except Exception as e:
@@ -186,21 +183,18 @@ steps:
         parameters:
           counter: "{{ check_counter.new_value }}"
 """
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(recursive_pipeline)
         pipeline_path = f.name
-    
+
     try:
         tool = PipelineExecutorTool()
-        
+
         # This should hit recursion depth limit
         try:
             with pytest.raises(RecursionError):
-                await tool.execute(
-                    pipeline=pipeline_path,
-                    wait_for_completion=True
-                )
+                await tool.execute(pipeline=pipeline_path, wait_for_completion=True)
         except Exception as e:
             if "No models" in str(e) or "test-key-for-recursion" in str(e):
                 pytest.skip("No real models available for testing")
@@ -213,31 +207,28 @@ steps:
 async def test_recursion_control_check_condition():
     """Test recursion control condition checking."""
     tool = RecursionControlTool()
-    
+
     # Test simple condition
     result = await tool.execute(
         action="check_condition",
         condition="state.get('counter', 0) >= 5",
-        context_id="test_context"
+        context_id="test_context",
     )
-    
+
     assert result["success"] is True
     assert result["should_terminate"] is False  # Counter not set yet
-    
+
     # Update state and check again
     await tool.execute(
-        action="update_state",
-        state_key="counter",
-        state_value=5,
-        context_id="test_context"
+        action="update_state", state_key="counter", state_value=5, context_id="test_context"
     )
-    
+
     result = await tool.execute(
         action="check_condition",
         condition="state.get('counter', 0) >= 5",
-        context_id="test_context"
+        context_id="test_context",
     )
-    
+
     assert result["should_terminate"] is True
 
 
@@ -246,68 +237,46 @@ async def test_recursion_control_state_management():
     """Test recursion control state operations."""
     tool = RecursionControlTool()
     context_id = "state_test"
-    
+
     # Test update_state with value
     result = await tool.execute(
-        action="update_state",
-        state_key="user_name",
-        state_value="Alice",
-        context_id=context_id
+        action="update_state", state_key="user_name", state_value="Alice", context_id=context_id
     )
-    
+
     assert result["success"] is True
     assert result["new_value"] == "Alice"
-    
+
     # Test increment
     await tool.execute(
-        action="update_state",
-        state_key="score",
-        state_value=10,
-        context_id=context_id
+        action="update_state", state_key="score", state_value=10, context_id=context_id
     )
-    
+
     result = await tool.execute(
-        action="update_state",
-        state_key="score",
-        increment=5,
-        context_id=context_id
+        action="update_state", state_key="score", increment=5, context_id=context_id
     )
-    
+
     assert result["new_value"] == 15
-    
+
     # Test get_state for specific key
-    result = await tool.execute(
-        action="get_state",
-        state_key="score",
-        context_id=context_id
-    )
-    
+    result = await tool.execute(action="get_state", state_key="score", context_id=context_id)
+
     assert result["value"] == 15
     assert result["exists"] is True
-    
+
     # Test get_state for all
-    result = await tool.execute(
-        action="get_state",
-        context_id=context_id
-    )
-    
+    result = await tool.execute(action="get_state", context_id=context_id)
+
     assert result["state"]["user_name"] == "Alice"
     assert result["state"]["score"] == 15
-    
+
     # Test reset
-    result = await tool.execute(
-        action="reset",
-        context_id=context_id
-    )
-    
+    result = await tool.execute(action="reset", context_id=context_id)
+
     assert result["success"] is True
-    
+
     # Verify reset worked
-    result = await tool.execute(
-        action="get_state",
-        context_id=context_id
-    )
-    
+    result = await tool.execute(action="get_state", context_id=context_id)
+
     assert result["state"] == {}
 
 
@@ -316,37 +285,31 @@ async def test_recursion_control_limits():
     """Test recursion control limit checking."""
     tool = RecursionControlTool()
     context_id = "limits_test"
-    
+
     # Test iteration limit
     result = await tool.execute(
         action="check_condition",
         condition="False",  # Never terminate naturally
         max_iterations=5,
-        context_id=context_id
+        context_id=context_id,
     )
-    
+
     assert result["success"] is True
     assert result["should_terminate"] is False
-    
+
     # Simulate multiple iterations
     for i in range(5):
         await tool.execute(
-            action="update_state",
-            state_key=f"iteration_{i}",
-            state_value=i,
-            context_id=context_id
+            action="update_state", state_key=f"iteration_{i}", state_value=i, context_id=context_id
         )
         # Update execution count manually (normally done by PipelineExecutorTool)
         tool._recursion_states[context_id].execution_count["test"] = i + 1
-    
+
     # Check should now fail due to iteration limit
     result = await tool.execute(
-        action="check_condition",
-        condition="False",
-        max_iterations=5,
-        context_id=context_id
+        action="check_condition", condition="False", max_iterations=5, context_id=context_id
     )
-    
+
     assert result["should_terminate"] is True
     assert "max_iterations exceeded" in result["reason"]
 
@@ -366,23 +329,21 @@ steps:
 outputs:
   result_status: "{{ generate_data.output }}"
 """
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(sub_pipeline)
         pipeline_path = f.name
-    
+
     try:
         tool = PipelineExecutorTool()
-        
+
         try:
             result = await tool.execute(
                 pipeline=pipeline_path,
-                output_mapping={
-                    "result_status": "mapped_status"
-                },
-                wait_for_completion=True
+                output_mapping={"result_status": "mapped_status"},
+                wait_for_completion=True,
             )
-            
+
             assert result["success"] is True
             assert "outputs" in result
             # The mapping would be applied if outputs were properly extracted
@@ -407,30 +368,26 @@ steps:
       prompt: "This should fail due to invalid model"
       model: "invalid-model-name"
 """
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(failing_pipeline)
         pipeline_path = f.name
-    
+
     try:
         tool = PipelineExecutorTool()
-        
+
         # Test fail strategy (default)
         try:
             with pytest.raises(RuntimeError):
                 await tool.execute(
-                    pipeline=pipeline_path,
-                    error_handling="fail",
-                    wait_for_completion=True
+                    pipeline=pipeline_path, error_handling="fail", wait_for_completion=True
                 )
-            
+
             # Test continue strategy
             result = await tool.execute(
-                pipeline=pipeline_path,
-                error_handling="continue",
-                wait_for_completion=True
+                pipeline=pipeline_path, error_handling="continue", wait_for_completion=True
             )
-            
+
             assert result["success"] is False
             assert result["continued"] is True
         except Exception as e:
@@ -509,10 +466,10 @@ steps:
 outputs:
   result: "{{ combine_results.new_value if combine_results else return_base.new_value }}"
 """
-    
+
     # Note: This is a complex example that would require full pipeline execution
     # In a real test, we'd save this and test with small values of n
-    
+
     # For now, just verify the YAML is valid
     pipeline_def = yaml.safe_load(fib_pipeline)
     assert pipeline_def["id"] == "fibonacci"

@@ -111,17 +111,13 @@ class DockerSandboxExecutor(SandboxExecutor):
             try:
                 # Get Docker image and command
                 image = self._get_docker_image(language)
-                command = self._get_execution_command(
-                    language, os.path.basename(code_file)
-                )
+                command = self._get_execution_command(language, os.path.basename(code_file))
 
                 # Create and run container with detached mode to capture both stdout and stderr
                 container = client.containers.run(
                     image=image,
                     command=command,
-                    volumes={
-                        os.path.dirname(code_file): {"bind": "/code", "mode": "ro"}
-                    },
+                    volumes={os.path.dirname(code_file): {"bind": "/code", "mode": "ro"}},
                     working_dir="/code",
                     mem_limit=self.config.memory_limit,
                     cpu_quota=self.config.cpu_quota,
@@ -678,18 +674,18 @@ class ResourceManager:
         """Get real-time monitoring data."""
         try:
             import psutil
-            
+
             # Get real CPU usage percentage
             cpu_usage = psutil.cpu_percent(interval=0.1)
-            
+
             # Get real memory usage percentage
             memory = psutil.virtual_memory()
             memory_usage = memory.percent
-            
+
             # Get real disk usage percentage
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             disk_usage = disk.percent
-            
+
             return {
                 "timestamp": time.time(),
                 "cpu_usage": cpu_usage,
@@ -724,12 +720,8 @@ class ResourceManager:
         """Monitor resource usage of allocated tasks."""
         return {
             "total_allocated": len(self.allocated_resources),
-            "memory_used": sum(
-                r.get("memory", 0) for r in self.allocated_resources.values()
-            ),
-            "cpu_used": sum(
-                r.get("cpu_cores", 0) for r in self.allocated_resources.values()
-            ),
+            "memory_used": sum(r.get("memory", 0) for r in self.allocated_resources.values()),
+            "cpu_used": sum(r.get("cpu_cores", 0) for r in self.allocated_resources.values()),
             "tasks": list(self.allocated_resources.keys()),
         }
 

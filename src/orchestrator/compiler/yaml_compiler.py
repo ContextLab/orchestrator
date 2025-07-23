@@ -59,7 +59,7 @@ class YAMLCompiler:
             model_registry: Model registry for ambiguity resolution
         """
         self.schema_validator = schema_validator or SchemaValidator()
-        
+
         # Try to create ambiguity resolver, fall back to mock if no model
         if ambiguity_resolver:
             self.ambiguity_resolver = ambiguity_resolver
@@ -69,10 +69,11 @@ class YAMLCompiler:
             except ValueError:
                 # No model available, use mock resolver
                 from .mock_ambiguity_resolver import MockAmbiguityResolver
+
                 self.ambiguity_resolver = MockAmbiguityResolver()
-                
+
         self.template_engine = Environment(undefined=StrictUndefined)
-        
+
         # Add custom filters to Jinja2 environment
         self._register_custom_filters()
 
@@ -138,21 +139,21 @@ class YAMLCompiler:
             Merged context with defaults applied
         """
         merged = context.copy()
-        
+
         # Check if inputs section exists
         if "inputs" in pipeline_def:
             inputs_def = pipeline_def["inputs"]
-            
+
             # Process each input definition
             for input_name, input_spec in inputs_def.items():
                 # Skip if input already provided in context
                 if input_name in merged:
                     continue
-                    
+
                 # Apply default value if specified
                 if isinstance(input_spec, dict) and "default" in input_spec:
                     merged[input_name] = input_spec["default"]
-        
+
         return merged
 
     def _parse_yaml(self, yaml_content: str) -> Dict[str, Any]:
@@ -217,7 +218,7 @@ class YAMLCompiler:
                         "$iteration",
                         "$loop",
                     ]
-                    
+
                     # Check if any runtime pattern is in the original template
                     if any(ref in value for ref in runtime_patterns):
                         return value  # Keep template for runtime resolution
@@ -236,9 +237,7 @@ class YAMLCompiler:
                         if re.search(step_ref_pattern, value):
                             return value  # Keep template for runtime resolution
 
-                    raise TemplateRenderError(
-                        f"Failed to render template '{value}': {e}"
-                    ) from e
+                    raise TemplateRenderError(f"Failed to render template '{value}': {e}") from e
             elif isinstance(value, dict):
                 return {k: process_value(v) for k, v in value.items()}
             elif isinstance(value, list):
@@ -247,9 +246,7 @@ class YAMLCompiler:
 
         return process_value(pipeline_def)
 
-    async def _resolve_ambiguities(
-        self, pipeline_def: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _resolve_ambiguities(self, pipeline_def: Dict[str, Any]) -> Dict[str, Any]:
         """
         Detect and resolve AUTO tags.
 
@@ -273,10 +270,7 @@ class YAMLCompiler:
                     result[key] = await process_auto_tags(value, new_path)
                 return result
             elif isinstance(obj, list):
-                return [
-                    await process_auto_tags(item, f"{path}[{i}]")
-                    for i, item in enumerate(obj)
-                ]
+                return [await process_auto_tags(item, f"{path}[{i}]") for i, item in enumerate(obj)]
             return obj
 
         return await process_auto_tags(pipeline_def)
@@ -308,13 +302,9 @@ class YAMLCompiler:
             resolved_value = await self.ambiguity_resolver.resolve(match.strip(), path)
             # Convert resolved value to string for substitution
             resolved_str = (
-                str(resolved_value)
-                if not isinstance(resolved_value, str)
-                else resolved_value
+                str(resolved_value) if not isinstance(resolved_value, str) else resolved_value
             )
-            resolved_content = resolved_content.replace(
-                f"<AUTO>{match}</AUTO>", resolved_str
-            )
+            resolved_content = resolved_content.replace(f"<AUTO>{match}</AUTO>", resolved_str)
 
         return resolved_content
 
@@ -449,7 +439,7 @@ class YAMLCompiler:
     def _register_custom_filters(self) -> None:
         """Register custom Jinja2 filters."""
         import re as regex_module
-        
+
         def regex_search(value, pattern, group=None):
             """Search for regex pattern in value."""
             if not isinstance(value, str):
@@ -459,23 +449,23 @@ class YAMLCompiler:
                 if group is not None:
                     try:
                         # Handle numeric group references
-                        if isinstance(group, str) and group.startswith('\\'):
+                        if isinstance(group, str) and group.startswith("\\"):
                             group_num = int(group[1:])
-                            return match.group(group_num) if group_num <= match.lastindex else ''
-                        return match.group(group) 
+                            return match.group(group_num) if group_num <= match.lastindex else ""
+                        return match.group(group)
                     except (IndexError, ValueError):
-                        return ''
+                        return ""
                 return match.group(0)
-            return ''
-        
+            return ""
+
         # Register filters
-        self.template_engine.filters['regex_search'] = regex_search
-        
+        self.template_engine.filters["regex_search"] = regex_search
+
         # Also add other commonly used filters that might be missing
-        self.template_engine.filters['default'] = lambda v, d='': v if v else d
-        self.template_engine.filters['lower'] = lambda v: str(v).lower()
-        self.template_engine.filters['upper'] = lambda v: str(v).upper()
-        self.template_engine.filters['replace'] = lambda v, old, new: str(v).replace(old, new)
+        self.template_engine.filters["default"] = lambda v, d="": v if v else d
+        self.template_engine.filters["lower"] = lambda v: str(v).lower()
+        self.template_engine.filters["upper"] = lambda v: str(v).upper()
+        self.template_engine.filters["replace"] = lambda v, old, new: str(v).replace(old, new)
 
     def get_template_variables(self, yaml_content: str) -> List[str]:
         """

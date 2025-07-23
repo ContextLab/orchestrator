@@ -28,7 +28,7 @@ def orchestrator(setup_environment):
         model_registry = init_models()
     except Exception as e:
         pytest.skip(f"Failed to initialize models: {e}")
-    
+
     control_system = ModelBasedControlSystem(model_registry=model_registry)
     return Orchestrator(control_system=control_system, model_registry=model_registry)
 
@@ -36,19 +36,24 @@ def orchestrator(setup_environment):
 @pytest.fixture
 def yaml_compiler(orchestrator):
     """Create YAML compiler with model registry."""
-    model_registry = orchestrator.control_system.model_registry if hasattr(orchestrator.control_system, 'model_registry') else None
+    model_registry = (
+        orchestrator.control_system.model_registry
+        if hasattr(orchestrator.control_system, "model_registry")
+        else None
+    )
     return YAMLCompiler(model_registry=model_registry)
 
 
 class TestSimplifiedCodeAnalysis:
     """Test simplified version of code analysis pipeline."""
-    
+
     @pytest.mark.timeout(90)
     async def test_simplified_code_analysis(self, orchestrator, yaml_compiler, tmp_path):
         """Test a simplified code analysis with just key steps."""
         # Create sample code file
         code_file = tmp_path / "sample.py"
-        code_file.write_text("""
+        code_file.write_text(
+            """
 def calculate_sum(a, b):
     # Simple function to add two numbers
     return a + b
@@ -59,8 +64,9 @@ def main():
 
 if __name__ == "__main__":
     main()
-""")
-        
+"""
+        )
+
         yaml_content = """
 name: "Simplified Code Analysis"
 description: "Minimal code analysis for testing"
@@ -95,28 +101,28 @@ steps:
       max_tokens: 50
     depends_on: [analyze_code]
 """
-        
+
         # Compile with context
         context = {"repo_path": str(code_file)}
         pipeline = await yaml_compiler.compile(yaml_content, context=context)
-        
+
         # Execute
         result = await orchestrator.execute_pipeline(pipeline)
-        
+
         # Verify
         assert result is not None
         assert "analyze_code" in result
         assert "generate_summary" in result
         assert len(result["analyze_code"]) > 0
         assert len(result["generate_summary"]) > 0
-        
+
         print(f"\nAnalysis: {result['analyze_code']}")
         print(f"Summary: {result['generate_summary']}")
 
 
 class TestSimplifiedCreativeWriting:
     """Test simplified version of creative writing pipeline."""
-    
+
     @pytest.mark.timeout(60)
     async def test_simplified_story_generation(self, orchestrator, yaml_compiler):
         """Test simplified story generation with minimal steps."""
@@ -151,27 +157,27 @@ steps:
       max_tokens: 100
     depends_on: [generate_premise]
 """
-        
+
         # Compile with defaults
         pipeline = await yaml_compiler.compile(yaml_content)
-        
+
         # Execute
         result = await orchestrator.execute_pipeline(pipeline)
-        
+
         # Verify
         assert result is not None
         assert "generate_premise" in result
         assert "write_opening" in result
         assert len(result["generate_premise"]) > 0
         assert len(result["write_opening"]) > 0
-        
+
         print(f"\nPremise: {result['generate_premise']}")
         print(f"Opening: {result['write_opening']}")
 
 
 class TestSimplifiedDataProcessing:
     """Test simplified version of data processing pipeline."""
-    
+
     @pytest.mark.timeout(60)
     async def test_simplified_data_analysis(self, orchestrator, yaml_compiler):
         """Test simplified data processing with minimal steps."""
@@ -202,18 +208,18 @@ steps:
         Suggest the best chart type for visualization (one line).
       max_tokens: 30
 """
-        
+
         # Compile
         pipeline = await yaml_compiler.compile(yaml_content)
-        
+
         # Execute
         result = await orchestrator.execute_pipeline(pipeline)
-        
+
         # Verify
         assert result is not None
         assert "analyze_data" in result
         assert "suggest_visualization" in result
-        
+
         print(f"\nAnalysis: {result['analyze_data']}")
         print(f"Visualization: {result['suggest_visualization']}")
 

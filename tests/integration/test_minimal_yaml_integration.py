@@ -28,7 +28,7 @@ def orchestrator(setup_environment):
         model_registry = init_models()
     except Exception as e:
         pytest.skip(f"Failed to initialize models: {e}")
-    
+
     control_system = ModelBasedControlSystem(model_registry=model_registry)
     return Orchestrator(control_system=control_system, model_registry=model_registry)
 
@@ -36,7 +36,11 @@ def orchestrator(setup_environment):
 @pytest.fixture
 def yaml_compiler(orchestrator):
     """Create YAML compiler with model registry."""
-    model_registry = orchestrator.control_system.model_registry if hasattr(orchestrator.control_system, 'model_registry') else None
+    model_registry = (
+        orchestrator.control_system.model_registry
+        if hasattr(orchestrator.control_system, "model_registry")
+        else None
+    )
     return YAMLCompiler(model_registry=model_registry)
 
 
@@ -54,17 +58,17 @@ steps:
       prompt: "Say hello"
       max_tokens: 10
 """
-    
+
     # Compile and execute
     pipeline = await yaml_compiler.compile(yaml_content)
     result = await orchestrator.execute_pipeline(pipeline)
-    
+
     # Verify result
     assert result is not None
     assert "test_step" in result
     assert isinstance(result["test_step"], str)
     assert len(result["test_step"]) > 0
-    
+
     print(f"\nResult: {result['test_step']}")
 
 
@@ -83,17 +87,17 @@ steps:
       prompt: "Count to 5"
       max_tokens: 20
 """
-    
+
     # Compile and execute
     pipeline = await yaml_compiler.compile(yaml_content)
     result = await orchestrator.execute_pipeline(pipeline)
-    
+
     # Verify result
     assert result is not None
     assert "test_with_model" in result
     assert isinstance(result["test_with_model"], str)
     assert len(result["test_with_model"]) > 0
-    
+
     print(f"\nResult with model: {result['test_with_model']}")
 
 

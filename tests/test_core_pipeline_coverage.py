@@ -160,9 +160,7 @@ class TestPipeline:
         """Test adding task with invalid dependency."""
         pipeline = Pipeline(id="test", name="Test")
 
-        task_with_invalid_dep = Task(
-            "task1", "Task 1", "action1", dependencies=["nonexistent"]
-        )
+        task_with_invalid_dep = Task("task1", "Task 1", "action1", dependencies=["nonexistent"])
 
         with pytest.raises(InvalidDependencyError):
             pipeline.add_task(task_with_invalid_dep)
@@ -172,9 +170,7 @@ class TestPipeline:
         task1 = Task("task1", "Task 1", "action1")
         task2 = Task("task2", "Task 2", "action2", dependencies=["task1"])
 
-        pipeline = Pipeline(
-            id="test", name="Test", tasks={"task1": task1, "task2": task2}
-        )
+        pipeline = Pipeline(id="test", name="Test", tasks={"task1": task1, "task2": task2})
 
         # Try to add task that creates circular dependency
         task3 = Task("task3", "Task 3", "action3", dependencies=["task2"])
@@ -188,9 +184,7 @@ class TestPipeline:
         task1 = Task("task1", "Task 1", "action1")
         task2 = Task("task2", "Task 2", "action2")
 
-        pipeline = Pipeline(
-            id="test", name="Test", tasks={"task1": task1, "task2": task2}
-        )
+        pipeline = Pipeline(id="test", name="Test", tasks={"task1": task1, "task2": task2})
 
         removed_task = pipeline.remove_task("task1")
 
@@ -211,13 +205,9 @@ class TestPipeline:
         task1 = Task("task1", "Task 1", "action1")
         task2 = Task("task2", "Task 2", "action2", dependencies=["task1"])
 
-        pipeline = Pipeline(
-            id="test", name="Test", tasks={"task1": task1, "task2": task2}
-        )
+        pipeline = Pipeline(id="test", name="Test", tasks={"task1": task1, "task2": task2})
 
-        with pytest.raises(
-            ValueError, match="Cannot remove task .* because it has dependents"
-        ):
+        with pytest.raises(ValueError, match="Cannot remove task .* because it has dependents"):
             pipeline.remove_task("task1")
 
     def test_pipeline_get_task(self):
@@ -313,9 +303,7 @@ class TestPipeline:
         task1 = Task("task1", "Task 1", "action1")
         task2 = Task("task2", "Task 2", "action2", dependencies=["task1"])
 
-        pipeline = Pipeline(
-            id="test", name="Test", tasks={"task1": task1, "task2": task2}
-        )
+        pipeline = Pipeline(id="test", name="Test", tasks={"task1": task1, "task2": task2})
 
         deps = pipeline.get_dependencies("task2")
         assert deps == ["task1"]
@@ -353,9 +341,7 @@ class TestPipeline:
         task1 = Task("task1", "Task 1", "action1")
         task2 = Task("task2", "Task 2", "action2", dependencies=["task1"])
 
-        pipeline = Pipeline(
-            id="test", name="Test", tasks={"task1": task1, "task2": task2}
-        )
+        pipeline = Pipeline(id="test", name="Test", tasks={"task1": task1, "task2": task2})
 
         assert pipeline.is_valid() is True
 
@@ -365,9 +351,7 @@ class TestPipeline:
         pipeline = Pipeline(id="test", name="Test")
 
         # Add task with invalid dependency directly to bypass validation
-        task_with_invalid_dep = Task(
-            "task1", "Task 1", "action1", dependencies=["nonexistent"]
-        )
+        task_with_invalid_dep = Task("task1", "Task 1", "action1", dependencies=["nonexistent"])
         pipeline.tasks["task1"] = task_with_invalid_dep
 
         assert pipeline.is_valid() is False
@@ -380,9 +364,7 @@ class TestPipeline:
         task1.complete()
         task2.start()
 
-        pipeline = Pipeline(
-            id="test", name="Test", tasks={"task1": task1, "task2": task2}
-        )
+        pipeline = Pipeline(id="test", name="Test", tasks={"task1": task1, "task2": task2})
 
         status = pipeline.get_status()
 
@@ -508,9 +490,7 @@ class TestPipeline:
         task1 = Task("task1", "Task 1", "action1")
         task2 = Task("task2", "Task 2", "action2")
 
-        pipeline = Pipeline(
-            id="test", name="Test", tasks={"task1": task1, "task2": task2}
-        )
+        pipeline = Pipeline(id="test", name="Test", tasks={"task1": task1, "task2": task2})
 
         pipeline.clear_tasks()
 

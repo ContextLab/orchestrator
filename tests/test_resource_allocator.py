@@ -449,9 +449,7 @@ class TestResourceAllocator:
         quota = ResourceQuota(ResourceType.CPU, 8.0, "cores")
         allocator.add_resource_pool(ResourceType.CPU, quota)
 
-        request = ResourceRequest(
-            task_id="test_task", resources={ResourceType.CPU: 4.0}
-        )
+        request = ResourceRequest(task_id="test_task", resources={ResourceType.CPU: 4.0})
 
         success = await allocator.request_resources(request)
 
@@ -485,9 +483,7 @@ class TestResourceAllocator:
         allocator.add_resource_pool(ResourceType.CPU, quota)
 
         # First allocate resources
-        request = ResourceRequest(
-            task_id="release_test", resources={ResourceType.CPU: 3.0}
-        )
+        request = ResourceRequest(task_id="release_test", resources={ResourceType.CPU: 3.0})
         await allocator.request_resources(request)
 
         # Check that allocation is tracked
@@ -539,9 +535,7 @@ class TestResourceAllocator:
         allocator.add_resource_pool(ResourceType.CPU, quota)
 
         # Add a pending request
-        request = ResourceRequest(
-            task_id="cleanup_test", resources={ResourceType.CPU: 4.0}
-        )
+        request = ResourceRequest(task_id="cleanup_test", resources={ResourceType.CPU: 4.0})
         allocator.pending_requests.append(request)
 
         # Perform cleanup

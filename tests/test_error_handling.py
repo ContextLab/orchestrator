@@ -338,9 +338,7 @@ class TestRetryStrategy:
 
     def test_linear_backoff(self):
         """Test linear backoff calculation."""
-        strategy = RetryStrategy(
-            base_delay=1.0, backoff_factor=1.0, strategy_type="linear"
-        )
+        strategy = RetryStrategy(base_delay=1.0, backoff_factor=1.0, strategy_type="linear")
 
         assert strategy.calculate_delay(0) == 1.0
         assert strategy.calculate_delay(1) == 2.0
@@ -367,9 +365,7 @@ class TestRetryStrategy:
 
     def test_should_retry_with_conditions(self):
         """Test should retry with specific conditions."""
-        strategy = RetryStrategy(
-            max_retries=3, retryable_errors=[ValueError, TypeError]
-        )
+        strategy = RetryStrategy(max_retries=3, retryable_errors=[ValueError, TypeError])
 
         # Retryable errors
         assert strategy.should_retry_error(ValueError("test")) is True
@@ -577,9 +573,7 @@ class TestRecoveryManager:
 
         assert manager.select_recovery_strategy(network_error) == "retry_with_backoff"
         assert manager.select_recovery_strategy(memory_error) == "resource_reallocation"
-        assert (
-            manager.select_recovery_strategy(validation_error) == "input_sanitization"
-        )
+        assert manager.select_recovery_strategy(validation_error) == "input_sanitization"
 
     def test_recovery_metrics(self):
         """Test recovery metrics collection."""
@@ -657,9 +651,7 @@ class TestRetryStrategyAdvanced:
         assert strategy.should_retry_error(ValueError("test")) is True
 
         # Test with specific retryable errors
-        strategy_specific = RetryStrategy(
-            max_retries=3, retryable_errors=[ValueError, TypeError]
-        )
+        strategy_specific = RetryStrategy(max_retries=3, retryable_errors=[ValueError, TypeError])
         assert strategy_specific.should_retry_error(ValueError("test")) is True
         assert strategy_specific.should_retry_error(TypeError("test")) is True
         assert strategy_specific.should_retry_error(RuntimeError("test")) is False

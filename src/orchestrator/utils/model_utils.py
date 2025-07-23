@@ -56,13 +56,10 @@ def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
                 model_config = config["models"][model_name]
                 if "size_b" in model_config:
                     return float(model_config["size_b"])
-            
+
             # Also check for partial matches
             for model_id, model_config in config["models"].items():
-                if (
-                    model_id.lower() in model_name.lower()
-                    or model_name.lower() in model_id.lower()
-                ):
+                if model_id.lower() in model_name.lower() or model_name.lower() in model_id.lower():
                     if "size_b" in model_config:
                         return float(model_config["size_b"])
     except Exception:
@@ -77,12 +74,7 @@ def check_ollama_installed() -> bool:
     """Check if Ollama is installed and available."""
     try:
         # Use simple check without capturing output to avoid hanging
-        result = subprocess.run(
-            ["which", "ollama"], 
-            capture_output=True, 
-            text=True, 
-            timeout=1
-        )
+        result = subprocess.run(["which", "ollama"], capture_output=True, text=True, timeout=1)
         return result.returncode == 0
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
         return False
@@ -95,11 +87,11 @@ def check_ollama_model(model_name: str) -> bool:
 
     try:
         result = subprocess.run(
-            ["ollama", "list"], 
+            ["ollama", "list"],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            text=True, 
-            timeout=3  # Reduced timeout
+            text=True,
+            timeout=3,  # Reduced timeout
         )
         if result.returncode == 0:
             # Check if model is in the list
@@ -143,20 +135,20 @@ def install_ollama_model(model_name: str) -> bool:
 
 def load_model_config(config_path: str = "models.yaml") -> Dict[str, Any]:
     """Load model configuration from YAML file.
-    
+
     This is a compatibility wrapper that uses the new ModelConfigLoader.
     """
-    
+
     # Use the new config loader
     loader = get_model_config_loader()
     config = loader.load_config()
-    
+
     # Transform to old format for compatibility if needed
     # The new format has models as a dict, old format expected a list
     if "models" in config and isinstance(config["models"], dict):
         # Keep the new format - callers will be updated
         return config
-    
+
     # Return default configuration if no file found
     return {
         "models": [

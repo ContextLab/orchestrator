@@ -29,7 +29,7 @@ from .control_flow import (
     ForLoopHandler,
     WhileLoopHandler,
     DynamicFlowHandler,
-    ControlFlowAutoResolver
+    ControlFlowAutoResolver,
 )
 from .engine.control_flow_engine import ControlFlowEngine
 
@@ -85,7 +85,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
     from .utils.api_keys import load_api_keys
 
     print(">> Initializing model pool...")
-    
+
     # Load API keys first - this will raise an error if keys are missing
     load_api_keys()
 
@@ -106,22 +106,22 @@ def init_models(config_path: str = None) -> ModelRegistry:
     if not isinstance(models_config, list):
         print(">> ⚠️  Invalid models configuration format - expected list")
         models_config = []
-    
+
     # Process each model
     for model_config in models_config:
         provider = model_config.get("source")
         name = model_config.get("name")
-        
+
         # Parse size
         size_str = str(model_config.get("size", "1b"))
-        if size_str.endswith('b'):
+        if size_str.endswith("b"):
             size_billions = float(size_str[:-1])
         else:
             size_billions = float(size_str)
-            
+
         # Get expertise
         expertise = model_config.get("expertise", ["general"])
-        
+
         if not provider or not name:
             continue
 
@@ -177,9 +177,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(
-                    f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)"
-                )
+                print(f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)")
 
             elif provider == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
                 # Only register if API key is available
@@ -188,20 +186,18 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(
-                    f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)"
-                )
+                print(f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)")
 
-            elif provider == "google" and (os.environ.get("GOOGLE_AI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
+            elif provider == "google" and (
+                os.environ.get("GOOGLE_AI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+            ):
                 # Only register if API key is available
                 model = GoogleModel(model_name=name)
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(
-                    f">>   ✅ Registered Google model: {name} ({size_billions}B params)"
-                )
+                print(f">>   ✅ Registered Google model: {name} ({size_billions}B params)")
 
         except Exception as e:
             print(f">>   ⚠️  Error registering {provider} model {name}: {e}")
@@ -215,7 +211,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
 
     # Store defaults in registry for later use
     setattr(_model_registry, "_defaults", config.get("defaults", {}))
-    
+
     # Enable auto-registration for new models
     _model_registry.enable_auto_registration()
     print(">> Auto-registration enabled for new models")
@@ -226,9 +222,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
 class OrchestratorPipeline:
     """Wrapper for compiled pipeline that can be called with keyword arguments."""
 
-    def __init__(
-        self, pipeline: Pipeline, compiler: YAMLCompiler, orchestrator: Orchestrator
-    ):
+    def __init__(self, pipeline: Pipeline, compiler: YAMLCompiler, orchestrator: Orchestrator):
         self.pipeline = pipeline
         self.compiler = compiler
         self.orchestrator = orchestrator
@@ -275,10 +269,10 @@ class OrchestratorPipeline:
         # Run pipeline asynchronously
         try:
             # Check if there's an event loop running
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're in an async context but called from sync code
             # This is not ideal but we need to handle it
-            future = asyncio.ensure_future(self._run_async(**kwargs))
+            asyncio.ensure_future(self._run_async(**kwargs))
             # Can't await here since this is a sync method
             raise RuntimeError(
                 "Cannot call synchronous run() method from within an async context. "
@@ -294,7 +288,7 @@ class OrchestratorPipeline:
     async def run_async(self, **kwargs: Any) -> Any:
         """Run the pipeline asynchronously with given keyword arguments."""
         return await self._run_async(**kwargs)
-    
+
     async def _run_async(self, **kwargs):
         """Async pipeline execution."""
         # Validate required inputs
@@ -307,9 +301,7 @@ class OrchestratorPipeline:
         context = {"inputs": kwargs, "outputs": outputs}
 
         # Apply runtime template resolution to pipeline tasks
-        resolved_pipeline = await self._resolve_runtime_templates(
-            self.pipeline, context
-        )
+        resolved_pipeline = await self._resolve_runtime_templates(self.pipeline, context)
 
         # Execute pipeline
         # Set the resolved pipeline's context
@@ -346,24 +338,20 @@ class OrchestratorPipeline:
                     if value.startswith("<AUTO>") and value.endswith("</AUTO>"):
                         # Resolve AUTO tag
                         auto_content = value[6:-7]  # Remove <AUTO> tags
-                        if hasattr(
-                            self.orchestrator.yaml_compiler, "ambiguity_resolver"
-                        ):
-                            resolved = await self.orchestrator.yaml_compiler.ambiguity_resolver.resolve(
-                                auto_content, f"outputs.{name}"
+                        if hasattr(self.orchestrator.yaml_compiler, "ambiguity_resolver"):
+                            resolved = (
+                                await self.orchestrator.yaml_compiler.ambiguity_resolver.resolve(
+                                    auto_content, f"outputs.{name}"
+                                )
                             )
                             outputs[name] = resolved
                         else:
-                            outputs[name] = (
-                                f"report_{inputs.get('topic', 'research')}.pdf"
-                            )
+                            outputs[name] = f"report_{inputs.get('topic', 'research')}.pdf"
                     else:
                         # Regular template - render with current context
                         try:
                             template = Template(value)
-                            outputs[name] = template.render(
-                                inputs=inputs, outputs=outputs
-                            )
+                            outputs[name] = template.render(inputs=inputs, outputs=outputs)
                         except Exception:
                             outputs[name] = value
                 else:
@@ -389,9 +377,7 @@ class OrchestratorPipeline:
         # Resolve templates in each task
         for task_id, task in resolved_pipeline.tasks.items():
             if hasattr(task, "parameters"):
-                task.parameters = await self._resolve_task_templates(
-                    task.parameters, context
-                )
+                task.parameters = await self._resolve_task_templates(task.parameters, context)
 
         return resolved_pipeline
 
@@ -409,10 +395,7 @@ class OrchestratorPipeline:
                     return obj
             return obj
         elif isinstance(obj, dict):
-            return {
-                k: await self._resolve_task_templates(v, context)
-                for k, v in obj.items()
-            }
+            return {k: await self._resolve_task_templates(v, context) for k, v in obj.items()}
         elif isinstance(obj, list):
             return [await self._resolve_task_templates(item, context) for item in obj]
         else:
@@ -435,12 +418,9 @@ async def compile_async(yaml_path: str) -> "OrchestratorPipeline":
         raise RuntimeError(
             "No models available. Run init_models() first or ensure API keys are set."
         )
-    
+
     control_system = HybridControlSystem(_model_registry)
-    _orchestrator = Orchestrator(
-        model_registry=_model_registry,
-        control_system=control_system
-    )
+    _orchestrator = Orchestrator(model_registry=_model_registry, control_system=control_system)
 
     # Set up model for ambiguity resolution
     model_keys = _model_registry.list_models() if _model_registry else []
@@ -490,9 +470,6 @@ def compile(yaml_path: str) -> "OrchestratorPipeline":
     # Check if we're already in an event loop
     try:
         asyncio.get_running_loop()
-        # We're in an async context, need to run in a new thread or return a coroutine
-        import concurrent.futures
-
         # We're in an async context but called from sync code
         raise RuntimeError(
             "Cannot call synchronous compile_yaml() from within an async context. "

@@ -60,7 +60,7 @@ class Orchestrator:
             max_concurrent_tasks: Maximum concurrent tasks
         """
         self.model_registry = model_registry or get_model_registry()
-        
+
         # Use a proper control system if none provided
         if control_system is None:
             # We need models to create a real control system
@@ -69,10 +69,11 @@ class Orchestrator:
                     "No control system provided and no models available. "
                     "Initialize models first with init_models() or provide a control system."
                 )
-            
+
             from .control_systems.hybrid_control_system import HybridControlSystem
+
             control_system = HybridControlSystem(self.model_registry)
-        
+
         self.control_system = control_system
         self.state_manager = state_manager or StateManager()
 
@@ -87,11 +88,11 @@ class Orchestrator:
         self.running_pipelines: Dict[str, Pipeline] = {}  # Keep for backward compatibility
         self.execution_semaphore = asyncio.Semaphore(max_concurrent_tasks)
         self.execution_history: List[Dict[str, Any]] = []  # Keep for backward compatibility
-        
+
         # New status tracker and resume manager
         self.status_tracker = PipelineStatusTracker()
         self.resume_manager = PipelineResumeManager(self.state_manager)
-        
+
         # Logger
         self.logger = logging.getLogger(__name__)
 
@@ -116,7 +117,7 @@ class Orchestrator:
             ExecutionError: If execution fails
         """
         execution_id = f"{pipeline.id}_{int(time.time())}"
-        
+
         # Create execution context early to avoid UnboundLocalError
         context = {
             "pipeline_id": pipeline.id,
@@ -129,7 +130,7 @@ class Orchestrator:
         try:
             # Register pipeline as running
             self.running_pipelines[execution_id] = pipeline
-            
+
             # Register with new status tracker
             await self.status_tracker.start_execution(execution_id, pipeline, context)
 
@@ -146,10 +147,7 @@ class Orchestrator:
             final_result = results
             if pipeline.metadata.get("outputs"):
                 outputs = self._extract_outputs(pipeline, results)
-                final_result = {
-                    "steps": results,
-                    "outputs": outputs
-                }
+                final_result = {"steps": results, "outputs": outputs}
 
             # Record successful execution
             execution_record = {
@@ -186,13 +184,13 @@ class Orchestrator:
     async def _execute_step(self, task, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute a single step/task.
-        
+
         This method is used by tests to override behavior for minimal responses.
-        
+
         Args:
             task: Task object to execute
             context: Execution context
-            
+
         Returns:
             Step execution result
         """
@@ -270,9 +268,7 @@ class Orchestrator:
             )
 
             # Request resources
-            allocation_success = await self.resource_allocator.request_resources(
-                request
-            )
+            allocation_success = await self.resource_allocator.request_resources(request)
             resource_allocations[task_id] = allocation_success
 
         try:
@@ -295,26 +291,20 @@ class Orchestrator:
                     "previous_results": previous_results,
                     "resource_allocation": resource_allocations[task_id],
                 }
-                execution_tasks.append(
-                    self._execute_task_with_resources(task, task_context)
-                )
+                execution_tasks.append(self._execute_task_with_resources(task, task_context))
                 scheduled_task_ids.append(task_id)
 
             # Execute tasks with proper error handling
             if execution_tasks:
                 # Execute tasks concurrently with semaphore control
-                task_results = await asyncio.gather(
-                    *execution_tasks, return_exceptions=True
-                )
+                task_results = await asyncio.gather(*execution_tasks, return_exceptions=True)
 
                 for task_id, result in zip(scheduled_task_ids, task_results):
                     if isinstance(result, Exception):
                         # Task failed - use error handler
                         task = pipeline.get_task(task_id)
                         try:
-                            handled_error = await self.error_handler.handle_error(
-                                result, context
-                            )
+                            handled_error = await self.error_handler.handle_error(result, context)
                         except Exception:
                             # Fallback to original error
                             handled_error = result
@@ -426,9 +416,7 @@ class Orchestrator:
         return {
             "id": pipeline.id,
             "name": pipeline.name,
-            "tasks": {
-                task_id: task.to_dict() for task_id, task in pipeline.tasks.items()
-            },
+            "tasks": {task_id: task.to_dict() for task_id, task in pipeline.tasks.items()},
             "context": pipeline.context,
             "metadata": pipeline.metadata,
             "created_at": pipeline.created_at,
@@ -439,20 +427,20 @@ class Orchestrator:
     def _extract_outputs(self, pipeline: Pipeline, results: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract outputs from pipeline results based on output definitions.
-        
+
         Args:
             pipeline: Pipeline with output definitions in metadata
             results: Step execution results
-            
+
         Returns:
             Extracted outputs
         """
         outputs = {}
         output_defs = pipeline.metadata.get("outputs", {})
-        
+
         # Use Jinja2 for template rendering to support filters
         from jinja2 import Template, TemplateError
-        
+
         for output_name, output_expr in output_defs.items():
             try:
                 if isinstance(output_expr, str) and "{{" in output_expr:
@@ -462,30 +450,32 @@ class Orchestrator:
                     context = results.copy()
                     # Render the template
                     value = template.render(**context)
-                    
+
                     # Try to convert to appropriate type
                     if isinstance(value, str):
                         if value.isdigit():
                             value = int(value)
-                        elif value.replace('.', '', 1).isdigit():
+                        elif value.replace(".", "", 1).isdigit():
                             value = float(value)
-                        elif value.lower() in ('true', 'false'):
-                            value = value.lower() == 'true'
-                        elif value.startswith('{') and value.endswith('}'):
+                        elif value.lower() in ("true", "false"):
+                            value = value.lower() == "true"
+                        elif value.startswith("{") and value.endswith("}"):
                             # Try to parse as dict
                             try:
                                 import ast
+
                                 value = ast.literal_eval(value)
                             except:
                                 pass  # Keep as string if parsing fails
-                        elif value.startswith('[') and value.endswith(']'):
+                        elif value.startswith("[") and value.endswith("]"):
                             # Try to parse as list
                             try:
                                 import ast
+
                                 value = ast.literal_eval(value)
                             except:
                                 pass  # Keep as string if parsing fails
-                    
+
                     outputs[output_name] = value
                 else:
                     # Direct value assignment
@@ -498,7 +488,7 @@ class Orchestrator:
                 # Catch any other errors
                 self.logger.warning(f"Error extracting output '{output_name}': {e}")
                 outputs[output_name] = None
-        
+
         return outputs
 
     async def execute_yaml(
@@ -562,9 +552,7 @@ class Orchestrator:
             Recovery results
         """
         # Load checkpoint
-        checkpoint = await self.state_manager.restore_checkpoint(
-            execution_id, from_checkpoint
-        )
+        checkpoint = await self.state_manager.restore_checkpoint(execution_id, from_checkpoint)
 
         if not checkpoint:
             raise ExecutionError(f"No checkpoint found for execution '{execution_id}'")
@@ -625,35 +613,36 @@ class Orchestrator:
     def clear_execution_history(self) -> None:
         """Clear execution history."""
         self.execution_history.clear()
-    
-    async def resume_pipeline(self, execution_id: str, 
-                            resume_strategy: Optional[ResumeStrategy] = None) -> Dict[str, Any]:
+
+    async def resume_pipeline(
+        self, execution_id: str, resume_strategy: Optional[ResumeStrategy] = None
+    ) -> Dict[str, Any]:
         """
         Resume a failed or interrupted pipeline execution.
-        
+
         Args:
             execution_id: ID of the execution to resume
             resume_strategy: Optional custom resume strategy
-            
+
         Returns:
             Execution result
-            
+
         Raises:
             ExecutionError: If resume fails
         """
         # Check if resumable
         if not await self.resume_manager.can_resume(execution_id):
             raise ExecutionError(f"No resume checkpoint found for execution {execution_id}")
-        
+
         # Get resume state
         result = await self.resume_manager.resume_pipeline(execution_id, resume_strategy)
         if not result:
             raise ExecutionError(f"Failed to load resume state for execution {execution_id}")
-        
+
         pipeline, context = result
-        
+
         self.logger.info(f"Resuming execution {execution_id} for pipeline {pipeline.id}")
-        
+
         # Execute with resume context
         return await self.execute_pipeline(pipeline, context=context)
 
@@ -677,16 +666,13 @@ class Orchestrator:
                     {
                         "model_memory": model.requirements.memory_gb * 1024,
                         "model_gpu": model.requirements.requires_gpu,
-                        "model_gpu_memory": (model.requirements.gpu_memory_gb or 0)
-                        * 1024,
+                        "model_gpu_memory": (model.requirements.gpu_memory_gb or 0) * 1024,
                     }
                 )
 
         return requirements
 
-    async def _select_model_for_task(
-        self, task: Task, context: Dict[str, Any]
-    ) -> Optional[Any]:
+    async def _select_model_for_task(self, task: Task, context: Dict[str, Any]) -> Optional[Any]:
         """Select appropriate model for task execution."""
         # Check if task specifies model requirements
         if "requires_model" in task.metadata:
@@ -713,8 +699,7 @@ class Orchestrator:
             # Infer requirements based on task action
             requirements = {
                 "tasks": [task.action],
-                "context_window": len(str(task.parameters).encode())
-                // 4,  # Rough token estimate
+                "context_window": len(str(task.parameters).encode()) // 4,  # Rough token estimate
             }
 
             # Add default expertise based on action
@@ -729,43 +714,26 @@ class Orchestrator:
 
         return None
 
-
     async def get_performance_metrics(self) -> Dict[str, Any]:
         """Get performance metrics for the orchestrator."""
         return {
             "total_executions": len(self.execution_history),
             "successful_executions": len(
-                [
-                    record
-                    for record in self.execution_history
-                    if record["status"] == "completed"
-                ]
+                [record for record in self.execution_history if record["status"] == "completed"]
             ),
             "failed_executions": len(
-                [
-                    record
-                    for record in self.execution_history
-                    if record["status"] == "failed"
-                ]
+                [record for record in self.execution_history if record["status"] == "failed"]
             ),
             "running_pipelines": len(self.running_pipelines),
             "average_execution_time": (
-                sum(
-                    record.get("execution_time", 0) for record in self.execution_history
-                )
+                sum(record.get("execution_time", 0) for record in self.execution_history)
                 / len(self.execution_history)
                 if self.execution_history
                 else 0
             ),
             "resource_utilization": await self.resource_allocator.get_utilization(),
             "error_rate": (
-                len(
-                    [
-                        record
-                        for record in self.execution_history
-                        if record["status"] == "failed"
-                    ]
-                )
+                len([record for record in self.execution_history if record["status"] == "failed"])
                 / len(self.execution_history)
                 if self.execution_history
                 else 0
@@ -839,50 +807,50 @@ class Orchestrator:
     ) -> Dict[str, Any]:
         """
         Execute pipeline from dictionary definition.
-        
+
         This method is used by PipelineExecutorTool for recursive execution.
-        
+
         Args:
             pipeline_dict: Pipeline definition as dictionary
             inputs: Input parameters for the pipeline
             context: Recursion context or other context data
             **kwargs: Additional execution parameters
-            
+
         Returns:
             Execution results
         """
         # Import here to avoid circular import
         import yaml
-        
+
         # Convert dict to YAML for compilation
         yaml_content = yaml.dump(pipeline_dict)
-        
+
         # Create compilation context with inputs
         compile_context = inputs or {}
-        
+
         # Store recursion context if provided
         recursion_context = None
-        if context and hasattr(context, 'shared_state'):
+        if context and hasattr(context, "shared_state"):
             # This is a RecursionContext object
             recursion_context = context
             # Remove it from kwargs since execute_pipeline doesn't accept it
-            kwargs.pop('recursion_context', None)
-        
+            kwargs.pop("recursion_context", None)
+
         # Compile and execute
         pipeline = await self.yaml_compiler.compile(yaml_content, compile_context)
-        
+
         # Execute with inputs merged into pipeline context
         if inputs:
             pipeline.context.update(inputs)
-        
+
         # Store recursion context in pipeline metadata if provided
         if recursion_context:
             pipeline.metadata = pipeline.metadata or {}
-            pipeline.metadata['recursion_context'] = recursion_context
-        
+            pipeline.metadata["recursion_context"] = recursion_context
+
         # Execute pipeline
         result = await self.execute_pipeline(pipeline, **kwargs)
-        
+
         # Return with outputs key for consistency
         if isinstance(result, dict) and "outputs" in result:
             return result

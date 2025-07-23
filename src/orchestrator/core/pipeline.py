@@ -112,9 +112,7 @@ class Pipeline:
         # Check if any tasks depend on this task
         dependents = self._get_dependents(task_id)
         if dependents:
-            raise ValueError(
-                f"Cannot remove task '{task_id}' - tasks {dependents} depend on it"
-            )
+            raise ValueError(f"Cannot remove task '{task_id}' - tasks {dependents} depend on it")
 
         task = self.tasks[task_id]
         del self.tasks[task_id]
@@ -259,26 +257,18 @@ class Pipeline:
 
     def get_failed_tasks(self) -> List[str]:
         """Get list of failed task IDs."""
-        return [
-            task_id
-            for task_id, task in self.tasks.items()
-            if task.status == TaskStatus.FAILED
-        ]
+        return [task_id for task_id, task in self.tasks.items() if task.status == TaskStatus.FAILED]
 
     def get_completed_tasks(self) -> List[str]:
         """Get list of completed task IDs."""
         return [
-            task_id
-            for task_id, task in self.tasks.items()
-            if task.status == TaskStatus.COMPLETED
+            task_id for task_id, task in self.tasks.items() if task.status == TaskStatus.COMPLETED
         ]
 
     def get_running_tasks(self) -> List[str]:
         """Get list of running task IDs."""
         return [
-            task_id
-            for task_id, task in self.tasks.items()
-            if task.status == TaskStatus.RUNNING
+            task_id for task_id, task in self.tasks.items() if task.status == TaskStatus.RUNNING
         ]
 
     def reset(self) -> None:
@@ -430,9 +420,7 @@ class Pipeline:
             be executed in parallel at that level
         """
         # Build dependency graph
-        in_degree = {
-            task_id: len(task.dependencies) for task_id, task in self.tasks.items()
-        }
+        in_degree = {task_id: len(task.dependencies) for task_id, task in self.tasks.items()}
         graph = defaultdict(list)
 
         for task_id, task in self.tasks.items():

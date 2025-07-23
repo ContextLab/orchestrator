@@ -179,9 +179,7 @@ class SchemaValidator:
             dependencies = step.get("dependencies", [])
             for dep in dependencies:
                 if dep not in task_ids:
-                    errors.append(
-                        f"Task '{step['id']}' depends on non-existent task '{dep}'"
-                    )
+                    errors.append(f"Task '{step['id']}' depends on non-existent task '{dep}'")
                 if dep == step["id"]:
                     errors.append(f"Task '{step['id']}' cannot depend on itself")
 

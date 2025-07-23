@@ -407,9 +407,7 @@ class HuggingFaceModel(Model):
         """
 
         try:
-            response = await self.generate(
-                structured_prompt, temperature=temperature, **kwargs
-            )
+            response = await self.generate(structured_prompt, temperature=temperature, **kwargs)
 
             # Parse JSON response
             try:
@@ -425,9 +423,7 @@ class HuggingFaceModel(Model):
                     raise ValueError("Could not parse JSON from response")
 
         except Exception as e:
-            raise RuntimeError(
-                f"HuggingFace structured generation error: {str(e)}"
-            ) from e
+            raise RuntimeError(f"HuggingFace structured generation error: {str(e)}") from e
 
     async def health_check(self) -> bool:
         """

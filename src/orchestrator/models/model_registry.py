@@ -86,6 +86,7 @@ class ModelRegistry:
         """Enable automatic model registration for new models."""
         if self._auto_registrar is None:
             from .auto_register import AutoModelRegistrar
+
             self._auto_registrar = AutoModelRegistrar(self)
 
     async def get_model_async(self, model_name: str, provider: str = "") -> Model:
@@ -113,9 +114,12 @@ class ModelRegistry:
             elif self._auto_registrar and not provider:
                 # Try to guess provider from model name
                 from .auto_register import get_provider_from_model_name
+
                 guessed_provider = get_provider_from_model_name(model_name)
                 if guessed_provider:
-                    model = await self._auto_registrar.try_register_model(model_name, guessed_provider)
+                    model = await self._auto_registrar.try_register_model(
+                        model_name, guessed_provider
+                    )
                     if model:
                         return model
             raise
@@ -219,9 +223,7 @@ class ModelRegistry:
 
         return self.models[selected_key]
 
-    async def _filter_by_capabilities(
-        self, requirements: Dict[str, Any]
-    ) -> List[Model]:
+    async def _filter_by_capabilities(self, requirements: Dict[str, Any]) -> List[Model]:
         """Filter models by capabilities and expertise."""
         eligible = []
 
@@ -263,8 +265,7 @@ class ModelRegistry:
 
         # Only consider cache stale if we've checked before and enough time has passed
         cache_is_stale = (
-            self._last_health_check > 0
-            and current_time - self._last_health_check > self._cache_ttl
+            self._last_health_check > 0 and current_time - self._last_health_check > self._cache_ttl
         )
 
         # Check if any models are missing from cache

@@ -66,9 +66,7 @@ class PostgresBackend:
         try:
             import asyncpg
 
-            self.pool = await asyncpg.create_pool(
-                self.connection_string, min_size=1, max_size=5
-            )
+            self.pool = await asyncpg.create_pool(self.connection_string, min_size=1, max_size=5)
 
             # Create table if not exists
             async with self.pool.acquire() as conn:
@@ -337,9 +335,7 @@ class TestPostgresIntegration:
         }
 
         # Save checkpoint
-        result = await postgres_backend.save_checkpoint(
-            checkpoint_id, execution_id, data
-        )
+        result = await postgres_backend.save_checkpoint(checkpoint_id, execution_id, data)
         assert result is True
 
         # Load checkpoint
@@ -379,9 +375,7 @@ class TestPostgresIntegration:
         checkpoints = []
         for i in range(3):
             checkpoint_id = f"checkpoint_{i}"
-            await postgres_backend.save_checkpoint(
-                checkpoint_id, execution_id, {"step": i}
-            )
+            await postgres_backend.save_checkpoint(checkpoint_id, execution_id, {"step": i})
             checkpoints.append(checkpoint_id)
             await asyncio.sleep(0.01)  # Small delay for different timestamps
 
@@ -430,19 +424,13 @@ class TestPostgresIntegration:
 
         # Save checkpoints for target execution
         for i in range(3):
-            await postgres_backend.save_checkpoint(
-                f"delete_{i}", execution_id, {"step": i}
-            )
+            await postgres_backend.save_checkpoint(f"delete_{i}", execution_id, {"step": i})
 
         # Save checkpoint for other execution
-        await postgres_backend.save_checkpoint(
-            "keep_1", other_execution_id, {"keep": True}
-        )
+        await postgres_backend.save_checkpoint("keep_1", other_execution_id, {"keep": True})
 
         # Delete all for target execution
-        deleted_count = await postgres_backend.delete_execution_checkpoints(
-            execution_id
-        )
+        deleted_count = await postgres_backend.delete_execution_checkpoints(execution_id)
         assert deleted_count == 3
 
         # Verify target execution checkpoints are gone
@@ -470,9 +458,7 @@ class TestPostgresIntegration:
         }
 
         # Save and load
-        await postgres_backend.save_checkpoint(
-            checkpoint_id, execution_id, complex_data
-        )
+        await postgres_backend.save_checkpoint(checkpoint_id, execution_id, complex_data)
         loaded = await postgres_backend.load_checkpoint(checkpoint_id)
 
         assert loaded["data"] == complex_data
@@ -579,9 +565,7 @@ class TestRedisIntegration:
         # Save multiple checkpoints
         for i in range(3):
             checkpoint_id = f"checkpoint_{i}"
-            await redis_backend.save_checkpoint(
-                checkpoint_id, execution_id, {"step": i}
-            )
+            await redis_backend.save_checkpoint(checkpoint_id, execution_id, {"step": i})
             await asyncio.sleep(0.01)  # Small delay for different timestamps
 
         # List checkpoints
@@ -637,9 +621,7 @@ class TestRedisIntegration:
         assert loaded["data"] == complex_data
 
 
-@pytest.mark.skipif(
-    not (HAS_POSTGRES and HAS_REDIS), reason="Both PostgreSQL and Redis needed"
-)
+@pytest.mark.skipif(not (HAS_POSTGRES and HAS_REDIS), reason="Both PostgreSQL and Redis needed")
 class TestDatabaseConsistency:
     """Test consistency between different database backends."""
 
@@ -665,12 +647,8 @@ class TestDatabaseConsistency:
             data = {"consistency": "test", "value": 42}
 
             # Save to both
-            pg_result = await postgres.save_checkpoint(
-                checkpoint_id, execution_id, data
-            )
-            redis_result = await redis.save_checkpoint(
-                checkpoint_id, execution_id, data
-            )
+            pg_result = await postgres.save_checkpoint(checkpoint_id, execution_id, data)
+            redis_result = await redis.save_checkpoint(checkpoint_id, execution_id, data)
 
             assert pg_result is True
             assert redis_result is True

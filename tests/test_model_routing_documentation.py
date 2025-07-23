@@ -23,7 +23,7 @@ async def setup_orchestrator():
 async def test_automatic_model_selection():
     """Test automatic model selection example."""
     print("\n=== Testing Automatic Model Selection ===")
-    
+
     pipeline_yaml = """
 name: auto-selection-test
 description: Test automatic model selection
@@ -51,29 +51,30 @@ steps:
             items:
               type: string
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {
             "document": """Artificial intelligence has transformed how we process information.
 Machine learning models can now understand and generate human-like text."""
         }
-        
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify automatic selection worked
-        analysis = result.get('analyze_document', {}).get('result', {})
-        assert 'main_topic' in analysis, "Should have analyzed main topic"
-        assert 'key_points' in analysis, "Should have extracted key points"
-        
+        analysis = result.get("analyze_document", {}).get("result", {})
+        assert "main_topic" in analysis, "Should have analyzed main topic"
+        assert "key_points" in analysis, "Should have extracted key points"
+
         print("✅ Automatic model selection test passed")
         print(f"   Main topic: {analysis.get('main_topic')}")
         return True
-        
+
     except Exception as e:
         print(f"❌ Automatic selection test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -81,7 +82,7 @@ Machine learning models can now understand and generate human-like text."""
 async def test_task_based_routing():
     """Test task-based model routing."""
     print("\n=== Testing Task-Based Routing ===")
-    
+
     pipeline_yaml = """
 name: task-routing-test
 description: Test different models for different tasks
@@ -123,28 +124,29 @@ steps:
       temperature: 0.8
       max_tokens: 50
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         result = await orchestrator.execute_yaml(pipeline_yaml)
-        
+
         # Verify all tasks completed
-        code = result.get('generate_code', {}).get('result', '')
-        assert 'def' in code or 'function' in code.lower(), "Should generate code"
-        
-        analysis = result.get('analyze_data', {}).get('result', {})
-        assert analysis.get('trend') == 'positive', "Should identify positive trend"
-        
-        story = result.get('write_story', {}).get('result', '')
+        code = result.get("generate_code", {}).get("result", "")
+        assert "def" in code or "function" in code.lower(), "Should generate code"
+
+        analysis = result.get("analyze_data", {}).get("result", {})
+        assert analysis.get("trend") == "positive", "Should identify positive trend"
+
+        story = result.get("write_story", {}).get("result", "")
         assert len(story) > 0, "Should generate creative content"
-        
+
         print("✅ Task-based routing test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ Task-based routing test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -152,10 +154,10 @@ steps:
 async def test_explicit_requirements():
     """Test explicit model requirements."""
     print("\n=== Testing Explicit Model Requirements ===")
-    
+
     # Create a large document to test context requirements
     large_content = "This is a test document. " * 100  # Moderate size
-    
+
     pipeline_yaml = """
 name: explicit-requirements-test
 description: Test explicit model requirements
@@ -185,24 +187,25 @@ steps:
           type: string
           enum: ["simple", "moderate", "complex"]
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {"content": large_content}
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify requirements were met
-        analysis = result.get('complex_analysis', {}).get('result', {})
-        assert 'summary' in analysis, "Should provide summary"
-        assert 'complexity' in analysis, "Should assess complexity"
-        
+        analysis = result.get("complex_analysis", {}).get("result", {})
+        assert "summary" in analysis, "Should provide summary"
+        assert "complexity" in analysis, "Should assess complexity"
+
         print("✅ Explicit requirements test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ Explicit requirements test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -210,7 +213,7 @@ steps:
 async def test_cost_optimized_pipeline():
     """Test cost-optimized model selection."""
     print("\n=== Testing Cost-Optimized Pipeline ===")
-    
+
     pipeline_yaml = """
 name: cost-optimized-test
 description: Test cost optimization
@@ -252,32 +255,36 @@ steps:
       cost_tier: "high"  # Use best model for important items
       capabilities: ["advanced_reasoning"]
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {
             "documents": [
-                {"content": "Important: New AI breakthrough in medical diagnosis", "category": "technology"},
+                {
+                    "content": "Important: New AI breakthrough in medical diagnosis",
+                    "category": "technology",
+                },
                 {"content": "Weather update: Sunny skies expected", "category": "weather"},
-                {"content": "Critical: Security vulnerability discovered", "category": "security"}
+                {"content": "Critical: Security vulnerability discovered", "category": "security"},
             ]
         }
-        
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify cost optimization worked
-        result.get('filter_relevant', {}).get('result', {})
-        analysis = result.get('analyze_important', {}).get('result', '')
-        
+        result.get("filter_relevant", {}).get("result", {})
+        analysis = result.get("analyze_important", {}).get("result", "")
+
         assert len(analysis) > 0, "Should analyze important items"
-        
+
         print("✅ Cost-optimized pipeline test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ Cost optimization test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -285,7 +292,7 @@ steps:
 async def test_fallback_strategy():
     """Test model fallback strategy."""
     print("\n=== Testing Fallback Strategy ===")
-    
+
     pipeline_yaml = """
 name: fallback-test
 description: Test fallback to alternative models
@@ -325,38 +332,37 @@ steps:
     requires_model:
       preference: "local"  # Try local model as fallback
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
-        inputs = {
-            "data": "Analyze this data for patterns: [1, 2, 3, 5, 8, 13, 21]"
-        }
-        
+        inputs = {"data": "Analyze this data for patterns: [1, 2, 3, 5, 8, 13, 21]"}
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Check if primary or fallback succeeded
-        primary = result.get('primary_analysis', {})
-        fallback = result.get('simple_analysis', {})
-        
+        primary = result.get("primary_analysis", {})
+        fallback = result.get("simple_analysis", {})
+
         success = False
-        if primary.get('result'):
+        if primary.get("result"):
             print("   Primary analysis succeeded")
-            assert 'pattern_name' in primary['result'], "Should identify pattern"
+            assert "pattern_name" in primary["result"], "Should identify pattern"
             success = True
-        elif fallback.get('result'):
+        elif fallback.get("result"):
             print("   Fallback analysis used")
-            assert len(fallback['result']) > 0, "Should provide analysis"
+            assert len(fallback["result"]) > 0, "Should provide analysis"
             success = True
-            
+
         assert success, "Either primary or fallback should succeed"
-        
+
         print("✅ Fallback strategy test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ Fallback strategy test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -364,7 +370,7 @@ steps:
 async def test_router_tool():
     """Test the LLM router tool directly."""
     print("\n=== Testing LLM Router Tool ===")
-    
+
     pipeline_yaml = """
 name: router-tool-test
 description: Test direct router tool usage
@@ -403,33 +409,33 @@ steps:
         - {{ model.name }} (score: {{ model.score }})
         {% endfor %}
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {
             "complex_prompt": """Analyze the implications of quantum computing on cryptography.
 Consider both near-term and long-term impacts."""
         }
-        
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify router made a selection
-        routing = result.get('smart_routing', {})
-        report = result.get('show_selection', {}).get('content', '')
-        
+        routing = result.get("smart_routing", {})
+        report = result.get("show_selection", {}).get("content", "")
+
         # Router tool might not be implemented yet, so check for any result
         assert routing or report, "Should have routing result or report"
-        
+
         print("✅ Router tool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ Router tool test failed: {e}")
         # This tool might not be implemented yet
         print("   (Router tool may not be implemented yet)")
         return True  # Don't fail the whole test suite
-        
+
 
 async def main():
     """Run all model routing documentation tests."""
@@ -437,14 +443,14 @@ async def main():
     print("=" * 70)
     print("Testing examples from docs/user_guide/model_routing.md")
     print("=" * 70)
-    
+
     # Check for API keys
     if not os.getenv("OPENAI_API_KEY") and not os.getenv("ANTHROPIC_API_KEY"):
         print("\n⚠️  WARNING: No API keys found!")
         print("Please set OPENAI_API_KEY or ANTHROPIC_API_KEY")
         print("Some tests may fail without API access.")
         print()
-    
+
     # Define all tests
     tests = [
         ("Automatic Model Selection", test_automatic_model_selection),
@@ -454,40 +460,40 @@ async def main():
         ("Fallback Strategy", test_fallback_strategy),
         ("LLM Router Tool", test_router_tool),
     ]
-    
+
     # Run tests
     results = []
     for test_name, test_func in tests:
         print(f"\n{'='*70}")
         print(f"Running: {test_name}")
-        print("="*70)
-        
+        print("=" * 70)
+
         try:
             success = await test_func()
             results.append((test_name, success))
         except Exception as e:
             print(f"❌ Test {test_name} crashed: {e}")
             results.append((test_name, False))
-    
+
     # Summary
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST SUMMARY")
-    print("="*70)
-    
+    print("=" * 70)
+
     for test_name, success in results:
         status = "✅ PASSED" if success else "❌ FAILED"
         print(f"{status} - {test_name}")
-    
+
     passed = sum(1 for _, success in results if success)
     total = len(results)
-    
+
     print(f"\nTotal: {passed}/{total} tests passed")
-    
+
     if passed == total:
         print("\n🎉 All model routing examples are working correctly!")
     else:
         print(f"\n⚠️  {total - passed} tests failed. Please check the errors above.")
-    
+
     return passed == total
 
 

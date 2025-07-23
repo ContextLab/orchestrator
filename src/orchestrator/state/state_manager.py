@@ -164,9 +164,7 @@ class StateManager:
             "compressed_size": len(state_bytes),
         }
 
-        checkpoint_id = await self.backend.save_state(
-            execution_id, checkpoint_state, metadata
-        )
+        checkpoint_id = await self.backend.save_state(execution_id, checkpoint_state, metadata)
 
         # Update statistics
         self.stats["checkpoints_created"] += 1
@@ -294,9 +292,7 @@ class StateManager:
         """
         return await self.backend.list_checkpoints(execution_id, limit)
 
-    async def delete_checkpoint(
-        self, pipeline_id: str, checkpoint_id: str = None
-    ) -> bool:
+    async def delete_checkpoint(self, pipeline_id: str, checkpoint_id: str = None) -> bool:
         """
         Delete a checkpoint.
 
@@ -620,9 +616,7 @@ class StateManager:
             "RedisBackend": "redis",
         }
         backend_type_name = type(self.backend).__name__
-        storage_backend = backend_name_map.get(
-            backend_type_name, backend_type_name.lower()
-        )
+        storage_backend = backend_name_map.get(backend_type_name, backend_type_name.lower())
 
         return {
             **self.stats,
@@ -645,20 +639,23 @@ class StateManager:
         """Check if the state manager is healthy and operational."""
         try:
             # Check if backend is available
-            if not hasattr(self, 'backend') or self.backend is None:
+            if not hasattr(self, "backend") or self.backend is None:
                 return False
-            
+
             # Try to perform a simple operation to verify backend is working
             # List checkpoints with a small limit to test connectivity
             await self.backend.list_checkpoints(limit=1)
-            
+
             # Check if the storage path exists for file backend
-            if hasattr(self.backend, '__class__') and self.backend.__class__.__name__ == 'FileBackend':
-                if hasattr(self, 'storage_path') and not os.path.exists(self.storage_path):
+            if (
+                hasattr(self.backend, "__class__")
+                and self.backend.__class__.__name__ == "FileBackend"
+            ):
+                if hasattr(self, "storage_path") and not os.path.exists(self.storage_path):
                     return False
-            
+
             return True
-            
+
         except Exception:
             # Any exception means the state manager is not healthy
             return False
@@ -692,6 +689,4 @@ async def create_state_manager(
     Returns:
         StateManager instance
     """
-    return StateManager(
-        backend_type=backend_type, backend_config=backend_config, **kwargs
-    )
+    return StateManager(backend_type=backend_type, backend_config=backend_config, **kwargs)

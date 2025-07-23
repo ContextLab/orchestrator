@@ -28,9 +28,7 @@ class DataProcessingTool(Tool):
             required=False,
             default="json",
         )
-        self.add_parameter(
-            "operation", "object", "Operation details", required=False, default={}
-        )
+        self.add_parameter("operation", "object", "Operation details", required=False, default={})
 
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute data processing operation."""
@@ -54,9 +52,7 @@ class DataProcessingTool(Tool):
         except Exception as e:
             return {"action": action, "success": False, "error": str(e)}
 
-    async def _convert_data(
-        self, data: Any, target_format: str, operation: Dict
-    ) -> Dict[str, Any]:
+    async def _convert_data(self, data: Any, target_format: str, operation: Dict) -> Dict[str, Any]:
         """Convert data between formats."""
         # Handle file paths
         if isinstance(data, str) and Path(data).exists():
@@ -135,9 +131,7 @@ class DataProcessingTool(Tool):
             if agg_type == "sum" and numeric_values:
                 result["aggregations"][f"{field}_sum"] = sum(numeric_values)
             elif agg_type == "avg" and numeric_values:
-                result["aggregations"][f"{field}_avg"] = sum(numeric_values) / len(
-                    numeric_values
-                )
+                result["aggregations"][f"{field}_avg"] = sum(numeric_values) / len(numeric_values)
             elif agg_type == "count":
                 result["aggregations"][f"{field}_count"] = len(values)
 
@@ -156,10 +150,7 @@ class DataProcessingTool(Tool):
                 if isinstance(result, dict):
                     result = {mapping.get(k, k): v for k, v in result.items()}
                 elif isinstance(result, list):
-                    result = [
-                        {mapping.get(k, k): v for k, v in item.items()}
-                        for item in result
-                    ]
+                    result = [{mapping.get(k, k): v for k, v in item.items()} for item in result]
 
             elif transform_type == "add_field":
                 field_name = transform.get("field", "")
@@ -196,7 +187,7 @@ class DataProcessingTool(Tool):
 
 # class ValidationTool(Tool):
 #     """Tool for data validation."""
-# 
+#
 #     def __init__(self):
 #         super().__init__(
 #             name="validation", description="Validate data against schemas and rules"
@@ -212,16 +203,16 @@ class DataProcessingTool(Tool):
 #         data = kwargs.get("data", {})
 #         schema = kwargs.get("schema", {})
 #         rules = kwargs.get("rules", [])
-# 
+#
 #         validation_results = {"valid": True, "errors": [], "warnings": []}
-# 
+#
 #         # Schema validation
 #         if schema:
 #             schema_errors = self._validate_schema(data, schema)
 #             validation_results["errors"].extend(schema_errors)
 #             if schema_errors:
 #                 validation_results["valid"] = False
-# 
+#
 #         # Rules validation
 #         for rule in rules:
 #             rule_result = self._validate_rule(data, rule)
@@ -230,21 +221,21 @@ class DataProcessingTool(Tool):
 #                 validation_results["valid"] = False
 #             elif rule_result["severity"] == "warning":
 #                 validation_results["warnings"].append(rule_result)
-# 
+#
 #         return {
 #             "action": "validation",
 #             "result": validation_results,
 #             "data_type": type(data).__name__,
 #             "success": True,
 #         }
-# 
+#
 #     def _validate_schema(self, data: Any, schema: Dict) -> List[Dict]:
 #         """Validate data against schema."""
 #         errors = []
-# 
+#
 #         required_fields = schema.get("required", [])
 #         properties = schema.get("properties", {})
-# 
+#
 #         if isinstance(data, dict):
 #             # Check required fields
 #             for field in required_fields:
@@ -256,7 +247,7 @@ class DataProcessingTool(Tool):
 #                             "severity": "error",
 #                         }
 #                     )
-# 
+#
 #             # Check field types
 #             for field, value in data.items():
 #                 if field in properties:
@@ -277,14 +268,14 @@ class DataProcessingTool(Tool):
 #                                 "severity": "error",
 #                             }
 #                         )
-# 
+#
 #         return errors
-# 
+#
 #     def _validate_rule(self, data: Any, rule: Dict) -> Dict:
 #         """Validate data against a single rule."""
 #         rule_type = rule.get("type", "")
 #         severity = rule.get("severity", "warning")
-# 
+#
 #         if rule_type == "not_empty":
 #             field = rule.get("field", "")
 #             if isinstance(data, dict) and field in data:
@@ -297,7 +288,7 @@ class DataProcessingTool(Tool):
 #                         "message": f"Field '{field}' should not be empty",
 #                         "severity": severity,
 #                     }
-# 
+#
 #         elif rule_type == "min_length":
 #             field = rule.get("field", "")
 #             min_length = rule.get("value", 0)
@@ -309,6 +300,6 @@ class DataProcessingTool(Tool):
 #                         "message": f"Field '{field}' should be at least {min_length} characters",
 #                         "severity": severity,
 #                     }
-# 
+#
 #         # Rule passed
 #         return {"rule": rule_type, "message": "Rule passed", "severity": "info"}

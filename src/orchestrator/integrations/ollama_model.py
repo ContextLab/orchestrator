@@ -163,9 +163,7 @@ class OllamaModel(Model):
             **kwargs: Additional arguments passed to parent class
         """
         if not REQUESTS_AVAILABLE:
-            raise ImportError(
-                "Requests library not available. Install with: pip install requests"
-            )
+            raise ImportError("Requests library not available. Install with: pip install requests")
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(
@@ -247,9 +245,7 @@ class OllamaModel(Model):
             if result.returncode == 0:
                 self._is_available = True
             else:
-                print(
-                    f"Warning: Could not pull model {self.model_name}: {result.stderr}"
-                )
+                print(f"Warning: Could not pull model {self.model_name}: {result.stderr}")
         except (subprocess.TimeoutExpired, FileNotFoundError):
             print(
                 f"Warning: Could not pull model {self.model_name} (ollama CLI not available or timeout)"
@@ -275,9 +271,7 @@ class OllamaModel(Model):
             Generated text
         """
         if not self._is_available:
-            raise RuntimeError(
-                "Ollama model not available. Check if Ollama is running."
-            )
+            raise RuntimeError("Ollama model not available. Check if Ollama is running.")
 
         # Validate temperature
         temp_min, temp_max = self.capabilities.temperature_range
@@ -305,10 +299,7 @@ class OllamaModel(Model):
         try:
             # Run the synchronous request in a thread pool to avoid blocking
             response = await asyncio.to_thread(
-                requests.post,
-                f"{self.base_url}/api/generate",
-                json=payload,
-                timeout=self.timeout
+                requests.post, f"{self.base_url}/api/generate", json=payload, timeout=self.timeout
             )
             response.raise_for_status()
 
@@ -351,9 +342,7 @@ Return only the JSON object, no additional text.
 """
 
         try:
-            response = await self.generate(
-                structured_prompt, temperature=temperature, **kwargs
-            )
+            response = await self.generate(structured_prompt, temperature=temperature, **kwargs)
 
             # Parse JSON response
             try:
@@ -380,11 +369,7 @@ Return only the JSON object, no additional text.
         """
         try:
             # Check if Ollama is running
-            response = await asyncio.to_thread(
-                requests.get,
-                f"{self.base_url}/api/tags",
-                timeout=5
-            )
+            response = await asyncio.to_thread(requests.get, f"{self.base_url}/api/tags", timeout=5)
             if response.status_code != 200:
                 self._is_available = False
                 return False

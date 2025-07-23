@@ -18,7 +18,7 @@ async def setup_orchestrator():
     # Initialize models
     print("Initializing models...")
     model_registry = init_models()
-    
+
     # Create orchestrator
     orchestrator = Orchestrator(model_registry=model_registry)
     return orchestrator
@@ -27,17 +27,22 @@ async def setup_orchestrator():
 async def test_filesystem_tool():
     """Test FileSystemTool examples from documentation."""
     print("\n=== Testing FileSystemTool ===")
-    
+
     # Create temporary test content
-    """# Test Report
+    (
+        """# Test Report
 This is a test report generated for documentation validation.
-Generated at: """ + datetime.now().isoformat()
-    
+Generated at: """
+        + datetime.now().isoformat()
+    )
+
     # Test pipeline from documentation
     import tempfile
-    report_path = os.path.join(tempfile.gettempdir(), 'test_report.md')
-    
-    pipeline_yaml = f"""
+
+    report_path = os.path.join(tempfile.gettempdir(), "test_report.md")
+
+    pipeline_yaml = (
+        f"""
 name: filesystem-tool-test
 description: Test FileSystemTool from documentation
 
@@ -47,7 +52,9 @@ steps:
     action: write
     parameters:
       path: "{report_path}"
-      content: "# Test Report\\nThis is a test report generated for documentation validation.\\nGenerated at: """ + datetime.now().isoformat() + """"
+      content: "# Test Report\\nThis is a test report generated for documentation validation.\\nGenerated at: """
+        + datetime.now().isoformat()
+        + """"
       mode: "w"
       
   - id: verify_write
@@ -69,22 +76,26 @@ steps:
       path: "/tmp"
       pattern: "test_*.md"
 """
-    
+    )
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         result = await orchestrator.execute_yaml(pipeline_yaml)
-        
+
         # Verify results
-        assert result.get('verify_write', {}).get('exists') is True, "File should exist after write"
-        assert "Test Report" in result.get('read_report', {}).get('content', ''), "Content should match"
-        
+        assert result.get("verify_write", {}).get("exists") is True, "File should exist after write"
+        assert "Test Report" in result.get("read_report", {}).get(
+            "content", ""
+        ), "Content should match"
+
         print("✅ FileSystemTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ FileSystemTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -96,7 +107,7 @@ steps:
 async def test_terminal_tool():
     """Test TerminalTool examples from documentation."""
     print("\n=== Testing TerminalTool ===")
-    
+
     # Create test Python script
     test_script = """
 import json
@@ -106,17 +117,18 @@ import sys
 data = {"result": "Analysis complete", "items": 5}
 print(json.dumps(data))
 """
-    
+
     import tempfile
+
     script_path = os.path.join(tempfile.gettempdir(), "test_analyze.py")
     with open(script_path, "w") as f:
         f.write(test_script)
-    
+
     # Create test data file
     data_path = os.path.join(tempfile.gettempdir(), "test_data.csv")
     with open(data_path, "w") as f:
         f.write("name,value\nitem1,10\nitem2,20\n")
-    
+
     pipeline_yaml = f"""
 name: terminal-tool-test
 description: Test TerminalTool from documentation
@@ -137,25 +149,26 @@ steps:
       command: "python --version"
       timeout: 10
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         result = await orchestrator.execute_yaml(pipeline_yaml)
-        
+
         # Verify results
-        analysis_output = result.get('run_analysis', {}).get('stdout', '')
-        assert 'Analysis complete' in analysis_output, "Analysis should complete"
-        
-        version_output = result.get('check_python_version', {}).get('stdout', '')
-        assert 'Python' in version_output, "Should get Python version"
-        
+        analysis_output = result.get("run_analysis", {}).get("stdout", "")
+        assert "Analysis complete" in analysis_output, "Analysis should complete"
+
+        version_output = result.get("check_python_version", {}).get("stdout", "")
+        assert "Python" in version_output, "Should get Python version"
+
         print("✅ TerminalTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ TerminalTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -168,7 +181,7 @@ steps:
 async def test_web_search_tool():
     """Test WebSearchTool examples from documentation."""
     print("\n=== Testing WebSearchTool ===")
-    
+
     pipeline_yaml = """
 name: web-search-tool-test
 description: Test WebSearchTool from documentation
@@ -196,23 +209,24 @@ steps:
         First result title: {{ research_topic.results[0].title }}
         {% endif %}
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         result = await orchestrator.execute_yaml(pipeline_yaml)
-        
+
         # Verify results
-        search_results = result.get('research_topic', {}).get('results', [])
+        search_results = result.get("research_topic", {}).get("results", [])
         assert len(search_results) > 0, "Should get search results"
-        assert all('title' in r for r in search_results), "Results should have titles"
-        
+        assert all("title" in r for r in search_results), "Results should have titles"
+
         print("✅ WebSearchTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ WebSearchTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -220,7 +234,7 @@ steps:
 async def test_data_processing_tool():
     """Test DataProcessingTool examples from documentation."""
     print("\n=== Testing DataProcessingTool ===")
-    
+
     # Create test CSV data
     csv_data = """name,age,score
 Alice,25,85
@@ -228,14 +242,17 @@ Bob,17,90
 Charlie,30,75
 David,16,95
 Eve,22,88"""
-    
-    pipeline_yaml = """
+
+    pipeline_yaml = (
+        """
 name: data-processing-tool-test
 description: Test DataProcessingTool from documentation
 
 inputs:
   raw_data: |
-    """ + csv_data + """
+    """
+        + csv_data
+        + """
 
 steps:
   - id: process_csv
@@ -267,29 +284,31 @@ steps:
         Top scorer: {{ process_csv.result[0].name }} with score {{ process_csv.result[0].score }}
         {% endif %}
 """
-    
+    )
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         result = await orchestrator.execute_yaml(pipeline_yaml, {"raw_data": csv_data})
-        
+
         # Verify results
-        processed_data = result.get('process_csv', {}).get('result', [])
+        processed_data = result.get("process_csv", {}).get("result", [])
         assert len(processed_data) > 0, "Should have processed data"
-        
+
         # Check filtering (age > 18)
-        assert all(record['age'] > 18 for record in processed_data), "All ages should be > 18"
-        
+        assert all(record["age"] > 18 for record in processed_data), "All ages should be > 18"
+
         # Check sorting (by score descending)
-        scores = [record['score'] for record in processed_data]
+        scores = [record["score"] for record in processed_data]
         assert scores == sorted(scores, reverse=True), "Should be sorted by score descending"
-        
+
         print("✅ DataProcessingTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ DataProcessingTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -297,10 +316,11 @@ steps:
 async def test_report_generator_tool():
     """Test ReportGeneratorTool examples from documentation."""
     print("\n=== Testing ReportGeneratorTool ===")
-    
+
     import tempfile
-    report_path = os.path.join(tempfile.gettempdir(), 'test_analysis_report.md')
-    
+
+    report_path = os.path.join(tempfile.gettempdir(), "test_analysis_report.md")
+
     pipeline_yaml = f"""
 name: report-generator-tool-test
 description: Test ReportGeneratorTool from documentation
@@ -340,31 +360,32 @@ steps:
       path: "{report_path}"
       content: "{{ create_report.content }}"
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {
             "title": "Analysis Report",
             "summary": "This report summarizes the key findings from our analysis.",
             "analysis_results": "- Finding 1: Data shows positive trend\n- Finding 2: Performance improved by 25%\n- Finding 3: User satisfaction increased",
-            "current_date": datetime.now().strftime("%Y-%m-%d")
+            "current_date": datetime.now().strftime("%Y-%m-%d"),
         }
-        
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify results
-        report_content = result.get('create_report', {}).get('content', '')
-        assert inputs['title'] in report_content, "Report should contain title"
-        assert inputs['summary'] in report_content, "Report should contain summary"
+        report_content = result.get("create_report", {}).get("content", "")
+        assert inputs["title"] in report_content, "Report should contain title"
+        assert inputs["summary"] in report_content, "Report should contain summary"
         assert "Finding 1" in report_content, "Report should contain findings"
-        
+
         print("✅ ReportGeneratorTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ ReportGeneratorTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -376,7 +397,7 @@ steps:
 async def test_llm_generate_tool():
     """Test LLMGenerateTool examples from documentation."""
     print("\n=== Testing LLMGenerateTool ===")
-    
+
     pipeline_yaml = """
 name: llm-generate-tool-test
 description: Test LLMGenerateTool from documentation
@@ -414,9 +435,9 @@ steps:
         Summary:
         {{ write_summary.result }}
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {
             "article_content": """Artificial intelligence continues to transform industries worldwide. 
@@ -424,20 +445,21 @@ Recent advances in machine learning have enabled new applications in
 healthcare, finance, and transportation. However, challenges remain 
 in ensuring AI systems are ethical, transparent, and beneficial to all."""
         }
-        
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify results
-        summary = result.get('write_summary', {}).get('result', '')
+        summary = result.get("write_summary", {}).get("result", "")
         assert len(summary) > 0, "Should generate a summary"
-        assert len(summary) < len(inputs['article_content']), "Summary should be shorter"
-        
+        assert len(summary) < len(inputs["article_content"]), "Summary should be shorter"
+
         print("✅ LLMGenerateTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ LLMGenerateTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -445,7 +467,7 @@ in ensuring AI systems are ethical, transparent, and beneficial to all."""
 async def test_llm_analyze_tool():
     """Test LLMAnalyzeTool examples from documentation."""
     print("\n=== Testing LLMAnalyzeTool ===")
-    
+
     pipeline_yaml = """
 name: llm-analyze-tool-test
 description: Test LLMAnalyzeTool from documentation
@@ -493,31 +515,36 @@ steps:
         - {{ point }}
         {% endfor %}
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {
             "customer_feedback": """The product works great and I'm very happy with my purchase. 
 The customer service was excellent and shipping was fast. 
 I would definitely recommend this to others!"""
         }
-        
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify results
-        analysis = result.get('analyze_sentiment', {}).get('result', {})
-        assert 'sentiment' in analysis, "Should have sentiment field"
-        assert analysis['sentiment'] in ['positive', 'negative', 'neutral'], "Sentiment should be valid"
-        assert 'confidence' in analysis, "Should have confidence score"
-        assert isinstance(analysis.get('key_points'), list), "Should have key points list"
-        
+        analysis = result.get("analyze_sentiment", {}).get("result", {})
+        assert "sentiment" in analysis, "Should have sentiment field"
+        assert analysis["sentiment"] in [
+            "positive",
+            "negative",
+            "neutral",
+        ], "Sentiment should be valid"
+        assert "confidence" in analysis, "Should have confidence score"
+        assert isinstance(analysis.get("key_points"), list), "Should have key points list"
+
         print("✅ LLMAnalyzeTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ LLMAnalyzeTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -525,7 +552,7 @@ I would definitely recommend this to others!"""
 async def test_validation_tool():
     """Test ValidationTool examples from documentation."""
     print("\n=== Testing ValidationTool ===")
-    
+
     pipeline_yaml = """
 name: validation-tool-test
 description: Test ValidationTool from documentation
@@ -572,33 +599,29 @@ steps:
         required: ["email", "age"]
       mode: "REPORT_ONLY"
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
-        inputs = {
-            "user_input": {
-                "email": "test@example.com",
-                "age": 25
-            }
-        }
-        
+        inputs = {"user_input": {"email": "test@example.com", "age": 25}}
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify results
-        valid_result = result.get('validate_input', {})
-        assert valid_result.get('is_valid') is True, "Valid data should pass"
-        
-        invalid_result = result.get('test_invalid', {})
-        assert invalid_result.get('is_valid') is False, "Invalid data should fail"
-        assert len(invalid_result.get('errors', [])) > 0, "Should report validation errors"
-        
+        valid_result = result.get("validate_input", {})
+        assert valid_result.get("is_valid") is True, "Valid data should pass"
+
+        invalid_result = result.get("test_invalid", {})
+        assert invalid_result.get("is_valid") is False, "Invalid data should fail"
+        assert len(invalid_result.get("errors", [])) > 0, "Should report validation errors"
+
         print("✅ ValidationTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ ValidationTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -606,7 +629,7 @@ steps:
 async def test_sub_pipeline_tool():
     """Test SubPipelineTool examples from documentation."""
     print("\n=== Testing SubPipelineTool ===")
-    
+
     # Create a simple sub-pipeline file
     sub_pipeline_yaml = """
 name: data_analysis_pipeline
@@ -625,12 +648,13 @@ steps:
 outputs:
   analysis_result: "{{ analyze.result }}"
 """
-    
+
     import tempfile
+
     sub_pipeline_path = os.path.join(tempfile.gettempdir(), "test_sub_pipeline.yaml")
     with open(sub_pipeline_path, "w") as f:
         f.write(sub_pipeline_yaml)
-    
+
     main_pipeline_yaml = f"""
 name: sub-pipeline-tool-test
 description: Test SubPipelineTool from documentation
@@ -662,28 +686,29 @@ steps:
         
         Result: {{ run_analysis.outputs.analysis_result }}
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {
             "processed_data": "Sample data: [10, 20, 30, 40, 50]",
-            "analysis_config": {"type": "statistical"}
+            "analysis_config": {"type": "statistical"},
         }
-        
+
         result = await orchestrator.execute_yaml(main_pipeline_yaml, inputs)
-        
+
         # Verify results
-        sub_result = result.get('run_analysis', {})
-        assert 'outputs' in sub_result, "Should have sub-pipeline outputs"
-        assert 'analysis_result' in sub_result.get('outputs', {}), "Should have analysis result"
-        
+        sub_result = result.get("run_analysis", {})
+        assert "outputs" in sub_result, "Should have sub-pipeline outputs"
+        assert "analysis_result" in sub_result.get("outputs", {}), "Should have analysis result"
+
         print("✅ SubPipelineTool test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ SubPipelineTool test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -695,7 +720,7 @@ steps:
 async def test_combined_pipeline():
     """Test the combined research pipeline example from documentation."""
     print("\n=== Testing Combined Research Pipeline ===")
-    
+
     pipeline_yaml = """
 name: research-pipeline-test
 description: Test combined tool workflow
@@ -756,28 +781,29 @@ steps:
         - [{{ result.title }}]({{ result.url }})
         {% endfor %}
 """
-    
+
     orchestrator = await setup_orchestrator()
-    
+
     try:
         inputs = {"research_topic": "artificial intelligence ethics"}
-        
+
         result = await orchestrator.execute_yaml(pipeline_yaml, inputs)
-        
+
         # Verify results
-        assert 'search' in result, "Should have search results"
-        assert 'analyze' in result, "Should have analysis"
-        assert 'report' in result, "Should have report"
-        
-        report_content = result.get('report', {}).get('content', '')
-        assert inputs['research_topic'] in report_content, "Report should contain topic"
-        
+        assert "search" in result, "Should have search results"
+        assert "analyze" in result, "Should have analysis"
+        assert "report" in result, "Should have report"
+
+        report_content = result.get("report", {}).get("content", "")
+        assert inputs["research_topic"] in report_content, "Report should contain topic"
+
         print("✅ Combined Pipeline test passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ Combined Pipeline test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -788,14 +814,14 @@ async def main():
     print("=" * 70)
     print("Testing all examples from docs/reference/tool_catalog.md")
     print("=" * 70)
-    
+
     # Check for API keys
     if not os.getenv("OPENAI_API_KEY") and not os.getenv("ANTHROPIC_API_KEY"):
         print("\n⚠️  WARNING: No API keys found!")
         print("Please set OPENAI_API_KEY or ANTHROPIC_API_KEY")
         print("Some tests may fail without API access.")
         print()
-    
+
     # Define all tests
     tests = [
         ("FileSystemTool", test_filesystem_tool),
@@ -809,40 +835,40 @@ async def main():
         ("SubPipelineTool", test_sub_pipeline_tool),
         ("Combined Research Pipeline", test_combined_pipeline),
     ]
-    
+
     # Run tests
     results = []
     for test_name, test_func in tests:
         print(f"\n{'='*70}")
         print(f"Running: {test_name}")
-        print("="*70)
-        
+        print("=" * 70)
+
         try:
             success = await test_func()
             results.append((test_name, success))
         except Exception as e:
             print(f"❌ Test {test_name} crashed: {e}")
             results.append((test_name, False))
-    
+
     # Summary
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST SUMMARY")
-    print("="*70)
-    
+    print("=" * 70)
+
     for test_name, success in results:
         status = "✅ PASSED" if success else "❌ FAILED"
         print(f"{status} - {test_name}")
-    
+
     passed = sum(1 for _, success in results if success)
     total = len(results)
-    
+
     print(f"\nTotal: {passed}/{total} tests passed")
-    
+
     if passed == total:
         print("\n🎉 All tool catalog examples are working correctly!")
     else:
         print(f"\n⚠️  {total - passed} tests failed. Please check the errors above.")
-    
+
     return passed == total
 
 

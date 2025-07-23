@@ -78,13 +78,13 @@ class OpenAIModel(Model):
         """Normalize model name to OpenAI format."""
         # Handle common variations
         name_lower = name.lower()
-        
+
         # GPT-4.1 variations
         if "gpt-4.1" in name_lower or "gpt-41" in name_lower:
             if "mini" in name_lower:
                 return "gpt-4-0125-preview"  # Using latest GPT-4 as substitute
             return "gpt-4-turbo-preview"
-        
+
         # GPT-4 variations
         if name_lower.startswith("gpt-4"):
             if "turbo" in name_lower:
@@ -92,13 +92,13 @@ class OpenAIModel(Model):
             elif "32k" in name_lower:
                 return "gpt-4-32k"
             return "gpt-4"
-        
+
         # GPT-3.5 variations
         if "gpt-3.5" in name_lower or "gpt-35" in name_lower:
             if "16k" in name_lower:
                 return "gpt-3.5-turbo-16k"
             return "gpt-3.5-turbo"
-        
+
         # Default: return as-is
         return name
 
@@ -111,11 +111,17 @@ class OpenAIModel(Model):
             context_window = 128000 if "turbo" in name_lower else 8192
             if "32k" in name_lower:
                 context_window = 32768
-            
+
             return ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "code", 
-                    "reasoning", "creative", "chat", "instruct"
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                    "creative",
+                    "chat",
+                    "instruct",
                 ],
                 context_window=context_window,
                 supports_function_calling=True,
@@ -136,12 +142,9 @@ class OpenAIModel(Model):
         # GPT-3.5 models
         elif "gpt-3.5" in name_lower:
             context_window = 16385 if "16k" in name_lower else 4096
-            
+
             return ModelCapabilities(
-                supported_tasks=[
-                    "generate", "analyze", "transform", "code", 
-                    "chat", "instruct"
-                ],
+                supported_tasks=["generate", "analyze", "transform", "code", "chat", "instruct"],
                 context_window=context_window,
                 supports_function_calling=True,
                 supports_structured_output=True,
@@ -171,58 +174,50 @@ class OpenAIModel(Model):
     def _get_model_expertise(self, name: str) -> list[str]:
         """Get model expertise areas."""
         name_lower = name.lower()
-        
+
         if "gpt-4" in name_lower:
             return ["general", "reasoning", "code", "creative", "analysis"]
         elif "gpt-3.5" in name_lower:
             return ["general", "chat", "instruct"]
-        
+
         return ["general"]
 
     def _estimate_model_size(self, name: str) -> float:
         """Estimate model size in billions of parameters."""
         name_lower = name.lower()
-        
+
         if "gpt-4" in name_lower:
             return 1760.0  # Estimated
         elif "gpt-3.5" in name_lower:
             return 175.0
-        
+
         return 1.0
-    
+
     def _get_model_cost(self, name: str) -> ModelCost:
         """Get cost information for model."""
         name_lower = name.lower()
-        
+
         # GPT-4 pricing (as of 2024)
         if "gpt-4" in name_lower:
             if "turbo" in name_lower or "preview" in name_lower:
                 return ModelCost(
-                    input_cost_per_1k_tokens=0.01,
-                    output_cost_per_1k_tokens=0.03,
-                    is_free=False
+                    input_cost_per_1k_tokens=0.01, output_cost_per_1k_tokens=0.03, is_free=False
                 )
             else:
                 return ModelCost(
-                    input_cost_per_1k_tokens=0.03,
-                    output_cost_per_1k_tokens=0.06,
-                    is_free=False
+                    input_cost_per_1k_tokens=0.03, output_cost_per_1k_tokens=0.06, is_free=False
                 )
-        
+
         # GPT-3.5 pricing
         elif "gpt-3.5" in name_lower:
             return ModelCost(
-                input_cost_per_1k_tokens=0.0005,
-                output_cost_per_1k_tokens=0.0015,
-                is_free=False
+                input_cost_per_1k_tokens=0.0005, output_cost_per_1k_tokens=0.0015, is_free=False
             )
-        
+
         # Default pricing for unknown models
         else:
             return ModelCost(
-                input_cost_per_1k_tokens=0.002,
-                output_cost_per_1k_tokens=0.002,
-                is_free=False
+                input_cost_per_1k_tokens=0.002, output_cost_per_1k_tokens=0.002, is_free=False
             )
 
     async def generate(
@@ -247,7 +242,7 @@ class OpenAIModel(Model):
         try:
             # Prepare messages
             messages = [{"role": "user", "content": prompt}]
-            
+
             # Add system message if provided
             if "system_prompt" in kwargs:
                 messages.insert(0, {"role": "system", "content": kwargs["system_prompt"]})
@@ -265,7 +260,7 @@ class OpenAIModel(Model):
             # Extract response
             if response.choices and response.choices[0].message:
                 return response.choices[0].message.content or ""
-            
+
             return ""
 
         except Exception as e:
@@ -293,8 +288,10 @@ class OpenAIModel(Model):
         """
         try:
             # Add schema instruction to prompt
-            schema_prompt = f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
-            
+            schema_prompt = (
+                f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
+            )
+
             # Generate response
             response = await self.generate(
                 prompt=schema_prompt,
@@ -304,12 +301,14 @@ class OpenAIModel(Model):
 
             # Parse JSON response
             import json
+
             try:
                 return json.loads(response)
             except json.JSONDecodeError:
                 # Try to extract JSON from response
                 import re
-                json_match = re.search(r'\{.*\}', response, re.DOTALL)
+
+                json_match = re.search(r"\{.*\}", response, re.DOTALL)
                 if json_match:
                     return json.loads(json_match.group())
                 raise
@@ -353,6 +352,7 @@ class OpenAIModel(Model):
         """
         # Estimate token counts
         import tiktoken
+
         try:
             encoding = tiktoken.encoding_for_model(self._model_id)
             prompt_tokens = len(encoding.encode(prompt))

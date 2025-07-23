@@ -7,8 +7,8 @@ from .task_executor import UniversalTaskExecutor
 
 __all__ = [
     "DeclarativePipelineEngine",
-    "EnhancedAutoResolver", 
+    "EnhancedAutoResolver",
     "UniversalTaskExecutor",
     "PipelineSpec",
-    "TaskSpec"
+    "TaskSpec",
 ]

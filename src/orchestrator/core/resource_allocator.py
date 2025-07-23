@@ -145,9 +145,7 @@ class PriorityBasedStrategy(ResourceAllocationStrategy):
             adjusted_request = requested * priority_multiplier
 
             if available_amount >= adjusted_request:
-                allocation[resource_type] = min(
-                    adjusted_request, requested * 1.2
-                )  # Max 20% bonus
+                allocation[resource_type] = min(adjusted_request, requested * 1.2)  # Max 20% bonus
             elif available_amount >= request.min_resources.get(resource_type, 0.0):
                 allocation[resource_type] = available_amount
             else:
@@ -273,9 +271,7 @@ class ResourcePool:
                 "allocated": usage.used,
                 "reserved": usage.reserved,
                 "utilization": (
-                    (usage.used + usage.reserved) / self.quota.limit
-                    if self.quota.limit > 0
-                    else 0
+                    (usage.used + usage.reserved) / self.quota.limit if self.quota.limit > 0 else 0
                 ),
                 "active_allocations": len(self.allocations),
                 "active_reservations": len(self.reservations),
@@ -304,9 +300,7 @@ class ResourceAllocator:
         if resource_type in self.pools:
             # Release all allocations
             pool = self.pools[resource_type]
-            for task_id in list(pool.allocations.keys()) + list(
-                pool.reservations.keys()
-            ):
+            for task_id in list(pool.allocations.keys()) + list(pool.reservations.keys()):
                 pool.release(task_id)
 
             del self.pools[resource_type]
@@ -333,8 +327,7 @@ class ResourceAllocator:
 
             # Check if allocation meets minimum requirements
             allocation_viable = all(
-                allocation.get(res_type, 0.0)
-                >= request.min_resources.get(res_type, 0.0)
+                allocation.get(res_type, 0.0) >= request.min_resources.get(res_type, 0.0)
                 for res_type in request.resources
             )
 
@@ -442,9 +435,7 @@ class ResourceAllocator:
         """Get current resource allocation for a task."""
         return self.task_allocations.get(task_id, {})
 
-    def get_resource_usage(
-        self, resource_type: ResourceType
-    ) -> Optional[ResourceUsage]:
+    def get_resource_usage(self, resource_type: ResourceType) -> Optional[ResourceUsage]:
         """Get usage for a specific resource type."""
         if resource_type in self.pools:
             return self.pools[resource_type].get_usage()
@@ -476,7 +467,7 @@ class ResourceAllocator:
             "allocation_history_size": len(self.allocation_history),
             "strategy": type(self.strategy).__name__,
         }
-    
+
     async def get_utilization(self) -> Dict[str, Any]:
         """Get current resource utilization metrics."""
         async with self._lock:
@@ -486,28 +477,28 @@ class ResourceAllocator:
                 cpu_pool = self.pools[ResourceType.CPU]
                 cpu_stats = cpu_pool.get_statistics()
                 cpu_usage = cpu_stats.get("utilization", 0.0)
-            
+
             # Calculate memory usage
             memory_usage = 0.0
             if ResourceType.MEMORY in self.pools:
                 memory_pool = self.pools[ResourceType.MEMORY]
                 memory_stats = memory_pool.get_statistics()
                 memory_usage = memory_stats.get("utilization", 0.0)
-            
+
             # Calculate GPU usage if available
             gpu_usage = 0.0
             if ResourceType.GPU in self.pools:
                 gpu_pool = self.pools[ResourceType.GPU]
                 gpu_stats = gpu_pool.get_statistics()
                 gpu_usage = gpu_stats.get("utilization", 0.0)
-            
+
             # Calculate API quota usage
             api_usage = 0.0
             if ResourceType.API_QUOTA in self.pools:
                 api_pool = self.pools[ResourceType.API_QUOTA]
                 api_stats = api_pool.get_statistics()
                 api_usage = api_stats.get("utilization", 0.0)
-            
+
             return {
                 "cpu_usage": cpu_usage,
                 "memory_usage": memory_usage,

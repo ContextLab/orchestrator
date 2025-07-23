@@ -19,7 +19,7 @@ class ModelCapabilities:
     languages: List[str] = field(default_factory=lambda: ["en"])
     max_tokens: Optional[int] = None
     temperature_range: tuple[float, float] = (0.0, 2.0)
-    
+
     # Enhanced capabilities for intelligent routing
     domains: List[str] = field(default_factory=list)  # e.g., ["medical", "legal", "creative"]
     vision_capable: bool = False
@@ -124,12 +124,12 @@ class ModelRequirements:
 @dataclass
 class ModelCost:
     """Cost information for a model."""
-    
+
     input_cost_per_1k_tokens: float = 0.0  # Cost per 1000 input tokens in USD
     output_cost_per_1k_tokens: float = 0.0  # Cost per 1000 output tokens in USD
     base_cost_per_request: float = 0.0  # Fixed cost per request in USD
     is_free: bool = False  # True for local/self-hosted models
-    
+
     def __post_init__(self) -> None:
         """Validate cost information."""
         if self.input_cost_per_1k_tokens < 0:
@@ -138,16 +138,16 @@ class ModelCost:
             raise ValueError("Output cost must be non-negative")
         if self.base_cost_per_request < 0:
             raise ValueError("Base cost must be non-negative")
-    
+
     def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """Calculate total cost for a request."""
         if self.is_free:
             return 0.0
-        
+
         input_cost = (input_tokens / 1000) * self.input_cost_per_1k_tokens
         output_cost = (output_tokens / 1000) * self.output_cost_per_1k_tokens
         return self.base_cost_per_request + input_cost + output_cost
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         return {
@@ -156,7 +156,7 @@ class ModelCost:
             "base_cost_per_request": self.base_cost_per_request,
             "is_free": self.is_free,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ModelCost:
         """Create from dictionary representation."""

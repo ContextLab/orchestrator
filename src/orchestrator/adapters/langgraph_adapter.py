@@ -168,7 +168,7 @@ class LangGraphAdapter(ControlSystem):
         self.config = config
         self.workflows: Dict[str, LangGraphWorkflow] = {}
         self.active_executions: Dict[str, LangGraphState] = {}
-        
+
         # Initialize model registry and control system for task execution
         self.model_registry = model_registry or get_model_registry()
         self.execution_control = ModelBasedControlSystem(self.model_registry)
@@ -224,7 +224,7 @@ class LangGraphAdapter(ControlSystem):
         """Return system capabilities."""
         # Combine LangGraph capabilities with underlying execution capabilities
         base_capabilities = self.execution_control.get_capabilities()
-        
+
         langgraph_capabilities = {
             "supports_workflows": True,
             "supports_conditional_execution": True,
@@ -232,11 +232,11 @@ class LangGraphAdapter(ControlSystem):
             "supports_checkpointing": True,
             "supports_state_management": True,
         }
-        
+
         # Merge capabilities
         combined = base_capabilities.copy()
         combined.update(langgraph_capabilities)
-        
+
         return combined
 
     async def health_check(self) -> bool:
@@ -244,10 +244,10 @@ class LangGraphAdapter(ControlSystem):
         try:
             # Check underlying execution system health
             execution_healthy = await self.execution_control.health_check()
-            
+
             # Check if we have models available
             models_available = len(await self.model_registry.get_available_models()) > 0
-            
+
             return execution_healthy and models_available
         except Exception:
             return False
@@ -260,26 +260,27 @@ class LangGraphAdapter(ControlSystem):
             "execution_id": state_data.get("execution_id"),
             "workflow_name": state_data.get("workflow_name"),
         }
-        
+
         # Add any previous results from the state
         if "previous_results" in state_data:
             context["previous_results"] = state_data["previous_results"]
         elif state_data:
             # Use state data as previous results if not explicitly set
-            context["previous_results"] = {k: v for k, v in state_data.items() 
-                                          if k not in ["execution_id", "workflow_name"]}
-        
+            context["previous_results"] = {
+                k: v for k, v in state_data.items() if k not in ["execution_id", "workflow_name"]
+            }
+
         try:
             # Execute the task using the model-based control system
             result = await self.execution_control.execute_task(task, context)
-            
+
             # Store result in state for downstream tasks
             if "previous_results" not in state_data:
                 state_data["previous_results"] = {}
             state_data["previous_results"][task.id] = result
-            
+
             return result
-            
+
         except Exception as e:
             # Log the error and raise with context
             error_msg = f"Failed to execute task {task.id} in LangGraph workflow: {str(e)}"
@@ -339,9 +340,7 @@ class LangGraphAdapter(ControlSystem):
 
         # Count active executions for this workflow
         active_count = sum(
-            1
-            for exec_id in self.active_executions
-            if exec_id.startswith(f"{workflow_name}_")
+            1 for exec_id in self.active_executions if exec_id.startswith(f"{workflow_name}_")
         )
 
         return {

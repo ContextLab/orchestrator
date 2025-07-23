@@ -17,17 +17,13 @@ class TestPipelineExtended:
 
         # Add tasks one by one to test circular dependency detection at each step
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(
-            id="task2", name="Task 2", action="action2", dependencies=["task1"]
-        )
+        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
 
         # Now try to add a task that creates a circular dependency
-        task3 = Task(
-            id="task3", name="Task 3", action="action3", dependencies=["task2"]
-        )
+        task3 = Task(id="task3", name="Task 3", action="action3", dependencies=["task2"])
         pipeline.add_task(task3)
 
         # This should create a circular dependency
@@ -50,12 +46,8 @@ class TestPipelineExtended:
 
         # Build a complex pipeline first
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(
-            id="task2", name="Task 2", action="action2", dependencies=["task1"]
-        )
-        task3 = Task(
-            id="task3", name="Task 3", action="action3", dependencies=["task2"]
-        )
+        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
+        task3 = Task(id="task3", name="Task 3", action="action3", dependencies=["task2"])
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
@@ -73,16 +65,10 @@ class TestPipelineExtended:
 
         # Create a pipeline with potential for multiple cycles
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(
-            id="task2", name="Task 2", action="action2", dependencies=["task1"]
-        )
-        task3 = Task(
-            id="task3", name="Task 3", action="action3", dependencies=["task2"]
-        )
+        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
+        task3 = Task(id="task3", name="Task 3", action="action3", dependencies=["task2"])
         task4 = Task(id="task4", name="Task 4", action="action4")
-        task5 = Task(
-            id="task5", name="Task 5", action="action5", dependencies=["task4"]
-        )
+        task5 = Task(id="task5", name="Task 5", action="action5", dependencies=["task4"])
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
@@ -102,13 +88,9 @@ class TestPipelineExtended:
         pipeline = Pipeline(id="test", name="Test Pipeline")
 
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(
-            id="task2", name="Task 2", action="action2", dependencies=["task1"]
-        )
+        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
         task3 = Task(id="task3", name="Task 3", action="action3")
-        task4 = Task(
-            id="task4", name="Task 4", action="action4", dependencies=["task1"]
-        )
+        task4 = Task(id="task4", name="Task 4", action="action4", dependencies=["task1"])
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
@@ -131,9 +113,7 @@ class TestPipelineExtended:
         pipeline = Pipeline(id="test", name="Test Pipeline")
 
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(
-            id="task2", name="Task 2", action="action2", dependencies=["task1"]
-        )
+        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
@@ -142,9 +122,7 @@ class TestPipelineExtended:
         task1.dependencies = ["task2"]
 
         # This should raise an error when trying to get execution order
-        with pytest.raises(
-            CircularDependencyError, match="Cannot determine execution order"
-        ):
+        with pytest.raises(CircularDependencyError, match="Cannot determine execution order"):
             pipeline.get_execution_order()
 
     def test_critical_path_empty_pipeline(self):
@@ -253,9 +231,7 @@ class TestPipelineExtended:
 
         # Task with self-dependency should be caught by Task validation
         with pytest.raises(ValueError, match="cannot depend on itself"):
-            Task(
-                id="task1", name="Task 1", action="action1", dependencies=["task1"]
-            )
+            Task(id="task1", name="Task 1", action="action1", dependencies=["task1"])
 
     def test_dependency_validation_with_valid_dependencies(self):
         """Test that valid dependencies don't raise errors."""
@@ -265,9 +241,7 @@ class TestPipelineExtended:
         pipeline.add_task(task1)
 
         # This should work fine
-        task2 = Task(
-            id="task2", name="Task 2", action="action2", dependencies=["task1"]
-        )
+        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
         pipeline.add_task(task2)
 
         # Validate dependencies manually
@@ -278,12 +252,8 @@ class TestPipelineExtended:
         pipeline = Pipeline(id="test", name="Test Pipeline")
 
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(
-            id="task2", name="Task 2", action="action2", dependencies=["task1"]
-        )
-        task3 = Task(
-            id="task3", name="Task 3", action="action3", dependencies=["task1"]
-        )
+        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
+        task3 = Task(id="task3", name="Task 3", action="action3", dependencies=["task1"])
         task4 = Task(id="task4", name="Task 4", action="action4")
 
         pipeline.add_task(task1)
@@ -310,15 +280,9 @@ class TestPipelineExtended:
 
         task1 = Task(id="task1", name="Task 1", action="action1")
         task2 = Task(id="task2", name="Task 2", action="action2")
-        task3 = Task(
-            id="task3", name="Task 3", action="action3", dependencies=["task1"]
-        )
-        task4 = Task(
-            id="task4", name="Task 4", action="action4", dependencies=["task2"]
-        )
-        task5 = Task(
-            id="task5", name="Task 5", action="action5", dependencies=["task3", "task4"]
-        )
+        task3 = Task(id="task3", name="Task 3", action="action3", dependencies=["task1"])
+        task4 = Task(id="task4", name="Task 4", action="action4", dependencies=["task2"])
+        task5 = Task(id="task5", name="Task 5", action="action5", dependencies=["task3", "task4"])
 
         for task in [task1, task2, task3, task4, task5]:
             pipeline.add_task(task)

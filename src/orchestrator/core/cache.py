@@ -278,20 +278,14 @@ class MemoryCache(CacheBackend):
     async def _evict_by_memory(self, needed_size: int):
         """Evict entries to free up memory."""
         if self.eviction_policy == EvictionPolicy.LRU:
-            while (
-                self._current_memory + needed_size > self.max_memory and self._storage
-            ):
+            while self._current_memory + needed_size > self.max_memory and self._storage:
                 key, entry = self._storage.popitem(last=False)
                 self._current_memory -= entry.size
 
         elif self.eviction_policy == EvictionPolicy.LFU:
             # Sort by access count and remove least frequently used
-            while (
-                self._current_memory + needed_size > self.max_memory and self._storage
-            ):
-                lfu_key = min(
-                    self._storage.keys(), key=lambda k: self._storage[k].access_count
-                )
+            while self._current_memory + needed_size > self.max_memory and self._storage:
+                lfu_key = min(self._storage.keys(), key=lambda k: self._storage[k].access_count)
                 entry = self._storage[lfu_key]
                 self._current_memory -= entry.size
                 del self._storage[lfu_key]
@@ -316,9 +310,7 @@ class MemoryCache(CacheBackend):
                 key, entry = self._storage.popitem(last=False)
                 self._current_memory -= entry.size
             elif self.eviction_policy == EvictionPolicy.LFU:
-                lfu_key = min(
-                    self._storage.keys(), key=lambda k: self._storage[k].access_count
-                )
+                lfu_key = min(self._storage.keys(), key=lambda k: self._storage[k].access_count)
                 entry = self._storage[lfu_key]
                 self._current_memory -= entry.size
                 del self._storage[lfu_key]
@@ -334,9 +326,7 @@ class MemoryCache(CacheBackend):
             "memory_utilization": (
                 self._current_memory / self.max_memory if self.max_memory > 0 else 0
             ),
-            "size_utilization": (
-                len(self._storage) / self.max_size if self.max_size > 0 else 0
-            ),
+            "size_utilization": (len(self._storage) / self.max_size if self.max_size > 0 else 0),
         }
 
     async def set(self, key: str, value: Any, ttl: Optional[float] = None) -> bool:
@@ -354,9 +344,7 @@ class MemoryCache(CacheBackend):
                 import concurrent.futures
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(
-                        asyncio.run, self.async_set(key, value, ttl)
-                    )
+                    future = executor.submit(asyncio.run, self.async_set(key, value, ttl))
                     future.result()
             else:
                 loop.run_until_complete(self.async_set(key, value, ttl))
@@ -446,9 +434,7 @@ class MemoryCache(CacheBackend):
 class DiskCache(CacheBackend):
     """Disk-based cache backend."""
 
-    def __init__(
-        self, cache_dir: str = "/tmp/orchestrator_cache", max_size: int = 10000
-    ):
+    def __init__(self, cache_dir: str = "/tmp/orchestrator_cache", max_size: int = 10000):
         import os
 
         self.cache_dir = cache_dir
@@ -612,9 +598,7 @@ class DiskCache(CacheBackend):
             return
 
         # Find oldest entry
-        oldest_key = min(
-            self._index.keys(), key=lambda k: self._index[k].get("accessed_at", 0)
-        )
+        oldest_key = min(self._index.keys(), key=lambda k: self._index[k].get("accessed_at", 0))
 
         await self.delete(oldest_key)
 
@@ -804,9 +788,7 @@ class DistributedCache(CacheBackend):
         except Exception:
             return []
 
-    async def batch_set(
-        self, keys_values: List[tuple], ttl: Optional[int] = None
-    ) -> bool:
+    async def batch_set(self, keys_values: List[tuple], ttl: Optional[int] = None) -> bool:
         """Set multiple key-value pairs in batch."""
         try:
             success_count = 0
@@ -881,7 +863,7 @@ class RedisCache(DistributedCache):
         # Store original Redis parameters for compatibility
         self.redis_url = redis_url
         self.auto_fallback = auto_fallback
-    
+
     def _check_and_start_redis(self, redis_url: str) -> bool:
         """Check if Redis is running and attempt to start it if not."""
         import subprocess
@@ -892,10 +874,11 @@ class RedisCache(DistributedCache):
         parsed = urlparse(redis_url)
         host = parsed.hostname or "localhost"
         port = parsed.port or 6379
-        
+
         # Check if Redis is already running
         try:
             import socket
+
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
             result = sock.connect_ex((host, int(port)))
@@ -904,46 +887,47 @@ class RedisCache(DistributedCache):
                 return True  # Redis is already running
         except Exception:
             pass
-        
+
         # Try to start Redis server
         try:
             # Try different Redis server commands
             redis_commands = ["redis-server", "redis-server.exe", "/usr/local/bin/redis-server"]
-            
+
             for cmd in redis_commands:
                 try:
                     # Start Redis in background with custom port if needed
                     if port != 6379:
-                        process = subprocess.Popen([cmd, "--port", str(port)], 
-                                                 stdout=subprocess.DEVNULL, 
-                                                 stderr=subprocess.DEVNULL)
+                        process = subprocess.Popen(
+                            [cmd, "--port", str(port)],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
                     else:
-                        process = subprocess.Popen([cmd], 
-                                                 stdout=subprocess.DEVNULL, 
-                                                 stderr=subprocess.DEVNULL)
-                    
+                        process = subprocess.Popen(
+                            [cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                        )
+
                     # Give Redis time to start
                     time.sleep(0.5)
-                    
+
                     # Check if Redis started successfully
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     sock.settimeout(1)
                     result = sock.connect_ex((host, int(port)))
                     sock.close()
-                    
+
                     if result == 0:
                         return True  # Redis started successfully
                     else:
                         process.terminate()  # Stop the process if it didn't work
-                        
+
                 except (FileNotFoundError, OSError):
                     continue  # Try next command
-                    
+
         except Exception:
             pass
-            
-        return False  # Could not start Redis
 
+        return False  # Could not start Redis
 
 
 class MultiLevelCache:
@@ -965,14 +949,10 @@ class MultiLevelCache:
 
         # Redis cache (with fallback if Redis not available)
         try:
-            self.redis_cache = RedisCache(
-                config.get("redis_url", "redis://localhost:6379")
-            )
+            self.redis_cache = RedisCache(config.get("redis_url", "redis://localhost:6379"))
         except Exception:
             # Fallback to memory cache if Redis not available
-            self.redis_cache = MemoryCache(
-                max_size=1000, eviction_policy=EvictionPolicy.LRU
-            )
+            self.redis_cache = MemoryCache(max_size=1000, eviction_policy=EvictionPolicy.LRU)
 
         # Cache strategy (placeholder)
         self.cache_strategy = "multi_level"
@@ -1077,9 +1057,7 @@ class MultiLevelCache:
 
         return success
 
-    async def _promote_entry(
-        self, key: str, entry: CacheEntry, current_level: CacheLevel
-    ):
+    async def _promote_entry(self, key: str, entry: CacheEntry, current_level: CacheLevel):
         """Promote entry to higher cache levels."""
         current_index = self.level_order.index(current_level)
 
@@ -1102,9 +1080,7 @@ class MultiLevelCache:
             "total_misses": self.miss_stats,
             "hit_rate": total_hits / total_requests if total_requests > 0 else 0,
             "miss_rate": self.miss_stats / total_requests if total_requests > 0 else 0,
-            "level_hits": {
-                level.name: count for level, count in self.hit_stats.items()
-            },
+            "level_hits": {level.name: count for level, count in self.hit_stats.items()},
             "level_statistics": {},
         }
 
@@ -1276,9 +1252,7 @@ class CacheStrategy:
 
         return optimizations
 
-    def select_warmup_keys(
-        self, available_keys: List[str], max_keys: int = 10
-    ) -> List[str]:
+    def select_warmup_keys(self, available_keys: List[str], max_keys: int = 10) -> List[str]:
         """Select keys for cache warmup."""
         priority_keys = []
 

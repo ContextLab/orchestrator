@@ -17,12 +17,12 @@ class LazyOllamaModel(OllamaModel):
         super().__init__(model_name=model_name, **kwargs)
         # Override availability to True initially (we'll check on first use)
         self._is_available = True
-    
+
     def _check_ollama_availability(self) -> None:
         """Override parent's availability check - we check lazily on first use."""
         # Don't check availability during init - we'll do it on first use
         self._is_available = True
-    
+
     def _pull_model(self) -> None:
         """Override parent's pull method - we do this lazily."""
         # Don't pull during init - we'll do it on first use

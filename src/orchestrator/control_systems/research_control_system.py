@@ -10,6 +10,7 @@ from urllib.parse import quote
 
 try:
     import requests
+
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
@@ -21,14 +22,17 @@ from ..core.pipeline import Pipeline
 
 class ResearchReportControlSystem(ControlSystem):
     """Control system that implements research report generation."""
-    
+
     def __init__(self, output_dir: str = "./output/research"):
         # Define capabilities for research control system
         config = {
             "capabilities": {
                 "supported_actions": [
-                    "search_web", "compile_markdown", "generate_report",
-                    "validate_report", "finalize_report"
+                    "search_web",
+                    "compile_markdown",
+                    "generate_report",
+                    "validate_report",
+                    "finalize_report",
                 ],
                 "parallel_execution": True,
                 "streaming": False,
@@ -36,19 +40,19 @@ class ResearchReportControlSystem(ControlSystem):
             },
             "base_priority": 15,
         }
-        
+
         super().__init__(name="research-report-system", config=config)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._results = {}
-    
+
     async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute a research task."""
         print(f"\n⚙️  Executing task: {task.id} ({task.action})")
-        
+
         # Resolve $results references
         self._resolve_references(task, context)
-        
+
         # Route to appropriate handler
         if task.action == "search_web":
             result = await self._search_web(task, context)
@@ -62,13 +66,13 @@ class ResearchReportControlSystem(ControlSystem):
             result = await self._finalize_report(task, context)
         else:
             result = {"status": "completed", "message": f"Executed {task.action}"}
-        
+
         # Store result
         self._results[task.id] = result
         task.status = TaskStatus.COMPLETED
-        
+
         return result
-    
+
     async def execute_pipeline(self, pipeline: Pipeline) -> Dict[str, Any]:
         """Execute a research pipeline."""
         results: Dict[str, Any] = {}
@@ -97,11 +101,11 @@ class ResearchReportControlSystem(ControlSystem):
             results.update(level_results)
 
         return results
-    
+
     def get_capabilities(self) -> Dict[str, Any]:
         """Get control system capabilities."""
         return self._capabilities
-    
+
     async def health_check(self) -> bool:
         """Check if control system is healthy."""
         # Check if output directory is writable
@@ -112,12 +116,12 @@ class ResearchReportControlSystem(ControlSystem):
             return True
         except Exception:
             return False
-    
+
     def _resolve_references(self, task: Task, context: dict):
         """Resolve $results and template references."""
         if not task.parameters:
             return
-            
+
         for key, value in task.parameters.items():
             if isinstance(value, str):
                 # Handle $results references
@@ -134,190 +138,200 @@ class ResearchReportControlSystem(ControlSystem):
                                     result = None
                                     break
                             task.parameters[key] = result
-                
+
                 # Handle template variables
                 elif "{{" in value and "}}" in value:
                     # Simple template replacement
-                    if context and 'inputs' in context:
-                        for input_key, input_value in context['inputs'].items():
+                    if context and "inputs" in context:
+                        for input_key, input_value in context["inputs"].items():
                             value = value.replace(f"{{{{ inputs.{input_key} }}}}", str(input_value))
                     task.parameters[key] = value
-    
+
     async def _search_web(self, task: Task, context: dict) -> Dict[str, Any]:
         """Perform web search for research."""
         query = task.parameters.get("query", "")
         sources = task.parameters.get("sources", ["web"])
-        
+
         print(f"   🔍 Searching: '{query}'")
         print(f"   📚 Sources: {sources}")
-        
+
         # Perform real web searches
         results = []
-        
+
         # Check if requests is available
         if not REQUESTS_AVAILABLE:
             print("   ⚠️  requests library not available, cannot perform web searches")
-            results.append({
-                "title": "Search unavailable",
-                "url": "",
-                "snippet": "The requests library is not installed. Install it with: pip install requests",
-                "source": "error",
-                "relevance": 0.0
-            })
-            
+            results.append(
+                {
+                    "title": "Search unavailable",
+                    "url": "",
+                    "snippet": "The requests library is not installed. Install it with: pip install requests",
+                    "source": "error",
+                    "relevance": 0.0,
+                }
+            )
+
             # Save error result and return
             search_file = self.output_dir / "search_results.json"
             with open(search_file, "w") as f:
                 json.dump({"query": query, "results": results}, f, indent=2)
-            
+
             return {
                 "query": query,
                 "results": results,
                 "count": len(results),
-                "file": str(search_file)
+                "file": str(search_file),
             }
-        
+
         # Try to use real search APIs
         if "web" in sources:
             try:
                 # Try DuckDuckGo search first (no API key required)
                 search_url = f"https://api.duckduckgo.com/?q={quote(query)}&format=json"
                 response = requests.get(search_url, timeout=10)
-                
+
                 if response.status_code in [200, 202]:
                     data = response.json()
-                    
+
                     # Extract results from DuckDuckGo response
                     if data.get("RelatedTopics"):
                         for topic in data["RelatedTopics"][:5]:  # Get top 5 results
                             if isinstance(topic, dict) and topic.get("Text"):
-                                results.append({
-                                    "title": topic.get("Text", "").split(" - ")[0][:100],
-                                    "url": topic.get("FirstURL", ""),
-                                    "snippet": topic.get("Text", ""),
-                                    "source": "web",
-                                    "relevance": 0.8  # DuckDuckGo doesn't provide relevance scores
-                                })
-                    
+                                results.append(
+                                    {
+                                        "title": topic.get("Text", "").split(" - ")[0][:100],
+                                        "url": topic.get("FirstURL", ""),
+                                        "snippet": topic.get("Text", ""),
+                                        "source": "web",
+                                        "relevance": 0.8,  # DuckDuckGo doesn't provide relevance scores
+                                    }
+                                )
+
                     # Also check for instant answer
                     if data.get("Abstract"):
-                        results.insert(0, {
-                            "title": data.get("Heading", query),
-                            "url": data.get("AbstractURL", ""),
-                            "snippet": data.get("Abstract", ""),
-                            "source": "web",
-                            "relevance": 0.9
-                        })
+                        results.insert(
+                            0,
+                            {
+                                "title": data.get("Heading", query),
+                                "url": data.get("AbstractURL", ""),
+                                "snippet": data.get("Abstract", ""),
+                                "source": "web",
+                                "relevance": 0.9,
+                            },
+                        )
             except Exception as e:
                 print(f"   ⚠️  DuckDuckGo search failed: {e}")
-                
+
                 # Fallback to Google Search API if available
                 try:
                     google_api_key = os.getenv("GOOGLE_API_KEY")
                     google_cse_id = os.getenv("GOOGLE_CSE_ID")
-                    
+
                     if google_api_key and google_cse_id:
                         google_url = f"https://www.googleapis.com/customsearch/v1?key={google_api_key}&cx={google_cse_id}&q={quote(query)}"
                         response = requests.get(google_url, timeout=10)
-                        
+
                         if response.status_code in [200, 202]:
                             data = response.json()
                             for item in data.get("items", [])[:5]:
-                                results.append({
-                                    "title": item.get("title", ""),
-                                    "url": item.get("link", ""),
-                                    "snippet": item.get("snippet", ""),
-                                    "source": "web",
-                                    "relevance": 0.85
-                                })
+                                results.append(
+                                    {
+                                        "title": item.get("title", ""),
+                                        "url": item.get("link", ""),
+                                        "snippet": item.get("snippet", ""),
+                                        "source": "web",
+                                        "relevance": 0.85,
+                                    }
+                                )
                 except Exception as google_error:
                     print(f"   ⚠️  Google search also failed: {google_error}")
-        
+
         if "documentation" in sources and REQUESTS_AVAILABLE:
             # Search specific documentation sites
             doc_queries = [
                 ("OpenAI", f"site:platform.openai.com {query}"),
                 ("LangChain", f"site:python.langchain.com {query}"),
-                ("Hugging Face", f"site:huggingface.co {query}")
+                ("Hugging Face", f"site:huggingface.co {query}"),
             ]
-            
+
             for doc_name, doc_query in doc_queries:
                 try:
                     # Use DuckDuckGo for site-specific searches
                     search_url = f"https://api.duckduckgo.com/?q={quote(doc_query)}&format=json"
                     response = requests.get(search_url, timeout=5)
-                    
+
                     if response.status_code in [200, 202]:
                         data = response.json()
                         if data.get("Abstract"):
-                            results.append({
-                                "title": f"{doc_name}: {data.get('Heading', query)}",
-                                "url": data.get("AbstractURL", ""),
-                                "snippet": data.get("Abstract", ""),
-                                "source": "documentation", 
-                                "relevance": 0.85
-                            })
+                            results.append(
+                                {
+                                    "title": f"{doc_name}: {data.get('Heading', query)}",
+                                    "url": data.get("AbstractURL", ""),
+                                    "snippet": data.get("Abstract", ""),
+                                    "source": "documentation",
+                                    "relevance": 0.85,
+                                }
+                            )
                 except Exception:
                     pass  # Continue with other searches
-        
+
         if "academic" in sources and REQUESTS_AVAILABLE:
             # Search academic sources
             try:
                 # Use arXiv API for academic papers
                 arxiv_url = f"http://export.arxiv.org/api/query?search_query=all:{quote(query)}&max_results=3"
                 response = requests.get(arxiv_url, timeout=10)
-                
+
                 if response.status_code in [200, 202]:
                     root = ET.fromstring(response.content)
-                    
+
                     # Parse arXiv XML response
                     for entry in root.findall("{http://www.w3.org/2005/Atom}entry"):
                         title_elem = entry.find("{http://www.w3.org/2005/Atom}title")
                         summary_elem = entry.find("{http://www.w3.org/2005/Atom}summary")
                         id_elem = entry.find("{http://www.w3.org/2005/Atom}id")
-                        
+
                         if title_elem is not None and summary_elem is not None:
-                            results.append({
-                                "title": title_elem.text.strip().replace("\n", " "),
-                                "url": id_elem.text if id_elem is not None else "",
-                                "snippet": summary_elem.text.strip()[:300] + "...",
-                                "source": "academic",
-                                "relevance": 0.9
-                            })
+                            results.append(
+                                {
+                                    "title": title_elem.text.strip().replace("\n", " "),
+                                    "url": id_elem.text if id_elem is not None else "",
+                                    "snippet": summary_elem.text.strip()[:300] + "...",
+                                    "source": "academic",
+                                    "relevance": 0.9,
+                                }
+                            )
             except Exception as e:
                 print(f"   ⚠️  Academic search failed: {e}")
-        
+
         # If no results were found, return at least a message
         if not results:
-            results.append({
-                "title": "No results found",
-                "url": "",
-                "snippet": f"No search results were found for '{query}'. This may be due to network issues or API limitations.",
-                "source": "error",
-                "relevance": 0.0
-            })
-        
+            results.append(
+                {
+                    "title": "No results found",
+                    "url": "",
+                    "snippet": f"No search results were found for '{query}'. This may be due to network issues or API limitations.",
+                    "source": "error",
+                    "relevance": 0.0,
+                }
+            )
+
         # Save search results
         search_file = self.output_dir / "search_results.json"
         with open(search_file, "w") as f:
             json.dump({"query": query, "results": results}, f, indent=2)
-        
-        return {
-            "query": query,
-            "results": results,
-            "count": len(results),
-            "file": str(search_file)
-        }
-    
+
+        return {"query": query, "results": results, "count": len(results), "file": str(search_file)}
+
     async def _compile_markdown(self, task: Task, context: dict) -> Dict[str, Any]:
         """Compile search results into markdown."""
         content = task.parameters.get("content", {})
         instruction = task.parameters.get("instruction", "")
-        
+
         print(f"   📚 Compiling {content.get('count', 0)} results")
-        
+
         results = content.get("results", [])
-        
+
         # Create comprehensive markdown compilation
         compiled = f"""# Research Compilation: {content.get('query', 'AI Agents')}
 
@@ -332,7 +346,7 @@ This document compiles research findings from web searches, documentation, and a
 ## Search Results by Source
 
 """
-        
+
         # Group by source
         by_source = {}
         for result in results:
@@ -340,7 +354,7 @@ This document compiles research findings from web searches, documentation, and a
             if source not in by_source:
                 by_source[source] = []
             by_source[source].append(result)
-        
+
         for source, items in by_source.items():
             compiled += f"### {source.title()} Sources\n\n"
             for i, item in enumerate(items, 1):
@@ -348,7 +362,7 @@ This document compiles research findings from web searches, documentation, and a
                 compiled += f"**Relevance**: {item.get('relevance', 0):.0%}\n\n"
                 compiled += f"{item['snippet']}\n\n"
                 compiled += "---\n\n"
-        
+
         compiled += """## Key Themes
 
 Based on the search results, several key themes emerge:
@@ -366,19 +380,19 @@ Further analysis should explore:
 - Real-world use cases and examples
 - Performance and cost considerations
 """
-        
+
         # Save compiled markdown
         compiled_file = self.output_dir / "compiled_results.md"
         with open(compiled_file, "w") as f:
             f.write(compiled)
-        
+
         return {
             "content": compiled,
             "word_count": len(compiled.split()),
             "source_count": len(results),
-            "file": str(compiled_file)
+            "file": str(compiled_file),
         }
-    
+
     async def _generate_report(self, task: Task, context: dict) -> Dict[str, Any]:
         """Generate comprehensive research report."""
         try:
@@ -386,21 +400,23 @@ Further analysis should explore:
             topic = task.parameters.get("topic", "AI Agents")
             instructions = task.parameters.get("instructions", "")
             style = task.parameters.get("style", "technical")
-            sections = task.parameters.get("sections", ["introduction", "overview", "details", "examples", "conclusion"])
-            
+            sections = task.parameters.get(
+                "sections", ["introduction", "overview", "details", "examples", "conclusion"]
+            )
+
             # Ensure all values are strings and safe for f-strings
             topic = str(topic) if topic else "AI Agents"
             instructions = str(instructions) if instructions else ""
             style = str(style) if style else "technical"
-            
+
             print(f"   📝 Generating report on: {topic}")
-            
+
             content.get("content", "") if isinstance(content, dict) else str(content)
-        
+
             # Generate comprehensive report
             topic_title = topic.title() if topic else "AI Agents"
             style_title = style.title() if style else "Technical"
-            
+
             report = f"""# {topic_title}: A Comprehensive Research Report
 
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M')}
@@ -661,66 +677,78 @@ The field of AI agents is rapidly evolving with trends including:
 
 *This report was generated by the Orchestrator framework using multiple AI models and automated research tools.*
 """
-        
+
             # Save report
             report_file = self.output_dir / "draft_report.md"
             with open(report_file, "w") as f:
                 f.write(report)
-            
+
             return {
                 "content": report,
                 "word_count": len(report.split()),
                 "sections": sections,
                 "style": style,
-                "file": str(report_file)
+                "file": str(report_file),
             }
-        
+
         except Exception as e:
             print(f"ERROR in _generate_report: {e}")
             import traceback
+
             traceback.print_exc()
             raise
-    
+
     async def _validate_report(self, task: Task, context: dict) -> Dict[str, Any]:
         """Validate report quality."""
         report = task.parameters.get("report", {})
         checks = task.parameters.get("checks", ["completeness"])
-        
+
         print(f"   ✅ Running quality checks: {checks}")
-        
+
         report_content = report.get("content", "") if isinstance(report, dict) else str(report)
-        
+
         validation_results = {}
         issues = []
         recommendations = []
-        
+
         for check in checks:
             if check == "completeness":
                 # Check for required sections
-                required = ["Introduction", "Overview", "Technical Details", "Examples", "Conclusion", "References"]
+                required = [
+                    "Introduction",
+                    "Overview",
+                    "Technical Details",
+                    "Examples",
+                    "Conclusion",
+                    "References",
+                ]
                 missing = [s for s in required if s not in report_content]
                 validation_results[check] = len(missing) == 0
                 if missing:
                     issues.append(f"Missing sections: {', '.join(missing)}")
                     recommendations.append("Add missing sections to ensure comprehensive coverage")
-            
+
             elif check == "accuracy":
                 # Check for technical accuracy indicators
                 has_code = "```python" in report_content or "```" in report_content
-                has_frameworks = all(f in report_content for f in ["LangChain", "AutoGen", "CrewAI"])
+                has_frameworks = all(
+                    f in report_content for f in ["LangChain", "AutoGen", "CrewAI"]
+                )
                 validation_results[check] = has_code and has_frameworks
                 if not has_code:
                     issues.append("No code examples found")
                     recommendations.append("Add practical code examples")
-            
+
             elif check == "sources_cited":
                 # Check for references
-                has_refs = "References" in report_content and ("http" in report_content or "www." in report_content)
+                has_refs = "References" in report_content and (
+                    "http" in report_content or "www." in report_content
+                )
                 validation_results[check] = has_refs
                 if not has_refs:
                     issues.append("References section missing or incomplete")
                     recommendations.append("Add proper citations and references")
-            
+
             elif check == "logical_flow":
                 # Check structure
                 has_toc = "Table of Contents" in report_content or "## " in report_content
@@ -728,36 +756,38 @@ The field of AI agents is rapidly evolving with trends including:
                 if not has_toc:
                     issues.append("Document structure could be improved")
                     recommendations.append("Add clear section headers and organization")
-        
-        overall_score = sum(validation_results.values()) / len(validation_results) if validation_results else 0
-        
+
+        overall_score = (
+            sum(validation_results.values()) / len(validation_results) if validation_results else 0
+        )
+
         result = {
             "validation_passed": overall_score >= 0.75,
             "overall_score": overall_score,
             "checks": validation_results,
             "issues": issues,
             "recommendations": recommendations,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
+
         # Save validation results
         validation_file = self.output_dir / "validation_results.json"
         with open(validation_file, "w") as f:
             json.dump(result, f, indent=2)
-        
+
         return result
-    
+
     async def _finalize_report(self, task: Task, context: dict) -> Dict[str, Any]:
         """Finalize the report with improvements."""
         draft = task.parameters.get("draft", {})
         validation = task.parameters.get("validation", {})
         task.parameters.get("improvements", [])
-        
+
         print("   📄 Finalizing report")
-        
+
         draft_content = draft.get("content", "") if isinstance(draft, dict) else str(draft)
         overall_score = validation.get("overall_score", 0) if isinstance(validation, dict) else 0.8
-        
+
         # Add quality stamp
         quality_stamp = f"""
 
@@ -769,47 +799,50 @@ The field of AI agents is rapidly evolving with trends including:
 **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M')}
 **Framework**: Orchestrator AI Pipeline Framework
 """
-        
+
         if overall_score >= 0.75:
             quality_stamp += "\n✅ This report passed all quality checks."
         else:
             quality_stamp += "\n⚠️ This report may benefit from additional review."
-        
+
         if isinstance(validation, dict) and validation.get("recommendations"):
             quality_stamp += "\n\n### Recommendations for Improvement\n"
             for rec in validation["recommendations"]:
                 quality_stamp += f"- {rec}\n"
-        
+
         final_content = draft_content + quality_stamp
-        
+
         # Save final report
         final_file = self.output_dir / "final_report.md"
         with open(final_file, "w") as f:
             f.write(final_content)
-        
+
         # Also save as the main output
         output_file = self.output_dir / "research_report.md"
         with open(output_file, "w") as f:
             f.write(final_content)
-        
+
         print(f"\n✅ Report saved to: {output_file}")
-        
+
         return {
             "content": final_content,
             "word_count": len(final_content.split()),
             "quality_score": overall_score,
             "file": str(output_file),
-            "final_file": str(final_file)
+            "final_file": str(final_file),
         }
-    
+
     async def can_execute_task(self, task: Task) -> bool:
         """Check if this control system can execute the given task."""
         supported_actions = [
-            "search_web", "compile_markdown", "generate_report",
-            "validate_report", "finalize_report"
+            "search_web",
+            "compile_markdown",
+            "generate_report",
+            "validate_report",
+            "finalize_report",
         ]
         return task.action in supported_actions
-    
+
     async def estimate_resource_requirements(self, task: Task) -> Dict[str, Any]:
         """Estimate resources needed for task execution."""
         # Basic estimates
@@ -819,7 +852,7 @@ The field of AI agents is rapidly evolving with trends including:
             return {"time_seconds": 5, "memory_mb": 100}
         else:
             return {"time_seconds": 1, "memory_mb": 25}
-    
+
     async def validate_task_parameters(self, task: Task) -> bool:
         """Validate that task has required parameters."""
         required_params = {
@@ -827,13 +860,13 @@ The field of AI agents is rapidly evolving with trends including:
             "compile_markdown": ["content"],
             "generate_report": ["content", "topic"],
             "validate_report": ["report"],
-            "finalize_report": ["draft", "validation"]
+            "finalize_report": ["draft", "validation"],
         }
-        
+
         if task.action in required_params:
             for param in required_params[task.action]:
                 if param not in task.parameters:
                     print(f"⚠️  Missing required parameter '{param}' for {task.action}")
                     return False
-        
+
         return True

@@ -132,9 +132,7 @@ class MemoryBackend(StateBackend):
                     "checkpoint_id": checkpoint_id,
                     "execution_id": checkpoint["execution_id"],
                     "timestamp": checkpoint["timestamp"],
-                    "created_at": datetime.fromtimestamp(
-                        checkpoint["timestamp"]
-                    ).isoformat(),
+                    "created_at": datetime.fromtimestamp(checkpoint["timestamp"]).isoformat(),
                     "metadata": metadata,
                 }
             )
@@ -482,9 +480,7 @@ class PostgresBackend(StateBackend):
                         "execution_id": row["execution_id"],
                         "timestamp": row["timestamp"],
                         "created_at": row["created_at"].isoformat(),
-                        "metadata": (
-                            json.loads(row["metadata"]) if row["metadata"] else {}
-                        ),
+                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
                     }
                 )
 
@@ -582,9 +578,7 @@ class RedisBackend(StateBackend):
         )
 
         # Add to execution index
-        await redis_client.zadd(
-            f"execution:{execution_id}:checkpoints", {checkpoint_id: timestamp}
-        )
+        await redis_client.zadd(f"execution:{execution_id}:checkpoints", {checkpoint_id: timestamp})
 
         return checkpoint_id
 
@@ -645,18 +639,14 @@ class RedisBackend(StateBackend):
         redis_client = await self._get_redis()
 
         # Get execution_id first
-        execution_id = await redis_client.hget(
-            f"checkpoint:{checkpoint_id}", "execution_id"
-        )
+        execution_id = await redis_client.hget(f"checkpoint:{checkpoint_id}", "execution_id")
 
         # Delete checkpoint data
         result = await redis_client.delete(f"checkpoint:{checkpoint_id}")
 
         # Remove from execution index
         if execution_id:
-            await redis_client.zrem(
-                f"execution:{execution_id}:checkpoints", checkpoint_id
-            )
+            await redis_client.zrem(f"execution:{execution_id}:checkpoints", checkpoint_id)
 
         return result > 0
 
@@ -679,9 +669,7 @@ class RedisBackend(StateBackend):
         return expired_count
 
 
-def create_backend(
-    backend_type: str, backend_config: Dict[str, Any] = None
-) -> StateBackend:
+def create_backend(backend_type: str, backend_config: Dict[str, Any] = None) -> StateBackend:
     """Factory function to create state backends."""
     backend_config = backend_config or {}
 

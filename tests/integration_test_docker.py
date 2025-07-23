@@ -62,9 +62,7 @@ class DockerExecutor:
         image = self._get_image_for_language(language)
 
         # Create temporary file for code
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=f".{language}", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=f".{language}", delete=False) as f:
             f.write(code)
             code_file = f.name
 
@@ -72,9 +70,7 @@ class DockerExecutor:
             # Create container
             container = self.docker.containers.create(
                 image=image,
-                command=self._get_command_for_language(
-                    language, os.path.basename(code_file)
-                ),
+                command=self._get_command_for_language(language, os.path.basename(code_file)),
                 volumes={
                     os.path.dirname(code_file): {
                         "bind": "/code",
@@ -260,10 +256,7 @@ print("This should not appear")
         result = await docker_executor.execute_code(code, "python", timeout=2)
 
         assert result["success"] is False
-        assert (
-            "timeout" in result.get("error", "").lower()
-            or result["execution_time"] >= 2
-        )
+        assert "timeout" in result.get("error", "").lower() or result["execution_time"] >= 2
 
     @pytest.mark.asyncio
     async def test_memory_limit_enforcement(self, docker_executor):

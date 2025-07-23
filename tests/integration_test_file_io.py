@@ -110,9 +110,7 @@ class FileIOManager:
         with open(file_path, "rb") as f:
             return f.read()
 
-    def create_json_file(
-        self, filename: str, data: Dict[str, Any], subdir: str = ""
-    ) -> str:
+    def create_json_file(self, filename: str, data: Dict[str, Any], subdir: str = "") -> str:
         """Create a JSON file."""
         if subdir:
             dir_path = os.path.join(self.base_dir, subdir)
@@ -328,9 +326,7 @@ class TestFileIOBasics:
         assert os.path.exists(os.path.join(file_manager.base_dir, "level1"))
 
         # Create file in nested directory
-        file_path = file_manager.create_file(
-            "nested.txt", "Nested content", "level1/level2"
-        )
+        file_path = file_manager.create_file("nested.txt", "Nested content", "level1/level2")
         assert os.path.exists(file_path)
 
     def test_binary_file_operations(self, file_manager):
@@ -477,9 +473,7 @@ class TestFileIOAdvanced:
         # Create multiple files concurrently
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             futures = [executor.submit(create_file_task, i) for i in range(10)]
-            results = [
-                future.result() for future in concurrent.futures.as_completed(futures)
-            ]
+            results = [future.result() for future in concurrent.futures.as_completed(futures)]
 
         # All files should be created successfully
         assert len(results) == 10
@@ -511,12 +505,9 @@ class TestFileIOAdvanced:
         # Perform concurrent read-write operations
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             futures = [
-                executor.submit(read_write_task, file_paths[i], i)
-                for i in range(len(file_paths))
+                executor.submit(read_write_task, file_paths[i], i) for i in range(len(file_paths))
             ]
-            [
-                future.result() for future in concurrent.futures.as_completed(futures)
-            ]
+            [future.result() for future in concurrent.futures.as_completed(futures)]
 
         # Verify final contents
         for i, file_path in enumerate(file_paths):
@@ -543,9 +534,7 @@ class TestFileIOAdvanced:
         # Try to create file outside base directory using path traversal
         try:
             # This should either fail or be contained within base directory
-            file_path = file_manager.create_file(
-                "../../../etc/passwd", "malicious content"
-            )
+            file_path = file_manager.create_file("../../../etc/passwd", "malicious content")
 
             # If it succeeds, ensure it's still within our base directory
             assert file_manager.base_dir in os.path.abspath(file_path)

@@ -146,9 +146,7 @@ class OpenAIModel(Model):
             **kwargs: Additional arguments passed to parent class
         """
         if not OPENAI_AVAILABLE:
-            raise ImportError(
-                "OpenAI library not available. Install with: pip install openai"
-            )
+            raise ImportError("OpenAI library not available. Install with: pip install openai")
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(model_name)
@@ -158,7 +156,11 @@ class OpenAIModel(Model):
                 config = self.MODEL_CONFIGS["gpt-4"]
             elif model_name.startswith("gpt-3.5"):
                 config = self.MODEL_CONFIGS["gpt-3.5-turbo"]
-            elif model_name.startswith("o1") or model_name.startswith("o3") or model_name.startswith("o4"):
+            elif (
+                model_name.startswith("o1")
+                or model_name.startswith("o3")
+                or model_name.startswith("o4")
+            ):
                 # New reasoning models - use GPT-4 config as base
                 config = self.MODEL_CONFIGS["gpt-4"]
             else:

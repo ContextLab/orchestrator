@@ -72,9 +72,7 @@ class AutoTagYAMLParser:
 
         # Find all positions
         open_positions = [(m.start(), m.end()) for m in open_pattern.finditer(content)]
-        [
-            (m.start(), m.end()) for m in close_pattern.finditer(content)
-        ]
+        [(m.start(), m.end()) for m in close_pattern.finditer(content)]
 
         # Match opening and closing tags
         for open_start, open_end in open_positions:
@@ -153,9 +151,7 @@ class AutoTagYAMLParser:
             # Replace innermost tags from end to beginning (to preserve positions)
             for tag in reversed(sorted(innermost_tags, key=lambda t: t.start)):
                 counter += 1
-                placeholder_key = (
-                    f"{self.placeholder_prefix}{counter}{self.placeholder_suffix}"
-                )
+                placeholder_key = f"{self.placeholder_prefix}{counter}{self.placeholder_suffix}"
 
                 # Store the complete AUTO tag
                 self.tag_registry[placeholder_key] = tag.full_text
@@ -178,9 +174,7 @@ class AutoTagYAMLParser:
             return [self._restore_auto_tags(item) for item in data]
         elif isinstance(data, str):
             # Check if this is a placeholder
-            if data.startswith(self.placeholder_prefix) and data.endswith(
-                self.placeholder_suffix
-            ):
+            if data.startswith(self.placeholder_prefix) and data.endswith(self.placeholder_suffix):
                 if data in self.tag_registry:
                     # Get the original AUTO tag
                     original = self.tag_registry[data]

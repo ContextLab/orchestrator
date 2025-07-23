@@ -70,39 +70,39 @@ class AnthropicModel(Model):
     def _normalize_model_name(self, name: str) -> str:
         """Normalize model name to Anthropic format."""
         name_lower = name.lower()
-        
+
         # Handle Claude Sonnet 4
         if "sonnet-4" in name_lower or "sonnet4" in name_lower:
             return "claude-3-5-sonnet-20241022"  # Latest Sonnet
-        
+
         # Claude 3.5 Sonnet
         if "claude-3.5-sonnet" in name_lower or "claude-3-5-sonnet" in name_lower:
             return "claude-3-5-sonnet-20241022"
-        
+
         # Claude 3 Opus
         if "opus" in name_lower:
             return "claude-3-opus-20240229"
-        
+
         # Claude 3 Sonnet
         if "sonnet" in name_lower and "3.5" not in name_lower:
             return "claude-3-sonnet-20240229"
-        
+
         # Claude 3 Haiku
         if "haiku" in name_lower:
             return "claude-3-haiku-20240307"
-        
+
         # Claude 2.1
         if "claude-2.1" in name_lower:
             return "claude-2.1"
-        
+
         # Claude 2
         if "claude-2" in name_lower:
             return "claude-2.0"
-        
+
         # Claude Instant
         if "instant" in name_lower:
             return "claude-instant-1.2"
-        
+
         # Default
         return name
 
@@ -111,12 +111,22 @@ class AnthropicModel(Model):
         name_lower = name.lower()
 
         # Claude 3.5 Sonnet / Sonnet 4
-        if "sonnet" in name_lower and ("3.5" in name_lower or "sonnet-4" in name_lower or "sonnet4" in name_lower):
+        if "sonnet" in name_lower and (
+            "3.5" in name_lower or "sonnet-4" in name_lower or "sonnet4" in name_lower
+        ):
             return ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "code", 
-                    "reasoning", "creative", "chat", "instruct",
-                    "vision", "math", "research"
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                    "creative",
+                    "chat",
+                    "instruct",
+                    "vision",
+                    "math",
+                    "research",
                 ],
                 context_window=200000,
                 supports_function_calling=True,
@@ -131,9 +141,17 @@ class AnthropicModel(Model):
         elif "opus" in name_lower:
             return ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "code", 
-                    "reasoning", "creative", "chat", "instruct",
-                    "vision", "math", "research"
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                    "creative",
+                    "chat",
+                    "instruct",
+                    "vision",
+                    "math",
+                    "research",
                 ],
                 context_window=200000,
                 supports_function_calling=True,
@@ -148,9 +166,15 @@ class AnthropicModel(Model):
         elif "sonnet" in name_lower:
             return ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "code", 
-                    "reasoning", "creative", "chat", "instruct",
-                    "vision"
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                    "creative",
+                    "chat",
+                    "instruct",
+                    "vision",
                 ],
                 context_window=200000,
                 supports_function_calling=True,
@@ -165,8 +189,13 @@ class AnthropicModel(Model):
         elif "haiku" in name_lower:
             return ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "code", 
-                    "chat", "instruct", "vision"
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "chat",
+                    "instruct",
+                    "vision",
                 ],
                 context_window=200000,
                 supports_function_calling=True,
@@ -181,8 +210,14 @@ class AnthropicModel(Model):
         elif "claude-2" in name_lower:
             return ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "code", 
-                    "reasoning", "creative", "chat", "instruct"
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                    "creative",
+                    "chat",
+                    "instruct",
                 ],
                 context_window=100000,
                 supports_function_calling=False,
@@ -220,7 +255,7 @@ class AnthropicModel(Model):
     def _get_model_expertise(self, name: str) -> list[str]:
         """Get model expertise areas."""
         name_lower = name.lower()
-        
+
         if "opus" in name_lower:
             return ["general", "reasoning", "code", "creative", "analysis", "research", "math"]
         elif "sonnet" in name_lower:
@@ -231,13 +266,13 @@ class AnthropicModel(Model):
             return ["general", "chat", "code"]
         elif "instant" in name_lower:
             return ["general", "chat"]
-        
+
         return ["general"]
 
     def _estimate_model_size(self, name: str) -> float:
         """Estimate model size in billions of parameters."""
         name_lower = name.lower()
-        
+
         if "opus" in name_lower:
             return 175.0  # Estimated
         elif "sonnet" in name_lower:
@@ -246,7 +281,7 @@ class AnthropicModel(Model):
             return 20.0  # Estimated
         elif "instant" in name_lower:
             return 10.0  # Estimated
-        
+
         return 1.0
 
     async def generate(
@@ -271,7 +306,7 @@ class AnthropicModel(Model):
         try:
             # Prepare messages
             messages = [{"role": "user", "content": prompt}]
-            
+
             # Add system message if provided
             system_prompt = kwargs.get("system_prompt", "")
 
@@ -292,12 +327,12 @@ class AnthropicModel(Model):
                     # Extract text from content blocks
                     text_parts = []
                     for block in response.content:
-                        if hasattr(block, 'text'):
+                        if hasattr(block, "text"):
                             text_parts.append(block.text)
                     return " ".join(text_parts)
                 else:
                     return str(response.content)
-            
+
             return ""
 
         except Exception as e:
@@ -325,8 +360,10 @@ class AnthropicModel(Model):
         """
         try:
             # Add schema instruction to prompt
-            schema_prompt = f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
-            
+            schema_prompt = (
+                f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
+            )
+
             # Generate response
             response = await self.generate(
                 prompt=schema_prompt,
@@ -336,12 +373,14 @@ class AnthropicModel(Model):
 
             # Parse JSON response
             import json
+
             try:
                 return json.loads(response)
             except json.JSONDecodeError:
                 # Try to extract JSON from response
                 import re
-                json_match = re.search(r'\{.*\}', response, re.DOTALL)
+
+                json_match = re.search(r"\{.*\}", response, re.DOTALL)
                 if json_match:
                     return json.loads(json_match.group())
                 raise
@@ -411,5 +450,7 @@ class AnthropicModel(Model):
             output_cost = 24.0
 
         # Calculate total cost
-        total_cost = (prompt_tokens / 1_000_000 * input_cost) + (output_tokens / 1_000_000 * output_cost)
+        total_cost = (prompt_tokens / 1_000_000 * input_cost) + (
+            output_tokens / 1_000_000 * output_cost
+        )
         return total_cost
