@@ -42,16 +42,28 @@ async def load_balancer(registry):
     if models_registered:
         # Primary pool
         primary_config = ModelPoolConfig(
-            name="primary",
-            models=[models_registered[0]],
-            selection_strategy="weighted",
-            model_weights={models_registered[0]: 1.0},
+            models=[
+                {
+                    "model": models_registered[0],
+                    "weight": 1.0,
+                    "max_concurrent": 10
+                }
+            ],
+            always_available=False,
+            fallback_pool="backup"
         )
         load_balancer.configure_pool("primary", primary_config)
 
         # Backup pool
         backup_config = ModelPoolConfig(
-            name="backup", models=[models_registered[0]], selection_strategy="round_robin"
+            models=[
+                {
+                    "model": models_registered[0],
+                    "weight": 1.0,
+                    "max_concurrent": 5
+                }
+            ],
+            always_available=True
         )
         load_balancer.configure_pool("backup", backup_config)
 

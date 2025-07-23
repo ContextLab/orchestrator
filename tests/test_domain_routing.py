@@ -4,6 +4,7 @@
 import asyncio
 import os
 import sys
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -66,6 +67,27 @@ async def setup_registry():
     return registry
 
 
+@pytest.fixture
+async def registry():
+    """Create model registry fixture."""
+    return await setup_registry()
+
+
+@pytest.fixture
+async def router(registry):
+    """Create domain router fixture."""
+    # Create domain configuration
+    config = DomainConfig(
+        domain_threshold=0.6,
+        multi_domain_strategy="best_match",
+        fallback_to_general=True
+    )
+    
+    # Create router
+    return DomainRouter(registry, config)
+
+
+@pytest.mark.asyncio
 async def test_domain_detection(router: DomainRouter):
     """Test domain detection in various texts."""
     print("\n=== Testing Domain Detection ===")
@@ -142,6 +164,7 @@ async def test_domain_detection(router: DomainRouter):
     print(f"All domains: {analysis['detected_domains']}")
 
 
+@pytest.mark.asyncio
 async def test_domain_routing(router: DomainRouter):
     """Test model selection based on domain."""
     print("\n=== Testing Domain-Based Model Selection ===")
@@ -196,6 +219,7 @@ async def test_domain_routing(router: DomainRouter):
             print(f"✗ Routing failed: {e}")
 
 
+@pytest.mark.asyncio
 async def test_custom_domain(router: DomainRouter):
     """Test registering and using custom domains."""
     print("\n=== Testing Custom Domain Registration ===")
@@ -230,6 +254,7 @@ async def test_custom_domain(router: DomainRouter):
     print(f"\nAll registered domains: {router.list_domains()}")
 
 
+@pytest.mark.asyncio
 async def test_domain_override(router: DomainRouter):
     """Test forcing specific domain selection."""
     print("\n=== Testing Domain Override ===")
@@ -253,6 +278,7 @@ async def test_domain_override(router: DomainRouter):
             print(f"✗ Selection failed: {e}")
 
 
+@pytest.mark.asyncio
 async def test_multi_domain_handling(router: DomainRouter):
     """Test handling of multi-domain content."""
     print("\n=== Testing Multi-Domain Content ===")
@@ -287,6 +313,7 @@ async def test_multi_domain_handling(router: DomainRouter):
         print(f"\n✗ Selection failed: {e}")
 
 
+@pytest.mark.asyncio
 async def test_real_generation_with_domain(registry: ModelRegistry, router: DomainRouter):
     """Test real generation with domain-appropriate model."""
     print("\n=== Testing Real Generation with Domain Routing ===")
@@ -324,36 +351,4 @@ async def test_real_generation_with_domain(registry: ModelRegistry, router: Doma
             print(f"✗ Generation failed: {e}")
 
 
-async def main():
-    """Run all domain routing tests."""
-    print("🚀 DOMAIN-SPECIFIC ROUTING TEST")
-    print("=" * 50)
-
-    # Set up registry and router
-    registry = await setup_registry()
-    router = DomainRouter(registry)
-
-    # Check available models
-    available = await registry.get_available_models()
-    print(f"\nAvailable models: {len(available)}")
-
-    if not available:
-        print("\n⚠️  No models available! Please ensure:")
-        print("  - Ollama is running")
-        print("  - API keys are set (OPENAI_API_KEY)")
-        return
-
-    # Run tests
-    await test_domain_detection(router)
-    await test_domain_routing(router)
-    await test_custom_domain(router)
-    await test_domain_override(router)
-    await test_multi_domain_handling(router)
-    await test_real_generation_with_domain(registry, router)
-
-    print("\n" + "=" * 50)
-    print("✓ All domain routing tests complete!")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# This file now uses pytest - no main function needed
