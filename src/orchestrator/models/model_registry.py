@@ -204,10 +204,13 @@ class ModelRegistry:
         Raises:
             NoEligibleModelsError: If no models meet requirements
         """
+        print(f">> DEBUG ModelRegistry.select_model called with: {requirements}")
+        
         # Step 1: Filter by capabilities
         eligible_models = await self._filter_by_capabilities(requirements)
 
         if not eligible_models:
+            print(f">> DEBUG: No models passed capability filter. Total models: {len(self.models)}")
             raise NoEligibleModelsError("No models meet the specified requirements")
 
         # Step 2: Filter by health

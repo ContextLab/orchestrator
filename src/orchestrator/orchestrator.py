@@ -447,7 +447,19 @@ class Orchestrator:
                     # Render template with results context
                     template = Template(output_expr)
                     # Create a context that includes all step results
-                    context = results.copy()
+                    # Also create objects with .result attribute for backward compatibility
+                    context = {}
+                    for step_id, step_result in results.items():
+                        context[step_id] = step_result
+                        # Create an object-like dict with result attribute
+                        if isinstance(step_result, str):
+                            context[step_id] = type('Result', (), {'result': step_result})()
+                        elif isinstance(step_result, dict) and 'result' in step_result:
+                            context[step_id] = type('Result', (), step_result)()
+                        elif isinstance(step_result, dict):
+                            # If dict doesn't have 'result' key, wrap the whole dict
+                            context[step_id] = type('Result', (), {'result': step_result})()
+                    
                     # Render the template
                     value = template.render(**context)
 
@@ -684,8 +696,13 @@ class Orchestrator:
 
             # Handle dict format (requirements)
             if isinstance(model_req, dict):
+                # Map task action to supported task types
+                task_type = task.action
+                if task.action == "generate_text":
+                    task_type = "generate"
+                    
                 requirements = {
-                    "tasks": [task.action],
+                    "tasks": [task_type],
                     "context_window": len(str(task.parameters).encode())
                     // 4,  # Rough token estimate
                 }
@@ -696,9 +713,14 @@ class Orchestrator:
 
         # Check if task requires AI capabilities
         if task.action in ["generate", "analyze", "transform", "chat", "generate_text"]:
+            # Map task action to supported task types
+            task_type = task.action
+            if task.action == "generate_text":
+                task_type = "generate"
+            
             # Infer requirements based on task action
             requirements = {
-                "tasks": [task.action],
+                "tasks": [task_type],
                 "context_window": len(str(task.parameters).encode()) // 4,  # Rough token estimate
             }
 

@@ -75,15 +75,8 @@ async def registry():
 @pytest.fixture
 async def router(registry):
     """Create domain router fixture."""
-    # Create domain configuration
-    config = DomainConfig(
-        domain_threshold=0.6,
-        multi_domain_strategy="best_match",
-        fallback_to_general=True
-    )
-    
-    # Create router
-    return DomainRouter(registry, config)
+    # Create router (it initializes with default domains)
+    return DomainRouter(registry)
 
 
 @pytest.mark.asyncio

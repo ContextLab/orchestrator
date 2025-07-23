@@ -370,6 +370,7 @@ class Model(ABC):
         # Check context window
         if "context_window" in requirements:
             if self.capabilities.context_window < requirements["context_window"]:
+                print(f">> DEBUG: Model {self.name} failed context_window check: {self.capabilities.context_window} < {requirements['context_window']}")
                 return False
 
         # Check function calling
@@ -386,6 +387,7 @@ class Model(ABC):
         if "tasks" in requirements:
             required_tasks = requirements["tasks"]
             if not all(self.can_handle_task(task) for task in required_tasks):
+                print(f">> DEBUG: Model {self.name} failed task check. Required: {required_tasks}, Supported: {self.capabilities.supported_tasks}")
                 return False
 
         # Check supported languages
