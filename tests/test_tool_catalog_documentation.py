@@ -34,7 +34,10 @@ This is a test report generated for documentation validation.
 Generated at: """ + datetime.now().isoformat()
     
     # Test pipeline from documentation
-    pipeline_yaml = """
+    import tempfile
+    report_path = os.path.join(tempfile.gettempdir(), 'test_report.md')
+    
+    pipeline_yaml = f"""
 name: filesystem-tool-test
 description: Test FileSystemTool from documentation
 
@@ -43,7 +46,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "/tmp/test_report.md"
+      path: "{report_path}"
       content: "# Test Report\\nThis is a test report generated for documentation validation.\\nGenerated at: """ + datetime.now().isoformat() + """"
       mode: "w"
       
@@ -51,13 +54,13 @@ steps:
     tool: filesystem
     action: exists
     parameters:
-      path: "/tmp/test_report.md"
+      path: "{report_path}"
       
   - id: read_report
     tool: filesystem
     action: read
     parameters:
-      path: "/tmp/test_report.md"
+      path: "{report_path}"
       
   - id: list_tmp
     tool: filesystem
@@ -86,8 +89,8 @@ steps:
         return False
     finally:
         # Cleanup
-        if os.path.exists("/tmp/test_report.md"):
-            os.unlink("/tmp/test_report.md")
+        if os.path.exists(report_path):
+            os.unlink(report_path)
 
 
 async def test_terminal_tool():
@@ -104,15 +107,17 @@ data = {"result": "Analysis complete", "items": 5}
 print(json.dumps(data))
 """
     
-    script_path = "/tmp/test_analyze.py"
+    import tempfile
+    script_path = os.path.join(tempfile.gettempdir(), "test_analyze.py")
     with open(script_path, "w") as f:
         f.write(test_script)
     
     # Create test data file
-    with open("/tmp/test_data.csv", "w") as f:
+    data_path = os.path.join(tempfile.gettempdir(), "test_data.csv")
+    with open(data_path, "w") as f:
         f.write("name,value\nitem1,10\nitem2,20\n")
     
-    pipeline_yaml = """
+    pipeline_yaml = f"""
 name: terminal-tool-test
 description: Test TerminalTool from documentation
 
@@ -121,8 +126,8 @@ steps:
     tool: terminal
     action: execute
     parameters:
-      command: "python /tmp/test_analyze.py --input /tmp/test_data.csv"
-      cwd: "/tmp"
+      command: "python {script_path} --input {data_path}"
+      cwd: "{tempfile.gettempdir()}"
       timeout: 30
       
   - id: check_python_version
@@ -155,7 +160,7 @@ steps:
         return False
     finally:
         # Cleanup
-        for path in [script_path, "/tmp/test_data.csv"]:
+        for path in [script_path, data_path]:
             if os.path.exists(path):
                 os.unlink(path)
 
@@ -293,7 +298,10 @@ async def test_report_generator_tool():
     """Test ReportGeneratorTool examples from documentation."""
     print("\n=== Testing ReportGeneratorTool ===")
     
-    pipeline_yaml = """
+    import tempfile
+    report_path = os.path.join(tempfile.gettempdir(), 'test_analysis_report.md')
+    
+    pipeline_yaml = f"""
 name: report-generator-tool-test
 description: Test ReportGeneratorTool from documentation
 
@@ -329,7 +337,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "/tmp/test_analysis_report.md"
+      path: "{report_path}"
       content: "{{ create_report.content }}"
 """
     
@@ -361,8 +369,8 @@ steps:
         return False
     finally:
         # Cleanup
-        if os.path.exists("/tmp/test_analysis_report.md"):
-            os.unlink("/tmp/test_analysis_report.md")
+        if os.path.exists(report_path):
+            os.unlink(report_path)
 
 
 async def test_llm_generate_tool():
@@ -618,7 +626,8 @@ outputs:
   analysis_result: "{{ analyze.result }}"
 """
     
-    sub_pipeline_path = "/tmp/test_sub_pipeline.yaml"
+    import tempfile
+    sub_pipeline_path = os.path.join(tempfile.gettempdir(), "test_sub_pipeline.yaml")
     with open(sub_pipeline_path, "w") as f:
         f.write(sub_pipeline_yaml)
     
