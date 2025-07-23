@@ -253,6 +253,10 @@ class ControlFlowCompiler(YAMLCompiler):
         if 'if' in task_def or 'condition' in task_def:
             return self.conditional_handler.create_conditional_task(task_def)
             
+        # Check for goto at top level
+        if 'goto' in task_def:
+            return self.dynamic_flow_handler.create_dynamic_task(task_def)
+            
         # Check for control flow metadata
         if 'metadata' in task_def:
             metadata = task_def['metadata']

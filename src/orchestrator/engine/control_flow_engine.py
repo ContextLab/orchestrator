@@ -323,24 +323,38 @@ class ControlFlowEngine:
             from_task: Starting task ID
             to_task: Target task ID
         """
-        # Get execution order
-        try:
-            execution_order = pipeline.get_execution_order()
-        except Exception:
-            # If we can't get order due to dynamic changes, skip
-            return
-            
-        # Find positions
-        try:
-            from_idx = execution_order.index(from_task)
-            to_idx = execution_order.index(to_task)
-        except ValueError:
-            return
-            
-        # Skip intermediate tasks
-        for idx in range(from_idx + 1, to_idx):
-            task_id = execution_order[idx]
+        # When using goto, we should skip tasks that:
+        # 1. Depend on the from_task (directly or indirectly)
+        # 2. Are not on the path to the to_task
+        
+        # Find all tasks that depend on from_task
+        dependent_tasks = set()
+        
+        def find_dependents(task_id: str):
+            for t_id, task in pipeline.tasks.items():
+                if task_id in task.dependencies and t_id not in dependent_tasks:
+                    dependent_tasks.add(t_id)
+                    find_dependents(t_id)  # Recursively find transitive dependents
+        
+        find_dependents(from_task)
+        
+        # Find tasks that are on the path to to_task (and their dependencies)
+        tasks_on_path = set()
+        tasks_on_path.add(to_task)
+        
+        def find_dependencies(task_id: str):
             if task_id in pipeline.tasks:
+                task = pipeline.tasks[task_id]
+                for dep in task.dependencies:
+                    if dep not in tasks_on_path:
+                        tasks_on_path.add(dep)
+                        find_dependencies(dep)
+        
+        find_dependencies(to_task)
+        
+        # Skip tasks that depend on from_task but are not on the path to to_task
+        for task_id in dependent_tasks:
+            if task_id not in tasks_on_path and task_id in pipeline.tasks:
                 task = pipeline.tasks[task_id]
                 if task.status == TaskStatus.PENDING:
                     task.skip("Skipped due to flow jump")

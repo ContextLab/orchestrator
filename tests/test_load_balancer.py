@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import random
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -13,6 +14,50 @@ from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.models.load_balancer import LoadBalancer, ModelPoolConfig
 from orchestrator.models.openai_model import OpenAIModel
 from orchestrator.integrations.ollama_model import OllamaModel
+
+
+@pytest.fixture
+async def registry():
+    """Create a model registry for testing."""
+    return ModelRegistry()
+
+
+@pytest.fixture
+async def load_balancer(registry):
+    """Create a load balancer with test models and pools."""
+    load_balancer = LoadBalancer(registry)
+    
+    # Register some test models (this setup is simplified for testing)
+    models_registered = []
+    
+    # Try to register local models if available
+    try:
+        llama_small = OllamaModel("llama3.2:1b")
+        registry.register_model(llama_small)
+        models_registered.append("ollama:llama3.2:1b")
+    except Exception:
+        pass
+    
+    # Configure test pools
+    if models_registered:
+        # Primary pool
+        primary_config = ModelPoolConfig(
+            name="primary",
+            models=[models_registered[0]],
+            selection_strategy="weighted",
+            model_weights={models_registered[0]: 1.0}
+        )
+        load_balancer.configure_pool("primary", primary_config)
+        
+        # Backup pool
+        backup_config = ModelPoolConfig(
+            name="backup",
+            models=[models_registered[0]],
+            selection_strategy="round_robin"
+        )
+        load_balancer.configure_pool("backup", backup_config)
+    
+    return load_balancer
 
 
 async def setup_models_and_pools():

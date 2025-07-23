@@ -861,9 +861,12 @@ class Orchestrator:
         compile_context = inputs or {}
         
         # Store recursion context if provided
+        recursion_context = None
         if context and hasattr(context, 'shared_state'):
             # This is a RecursionContext object
-            kwargs['recursion_context'] = context
+            recursion_context = context
+            # Remove it from kwargs since execute_pipeline doesn't accept it
+            kwargs.pop('recursion_context', None)
         
         # Compile and execute
         pipeline = await self.yaml_compiler.compile(yaml_content, compile_context)
@@ -871,6 +874,11 @@ class Orchestrator:
         # Execute with inputs merged into pipeline context
         if inputs:
             pipeline.context.update(inputs)
+        
+        # Store recursion context in pipeline metadata if provided
+        if recursion_context:
+            pipeline.metadata = pipeline.metadata or {}
+            pipeline.metadata['recursion_context'] = recursion_context
         
         # Execute pipeline
         result = await self.execute_pipeline(pipeline, **kwargs)

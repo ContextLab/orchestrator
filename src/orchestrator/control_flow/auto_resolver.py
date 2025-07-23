@@ -176,7 +176,13 @@ class ControlFlowAutoResolver:
         Returns:
             Resolved target step ID
         """
+        # First resolve AUTO tags
         resolved = await self._resolve_auto_tags(target_expr, context, step_results)
+        
+        # If it's a template expression, evaluate it
+        if isinstance(resolved, str) and ('{{' in resolved or '?' in resolved):
+            eval_context = self._build_eval_context(context, step_results)
+            resolved = self._safe_eval(resolved, eval_context)
         
         if not isinstance(resolved, str):
             resolved = str(resolved)
@@ -375,6 +381,61 @@ class ControlFlowAutoResolver:
         else:
             return prompt
     
+    def _replace_variables(self, expression: str, context: Dict[str, Any]) -> str:
+        """Replace variables in an expression with their values.
+        
+        Args:
+            expression: Expression containing variables
+            context: Variables available
+            
+        Returns:
+            Expression with variables replaced
+        """
+        import re
+        
+        def replace_var(match):
+            var_path = match.group(1)  # Get the captured group
+            parts = var_path.split('.')
+            
+            # Navigate through context
+            value = None
+            
+            # Try step results first
+            if parts[0] in context.get('steps', {}) or parts[0] in context.get('results', {}):
+                step_results = context.get('steps', context.get('results', {}))
+                if parts[0] in step_results:
+                    value = step_results[parts[0]]
+                    for p in parts[1:]:
+                        if isinstance(value, dict) and p in value:
+                            value = value[p]
+                        else:
+                            return var_path  # Return original if can't resolve
+            # Try direct lookup
+            elif parts[0] in context:
+                value = context[parts[0]]
+                for p in parts[1:]:
+                    if isinstance(value, dict) and p in value:
+                        value = value[p]
+                    else:
+                        return var_path
+            else:
+                return var_path  # Return original if can't resolve
+            
+            # Return Python representation
+            if isinstance(value, str):
+                return f'"{value}"'
+            elif isinstance(value, bool):
+                return 'True' if value else 'False'
+            elif value is None:
+                return 'None'
+            else:
+                return str(value)
+        
+        # Replace all variable references, but skip quoted strings
+        # This pattern matches variable names but not when inside quotes
+        pattern = r'''(?<!['""])\b([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\b(?!['""])'''
+        return re.sub(pattern, replace_var, expression)
+    
     def _safe_eval(self, expression: str, context: Dict[str, Any]) -> Any:
         """Safely evaluate a Python expression.
         
@@ -385,48 +446,50 @@ class ControlFlowAutoResolver:
         Returns:
             Result of expression evaluation
         """
-        # Simple expression evaluation using compile
         try:
-            # Replace template variables {{ var }} with context lookups
+            # Handle template expressions {{ ... }}
             import re
+            expr_to_eval = expression
             
-            def replace_var(match):
-                var_path = match.group(1).strip()
-                parts = var_path.split('.')
-                
-                # Navigate through context
-                value = context
-                for part in parts:
-                    if isinstance(value, dict) and part in value:
-                        value = value[part]
-                    else:
-                        # Try direct lookup in context
-                        if part in context:
-                            value = context[part]
-                        else:
-                            return "None"
-                
-                # Return Python representation
-                if isinstance(value, str):
-                    return f'"{value}"'
-                else:
-                    return str(value)
+            # Extract expression from {{ }} if present
+            template_match = re.match(r'^\s*\{\{(.+?)\}\}\s*$', expression)
+            if template_match:
+                expr_to_eval = template_match.group(1).strip()
             
-            # Replace template variables
-            resolved_expr = re.sub(r'\{\{([^}]+)\}\}', replace_var, expression)
+            # Replace variables with their values
+            resolved_expr = self._replace_variables(expr_to_eval, context)
             
-            # If no replacement happened, try direct evaluation
-            if resolved_expr == expression:
-                # Check if it's a simple boolean string
-                lower_expr = expression.strip().lower()
-                if lower_expr == "true":
-                    return True
-                elif lower_expr == "false":
-                    return False
+            # Debug logging
+            import logging
+            logger = logging.getLogger(__name__)
+            if 'start.result' in expr_to_eval:
+                logger.info(f"After variable replacement: {resolved_expr}")
+            
+            # First, convert lowercase true/false to Python booleans
+            resolved_expr = re.sub(r'\btrue\b', 'True', resolved_expr)
+            resolved_expr = re.sub(r'\bfalse\b', 'False', resolved_expr)
+            
+            # Convert JavaScript-style ternary to Python
+            # Pattern: condition ? true_value : false_value
+            ternary_pattern = r'([^?]+)\?([^:]+):(.+)'
+            ternary_match = re.match(ternary_pattern, resolved_expr.strip())
+            if ternary_match:
+                condition, true_val, false_val = ternary_match.groups()
+                # Convert to Python ternary
+                resolved_expr = f"({true_val.strip()}) if ({condition.strip()}) else ({false_val.strip()})"
+                if 'start.result' in expr_to_eval:
+                    logger.info(f"After ternary conversion: {resolved_expr}")
+            
+            # Handle simple boolean strings
+            if resolved_expr.strip().lower() == "true":
+                return True
+            elif resolved_expr.strip().lower() == "false":
+                return False
             
             # Compile and evaluate
             code = compile(resolved_expr, '<string>', 'eval')
-            return eval(code, {"__builtins__": {}}, context)
+            result = eval(code, {"__builtins__": {}}, {})
+            return result
             
         except Exception as e:
             raise ValueError(f"Failed to evaluate expression '{expression}': {e}")
