@@ -3,7 +3,7 @@
 
 import asyncio
 import os
-
+import pytest
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -77,6 +77,13 @@ async def setup_test_registry() -> ModelRegistry:
     return registry
 
 
+@pytest.fixture
+async def registry():
+    """Create test registry fixture."""
+    return await setup_test_registry()
+
+
+@pytest.mark.asyncio
 async def test_basic_selection(registry: ModelRegistry):
     """Test basic model selection."""
     print("\n=== Testing Basic Model Selection ===")
@@ -122,6 +129,7 @@ async def test_basic_selection(registry: ModelRegistry):
         print(f"   Error: {e}")
 
 
+@pytest.mark.asyncio
 async def test_auto_tag_parsing(registry: ModelRegistry):
     """Test AUTO tag parsing."""
     print("\n=== Testing AUTO Tag Parsing ===")
@@ -150,6 +158,7 @@ async def test_auto_tag_parsing(registry: ModelRegistry):
             print(f"   Error: {e}")
 
 
+@pytest.mark.asyncio
 async def test_capability_matching(registry: ModelRegistry):
     """Test capability-based selection."""
     print("\n=== Testing Capability Matching ===")
@@ -181,6 +190,7 @@ async def test_capability_matching(registry: ModelRegistry):
         print(f"   Error: {e}")
 
 
+@pytest.mark.asyncio
 async def test_real_generation(registry: ModelRegistry):
     """Test actual generation with selected models."""
     print("\n=== Testing Real Generation ===")
@@ -214,6 +224,7 @@ async def test_real_generation(registry: ModelRegistry):
         print(f"✗ Generation failed: {e}")
 
 
+@pytest.mark.asyncio
 async def test_cost_calculation(registry: ModelRegistry):
     """Test cost calculation for different models."""
     print("\n=== Testing Cost Calculation ===")
@@ -242,40 +253,4 @@ async def test_cost_calculation(registry: ModelRegistry):
             print(f"  Output rate: ${model.cost.output_cost_per_1k_tokens}/1K tokens")
 
 
-async def main():
-    """Run all tests."""
-    print("🚀 INTELLIGENT MODEL ROUTING TEST")
-    print("=" * 50)
-
-    # Set up registry
-    registry = await setup_test_registry()
-
-    # Check what models are available
-    available = await registry.get_available_models()
-    print(f"\nAvailable models: {len(available)}")
-    for model_key in available:
-        print(f"  - {model_key}")
-
-    if not available:
-        print("\n⚠️  No models available! Please ensure:")
-        print("  - Ollama is running (for free local models)")
-        print("  - API keys are set (OPENAI_API_KEY, ANTHROPIC_API_KEY)")
-        return
-
-    # Run tests
-    await test_basic_selection(registry)
-    await test_auto_tag_parsing(registry)
-    await test_capability_matching(registry)
-    await test_cost_calculation(registry)
-    await test_real_generation(registry)
-
-    # Show final statistics
-    stats = registry.get_model_statistics()
-    print("\n=== Final Statistics ===")
-    print(f"Total models: {stats['total_models']}")
-    print(f"Healthy models: {stats['healthy_models']}")
-    print(f"Selection stats: {stats['selection_stats']}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# This file now uses pytest - no main function needed

@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import json
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -91,6 +92,14 @@ async def setup_comprehensive_registry():
     return registry, models_added
 
 
+@pytest.fixture
+async def registry():
+    """Create test registry fixture."""
+    registry, models = await setup_comprehensive_registry()
+    return registry
+
+
+@pytest.mark.asyncio
 async def test_auto_tag_routing(registry: ModelRegistry):
     """Test AUTO tag model selection with real generation."""
     print("\n=== Testing AUTO Tag Model Selection ===")
@@ -151,6 +160,7 @@ async def test_auto_tag_routing(registry: ModelRegistry):
             print(f"   ✗ Failed: {e}")
 
 
+@pytest.mark.asyncio
 async def test_cost_optimized_routing(registry: ModelRegistry):
     """Test cost-optimized model selection."""
     print("\n=== Testing Cost-Optimized Routing ===")
@@ -208,6 +218,7 @@ async def test_cost_optimized_routing(registry: ModelRegistry):
         print(f"  {model_key}: {count} times")
 
 
+@pytest.mark.asyncio
 async def test_domain_specific_generation(registry: ModelRegistry):
     """Test domain-specific routing with real generation."""
     print("\n=== Testing Domain-Specific Generation ===")
@@ -252,6 +263,7 @@ async def test_domain_specific_generation(registry: ModelRegistry):
             print(f"✗ Failed: {e}")
 
 
+@pytest.mark.asyncio
 async def test_load_balanced_generation(registry: ModelRegistry):
     """Test load balancing with real concurrent requests."""
     print("\n=== Testing Load-Balanced Generation ===")
@@ -317,6 +329,7 @@ async def test_load_balanced_generation(registry: ModelRegistry):
         )
 
 
+@pytest.mark.asyncio
 async def test_model_performance_tracking(registry: ModelRegistry):
     """Test model performance tracking over multiple requests."""
     print("\n=== Testing Model Performance Tracking ===")
@@ -374,6 +387,7 @@ async def test_model_performance_tracking(registry: ModelRegistry):
             print(f"  Avg reward: {perf['average_reward']:.3f}")
 
 
+@pytest.mark.asyncio
 async def test_failover_scenario(registry: ModelRegistry):
     """Test failover when primary models fail."""
     print("\n=== Testing Failover Scenario ===")
@@ -417,63 +431,4 @@ async def save_test_results(results: dict):
     print(f"\nTest results saved to {filename}")
 
 
-async def main():
-    """Run comprehensive intelligent routing tests."""
-    print("🚀 COMPREHENSIVE INTELLIGENT MODEL ROUTING TEST")
-    print("=" * 60)
-
-    # Set up registry
-    registry, models = await setup_comprehensive_registry()
-
-    if not models:
-        print("\n⚠️  No models registered! Please ensure:")
-        print("  - Ollama is running for local models")
-        print("  - API keys are set (OPENAI_API_KEY, ANTHROPIC_API_KEY)")
-        return
-
-    print(f"\n✓ Registered {len(models)} models")
-    print(f"  Models: {', '.join(models)}")
-
-    # Run all tests
-    test_results = {
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "models_available": models,
-        "tests_run": [],
-    }
-
-    tests = [
-        ("AUTO Tag Routing", test_auto_tag_routing),
-        ("Cost-Optimized Routing", test_cost_optimized_routing),
-        ("Domain-Specific Generation", test_domain_specific_generation),
-        ("Load-Balanced Generation", test_load_balanced_generation),
-        ("Model Performance Tracking", test_model_performance_tracking),
-        ("Failover Scenarios", test_failover_scenario),
-    ]
-
-    for test_name, test_func in tests:
-        print(f"\n{'='*60}")
-        start_time = time.time()
-
-        try:
-            await test_func(registry)
-            duration = time.time() - start_time
-            test_results["tests_run"].append(
-                {"name": test_name, "status": "passed", "duration": duration}
-            )
-        except Exception as e:
-            print(f"\n✗ Test failed: {e}")
-            test_results["tests_run"].append(
-                {"name": test_name, "status": "failed", "error": str(e)}
-            )
-
-    # Save results
-    await save_test_results(test_results)
-
-    print("\n" + "=" * 60)
-    print("✓ All tests complete!")
-    print(f"  Passed: {sum(1 for t in test_results['tests_run'] if t['status'] == 'passed')}")
-    print(f"  Failed: {sum(1 for t in test_results['tests_run'] if t['status'] == 'failed')}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# This file now uses pytest - no main function needed

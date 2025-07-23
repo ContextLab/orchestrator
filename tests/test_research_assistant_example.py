@@ -52,10 +52,14 @@ class ResearchAssistant:
         # Initialize caching for performance
         self.cache = MemoryCache(max_size=1000, default_ttl=3600)  # 1 hour
 
+        # Import orchestrator module and initialize models first
+        import orchestrator as orc
+        orc.init_models()
+
         # Initialize orchestrator
         self.orchestrator = Orchestrator(state_manager=self.state_manager)
 
-        # Register models
+        # Register additional models if needed
         self._register_models()
 
         # Tools are handled by the control system
