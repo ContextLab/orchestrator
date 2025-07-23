@@ -78,8 +78,21 @@ class PipelineExecutorTool(Tool):
         """Lazy load orchestrator to avoid circular imports."""
         if self._orchestrator is None:
             from ..orchestrator import Orchestrator
-
-            self._orchestrator = Orchestrator()
+            from ..models.registry_singleton import get_model_registry
+            from ..control_systems.hybrid_control_system import HybridControlSystem
+            
+            # Get the global model registry
+            model_registry = get_model_registry()
+            
+            # Create control system if we have models
+            control_system = None
+            if model_registry and model_registry.models:
+                control_system = HybridControlSystem(model_registry)
+            
+            self._orchestrator = Orchestrator(
+                model_registry=model_registry,
+                control_system=control_system
+            )
         return self._orchestrator
 
     def _resolve_pipeline(self, pipeline_spec: str) -> Dict[str, Any]:
