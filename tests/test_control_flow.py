@@ -42,7 +42,7 @@ class TestControlFlowAutoResolver:
         mock_registry = Mock(spec=ModelRegistry)
         mock_model = Mock()
         mock_model.generate = AsyncMock(return_value="true")
-        mock_registry.select_model = AsyncMock(return_value=mock_model)
+        mock_registry.select_model.return_value = mock_model
         
         resolver = ControlFlowAutoResolver(mock_registry)
         
@@ -182,8 +182,8 @@ class TestForLoopHandler:
         
         assert len(tasks) == 4  # 2 items × 2 steps
         
-        # Check dependencies
-        assert tasks[2].dependencies == ["multi_step_loop_1_step1"]  # step2 of item 1
+        # Check dependencies - tasks are numbered from 0
+        assert tasks[2].dependencies == ["multi_step_loop_0_step1"]  # step2 of item 0
         assert tasks[3].dependencies == ["multi_step_loop_1_step1", "multi_step_loop_0_step2"]  # Sequential
 
 
@@ -266,7 +266,7 @@ class TestDynamicFlowHandler:
             name="Final",
             action="finalize",
             dependencies=["static_dep"],
-            metadata={"dynamic_dependencies": "['dynamic_dep1', 'dynamic_dep2']"}
+            metadata={"dynamic_dependencies": '["dynamic_dep1", "dynamic_dep2"]'}
         )
         
         all_tasks = {

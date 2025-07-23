@@ -868,9 +868,8 @@ def test_test_data_files_exist():
     
     for filename in expected_files:
         filepath = test_data_dir / filename
-        # Mark as expected but don't fail if missing, just warn
-        if not filepath.exists():
-            pytest.warns(UserWarning, f"Test data file missing: {filename}")
+        # Check if file exists
+        assert filepath.exists(), f"Test data file missing: {filename}"
 
 
 # Run tests directly

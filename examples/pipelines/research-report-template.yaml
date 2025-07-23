@@ -1,0 +1,61 @@
+name: Research Report Template
+description: Generate comprehensive research reports with citations
+
+inputs:
+  topic:
+    type: string
+    required: true
+    description: Research topic
+  depth:
+    type: string
+    default: comprehensive
+    description: Research depth (basic, comprehensive, or expert)
+
+steps:
+  - id: initial_search
+    action: web_search
+    parameters:
+      query: "{{topic}} overview introduction basics"
+      max_results: 10
+  
+  - id: deep_search
+    action: web_search
+    parameters:
+      query: <AUTO>Generate specific search query for in-depth {{topic}} research</AUTO>
+      max_results: 10
+    depends_on: [initial_search]
+  
+  - id: extract_key_points
+    action: llm
+    parameters:
+      prompt: |
+        Extract key points from these search results about {{topic}}:
+        
+        Initial Results: {{initial_search.results}}
+        Deep Results: {{deep_search.results}}
+        
+        Format as a structured list of main topics and subtopics.
+      model: <AUTO>Select model for information extraction</AUTO>
+    depends_on: [initial_search, deep_search]
+  
+  - id: generate_report
+    action: report_generator
+    parameters:
+      title: "Research Report: {{topic}}"
+      sections:
+        - name: "Executive Summary"
+          content: <AUTO>Generate executive summary based on {{extract_key_points.result}}</AUTO>
+        - name: "Introduction"
+          content: <AUTO>Write introduction to {{topic}}</AUTO>
+        - name: "Key Findings"
+          content: "{{extract_key_points.result}}"
+        - name: "Analysis"
+          content: <AUTO>Provide analysis of findings with depth={{depth}}</AUTO>
+        - name: "Conclusion"
+          content: <AUTO>Summarize key takeaways and future implications</AUTO>
+      citations: "{{initial_search.results}} {{deep_search.results}}"
+    depends_on: [extract_key_points]
+
+outputs:
+  report: "{{generate_report.markdown}}"
+  total_sources: "{{initial_search.total_results + deep_search.total_results}}"

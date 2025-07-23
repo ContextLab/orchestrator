@@ -1,0 +1,63 @@
+{
+  "records": [
+    {
+      "id": 1,
+      "name": "Acme Corp",
+      "type": "enterprise",
+      "revenue": 5000000,
+      "employees": 250,
+      "active": true,
+      "contacts": [
+        {
+          "name": "John Smith",
+          "role": "CEO",
+          "email": "john@acme.com"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "TechStart Inc",
+      "type": "startup",
+      "revenue": 500000,
+      "employees": 15,
+      "active": true,
+      "contacts": [
+        {
+          "name": "Sarah Johnson",
+          "role": "CTO",
+          "email": "sarah@techstart.com"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Global Solutions",
+      "type": "enterprise",
+      "revenue": 10000000,
+      "employees": 500,
+      "active": false,
+      "contacts": []
+    },
+    {
+      "id": 4,
+      "name": "Innovation Labs",
+      "type": "startup",
+      "revenue": 250000,
+      "employees": 8,
+      "active": true,
+      "contacts": [
+        {
+          "name": "Mike Chen",
+          "role": "Founder",
+          "email": "mike@innovationlabs.com"
+        }
+      ]
+    }
+  ],
+  "total": 4,
+  "metadata": {
+    "generated": "2024-01-15",
+    "version": "1.0"
+  }
+}

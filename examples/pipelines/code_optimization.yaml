@@ -1,0 +1,52 @@
+name: Code Optimization Pipeline
+description: Analyze and optimize code for performance and best practices
+
+inputs:
+  code_file:
+    type: string
+    required: true
+    description: Path to the code file to optimize
+  language:
+    type: string
+    default: python
+    description: Programming language
+
+steps:
+  - id: read_code
+    action: file
+    parameters:
+      action: read
+      path: "{{code_file}}"
+  
+  - id: analyze_code
+    action: llm
+    parameters:
+      prompt: |
+        Analyze this {{language}} code for optimization opportunities:
+        
+        ```{{language}}
+        {{read_code.content}}
+        ```
+        
+        Identify:
+        1. Performance bottlenecks
+        2. Code quality issues
+        3. Best practice violations
+      model: <AUTO>Select model best suited for code analysis</AUTO>
+    depends_on: [read_code]
+  
+  - id: optimize_code
+    action: llm
+    parameters:
+      prompt: |
+        Based on this analysis:
+        {{analyze_code.result}}
+        
+        Provide optimized version of the code that addresses the identified issues.
+        Return only the optimized code, no explanations.
+      model: <AUTO>Select model for code generation</AUTO>
+    depends_on: [analyze_code]
+
+outputs:
+  analysis: "{{analyze_code.result}}"
+  optimized_code: "{{optimize_code.result}}"

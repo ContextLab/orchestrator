@@ -1,0 +1,28 @@
+name: Simple Research Pipeline
+description: A basic research pipeline that searches the web and summarizes findings
+
+inputs:
+  topic:
+    type: string
+    required: true
+    description: The research topic
+
+steps:
+  - id: search_web
+    action: web_search
+    parameters:
+      query: "{{topic}}"
+      max_results: 5
+  
+  - id: summarize_results
+    action: llm
+    parameters:
+      prompt: |
+        Summarize the key findings from these search results about {{topic}}:
+        {{search_web.results}}
+      model: <AUTO>Select appropriate model for summarization</AUTO>
+    depends_on: [search_web]
+
+outputs:
+  summary: "{{summarize_results.result}}"
+  search_count: "{{search_web.total_results}}"

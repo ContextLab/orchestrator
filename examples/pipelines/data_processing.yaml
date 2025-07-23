@@ -1,0 +1,58 @@
+name: Data Processing Pipeline
+description: Process and validate data from various sources
+
+inputs:
+  data_source:
+    type: string
+    required: true
+    description: Path to data file (CSV or JSON)
+  output_format:
+    type: string
+    default: json
+    description: Output format (json, csv, or yaml)
+
+steps:
+  - id: load_data
+    action: data_processing
+    parameters:
+      action: load
+      source: "{{data_source}}"
+  
+  - id: validate_data
+    action: data_processing
+    parameters:
+      action: validate
+      data: "{{load_data.data}}"
+      schema:
+        type: object
+        properties:
+          records:
+            type: array
+    depends_on: [load_data]
+  
+  - id: transform_data
+    action: data_processing
+    parameters:
+      action: transform
+      data: "{{load_data.data}}"
+      operations:
+        - type: filter
+          field: active
+          value: true
+        - type: aggregate
+          operation: sum
+          field: value
+    depends_on: [validate_data]
+  
+  - id: save_results
+    action: file
+    parameters:
+      action: write
+      path: "/tmp/processed_data.{{output_format}}"
+      content: "{{transform_data.result}}"
+    depends_on: [transform_data]
+
+outputs:
+  original_count: "{{load_data.stats.records_loaded}}"
+  processed_count: "{{transform_data.stats.records_processed}}"
+  output_file: "/tmp/processed_data.{{output_format}}"
