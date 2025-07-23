@@ -21,7 +21,8 @@ class ControlFlowAutoResolver:
 
         # Try to create ambiguity resolver, but make it optional
         try:
-            self.ambiguity_resolver = AmbiguityResolver(model_registry)
+            # Pass the model_registry to AmbiguityResolver correctly
+            self.ambiguity_resolver = AmbiguityResolver(model_registry=model_registry)
         except ValueError:
             # No model available, create a placeholder
             self.ambiguity_resolver = None
@@ -263,20 +264,27 @@ class ControlFlowAutoResolver:
         # If entire string is a single AUTO tag, resolve directly
         if len(matches) == 1 and content.strip() == f"<AUTO>{matches[0]}</AUTO>":
             prompt = matches[0].strip()
+            
+            # Replace template variables in the prompt first
+            prompt = self._replace_template_variables(prompt, enhanced_context)
 
             # Check if we have a resolver
             if not self.ambiguity_resolver:
                 # Return a reasonable default
                 return self._get_default_resolution(prompt)
 
-            # Add context to prompt
+            # Add context to prompt (but the prompt already has variables replaced)
             context_prompt = self._build_context_prompt(prompt, enhanced_context)
+            # Let the ambiguity resolver determine the type from content
             return await self.ambiguity_resolver.resolve(context_prompt, "control_flow")
 
         # Otherwise resolve each AUTO tag and substitute
         resolved_content = content
         for match in matches:
             prompt = match.strip()
+            
+            # Replace template variables in the prompt first
+            prompt = self._replace_template_variables(prompt, enhanced_context)
 
             if not self.ambiguity_resolver:
                 resolved_value = self._get_default_resolution(prompt)
@@ -358,6 +366,37 @@ class ControlFlowAutoResolver:
         else:
             return prompt
 
+    def _replace_template_variables(self, text: str, context: Dict[str, Any]) -> str:
+        """Replace template variables like {{ var }} in text.
+        
+        Args:
+            text: Text containing template variables
+            context: Context with variable values
+            
+        Returns:
+            Text with variables replaced
+        """
+        import re
+        
+        def replace_template(match):
+            var_name = match.group(1).strip()
+            # Navigate through context to find value
+            parts = var_name.split('.')
+            value = context
+            
+            for part in parts:
+                if isinstance(value, dict) and part in value:
+                    value = value[part]
+                else:
+                    # Variable not found, return original
+                    return match.group(0)
+            
+            return str(value)
+        
+        # Replace {{ variable }} patterns
+        template_pattern = r'\{\{\s*([^}]+)\s*\}\}'
+        return re.sub(template_pattern, replace_template, text)
+    
     def _replace_variables(self, expression: str, context: Dict[str, Any]) -> str:
         """Replace variables in an expression with their values.
 
