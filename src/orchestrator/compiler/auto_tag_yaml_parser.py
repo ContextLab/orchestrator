@@ -156,11 +156,32 @@ class AutoTagYAMLParser:
                 # Store the complete AUTO tag
                 self.tag_registry[placeholder_key] = tag.full_text
 
-                # Replace with a JSON-encoded string that's YAML-safe
-                json_safe = json.dumps(placeholder_key)
-
-                # Replace in result
-                result = result[: tag.start] + json_safe + result[tag.end :]
+                # Replace with placeholder - we need to check context
+                # to determine if we need quotes
+                before = result[:tag.start]
+                after = result[tag.end:]
+                
+                # Check if we're in a YAML value position that needs quotes
+                # Look backwards for the key and colon
+                line_start = before.rfind('\n') + 1
+                line_before_tag = before[line_start:]
+                
+                # Check if there's a key: pattern before the AUTO tag
+                if ':' in line_before_tag:
+                    # We're in a value position
+                    # Check if already quoted
+                    trimmed = line_before_tag.split(':', 1)[1].strip()
+                    if trimmed.startswith('"') or trimmed.startswith("'"):
+                        # Already quoted, use placeholder as-is
+                        replacement = placeholder_key
+                    else:
+                        # Not quoted, use quoted placeholder to make YAML-safe
+                        replacement = f'"{placeholder_key}"'
+                else:
+                    # Not sure, use safe quoted form
+                    replacement = f'"{placeholder_key}"'
+                
+                result = before + replacement + after
 
         return result
 
