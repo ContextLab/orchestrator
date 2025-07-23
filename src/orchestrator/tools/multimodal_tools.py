@@ -129,7 +129,7 @@ class ImageAnalysisTool(Tool):
                                  detail_level: str, model_name: Optional[str]) -> Dict[str, Any]:
         """Analyze image using AI model."""
         # Get model registry
-        from ..models.registry_singleton import get_model_registry
+        from orchestrator.models.registry_singleton import get_model_registry
         registry = get_model_registry()
         
         # Select model
@@ -140,8 +140,7 @@ class ImageAnalysisTool(Tool):
         else:
             # Select model with vision capabilities
             requirements = {
-                "capabilities": ["vision", "multimodal"],
-                "tasks": ["image-analysis", analysis_type]
+                "tasks": ["vision"]
             }
             model = await registry.select_model(requirements)
             if not model:
@@ -287,7 +286,7 @@ class ImageGenerationTool(Tool):
                                   model_name: Optional[str], num_images: int) -> List[str]:
         """Generate images using AI model."""
         # Get model registry
-        from ..models.registry_singleton import get_model_registry
+        from orchestrator.models.registry_singleton import get_model_registry
         registry = get_model_registry()
         
         # Select model

@@ -16,26 +16,13 @@ from src.orchestrator.tools.multimodal_tools import (
     ImageData,
     AudioData
 )
-from src.orchestrator.models.registry_singleton import get_model_registry, reset_model_registry
 
 
 @pytest.fixture
-async def setup_test_model():
+async def setup_test_model(populated_model_registry):
     """Setup a test model for multimodal operations."""
-    reset_model_registry()
-    registry = get_model_registry()
-    
-    # Register a test model with vision capabilities
-    from src.orchestrator.models.anthropic_model import AnthropicModel
-    model = AnthropicModel(
-        name="claude-3-haiku-20240307",
-        api_key=os.environ.get("ANTHROPIC_API_KEY", "test-key")
-    )
-    registry.register_model(model)
-    
-    yield registry
-    
-    reset_model_registry()
+    # Use the populated model registry that already has API keys loaded
+    yield populated_model_registry
 
 
 @pytest.fixture
@@ -123,23 +110,35 @@ async def test_image_analysis_describe(test_image, setup_test_model):
     """Test image description analysis."""
     tool = ImageAnalysisTool()
     
-    # Only run if we have a real API key
-    if os.environ.get("ANTHROPIC_API_KEY", "").startswith("test"):
-        # Skip real API call
+    # Check if we have any vision-capable models
+    registry = setup_test_model
+    vision_models = []
+    
+    # Directly iterate through the models dictionary
+    for model_key, model in registry.models.items():
+        if hasattr(model, 'capabilities') and "vision" in model.capabilities.supported_tasks:
+            vision_models.append(model)
+    
+    if not vision_models:
+        pytest.skip("No vision-capable models available")
+    
+    # Print found vision models for debugging
+    print(f"\nFound {len(vision_models)} vision models")
+    for model in vision_models[:3]:  # Show first 3
+        print(f"  - {model.name} ({model.provider})")
+    
+    try:
         result = await tool.execute(
             image=test_image['path'],
             analysis_type="describe",
             detail_level="low"
         )
-        # Will fail with no real model, but we can check the error
-        assert result["success"] is False
-        return
+    except Exception as e:
+        print(f"\nTool execution failed with: {e}")
+        raise
     
-    result = await tool.execute(
-        image=test_image['path'],
-        analysis_type="describe",
-        detail_level="low"
-    )
+    # Print result for debugging
+    print(f"\nResult: {result}")
     
     assert result["success"] is True
     assert "analysis" in result
