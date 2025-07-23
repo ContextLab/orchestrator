@@ -1,5 +1,26 @@
 # Test Failure Summary
 
+## Latest Update: July 23, 2025
+
+### Fixes Applied
+1. **Control Flow Tests** - Converted to use real models (Issue #114)
+2. **Multimodal Tools** - Fixed OpenAI duplicate messages parameter (Issue #115)
+3. **Event Loop Issues** - Fixed async/sync boundary problems (Issue #116)
+4. **AUTO Tag Parsing** - Fixed YAML parsing with colons in AUTO tags (Issue #117)
+5. **Test Structure** - Converted standalone scripts to pytest format
+6. **Documentation Tests** - Added validation for all code snippets (Issue #118)
+
+### Key Changes
+- AmbiguityResolver now uses lazy model selection
+- ConditionalTask.should_execute is now async
+- Cache sync methods detect and reject async context
+- Domain routing and load balancer tests use proper pytest fixtures
+- All tests use real models and API calls (no mocks)
+
+---
+
+# Original Test Failure Summary
+
 ## Overview
 Total test files analyzed: 52
 
