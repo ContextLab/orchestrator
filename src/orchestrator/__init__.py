@@ -273,13 +273,28 @@ class OrchestratorPipeline:
     def run(self, **kwargs: Any) -> Any:
         """Run the pipeline with given keyword arguments."""
         # Run pipeline asynchronously
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
-            return loop.run_until_complete(self._run_async(**kwargs))
-        finally:
-            loop.close()
+            # Check if there's an event loop running
+            loop = asyncio.get_running_loop()
+            # We're in an async context but called from sync code
+            # This is not ideal but we need to handle it
+            future = asyncio.ensure_future(self._run_async(**kwargs))
+            # Can't await here since this is a sync method
+            raise RuntimeError(
+                "Cannot call synchronous run() method from within an async context. "
+                "Use 'await run_async()' instead."
+            )
+        except RuntimeError as e:
+            if "no running event loop" in str(e):
+                # No event loop running, use asyncio.run which handles cleanup properly
+                return asyncio.run(self._run_async(**kwargs))
+            else:
+                raise
 
+    async def run_async(self, **kwargs: Any) -> Any:
+        """Run the pipeline asynchronously with given keyword arguments."""
+        return await self._run_async(**kwargs)
+    
     async def _run_async(self, **kwargs):
         """Async pipeline execution."""
         # Validate required inputs
@@ -478,21 +493,18 @@ def compile(yaml_path: str) -> "OrchestratorPipeline":
         # We're in an async context, need to run in a new thread or return a coroutine
         import concurrent.futures
 
-        def run_in_new_loop():
-            new_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(new_loop)
-            try:
-                return new_loop.run_until_complete(compile_async(yaml_path))
-            finally:
-                new_loop.close()
+        # We're in an async context but called from sync code
+        raise RuntimeError(
+            "Cannot call synchronous compile_yaml() from within an async context. "
+            "Use 'await compile_yaml_async()' instead."
+        )
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(run_in_new_loop)
-            return future.result()
-
-    except RuntimeError:
-        # No event loop running, we can create one
-        return asyncio.run(compile_async(yaml_path))
+    except RuntimeError as e:
+        if "no running event loop" in str(e):
+            # No event loop running, use asyncio.run
+            return asyncio.run(compile_async(yaml_path))
+        else:
+            raise
 
 
 __all__ = [

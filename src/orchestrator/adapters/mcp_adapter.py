@@ -693,5 +693,11 @@ class MCPAdapter(ControlSystem):
 
     async def cleanup(self):
         """Clean up all connections."""
+        # Clean up HTTP sessions in all clients
+        for client in self.clients.values():
+            if hasattr(client, '_http_session'):
+                await client._http_session.close()
+        
+        # Remove all servers
         for server_name in list(self.clients.keys()):
             await self.remove_server(server_name)
