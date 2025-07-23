@@ -285,6 +285,41 @@ class Model(ABC):
             Structured output matching schema
         """
         pass
+    
+    async def generate_multimodal(
+        self,
+        messages: List[Dict[str, Any]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Generate text from multimodal input (text, images, etc.).
+        
+        Default implementation converts to generate() call.
+        Models with native multimodal support should override this.
+
+        Args:
+            messages: List of message dicts with role and content
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+            **kwargs: Additional model-specific parameters
+
+        Returns:
+            Generated text
+        """
+        # Default: extract text content and use generate
+        text_parts = []
+        for msg in messages:
+            if isinstance(msg.get("content"), str):
+                text_parts.append(msg["content"])
+            elif isinstance(msg.get("content"), list):
+                for block in msg["content"]:
+                    if block.get("type") == "text":
+                        text_parts.append(block.get("text", ""))
+        
+        prompt = "\n".join(text_parts)
+        return await self.generate(prompt, temperature, max_tokens, **kwargs)
 
     @abstractmethod
     async def health_check(self) -> bool:

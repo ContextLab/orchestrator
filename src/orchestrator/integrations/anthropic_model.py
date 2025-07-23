@@ -200,10 +200,10 @@ class AnthropicModel(Model):
         Generate text using Anthropic API.
 
         Args:
-            prompt: Input prompt
+            prompt: Input prompt (can be string or list of content blocks)
             temperature: Sampling temperature (0.0 to 1.0)
             max_tokens: Maximum tokens to generate
-            **kwargs: Additional Anthropic parameters
+            **kwargs: Additional Anthropic parameters (including 'messages' for multimodal)
 
         Returns:
             Generated text
@@ -222,11 +222,18 @@ class AnthropicModel(Model):
             max_tokens = self.capabilities.max_tokens
 
         try:
+            # Check if multimodal messages are provided
+            if "messages" in kwargs:
+                messages = kwargs.pop("messages")
+            else:
+                # Create messages from prompt
+                messages = [{"role": "user", "content": prompt}]
+            
             response = self.client.messages.create(
                 model=self.model_name,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
                 **kwargs,
             )
 
@@ -401,6 +408,33 @@ class AnthropicModel(Model):
     def supports_function_calling(self) -> bool:
         """Check if model supports function calling."""
         return self.capabilities.supports_function_calling
+
+    async def generate_multimodal(
+        self,
+        messages: List[Dict[str, Any]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Generate text from multimodal input using Anthropic's native vision support.
+
+        Args:
+            messages: List of message dicts with role and content (can include images)
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+            **kwargs: Additional Anthropic parameters
+
+        Returns:
+            Generated text
+        """
+        # For Anthropic models with vision support, we can pass messages directly
+        if "vision" in self.capabilities.supported_tasks:
+            kwargs["messages"] = messages
+            return await self.generate("", temperature, max_tokens, **kwargs)
+        else:
+            # Fall back to default text-only implementation
+            return await super().generate_multimodal(messages, temperature, max_tokens, **kwargs)
 
     async def generate_with_tools(
         self,

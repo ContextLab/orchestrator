@@ -408,6 +408,51 @@ class OpenAIModel(Model):
         except Exception as e:
             raise RuntimeError(f"OpenAI streaming error: {str(e)}") from e
 
+    async def generate_multimodal(
+        self,
+        messages: List[Dict[str, Any]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Generate text from multimodal input using OpenAI's native vision support.
+
+        Args:
+            messages: List of message dicts with role and content (can include images)
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+            **kwargs: Additional OpenAI parameters
+
+        Returns:
+            Generated text
+        """
+        # For OpenAI models with vision support (gpt-4-vision, etc.),
+        # we need to format image content properly
+        formatted_messages = []
+        for msg in messages:
+            if isinstance(msg.get("content"), list):
+                # Convert our format to OpenAI format
+                content_parts = []
+                for block in msg["content"]:
+                    if block["type"] == "text":
+                        content_parts.append({"type": "text", "text": block["text"]})
+                    elif block["type"] == "image":
+                        # OpenAI expects image_url format
+                        if block.get("source", {}).get("type") == "base64":
+                            content_parts.append({
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{block['source'].get('media_type', 'image/png')};base64,{block['source']['data']}"
+                                }
+                            })
+                formatted_messages.append({"role": msg["role"], "content": content_parts})
+            else:
+                formatted_messages.append(msg)
+        
+        kwargs["messages"] = formatted_messages
+        return await self.generate("", temperature, max_tokens, **kwargs)
+
     def get_available_models(self) -> List[str]:
         """Get list of available OpenAI models."""
         return list(self.MODEL_CONFIGS.keys())

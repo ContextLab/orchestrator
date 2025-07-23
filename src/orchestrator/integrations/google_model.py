@@ -203,7 +203,7 @@ class GoogleModel(Model):
             prompt: Input prompt
             temperature: Sampling temperature (0.0 to 2.0)
             max_tokens: Maximum tokens to generate
-            **kwargs: Additional Google AI parameters
+            **kwargs: Additional Google AI parameters (including 'contents' for multimodal)
 
         Returns:
             Generated text
@@ -221,14 +221,27 @@ class GoogleModel(Model):
         generation_config = {
             "temperature": temperature,
             "max_output_tokens": max_tokens or self.capabilities.max_tokens,
-            **kwargs,
         }
+        
+        # Remove generation config params from kwargs
+        for key in ["temperature", "max_output_tokens"]:
+            kwargs.pop(key, None)
 
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config=generation_config,
-            )
+            # Check if multimodal contents are provided
+            if "contents" in kwargs:
+                contents = kwargs.pop("contents")
+                response = self.model.generate_content(
+                    contents,
+                    generation_config=generation_config,
+                    **kwargs,
+                )
+            else:
+                response = self.model.generate_content(
+                    prompt,
+                    generation_config=generation_config,
+                    **kwargs,
+                )
 
             return response.text if response.text else ""
 
@@ -527,6 +540,53 @@ class GoogleModel(Model):
 
         except Exception as e:
             raise RuntimeError(f"Google AI vision error: {str(e)}") from e
+
+    async def generate_multimodal(
+        self,
+        messages: List[Dict[str, Any]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Generate text from multimodal input using Google's native vision support.
+
+        Args:
+            messages: List of message dicts with role and content (can include images)
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+            **kwargs: Additional Google parameters
+
+        Returns:
+            Generated text
+        """
+        # Convert our format to Google format
+        contents = []
+        
+        for msg in messages:
+            if isinstance(msg.get("content"), list):
+                # Build parts for multimodal content
+                parts = []
+                for block in msg["content"]:
+                    if block["type"] == "text":
+                        parts.append(block["text"])
+                    elif block["type"] == "image":
+                        if block.get("source", {}).get("type") == "base64":
+                            # Google expects PIL Image or bytes
+                            import base64
+                            from PIL import Image
+                            import io
+                            
+                            image_data = base64.b64decode(block["source"]["data"])
+                            image = Image.open(io.BytesIO(image_data))
+                            parts.append(image)
+                contents.extend(parts)
+            else:
+                # Simple text content
+                contents.append(msg["content"])
+        
+        kwargs["contents"] = contents
+        return await self.generate("", temperature, max_tokens, **kwargs)
 
     def get_available_models(self) -> List[str]:
         """Get list of available Google AI models."""

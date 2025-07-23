@@ -169,49 +169,56 @@ class ImageAnalysisTool(Tool):
             "classify": "Classify this image into appropriate categories.",
         }
 
-        base_prompt = prompts.get(analysis_type, f"Analyze this image for: {analysis_type}")
-        
-        # Since our models don't support multimodal inputs directly,
-        # we'll use a text-based approach or placeholder
-        # TODO: Add proper multimodal support when models support it
-        
-        # For now, we'll provide a simulated response based on the analysis type
-        if analysis_type == "describe":
-            # Try to use the model with a descriptive prompt
-            prompt = f"{base_prompt}\n\n[Note: This is a placeholder response as the model doesn't support direct image input. In a real implementation, the image would be analyzed.]\n\nImage description:"
-            
-            try:
-                response = await model.generate(
-                    prompt=prompt,
+        prompt = prompts.get(analysis_type, f"Analyze this image for: {analysis_type}")
+
+        # Create multimodal message with image
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/png",
+                            "data": image_b64
+                        }
+                    },
+                ],
+            }
+        ]
+
+        # Call model with multimodal support
+        try:
+            # Check if model has generate_multimodal method
+            if hasattr(model, "generate_multimodal"):
+                response = await model.generate_multimodal(
+                    messages=messages,
                     temperature=0.1,
-                    max_tokens=500
+                    max_tokens=1000
                 )
-                
-                return {
-                    "model": model.name,
-                    "analysis": response,
-                    "usage": {"prompt_tokens": len(prompt.split()), "completion_tokens": len(response.split())},
-                    "note": "This is a simulated response. Real image analysis requires multimodal model support."
-                }
-            except Exception as e:
-                self.logger.warning(f"Model generation failed: {e}")
-                # Fallback to placeholder
-        
-        # Placeholder responses for testing
-        placeholder_responses = {
-            "describe": "This appears to be a test image. Without actual vision capabilities, I cannot provide a real description.",
-            "detect_objects": "Object detection requires vision model capabilities. Detected objects: [placeholder]",
-            "extract_text": "Text extraction requires OCR capabilities. No text detected in placeholder mode.",
-            "detect_faces": "Face detection requires vision model capabilities. No faces detected in placeholder mode.", 
-            "classify": "Image classification: Test/Placeholder category"
-        }
-        
-        return {
-            "model": model_name or "placeholder",
-            "analysis": placeholder_responses.get(analysis_type, "Analysis not available"),
-            "usage": {"prompt_tokens": 0, "completion_tokens": 0},
-            "note": "This is a placeholder response. Real image analysis requires multimodal model support."
-        }
+            else:
+                # Fall back to generate with messages in kwargs for models like Anthropic
+                response = await model.generate(
+                    prompt="",  # Empty prompt since content is in messages
+                    temperature=0.1,
+                    max_tokens=1000,
+                    messages=messages
+                )
+
+            return {
+                "model": model.name,
+                "analysis": response,
+                "usage": {
+                    "prompt_tokens": len(prompt.split()) + 100,  # Estimate for image
+                    "completion_tokens": len(response.split())
+                },
+            }
+
+        except Exception as e:
+            self.logger.error(f"Model analysis failed: {e}")
+            raise
 
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute image analysis."""
