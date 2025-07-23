@@ -1,14 +1,13 @@
 """Tests for control flow features using real models."""
 
 import pytest
-import asyncio
 
 from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
 from orchestrator.control_flow.conditional import ConditionalHandler, ConditionalTask
 from orchestrator.control_flow.loops import ForLoopHandler, WhileLoopHandler
 from orchestrator.control_flow.dynamic_flow import DynamicFlowHandler
 from orchestrator.engine.control_flow_engine import ControlFlowEngine
-from orchestrator.core.task import Task, TaskStatus
+from orchestrator.core.task import Task
 from orchestrator.core.pipeline import Pipeline
 
 

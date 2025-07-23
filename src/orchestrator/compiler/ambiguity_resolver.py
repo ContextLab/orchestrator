@@ -163,7 +163,7 @@ class AmbiguityResolver:
             return "format"
         elif any(
             word in content_lower for word in ["true", "false", "enable", "disable", "yes", " no "]  # Note space around "no"
-        ) and not ("which" in content_lower):  # Don't treat as boolean if asking "which"
+        ) and "which" not in content_lower:  # Don't treat as boolean if asking "which"
             return "boolean"
 
         # Check context path

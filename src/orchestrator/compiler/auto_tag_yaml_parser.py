@@ -1,6 +1,5 @@
 """YAML parser that properly handles <AUTO> tags with arbitrary content."""
 
-import json
 import re
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 

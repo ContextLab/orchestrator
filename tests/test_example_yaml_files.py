@@ -125,7 +125,6 @@ class TestExampleYAMLFiles:
     @pytest.mark.asyncio
     async def test_pipeline_compilation(self, example_files, populated_model_registry):
         """Test that pipelines can be compiled successfully."""
-        from orchestrator.compiler.yaml_compiler import YAMLCompiler
         
         compiler = YAMLCompiler(model_registry=populated_model_registry)
         errors = []

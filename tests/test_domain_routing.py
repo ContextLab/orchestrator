@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Test domain-specific model routing."""
 
-import asyncio
 import os
 import sys
 import pytest

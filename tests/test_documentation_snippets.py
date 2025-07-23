@@ -310,7 +310,6 @@ class TestModelUsageExamples:
     @pytest.mark.asyncio
     async def test_model_selection(self, populated_model_registry):
         """Test model selection examples."""
-        from orchestrator.models.model_registry import ModelRegistry
         
         # Test selecting a model by requirements
         model = await populated_model_registry.select_model({
@@ -475,7 +474,6 @@ class TestDesignDocCodeSnippets:
     @pytest.mark.asyncio
     async def test_model_registry_interface(self, populated_model_registry):
         """Test ModelRegistry interface from design."""
-        from orchestrator.models.model_registry import ModelRegistry
         
         registry = populated_model_registry
         

@@ -11,8 +11,7 @@ from orchestrator.tools.pipeline_recursion_tools import (
     PipelineExecutorTool,
     RecursionControlTool,
 )
-from orchestrator.models.registry_singleton import get_model_registry, reset_model_registry
-from orchestrator.models.anthropic_model import AnthropicModel
+from orchestrator.models.registry_singleton import get_model_registry
 
 
 @pytest.fixture(autouse=True)

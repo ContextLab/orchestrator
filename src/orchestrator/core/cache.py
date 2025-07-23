@@ -184,7 +184,7 @@ class MemoryCache(CacheBackend):
 
         try:
             # Try to get the current event loop
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're in an async context, can't use run_until_complete
             # This should not be called from async context
             raise RuntimeError("get_sync() cannot be called from an async context. Use get() instead.")
@@ -343,7 +343,7 @@ class MemoryCache(CacheBackend):
 
         try:
             # Try to get the current event loop
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're in an async context, can't use run_until_complete
             # This should not be called from async context
             raise RuntimeError("set_sync() cannot be called from an async context. Use set() or async_set() instead.")
@@ -366,7 +366,7 @@ class MemoryCache(CacheBackend):
 
         try:
             # Try to get the current event loop
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're in an async context, can't use run_until_complete
             # This should not be called from async context
             raise RuntimeError("get_value_sync() cannot be called from an async context. Use get_value() instead.")
@@ -502,7 +502,7 @@ class DiskCache(CacheBackend):
 
                 return entry
 
-            except:
+            except Exception:
                 # File corruption or missing, remove from index
                 if key in self._index:
                     del self._index[key]
@@ -538,7 +538,7 @@ class DiskCache(CacheBackend):
                 self._save_index()
                 return True
 
-            except:
+            except Exception:
                 return False
 
     async def delete(self, key: str) -> bool:
@@ -558,7 +558,7 @@ class DiskCache(CacheBackend):
                 self._save_index()
                 return True
 
-            except:
+            except Exception:
                 return False
 
     async def clear(self) -> bool:
@@ -577,7 +577,7 @@ class DiskCache(CacheBackend):
                 self._save_index()
                 return True
 
-            except:
+            except Exception:
                 return False
 
     async def size(self) -> int:
@@ -612,7 +612,7 @@ class DiskCache(CacheBackend):
 
                     if entry.is_expired():
                         expired_keys.append(key)
-                except:
+                except Exception:
                     # File corruption or missing, mark for removal
                     expired_keys.append(key)
 
