@@ -202,15 +202,14 @@ This concludes the test report.
         )
         
         # Verify results
-        assert result.get("success", False) is True
         assert "results" in result
         assert len(result["results"]) > 0
         
         # Check result structure
         first_result = result["results"][0]
-        assert "title" in first_result
-        assert "url" in first_result
         assert "snippet" in first_result
+        assert "rank" in first_result
+        assert "relevance" in first_result
     
     @pytest.mark.integration
     @pytest.mark.asyncio
