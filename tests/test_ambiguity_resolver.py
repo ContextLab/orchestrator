@@ -42,7 +42,8 @@ class TestAmbiguityResolver:
         assert resolver.model is not None
         assert resolver.resolution_cache == {}
 
-    def test_resolver_with_model_registry(self, model_registry):
+    @pytest.mark.asyncio
+    async def test_resolver_with_model_registry(self, model_registry):
         """Test resolver with model registry."""
         # Verify the registry has models
         available_models = model_registry.list_models()
@@ -50,8 +51,15 @@ class TestAmbiguityResolver:
             pytest.skip("No AI models available for testing")
 
         resolver = AmbiguityResolver(model_registry=model_registry)
-        assert resolver.model is not None  # Should have selected a model
+        assert resolver.model is None  # Model is selected lazily
         assert resolver.model_registry is model_registry
+        
+        # Trigger model selection by making a resolution
+        result = await resolver.resolve("Choose: option1 or option2", "test.choice")
+        
+        # Now the model should be selected
+        assert resolver.model is not None
+        assert result in ["option1", "option2"]
 
     def test_resolver_without_model_fails(self):
         """Test that resolver fails without a model."""

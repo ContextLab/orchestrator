@@ -96,16 +96,28 @@ class TestOllamaIntegration:
     async def test_auto_model_detection(self):
         """Test automatic Ollama model detection."""
         from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        from orchestrator.integrations.ollama_model import OllamaModel
+        from orchestrator.models.model_registry import ModelRegistry
 
-        # Should auto-detect Ollama model
-        resolver = AmbiguityResolver()
-        assert resolver.model.provider == "ollama"
-        assert resolver.model.name in available_models
+        # Create a model registry and register an Ollama model
+        registry = ModelRegistry()
+        model_name = available_models[0] if available_models else "llama3.2:1b"
+        model = OllamaModel(name=model_name, model_size="1b")
+        registry.register_model(model)
 
-        # Test resolution works
+        # Create resolver with registry
+        resolver = AmbiguityResolver(model_registry=registry)
+        assert resolver.model is None  # Model selected lazily
+        assert resolver.model_registry is registry
+
+        # Test resolution works - this will trigger model selection
         result = await resolver.resolve("json or csv", "data.format")
         assert isinstance(result, str)
         assert len(result) > 0
+        
+        # Now model should be selected
+        assert resolver.model is not None
+        assert resolver.model.provider == "ollama"
 
 
 @pytest.mark.asyncio

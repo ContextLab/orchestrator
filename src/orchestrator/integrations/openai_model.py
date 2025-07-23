@@ -233,9 +233,15 @@ class OpenAIModel(Model):
             max_tokens = self.capabilities.max_tokens
 
         try:
+            # Check if messages already passed in kwargs (e.g., from generate_multimodal)
+            if "messages" in kwargs:
+                messages = kwargs.pop("messages")
+            else:
+                messages = [{"role": "user", "content": prompt}]
+                
             response = self.client.chat.completions.create(
                 model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 **kwargs,
