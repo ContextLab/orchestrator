@@ -61,7 +61,7 @@ class AmbiguityResolver:
                 # Try to get a good model for text generation
                 try:
                     self.model = model_registry.select_model({"tasks": ["generate"]})
-                except:
+                except Exception:
                     # If selection fails, just get the first available
                     self.model = model_registry.get_model(available_models[0])
         
@@ -203,7 +203,7 @@ Respond with only the value, no explanation."""
                 result = json.loads(response)
                 if isinstance(result, list):
                     return result
-            except:
+            except Exception:
                 pass
             # Try to split by common delimiters
             if ',' in response:

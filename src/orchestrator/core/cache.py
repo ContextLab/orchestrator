@@ -68,7 +68,7 @@ class CacheEntry:
                 return len(str(self.value))
             else:
                 return len(pickle.dumps(self.value))
-        except:
+        except Exception:
             return 1024  # Default size estimate
 
     def is_expired(self) -> bool:
@@ -363,7 +363,7 @@ class MemoryCache(CacheBackend):
         except RuntimeError:
             asyncio.run(self.async_set(key, value, ttl))
 
-    async def get(self, key: str) -> Optional[CacheEntry]:
+    async def get_entry(self, key: str) -> Optional[CacheEntry]:
         """Async get method - returns CacheEntry for MultiLevelCache compatibility."""
         return await self.async_get(key)
 
@@ -372,7 +372,7 @@ class MemoryCache(CacheBackend):
         entry = await self.async_get(key)
         return entry.value if entry else None
 
-    def get_sync(self, key: str) -> Optional[Any]:
+    def get_value_sync(self, key: str) -> Optional[Any]:
         """Synchronous get method that returns the value directly."""
         import asyncio
 
@@ -479,7 +479,7 @@ class DiskCache(CacheBackend):
             if os.path.exists(index_file):
                 with open(index_file, "r") as f:
                     self._index = json.load(f)
-        except:
+        except Exception:
             self._index = {}
 
     def _save_index(self):
@@ -490,7 +490,7 @@ class DiskCache(CacheBackend):
         try:
             with open(index_file, "w") as f:
                 json.dump(self._index, f)
-        except:
+        except Exception:
             pass
 
     async def get(self, key: str) -> Optional[CacheEntry]:
@@ -902,7 +902,7 @@ class RedisCache(DistributedCache):
             sock.close()
             if result == 0:
                 return True  # Redis is already running
-        except:
+        except Exception:
             pass
         
         # Try to start Redis server

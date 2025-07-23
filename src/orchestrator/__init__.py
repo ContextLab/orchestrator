@@ -7,7 +7,7 @@ with automatic ambiguity resolution using LLMs.
 
 import asyncio
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from .compiler.yaml_compiler import YAMLCompiler
 from .compiler.control_flow_compiler import ControlFlowCompiler
@@ -20,7 +20,7 @@ from .core.task import Task, TaskStatus
 from .integrations.huggingface_model import HuggingFaceModel
 from .integrations.ollama_model import OllamaModel
 from .models.model_registry import ModelRegistry
-from .models.registry_singleton import get_model_registry, set_model_registry
+from .models.registry_singleton import get_model_registry
 from .orchestrator import Orchestrator
 from .state.state_manager import StateManager
 from .tools.mcp_server import default_mcp_server, default_tool_detector
@@ -80,10 +80,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
     from .integrations.anthropic_model import AnthropicModel
     from .integrations.google_model import GoogleModel
     from .integrations.openai_model import OpenAIModel
-    from .utils.model_utils import (
-        check_ollama_installed,
-        parse_model_size,
-    )
+    from .utils.model_utils import check_ollama_installed
     from .utils.model_config_loader import get_model_config_loader
     from .utils.api_keys import load_api_keys
 

@@ -257,7 +257,7 @@ class ResearchReportControlSystem(ControlSystem):
                                 "source": "documentation", 
                                 "relevance": 0.85
                             })
-                except:
+                except Exception:
                     pass  # Continue with other searches
         
         if "academic" in sources and REQUESTS_AVAILABLE:
