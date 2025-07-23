@@ -15,7 +15,7 @@ class ConditionalTask(Task):
     condition_cache_key: Optional[str] = None
     else_task_id: Optional[str] = None
 
-    def should_execute(
+    async def should_execute(
         self,
         context: Dict[str, Any],
         step_results: Dict[str, Any],
@@ -34,29 +34,10 @@ class ConditionalTask(Task):
         if not self.condition:
             return True
 
-        # Synchronous wrapper for async resolution
-        import asyncio
-
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # We're already in an async context
-            import concurrent.futures
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(
-                    asyncio.run,
-                    resolver.resolve_condition(
-                        self.condition, context, step_results, self.condition_cache_key
-                    ),
-                )
-                return future.result()
-        else:
-            # We can create a new event loop
-            return asyncio.run(
-                resolver.resolve_condition(
-                    self.condition, context, step_results, self.condition_cache_key
-                )
-            )
+        # Now we can directly await the async method
+        return await resolver.resolve_condition(
+            self.condition, context, step_results, self.condition_cache_key
+        )
 
 
 class ConditionalHandler:

@@ -261,7 +261,8 @@ class ModelRegistry:
     async def _filter_by_health(self, models: List[Model]) -> List[Model]:
         """Filter models by health status."""
         # Check if cache is stale or if any models don't have cached health status
-        current_time = asyncio.get_event_loop().time()
+        import time
+        current_time = time.time()
 
         # Only consider cache stale if we've checked before and enough time has passed
         cache_is_stale = (

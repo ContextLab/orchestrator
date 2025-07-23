@@ -183,11 +183,15 @@ class MemoryCache(CacheBackend):
         import asyncio
 
         try:
-            loop = asyncio.get_event_loop()
-            entry = loop.run_until_complete(self.get(key))
+            # Try to get the current event loop
+            loop = asyncio.get_running_loop()
+            # We're in an async context, can't use run_until_complete
+            # This should not be called from async context
+            raise RuntimeError("get_sync() cannot be called from an async context. Use get() instead.")
         except RuntimeError:
+            # No event loop running, safe to use asyncio.run
             entry = asyncio.run(self.get(key))
-        return entry.value if entry else None
+            return entry.value if entry else None
 
     async def get(self, key: str) -> Optional[CacheEntry]:
         """Get value from memory cache."""
@@ -338,17 +342,13 @@ class MemoryCache(CacheBackend):
         import asyncio
 
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If in an async context, create a task
-                import concurrent.futures
-
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, self.async_set(key, value, ttl))
-                    future.result()
-            else:
-                loop.run_until_complete(self.async_set(key, value, ttl))
+            # Try to get the current event loop
+            loop = asyncio.get_running_loop()
+            # We're in an async context, can't use run_until_complete
+            # This should not be called from async context
+            raise RuntimeError("set_sync() cannot be called from an async context. Use set() or async_set() instead.")
         except RuntimeError:
+            # No event loop running, safe to use asyncio.run
             asyncio.run(self.async_set(key, value, ttl))
 
     async def get_entry(self, key: str) -> Optional[CacheEntry]:
@@ -365,19 +365,15 @@ class MemoryCache(CacheBackend):
         import asyncio
 
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If in an async context, create a task
-                import concurrent.futures
-
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, self.async_get(key))
-                    entry = future.result()
-            else:
-                entry = loop.run_until_complete(self.async_get(key))
+            # Try to get the current event loop
+            loop = asyncio.get_running_loop()
+            # We're in an async context, can't use run_until_complete
+            # This should not be called from async context
+            raise RuntimeError("get_value_sync() cannot be called from an async context. Use get_value() instead.")
         except RuntimeError:
+            # No event loop running, safe to use asyncio.run
             entry = asyncio.run(self.async_get(key))
-        return entry.value if entry else None
+            return entry.value if entry else None
 
     async def async_get(self, key: str) -> Optional[CacheEntry]:
         """Async get method that returns CacheEntry."""
