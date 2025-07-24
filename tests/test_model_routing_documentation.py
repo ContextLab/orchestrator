@@ -3,12 +3,8 @@
 
 import asyncio
 import os
-import sys
-from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from orchestrator import Orchestrator, init_models
 
 
@@ -96,7 +92,7 @@ steps:
       prompt: "Write a Python function to calculate factorial"
       max_tokens: 200
       temperature: 0.2
-      
+
   # Analysis - should select reasoning model
   - id: analyze_data
     tool: llm-analyze
@@ -114,7 +110,7 @@ steps:
             type: array
             items:
               type: string
-              
+
   # Creative - should select creative model
   - id: write_story
     tool: llm-generate
@@ -241,7 +237,7 @@ steps:
       categories: ["high_priority", "low_priority"]
     requires_model:
       cost_tier: "low"  # Use cheapest model
-      
+
   # Only analyze high priority with expensive model
   - id: analyze_important
     tool: llm-generate
@@ -265,8 +261,14 @@ steps:
                     "content": "Important: New AI breakthrough in medical diagnosis",
                     "category": "technology",
                 },
-                {"content": "Weather update: Sunny skies expected", "category": "weather"},
-                {"content": "Critical: Security vulnerability discovered", "category": "security"},
+                {
+                    "content": "Weather update: Sunny skies expected",
+                    "category": "weather",
+                },
+                {
+                    "content": "Critical: Security vulnerability discovered",
+                    "category": "security",
+                },
             ]
         }
 
@@ -320,7 +322,7 @@ steps:
           type: array
           items:
             type: number
-            
+
   # Fallback if primary fails
   - id: simple_analysis
     tool: llm-generate
@@ -391,7 +393,7 @@ steps:
         speed: "medium"
         cost: "optimized"
       prompt: "{{ complex_prompt }}"
-      
+
   - id: show_selection
     tool: report-generator
     action: generate
@@ -400,10 +402,10 @@ steps:
       format: "markdown"
       content: |
         # Model Selection Results
-        
+
         Selected model: {{ smart_routing.model_used }}
         Confidence: {{ smart_routing.selection_confidence }}
-        
+
         ## Alternative Models Considered
         {% for model in smart_routing.alternatives %}
         - {{ model.name }} (score: {{ model.score }})

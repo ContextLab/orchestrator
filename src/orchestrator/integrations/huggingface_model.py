@@ -399,15 +399,17 @@ class HuggingFaceModel(Model):
         # Create prompt with schema instructions
         structured_prompt = f"""
         {prompt}
-        
+
         Please respond with a JSON object that matches this schema:
         {json.dumps(schema, indent=2)}
-        
+
         Return only the JSON object, no additional text.
         """
 
         try:
-            response = await self.generate(structured_prompt, temperature=temperature, **kwargs)
+            response = await self.generate(
+                structured_prompt, temperature=temperature, **kwargs
+            )
 
             # Parse JSON response
             try:
@@ -423,7 +425,9 @@ class HuggingFaceModel(Model):
                     raise ValueError("Could not parse JSON from response")
 
         except Exception as e:
-            raise RuntimeError(f"HuggingFace structured generation error: {str(e)}") from e
+            raise RuntimeError(
+                f"HuggingFace structured generation error: {str(e)}"
+            ) from e
 
     async def health_check(self) -> bool:
         """

@@ -212,10 +212,14 @@ class ToolDiscoveryEngine:
 
         # 5. Filter for available tools
         available_matches = [
-            match for match in unique_matches if match.tool_name in self.tool_registry.list_tools()
+            match
+            for match in unique_matches
+            if match.tool_name in self.tool_registry.list_tools()
         ]
 
-        logger.debug(f"Discovered {len(available_matches)} tools for action: {action_description}")
+        logger.debug(
+            f"Discovered {len(available_matches)} tools for action: {action_description}"
+        )
         return available_matches
 
     def _match_by_patterns(self, action_lower: str) -> List[ToolMatch]:

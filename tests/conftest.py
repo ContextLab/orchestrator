@@ -25,7 +25,8 @@ def populated_model_registry() -> ModelRegistry:
     available_models = registry.list_models()
     if not available_models:
         raise AssertionError(
-            "No models available in registry. " "Please configure API keys in ~/.orchestrator/.env"
+            "No models available in registry. "
+            "Please configure API keys in ~/.orchestrator/.env"
         )
 
     return registry

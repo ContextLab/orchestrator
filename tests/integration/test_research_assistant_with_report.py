@@ -21,8 +21,6 @@ class TestResearchAssistantWithReport:
         import sys
 
         examples_dir = Path(__file__).parent.parent.parent / "examples"
-        sys.path.insert(0, str(examples_dir))
-
         try:
             from research_assistant_with_report import ResearchAssistantWithReport
         except ImportError:
@@ -184,7 +182,11 @@ This concludes the test report.
         """Test web search with real queries."""
         config = {
             "web_tools": {
-                "search": {"default_backend": "duckduckgo", "max_results": 5, "timeout": 30}
+                "search": {
+                    "default_backend": "duckduckgo",
+                    "max_results": 5,
+                    "timeout": 30,
+                }
             }
         }
 
@@ -211,8 +213,6 @@ This concludes the test report.
         import sys
 
         examples_dir = Path(__file__).parent.parent.parent / "examples"
-        sys.path.insert(0, str(examples_dir))
-
         try:
             from research_assistant_with_report import ResearchAssistantWithReport
         except ImportError:

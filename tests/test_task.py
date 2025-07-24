@@ -67,7 +67,9 @@ class TestTask:
 
     def test_is_ready_with_dependencies(self):
         """Test is_ready with dependencies."""
-        task = Task(id="test", name="Test", action="test", dependencies=["dep1", "dep2"])
+        task = Task(
+            id="test", name="Test", action="test", dependencies=["dep1", "dep2"]
+        )
 
         assert not task.is_ready(set())
         assert not task.is_ready({"dep1"})

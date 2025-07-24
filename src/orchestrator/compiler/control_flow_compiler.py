@@ -55,7 +55,9 @@ class ControlFlowCompiler(YAMLCompiler):
             self.schema_validator.validate(raw_pipeline)
 
             # Step 3: Merge default values with context
-            merged_context = self._merge_defaults_with_context(raw_pipeline, context or {})
+            merged_context = self._merge_defaults_with_context(
+                raw_pipeline, context or {}
+            )
 
             # Step 4: Process templates
             pipeline_def = self._process_templates(raw_pipeline, merged_context)
@@ -65,7 +67,9 @@ class ControlFlowCompiler(YAMLCompiler):
                 pipeline_def = await self._resolve_ambiguities(pipeline_def)
 
             # Step 6: Process control flow constructs
-            pipeline_def = await self._process_control_flow(pipeline_def, merged_context)
+            pipeline_def = await self._process_control_flow(
+                pipeline_def, merged_context
+            )
 
             # Step 7: Build pipeline with expanded tasks
             pipeline = self._build_pipeline(pipeline_def)
@@ -108,19 +112,26 @@ class ControlFlowCompiler(YAMLCompiler):
 
             elif "while" in step_def:
                 # Handle while loop (compile-time setup only)
-                processed_step = await self._process_while_loop(step_def, context, step_results)
+                processed_step = await self._process_while_loop(
+                    step_def, context, step_results
+                )
                 processed_steps.append(processed_step)
 
             else:
                 # Process regular step with potential control flow
-                processed_step = await self._process_regular_step(step_def, context, step_results)
+                processed_step = await self._process_regular_step(
+                    step_def, context, step_results
+                )
                 processed_steps.append(processed_step)
 
         pipeline_def["steps"] = processed_steps
         return pipeline_def
 
     async def _process_regular_step(
-        self, step_def: Dict[str, Any], context: Dict[str, Any], step_results: Dict[str, Any]
+        self,
+        step_def: Dict[str, Any],
+        context: Dict[str, Any],
+        step_results: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Process a regular step with control flow features.
 
@@ -145,7 +156,10 @@ class ControlFlowCompiler(YAMLCompiler):
         return step_def
 
     async def _process_while_loop(
-        self, loop_def: Dict[str, Any], context: Dict[str, Any], step_results: Dict[str, Any]
+        self,
+        loop_def: Dict[str, Any],
+        context: Dict[str, Any],
+        step_results: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Process while loop definition.
 

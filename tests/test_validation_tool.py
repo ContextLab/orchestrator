@@ -26,7 +26,9 @@ class TestFormatValidator:
         assert validator.validate_format("tool-name", "web-search")
         assert validator.validate_format("tool-name", "file_system")
         assert not validator.validate_format("tool-name", "Tool-Name")  # No uppercase
-        assert not validator.validate_format("tool-name", "123tool")  # Can't start with number
+        assert not validator.validate_format(
+            "tool-name", "123tool"
+        )  # Can't start with number
 
         # Test file-path format
         assert validator.validate_format("file-path", "/path/to/file.txt")
@@ -139,7 +141,10 @@ class TestSchemaValidator:
                             "items": {
                                 "type": "object",
                                 "properties": {
-                                    "type": {"type": "string", "enum": ["email", "phone"]},
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["email", "phone"],
+                                    },
                                     "value": {"type": "string"},
                                 },
                             },
@@ -215,7 +220,12 @@ class TestValidationTool:
     async def test_infer_schema_action(self, validation_tool):
         """Test schema inference from data."""
         sample_data = {
-            "user": {"name": "John Doe", "email": "john@example.com", "age": 30, "active": True},
+            "user": {
+                "name": "John Doe",
+                "email": "john@example.com",
+                "age": 30,
+                "active": True,
+            },
             "scores": [95, 87, 92],
             "created": "2024-01-15",
         }
@@ -262,7 +272,10 @@ class TestValidationTool:
         # Invalid format
         result = await validation_tool.execute(
             action="validate",
-            data={"order_id": "ORDER-123", "model_id": "gpt-4"},  # Wrong format  # Missing provider
+            data={
+                "order_id": "ORDER-123",
+                "model_id": "gpt-4",
+            },  # Wrong format  # Missing provider
             schema=schema,
         )
 

@@ -91,7 +91,10 @@ class TestUserPromptTool:
         # Valid choice
         with mock.patch("builtins.input", return_value="banana"):
             result = await prompt_tool.execute(
-                prompt="Choose a fruit:", input_type="choice", choices=choices, context="cli"
+                prompt="Choose a fruit:",
+                input_type="choice",
+                choices=choices,
+                context="cli",
             )
 
         assert result["success"] is True
@@ -147,7 +150,9 @@ class TestUserPromptTool:
         assert result["value"] == "user@example.com"
 
         # Invalid email with retries
-        with mock.patch("builtins.input", side_effect=["invalid-email", "user@example.com"]):
+        with mock.patch(
+            "builtins.input", side_effect=["invalid-email", "user@example.com"]
+        ):
             result = await prompt_tool.execute(
                 prompt="Enter email:",
                 input_type="text",
@@ -220,7 +225,9 @@ class TestApprovalGateTool:
         # Mock input to provide modify choice, then raise EOFError to stop reading
         def mock_input_sequence(prompt=""):
             # This generator will provide inputs in sequence
-            inputs = iter(["modify", "Updated schema with new fields", "Added validation rules"])
+            inputs = iter(
+                ["modify", "Updated schema with new fields", "Added validation rules"]
+            )
 
             def _input(p=""):
                 try:
@@ -303,7 +310,12 @@ class TestFeedbackCollectionTool:
     async def test_simple_feedback_form(self, feedback_tool):
         """Test simple feedback collection."""
         questions = [
-            {"id": "satisfaction", "text": "How satisfied are you?", "type": "rating", "scale": 5},
+            {
+                "id": "satisfaction",
+                "text": "How satisfied are you?",
+                "type": "rating",
+                "scale": 5,
+            },
             {"id": "comments", "text": "Any additional comments?", "type": "text"},
         ]
 
@@ -349,7 +361,11 @@ class TestFeedbackCollectionTool:
     async def test_boolean_feedback(self, feedback_tool):
         """Test yes/no questions."""
         questions = [
-            {"id": "recommend", "text": "Would you recommend this to others?", "type": "boolean"}
+            {
+                "id": "recommend",
+                "text": "Would you recommend this to others?",
+                "type": "boolean",
+            }
         ]
 
         with mock.patch("builtins.input", return_value="yes"):
@@ -364,12 +380,19 @@ class TestFeedbackCollectionTool:
     async def test_anonymous_feedback(self, feedback_tool):
         """Test anonymous feedback collection."""
         questions = [
-            {"id": "honest_feedback", "text": "Please provide honest feedback:", "type": "text"}
+            {
+                "id": "honest_feedback",
+                "text": "Please provide honest feedback:",
+                "type": "text",
+            }
         ]
 
         with mock.patch("builtins.input", return_value="Room for improvement in UI"):
             result = await feedback_tool.execute(
-                questions=questions, title="Anonymous Feedback", anonymous=True, context="cli"
+                questions=questions,
+                title="Anonymous Feedback",
+                anonymous=True,
+                context="cli",
             )
 
         assert result["success"] is True
@@ -381,7 +404,12 @@ class TestFeedbackCollectionTool:
     async def test_skip_optional_questions(self, feedback_tool):
         """Test skipping optional questions."""
         questions = [
-            {"id": "required", "text": "Required question:", "type": "text", "required": True},
+            {
+                "id": "required",
+                "text": "Required question:",
+                "type": "text",
+                "required": True,
+            },
             {
                 "id": "optional",
                 "text": "Optional question (press Enter to skip):",
@@ -404,7 +432,12 @@ class TestFeedbackCollectionTool:
     async def test_feedback_with_validation(self, feedback_tool):
         """Test feedback with validation rules."""
         questions = [
-            {"id": "satisfaction", "text": "Rate your satisfaction:", "type": "rating", "scale": 10}
+            {
+                "id": "satisfaction",
+                "text": "Rate your satisfaction:",
+                "type": "rating",
+                "scale": 10,
+            }
         ]
 
         # Test valid rating

@@ -144,7 +144,9 @@ class ResearchReportControlSystem(ControlSystem):
                     # Simple template replacement
                     if context and "inputs" in context:
                         for input_key, input_value in context["inputs"].items():
-                            value = value.replace(f"{{{{ inputs.{input_key} }}}}", str(input_value))
+                            value = value.replace(
+                                f"{{{{ inputs.{input_key} }}}}", str(input_value)
+                            )
                     task.parameters[key] = value
 
     async def _search_web(self, task: Task, context: dict) -> Dict[str, Any]:
@@ -199,7 +201,9 @@ class ResearchReportControlSystem(ControlSystem):
                             if isinstance(topic, dict) and topic.get("Text"):
                                 results.append(
                                     {
-                                        "title": topic.get("Text", "").split(" - ")[0][:100],
+                                        "title": topic.get("Text", "").split(" - ")[0][
+                                            :100
+                                        ],
                                         "url": topic.get("FirstURL", ""),
                                         "snippet": topic.get("Text", ""),
                                         "source": "web",
@@ -257,7 +261,9 @@ class ResearchReportControlSystem(ControlSystem):
             for doc_name, doc_query in doc_queries:
                 try:
                     # Use DuckDuckGo for site-specific searches
-                    search_url = f"https://api.duckduckgo.com/?q={quote(doc_query)}&format=json"
+                    search_url = (
+                        f"https://api.duckduckgo.com/?q={quote(doc_query)}&format=json"
+                    )
                     response = requests.get(search_url, timeout=5)
 
                     if response.status_code in [200, 202]:
@@ -288,7 +294,9 @@ class ResearchReportControlSystem(ControlSystem):
                     # Parse arXiv XML response
                     for entry in root.findall("{http://www.w3.org/2005/Atom}entry"):
                         title_elem = entry.find("{http://www.w3.org/2005/Atom}title")
-                        summary_elem = entry.find("{http://www.w3.org/2005/Atom}summary")
+                        summary_elem = entry.find(
+                            "{http://www.w3.org/2005/Atom}summary"
+                        )
                         id_elem = entry.find("{http://www.w3.org/2005/Atom}id")
 
                         if title_elem is not None and summary_elem is not None:
@@ -321,7 +329,12 @@ class ResearchReportControlSystem(ControlSystem):
         with open(search_file, "w") as f:
             json.dump({"query": query, "results": results}, f, indent=2)
 
-        return {"query": query, "results": results, "count": len(results), "file": str(search_file)}
+        return {
+            "query": query,
+            "results": results,
+            "count": len(results),
+            "file": str(search_file),
+        }
 
     async def _compile_markdown(self, task: Task, context: dict) -> Dict[str, Any]:
         """Compile search results into markdown."""
@@ -401,7 +414,8 @@ Further analysis should explore:
             instructions = task.parameters.get("instructions", "")
             style = task.parameters.get("style", "technical")
             sections = task.parameters.get(
-                "sections", ["introduction", "overview", "details", "examples", "conclusion"]
+                "sections",
+                ["introduction", "overview", "details", "examples", "conclusion"],
             )
 
             # Ensure all values are strings and safe for f-strings
@@ -705,7 +719,9 @@ The field of AI agents is rapidly evolving with trends including:
 
         print(f"   ✅ Running quality checks: {checks}")
 
-        report_content = report.get("content", "") if isinstance(report, dict) else str(report)
+        report_content = (
+            report.get("content", "") if isinstance(report, dict) else str(report)
+        )
 
         validation_results = {}
         issues = []
@@ -726,7 +742,9 @@ The field of AI agents is rapidly evolving with trends including:
                 validation_results[check] = len(missing) == 0
                 if missing:
                     issues.append(f"Missing sections: {', '.join(missing)}")
-                    recommendations.append("Add missing sections to ensure comprehensive coverage")
+                    recommendations.append(
+                        "Add missing sections to ensure comprehensive coverage"
+                    )
 
             elif check == "accuracy":
                 # Check for technical accuracy indicators
@@ -751,14 +769,18 @@ The field of AI agents is rapidly evolving with trends including:
 
             elif check == "logical_flow":
                 # Check structure
-                has_toc = "Table of Contents" in report_content or "## " in report_content
+                has_toc = (
+                    "Table of Contents" in report_content or "## " in report_content
+                )
                 validation_results[check] = has_toc
                 if not has_toc:
                     issues.append("Document structure could be improved")
                     recommendations.append("Add clear section headers and organization")
 
         overall_score = (
-            sum(validation_results.values()) / len(validation_results) if validation_results else 0
+            sum(validation_results.values()) / len(validation_results)
+            if validation_results
+            else 0
         )
 
         result = {
@@ -785,8 +807,12 @@ The field of AI agents is rapidly evolving with trends including:
 
         print("   📄 Finalizing report")
 
-        draft_content = draft.get("content", "") if isinstance(draft, dict) else str(draft)
-        overall_score = validation.get("overall_score", 0) if isinstance(validation, dict) else 0.8
+        draft_content = (
+            draft.get("content", "") if isinstance(draft, dict) else str(draft)
+        )
+        overall_score = (
+            validation.get("overall_score", 0) if isinstance(validation, dict) else 0.8
+        )
 
         # Add quality stamp
         quality_stamp = f"""

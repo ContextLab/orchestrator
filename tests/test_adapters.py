@@ -117,7 +117,9 @@ class TestMCPAdapter:
         adapter = MCPAdapter(config, model_registry=registry)
 
         task = Task("test_task", "Test Task", "analyze")
-        task.parameters = {"prompt": "Analyze the word 'hello' and list 3 characteristics"}
+        task.parameters = {
+            "prompt": "Analyze the word 'hello' and list 3 characteristics"
+        }
 
         # Real execution using AI models (no MCP server needed)
         result = await adapter.execute_task(task, {})
@@ -160,7 +162,9 @@ class TestAdapterIntegration:
         task1.parameters = {"prompt": "Generate a short sentence about AI"}
 
         task2 = Task("task2", "MCP Task", "analyze")
-        task2.parameters = {"prompt": "Analyze the previous text and count the number of words"}
+        task2.parameters = {
+            "prompt": "Analyze the previous text and count the number of words"
+        }
         task2.dependencies = ["task1"]
 
         pipeline.add_task(task1)
@@ -184,7 +188,8 @@ class TestAdapterIntegration:
             assert len(results["task2"]) > 10  # Should have actual analysis
             # The analysis should mention words or counting
             assert any(
-                word in results["task2"].lower() for word in ["word", "count", "number", "text"]
+                word in results["task2"].lower()
+                for word in ["word", "count", "number", "text"]
             )
         except Exception as e:
             if "No models meet the specified requirements" in str(e):
@@ -242,13 +247,18 @@ class TestAdapterIntegration:
         # Define a simple node function that uses the adapter
         async def analyze_node(state, **kwargs):
             task = Task("analyze", "Analyze", "analyze")
-            task.parameters = {"prompt": f"Analyze this number: {kwargs.get('number', 42)}"}
+            task.parameters = {
+                "prompt": f"Analyze this number: {kwargs.get('number', 42)}"
+            }
             result = await adapter._execute_task(task, state.data)
             return {"analysis": result}
 
         # Add node to workflow
         node = LangGraphNode(
-            name="analyzer", function=analyze_node, inputs=["number"], outputs=["analysis"]
+            name="analyzer",
+            function=analyze_node,
+            inputs=["number"],
+            outputs=["analysis"],
         )
         workflow.add_node(node)
 

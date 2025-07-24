@@ -45,7 +45,7 @@ steps:
     parameters:
       action: check
       value: 10
-      
+
   - id: high_branch
     action: test_tool
     if: "true"
@@ -53,7 +53,7 @@ steps:
       action: process
       type: high
     depends_on: [check_value]
-      
+
   - id: low_branch
     action: test_tool
     if: "false"
@@ -61,7 +61,7 @@ steps:
       action: process
       type: low
     depends_on: [check_value]
-      
+
   - id: final_step
     action: test_tool
     parameters:
@@ -107,7 +107,7 @@ steps:
     action: test_tool
     parameters:
       action: list
-      
+
   - id: process_each
     for_each: '["apple", "banana", "cherry"]'
     action: test_tool
@@ -154,33 +154,33 @@ steps:
     parameters:
       action: check
       value: 3
-      
+
   - id: router
     action: test_tool
     parameters:
       action: default
     goto: "{{ start.result == true ? 'success_path' : 'failure_path' }}"
     depends_on: [start]
-    
+
   - id: skipped_step
     action: test_tool
     parameters:
       action: process
       note: "This should be skipped"
     depends_on: [router]
-    
+
   - id: failure_path
     action: test_tool
     parameters:
       action: process
       type: failure
-      
+
   - id: success_path
     action: test_tool
     parameters:
       action: process
       type: success
-      
+
   - id: end
     action: test_tool
     parameters:
@@ -239,7 +239,9 @@ def test_task_dependency_resolution():
     """Test dynamic dependency resolution without model."""
     task1 = Task(id="task1", name="Task 1", action="test")
     task2 = Task(id="task2", name="Task 2", action="test", dependencies=["task1"])
-    task3 = Task(id="task3", name="Task 3", action="test", dependencies=["task1", "task2"])
+    task3 = Task(
+        id="task3", name="Task 3", action="test", dependencies=["task1", "task2"]
+    )
 
     # Complete task1
     task1.complete({"result": "done"})
@@ -266,7 +268,7 @@ steps:
     parameters:
       action: check
       value: "{{ threshold }}"
-      
+
   - id: result
     action: test_tool
     if: "{{ check.result }}"
@@ -282,7 +284,9 @@ steps:
     compiler.ambiguity_resolver.resolve = lambda x, y: x  # Just return the content
 
     # Compile pipeline
-    pipeline = await compiler.compile(yaml_content, {"threshold": 7}, resolve_ambiguities=False)
+    pipeline = await compiler.compile(
+        yaml_content, {"threshold": 7}, resolve_ambiguities=False
+    )
 
     # Verify pipeline structure
     assert pipeline.id == "Compiler Test"

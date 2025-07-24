@@ -6,9 +6,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-# Add parent directory to path so we can import orchestrator
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from ..core.control_system import ControlSystem
 from ..core.task import Task, TaskStatus
 from ..core.pipeline import Pipeline
@@ -153,7 +150,9 @@ class ToolIntegratedControlSystem(ControlSystem):
 
         return None
 
-    async def _execute_with_tool(self, task: Task, tool_name: str, context: dict) -> Dict[str, Any]:
+    async def _execute_with_tool(
+        self, task: Task, tool_name: str, context: dict
+    ) -> Dict[str, Any]:
         """Execute task using the specified tool."""
         try:
             print(f"   🔧 Using tool: {tool_name}")
@@ -168,7 +167,9 @@ class ToolIntegratedControlSystem(ControlSystem):
                 print("   ✅ Tool execution successful")
                 return result.get("result", {})
             else:
-                print(f"   ❌ Tool execution failed: {result.get('error', 'Unknown error')}")
+                print(
+                    f"   ❌ Tool execution failed: {result.get('error', 'Unknown error')}"
+                )
                 # Fall back to default implementation
                 return await self._execute_fallback(task, context)
 
@@ -317,7 +318,9 @@ class ToolIntegratedControlSystem(ControlSystem):
         print(f"   📝 Generating {style} report on: {topic}")
 
         # Extract compiled content
-        compiled_text = content.get("content", "") if isinstance(content, dict) else str(content)
+        compiled_text = (
+            content.get("content", "") if isinstance(content, dict) else str(content)
+        )
 
         # Generate report
         report = f"""# {topic.title()} Research Report
@@ -421,7 +424,9 @@ See compiled research results for detailed source citations.
 
         print("   📄 Finalizing report")
 
-        draft_content = draft.get("content", "") if isinstance(draft, dict) else str(draft)
+        draft_content = (
+            draft.get("content", "") if isinstance(draft, dict) else str(draft)
+        )
 
         # Add quality stamp
         final_content = (
@@ -462,7 +467,9 @@ See compiled research results for detailed source citations.
         if terminal_tool:
             try:
                 # Create pandoc command
-                source_file = source.get("file", "") if isinstance(source, dict) else str(source)
+                source_file = (
+                    source.get("file", "") if isinstance(source, dict) else str(source)
+                )
                 if not source_file:
                     source_file = str(self.output_dir / "final_report.md")
 

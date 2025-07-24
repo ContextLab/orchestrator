@@ -166,13 +166,17 @@ class MCPClient:
 
         try:
             async with self._http_session.post(
-                self.server_url, json=json_rpc_message, headers={"Content-Type": "application/json"}
+                self.server_url,
+                json=json_rpc_message,
+                headers={"Content-Type": "application/json"},
             ) as response:
                 if response.status == 200:
                     result = await response.json()
                     return result
                 else:
-                    self.logger.error(f"HTTP error {response.status}: {await response.text()}")
+                    self.logger.error(
+                        f"HTTP error {response.status}: {await response.text()}"
+                    )
                     return None
 
         except aiohttp.ClientError as e:
@@ -182,7 +186,9 @@ class MCPClient:
             self.logger.error(f"Unexpected error in HTTP transport: {e}")
             return None
 
-    async def _send_stdio_message(self, message: MCPMessage) -> Optional[Dict[str, Any]]:
+    async def _send_stdio_message(
+        self, message: MCPMessage
+    ) -> Optional[Dict[str, Any]]:
         """Send message via stdio transport to a subprocess."""
         if not hasattr(self, "_process") or self._process is None:
             # Start the MCP server process
@@ -271,7 +277,9 @@ class MCPClient:
             return response["result"]
         return None
 
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def call_tool(
+        self, name: str, arguments: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Call a tool on the MCP server."""
         msg = MCPMessage("tools/call", {"name": name, "arguments": arguments})
         response = await self._send_message(msg)
@@ -343,7 +351,10 @@ class MCPModel(Model):
         # Check if any tools might be useful
         tool_suggestions = []
         for tool in self.mcp_client.tools:
-            if any(keyword in prompt.lower() for keyword in ["search", "analyze", "calculate"]):
+            if any(
+                keyword in prompt.lower()
+                for keyword in ["search", "analyze", "calculate"]
+            ):
                 tool_suggestions.append(f"- {tool.name}: {tool.description}")
 
         if tool_suggestions:
@@ -368,7 +379,9 @@ class MCPModel(Model):
 class MCPAdapter(ControlSystem):
     """Adapter for integrating Orchestrator with MCP servers."""
 
-    def __init__(self, config: Dict[str, Any] = None, model_registry: ModelRegistry = None):
+    def __init__(
+        self, config: Dict[str, Any] = None, model_registry: ModelRegistry = None
+    ):
         if config is None:
             config = {"name": "mcp_adapter"}
 
@@ -399,7 +412,11 @@ class MCPAdapter(ControlSystem):
         context = context or {}
 
         # Determine the best approach based on task action
-        action = task.action.lower() if isinstance(task.action, str) else str(task.action).lower()
+        action = (
+            task.action.lower()
+            if isinstance(task.action, str)
+            else str(task.action).lower()
+        )
 
         # Check if this is an MCP tool invocation
         if action.startswith("mcp:") or action.startswith("tool:"):
@@ -421,7 +438,9 @@ class MCPAdapter(ControlSystem):
         else:
             return await self._execute_with_ai_and_mcp(task, context)
 
-    async def _execute_mcp_tool(self, task: Task, tool_name: str, context: Dict[str, Any]) -> Any:
+    async def _execute_mcp_tool(
+        self, task: Task, tool_name: str, context: Dict[str, Any]
+    ) -> Any:
         """Execute a task using an MCP tool."""
         # Find a client that has this tool
         for server_name, client in self.clients.items():
@@ -453,33 +472,49 @@ class MCPAdapter(ControlSystem):
             if result:
                 return result
 
-        raise RuntimeError(f"Failed to read resource '{resource_uri}' from any MCP server")
+        raise RuntimeError(
+            f"Failed to read resource '{resource_uri}' from any MCP server"
+        )
 
     async def _execute_mcp_prompt(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute a task using an MCP prompt template."""
-        prompt_name = task.parameters.get("prompt_name") or task.parameters.get("template")
+        prompt_name = task.parameters.get("prompt_name") or task.parameters.get(
+            "template"
+        )
 
         if prompt_name:
             # Find a client with this prompt
             for server_name, client in self.clients.items():
-                prompt = next((p for p in client.prompts if p.name == prompt_name), None)
+                prompt = next(
+                    (p for p in client.prompts if p.name == prompt_name), None
+                )
                 if prompt:
                     # Get the prompt with arguments
-                    prompt_result = await client.get_prompt(prompt_name, task.parameters)
+                    prompt_result = await client.get_prompt(
+                        prompt_name, task.parameters
+                    )
                     if prompt_result:
                         # Use AI to process the prompt
                         enhanced_task = Task(
                             id=task.id,
                             name=task.name,
                             action="generate",
-                            parameters={"prompt": prompt_result.get("prompt", str(prompt_result))},
+                            parameters={
+                                "prompt": prompt_result.get(
+                                    "prompt", str(prompt_result)
+                                )
+                            },
                         )
-                        return await self.ai_control.execute_task(enhanced_task, context)
+                        return await self.ai_control.execute_task(
+                            enhanced_task, context
+                        )
 
         # Fallback to AI execution
         return await self._execute_with_ai_and_mcp(task, context)
 
-    async def _execute_with_ai_and_mcp(self, task: Task, context: Dict[str, Any]) -> Any:
+    async def _execute_with_ai_and_mcp(
+        self, task: Task, context: Dict[str, Any]
+    ) -> Any:
         """Execute task using AI model enhanced with MCP context."""
         # Gather relevant MCP context
         mcp_context = await self._gather_mcp_context(task, context)
@@ -493,7 +528,9 @@ class MCPAdapter(ControlSystem):
         # Execute using AI control system
         return await self.ai_control.execute_task(task, enhanced_context)
 
-    async def _gather_mcp_context(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _gather_mcp_context(
+        self, task: Task, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Gather relevant MCP context for task execution."""
         mcp_context = {"resources": [], "tools": [], "capabilities": {}}
 
@@ -502,7 +539,9 @@ class MCPAdapter(ControlSystem):
             mcp_context["resources"].extend(
                 [{"server": server_name, "resource": r} for r in client.resources]
             )
-            mcp_context["tools"].extend([{"server": server_name, "tool": t} for t in client.tools])
+            mcp_context["tools"].extend(
+                [{"server": server_name, "tool": t} for t in client.tools]
+            )
             mcp_context["capabilities"][server_name] = client.capabilities
 
         return mcp_context
@@ -527,7 +566,9 @@ class MCPAdapter(ControlSystem):
             "supports_prompts": True,
             "supports_mcp_protocol": True,
             "mcp_servers": list(self.clients.keys()),
-            "mcp_tools": [tool.name for client in self.clients.values() for tool in client.tools],
+            "mcp_tools": [
+                tool.name for client in self.clients.values() for tool in client.tools
+            ],
             "mcp_resources": [
                 res.uri for client in self.clients.values() for res in client.resources
             ],
@@ -598,7 +639,9 @@ class MCPAdapter(ControlSystem):
         client = self.clients[server_name]
         return await client.call_tool(tool_name, arguments)
 
-    async def read_resource(self, server_name: str, resource_uri: str) -> Optional[Dict[str, Any]]:
+    async def read_resource(
+        self, server_name: str, resource_uri: str
+    ) -> Optional[Dict[str, Any]]:
         """Read a resource from a specific MCP server."""
         if server_name not in self.clients:
             self.logger.error(f"MCP server '{server_name}' not found")

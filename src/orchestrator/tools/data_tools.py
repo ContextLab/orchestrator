@@ -28,7 +28,9 @@ class DataProcessingTool(Tool):
             required=False,
             default="json",
         )
-        self.add_parameter("operation", "object", "Operation details", required=False, default={})
+        self.add_parameter(
+            "operation", "object", "Operation details", required=False, default={}
+        )
 
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute data processing operation."""
@@ -52,7 +54,9 @@ class DataProcessingTool(Tool):
         except Exception as e:
             return {"action": action, "success": False, "error": str(e)}
 
-    async def _convert_data(self, data: Any, target_format: str, operation: Dict) -> Dict[str, Any]:
+    async def _convert_data(
+        self, data: Any, target_format: str, operation: Dict
+    ) -> Dict[str, Any]:
         """Convert data between formats."""
         # Handle file paths
         if isinstance(data, str) and Path(data).exists():
@@ -131,7 +135,9 @@ class DataProcessingTool(Tool):
             if agg_type == "sum" and numeric_values:
                 result["aggregations"][f"{field}_sum"] = sum(numeric_values)
             elif agg_type == "avg" and numeric_values:
-                result["aggregations"][f"{field}_avg"] = sum(numeric_values) / len(numeric_values)
+                result["aggregations"][f"{field}_avg"] = sum(numeric_values) / len(
+                    numeric_values
+                )
             elif agg_type == "count":
                 result["aggregations"][f"{field}_count"] = len(values)
 
@@ -150,7 +156,10 @@ class DataProcessingTool(Tool):
                 if isinstance(result, dict):
                     result = {mapping.get(k, k): v for k, v in result.items()}
                 elif isinstance(result, list):
-                    result = [{mapping.get(k, k): v for k, v in item.items()} for item in result]
+                    result = [
+                        {mapping.get(k, k): v for k, v in item.items()}
+                        for item in result
+                    ]
 
             elif transform_type == "add_field":
                 field_name = transform.get("field", "")

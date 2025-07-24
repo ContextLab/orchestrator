@@ -54,7 +54,11 @@ class DemoDecisionTool(Tool):
             return {"result": 3}
         elif "generate" in task.lower() and "array" in task.lower():
             return {
-                "result": ["Branch A: Performance", "Branch B: Security", "Branch C: Usability"]
+                "result": [
+                    "Branch A: Performance",
+                    "Branch B: Security",
+                    "Branch C: Usability",
+                ]
             }
         else:
             return {"result": "decision made"}
@@ -110,14 +114,14 @@ steps:
     action: demo
     parameters:
       action: analyze
-      
+
   - id: high_path
     action: demo
     if: "{{ check_value.score > 0.7 }}"
     parameters:
       action: process
       method: advanced
-      
+
   - id: low_path
     action: demo
     if: "{{ check_value.score <= 0.7 }}"
@@ -153,7 +157,7 @@ steps:
     action: decision
     parameters:
       task: "Generate 3 items array"
-      
+
   - id: process_items
     for_each: '["Item A", "Item B", "Item C"]'
     action: demo
@@ -194,7 +198,7 @@ steps:
     action: demo
     parameters:
       action: initialize
-      
+
   - id: improve_loop
     while: "{{ current_result.score | default(0.5) < 0.9 }}"
     max_iterations: 3
@@ -204,7 +208,7 @@ steps:
         parameters:
           action: validate
           threshold: "{{ current_result.score | default(0.5) }}"
-          
+
       - id: capture_result
         action: demo
         parameters:
@@ -246,34 +250,34 @@ steps:
     action: demo
     parameters:
       action: start
-      
+
   - id: check_condition
     action: decision
     parameters:
       task: "Should we go to advanced path?"
-      
+
   - id: router
     action: demo
     goto: "{{ check_condition.result ? 'advanced_path' : 'simple_path' }}"
     depends_on: [check_condition]
-    
+
   - id: simple_path
     action: demo
     parameters:
       action: simple
     goto: "finish"
-    
+
   - id: advanced_path
     action: demo
     parameters:
       action: advanced
     goto: "finish"
-    
+
   - id: skipped_task
     action: demo
     parameters:
       note: "This should be skipped"
-      
+
   - id: finish
     action: demo
     parameters:

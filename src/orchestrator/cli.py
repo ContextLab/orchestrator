@@ -56,7 +56,9 @@ def list():
 @keys.command()
 @click.argument(
     "provider",
-    type=click.Choice(["anthropic", "google", "huggingface", "openai"], case_sensitive=False),
+    type=click.Choice(
+        ["anthropic", "google", "huggingface", "openai"], case_sensitive=False
+    ),
 )
 def add(provider: str):
     """Add single key interactively for a specific provider."""

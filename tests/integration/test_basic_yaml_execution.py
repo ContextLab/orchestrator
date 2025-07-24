@@ -8,7 +8,9 @@ import pytest
 
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler
-from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
+from orchestrator.control_systems.model_based_control_system import (
+    ModelBasedControlSystem,
+)
 from orchestrator.utils.api_keys import load_api_keys
 
 
@@ -103,7 +105,7 @@ inputs:
     type: string
     description: "Topic to write about"
     required: true
-  
+
   max_words:
     type: integer
     description: "Maximum number of words"
@@ -145,7 +147,7 @@ steps:
     parameters:
       prompt: "Generate a random topic for a blog post (one line only):"
       max_tokens: 20
-  
+
   - id: write_intro
     action: generate
     parameters:

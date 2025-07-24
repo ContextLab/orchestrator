@@ -136,7 +136,10 @@ class MCPToolServer:
                             self.send_header("Content-type", "application/json")
                             self.end_headers()
                             response = json.dumps(
-                                {"success": True, "result": {"message": "Tool call received"}}
+                                {
+                                    "success": True,
+                                    "result": {"message": "Tool call received"},
+                                }
                             )
                             self.wfile.write(response.encode())
 
@@ -187,7 +190,9 @@ class MCPToolServer:
 
         logger.info("MCP tool server stopped")
 
-    async def handle_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_tool_call(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Handle a tool call from an AI model."""
         try:
             result = await self.registry.execute_tool(tool_name, **arguments)
@@ -222,7 +227,11 @@ class ToolDetector:
                 required_tools.add("terminal")
             elif "search" in action.lower() or "web" in action.lower():
                 required_tools.add("headless-browser")
-            elif "file" in action.lower() or "read" in action.lower() or "write" in action.lower():
+            elif (
+                "file" in action.lower()
+                or "read" in action.lower()
+                or "write" in action.lower()
+            ):
                 required_tools.add("filesystem")
             elif "validate" in action.lower() or "check" in action.lower():
                 required_tools.add("validation")

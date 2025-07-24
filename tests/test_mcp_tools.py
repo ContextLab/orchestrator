@@ -22,7 +22,11 @@ async def test_mcp_server_connect():
     result = await tool.execute(
         action="connect",
         server_name="test-server",
-        server_config={"command": "node", "args": ["test-server.js"], "env": {"TEST": "true"}},
+        server_config={
+            "command": "node",
+            "args": ["test-server.js"],
+            "env": {"TEST": "true"},
+        },
     )
 
     assert result["success"] is True
@@ -119,7 +123,11 @@ async def test_mcp_memory_store_retrieve():
 
     # Store a value
     result = await tool.execute(
-        action="store", namespace="test", key="user_name", value="Alice", ttl=0  # Permanent
+        action="store",
+        namespace="test",
+        key="user_name",
+        value="Alice",
+        ttl=0,  # Permanent
     )
 
     assert result["success"] is True
@@ -140,7 +148,11 @@ async def test_mcp_memory_ttl():
 
     # Store with short TTL
     result = await tool.execute(
-        action="store", namespace="test", key="temp_value", value="temporary", ttl=1  # 1 second
+        action="store",
+        namespace="test",
+        key="temp_value",
+        value="temporary",
+        ttl=1,  # 1 second
     )
 
     assert result["success"] is True
@@ -296,7 +308,11 @@ async def test_mcp_resource_uri_types():
     tool = MCPResourceTool()
 
     # Test different URI schemes
-    uris = ["file:///data/config.json", "memory://context/conversation", "api://weather/current"]
+    uris = [
+        "file:///data/config.json",
+        "memory://context/conversation",
+        "api://weather/current",
+    ]
 
     for uri in uris:
         result = await tool.execute(action="read", server_name="test-server", uri=uri)

@@ -5,8 +5,6 @@ import asyncio
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.task import Task
@@ -97,7 +95,7 @@ async def test_auto_resolution():
                 if model:
                     print(f"✅ Using model: {model.name}")
                     break
-            except:
+            except Exception:
                 continue
 
         if not model:
@@ -112,7 +110,7 @@ async def test_auto_resolution():
                     print("❌ No models available for AUTO resolution")
                     print("Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or install Ollama")
                     return False
-            except:
+            except Exception:
                 print("❌ No models available for AUTO resolution")
                 return False
 
@@ -189,7 +187,7 @@ steps:
                 if model:
                     print(f"✅ Using model: {model.name}")
                     break
-            except:
+            except Exception:
                 continue
 
         if not model:
@@ -201,7 +199,7 @@ steps:
                 if not model._is_available:
                     print("❌ No models available")
                     return False
-            except:
+            except Exception:
                 print("❌ No models available")
                 return False
 
@@ -225,7 +223,9 @@ steps:
 
                 # Verify AUTO tags were resolved
                 for key, value in params.items():
-                    if isinstance(value, str) and ("<AUTO>" in value or "AUTO>" in value):
+                    if isinstance(value, str) and (
+                        "<AUTO>" in value or "AUTO>" in value
+                    ):
                         print(f"❌ AUTO tag not resolved: {key} = {value}")
                         return False
 

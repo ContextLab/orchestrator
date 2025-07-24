@@ -98,7 +98,9 @@ async def test_context_merging():
     assert merged["var3"] == "new"
 
     # Test without inheritance
-    merged_no_inherit = tool._merge_contexts(parent_context, child_inputs, inherit=False)
+    merged_no_inherit = tool._merge_contexts(
+        parent_context, child_inputs, inherit=False
+    )
     assert merged_no_inherit == child_inputs
     assert "var1" not in merged_no_inherit
 
@@ -108,7 +110,11 @@ async def test_output_mapping():
     """Test output mapping functionality."""
     tool = PipelineExecutorTool()
 
-    pipeline_outputs = {"result": "success", "data": {"value": 42}, "status": "completed"}
+    pipeline_outputs = {
+        "result": "success",
+        "data": {"value": 42},
+        "status": "completed",
+    }
 
     output_mapping = {
         "result": "final_result",
@@ -170,7 +176,10 @@ async def test_recursion_control_state_operations():
 
     # Test state update with value
     result = await tool.execute(
-        action="update_state", state_key="name", state_value="test_value", context_id="test1"
+        action="update_state",
+        state_key="name",
+        state_value="test_value",
+        context_id="test1",
     )
     assert result["success"] is True
     assert result["new_value"] == "test_value"
@@ -186,7 +195,9 @@ async def test_recursion_control_state_operations():
     assert result["new_value"] == 15
 
     # Test get specific key
-    result = await tool.execute(action="get_state", state_key="counter", context_id="test1")
+    result = await tool.execute(
+        action="get_state", state_key="counter", context_id="test1"
+    )
     assert result["value"] == 15
     assert result["exists"] is True
 
@@ -208,9 +219,13 @@ async def test_active_contexts():
     assert tool.get_active_contexts() == []
 
     # Create some contexts
-    await tool.execute(action="update_state", state_key="test", state_value=1, context_id="ctx1")
+    await tool.execute(
+        action="update_state", state_key="test", state_value=1, context_id="ctx1"
+    )
 
-    await tool.execute(action="update_state", state_key="test", state_value=2, context_id="ctx2")
+    await tool.execute(
+        action="update_state", state_key="test", state_value=2, context_id="ctx2"
+    )
 
     active = tool.get_active_contexts()
     assert len(active) == 2

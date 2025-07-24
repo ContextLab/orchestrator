@@ -72,9 +72,13 @@ class ModelBasedControlSystem(ControlSystem):
             Task execution result
         """
         # Validate required parameters for text generation actions
-        if task.action in ["generate_text", "generate"] and (not task.parameters or "prompt" not in task.parameters):
-            raise ValueError(f"Task '{task.id}' with action '{task.action}' requires a 'prompt' parameter")
-        
+        if task.action in ["generate_text", "generate"] and (
+            not task.parameters or "prompt" not in task.parameters
+        ):
+            raise ValueError(
+                f"Task '{task.id}' with action '{task.action}' requires a 'prompt' parameter"
+            )
+
         # Record execution
         self._execution_history.append(
             {
@@ -126,13 +130,15 @@ class ModelBasedControlSystem(ControlSystem):
         # Determine task type
         task_types = []
         action_lower = str(task.action).lower()  # Convert to string first
-        print(f">> DEBUG: Processing action: '{action_lower}' (type: {type(task.action)})")
+        print(
+            f">> DEBUG: Processing action: '{action_lower}' (type: {type(task.action)})"
+        )
 
         # Map action to supported task types
         if "generate_text" in action_lower or action_lower == "generate_text":
             # Special case for generate_text action - map to "generate"
             task_types.append("generate")
-            print(f">> DEBUG: Mapped generate_text to generate")
+            print(">> DEBUG: Mapped generate_text to generate")
         elif any(word in action_lower for word in ["generate", "create", "write"]):
             task_types.append("generate")
         if any(word in action_lower for word in ["analyze", "extract", "identify"]):
@@ -170,7 +176,9 @@ class ModelBasedControlSystem(ControlSystem):
 
         return expertise
 
-    def _build_prompt(self, task: Task, action_text: str, context: Dict[str, Any]) -> str:
+    def _build_prompt(
+        self, task: Task, action_text: str, context: Dict[str, Any]
+    ) -> str:
         """Build full prompt for the model."""
         # Start with the action text
         prompt_parts = [action_text]

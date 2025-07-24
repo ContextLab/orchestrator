@@ -228,7 +228,7 @@ class AnthropicModel(Model):
             else:
                 # Create messages from prompt
                 messages = [{"role": "user", "content": prompt}]
-            
+
             response = self.client.messages.create(
                 model=self.model_name,
                 max_tokens=max_tokens,
@@ -269,10 +269,10 @@ class AnthropicModel(Model):
         # Create prompt with schema instructions
         structured_prompt = f"""
         {prompt}
-        
+
         Please respond with a JSON object that matches this schema:
         {json.dumps(schema, indent=2)}
-        
+
         Return only the JSON object, no additional text.
         """
 
@@ -301,7 +301,9 @@ class AnthropicModel(Model):
                     raise ValueError("Could not parse JSON from response")
 
         except Exception as e:
-            raise RuntimeError(f"Anthropic structured generation error: {str(e)}") from e
+            raise RuntimeError(
+                f"Anthropic structured generation error: {str(e)}"
+            ) from e
 
     async def health_check(self) -> bool:
         """
@@ -434,7 +436,9 @@ class AnthropicModel(Model):
             return await self.generate("", temperature, max_tokens, **kwargs)
         else:
             # Fall back to default text-only implementation
-            return await super().generate_multimodal(messages, temperature, max_tokens, **kwargs)
+            return await super().generate_multimodal(
+                messages, temperature, max_tokens, **kwargs
+            )
 
     async def generate_with_tools(
         self,

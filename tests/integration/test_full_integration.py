@@ -15,8 +15,6 @@ import os
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 import orchestrator as orc
 from orchestrator.tools.mcp_server import default_tool_detector
 from orchestrator.tools.base import default_registry
@@ -36,7 +34,9 @@ async def test_input_agnostic_pipeline():
     orc.init_models()
 
     # Replace default control system with tool-integrated one
-    pipeline_file = Path(__file__).parent / "pipelines" / "research-report-template.yaml"
+    pipeline_file = (
+        Path(__file__).parent / "pipelines" / "research-report-template.yaml"
+    )
 
     print(f"\n2️⃣ Compiling pipeline: {pipeline_file.name}")
 
@@ -86,7 +86,9 @@ async def test_input_agnostic_pipeline():
 
             try:
                 # Run pipeline with different inputs
-                result = await pipeline._run_async(topic=topic, instructions=instructions)
+                result = await pipeline._run_async(
+                    topic=topic, instructions=instructions
+                )
 
                 print("      ✅ Pipeline completed successfully")
 
@@ -96,7 +98,9 @@ async def test_input_agnostic_pipeline():
                         output_file = Path(result["file"])
                         if output_file.exists():
                             size = output_file.stat().st_size
-                            print(f"      📄 Generated report: {output_file.name} ({size} bytes)")
+                            print(
+                                f"      📄 Generated report: {output_file.name} ({size} bytes)"
+                            )
                         else:
                             print(f"      ⚠️  Output file not found: {result['file']}")
                     else:
@@ -120,7 +124,9 @@ async def test_input_agnostic_pipeline():
             print("   🔍 Testing web search tool...")
             try:
                 search_result = await default_registry.execute_tool(
-                    "web-search", query="machine learning transformers 2024", max_results=3
+                    "web-search",
+                    query="machine learning transformers 2024",
+                    max_results=3,
                 )
                 if search_result.get("success"):
                     results = search_result.get("results", [])
@@ -212,7 +218,11 @@ async def test_mcp_tool_detection():
         "name": "tool-detection-test",
         "description": "Test pipeline for tool detection",
         "steps": [
-            {"id": "web_search", "action": "search_web", "parameters": {"query": "test"}},
+            {
+                "id": "web_search",
+                "action": "search_web",
+                "parameters": {"query": "test"},
+            },
             {"id": "terminal_cmd", "action": "!echo 'hello'", "parameters": {}},
             {
                 "id": "file_ops",
@@ -260,7 +270,9 @@ def main():
             print("🏁 TEST RESULTS")
             print("=" * 60)
             print(f"Tool Detection: {'✅ PASS' if detection_success else '❌ FAIL'}")
-            print(f"Full Integration: {'✅ PASS' if integration_success else '❌ FAIL'}")
+            print(
+                f"Full Integration: {'✅ PASS' if integration_success else '❌ FAIL'}"
+            )
 
             if detection_success and integration_success:
                 print("\n🎉 ALL TESTS PASSED!")

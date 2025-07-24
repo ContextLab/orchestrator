@@ -8,12 +8,9 @@ with real API keys and produces high-quality outputs.
 import asyncio
 import os
 import pytest
-from typing import Dict, Any
-
-# Import the research assistant components
 import sys
-
-sys.path.append("/Users/jmanning/orchestrator/docs/tutorials/examples")
+import yaml
+from typing import Dict, Any
 
 from orchestrator import Orchestrator
 from orchestrator.integrations.openai_model import OpenAIModel
@@ -22,7 +19,6 @@ from orchestrator.state.state_manager import StateManager
 from orchestrator.tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from orchestrator.tools.data_tools import DataProcessingTool
 from orchestrator.core.cache import MemoryCache
-import yaml
 
 
 class ResearchAssistant:
@@ -46,7 +42,8 @@ class ResearchAssistant:
         """Initialize the orchestrator with models and tools."""
         # Initialize state manager for checkpointing
         self.state_manager = StateManager(
-            backend_type="memory", compression_enabled=False  # Use memory backend for testing
+            backend_type="memory",
+            compression_enabled=False,  # Use memory backend for testing
         )
 
         # Initialize caching for performance
@@ -54,6 +51,7 @@ class ResearchAssistant:
 
         # Import orchestrator module and initialize models first
         import orchestrator as orc
+
         orc.init_models()
 
         # Initialize orchestrator
@@ -105,7 +103,11 @@ class ResearchAssistant:
             # Default configuration for web tools
             return {
                 "web_tools": {
-                    "search": {"default_backend": "duckduckgo", "max_results": 10, "timeout": 30},
+                    "search": {
+                        "default_backend": "duckduckgo",
+                        "max_results": 10,
+                        "timeout": 30,
+                    },
                     "scraping": {
                         "timeout": 30,
                         "max_content_length": 1048576,
@@ -154,22 +156,33 @@ class ResearchAssistant:
             if search_results.get("results") and len(search_results["results"]) > 0:
                 extraction_url = search_results["results"][0].get("url", extraction_url)
 
-            extraction_results = await browser_tool.execute(action="scrape", url=extraction_url)
+            extraction_results = await browser_tool.execute(
+                action="scrape", url=extraction_url
+            )
 
             return {
                 "query": query,
                 "context": context,
                 "search_results": search_results,
                 "extraction_results": extraction_results,
-                "quality_score": self._calculate_quality_score(search_results, extraction_results),
+                "quality_score": self._calculate_quality_score(
+                    search_results, extraction_results
+                ),
                 "execution_time": 2.5,  # Estimated execution time for real operations
                 "success": True,
             }
 
         except Exception as e:
-            return {"query": query, "context": context, "error": str(e), "success": False}
+            return {
+                "query": query,
+                "context": context,
+                "error": str(e),
+                "success": False,
+            }
 
-    def _calculate_quality_score(self, search_results: Dict, extraction_results: Dict) -> float:
+    def _calculate_quality_score(
+        self, search_results: Dict, extraction_results: Dict
+    ) -> float:
         """Calculate overall quality score for research results."""
         score = 0.0
 
@@ -183,7 +196,9 @@ class ResearchAssistant:
         # Extraction quality - more generous scoring
         if extraction_results.get("content"):
             content_length = len(extraction_results.get("content", ""))
-            extraction_score = min(content_length / 500.0, 1.0)  # Up to 500 chars for max score
+            extraction_score = min(
+                content_length / 500.0, 1.0
+            )  # Up to 500 chars for max score
             score += extraction_score * 0.4
 
         # Base quality score for successful execution
@@ -248,7 +263,9 @@ class TestResearchAssistant:
         web_search_tool = assistant.tools["comprehensive_web_search"]
 
         # Test search
-        search_result = await web_search_tool.execute(query="machine learning", max_results=3)
+        search_result = await web_search_tool.execute(
+            query="machine learning", max_results=3
+        )
 
         # Validate search results
         assert "query" in search_result
@@ -270,7 +287,9 @@ class TestResearchAssistant:
         browser_tool = assistant.tools["extract_web_content"]
 
         # Test content extraction
-        extraction_result = await browser_tool.execute(action="scrape", url="https://example.com")
+        extraction_result = await browser_tool.execute(
+            action="scrape", url="https://example.com"
+        )
 
         # Validate extraction results
         assert "url" in extraction_result
@@ -346,7 +365,9 @@ class TestResearchAssistant:
 
         # Save checkpoint
         checkpoint_id = await assistant.state_manager.save_checkpoint(
-            execution_id="test_execution", state=test_state, metadata={"task_id": "web_search"}
+            execution_id="test_execution",
+            state=test_state,
+            metadata={"task_id": "web_search"},
         )
 
         # Load checkpoint
@@ -556,7 +577,8 @@ if __name__ == "__main__":
 
         print("Testing Research Assistant...")
         result = await assistant.conduct_research(
-            "artificial intelligence trends 2024", "Focus on recent developments and applications"
+            "artificial intelligence trends 2024",
+            "Focus on recent developments and applications",
         )
 
         print(f"Test completed: {result['success']}")

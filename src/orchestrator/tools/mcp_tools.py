@@ -49,17 +49,29 @@ class MCPServerTool(Tool):
 
     def __init__(self):
         super().__init__(
-            name="mcp-server", description="Connect to MCP servers and execute their tools"
+            name="mcp-server",
+            description="Connect to MCP servers and execute their tools",
         )
         self.add_parameter(
-            "action", "string", "Action to perform: connect, list_tools, execute_tool, disconnect"
+            "action",
+            "string",
+            "Action to perform: connect, list_tools, execute_tool, disconnect",
         )
         self.add_parameter(
-            "server_config", "object", "Server configuration for connect action", required=False
+            "server_config",
+            "object",
+            "Server configuration for connect action",
+            required=False,
         )
-        self.add_parameter("server_name", "string", "Name of the server", required=False)
-        self.add_parameter("tool_name", "string", "Name of the tool to execute", required=False)
-        self.add_parameter("tool_params", "object", "Parameters for tool execution", required=False)
+        self.add_parameter(
+            "server_name", "string", "Name of the server", required=False
+        )
+        self.add_parameter(
+            "tool_name", "string", "Name of the tool to execute", required=False
+        )
+        self.add_parameter(
+            "tool_params", "object", "Parameters for tool execution", required=False
+        )
 
         self.logger = logging.getLogger(__name__)
         self.connections: Dict[str, MCPConnection] = {}
@@ -76,16 +88,24 @@ class MCPServerTool(Tool):
         env.update(config.get("env", {}))
 
         # Create connection
-        connection = MCPConnection(server_name=server_name, command=command, args=args, env=env)
+        connection = MCPConnection(
+            server_name=server_name, command=command, args=args, env=env
+        )
 
         try:
             # Start the MCP server process
-            self.logger.info(f"Starting MCP server '{server_name}': {command} {' '.join(args)}")
+            self.logger.info(
+                f"Starting MCP server '{server_name}': {command} {' '.join(args)}"
+            )
 
             # For demonstration, we'll simulate a connection
             # In production, this would start the actual MCP server process
             connection.connected = True
-            connection.capabilities = {"tools": True, "resources": True, "prompts": True}
+            connection.capabilities = {
+                "tools": True,
+                "resources": True,
+                "prompts": True,
+            }
 
             self.connections[server_name] = connection
             return True
@@ -96,7 +116,10 @@ class MCPServerTool(Tool):
 
     async def _list_server_tools(self, server_name: str) -> List[MCPToolInfo]:
         """List available tools from a server."""
-        if server_name not in self.connections or not self.connections[server_name].connected:
+        if (
+            server_name not in self.connections
+            or not self.connections[server_name].connected
+        ):
             return []
 
         # In production, this would query the actual MCP server
@@ -131,7 +154,10 @@ class MCPServerTool(Tool):
         self, server_name: str, tool_name: str, params: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute a tool on an MCP server."""
-        if server_name not in self.connections or not self.connections[server_name].connected:
+        if (
+            server_name not in self.connections
+            or not self.connections[server_name].connected
+        ):
             raise ValueError(f"Server '{server_name}' not connected")
 
         # In production, this would send the request to the MCP server
@@ -176,7 +202,10 @@ class MCPServerTool(Tool):
             if action == "connect":
                 server_config = kwargs.get("server_config")
                 if not server_config:
-                    return {"success": False, "error": "server_config required for connect action"}
+                    return {
+                        "success": False,
+                        "error": "server_config required for connect action",
+                    }
 
                 server_name = kwargs.get("server_name", "default")
                 connected = await self._connect_server(server_name, server_config)
@@ -185,7 +214,9 @@ class MCPServerTool(Tool):
                     "success": connected,
                     "server_name": server_name,
                     "connected": connected,
-                    "capabilities": self.connections[server_name].capabilities if connected else {},
+                    "capabilities": (
+                        self.connections[server_name].capabilities if connected else {}
+                    ),
                 }
 
             elif action == "list_tools":
@@ -209,7 +240,10 @@ class MCPServerTool(Tool):
                 server_name = kwargs.get("server_name", "default")
                 tool_name = kwargs.get("tool_name")
                 if not tool_name:
-                    return {"success": False, "error": "tool_name required for execute_tool action"}
+                    return {
+                        "success": False,
+                        "error": "tool_name required for execute_tool action",
+                    }
 
                 tool_params = kwargs.get("tool_params", {})
                 result = await self._execute_tool(server_name, tool_name, tool_params)
@@ -246,13 +280,16 @@ class MCPMemoryTool(Tool):
 
     def __init__(self):
         super().__init__(
-            name="mcp-memory", description="Store and retrieve context for MCP server interactions"
+            name="mcp-memory",
+            description="Store and retrieve context for MCP server interactions",
         )
         self.add_parameter("action", "string", "Action: store, retrieve, list, clear")
         self.add_parameter("key", "string", "Memory key", required=False)
         self.add_parameter("value", "any", "Value to store", required=False)
         self.add_parameter("namespace", "string", "Memory namespace", default="default")
-        self.add_parameter("ttl", "integer", "Time to live in seconds (0 for permanent)", default=0)
+        self.add_parameter(
+            "ttl", "integer", "Time to live in seconds (0 for permanent)", default=0
+        )
 
         self.logger = logging.getLogger(__name__)
         self.memory_store: Dict[str, Dict[str, Any]] = {}
@@ -324,7 +361,10 @@ class MCPMemoryTool(Tool):
             elif action == "retrieve":
                 key = kwargs.get("key")
                 if not key:
-                    return {"success": False, "error": "key required for retrieve action"}
+                    return {
+                        "success": False,
+                        "error": "key required for retrieve action",
+                    }
 
                 ns = self._get_namespace(namespace)
 
@@ -354,7 +394,12 @@ class MCPMemoryTool(Tool):
                         "metadata": self.metadata[namespace].get(key, {}),
                     }
                 else:
-                    return {"success": True, "namespace": namespace, "key": key, "found": False}
+                    return {
+                        "success": True,
+                        "namespace": namespace,
+                        "key": key,
+                        "found": False,
+                    }
 
             elif action == "list":
                 ns = self._get_namespace(namespace)
@@ -393,12 +438,21 @@ class MCPResourceTool(Tool):
     """Access and manage MCP resources."""
 
     def __init__(self):
-        super().__init__(name="mcp-resource", description="Access resources from MCP servers")
-        self.add_parameter("action", "string", "Action: list, read, subscribe, unsubscribe")
-        self.add_parameter("server_name", "string", "MCP server name", default="default")
+        super().__init__(
+            name="mcp-resource", description="Access resources from MCP servers"
+        )
+        self.add_parameter(
+            "action", "string", "Action: list, read, subscribe, unsubscribe"
+        )
+        self.add_parameter(
+            "server_name", "string", "MCP server name", default="default"
+        )
         self.add_parameter("uri", "string", "Resource URI", required=False)
         self.add_parameter(
-            "subscription_id", "string", "Subscription ID for unsubscribe", required=False
+            "subscription_id",
+            "string",
+            "Subscription ID for unsubscribe",
+            required=False,
         )
 
         self.logger = logging.getLogger(__name__)
@@ -448,7 +502,10 @@ class MCPResourceTool(Tool):
             }
         elif uri.startswith("memory://"):
             return {
-                "content": {"messages": ["Hello", "How can I help?"], "context": "greeting"},
+                "content": {
+                    "messages": ["Hello", "How can I help?"],
+                    "context": "greeting",
+                },
                 "metadata": {"entries": 2},
             }
         elif uri.startswith("api://"):
@@ -521,7 +578,10 @@ class MCPResourceTool(Tool):
             elif action == "subscribe":
                 uri = kwargs.get("uri")
                 if not uri:
-                    return {"success": False, "error": "uri required for subscribe action"}
+                    return {
+                        "success": False,
+                        "error": "uri required for subscribe action",
+                    }
 
                 subscription_id = await self._subscribe_resource(server_name, uri)
 

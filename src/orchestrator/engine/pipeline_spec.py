@@ -107,11 +107,15 @@ class TaskSpec:
 
     def should_retry_on_error(self) -> bool:
         """Check if task should retry on error."""
-        return isinstance(self.on_error, ErrorHandling) and self.on_error.retry_count > 0
+        return (
+            isinstance(self.on_error, ErrorHandling) and self.on_error.retry_count > 0
+        )
 
     def should_continue_on_error(self) -> bool:
         """Check if pipeline should continue on task error."""
-        return isinstance(self.on_error, ErrorHandling) and self.on_error.continue_on_error
+        return (
+            isinstance(self.on_error, ErrorHandling) and self.on_error.continue_on_error
+        )
 
     def get_condition_variables(self) -> List[str]:
         """Extract variables from condition expression."""
@@ -180,7 +184,9 @@ class PipelineSpec:
         for step in self.steps:
             for dep in step.depends_on:
                 if dep not in step_ids:
-                    raise ValueError(f"Step '{step.id}' depends on non-existent step '{dep}'")
+                    raise ValueError(
+                        f"Step '{step.id}' depends on non-existent step '{dep}'"
+                    )
 
         # Check for circular dependencies using topological sort
         self._check_circular_dependencies()
@@ -214,7 +220,9 @@ class PipelineSpec:
         for step in self.steps:
             if step.id not in visited:
                 if has_cycle(step.id):
-                    raise ValueError(f"Circular dependency detected involving step '{step.id}'")
+                    raise ValueError(
+                        f"Circular dependency detected involving step '{step.id}'"
+                    )
 
     def get_execution_order(self) -> List[TaskSpec]:
         """Get steps in valid execution order (topological sort)."""
@@ -242,7 +250,9 @@ class PipelineSpec:
                     queue.append(neighbor)
 
         if len(result) != len(self.steps):
-            raise ValueError("Cannot determine execution order - circular dependencies exist")
+            raise ValueError(
+                "Cannot determine execution order - circular dependencies exist"
+            )
 
         return result
 

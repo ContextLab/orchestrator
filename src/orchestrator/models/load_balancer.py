@@ -74,7 +74,9 @@ class LoadBalancer:
         # Initialize model states
         for model_info in config.models:
             model_id = model_info["model"]
-            self.model_states[model_id].max_concurrent = model_info.get("max_concurrent", 10)
+            self.model_states[model_id].max_concurrent = model_info.get(
+                "max_concurrent", 10
+            )
 
     async def select_from_pool(self, pool_name: str) -> Model:
         """
@@ -106,7 +108,9 @@ class LoadBalancer:
 
         return model
 
-    async def _select_from_pool_weighted(self, pool: ModelPoolConfig) -> Optional[Model]:
+    async def _select_from_pool_weighted(
+        self, pool: ModelPoolConfig
+    ) -> Optional[Model]:
         """
         Select model from pool using weighted random selection.
 
@@ -179,7 +183,9 @@ class LoadBalancer:
         self.model_states[model_id].current_requests += 1
         return model
 
-    async def execute_with_retry(self, model: Model, operation: str, *args, **kwargs) -> Any:
+    async def execute_with_retry(
+        self, model: Model, operation: str, *args, **kwargs
+    ) -> Any:
         """
         Execute an operation with retry logic.
 

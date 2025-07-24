@@ -8,8 +8,6 @@ import time
 import json
 import pytest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
 from orchestrator.models.load_balancer import LoadBalancer, ModelPoolConfig
@@ -147,7 +145,9 @@ async def test_auto_tag_routing(registry: ModelRegistry):
 
             # Generate response
             start_time = time.time()
-            response = await model.generate(test["prompt"], temperature=0.7, max_tokens=50)
+            response = await model.generate(
+                test["prompt"], temperature=0.7, max_tokens=50
+            )
             latency = time.time() - start_time
 
             print(f"   Response: {response.strip()[:100]}...")
@@ -230,13 +230,19 @@ async def test_domain_specific_generation(registry: ModelRegistry):
             "prompt": "Explain the symptoms and treatment for pneumonia",
             "expected_domain": "medical",
         },
-        {"prompt": "Draft a non-disclosure agreement template", "expected_domain": "legal"},
+        {
+            "prompt": "Draft a non-disclosure agreement template",
+            "expected_domain": "legal",
+        },
         {
             "prompt": "Write a function to sort an array using quicksort",
             "expected_domain": "technical/code",
         },
         {"prompt": "Compose a haiku about the seasons", "expected_domain": "creative"},
-        {"prompt": "Explain photosynthesis to a 10-year-old", "expected_domain": "educational"},
+        {
+            "prompt": "Explain photosynthesis to a 10-year-old",
+            "expected_domain": "educational",
+        },
     ]
 
     for test in domain_prompts:
@@ -246,13 +252,17 @@ async def test_domain_specific_generation(registry: ModelRegistry):
         try:
             # Detect domain
             domains = router.detect_domains(test["prompt"])
-            print(f"Detected: {', '.join([f'{d[0]} ({d[1]:.2f})' for d in domains[:2]])}")
+            print(
+                f"Detected: {', '.join([f'{d[0]} ({d[1]:.2f})' for d in domains[:2]])}"
+            )
 
             # Route and generate
             model = await router.route_by_domain(test["prompt"])
             print(f"Model: {model.provider}:{model.name}")
 
-            response = await model.generate(test["prompt"], temperature=0.7, max_tokens=100)
+            response = await model.generate(
+                test["prompt"], temperature=0.7, max_tokens=100
+            )
             print(f"Response: {response.strip()[:150]}...")
 
             # Verify domain coverage
@@ -280,8 +290,12 @@ async def test_load_balanced_generation(registry: ModelRegistry):
 
     # Add API models if available
     api_models = []
-    if "openai:gpt-3.5-turbo" in [f"{m.provider}:{m.name}" for m in registry.models.values()]:
-        api_models.append({"model": "openai:gpt-3.5-turbo", "weight": 0.7, "max_concurrent": 5})
+    if "openai:gpt-3.5-turbo" in [
+        f"{m.provider}:{m.name}" for m in registry.models.values()
+    ]:
+        api_models.append(
+            {"model": "openai:gpt-3.5-turbo", "weight": 0.7, "max_concurrent": 5}
+        )
 
     if api_models:
         api_pool = ModelPoolConfig(models=api_models, fallback_pool="local")
@@ -316,7 +330,9 @@ async def test_load_balanced_generation(registry: ModelRegistry):
         if "error" in result:
             print(f"  Request {result['request']}: Failed - {result['error']}")
         else:
-            print(f"  Request {result['request']}: {result['model']} -> {result['response']}")
+            print(
+                f"  Request {result['request']}: {result['model']} -> {result['response']}"
+            )
 
     # Show pool statistics
     stats = load_balancer.get_pool_status("local")
@@ -362,7 +378,9 @@ async def test_model_performance_tracking(registry: ModelRegistry):
             success = len(response.strip()) > 0
             cost = 0.001 if not model.cost.is_free else 0.0
 
-            registry.update_model_performance(model, success=success, latency=latency, cost=cost)
+            registry.update_model_performance(
+                model, success=success, latency=latency, cost=cost
+            )
 
             print(
                 f"{i+1}. {model.provider}:{model.name} - {latency:.2f}s - {'✓' if success else '✗'}"
@@ -398,7 +416,8 @@ async def test_failover_scenario(registry: ModelRegistry):
     print("1. Testing with impossible requirements (should failover):")
     try:
         criteria = ModelSelectionCriteria(
-            min_context_window=1000000, min_accuracy_score=0.99  # 1M context (impossible)
+            min_context_window=1000000,
+            min_accuracy_score=0.99,  # 1M context (impossible)
         )
         model = await selector.select_model(criteria)
         print(f"   Unexpected success: {model.provider}:{model.name}")
@@ -408,7 +427,9 @@ async def test_failover_scenario(registry: ModelRegistry):
     # Now with relaxed requirements
     print("\n2. Testing with relaxed requirements:")
     try:
-        criteria = ModelSelectionCriteria(min_context_window=4096, min_accuracy_score=0.7)
+        criteria = ModelSelectionCriteria(
+            min_context_window=4096, min_accuracy_score=0.7
+        )
         model = await selector.select_model(criteria)
         print(f"   Success: Selected {model.provider}:{model.name}")
 

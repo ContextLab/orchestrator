@@ -56,7 +56,9 @@ class ModelUpdater:
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {"Authorization": f"Bearer {api_key}"}
-                async with session.get("https://api.openai.com/v1/models", headers=headers) as resp:
+                async with session.get(
+                    "https://api.openai.com/v1/models", headers=headers
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         for model in data.get("data", []):
@@ -94,14 +96,46 @@ class ModelUpdater:
         # Anthropic doesn't have a public API endpoint for listing models
         # We'll use a hardcoded list of known models
         models = [
-            {"id": "claude-opus-4-20250514", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-sonnet-4-20250514", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-3-7-sonnet-20250219", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-3-5-sonnet-20241022", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-3-5-haiku-20241022", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-3-opus-20240229", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-3-sonnet-20240229", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-3-haiku-20240307", "provider": "anthropic", "type": "anthropic"},
+            {
+                "id": "claude-opus-4-20250514",
+                "provider": "anthropic",
+                "type": "anthropic",
+            },
+            {
+                "id": "claude-sonnet-4-20250514",
+                "provider": "anthropic",
+                "type": "anthropic",
+            },
+            {
+                "id": "claude-3-7-sonnet-20250219",
+                "provider": "anthropic",
+                "type": "anthropic",
+            },
+            {
+                "id": "claude-3-5-sonnet-20241022",
+                "provider": "anthropic",
+                "type": "anthropic",
+            },
+            {
+                "id": "claude-3-5-haiku-20241022",
+                "provider": "anthropic",
+                "type": "anthropic",
+            },
+            {
+                "id": "claude-3-opus-20240229",
+                "provider": "anthropic",
+                "type": "anthropic",
+            },
+            {
+                "id": "claude-3-sonnet-20240229",
+                "provider": "anthropic",
+                "type": "anthropic",
+            },
+            {
+                "id": "claude-3-haiku-20240307",
+                "provider": "anthropic",
+                "type": "anthropic",
+            },
             {"id": "claude-2.1", "provider": "anthropic", "type": "anthropic"},
             {"id": "claude-2", "provider": "anthropic", "type": "anthropic"},
             {"id": "claude-instant-1.2", "provider": "anthropic", "type": "anthropic"},
@@ -314,7 +348,12 @@ class ModelUpdater:
         size_b = self.estimate_model_size(model_id)
 
         # Base configuration
-        entry = {"provider": provider, "type": model["type"], "size_b": size_b, "config": {}}
+        entry = {
+            "provider": provider,
+            "type": model["type"],
+            "size_b": size_b,
+            "config": {},
+        }
 
         # Provider-specific configuration
         if provider == "openai":
@@ -392,7 +431,11 @@ class ModelUpdater:
         # Add preference sections
         config["preferences"] = {
             "default": "gpt-4o-mini",
-            "fallback": ["gpt-3.5-turbo", "claude-3-haiku-20240307", "ollama:llama3.2:1b"],
+            "fallback": [
+                "gpt-3.5-turbo",
+                "claude-3-haiku-20240307",
+                "ollama:llama3.2:1b",
+            ],
         }
 
         # Cost-optimized selection (smaller, cheaper models)
@@ -433,7 +476,9 @@ class ModelUpdater:
         clean_config["performance_optimized"] = config["performance_optimized"]
 
         # Write to file
-        yaml_content += yaml.dump(clean_config, default_flow_style=False, sort_keys=False)
+        yaml_content += yaml.dump(
+            clean_config, default_flow_style=False, sort_keys=False
+        )
 
         with open(self.config_path, "w") as f:
             f.write(yaml_content)
@@ -464,7 +509,9 @@ def main():
     """Command-line entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Update Orchestrator models configuration")
+    parser = argparse.ArgumentParser(
+        description="Update Orchestrator models configuration"
+    )
     parser.add_argument(
         "--output",
         "-o",

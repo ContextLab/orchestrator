@@ -164,7 +164,9 @@ class StateManager:
             "compressed_size": len(state_bytes),
         }
 
-        checkpoint_id = await self.backend.save_state(execution_id, checkpoint_state, metadata)
+        checkpoint_id = await self.backend.save_state(
+            execution_id, checkpoint_state, metadata
+        )
 
         # Update statistics
         self.stats["checkpoints_created"] += 1
@@ -292,7 +294,9 @@ class StateManager:
         """
         return await self.backend.list_checkpoints(execution_id, limit)
 
-    async def delete_checkpoint(self, pipeline_id: str, checkpoint_id: str = None) -> bool:
+    async def delete_checkpoint(
+        self, pipeline_id: str, checkpoint_id: str = None
+    ) -> bool:
         """
         Delete a checkpoint.
 
@@ -530,43 +534,6 @@ class StateManager:
 
         return False
 
-    async def get_pipeline_state(self, pipeline_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get current state for a pipeline (latest checkpoint).
-
-        Args:
-            pipeline_id: Pipeline ID
-
-        Returns:
-            Latest checkpoint state or None if not found
-        """
-        return await self.restore_checkpoint(pipeline_id)
-
-    async def get_pipeline_history(
-        self, pipeline_id: str, limit: int = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Get execution history for a pipeline.
-
-        Args:
-            pipeline_id: Pipeline ID
-            limit: Maximum number of history entries to return
-
-        Returns:
-            List of checkpoint history entries, most recent first
-        """
-        checkpoints = await self.backend.list_checkpoints(pipeline_id, limit)
-
-        # Get full checkpoint data for each
-        history = []
-        for checkpoint_metadata in checkpoints:
-            checkpoint_id = checkpoint_metadata["checkpoint_id"]
-            full_checkpoint = await self.restore_checkpoint(pipeline_id, checkpoint_id)
-            if full_checkpoint:
-                history.append(full_checkpoint)
-
-        return history
-
     def _validate_state(self, state: Dict[str, Any]) -> bool:
         """
         Validate state structure.
@@ -616,7 +583,9 @@ class StateManager:
             "RedisBackend": "redis",
         }
         backend_type_name = type(self.backend).__name__
-        storage_backend = backend_name_map.get(backend_type_name, backend_type_name.lower())
+        storage_backend = backend_name_map.get(
+            backend_type_name, backend_type_name.lower()
+        )
 
         return {
             **self.stats,
@@ -651,7 +620,9 @@ class StateManager:
                 hasattr(self.backend, "__class__")
                 and self.backend.__class__.__name__ == "FileBackend"
             ):
-                if hasattr(self, "storage_path") and not os.path.exists(self.storage_path):
+                if hasattr(self, "storage_path") and not os.path.exists(
+                    self.storage_path
+                ):
                     return False
 
             return True
@@ -689,4 +660,6 @@ async def create_state_manager(
     Returns:
         StateManager instance
     """
-    return StateManager(backend_type=backend_type, backend_config=backend_config, **kwargs)
+    return StateManager(
+        backend_type=backend_type, backend_config=backend_config, **kwargs
+    )

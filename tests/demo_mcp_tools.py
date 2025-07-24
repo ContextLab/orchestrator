@@ -3,7 +3,11 @@
 import asyncio
 import json
 
-from src.orchestrator.tools.mcp_tools import MCPServerTool, MCPMemoryTool, MCPResourceTool
+from src.orchestrator.tools.mcp_tools import (
+    MCPServerTool,
+    MCPMemoryTool,
+    MCPResourceTool,
+)
 
 
 async def demo_mcp_server():
@@ -66,7 +70,11 @@ async def demo_mcp_memory():
     }
 
     result = await tool.execute(
-        action="store", namespace="session", key="context", value=context, ttl=3600  # 1 hour
+        action="store",
+        namespace="session",
+        key="context",
+        value=context,
+        ttl=3600,  # 1 hour
     )
 
     print(f"✓ Stored context with TTL: {result['ttl']}s")
@@ -128,7 +136,9 @@ async def demo_mcp_resources():
         print(f"  Subscription ID: {result['subscription_id']}")
 
         # Unsubscribe
-        await tool.execute(action="unsubscribe", subscription_id=result["subscription_id"])
+        await tool.execute(
+            action="unsubscribe", subscription_id=result["subscription_id"]
+        )
         print("✓ Unsubscribed from updates")
 
 

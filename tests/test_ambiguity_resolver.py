@@ -19,12 +19,16 @@ def model_registry():
 def test_model(model_registry):
     """Get a test model for use in tests."""
     model = None
-    for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "gemini-2.0-flash-lite"]:
+    for model_id in [
+        "gpt-4o-mini",
+        "claude-3-5-haiku-20241022",
+        "gemini-2.0-flash-lite",
+    ]:
         try:
             model = model_registry.get_model(model_id)
             if model:
                 break
-        except:
+        except Exception:
             pass
 
     if not model:
@@ -53,15 +57,20 @@ class TestAmbiguityResolver:
         resolver = AmbiguityResolver(model_registry=model_registry)
         assert resolver.model is None  # Model is selected lazily
         assert resolver.model_registry is model_registry
-        
+
         # Trigger model selection by making a resolution
         # Use a clearer prompt that's more likely to get a direct answer
-        result = await resolver.resolve("Select either 'option1' or 'option2'. Reply with only the option name.", "test.choice")
-        
+        result = await resolver.resolve(
+            "Select either 'option1' or 'option2'. Reply with only the option name.",
+            "test.choice",
+        )
+
         # Now the model should be selected
         assert resolver.model is not None
         # Accept any result that contains option1 or option2
-        assert "option1" in result.lower() or "option2" in result.lower() or result == ""
+        assert (
+            "option1" in result.lower() or "option2" in result.lower() or result == ""
+        )
 
     def test_resolver_without_model_fails(self):
         """Test that resolver fails without a model."""
@@ -74,7 +83,8 @@ class TestAmbiguityResolver:
         resolver = AmbiguityResolver(model=test_model)
 
         result = await resolver.resolve(
-            "Choose the best output format for structured data: json, yaml, or xml", "output.format"
+            "Choose the best output format for structured data: json, yaml, or xml",
+            "output.format",
         )
 
         # AI should choose one of the valid formats
@@ -228,14 +238,18 @@ class TestAmbiguityResolver:
     async def test_resolve_with_different_models(self, model_registry):
         """Test that different models can resolve ambiguities."""
         models = []
-        for model_id in ["gpt-4o-mini", "claude-3-5-haiku-20241022", "gemini-2.0-flash-lite"]:
+        for model_id in [
+            "gpt-4o-mini",
+            "claude-3-5-haiku-20241022",
+            "gemini-2.0-flash-lite",
+        ]:
             try:
                 model = model_registry.get_model(model_id)
                 if model:
                     models.append(model)
                 if len(models) >= 2:
                     break
-            except:
+            except Exception:
                 pass
 
         if len(models) < 2:
@@ -291,7 +305,9 @@ class TestAmbiguityResolver:
         content = "Choose the best approach"
 
         security_result = await resolver.resolve(content, "security.encryption.method")
-        performance_result = await resolver.resolve(content, "performance.caching.method")
+        performance_result = await resolver.resolve(
+            content, "performance.caching.method"
+        )
 
         # Both should be valid responses
         assert security_result is not None

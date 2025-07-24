@@ -10,8 +10,6 @@ import sys
 import os
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from orchestrator.tools.web_tools import HeadlessBrowserTool, WebSearchTool
 
 
@@ -120,7 +118,9 @@ async def test_browser_search():
     print("\n1. Testing Browser Search:")
 
     try:
-        result = await browser_tool.execute(action="search", query="OpenAI ChatGPT", max_results=3)
+        result = await browser_tool.execute(
+            action="search", query="OpenAI ChatGPT", max_results=3
+        )
 
         print(f"   Query: {result['query']}")
         print(f"   Total results: {result['total_results']}")

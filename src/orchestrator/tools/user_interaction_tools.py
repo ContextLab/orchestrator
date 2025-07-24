@@ -53,19 +53,38 @@ class UserPromptTool(Tool):
         )
         self.add_parameter("prompt", "string", "The prompt to display to the user")
         self.add_parameter(
-            "input_type", "string", "Type of input: text, number, boolean, choice", default="text"
+            "input_type",
+            "string",
+            "Type of input: text, number, boolean, choice",
+            default="text",
         )
-        self.add_parameter("default", "any", "Default value if no input provided", required=False)
         self.add_parameter(
-            "choices", "array", "Available choices for 'choice' input type", required=False
+            "default", "any", "Default value if no input provided", required=False
         )
-        self.add_parameter("timeout", "number", "Timeout in seconds (0 for no timeout)", default=0)
-        self.add_parameter("context", "string", "Execution context: cli, gui, api", default="cli")
         self.add_parameter(
-            "validation_pattern", "string", "Regex pattern for input validation", required=False
+            "choices",
+            "array",
+            "Available choices for 'choice' input type",
+            required=False,
         )
-        self.add_parameter("retry_on_invalid", "boolean", "Retry if validation fails", default=True)
-        self.add_parameter("max_retries", "integer", "Maximum validation retries", default=3)
+        self.add_parameter(
+            "timeout", "number", "Timeout in seconds (0 for no timeout)", default=0
+        )
+        self.add_parameter(
+            "context", "string", "Execution context: cli, gui, api", default="cli"
+        )
+        self.add_parameter(
+            "validation_pattern",
+            "string",
+            "Regex pattern for input validation",
+            required=False,
+        )
+        self.add_parameter(
+            "retry_on_invalid", "boolean", "Retry if validation fails", default=True
+        )
+        self.add_parameter(
+            "max_retries", "integer", "Maximum validation retries", default=3
+        )
 
         self.logger = logging.getLogger(__name__)
 
@@ -220,7 +239,10 @@ class UserPromptTool(Tool):
 
         # Validate choices for choice type
         if input_type == "choice" and not choices:
-            return {"success": False, "error": "Choices must be provided for 'choice' input type"}
+            return {
+                "success": False,
+                "error": "Choices must be provided for 'choice' input type",
+            }
 
         retries = 0
         while retries <= max_retries:
@@ -248,7 +270,9 @@ class UserPromptTool(Tool):
                 if not response.skipped:
                     # Convert type
                     try:
-                        converted_value = self._convert_input(str(response.value), input_type)
+                        converted_value = self._convert_input(
+                            str(response.value), input_type
+                        )
                         response.value = converted_value
                     except ValueError as e:
                         if retry_on_invalid and retries < max_retries:
@@ -256,14 +280,20 @@ class UserPromptTool(Tool):
                             retries += 1
                             continue
                         else:
-                            return {"success": False, "error": str(e), "retries": retries}
+                            return {
+                                "success": False,
+                                "error": str(e),
+                                "retries": retries,
+                            }
 
                     # Validate pattern
                     if validation_pattern and not self._validate_input(
                         str(response.value), validation_pattern
                     ):
                         if retry_on_invalid and retries < max_retries:
-                            print("Input does not match required pattern. Please try again.")
+                            print(
+                                "Input does not match required pattern. Please try again."
+                            )
                             retries += 1
                             continue
                         else:
@@ -277,7 +307,9 @@ class UserPromptTool(Tool):
                     # Validate choice
                     if input_type == "choice" and response.value not in choices:
                         if retry_on_invalid and retries < max_retries:
-                            print(f"Invalid choice. Please select from: {', '.join(choices)}")
+                            print(
+                                f"Invalid choice. Please select from: {', '.join(choices)}"
+                            )
                             retries += 1
                             continue
                         else:
@@ -309,7 +341,8 @@ class ApprovalGateTool(Tool):
 
     def __init__(self):
         super().__init__(
-            name="approval-gate", description="Present results for user review and approval"
+            name="approval-gate",
+            description="Present results for user review and approval",
         )
         self.add_parameter("title", "string", "Title of the approval request")
         self.add_parameter("content", "string", "Content to review")
@@ -317,14 +350,22 @@ class ApprovalGateTool(Tool):
             "format", "string", "Content format: text, json, markdown", default="text"
         )
         self.add_parameter(
-            "allow_modifications", "boolean", "Allow user to modify content", default=True
+            "allow_modifications",
+            "boolean",
+            "Allow user to modify content",
+            default=True,
         )
         self.add_parameter(
             "require_reason", "boolean", "Require reason for rejection", default=True
         )
-        self.add_parameter("context", "string", "Execution context: cli, gui, api", default="cli")
         self.add_parameter(
-            "auto_approve_hash", "string", "Auto-approve if content hash matches", required=False
+            "context", "string", "Execution context: cli, gui, api", default="cli"
+        )
+        self.add_parameter(
+            "auto_approve_hash",
+            "string",
+            "Auto-approve if content hash matches",
+            required=False,
         )
         self.add_parameter(
             "metadata", "object", "Additional metadata for the approval", required=False
@@ -345,7 +386,7 @@ class ApprovalGateTool(Tool):
             try:
                 parsed = json.loads(content)
                 return json.dumps(parsed, indent=2)
-            except:
+            except Exception:
                 return content
         elif format == "markdown":
             # Basic markdown rendering for CLI
@@ -434,7 +475,9 @@ class ApprovalGateTool(Tool):
         formatted_content = self._format_content(content, format)
 
         # Create approval request
-        request = ApprovalRequest(title=title, content=formatted_content, metadata=metadata)
+        request = ApprovalRequest(
+            title=title, content=formatted_content, metadata=metadata
+        )
 
         if allow_modifications and "modify" not in request.options:
             request.options = ["approve", "reject", "modify"]
@@ -442,11 +485,15 @@ class ApprovalGateTool(Tool):
         try:
             # Get approval based on context
             if context == "cli":
-                result = await self._get_cli_approval(request, allow_modifications, require_reason)
+                result = await self._get_cli_approval(
+                    request, allow_modifications, require_reason
+                )
             elif context == "gui":
                 # Fallback to CLI for now
                 self.logger.info("GUI approval requested - falling back to CLI")
-                result = await self._get_cli_approval(request, allow_modifications, require_reason)
+                result = await self._get_cli_approval(
+                    request, allow_modifications, require_reason
+                )
             elif context == "api":
                 # In API context, return pending status
                 return {
@@ -490,7 +537,9 @@ class ApprovalGateTool(Tool):
 
             if result.get("modified_content"):
                 response["modified_content"] = result["modified_content"]
-                response["modified_hash"] = self._hash_content(result["modified_content"])
+                response["modified_hash"] = self._hash_content(
+                    result["modified_content"]
+                )
 
             if result.get("reason"):
                 response["rejection_reason"] = result["reason"]
@@ -516,10 +565,18 @@ class FeedbackCollectionTool(Tool):
         )
         self.add_parameter("title", "string", "Feedback form title")
         self.add_parameter("questions", "array", "List of feedback questions")
-        self.add_parameter("anonymous", "boolean", "Allow anonymous feedback", default=False)
-        self.add_parameter("required_questions", "array", "IDs of required questions", default=[])
-        self.add_parameter("context", "string", "Execution context: cli, gui, api", default="cli")
-        self.add_parameter("save_to_file", "string", "File path to save feedback", required=False)
+        self.add_parameter(
+            "anonymous", "boolean", "Allow anonymous feedback", default=False
+        )
+        self.add_parameter(
+            "required_questions", "array", "IDs of required questions", default=[]
+        )
+        self.add_parameter(
+            "context", "string", "Execution context: cli, gui, api", default="cli"
+        )
+        self.add_parameter(
+            "save_to_file", "string", "File path to save feedback", required=False
+        )
 
         self.logger = logging.getLogger(__name__)
         self.feedback_store: List[Dict[str, Any]] = []
@@ -631,7 +688,9 @@ class FeedbackCollectionTool(Tool):
         questions[0]["_title"] = title
 
         # Create feedback form
-        form = FeedbackForm(questions=questions, anonymous=anonymous, metadata={"title": title})
+        form = FeedbackForm(
+            questions=questions, anonymous=anonymous, metadata={"title": title}
+        )
 
         try:
             # Collect feedback based on context
@@ -683,7 +742,11 @@ class FeedbackCollectionTool(Tool):
                     self.logger.error(f"Failed to save feedback: {e}")
 
             # Calculate summary statistics
-            summary = {"rating_average": None, "boolean_summary": {}, "choice_summary": {}}
+            summary = {
+                "rating_average": None,
+                "boolean_summary": {},
+                "choice_summary": {},
+            }
 
             # Process responses for summary
             ratings = []
@@ -722,7 +785,9 @@ class FeedbackCollectionTool(Tool):
             return {"total_responses": 0, "average_completion_rate": 0}
 
         total_responses = len(recent_feedback)
-        avg_completion = sum(f["completion_rate"] for f in recent_feedback) / total_responses
+        avg_completion = (
+            sum(f["completion_rate"] for f in recent_feedback) / total_responses
+        )
 
         return {
             "total_responses": total_responses,

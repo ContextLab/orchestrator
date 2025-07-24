@@ -59,7 +59,10 @@ def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
 
             # Also check for partial matches
             for model_id, model_config in config["models"].items():
-                if model_id.lower() in model_name.lower() or model_name.lower() in model_id.lower():
+                if (
+                    model_id.lower() in model_name.lower()
+                    or model_name.lower() in model_id.lower()
+                ):
                     if "size_b" in model_config:
                         return float(model_config["size_b"])
     except Exception:
@@ -74,7 +77,9 @@ def check_ollama_installed() -> bool:
     """Check if Ollama is installed and available."""
     try:
         # Use simple check without capturing output to avoid hanging
-        result = subprocess.run(["which", "ollama"], capture_output=True, text=True, timeout=1)
+        result = subprocess.run(
+            ["which", "ollama"], capture_output=True, text=True, timeout=1
+        )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
         return False

@@ -24,7 +24,9 @@ logger = logging.getLogger(__name__)
 class ControlFlowEngine:
     """Pipeline execution engine with advanced control flow support."""
 
-    def __init__(self, model_registry: Optional[ModelRegistry] = None, tool_registry=None):
+    def __init__(
+        self, model_registry: Optional[ModelRegistry] = None, tool_registry=None
+    ):
         """Initialize control flow engine.
 
         Args:
@@ -47,7 +49,9 @@ class ControlFlowEngine:
         self.step_results: Dict[str, Any] = {}
         self.skipped_tasks: Set[str] = set()
 
-    async def execute_yaml(self, yaml_content: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_yaml(
+        self, yaml_content: str, inputs: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute a pipeline from YAML content.
 
         Args:
@@ -69,7 +73,9 @@ class ControlFlowEngine:
             logger.error(f"Pipeline execution failed: {e}")
             raise
 
-    async def execute_pipeline(self, pipeline: Pipeline, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_pipeline(
+        self, pipeline: Pipeline, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute a compiled pipeline with control flow.
 
         Args:
@@ -106,7 +112,9 @@ class ControlFlowEngine:
 
                     # No tasks ready and no loops to expand
                     if self._has_pending_tasks(pipeline):
-                        raise RuntimeError("Pipeline deadlock: tasks pending but none ready")
+                        raise RuntimeError(
+                            "Pipeline deadlock: tasks pending but none ready"
+                        )
                     break
 
                 # Execute ready tasks
@@ -138,7 +146,9 @@ class ControlFlowEngine:
                 "results": self.step_results,
             }
 
-    async def _get_ready_tasks(self, pipeline: Pipeline, context: Dict[str, Any]) -> List[Task]:
+    async def _get_ready_tasks(
+        self, pipeline: Pipeline, context: Dict[str, Any]
+    ) -> List[Task]:
         """Get tasks ready for execution considering control flow.
 
         Args:
@@ -173,13 +183,16 @@ class ControlFlowEngine:
 
             # Check if all dependencies are satisfied
             if all(
-                dep in self.completed_tasks or dep in self.skipped_tasks for dep in dependencies
+                dep in self.completed_tasks or dep in self.skipped_tasks
+                for dep in dependencies
             ):
                 ready_tasks.append(task)
 
         return ready_tasks
 
-    async def _execute_tasks(self, tasks: List[Task], pipeline: Pipeline, context: Dict[str, Any]):
+    async def _execute_tasks(
+        self, tasks: List[Task], pipeline: Pipeline, context: Dict[str, Any]
+    ):
         """Execute a batch of tasks.
 
         Args:
@@ -231,14 +244,18 @@ class ControlFlowEngine:
                 # Handle retry logic
                 if task.can_retry():
                     task.reset()
-                    logger.info(f"Task {task.id} will retry (attempt {task.retry_count + 1})")
+                    logger.info(
+                        f"Task {task.id} will retry (attempt {task.retry_count + 1})"
+                    )
                 else:
                     raise
 
         # Execute all ready tasks
         await asyncio.gather(*[execute_task(task) for task in tasks])
 
-    async def _expand_while_loops(self, pipeline: Pipeline, context: Dict[str, Any]) -> bool:
+    async def _expand_while_loops(
+        self, pipeline: Pipeline, context: Dict[str, Any]
+    ) -> bool:
         """Expand while loops that need another iteration.
 
         Args:
@@ -280,8 +297,13 @@ class ControlFlowEngine:
 
                 if should_continue:
                     # Create tasks for next iteration
-                    iteration_tasks = await self.while_loop_handler.create_iteration_tasks(
-                        task.to_dict(), current_iteration, context, self.step_results
+                    iteration_tasks = (
+                        await self.while_loop_handler.create_iteration_tasks(
+                            task.to_dict(),
+                            current_iteration,
+                            context,
+                            self.step_results,
+                        )
                     )
 
                     # Add tasks to pipeline
@@ -289,7 +311,9 @@ class ControlFlowEngine:
                         pipeline.add_task(iter_task)
 
                     expanded = True
-                    logger.info(f"Expanded while loop {loop_id} iteration {current_iteration}")
+                    logger.info(
+                        f"Expanded while loop {loop_id} iteration {current_iteration}"
+                    )
                 else:
                     # Mark loop as completed
                     task.complete({"iterations": current_iteration})
@@ -372,7 +396,9 @@ class ControlFlowEngine:
         Returns:
             True if there are pending tasks
         """
-        return any(task.status == TaskStatus.PENDING for task in pipeline.tasks.values())
+        return any(
+            task.status == TaskStatus.PENDING for task in pipeline.tasks.values()
+        )
 
     def _has_failed_tasks(self, pipeline: Pipeline) -> bool:
         """Check if there are failed tasks.

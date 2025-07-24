@@ -4,7 +4,11 @@ from typing import Any, Dict, List
 
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.core.control_system import ControlSystem
-from src.orchestrator.core.resource_allocator import ResourceAllocator, ResourceType, ResourceQuota
+from src.orchestrator.core.resource_allocator import (
+    ResourceAllocator,
+    ResourceType,
+    ResourceQuota,
+)
 
 
 class FailingModelRegistry(ModelRegistry):

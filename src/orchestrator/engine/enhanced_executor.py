@@ -47,7 +47,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
             },
         }
 
-    async def execute_task(self, task_spec: TaskSpec, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_task(
+        self, task_spec: TaskSpec, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute task with enhanced tool discovery and orchestration."""
         logger.info(f"Enhanced execution for task: {task_spec.id}")
 
@@ -67,7 +69,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
             )
 
             # 5. Post-process and validate results
-            final_result = await self._post_process_results(result, task_spec, enhanced_spec)
+            final_result = await self._post_process_results(
+                result, task_spec, enhanced_spec
+            )
 
             logger.info(f"Enhanced task {task_spec.id} completed successfully")
             return final_result
@@ -83,7 +87,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         if task_spec.has_auto_tags():
             # Resolve AUTO tags
             auto_content = task_spec.extract_auto_content()
-            resolved_spec = await self.auto_resolver.resolve_auto_tag(auto_content, context)
+            resolved_spec = await self.auto_resolver.resolve_auto_tag(
+                auto_content, context
+            )
         else:
             resolved_spec = {
                 "prompt": task_spec.action,
@@ -108,7 +114,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         self, enhanced_spec: Dict[str, Any], context: Dict[str, Any]
     ) -> List[ToolMatch]:
         """Discover optimal tools for enhanced task execution."""
-        action_description = enhanced_spec.get("prompt", enhanced_spec.get("original_action", ""))
+        action_description = enhanced_spec.get(
+            "prompt", enhanced_spec.get("original_action", "")
+        )
 
         # Use discovery engine to find tools
         discovered_tools = self.discovery_engine.discover_tools_for_action(
@@ -129,7 +137,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
                 )
 
         # Validate tool availability and capabilities
-        validated_tools = await self._validate_discovered_tools(discovered_tools, enhanced_spec)
+        validated_tools = await self._validate_discovered_tools(
+            discovered_tools, enhanced_spec
+        )
 
         logger.debug(f"Discovered {len(validated_tools)} validated tools for task")
         return validated_tools
@@ -147,21 +157,29 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
                 if tool and await self._validate_tool_capability(tool, enhanced_spec):
                     validated.append(match)
                 else:
-                    logger.warning(f"Tool {match.tool_name} failed capability validation")
+                    logger.warning(
+                        f"Tool {match.tool_name} failed capability validation"
+                    )
             else:
                 logger.warning(f"Tool {match.tool_name} not available in registry")
                 # Try to suggest alternatives
-                suggestions = self.discovery_engine.suggest_missing_tools([match.tool_name])
+                suggestions = self.discovery_engine.suggest_missing_tools(
+                    [match.tool_name]
+                )
                 if suggestions.get(match.tool_name):
                     alt_tool = suggestions[match.tool_name][0]
-                    logger.info(f"Using alternative tool {alt_tool} for {match.tool_name}")
+                    logger.info(
+                        f"Using alternative tool {alt_tool} for {match.tool_name}"
+                    )
                     match.tool_name = alt_tool
                     match.reasoning += f" (alternative for {match.tool_name})"
                     validated.append(match)
 
         return validated
 
-    async def _validate_tool_capability(self, tool: Tool, enhanced_spec: Dict[str, Any]) -> bool:
+    async def _validate_tool_capability(
+        self, tool: Tool, enhanced_spec: Dict[str, Any]
+    ) -> bool:
         """Validate that a tool can handle the required task."""
         # Basic validation - can be enhanced with more sophisticated checks
         try:
@@ -172,7 +190,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
             # Check tool capabilities if available
             if hasattr(tool, "capabilities"):
                 required_caps = enhanced_spec.get("required_capabilities", [])
-                if required_caps and not any(cap in tool.capabilities for cap in required_caps):
+                if required_caps and not any(
+                    cap in tool.capabilities for cap in required_caps
+                ):
                     return False
 
             return True
@@ -282,17 +302,24 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
                 try:
                     schema = self._generate_output_schema(enhanced_spec)
                     result = await model.generate_structured(enhanced_prompt, schema)
-                except:
+                except Exception:
                     result = await model.generate(enhanced_prompt)
             else:
                 result = await model.generate(enhanced_prompt)
 
-            return {"result": result, "method": "model_only", "prompt_used": enhanced_prompt}
+            return {
+                "result": result,
+                "method": "model_only",
+                "prompt_used": enhanced_prompt,
+            }
         else:
             raise ValueError("No model registry available for model-only execution")
 
     async def _execute_sequential(
-        self, enhanced_spec: Dict[str, Any], tool_matches: List[ToolMatch], context: Dict[str, Any]
+        self,
+        enhanced_spec: Dict[str, Any],
+        tool_matches: List[ToolMatch],
+        context: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute tools sequentially with result chaining."""
         results = {"method": "sequential", "tool_results": {}}
@@ -343,7 +370,10 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         return results
 
     async def _execute_parallel(
-        self, enhanced_spec: Dict[str, Any], tool_matches: List[ToolMatch], context: Dict[str, Any]
+        self,
+        enhanced_spec: Dict[str, Any],
+        tool_matches: List[ToolMatch],
+        context: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute tools in parallel and combine results."""
         logger.debug(f"Executing {len(tool_matches)} tools in parallel")
@@ -353,8 +383,12 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         for match in tool_matches:
             tool = self.tool_registry.get_tool(match.tool_name)
             if tool:
-                params = self._prepare_enhanced_tool_params(tool, match, enhanced_spec, context)
-                task = asyncio.create_task(self._execute_single_tool(tool, params, match.tool_name))
+                params = self._prepare_enhanced_tool_params(
+                    tool, match, enhanced_spec, context
+                )
+                task = asyncio.create_task(
+                    self._execute_single_tool(tool, params, match.tool_name)
+                )
                 tasks.append((match.tool_name, task))
 
         # Wait for all tasks to complete
@@ -374,7 +408,10 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         return results
 
     async def _execute_pipeline(
-        self, enhanced_spec: Dict[str, Any], tool_matches: List[ToolMatch], context: Dict[str, Any]
+        self,
+        enhanced_spec: Dict[str, Any],
+        tool_matches: List[ToolMatch],
+        context: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute tools as a data pipeline."""
         logger.debug("Executing tools as data pipeline")
@@ -392,7 +429,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
                 continue
 
             # Prepare parameters with pipeline data
-            params = self._prepare_enhanced_tool_params(tool, match, enhanced_spec, context)
+            params = self._prepare_enhanced_tool_params(
+                tool, match, enhanced_spec, context
+            )
             if pipeline_data is not None:
                 params["data"] = pipeline_data
                 params["input_data"] = pipeline_data
@@ -421,7 +460,10 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         return results
 
     async def _execute_adaptive(
-        self, enhanced_spec: Dict[str, Any], tool_matches: List[ToolMatch], context: Dict[str, Any]
+        self,
+        enhanced_spec: Dict[str, Any],
+        tool_matches: List[ToolMatch],
+        context: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute tools using adaptive strategy."""
         logger.debug("Executing with adaptive strategy")
@@ -436,13 +478,17 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
             if len(group_tools) == 1:
                 # Single tool - execute directly
                 match = group_tools[0]
-                result = await self._execute_single_tool_enhanced(match, enhanced_spec, context)
+                result = await self._execute_single_tool_enhanced(
+                    match, enhanced_spec, context
+                )
                 results["tool_results"][match.tool_name] = result
             else:
                 # Multiple tools - choose best sub-strategy
                 if group_name in ["search", "data"]:
                     # These can often run in parallel
-                    group_result = await self._execute_parallel(enhanced_spec, group_tools, context)
+                    group_result = await self._execute_parallel(
+                        enhanced_spec, group_tools, context
+                    )
                 else:
                     # Default to sequential
                     group_result = await self._execute_sequential(
@@ -471,11 +517,15 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         ]
 
         if all_results:
-            results["result"] = self._intelligently_combine_results(all_results, enhanced_spec)
+            results["result"] = self._intelligently_combine_results(
+                all_results, enhanced_spec
+            )
 
         return results
 
-    def _group_tools_by_type(self, tool_matches: List[ToolMatch]) -> Dict[str, List[ToolMatch]]:
+    def _group_tools_by_type(
+        self, tool_matches: List[ToolMatch]
+    ) -> Dict[str, List[ToolMatch]]:
         """Group tools by their primary function type."""
         groups = {}
 
@@ -501,7 +551,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
 
         return groups
 
-    async def _execute_single_tool(self, tool: Tool, params: Dict[str, Any], tool_name: str) -> Any:
+    async def _execute_single_tool(
+        self, tool: Tool, params: Dict[str, Any], tool_name: str
+    ) -> Any:
         """Execute a single tool with error handling."""
         try:
             return await tool.execute(**params)
@@ -521,7 +573,11 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         return await self._execute_single_tool(tool, params, match.tool_name)
 
     def _prepare_enhanced_tool_params(
-        self, tool: Tool, match: ToolMatch, enhanced_spec: Dict[str, Any], context: Dict[str, Any]
+        self,
+        tool: Tool,
+        match: ToolMatch,
+        enhanced_spec: Dict[str, Any],
+        context: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Prepare enhanced parameters for tool execution."""
         params = match.parameters.copy()
@@ -591,7 +647,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         if "data" in context:
             data = context["data"]
             if isinstance(data, (list, dict)):
-                context_info.append(f"Available data: {type(data).__name__} with {len(data)} items")
+                context_info.append(
+                    f"Available data: {type(data).__name__} with {len(data)} items"
+                )
 
         if "url" in context:
             context_info.append(f"URL context: {context['url']}")
@@ -645,7 +703,10 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         else:
             return {
                 "type": "object",
-                "properties": {"result": {"type": "string"}, "summary": {"type": "string"}},
+                "properties": {
+                    "result": {"type": "string"},
+                    "summary": {"type": "string"},
+                },
             }
 
     def _combine_parallel_results(self, tool_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -665,7 +726,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
             if isinstance(result, dict):
                 if "data" in result:
                     all_data.extend(
-                        result["data"] if isinstance(result["data"], list) else [result["data"]]
+                        result["data"]
+                        if isinstance(result["data"], list)
+                        else [result["data"]]
                     )
                 if "insights" in result:
                     all_insights.extend(
@@ -705,7 +768,8 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
 
         # Sort by priority, then by confidence
         return sorted(
-            tool_matches, key=lambda x: (order_priority.get(x.tool_name, 99), -x.confidence)
+            tool_matches,
+            key=lambda x: (order_priority.get(x.tool_name, 99), -x.confidence),
         )
 
     def _extract_pipeline_data(self, result: Any) -> Any:
@@ -743,7 +807,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
         if "search" in prompt and "analyze" in prompt:
             # Search + analysis task
             search_results = [r for r in results if "search" in str(r) or "data" in r]
-            analysis_results = [r for r in results if "insights" in r or "analysis" in r]
+            analysis_results = [
+                r for r in results if "insights" in r or "analysis" in r
+            ]
 
             if search_results:
                 combined["search_data"] = search_results[0]
@@ -772,7 +838,9 @@ class EnhancedTaskExecutor(UniversalTaskExecutor):
                 combined["data"] = all_data
 
             # Use result with highest confidence or most complete data
-            best_result = max(results, key=lambda x: len(str(x)) if isinstance(x, dict) else 0)
+            best_result = max(
+                results, key=lambda x: len(str(x)) if isinstance(x, dict) else 0
+            )
             combined["result"] = best_result
 
         return combined

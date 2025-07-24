@@ -90,7 +90,8 @@ class HybridControlSystem(ModelBasedControlSystem):
             r"save.*to\s+[^\s]+\.(txt|md|json|yaml|yml|csv|html)",  # Save to filename.ext
         ]
         return any(
-            re.search(pattern, action, re.IGNORECASE | re.DOTALL) for pattern in file_patterns
+            re.search(pattern, action, re.IGNORECASE | re.DOTALL)
+            for pattern in file_patterns
         )
 
     def _is_echo_operation(self, action: str) -> bool:
@@ -102,15 +103,21 @@ class HybridControlSystem(ModelBasedControlSystem):
             r"^show\s+",
             r"^output\s+",
         ]
-        return any(re.match(pattern, action, re.IGNORECASE) for pattern in echo_patterns)
+        return any(
+            re.match(pattern, action, re.IGNORECASE) for pattern in echo_patterns
+        )
 
-    async def _handle_echo_operation(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_echo_operation(
+        self, task: Task, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Handle simple echo/print operations."""
         action_text = str(task.action)
 
         # Extract the message to echo (everything after the command)
         match = re.match(
-            r"^(?:echo|print|display|show|output)\s+(.+)", action_text, re.IGNORECASE | re.DOTALL
+            r"^(?:echo|print|display|show|output)\s+(.+)",
+            action_text,
+            re.IGNORECASE | re.DOTALL,
         )
         if match:
             message = match.group(1).strip()
@@ -131,7 +138,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             "action": "echo",
         }
 
-    async def _handle_file_operation(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_file_operation(
+        self, task: Task, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Handle file write operations."""
         action_text = str(task.action)
 
@@ -168,9 +177,15 @@ class HybridControlSystem(ModelBasedControlSystem):
                 "message": f"Successfully wrote {len(content)} bytes to {file_path_obj}",
             }
         except Exception as e:
-            return {"success": False, "error": str(e), "message": f"Failed to write file: {e}"}
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Failed to write file: {e}",
+            }
 
-    def _extract_file_path(self, action_text: str, parameters: Dict[str, Any]) -> Optional[str]:
+    def _extract_file_path(
+        self, action_text: str, parameters: Dict[str, Any]
+    ) -> Optional[str]:
         """Extract file path from action or parameters."""
         # Check parameters first
         if "filepath" in parameters:

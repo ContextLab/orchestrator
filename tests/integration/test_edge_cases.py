@@ -6,8 +6,6 @@ import sys
 import os
 import tempfile
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.task import Task
@@ -106,10 +104,18 @@ steps:
                     # Attempt to read the file
                     with open(file_path, "r") as f:
                         content = f.read()
-                    return {"status": "completed", "content": content, "size": len(content)}
+                    return {
+                        "status": "completed",
+                        "content": content,
+                        "size": len(content),
+                    }
                 except FileNotFoundError:
                     # Handle missing file gracefully
-                    return {"status": "completed", "error": "File not found", "handled": True}
+                    return {
+                        "status": "completed",
+                        "error": "File not found",
+                        "handled": True,
+                    }
                 except Exception as e:
                     return {"status": "failed", "error": str(e)}
 
@@ -118,7 +124,11 @@ steps:
             file_yaml, context={"file_path": "non_existent_file.py"}
         )
         # Check if error was handled gracefully
-        if any("error" in r and r.get("handled") for r in results.values() if isinstance(r, dict)):
+        if any(
+            "error" in r and r.get("handled")
+            for r in results.values()
+            if isinstance(r, dict)
+        ):
             print("  ✅ Handled missing file gracefully")
             tests.append(True)
         else:
@@ -158,7 +168,7 @@ steps:
   - id: task_a
     action: test
     dependencies: [task_b]
-  - id: task_b  
+  - id: task_b
     action: test
     dependencies: [task_a]
 """
@@ -213,7 +223,9 @@ steps:
 
         orchestrator.control_system = TextProcessingControlSystem()
         long_topic = "A" * 10000  # Very long string
-        results = await orchestrator.execute_yaml(text_yaml, context={"topic": long_topic})
+        results = await orchestrator.execute_yaml(
+            text_yaml, context={"topic": long_topic}
+        )
         print("  ✅ Handled very long input")
         tests.append(True)
     except Exception as e:
@@ -273,7 +285,9 @@ steps:
 
         orchestrator.control_system = UnicodeControlSystem()
         unicode_topic = "Machine Learning 机器学习 🤖 with émojis and spëcial chars"
-        results = await orchestrator.execute_yaml(unicode_yaml, context={"topic": unicode_topic})
+        results = await orchestrator.execute_yaml(
+            unicode_yaml, context={"topic": unicode_topic}
+        )
         print("  ✅ Handled Unicode and special characters")
         tests.append(True)
     except Exception as e:
@@ -354,7 +368,9 @@ steps:
                             "status": "completed",
                             "mean_value": float(mean_value),
                             "category_distribution": category_counts,
-                            "memory_used_mb": df.memory_usage(deep=True).sum() / 1024 / 1024,
+                            "memory_used_mb": df.memory_usage(deep=True).sum()
+                            / 1024
+                            / 1024,
                         }
                 return {"status": "completed"}
 
@@ -456,12 +472,12 @@ steps:
     parameters:
       data: "{{ pipeline_id }}"
       iterations: 5000
-  
+
   - id: io_operation
     action: io_task
     parameters:
       data: "Test data for pipeline {{ pipeline_id }}"
-  
+
   - id: network_call
     action: network_task
     parameters:
@@ -520,7 +536,9 @@ async def main():
 
     if overall_success:
         print("\n🎉 All edge case and performance tests completed successfully!")
-        print("The orchestrator framework handles edge cases and concurrent execution well.")
+        print(
+            "The orchestrator framework handles edge cases and concurrent execution well."
+        )
     else:
         print("\n⚠️ Some edge case or performance tests failed.")
         print("This indicates areas for improvement in error handling or performance.")

@@ -32,7 +32,9 @@ class ConditionalExecutor:
             result = self._evaluate_expression(resolved_condition)
 
             self.expression_cache[cache_key] = result
-            logger.debug(f"Condition '{condition}' -> '{resolved_condition}' -> {result}")
+            logger.debug(
+                f"Condition '{condition}' -> '{resolved_condition}' -> {result}"
+            )
 
             return result
 
@@ -40,7 +42,9 @@ class ConditionalExecutor:
             logger.warning(f"Failed to evaluate condition '{condition}': {e}")
             return False
 
-    def _resolve_condition_variables(self, condition: str, context: Dict[str, Any]) -> str:
+    def _resolve_condition_variables(
+        self, condition: str, context: Dict[str, Any]
+    ) -> str:
         """Resolve variables in condition expression."""
         import re
 
@@ -114,7 +118,7 @@ class ConditionalExecutor:
             # Try to evaluate as a simple boolean
             try:
                 return bool(eval(expression))
-            except:
+            except Exception:
                 logger.warning(f"Could not evaluate expression: {expression}")
                 return False
 
@@ -126,7 +130,9 @@ class LoopExecutor:
         self.task_executor = task_executor
         self.conditional_executor = ConditionalExecutor()
 
-    async def execute_loop(self, task_spec: TaskSpec, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_loop(
+        self, task_spec: TaskSpec, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute a task with loop configuration."""
         if not task_spec.loop:
             raise ValueError("Task has no loop configuration")
@@ -142,14 +148,18 @@ class LoopExecutor:
         if loop_spec.max_iterations:
             loop_items = loop_items[: loop_spec.max_iterations]
 
-        logger.info(f"Executing loop for task {task_spec.id} with {len(loop_items)} iterations")
+        logger.info(
+            f"Executing loop for task {task_spec.id} with {len(loop_items)} iterations"
+        )
 
         if loop_spec.parallel:
             return await self._execute_parallel_loop(task_spec, loop_items, context)
         else:
             return await self._execute_sequential_loop(task_spec, loop_items, context)
 
-    def _resolve_loop_items(self, foreach_expression: str, context: Dict[str, Any]) -> List[Any]:
+    def _resolve_loop_items(
+        self, foreach_expression: str, context: Dict[str, Any]
+    ) -> List[Any]:
         """Resolve the items to iterate over."""
         import re
 
@@ -173,7 +183,7 @@ class LoopExecutor:
                 import ast
 
                 return ast.literal_eval(foreach_expression)
-            except:
+            except Exception:
                 logger.warning(f"Could not resolve loop items: {foreach_expression}")
                 return []
 
@@ -207,13 +217,17 @@ class LoopExecutor:
                 if self.conditional_executor.evaluate_condition(
                     task_spec.loop.break_condition, iteration_context
                 ):
-                    logger.info(f"Breaking loop for task {task_spec.id} at iteration {i}")
+                    logger.info(
+                        f"Breaking loop for task {task_spec.id} at iteration {i}"
+                    )
                     break
 
             try:
                 # Create iteration-specific task
                 iteration_task = self._create_iteration_task(task_spec, i)
-                result = await self.task_executor.execute_task(iteration_task, iteration_context)
+                result = await self.task_executor.execute_task(
+                    iteration_task, iteration_context
+                )
 
                 if task_spec.loop.collect_results:
                     results.append(result)
@@ -222,11 +236,17 @@ class LoopExecutor:
                 iteration_context[f"{task_spec.id}_iteration_{i}"] = result
 
             except Exception as e:
-                logger.warning(f"Loop iteration {i} failed for task {task_spec.id}: {e}")
+                logger.warning(
+                    f"Loop iteration {i} failed for task {task_spec.id}: {e}"
+                )
                 if task_spec.loop.collect_results:
                     results.append({"error": str(e), "iteration": i})
 
-        return {"loop_results": results, "iteration_count": len(results), "loop_completed": True}
+        return {
+            "loop_results": results,
+            "iteration_count": len(results),
+            "loop_completed": True,
+        }
 
     async def _execute_parallel_loop(
         self, task_spec: TaskSpec, loop_items: List[Any], context: Dict[str, Any]
@@ -254,7 +274,9 @@ class LoopExecutor:
                 if task_spec.loop.collect_results:
                     results.append(result)
             except Exception as e:
-                logger.warning(f"Parallel loop iteration {i} failed for task {task_spec.id}: {e}")
+                logger.warning(
+                    f"Parallel loop iteration {i} failed for task {task_spec.id}: {e}"
+                )
                 if task_spec.loop.collect_results:
                     results.append({"error": str(e), "iteration": i})
 
@@ -297,8 +319,12 @@ class ErrorRecoveryExecutor:
             return await self.task_executor.execute_task(task_spec, context)
 
         error_config = task_spec.on_error
-        max_retries = error_config.retry_count if isinstance(error_config, ErrorHandling) else 0
-        retry_delay = error_config.retry_delay if isinstance(error_config, ErrorHandling) else 1.0
+        max_retries = (
+            error_config.retry_count if isinstance(error_config, ErrorHandling) else 0
+        )
+        retry_delay = (
+            error_config.retry_delay if isinstance(error_config, ErrorHandling) else 1.0
+        )
 
         last_error = None
 
@@ -308,22 +334,30 @@ class ErrorRecoveryExecutor:
                     logger.info(
                         f"Retrying task {task_spec.id}, attempt {attempt + 1}/{max_retries + 1}"
                     )
-                    await asyncio.sleep(retry_delay * (2 ** (attempt - 1)))  # Exponential backoff
+                    await asyncio.sleep(
+                        retry_delay * (2 ** (attempt - 1))
+                    )  # Exponential backoff
 
                 result = await self.task_executor.execute_task(task_spec, context)
 
                 if attempt > 0:
-                    logger.info(f"Task {task_spec.id} succeeded after {attempt} retries")
+                    logger.info(
+                        f"Task {task_spec.id} succeeded after {attempt} retries"
+                    )
 
                 return result
 
             except Exception as e:
                 last_error = e
-                logger.warning(f"Task {task_spec.id} failed on attempt {attempt + 1}: {e}")
+                logger.warning(
+                    f"Task {task_spec.id} failed on attempt {attempt + 1}: {e}"
+                )
 
                 if attempt == max_retries:
                     # Final attempt failed, handle error
-                    return await self._handle_final_error(task_spec, last_error, context)
+                    return await self._handle_final_error(
+                        task_spec, last_error, context
+                    )
 
         # Should not reach here
         return await self._handle_final_error(task_spec, last_error, context)
@@ -347,7 +381,9 @@ class ErrorRecoveryExecutor:
                         id=f"{task_spec.id}_error_handler", action=error_config.action
                     )
 
-                    error_result = await self.task_executor.execute_task(error_task, error_context)
+                    error_result = await self.task_executor.execute_task(
+                        error_task, error_context
+                    )
 
                     return {
                         "task_id": task_spec.id,
@@ -389,7 +425,9 @@ class AdvancedTaskExecutor(EnhancedTaskExecutor):
         self.error_recovery_executor = ErrorRecoveryExecutor(super())
         self.execution_cache = {}
 
-    async def execute_task(self, task_spec: TaskSpec, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_task(
+        self, task_spec: TaskSpec, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute task with advanced features (conditions, loops, error handling)."""
         logger.info(f"Advanced execution for task: {task_spec.id}")
 
@@ -403,7 +441,9 @@ class AdvancedTaskExecutor(EnhancedTaskExecutor):
 
             # 2. Check condition if present
             if task_spec.has_condition():
-                if not self.conditional_executor.evaluate_condition(task_spec.condition, context):
+                if not self.conditional_executor.evaluate_condition(
+                    task_spec.condition, context
+                ):
                     logger.info(f"Skipping task {task_spec.id} due to condition")
                     return {
                         "task_id": task_spec.id,
@@ -416,7 +456,8 @@ class AdvancedTaskExecutor(EnhancedTaskExecutor):
             # 3. Handle timeout if specified
             if task_spec.timeout:
                 result = await asyncio.wait_for(
-                    self._execute_task_core(task_spec, context), timeout=task_spec.timeout
+                    self._execute_task_core(task_spec, context),
+                    timeout=task_spec.timeout,
                 )
             else:
                 result = await self._execute_task_core(task_spec, context)
@@ -428,7 +469,9 @@ class AdvancedTaskExecutor(EnhancedTaskExecutor):
             return result
 
         except asyncio.TimeoutError:
-            logger.error(f"Task {task_spec.id} timed out after {task_spec.timeout} seconds")
+            logger.error(
+                f"Task {task_spec.id} timed out after {task_spec.timeout} seconds"
+            )
             return {
                 "task_id": task_spec.id,
                 "success": False,
@@ -467,7 +510,9 @@ class AdvancedTaskExecutor(EnhancedTaskExecutor):
         cache_key = self._generate_cache_key(task_spec, context)
         return self.execution_cache.get(cache_key)
 
-    def _cache_result(self, task_spec: TaskSpec, context: Dict[str, Any], result: Dict[str, Any]):
+    def _cache_result(
+        self, task_spec: TaskSpec, context: Dict[str, Any], result: Dict[str, Any]
+    ):
         """Cache task result."""
         cache_key = self._generate_cache_key(task_spec, context)
         self.execution_cache[cache_key] = result

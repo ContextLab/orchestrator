@@ -18,7 +18,7 @@ steps:
     if: "true"
     parameters:
       note: "Should execute"
-      
+
   - id: task2
     action: test
     if: "false"
@@ -52,7 +52,9 @@ async def test_condition_evaluation():
     handler = ConditionalHandler()
 
     # Create a task with condition
-    task = Task(id="test_task", name="Test", action="test", metadata={"condition": "true"})
+    task = Task(
+        id="test_task", name="Test", action="test", metadata={"condition": "true"}
+    )
 
     # Evaluate condition
     result = await handler.evaluate_condition(task, {}, {})

@@ -8,8 +8,6 @@ import time
 import random
 import pytest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.models.load_balancer import LoadBalancer, ModelPoolConfig
 from orchestrator.models.openai_model import OpenAIModel
@@ -43,27 +41,19 @@ async def load_balancer(registry):
         # Primary pool
         primary_config = ModelPoolConfig(
             models=[
-                {
-                    "model": models_registered[0],
-                    "weight": 1.0,
-                    "max_concurrent": 10
-                }
+                {"model": models_registered[0], "weight": 1.0, "max_concurrent": 10}
             ],
             always_available=False,
-            fallback_pool="backup"
+            fallback_pool="backup",
         )
         load_balancer.configure_pool("primary", primary_config)
 
         # Backup pool
         backup_config = ModelPoolConfig(
             models=[
-                {
-                    "model": models_registered[0],
-                    "weight": 1.0,
-                    "max_concurrent": 5
-                }
+                {"model": models_registered[0], "weight": 1.0, "max_concurrent": 5}
             ],
-            always_available=True
+            always_available=True,
         )
         load_balancer.configure_pool("backup", backup_config)
 
@@ -110,8 +100,16 @@ async def setup_models_and_pools():
     # Primary pool - mix of models with different weights
     primary_pool = ModelPoolConfig(
         models=[
-            {"model": "ollama:llama3.2:1b", "weight": 0.4, "max_concurrent": 5},  # 40% of traffic
-            {"model": "ollama:llama3.1:8b", "weight": 0.6, "max_concurrent": 3},  # 60% of traffic
+            {
+                "model": "ollama:llama3.2:1b",
+                "weight": 0.4,
+                "max_concurrent": 5,
+            },  # 40% of traffic
+            {
+                "model": "ollama:llama3.1:8b",
+                "weight": 0.6,
+                "max_concurrent": 3,
+            },  # 60% of traffic
         ],
         fallback_pool="emergency",
         retry_config={"max_retries": 3, "backoff": "exponential", "initial_delay": 0.5},
@@ -271,7 +269,9 @@ async def test_retry_with_backoff(load_balancer: LoadBalancer):
 
     start_time = time.time()
     try:
-        result = await load_balancer.execute_with_retry(model, "generate", "Test prompt")
+        result = await load_balancer.execute_with_retry(
+            model, "generate", "Test prompt"
+        )
         elapsed = time.time() - start_time
 
         print(f"✓ Retry successful after {model.attempts} attempts")
@@ -321,11 +321,13 @@ async def test_pool_status(load_balancer: LoadBalancer):
             model_id = f"{model.provider}:{model.name}"
 
             # Simulate success
-            await load_balancer._update_success_metrics(model_id, random.uniform(0.1, 0.5))
+            await load_balancer._update_success_metrics(
+                model_id, random.uniform(0.1, 0.5)
+            )
 
             # Release
             load_balancer.model_states[model_id].current_requests -= 1
-        except:
+        except Exception:
             pass
 
     # Get pool status
@@ -346,7 +348,9 @@ async def test_pool_status(load_balancer: LoadBalancer):
         )
 
 
-async def test_real_generation_with_lb(registry: ModelRegistry, load_balancer: LoadBalancer):
+async def test_real_generation_with_lb(
+    registry: ModelRegistry, load_balancer: LoadBalancer
+):
     """Test real generation through load balancer."""
     print("\n=== Testing Real Generation with Load Balancing ===")
 
@@ -358,7 +362,9 @@ async def test_real_generation_with_lb(registry: ModelRegistry, load_balancer: L
         print(f"Selected model: {model.provider}:{model.name}")
 
         # Execute with retry
-        result = await load_balancer.execute_with_retry(model, "generate", prompt, temperature=0)
+        result = await load_balancer.execute_with_retry(
+            model, "generate", prompt, temperature=0
+        )
 
         print(f"Prompt: {prompt}")
         print(f"Response: {result.strip()}")

@@ -120,8 +120,10 @@ class ResourceMonitor:
 
         return {
             "total_executions": len(all_stats),
-            "avg_execution_time": sum(s["execution_time"] for s in all_stats) / len(all_stats),
-            "avg_memory_used": sum(s["memory_used"] for s in all_stats) / len(all_stats),
+            "avg_execution_time": sum(s["execution_time"] for s in all_stats)
+            / len(all_stats),
+            "avg_memory_used": sum(s["memory_used"] for s in all_stats)
+            / len(all_stats),
             "avg_cpu_used": sum(s["cpu_used"] for s in all_stats) / len(all_stats),
             "max_execution_time": max(s["execution_time"] for s in all_stats),
             "max_memory_used": max(s["memory_used"] for s in all_stats),
@@ -145,7 +147,9 @@ class WorkerPool:
         elif self.config.execution_mode == ExecutionMode.PROCESS:
             self.process_pool = ProcessPoolExecutor(max_workers=self.config.max_workers)
 
-    async def execute_task(self, task: Task, executor_func: Callable) -> ExecutionResult:
+    async def execute_task(
+        self, task: Task, executor_func: Callable
+    ) -> ExecutionResult:
         """Execute task using appropriate worker pool."""
         self.resource_monitor.start_monitoring(task.id)
         start_time = time.time()
@@ -158,7 +162,9 @@ class WorkerPool:
             elif self.config.execution_mode == ExecutionMode.PROCESS:
                 result = await self._execute_process(task, executor_func)
             else:
-                raise ValueError(f"Unsupported execution mode: {self.config.execution_mode}")
+                raise ValueError(
+                    f"Unsupported execution mode: {self.config.execution_mode}"
+                )
 
             execution_time = time.time() - start_time
             self.resource_monitor.stop_monitoring(task.id)
@@ -181,7 +187,9 @@ class WorkerPool:
     async def _execute_async(self, task: Task, executor_func: Callable) -> Any:
         """Execute task asynchronously."""
         try:
-            return await asyncio.wait_for(executor_func(task), timeout=self.config.timeout)
+            return await asyncio.wait_for(
+                executor_func(task), timeout=self.config.timeout
+            )
         except asyncio.TimeoutError:
             raise TimeoutError(f"Task {task.id} timed out after {self.config.timeout}s")
 
@@ -316,7 +324,9 @@ class ParallelExecutor:
         if not tasks:
             return {}
 
-        results = await asyncio.gather(*[coro for _, coro in tasks], return_exceptions=True)
+        results = await asyncio.gather(
+            *[coro for _, coro in tasks], return_exceptions=True
+        )
 
         # Process results
         level_results = {}
@@ -384,7 +394,9 @@ class ParallelExecutor:
         # This can be enhanced with task metadata or configuration
         return False
 
-    async def _create_immediate_result(self, result: ExecutionResult) -> ExecutionResult:
+    async def _create_immediate_result(
+        self, result: ExecutionResult
+    ) -> ExecutionResult:
         """Create an immediate result for synchronous returns."""
         return result
 
@@ -393,9 +405,13 @@ class ParallelExecutor:
         if not self.execution_stats:
             return {}
 
-        total_time = sum(stats["execution_time"] for stats in self.execution_stats.values())
+        total_time = sum(
+            stats["execution_time"] for stats in self.execution_stats.values()
+        )
 
-        successful_tasks = sum(1 for stats in self.execution_stats.values() if stats["success"])
+        successful_tasks = sum(
+            1 for stats in self.execution_stats.values() if stats["success"]
+        )
 
         level_stats = defaultdict(list)
         for stats in self.execution_stats.values():

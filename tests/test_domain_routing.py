@@ -5,8 +5,6 @@ import os
 import sys
 import pytest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.models.domain_router import DomainRouter, DomainConfig
 from orchestrator.models.openai_model import OpenAIModel
@@ -35,7 +33,11 @@ async def setup_registry():
             gpt35 = OpenAIModel("gpt-3.5-turbo")
             gpt35.capabilities.domains = ["general", "educational", "creative"]
             gpt35.capabilities.accuracy_score = 0.85
-            gpt35._expertise = ["general", "educational", "creative"]  # For compatibility
+            gpt35._expertise = [
+                "general",
+                "educational",
+                "creative",
+            ]  # For compatibility
             registry.register_model(gpt35)
             print("✓ Registered gpt-3.5-turbo (general, educational, creative)")
 
@@ -59,7 +61,9 @@ async def setup_registry():
                 "financial",
             ]  # For compatibility
             registry.register_model(gpt4)
-            print("✓ Registered gpt-4 (technical, medical, legal, scientific, financial)")
+            print(
+                "✓ Registered gpt-4 (technical, medical, legal, scientific, financial)"
+            )
         except Exception as e:
             print(f"✗ Failed to register OpenAI models: {e}")
 
@@ -144,7 +148,9 @@ async def test_domain_detection(router: DomainRouter):
 
         detected = router.detect_domains(text)
         if detected:
-            print(f"Detected: {', '.join([f'{d[0]} ({d[1]:.2f})' for d in detected[:3]])}")
+            print(
+                f"Detected: {', '.join([f'{d[0]} ({d[1]:.2f})' for d in detected[:3]])}"
+            )
         else:
             print("Detected: None")
 
@@ -220,7 +226,10 @@ async def test_custom_domain(router: DomainRouter):
     gaming_domain = DomainConfig(
         name="gaming",
         keywords=["game", "player", "level", "quest", "boss", "gameplay", "mechanics"],
-        patterns=[r"\b(game|player|gameplay|mechanic)\b", r"\b(level|quest|boss|npc|character)\b"],
+        patterns=[
+            r"\b(game|player|gameplay|mechanic)\b",
+            r"\b(level|quest|boss|npc|character)\b",
+        ],
         preferred_models=["gpt-4", "claude-3-opus"],
         required_capabilities=["creative", "gaming"],
         min_accuracy_score=0.8,
@@ -277,8 +286,8 @@ async def test_multi_domain_handling(router: DomainRouter):
 
     # Text that spans multiple domains
     multi_domain_text = """
-    As a medical AI researcher, I'm analyzing patient data to validate 
-    our hypothesis about a new treatment protocol. The results will be 
+    As a medical AI researcher, I'm analyzing patient data to validate
+    our hypothesis about a new treatment protocol. The results will be
     submitted for peer review and publication in a scientific journal.
     """
 
@@ -306,13 +315,18 @@ async def test_multi_domain_handling(router: DomainRouter):
 
 
 @pytest.mark.asyncio
-async def test_real_generation_with_domain(registry: ModelRegistry, router: DomainRouter):
+async def test_real_generation_with_domain(
+    registry: ModelRegistry, router: DomainRouter
+):
     """Test real generation with domain-appropriate model."""
     print("\n=== Testing Real Generation with Domain Routing ===")
 
     # Different domain prompts
     prompts = [
-        {"text": "Explain how machine learning works to a beginner", "domain": "educational"},
+        {
+            "text": "Explain how machine learning works to a beginner",
+            "domain": "educational",
+        },
         {"text": "Write a haiku about artificial intelligence", "domain": "creative"},
     ]
 
@@ -334,7 +348,10 @@ async def test_real_generation_with_domain(registry: ModelRegistry, router: Doma
 
             # Update metrics
             registry.update_model_performance(
-                model, success=True, latency=0.5, cost=0.0 if model.cost.is_free else 0.002
+                model,
+                success=True,
+                latency=0.5,
+                cost=0.0 if model.cost.is_free else 0.002,
             )
 
             print("✓ Generation successful")

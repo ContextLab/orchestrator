@@ -160,7 +160,9 @@ class TestOpenAIIntegration:
     @pytest.mark.asyncio
     async def test_openai_response_format(self, openai_model):
         """Test that OpenAI responses are in expected format."""
-        prompt = "Generate a JSON object with a 'message' field containing 'hello world'"
+        prompt = (
+            "Generate a JSON object with a 'message' field containing 'hello world'"
+        )
 
         result = await openai_model.generate(prompt, max_tokens=50, temperature=0)
 
@@ -284,7 +286,9 @@ class TestAnthropicIntegration:
     @pytest.mark.asyncio
     async def test_anthropic_response_format(self, anthropic_model):
         """Test that Anthropic responses are in expected format."""
-        prompt = "List three colors in a simple format: 1. [color] 2. [color] 3. [color]"
+        prompt = (
+            "List three colors in a simple format: 1. [color] 2. [color] 3. [color]"
+        )
 
         result = await anthropic_model.generate(prompt, max_tokens=50, temperature=0)
 
@@ -382,7 +386,9 @@ class TestLLMIntegrationConsistency:
         prompt = "What is the chemical symbol for gold? Answer with just the symbol."
 
         openai_result = await openai_model.generate(prompt, max_tokens=5, temperature=0)
-        anthropic_result = await anthropic_model.generate(prompt, max_tokens=5, temperature=0)
+        anthropic_result = await anthropic_model.generate(
+            prompt, max_tokens=5, temperature=0
+        )
 
         assert isinstance(openai_result, str)
         assert isinstance(anthropic_result, str)
@@ -421,13 +427,16 @@ class TestLLMIntegrationConsistency:
         """Test that API timeouts are handled gracefully."""
         if not HAS_OPENAI_KEY:
             raise AssertionError(
-                "OpenAI API key not available. " "Please configure API keys in ~/.orchestrator/.env"
+                "OpenAI API key not available. "
+                "Please configure API keys in ~/.orchestrator/.env"
             )
 
         model = OpenAIModel(os.getenv("OPENAI_API_KEY"))
 
         # Test with a very long prompt that might timeout
-        very_long_prompt = "Please write a detailed essay about " + "artificial intelligence " * 100
+        very_long_prompt = (
+            "Please write a detailed essay about " + "artificial intelligence " * 100
+        )
 
         try:
             result = await asyncio.wait_for(

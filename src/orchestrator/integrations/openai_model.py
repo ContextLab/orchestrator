@@ -146,7 +146,9 @@ class OpenAIModel(Model):
             **kwargs: Additional arguments passed to parent class
         """
         if not OPENAI_AVAILABLE:
-            raise ImportError("OpenAI library not available. Install with: pip install openai")
+            raise ImportError(
+                "OpenAI library not available. Install with: pip install openai"
+            )
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(model_name)
@@ -238,7 +240,7 @@ class OpenAIModel(Model):
                 messages = kwargs.pop("messages")
             else:
                 messages = [{"role": "user", "content": prompt}]
-                
+
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
@@ -279,10 +281,10 @@ class OpenAIModel(Model):
         # Create prompt with schema instructions
         structured_prompt = f"""
         {prompt}
-        
+
         Please respond with a JSON object that matches this schema:
         {json.dumps(schema, indent=2)}
-        
+
         Return only the JSON object, no additional text.
         """
 
@@ -446,16 +448,20 @@ class OpenAIModel(Model):
                     elif block["type"] == "image":
                         # OpenAI expects image_url format
                         if block.get("source", {}).get("type") == "base64":
-                            content_parts.append({
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:{block['source'].get('media_type', 'image/png')};base64,{block['source']['data']}"
+                            content_parts.append(
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{block['source'].get('media_type', 'image/png')};base64,{block['source']['data']}"
+                                    },
                                 }
-                            })
-                formatted_messages.append({"role": msg["role"], "content": content_parts})
+                            )
+                formatted_messages.append(
+                    {"role": msg["role"], "content": content_parts}
+                )
             else:
                 formatted_messages.append(msg)
-        
+
         kwargs["messages"] = formatted_messages
         return await self.generate("", temperature, max_tokens, **kwargs)
 

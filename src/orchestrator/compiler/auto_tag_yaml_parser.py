@@ -150,26 +150,28 @@ class AutoTagYAMLParser:
             # Replace innermost tags from end to beginning (to preserve positions)
             for tag in reversed(sorted(innermost_tags, key=lambda t: t.start)):
                 counter += 1
-                placeholder_key = f"{self.placeholder_prefix}{counter}{self.placeholder_suffix}"
+                placeholder_key = (
+                    f"{self.placeholder_prefix}{counter}{self.placeholder_suffix}"
+                )
 
                 # Store the complete AUTO tag
                 self.tag_registry[placeholder_key] = tag.full_text
 
                 # Replace with placeholder - we need to check context
                 # to determine if we need quotes
-                before = result[:tag.start]
-                after = result[tag.end:]
-                
+                before = result[: tag.start]
+                after = result[tag.end :]
+
                 # Check if we're in a YAML value position that needs quotes
                 # Look backwards for the key and colon
-                line_start = before.rfind('\n') + 1
+                line_start = before.rfind("\n") + 1
                 line_before_tag = before[line_start:]
-                
+
                 # Check if there's a key: pattern before the AUTO tag
-                if ':' in line_before_tag:
+                if ":" in line_before_tag:
                     # We're in a value position
                     # Check if already quoted
-                    trimmed = line_before_tag.split(':', 1)[1].strip()
+                    trimmed = line_before_tag.split(":", 1)[1].strip()
                     if trimmed.startswith('"') or trimmed.startswith("'"):
                         # Already quoted, use placeholder as-is
                         replacement = placeholder_key
@@ -179,7 +181,7 @@ class AutoTagYAMLParser:
                 else:
                     # Not sure, use safe quoted form
                     replacement = f'"{placeholder_key}"'
-                
+
                 result = before + replacement + after
 
         return result
@@ -194,7 +196,9 @@ class AutoTagYAMLParser:
             return [self._restore_auto_tags(item) for item in data]
         elif isinstance(data, str):
             # Check if this is a placeholder
-            if data.startswith(self.placeholder_prefix) and data.endswith(self.placeholder_suffix):
+            if data.startswith(self.placeholder_prefix) and data.endswith(
+                self.placeholder_suffix
+            ):
                 if data in self.tag_registry:
                     # Get the original AUTO tag
                     original = self.tag_registry[data]

@@ -4,7 +4,9 @@ import pytest
 
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler
-from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
+from orchestrator.control_systems.model_based_control_system import (
+    ModelBasedControlSystem,
+)
 from orchestrator.utils.api_keys import load_api_keys
 
 
@@ -48,7 +50,9 @@ class TestSimplifiedCodeAnalysis:
     """Test simplified version of code analysis pipeline."""
 
     @pytest.mark.timeout(90)
-    async def test_simplified_code_analysis(self, orchestrator, yaml_compiler, tmp_path):
+    async def test_simplified_code_analysis(
+        self, orchestrator, yaml_compiler, tmp_path
+    ):
         """Test a simplified code analysis with just key steps."""
         # Create sample code file
         code_file = tmp_path / "sample.py"
@@ -86,17 +90,17 @@ steps:
         1. Brief code quality assessment
         2. Any potential issues
         3. One improvement suggestion
-        
+
         Code path: {{repo_path}}
         Keep response under 100 words.
       max_tokens: 150
-    
+
   - id: generate_summary
     action: generate
     parameters:
       prompt: |
         Based on the analysis: {{analyze_code}}
-        
+
         Provide a one-line summary of the code quality.
       max_tokens: 50
     depends_on: [analyze_code]
@@ -135,7 +139,7 @@ inputs:
   genre:
     type: string
     default: "sci-fi"
-  
+
   topic:
     type: string
     default: "time travel"
@@ -147,7 +151,7 @@ steps:
       prompt: |
         Create a one-sentence {{genre}} story premise about {{topic}}.
       max_tokens: 50
-  
+
   - id: write_opening
     action: generate
     parameters:
@@ -199,7 +203,7 @@ steps:
         Analyze this dataset: {{data_description}}
         Provide 2 key insights in bullet points.
       max_tokens: 100
-  
+
   - id: suggest_visualization
     action: generate
     parameters:

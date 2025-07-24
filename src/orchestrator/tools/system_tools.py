@@ -20,7 +20,9 @@ class TerminalTool(Tool):
         self.add_parameter(
             "working_dir", "string", "Working directory", required=False, default="."
         )
-        self.add_parameter("timeout", "integer", "Timeout in seconds", required=False, default=30)
+        self.add_parameter(
+            "timeout", "integer", "Timeout in seconds", required=False, default=30
+        )
         self.add_parameter(
             "capture_output",
             "boolean",
@@ -53,7 +55,9 @@ class TerminalTool(Tool):
                     stderr=asyncio.subprocess.PIPE,
                 )
 
-                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(), timeout=timeout
+                )
 
                 return {
                     "command": command,
@@ -65,7 +69,9 @@ class TerminalTool(Tool):
                     "execution_time": timeout,  # Simplified
                 }
             else:
-                process = await asyncio.create_subprocess_shell(command, cwd=working_dir)
+                process = await asyncio.create_subprocess_shell(
+                    command, cwd=working_dir
+                )
 
                 return_code = await asyncio.wait_for(process.wait(), timeout=timeout)
 

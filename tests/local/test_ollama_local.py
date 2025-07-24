@@ -6,8 +6,6 @@ import os
 import subprocess
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 # Mark all tests in this file as local-only (not run in CI)
 pytestmark = pytest.mark.local
 
@@ -16,7 +14,9 @@ def check_ollama_available():
     """Check if Ollama is available and has models."""
     try:
         # Check if ollama command exists
-        result = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            ["ollama", "list"], capture_output=True, text=True, timeout=10
+        )
         if result.returncode == 0:
             # Check for specific models
             output = result.stdout
@@ -114,7 +114,7 @@ class TestOllamaIntegration:
         result = await resolver.resolve("json or csv", "data.format")
         assert isinstance(result, str)
         assert len(result) > 0
-        
+
         # Now model should be selected
         assert resolver.model is not None
         assert resolver.model.provider == "ollama"
@@ -138,10 +138,18 @@ async def test_performance_comparison():
         try:
             result = await model.generate("Hello", max_tokens=5, temperature=0.0)
             duration = time.time() - start_time
-            results[model_name] = {"duration": duration, "success": True, "result": result}
+            results[model_name] = {
+                "duration": duration,
+                "success": True,
+                "result": result,
+            }
         except Exception as e:
             duration = time.time() - start_time
-            results[model_name] = {"duration": duration, "success": False, "error": str(e)}
+            results[model_name] = {
+                "duration": duration,
+                "success": False,
+                "error": str(e),
+            }
 
     print("\n🏁 Performance Results:")
     for model, data in results.items():

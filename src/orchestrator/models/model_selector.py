@@ -19,7 +19,9 @@ class ModelSelectionCriteria:
     required_capabilities: List[str] = field(
         default_factory=list
     )  # e.g., ["vision", "code", "tools"]
-    required_domains: List[str] = field(default_factory=list)  # e.g., ["medical", "legal"]
+    required_domains: List[str] = field(
+        default_factory=list
+    )  # e.g., ["medical", "legal"]
 
     # Context requirements
     min_context_window: int = 0
@@ -75,7 +77,9 @@ class ModelSelectionCriteria:
                 requirements["supports_json_mode"] = True
 
         if self.required_domains:
-            requirements["expertise"] = self.required_domains  # Use expertise for compatibility
+            requirements["expertise"] = (
+                self.required_domains
+            )  # Use expertise for compatibility
 
         if self.min_model_size:
             requirements["min_size"] = str(self.min_model_size)
@@ -132,15 +136,21 @@ class ModelSelector:
             if criteria.required_domains:
                 # Remove expertise requirement and try again
                 requirements.pop("expertise", None)
-                eligible_models = await self.registry._filter_by_capabilities(requirements)
+                eligible_models = await self.registry._filter_by_capabilities(
+                    requirements
+                )
 
             if not eligible_models:
                 # Get all models and see why they failed
                 all_models = list(self.registry.models.values())
                 if all_models:
                     # Try with just the basic requirements
-                    basic_req = {"context_window": requirements.get("context_window", 0)}
-                    eligible_models = await self.registry._filter_by_capabilities(basic_req)
+                    basic_req = {
+                        "context_window": requirements.get("context_window", 0)
+                    }
+                    eligible_models = await self.registry._filter_by_capabilities(
+                        basic_req
+                    )
 
                 if not eligible_models:
                     raise NoEligibleModelsError("No models meet the basic requirements")
@@ -155,7 +165,9 @@ class ModelSelector:
         scored_models = self._score_models(eligible_models, criteria)
 
         # Select best model based on strategy
-        selected_model = self._select_by_strategy(scored_models, criteria.selection_strategy)
+        selected_model = self._select_by_strategy(
+            scored_models, criteria.selection_strategy
+        )
 
         return selected_model
 
@@ -268,7 +280,10 @@ class ModelSelector:
 
         for model in models:
             # Check provider constraints (only apply if explicitly set)
-            if criteria.preferred_providers and model.provider not in criteria.preferred_providers:
+            if (
+                criteria.preferred_providers
+                and model.provider not in criteria.preferred_providers
+            ):
                 continue
             if model.provider in criteria.excluded_providers:
                 continue
@@ -286,9 +301,15 @@ class ModelSelector:
                 continue
             if "code" in criteria.required_capabilities and not caps.code_specialized:
                 continue
-            if "tools" in criteria.required_capabilities and not caps.supports_function_calling:
+            if (
+                "tools" in criteria.required_capabilities
+                and not caps.supports_function_calling
+            ):
                 continue
-            if "json_mode" in criteria.required_capabilities and not caps.supports_json_mode:
+            if (
+                "json_mode" in criteria.required_capabilities
+                and not caps.supports_json_mode
+            ):
                 continue
 
             # Check domain requirements (more lenient - prefer but don't require)
@@ -305,7 +326,9 @@ class ModelSelector:
             if criteria.speed_preference:
                 if criteria.speed_preference == "fast" and caps.speed_rating == "slow":
                     continue
-                elif criteria.speed_preference == "slow" and caps.speed_rating == "fast":
+                elif (
+                    criteria.speed_preference == "slow" and caps.speed_rating == "fast"
+                ):
                     continue
 
             # Check size constraints
@@ -318,7 +341,8 @@ class ModelSelector:
             # Check cost constraints
             if criteria.max_cost_per_1k_tokens:
                 avg_cost = (
-                    model.cost.input_cost_per_1k_tokens + model.cost.output_cost_per_1k_tokens
+                    model.cost.input_cost_per_1k_tokens
+                    + model.cost.output_cost_per_1k_tokens
                 ) / 2
                 if avg_cost > criteria.max_cost_per_1k_tokens:
                     continue
@@ -362,7 +386,8 @@ class ModelSelector:
                 score += 5  # Bonus for free models
             else:
                 avg_cost = (
-                    model.cost.input_cost_per_1k_tokens + model.cost.output_cost_per_1k_tokens
+                    model.cost.input_cost_per_1k_tokens
+                    + model.cost.output_cost_per_1k_tokens
                 ) / 2
                 if avg_cost < 0.001:  # Very cheap
                     score += 4
@@ -377,9 +402,15 @@ class ModelSelector:
             # Capability match scoring
             if criteria.required_capabilities:
                 capability_match = 0
-                if "vision" in criteria.required_capabilities and model.capabilities.vision_capable:
+                if (
+                    "vision" in criteria.required_capabilities
+                    and model.capabilities.vision_capable
+                ):
                     capability_match += 1
-                if "code" in criteria.required_capabilities and model.capabilities.code_specialized:
+                if (
+                    "code" in criteria.required_capabilities
+                    and model.capabilities.code_specialized
+                ):
                     capability_match += 1
                 if (
                     "tools" in criteria.required_capabilities
@@ -391,7 +422,9 @@ class ModelSelector:
 
             # Domain match scoring
             if criteria.required_domains and model.capabilities.domains:
-                domain_match = len(set(criteria.required_domains) & set(model.capabilities.domains))
+                domain_match = len(
+                    set(criteria.required_domains) & set(model.capabilities.domains)
+                )
                 score += domain_match * 3
 
             # Size preference scoring
@@ -405,7 +438,10 @@ class ModelSelector:
                     score += 1
 
             # Provider preference scoring
-            if criteria.preferred_providers and model.provider in criteria.preferred_providers:
+            if (
+                criteria.preferred_providers
+                and model.provider in criteria.preferred_providers
+            ):
                 score += 3
 
             # Model preference scoring
@@ -419,7 +455,9 @@ class ModelSelector:
         scored.sort(key=lambda x: x[1], reverse=True)
         return scored
 
-    def _select_by_strategy(self, scored_models: List[Tuple[Model, float]], strategy: str) -> Model:
+    def _select_by_strategy(
+        self, scored_models: List[Tuple[Model, float]], strategy: str
+    ) -> Model:
         """
         Select final model based on strategy.
 
@@ -450,7 +488,8 @@ class ModelSelector:
                 if model.cost.is_free:
                     return 0.0
                 return (
-                    model.cost.input_cost_per_1k_tokens + model.cost.output_cost_per_1k_tokens
+                    model.cost.input_cost_per_1k_tokens
+                    + model.cost.output_cost_per_1k_tokens
                 ) / 2
 
             top_half.sort(key=get_avg_cost)
@@ -465,12 +504,16 @@ class ModelSelector:
 
             # Sort by speed rating
             speed_order = {"fast": 0, "medium": 1, "slow": 2}
-            top_half.sort(key=lambda x: speed_order.get(x[0].capabilities.speed_rating, 1))
+            top_half.sort(
+                key=lambda x: speed_order.get(x[0].capabilities.speed_rating, 1)
+            )
             return top_half[0][0]
 
         elif strategy == "accuracy_optimized":
             # Find most accurate model regardless of other factors
-            scored_models.sort(key=lambda x: x[0].capabilities.accuracy_score, reverse=True)
+            scored_models.sort(
+                key=lambda x: x[0].capabilities.accuracy_score, reverse=True
+            )
             return scored_models[0][0]
 
         else:

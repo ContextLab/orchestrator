@@ -16,11 +16,17 @@ class DomainConfig:
     """Configuration for a specific domain."""
 
     name: str  # Domain name (e.g., "medical", "legal", "creative")
-    keywords: List[str] = field(default_factory=list)  # Keywords that indicate this domain
+    keywords: List[str] = field(
+        default_factory=list
+    )  # Keywords that indicate this domain
     patterns: List[str] = field(default_factory=list)  # Regex patterns to match
     preferred_models: List[str] = field(default_factory=list)  # Preferred model IDs
-    required_capabilities: List[str] = field(default_factory=list)  # Required capabilities
-    required_certifications: List[str] = field(default_factory=list)  # e.g., ["HIPAA", "SOC2"]
+    required_capabilities: List[str] = field(
+        default_factory=list
+    )  # Required capabilities
+    required_certifications: List[str] = field(
+        default_factory=list
+    )  # e.g., ["HIPAA", "SOC2"]
     min_accuracy_score: float = 0.0  # Minimum accuracy requirement
 
     def matches_text(self, text: str) -> float:
@@ -312,7 +318,9 @@ class DomainRouter:
         """
         self.domains[domain.name] = domain
 
-    def detect_domains(self, text: str, threshold: float = 0.3) -> List[Tuple[str, float]]:
+    def detect_domains(
+        self, text: str, threshold: float = 0.3
+    ) -> List[Tuple[str, float]]:
         """
         Detect domains in text.
 

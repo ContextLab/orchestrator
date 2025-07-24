@@ -89,7 +89,9 @@ class TestPipeline:
         """Test removing task that other tasks depend on."""
         pipeline = Pipeline(id="test", name="Test Pipeline")
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
+        task2 = Task(
+            id="task2", name="Task 2", action="action2", dependencies=["task1"]
+        )
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
@@ -170,8 +172,12 @@ class TestPipeline:
         """Test execution order for simple pipeline."""
         pipeline = Pipeline(id="test", name="Test Pipeline")
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
-        task3 = Task(id="task3", name="Task 3", action="action3", dependencies=["task1"])
+        task2 = Task(
+            id="task2", name="Task 2", action="action2", dependencies=["task1"]
+        )
+        task3 = Task(
+            id="task3", name="Task 3", action="action3", dependencies=["task1"]
+        )
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
@@ -187,9 +193,15 @@ class TestPipeline:
         """Test execution order for complex pipeline."""
         pipeline = Pipeline(id="test", name="Test Pipeline")
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
-        task3 = Task(id="task3", name="Task 3", action="action3", dependencies=["task1"])
-        task4 = Task(id="task4", name="Task 4", action="action4", dependencies=["task2", "task3"])
+        task2 = Task(
+            id="task2", name="Task 2", action="action2", dependencies=["task1"]
+        )
+        task3 = Task(
+            id="task3", name="Task 3", action="action3", dependencies=["task1"]
+        )
+        task4 = Task(
+            id="task4", name="Task 4", action="action4", dependencies=["task2", "task3"]
+        )
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)
@@ -207,7 +219,9 @@ class TestPipeline:
         """Test getting ready tasks."""
         pipeline = Pipeline(id="test", name="Test Pipeline")
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
+        task2 = Task(
+            id="task2", name="Task 2", action="action2", dependencies=["task1"]
+        )
         task3 = Task(id="task3", name="Task 3", action="action3")
 
         pipeline.add_task(task1)
@@ -291,7 +305,9 @@ class TestPipeline:
         pipeline.reset()
 
         # All tasks should be pending
-        assert all(task.status == TaskStatus.PENDING for task in pipeline.tasks.values())
+        assert all(
+            task.status == TaskStatus.PENDING for task in pipeline.tasks.values()
+        )
 
     def test_is_complete(self):
         """Test checking if pipeline is complete."""
@@ -366,9 +382,15 @@ class TestPipeline:
         """Test getting critical path."""
         pipeline = Pipeline(id="test", name="Test Pipeline")
         task1 = Task(id="task1", name="Task 1", action="action1")
-        task2 = Task(id="task2", name="Task 2", action="action2", dependencies=["task1"])
-        task3 = Task(id="task3", name="Task 3", action="action3", dependencies=["task2"])
-        task4 = Task(id="task4", name="Task 4", action="action4", dependencies=["task1"])
+        task2 = Task(
+            id="task2", name="Task 2", action="action2", dependencies=["task1"]
+        )
+        task3 = Task(
+            id="task3", name="Task 3", action="action3", dependencies=["task2"]
+        )
+        task4 = Task(
+            id="task4", name="Task 4", action="action4", dependencies=["task1"]
+        )
 
         pipeline.add_task(task1)
         pipeline.add_task(task2)

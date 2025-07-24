@@ -29,7 +29,9 @@ class LoopContext:
             "$items": self.items,
             "$loop_id": self.loop_id,
             "$is_first": self.current_index == 0,
-            "$is_last": self.current_index == len(self.items) - 1 if self.items else False,
+            "$is_last": (
+                self.current_index == len(self.items) - 1 if self.items else False
+            ),
         }
 
 
@@ -45,7 +47,10 @@ class ForLoopHandler:
         self.auto_resolver = auto_resolver or ControlFlowAutoResolver()
 
     async def expand_for_loop(
-        self, loop_def: Dict[str, Any], context: Dict[str, Any], step_results: Dict[str, Any]
+        self,
+        loop_def: Dict[str, Any],
+        context: Dict[str, Any],
+        step_results: Dict[str, Any],
     ) -> List[Task]:
         """Expand a for-each loop into individual tasks.
 
@@ -60,11 +65,13 @@ class ForLoopHandler:
         # Extract loop configuration
         loop_id = loop_def.get("id", "loop")
         for_each_expr = loop_def.get("for_each", [])
-        loop_def.get("loop_var", "$item")
+        loop_var = loop_def.get("loop_var", "$item")
         max_parallel = loop_def.get("max_parallel", 1)
 
         # Resolve iterator
-        items = await self.auto_resolver.resolve_iterator(for_each_expr, context, step_results)
+        items = await self.auto_resolver.resolve_iterator(
+            for_each_expr, context, step_results
+        )
 
         # Get loop body steps
         body_steps = loop_def.get("steps", [])
@@ -109,9 +116,14 @@ class ForLoopHandler:
 
                 # Process parameters with loop variables
                 if "parameters" in task_def:
-                    task_def["parameters"] = await self._process_loop_variables(
-                        task_def["parameters"], loop_context, context, step_results
+                    processed_params = await self._process_loop_variables(
+                        task_def["parameters"],
+                        loop_context,
+                        context,
+                        step_results,
+                        loop_var,
                     )
+                    task_def["parameters"] = processed_params
 
                 # Adjust dependencies
                 original_deps = task_def.get("dependencies", [])
@@ -142,6 +154,7 @@ class ForLoopHandler:
         loop_context: LoopContext,
         context: Dict[str, Any],
         step_results: Dict[str, Any],
+        loop_var: str = "$item",
     ) -> Any:
         """Process loop variables in parameters.
 
@@ -150,6 +163,7 @@ class ForLoopHandler:
             loop_context: Current loop context
             context: Pipeline context
             step_results: Step results
+            loop_var: Custom loop variable name
 
         Returns:
             Processed object with loop variables replaced
@@ -157,13 +171,30 @@ class ForLoopHandler:
         if isinstance(obj, str):
             # Replace loop variables
             result = obj
+
+            # First, replace custom loop variable
+            if loop_var != "$item":
+                # Handle both {{var}} and {{ var }} formats
+                result = result.replace(
+                    f"{{{{{loop_var}}}}}", str(loop_context.current_item)
+                )
+                result = result.replace(
+                    f"{{{{ {loop_var} }}}}", str(loop_context.current_item)
+                )
+
+            # Then replace standard loop variables
             for var_name, var_value in loop_context.to_dict().items():
+                # Handle both {{var}} and {{ var }} formats
                 result = result.replace(f"{{{{{var_name}}}}}", str(var_value))
+                result = result.replace(f"{{{{ {var_name} }}}}", str(var_value))
 
             # Resolve AUTO tags with loop context
             if "<AUTO>" in result:
                 enhanced_context = context.copy()
                 enhanced_context.update(loop_context.to_dict())
+                # Also add custom loop var to context
+                if loop_var != "$item":
+                    enhanced_context[loop_var] = loop_context.current_item
                 result = await self.auto_resolver._resolve_auto_tags(
                     result, enhanced_context, step_results
                 )
@@ -172,13 +203,17 @@ class ForLoopHandler:
 
         elif isinstance(obj, dict):
             return {
-                k: await self._process_loop_variables(v, loop_context, context, step_results)
+                k: await self._process_loop_variables(
+                    v, loop_context, context, step_results, loop_var
+                )
                 for k, v in obj.items()
             }
 
         elif isinstance(obj, list):
             return [
-                await self._process_loop_variables(item, loop_context, context, step_results)
+                await self._process_loop_variables(
+                    item, loop_context, context, step_results, loop_var
+                )
                 for item in obj
             ]
 
@@ -253,7 +288,9 @@ class WhileLoopHandler:
                 "$iteration": iteration,
                 "$loop_state": loop_state,
                 "current_result": (
-                    step_results.get(f"{loop_id}_{iteration-1}_result") if iteration > 0 else None
+                    step_results.get(f"{loop_id}_{iteration-1}_result")
+                    if iteration > 0
+                    else None
                 ),
             }
         )
@@ -313,7 +350,9 @@ class WhileLoopHandler:
             # Process parameters with loop variables
             if "parameters" in task_def:
                 enhanced_context = context.copy()
-                enhanced_context.update({"$iteration": iteration, "$loop_state": loop_state})
+                enhanced_context.update(
+                    {"$iteration": iteration, "$loop_state": loop_state}
+                )
 
                 task_def["parameters"] = await self._process_loop_params(
                     task_def["parameters"], enhanced_context, step_results
@@ -350,7 +389,11 @@ class WhileLoopHandler:
             action="capture_result",
             parameters={"loop_id": loop_id, "iteration": iteration},
             dependencies=[t.id for t in iteration_tasks],
-            metadata={"is_loop_result": True, "loop_id": loop_id, "iteration": iteration},
+            metadata={
+                "is_loop_result": True,
+                "loop_id": loop_id,
+                "iteration": iteration,
+            },
         )
         iteration_tasks.append(result_task)
 
@@ -389,17 +432,23 @@ class WhileLoopHandler:
 
             # Resolve AUTO tags
             if "<AUTO>" in result:
-                result = await self.auto_resolver._resolve_auto_tags(result, context, step_results)
+                result = await self.auto_resolver._resolve_auto_tags(
+                    result, context, step_results
+                )
 
             return result
 
         elif isinstance(obj, dict):
             return {
-                k: await self._process_loop_params(v, context, step_results) for k, v in obj.items()
+                k: await self._process_loop_params(v, context, step_results)
+                for k, v in obj.items()
             }
 
         elif isinstance(obj, list):
-            return [await self._process_loop_params(item, context, step_results) for item in obj]
+            return [
+                await self._process_loop_params(item, context, step_results)
+                for item in obj
+            ]
 
         return obj
 

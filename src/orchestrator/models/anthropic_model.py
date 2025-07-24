@@ -257,10 +257,25 @@ class AnthropicModel(Model):
         name_lower = name.lower()
 
         if "opus" in name_lower:
-            return ["general", "reasoning", "code", "creative", "analysis", "research", "math"]
+            return [
+                "general",
+                "reasoning",
+                "code",
+                "creative",
+                "analysis",
+                "research",
+                "math",
+            ]
         elif "sonnet" in name_lower:
             if "3.5" in name_lower or "sonnet-4" in name_lower:
-                return ["general", "reasoning", "code", "creative", "analysis", "research"]
+                return [
+                    "general",
+                    "reasoning",
+                    "code",
+                    "creative",
+                    "analysis",
+                    "research",
+                ]
             return ["general", "reasoning", "code", "analysis"]
         elif "haiku" in name_lower:
             return ["general", "chat", "code"]
@@ -360,9 +375,7 @@ class AnthropicModel(Model):
         """
         try:
             # Add schema instruction to prompt
-            schema_prompt = (
-                f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
-            )
+            schema_prompt = f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
 
             # Generate response
             response = await self.generate(

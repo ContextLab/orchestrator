@@ -31,7 +31,10 @@ class StateManager:
             os.makedirs(self.storage_path, exist_ok=True)
 
     async def save_checkpoint(
-        self, execution_id: str, state: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None
+        self,
+        execution_id: str,
+        state: Dict[str, Any],
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Save pipeline state checkpoint.
@@ -265,7 +268,10 @@ class InMemoryStateManager:
         self._execution_checkpoints = {}
 
     async def save_checkpoint(
-        self, execution_id: str, state: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None
+        self,
+        execution_id: str,
+        state: Dict[str, Any],
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Save checkpoint in memory."""
         timestamp = int(time.time())

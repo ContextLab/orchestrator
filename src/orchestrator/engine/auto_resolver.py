@@ -93,7 +93,9 @@ class EnhancedAutoResolver:
             "shell": ["terminal"],
         }
 
-    async def resolve_auto_tag(self, auto_content: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def resolve_auto_tag(
+        self, auto_content: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Resolve an AUTO tag into executable task specification."""
         logger.debug(f"Resolving AUTO tag: {auto_content}")
 
@@ -137,22 +139,35 @@ class EnhancedAutoResolver:
         # Pattern matching for common actions
         if any(word in content_lower for word in ["search", "find", "look", "query"]):
             return "search"
-        elif any(word in content_lower for word in ["analyze", "examine", "study", "review"]):
+        elif any(
+            word in content_lower for word in ["analyze", "examine", "study", "review"]
+        ):
             return "analyze"
-        elif any(word in content_lower for word in ["generate", "create", "write", "produce"]):
+        elif any(
+            word in content_lower for word in ["generate", "create", "write", "produce"]
+        ):
             return "generate"
         elif any(word in content_lower for word in ["summarize", "summary", "brief"]):
             return "summarize"
-        elif any(word in content_lower for word in ["extract", "scrape", "get", "fetch"]):
+        elif any(
+            word in content_lower for word in ["extract", "scrape", "get", "fetch"]
+        ):
             return "extract"
-        elif any(word in content_lower for word in ["validate", "verify", "check", "confirm"]):
+        elif any(
+            word in content_lower for word in ["validate", "verify", "check", "confirm"]
+        ):
             return "validate"
-        elif any(word in content_lower for word in ["transform", "convert", "change", "modify"]):
+        elif any(
+            word in content_lower
+            for word in ["transform", "convert", "change", "modify"]
+        ):
             return "transform"
         else:
             return "custom"
 
-    def _apply_pattern(self, pattern: Dict[str, str], content: str, context: Dict[str, Any]) -> str:
+    def _apply_pattern(
+        self, pattern: Dict[str, str], content: str, context: Dict[str, Any]
+    ) -> str:
         """Apply a predefined pattern to generate a prompt."""
         template = pattern["prompt_template"]
 
@@ -168,7 +183,9 @@ class EnhancedAutoResolver:
         elif "{data}" in template:
             template = template.replace("{data}", str(context.get("data", content)))
         elif "{content}" in template:
-            template = template.replace("{content}", str(context.get("content", content)))
+            template = template.replace(
+                "{content}", str(context.get("content", content))
+            )
         elif "{instructions}" in template:
             template = template.replace("{instructions}", content)
         elif "{source}" in template:
@@ -178,7 +195,9 @@ class EnhancedAutoResolver:
 
         return template
 
-    async def _generate_custom_prompt(self, content: str, context: Dict[str, Any]) -> str:
+    async def _generate_custom_prompt(
+        self, content: str, context: Dict[str, Any]
+    ) -> str:
         """Use AI model to generate a custom prompt for complex actions."""
         if not self.model:
             # Fallback to simple prompt if no model available
@@ -189,7 +208,7 @@ class EnhancedAutoResolver:
 
 Guidelines:
 - Be specific about desired output format
-- Include context variables where appropriate  
+- Include context variables where appropriate
 - Ensure the prompt is actionable and clear
 - Return only the generated prompt, no explanation
 
@@ -197,11 +216,13 @@ Examples:
 Input: "search web for information about quantum computing"
 Output: "Search for recent information about quantum computing. Return results as JSON array with title, URL, snippet, and relevance score for each result."
 
-Input: "analyze sales data and find trends" 
+Input: "analyze sales data and find trends"
 Output: "Analyze the provided sales data to identify trends, patterns, and insights. Return structured analysis with key findings, trend descriptions, and recommendations."
 """
 
-            user_prompt = f"Convert this abstract task into an executable AI prompt: {content}"
+            user_prompt = (
+                f"Convert this abstract task into an executable AI prompt: {content}"
+            )
 
             response = await self.model.generate(
                 f"{system_prompt}\n\nUser: {user_prompt}\nAssistant:"
@@ -228,7 +249,9 @@ Output: "Analyze the provided sales data to identify trends, patterns, and insig
         """Infer the expected output format."""
         content_lower = content.lower()
 
-        if any(word in content_lower for word in ["json", "structured", "array", "list"]):
+        if any(
+            word in content_lower for word in ["json", "structured", "array", "list"]
+        ):
             return "json"
         elif any(word in content_lower for word in ["report", "document", "markdown"]):
             return "markdown"

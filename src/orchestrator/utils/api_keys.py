@@ -26,7 +26,9 @@ def load_api_keys() -> None:
             # Try legacy location
             legacy_path = Path(".env")
             if legacy_path.exists():
-                print(f"Warning: Found .env in current directory. Please move it to {env_path}")
+                print(
+                    f"Warning: Found .env in current directory. Please move it to {env_path}"
+                )
                 load_dotenv(legacy_path)
 
     # Verify all required keys are present
@@ -128,7 +130,9 @@ def add_api_key(provider: str, key: str) -> None:
             f.write(f'GOOGLE_AI_API_KEY="{existing["GOOGLE_AI_API_KEY"]}"\n\n')
 
         if "GOOGLE_API_KEY" in existing:
-            f.write("# Also set the alternative Google env var that some libraries use\n")
+            f.write(
+                "# Also set the alternative Google env var that some libraries use\n"
+            )
             f.write(f'GOOGLE_API_KEY="{existing["GOOGLE_API_KEY"]}"\n\n')
 
         if "HF_TOKEN" in existing:

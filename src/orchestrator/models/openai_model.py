@@ -144,7 +144,14 @@ class OpenAIModel(Model):
             context_window = 16385 if "16k" in name_lower else 4096
 
             return ModelCapabilities(
-                supported_tasks=["generate", "analyze", "transform", "code", "chat", "instruct"],
+                supported_tasks=[
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "chat",
+                    "instruct",
+                ],
                 context_window=context_window,
                 supports_function_calling=True,
                 supports_structured_output=True,
@@ -201,23 +208,31 @@ class OpenAIModel(Model):
         if "gpt-4" in name_lower:
             if "turbo" in name_lower or "preview" in name_lower:
                 return ModelCost(
-                    input_cost_per_1k_tokens=0.01, output_cost_per_1k_tokens=0.03, is_free=False
+                    input_cost_per_1k_tokens=0.01,
+                    output_cost_per_1k_tokens=0.03,
+                    is_free=False,
                 )
             else:
                 return ModelCost(
-                    input_cost_per_1k_tokens=0.03, output_cost_per_1k_tokens=0.06, is_free=False
+                    input_cost_per_1k_tokens=0.03,
+                    output_cost_per_1k_tokens=0.06,
+                    is_free=False,
                 )
 
         # GPT-3.5 pricing
         elif "gpt-3.5" in name_lower:
             return ModelCost(
-                input_cost_per_1k_tokens=0.0005, output_cost_per_1k_tokens=0.0015, is_free=False
+                input_cost_per_1k_tokens=0.0005,
+                output_cost_per_1k_tokens=0.0015,
+                is_free=False,
             )
 
         # Default pricing for unknown models
         else:
             return ModelCost(
-                input_cost_per_1k_tokens=0.002, output_cost_per_1k_tokens=0.002, is_free=False
+                input_cost_per_1k_tokens=0.002,
+                output_cost_per_1k_tokens=0.002,
+                is_free=False,
             )
 
     async def generate(
@@ -245,7 +260,9 @@ class OpenAIModel(Model):
 
             # Add system message if provided
             if "system_prompt" in kwargs:
-                messages.insert(0, {"role": "system", "content": kwargs["system_prompt"]})
+                messages.insert(
+                    0, {"role": "system", "content": kwargs["system_prompt"]}
+                )
 
             # Make API call
             response = await self.client.chat.completions.create(
@@ -288,9 +305,7 @@ class OpenAIModel(Model):
         """
         try:
             # Add schema instruction to prompt
-            schema_prompt = (
-                f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
-            )
+            schema_prompt = f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
 
             # Generate response
             response = await self.generate(
@@ -380,5 +395,7 @@ class OpenAIModel(Model):
             output_cost = 0.002
 
         # Calculate total cost
-        total_cost = (prompt_tokens / 1000 * input_cost) + (output_tokens / 1000 * output_cost)
+        total_cost = (prompt_tokens / 1000 * input_cost) + (
+            output_tokens / 1000 * output_cost
+        )
         return total_cost

@@ -7,8 +7,6 @@ import os
 import traceback
 import json
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.task import Task
@@ -141,7 +139,9 @@ Provide 3-5 key insights about the search results."""
                 # Parse insights from model response
                 insights = []
                 for line in analysis.strip().split("\n"):
-                    if line.strip() and (line.strip()[0].isdigit() or line.strip().startswith("-")):
+                    if line.strip() and (
+                        line.strip()[0].isdigit() or line.strip().startswith("-")
+                    ):
                         insights.append(line.strip().lstrip("0123456789.-) "))
 
                 if not insights:
@@ -206,7 +206,9 @@ Write a concise executive summary (2-3 sentences)."""
 
             try:
                 # Use real model for summary
-                exec_summary = await model.generate(prompt, max_tokens=150, temperature=0.2)
+                exec_summary = await model.generate(
+                    prompt, max_tokens=150, temperature=0.2
+                )
 
                 # Build complete summary
                 summary = "# Research Summary\\n\\n"
@@ -271,7 +273,9 @@ Write a concise executive summary (2-3 sentences)."""
         summary += "## Key Insights\\n"
         for i, insight in enumerate(insights, 1):
             summary += f"{i}. {insight}\\n"
-        summary += f"\\n## Analysis Quality: {content.get('analysis_quality', 'standard')}"
+        summary += (
+            f"\\n## Analysis Quality: {content.get('analysis_quality', 'standard')}"
+        )
         summary += f"\\n## Confidence Score: {content.get('confidence_score', 0.8):.2f}"
         return summary
 
@@ -332,7 +336,9 @@ async def test_real_auto_resolution():
         print(f"\n🧪 Testing model: {model.name}")
 
         # Simple generation test
-        result = await model.generate("What is machine learning?", max_tokens=50, temperature=0.1)
+        result = await model.generate(
+            "What is machine learning?", max_tokens=50, temperature=0.1
+        )
         print(f"✅ Model generation successful: {result[:100]}...")
 
         # Test AUTO resolution scenarios

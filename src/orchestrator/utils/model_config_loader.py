@@ -31,7 +31,9 @@ class ModelConfigLoader:
         # Search paths in order of preference
         search_paths = [
             Path.home() / ".orchestrator" / "models.yaml",  # User config
-            Path(__file__).parent.parent.parent.parent / "config" / "models.yaml",  # Repo config
+            Path(__file__).parent.parent.parent.parent
+            / "config"
+            / "models.yaml",  # Repo config
         ]
 
         for path in search_paths:
@@ -63,7 +65,9 @@ class ModelConfigLoader:
 
         # Load configuration
         if not self.config_path.exists():
-            logger.warning(f"Models config not found at {self.config_path}, using empty config")
+            logger.warning(
+                f"Models config not found at {self.config_path}, using empty config"
+            )
             return {
                 "models": {},
                 "preferences": {},

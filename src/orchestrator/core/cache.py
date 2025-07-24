@@ -187,7 +187,9 @@ class MemoryCache(CacheBackend):
             asyncio.get_running_loop()
             # We're in an async context, can't use run_until_complete
             # This should not be called from async context
-            raise RuntimeError("get_sync() cannot be called from an async context. Use get() instead.")
+            raise RuntimeError(
+                "get_sync() cannot be called from an async context. Use get() instead."
+            )
         except RuntimeError:
             # No event loop running, safe to use asyncio.run
             entry = asyncio.run(self.get(key))
@@ -282,14 +284,20 @@ class MemoryCache(CacheBackend):
     async def _evict_by_memory(self, needed_size: int):
         """Evict entries to free up memory."""
         if self.eviction_policy == EvictionPolicy.LRU:
-            while self._current_memory + needed_size > self.max_memory and self._storage:
+            while (
+                self._current_memory + needed_size > self.max_memory and self._storage
+            ):
                 key, entry = self._storage.popitem(last=False)
                 self._current_memory -= entry.size
 
         elif self.eviction_policy == EvictionPolicy.LFU:
             # Sort by access count and remove least frequently used
-            while self._current_memory + needed_size > self.max_memory and self._storage:
-                lfu_key = min(self._storage.keys(), key=lambda k: self._storage[k].access_count)
+            while (
+                self._current_memory + needed_size > self.max_memory and self._storage
+            ):
+                lfu_key = min(
+                    self._storage.keys(), key=lambda k: self._storage[k].access_count
+                )
                 entry = self._storage[lfu_key]
                 self._current_memory -= entry.size
                 del self._storage[lfu_key]
@@ -314,7 +322,9 @@ class MemoryCache(CacheBackend):
                 key, entry = self._storage.popitem(last=False)
                 self._current_memory -= entry.size
             elif self.eviction_policy == EvictionPolicy.LFU:
-                lfu_key = min(self._storage.keys(), key=lambda k: self._storage[k].access_count)
+                lfu_key = min(
+                    self._storage.keys(), key=lambda k: self._storage[k].access_count
+                )
                 entry = self._storage[lfu_key]
                 self._current_memory -= entry.size
                 del self._storage[lfu_key]
@@ -330,7 +340,9 @@ class MemoryCache(CacheBackend):
             "memory_utilization": (
                 self._current_memory / self.max_memory if self.max_memory > 0 else 0
             ),
-            "size_utilization": (len(self._storage) / self.max_size if self.max_size > 0 else 0),
+            "size_utilization": (
+                len(self._storage) / self.max_size if self.max_size > 0 else 0
+            ),
         }
 
     async def set(self, key: str, value: Any, ttl: Optional[float] = None) -> bool:
@@ -346,7 +358,9 @@ class MemoryCache(CacheBackend):
             asyncio.get_running_loop()
             # We're in an async context, can't use run_until_complete
             # This should not be called from async context
-            raise RuntimeError("set_sync() cannot be called from an async context. Use set() or async_set() instead.")
+            raise RuntimeError(
+                "set_sync() cannot be called from an async context. Use set() or async_set() instead."
+            )
         except RuntimeError:
             # No event loop running, safe to use asyncio.run
             asyncio.run(self.async_set(key, value, ttl))
@@ -369,7 +383,9 @@ class MemoryCache(CacheBackend):
             asyncio.get_running_loop()
             # We're in an async context, can't use run_until_complete
             # This should not be called from async context
-            raise RuntimeError("get_value_sync() cannot be called from an async context. Use get_value() instead.")
+            raise RuntimeError(
+                "get_value_sync() cannot be called from an async context. Use get_value() instead."
+            )
         except RuntimeError:
             # No event loop running, safe to use asyncio.run
             entry = asyncio.run(self.async_get(key))
@@ -430,7 +446,9 @@ class MemoryCache(CacheBackend):
 class DiskCache(CacheBackend):
     """Disk-based cache backend."""
 
-    def __init__(self, cache_dir: str = "/tmp/orchestrator_cache", max_size: int = 10000):
+    def __init__(
+        self, cache_dir: str = "/tmp/orchestrator_cache", max_size: int = 10000
+    ):
         import os
 
         self.cache_dir = cache_dir
@@ -594,7 +612,9 @@ class DiskCache(CacheBackend):
             return
 
         # Find oldest entry
-        oldest_key = min(self._index.keys(), key=lambda k: self._index[k].get("accessed_at", 0))
+        oldest_key = min(
+            self._index.keys(), key=lambda k: self._index[k].get("accessed_at", 0)
+        )
 
         await self.delete(oldest_key)
 
@@ -784,7 +804,9 @@ class DistributedCache(CacheBackend):
         except Exception:
             return []
 
-    async def batch_set(self, keys_values: List[tuple], ttl: Optional[int] = None) -> bool:
+    async def batch_set(
+        self, keys_values: List[tuple], ttl: Optional[int] = None
+    ) -> bool:
         """Set multiple key-value pairs in batch."""
         try:
             success_count = 0
@@ -887,7 +909,11 @@ class RedisCache(DistributedCache):
         # Try to start Redis server
         try:
             # Try different Redis server commands
-            redis_commands = ["redis-server", "redis-server.exe", "/usr/local/bin/redis-server"]
+            redis_commands = [
+                "redis-server",
+                "redis-server.exe",
+                "/usr/local/bin/redis-server",
+            ]
 
             for cmd in redis_commands:
                 try:
@@ -945,10 +971,14 @@ class MultiLevelCache:
 
         # Redis cache (with fallback if Redis not available)
         try:
-            self.redis_cache = RedisCache(config.get("redis_url", "redis://localhost:6379"))
+            self.redis_cache = RedisCache(
+                config.get("redis_url", "redis://localhost:6379")
+            )
         except Exception:
             # Fallback to memory cache if Redis not available
-            self.redis_cache = MemoryCache(max_size=1000, eviction_policy=EvictionPolicy.LRU)
+            self.redis_cache = MemoryCache(
+                max_size=1000, eviction_policy=EvictionPolicy.LRU
+            )
 
         # Cache strategy (placeholder)
         self.cache_strategy = "multi_level"
@@ -1053,7 +1083,9 @@ class MultiLevelCache:
 
         return success
 
-    async def _promote_entry(self, key: str, entry: CacheEntry, current_level: CacheLevel):
+    async def _promote_entry(
+        self, key: str, entry: CacheEntry, current_level: CacheLevel
+    ):
         """Promote entry to higher cache levels."""
         current_index = self.level_order.index(current_level)
 
@@ -1076,7 +1108,9 @@ class MultiLevelCache:
             "total_misses": self.miss_stats,
             "hit_rate": total_hits / total_requests if total_requests > 0 else 0,
             "miss_rate": self.miss_stats / total_requests if total_requests > 0 else 0,
-            "level_hits": {level.name: count for level, count in self.hit_stats.items()},
+            "level_hits": {
+                level.name: count for level, count in self.hit_stats.items()
+            },
             "level_statistics": {},
         }
 
@@ -1248,7 +1282,9 @@ class CacheStrategy:
 
         return optimizations
 
-    def select_warmup_keys(self, available_keys: List[str], max_keys: int = 10) -> List[str]:
+    def select_warmup_keys(
+        self, available_keys: List[str], max_keys: int = 10
+    ) -> List[str]:
         """Select keys for cache warmup."""
         priority_keys = []
 

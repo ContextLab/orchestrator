@@ -92,7 +92,9 @@ class AutoTagSchemaInferer:
         content = context.auto_tag_content.strip()
 
         # Try pattern-based inference first
-        input_schema, output_schema, state = self._pattern_based_inference(content, context)
+        input_schema, output_schema, state = self._pattern_based_inference(
+            content, context
+        )
 
         # If still ambiguous and model available, use AI inference
         if state == SchemaState.AMBIGUOUS and self.model:
@@ -126,7 +128,9 @@ class AutoTagSchemaInferer:
         mentioned_fields = self._extract_mentioned_fields(content)
 
         # Build output schema based on action and fields
-        output_schema = self._build_output_schema(primary_action, mentioned_fields, content)
+        output_schema = self._build_output_schema(
+            primary_action, mentioned_fields, content
+        )
 
         # Infer input schema from predecessors and content
         input_schema = self._build_input_schema(context, content)
@@ -182,7 +186,9 @@ class AutoTagSchemaInferer:
                 return {
                     "type": "object",
                     "properties": properties,
-                    "required": [name for name, _ in fields[:3]],  # First 3 fields required
+                    "required": [
+                        name for name, _ in fields[:3]
+                    ],  # First 3 fields required
                 }
             else:
                 # Generic object
@@ -193,7 +199,10 @@ class AutoTagSchemaInferer:
             if fields:
                 # Array of objects
                 properties = {name: schema for name, schema in fields}
-                return {"type": "array", "items": {"type": "object", "properties": properties}}
+                return {
+                    "type": "array",
+                    "items": {"type": "object", "properties": properties},
+                }
             else:
                 return {"type": "array", "items": {"type": "string"}}
 
@@ -284,7 +293,13 @@ class AutoTagSchemaInferer:
             return True
 
         # Check for conditional language
-        conditional_keywords = ["if", "when", "based on", "depending on", "according to"]
+        conditional_keywords = [
+            "if",
+            "when",
+            "based on",
+            "depending on",
+            "according to",
+        ]
         content_lower = content.lower()
         for keyword in conditional_keywords:
             if keyword in content_lower:

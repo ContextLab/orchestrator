@@ -5,8 +5,6 @@ import asyncio
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
 from orchestrator.integrations.ollama_model import OllamaModel
 
@@ -28,7 +26,11 @@ async def test_auto_resolution():
     # Test cases
     test_cases = [
         # (content, context, expected_type)
-        ("Choose best sources for healthcare AI research", "parameters.sources", "list"),
+        (
+            "Choose best sources for healthcare AI research",
+            "parameters.sources",
+            "list",
+        ),
         ("Determine appropriate search depth", "parameters.depth", "string"),
         ("Select analysis method for research data", "parameters.method", "string"),
         ("Set relevance threshold", "parameters.threshold", "number"),
@@ -133,9 +135,7 @@ async def test_specific_resolutions():
 
     # Direct model test
     print("\n2️⃣ Testing direct model response:")
-    direct_prompt = (
-        "List the best sources for healthcare AI research. Answer with comma-separated values:"
-    )
+    direct_prompt = "List the best sources for healthcare AI research. Answer with comma-separated values:"
     direct_result = await model.generate(direct_prompt, max_tokens=20, temperature=0.1)
     print(f"   Prompt: '{direct_prompt}'")
     print(f"   Response: '{direct_result}'")

@@ -108,7 +108,9 @@ class ModelRegistry:
         except ModelNotFoundError:
             # Try auto-registration if enabled
             if self._auto_registrar and provider:
-                model = await self._auto_registrar.try_register_model(model_name, provider)
+                model = await self._auto_registrar.try_register_model(
+                    model_name, provider
+                )
                 if model:
                     return model
             elif self._auto_registrar and not provider:
@@ -205,12 +207,14 @@ class ModelRegistry:
             NoEligibleModelsError: If no models meet requirements
         """
         print(f">> DEBUG ModelRegistry.select_model called with: {requirements}")
-        
+
         # Step 1: Filter by capabilities
         eligible_models = await self._filter_by_capabilities(requirements)
 
         if not eligible_models:
-            print(f">> DEBUG: No models passed capability filter. Total models: {len(self.models)}")
+            print(
+                f">> DEBUG: No models passed capability filter. Total models: {len(self.models)}"
+            )
             raise NoEligibleModelsError("No models meet the specified requirements")
 
         # Step 2: Filter by health
@@ -226,7 +230,9 @@ class ModelRegistry:
 
         return self.models[selected_key]
 
-    async def _filter_by_capabilities(self, requirements: Dict[str, Any]) -> List[Model]:
+    async def _filter_by_capabilities(
+        self, requirements: Dict[str, Any]
+    ) -> List[Model]:
         """Filter models by capabilities and expertise."""
         eligible = []
 
@@ -259,17 +265,39 @@ class ModelRegistry:
 
             eligible.append(model)
 
+        # Sort eligible models to prefer API models over local models for reliability
+        # This helps avoid timeout issues with HuggingFace models that need downloading
+        def model_priority(model: Model) -> int:
+            """Return priority score (lower is better)."""
+            provider = model.provider.lower()
+            # API models get highest priority
+            if provider in ["openai", "anthropic", "google"]:
+                return 0
+            # Ollama models are local but fast if already installed
+            elif provider == "ollama":
+                return 1
+            # HuggingFace models may need downloading
+            elif provider == "huggingface":
+                return 2
+            # Unknown providers
+            else:
+                return 3
+
+        eligible.sort(key=model_priority)
+
         return eligible
 
     async def _filter_by_health(self, models: List[Model]) -> List[Model]:
         """Filter models by health status."""
         # Check if cache is stale or if any models don't have cached health status
         import time
+
         current_time = time.time()
 
         # Only consider cache stale if we've checked before and enough time has passed
         cache_is_stale = (
-            self._last_health_check > 0 and current_time - self._last_health_check > self._cache_ttl
+            self._last_health_check > 0
+            and current_time - self._last_health_check > self._cache_ttl
         )
 
         # Check if any models are missing from cache

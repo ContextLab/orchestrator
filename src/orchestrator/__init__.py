@@ -144,6 +144,13 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 )
 
             elif provider == "huggingface":
+                # Skip HuggingFace models if disabled via environment variable
+                if (
+                    os.environ.get("ORCHESTRATOR_SKIP_HUGGINGFACE", "").lower()
+                    == "true"
+                ):
+                    continue
+
                 # Check if transformers is available
                 try:
                     import importlib.util
@@ -177,7 +184,9 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)")
+                print(
+                    f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)"
+                )
 
             elif provider == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
                 # Only register if API key is available
@@ -186,7 +195,9 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)")
+                print(
+                    f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)"
+                )
 
             elif provider == "google" and (
                 os.environ.get("GOOGLE_AI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
@@ -197,7 +208,9 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
                 _model_registry.register_model(model)
-                print(f">>   ✅ Registered Google model: {name} ({size_billions}B params)")
+                print(
+                    f">>   ✅ Registered Google model: {name} ({size_billions}B params)"
+                )
 
         except Exception as e:
             print(f">>   ⚠️  Error registering {provider} model {name}: {e}")
@@ -222,7 +235,9 @@ def init_models(config_path: str = None) -> ModelRegistry:
 class OrchestratorPipeline:
     """Wrapper for compiled pipeline that can be called with keyword arguments."""
 
-    def __init__(self, pipeline: Pipeline, compiler: YAMLCompiler, orchestrator: Orchestrator):
+    def __init__(
+        self, pipeline: Pipeline, compiler: YAMLCompiler, orchestrator: Orchestrator
+    ):
         self.pipeline = pipeline
         self.compiler = compiler
         self.orchestrator = orchestrator
@@ -301,7 +316,9 @@ class OrchestratorPipeline:
         context = {"inputs": kwargs, "outputs": outputs}
 
         # Apply runtime template resolution to pipeline tasks
-        resolved_pipeline = await self._resolve_runtime_templates(self.pipeline, context)
+        resolved_pipeline = await self._resolve_runtime_templates(
+            self.pipeline, context
+        )
 
         # Execute pipeline
         # Set the resolved pipeline's context
@@ -338,20 +355,24 @@ class OrchestratorPipeline:
                     if value.startswith("<AUTO>") and value.endswith("</AUTO>"):
                         # Resolve AUTO tag
                         auto_content = value[6:-7]  # Remove <AUTO> tags
-                        if hasattr(self.orchestrator.yaml_compiler, "ambiguity_resolver"):
-                            resolved = (
-                                await self.orchestrator.yaml_compiler.ambiguity_resolver.resolve(
-                                    auto_content, f"outputs.{name}"
-                                )
+                        if hasattr(
+                            self.orchestrator.yaml_compiler, "ambiguity_resolver"
+                        ):
+                            resolved = await self.orchestrator.yaml_compiler.ambiguity_resolver.resolve(
+                                auto_content, f"outputs.{name}"
                             )
                             outputs[name] = resolved
                         else:
-                            outputs[name] = f"report_{inputs.get('topic', 'research')}.pdf"
+                            outputs[name] = (
+                                f"report_{inputs.get('topic', 'research')}.pdf"
+                            )
                     else:
                         # Regular template - render with current context
                         try:
                             template = Template(value)
-                            outputs[name] = template.render(inputs=inputs, outputs=outputs)
+                            outputs[name] = template.render(
+                                inputs=inputs, outputs=outputs
+                            )
                         except Exception:
                             outputs[name] = value
                 else:
@@ -377,7 +398,9 @@ class OrchestratorPipeline:
         # Resolve templates in each task
         for task_id, task in resolved_pipeline.tasks.items():
             if hasattr(task, "parameters"):
-                task.parameters = await self._resolve_task_templates(task.parameters, context)
+                task.parameters = await self._resolve_task_templates(
+                    task.parameters, context
+                )
 
         return resolved_pipeline
 
@@ -395,7 +418,10 @@ class OrchestratorPipeline:
                     return obj
             return obj
         elif isinstance(obj, dict):
-            return {k: await self._resolve_task_templates(v, context) for k, v in obj.items()}
+            return {
+                k: await self._resolve_task_templates(v, context)
+                for k, v in obj.items()
+            }
         elif isinstance(obj, list):
             return [await self._resolve_task_templates(item, context) for item in obj]
         else:
@@ -404,7 +430,7 @@ class OrchestratorPipeline:
 
 async def compile_async(yaml_path: str) -> "OrchestratorPipeline":
     """Compile a YAML pipeline file into an executable OrchestratorPipeline (async version)."""
-    global _orchestrator, _model_registry
+    global _orchestrator
 
     # Ensure models are initialized
     if _model_registry is None:
@@ -420,7 +446,9 @@ async def compile_async(yaml_path: str) -> "OrchestratorPipeline":
         )
 
     control_system = HybridControlSystem(_model_registry)
-    _orchestrator = Orchestrator(model_registry=_model_registry, control_system=control_system)
+    _orchestrator = Orchestrator(
+        model_registry=_model_registry, control_system=control_system
+    )
 
     # Set up model for ambiguity resolution
     model_keys = _model_registry.list_models() if _model_registry else []

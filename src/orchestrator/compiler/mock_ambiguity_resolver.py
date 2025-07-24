@@ -25,7 +25,10 @@ class MockAmbiguityResolver:
         content_lower = content.lower()
 
         # Boolean resolutions
-        if any(word in content_lower for word in ["should", "do we", "is", "are", "true", "false"]):
+        if any(
+            word in content_lower
+            for word in ["should", "do we", "is", "are", "true", "false"]
+        ):
             if "not" in content_lower or "false" in content_lower:
                 return False
             return True

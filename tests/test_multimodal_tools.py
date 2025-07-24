@@ -116,7 +116,10 @@ async def test_image_analysis_describe(test_image, setup_test_model):
 
     # Directly iterate through the models dictionary
     for model_key, model in registry.models.items():
-        if hasattr(model, "capabilities") and "vision" in model.capabilities.supported_tasks:
+        if (
+            hasattr(model, "capabilities")
+            and "vision" in model.capabilities.supported_tasks
+        ):
             vision_models.append(model)
 
     if not vision_models:
@@ -150,13 +153,18 @@ async def test_image_generation_placeholder():
 
     # Test will use placeholder since no image generation model
     result = await tool.execute(
-        prompt="A beautiful sunset", size="256x256", num_images=2, output_format="base64"
+        prompt="A beautiful sunset",
+        size="256x256",
+        num_images=2,
+        output_format="base64",
     )
 
     assert result["success"] is True
     assert len(result["images"]) == 2
     assert all(img["format"] == "base64" for img in result["images"])
-    assert all(img["data"].startswith("data:image/png;base64,") for img in result["images"])
+    assert all(
+        img["data"].startswith("data:image/png;base64,") for img in result["images"]
+    )
 
 
 @pytest.mark.asyncio
@@ -166,7 +174,10 @@ async def test_image_generation_file_output():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         result = await tool.execute(
-            prompt="A mountain landscape", size="512x512", output_format="file", output_path=tmpdir
+            prompt="A mountain landscape",
+            size="512x512",
+            output_format="file",
+            output_path=tmpdir,
         )
 
         assert result["success"] is True
@@ -203,7 +214,9 @@ async def test_audio_transcribe(test_audio):
     """Test audio transcription."""
     tool = AudioProcessingTool()
 
-    result = await tool.execute(audio=test_audio["path"], operation="transcribe", language="en")
+    result = await tool.execute(
+        audio=test_audio["path"], operation="transcribe", language="en"
+    )
 
     assert result["success"] is True
     assert "transcription" in result
@@ -263,7 +276,9 @@ async def test_video_summarize():
     """Test video summarization."""
     tool = VideoProcessingTool()
 
-    result = await tool.execute(video="http://example.com/video.mp4", operation="summarize")
+    result = await tool.execute(
+        video="http://example.com/video.mp4", operation="summarize"
+    )
 
     assert result["success"] is True
     assert "summary" in result

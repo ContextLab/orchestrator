@@ -82,7 +82,9 @@ class TemplateRenderer:
         text = re.sub(for_pattern, replace_for, text, flags=re.DOTALL)
 
         # Handle {% if %} conditions
-        if_pattern = r"\{%\s*if\s+([^%]+)\s*%\}(.*?)(?:\{%\s*else\s*%\}(.*?))?\{%\s*endif\s*%\}"
+        if_pattern = (
+            r"\{%\s*if\s+([^%]+)\s*%\}(.*?)(?:\{%\s*else\s*%\}(.*?))?\{%\s*endif\s*%\}"
+        )
 
         def replace_if(match) -> str:
             condition_expr = match.group(1).strip()
@@ -141,7 +143,9 @@ class TemplateRenderer:
             return str(value).upper()
         elif filter_expr.startswith("replace("):
             # Handle replace filter with arguments
-            match = re.match(r'replace\(["\']([^"\']*)["\'],\s*["\']([^"\']*)["\']', filter_expr)
+            match = re.match(
+                r'replace\(["\']([^"\']*)["\'],\s*["\']([^"\']*)["\']', filter_expr
+            )
             if match:
                 old_str = match.group(1)
                 new_str = match.group(2)

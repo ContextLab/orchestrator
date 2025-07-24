@@ -6,7 +6,9 @@ This test creates a minimal pipeline to verify the integration works correctly.
 import pytest
 
 from orchestrator import Orchestrator, Task, Pipeline, init_models
-from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
+from orchestrator.control_systems.model_based_control_system import (
+    ModelBasedControlSystem,
+)
 from orchestrator.utils.api_keys import load_api_keys
 
 
@@ -26,6 +28,12 @@ def setup_environment():
 @pytest.fixture(scope="module")
 def orchestrator(setup_environment):
     """Create orchestrator with real models."""
+    # Set environment variable to skip HuggingFace models for integration tests
+    # This avoids timeouts from downloading large models
+    import os
+
+    os.environ["ORCHESTRATOR_SKIP_HUGGINGFACE"] = "true"
+
     try:
         model_registry = init_models()
     except Exception as e:
@@ -43,6 +51,7 @@ def orchestrator(setup_environment):
         pytest.skip("No API models available")
 
     print(f"\nUsing {len(api_models)} API models for testing")
+    print(f"Total models available: {len(available_models)}")
 
     control_system = ModelBasedControlSystem(model_registry=model_registry)
     # Pass the model registry to the orchestrator
@@ -60,7 +69,10 @@ class TestSimplePipelineIntegration:
             id="simple_generation",
             name="Simple Text Generation",
             action="generate",
-            parameters={"prompt": "Write a haiku about testing software", "max_tokens": 50},
+            parameters={
+                "prompt": "Write a haiku about testing software",
+                "max_tokens": 50,
+            },
         )
 
         # Create pipeline
@@ -171,8 +183,12 @@ class TestSimplePipelineIntegration:
         # Check we got a meaningful error
         error_msg = str(exc_info.value).lower()
         # The error might be wrapped, so check for task failure or parameter error
-        assert ("prompt" in error_msg or "parameter" in error_msg or "required" in error_msg or 
-                "task 'invalid_task' failed" in error_msg)
+        assert (
+            "prompt" in error_msg
+            or "parameter" in error_msg
+            or "required" in error_msg
+            or "task 'invalid_task' failed" in error_msg
+        )
 
 
 if __name__ == "__main__":

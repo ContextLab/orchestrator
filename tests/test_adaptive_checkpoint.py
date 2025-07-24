@@ -119,11 +119,17 @@ class TestTimeBasedStrategy:
 
         # Recent checkpoint - should not checkpoint
         metrics = CheckpointMetrics(last_checkpoint_time=time.time())
-        assert strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED) is False
+        assert (
+            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED)
+            is False
+        )
 
         # Old checkpoint - should checkpoint
         metrics = CheckpointMetrics(last_checkpoint_time=time.time() - 120.0)
-        assert strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED) is True
+        assert (
+            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED)
+            is True
+        )
 
     def test_should_checkpoint_error_trigger(self):
         """Test checkpointing with error trigger."""
@@ -133,7 +139,10 @@ class TestTimeBasedStrategy:
 
         # Error detection should always trigger checkpoint
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.ERROR_DETECTION) is True
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.ERROR_DETECTION
+            )
+            is True
         )
 
     def test_should_checkpoint_other_triggers(self):
@@ -144,12 +153,21 @@ class TestTimeBasedStrategy:
 
         # Other triggers should not trigger in time-based strategy
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TASK_COMPLETION) is False
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.TASK_COMPLETION
+            )
+            is False
         )
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.RESOURCE_USAGE) is False
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.RESOURCE_USAGE
+            )
+            is False
         )
-        assert strategy.should_checkpoint(metrics, config, CheckpointTrigger.MANUAL) is False
+        assert (
+            strategy.should_checkpoint(metrics, config, CheckpointTrigger.MANUAL)
+            is False
+        )
 
     def test_get_next_checkpoint_time(self):
         """Test getting next checkpoint time."""
@@ -180,7 +198,10 @@ class TestAdaptiveStrategy:
 
         # Error detection should always trigger
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.ERROR_DETECTION) is True
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.ERROR_DETECTION
+            )
+            is True
         )
 
     def test_should_checkpoint_manual_trigger(self):
@@ -190,7 +211,10 @@ class TestAdaptiveStrategy:
         metrics = CheckpointMetrics()
 
         # Manual trigger should always trigger
-        assert strategy.should_checkpoint(metrics, config, CheckpointTrigger.MANUAL) is True
+        assert (
+            strategy.should_checkpoint(metrics, config, CheckpointTrigger.MANUAL)
+            is True
+        )
 
     def test_should_checkpoint_too_frequent(self):
         """Test prevention of too frequent checkpoints."""
@@ -199,16 +223,24 @@ class TestAdaptiveStrategy:
         metrics = CheckpointMetrics(last_checkpoint_time=time.time())
 
         # Should not checkpoint if too recent
-        assert strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED) is False
+        assert (
+            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED)
+            is False
+        )
 
     def test_should_checkpoint_high_error_rate(self):
         """Test checkpointing with high error rate."""
         strategy = AdaptiveStrategy()
         config = CheckpointConfig(min_interval=60.0, error_rate_threshold=0.1)
-        metrics = CheckpointMetrics(last_checkpoint_time=time.time() - 70.0, error_rate=0.15)
+        metrics = CheckpointMetrics(
+            last_checkpoint_time=time.time() - 70.0, error_rate=0.15
+        )
 
         # High error rate should trigger more frequent checkpoints
-        assert strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED) is True
+        assert (
+            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED)
+            is True
+        )
 
     def test_should_checkpoint_high_resource_usage(self):
         """Test checkpointing with high resource usage."""
@@ -219,11 +251,19 @@ class TestAdaptiveStrategy:
         metrics = CheckpointMetrics(
             last_checkpoint_time=time.time() - 61.0, memory_usage=0.85  # 61 seconds ago
         )
-        assert strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED) is True
+        assert (
+            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED)
+            is True
+        )
 
         # High CPU usage
-        metrics = CheckpointMetrics(last_checkpoint_time=time.time() - 61.0, cpu_usage=0.95)
-        assert strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED) is True
+        metrics = CheckpointMetrics(
+            last_checkpoint_time=time.time() - 61.0, cpu_usage=0.95
+        )
+        assert (
+            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TIME_BASED)
+            is True
+        )
 
     def test_should_checkpoint_task_completion(self):
         """Test checkpointing on task completion."""
@@ -238,14 +278,20 @@ class TestAdaptiveStrategy:
             completed_tasks=9, error_rate=0.05, last_checkpoint_time=old_time
         )
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TASK_COMPLETION) is True
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.TASK_COMPLETION
+            )
+            is True
         )
 
         metrics = CheckpointMetrics(
             completed_tasks=10, error_rate=0.05, last_checkpoint_time=old_time
         )
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TASK_COMPLETION) is False
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.TASK_COMPLETION
+            )
+            is False
         )
 
         # High error rate - checkpoint every 5 tasks
@@ -253,7 +299,10 @@ class TestAdaptiveStrategy:
             completed_tasks=5, error_rate=0.2, last_checkpoint_time=old_time
         )
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.TASK_COMPLETION) is True
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.TASK_COMPLETION
+            )
+            is True
         )
 
     def test_should_checkpoint_pipeline_milestones(self):
@@ -264,35 +313,45 @@ class TestAdaptiveStrategy:
         # Test 25% milestone
         metrics = CheckpointMetrics(progress_percentage=0.26)
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.PIPELINE_MILESTONE)
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.PIPELINE_MILESTONE
+            )
             is True
         )
 
         # Test 50% milestone
         metrics = CheckpointMetrics(progress_percentage=0.51)
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.PIPELINE_MILESTONE)
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.PIPELINE_MILESTONE
+            )
             is True
         )
 
         # Test 75% milestone
         metrics = CheckpointMetrics(progress_percentage=0.76)
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.PIPELINE_MILESTONE)
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.PIPELINE_MILESTONE
+            )
             is True
         )
 
         # Test 90% milestone
         metrics = CheckpointMetrics(progress_percentage=0.91)
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.PIPELINE_MILESTONE)
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.PIPELINE_MILESTONE
+            )
             is True
         )
 
         # Test non-milestone
         metrics = CheckpointMetrics(progress_percentage=0.35)
         assert (
-            strategy.should_checkpoint(metrics, config, CheckpointTrigger.PIPELINE_MILESTONE)
+            strategy.should_checkpoint(
+                metrics, config, CheckpointTrigger.PIPELINE_MILESTONE
+            )
             is False
         )
 

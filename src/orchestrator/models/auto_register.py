@@ -22,7 +22,9 @@ class AutoModelRegistrar:
         self.config_loader = get_model_config_loader()
         self._pending_models = {}  # Track models being tested
 
-    async def try_register_model(self, model_name: str, provider: str) -> Optional[Model]:
+    async def try_register_model(
+        self, model_name: str, provider: str
+    ) -> Optional[Model]:
         """Try to register a new model that's not in models.yaml.
 
         Args:
@@ -76,7 +78,9 @@ class AutoModelRegistrar:
             # Remove from pending
             self._pending_models.pop(model_key, None)
 
-    async def _create_model_instance(self, model_name: str, provider: str) -> Optional[Model]:
+    async def _create_model_instance(
+        self, model_name: str, provider: str
+    ) -> Optional[Model]:
         """Create a model instance for the given provider.
 
         Args:
@@ -109,7 +113,9 @@ class AutoModelRegistrar:
                 import os
 
                 if not os.environ.get("OPENAI_API_KEY"):
-                    logger.warning("OpenAI API key not set, cannot auto-register OpenAI models")
+                    logger.warning(
+                        "OpenAI API key not set, cannot auto-register OpenAI models"
+                    )
                     return None
                 from ..integrations.openai_model import OpenAIModel
 
@@ -137,7 +143,9 @@ class AutoModelRegistrar:
                 import os
 
                 if not os.environ.get("GOOGLE_API_KEY"):
-                    logger.warning("Google API key not set, cannot auto-register Google models")
+                    logger.warning(
+                        "Google API key not set, cannot auto-register Google models"
+                    )
                     return None
                 from ..integrations.google_model import GoogleModel
 
@@ -151,7 +159,9 @@ class AutoModelRegistrar:
                 return None
 
         except Exception as e:
-            logger.error(f"Error creating model instance for {provider}:{model_name}: {e}")
+            logger.error(
+                f"Error creating model instance for {provider}:{model_name}: {e}"
+            )
             return None
 
     async def _test_model(self, model: Model) -> bool:
@@ -186,14 +196,18 @@ class AutoModelRegistrar:
                     logger.debug(f"Test failed with prompt '{prompt[:30]}...': {e}")
                     continue
 
-            logger.warning("Model test failed: no successful responses from any test prompt")
+            logger.warning(
+                "Model test failed: no successful responses from any test prompt"
+            )
             return False
 
         except Exception as e:
             logger.error(f"Model test failed with error: {e}")
             return False
 
-    async def _add_to_config(self, model_name: str, provider: str, model: Model) -> None:
+    async def _add_to_config(
+        self, model_name: str, provider: str, model: Model
+    ) -> None:
         """Add successfully registered model to models.yaml.
 
         Args:
@@ -252,7 +266,13 @@ def get_provider_from_model_name(model_name: str) -> Optional[str]:
     elif "/" in model_name and not model_name.startswith("models/"):
         # Likely a HuggingFace model (org/model format)
         return "huggingface"
-    elif ":" in model_name or model_name in ["llama3.1", "llama3.2", "mistral", "gemma", "qwen"]:
+    elif ":" in model_name or model_name in [
+        "llama3.1",
+        "llama3.2",
+        "mistral",
+        "gemma",
+        "qwen",
+    ]:
         # Likely an Ollama model
         return "ollama"
     else:

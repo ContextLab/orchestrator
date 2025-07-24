@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """Test intelligent model routing with real models."""
 
-import asyncio
 import os
 import pytest
 import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
@@ -23,7 +20,9 @@ async def setup_test_registry() -> ModelRegistry:
     # Register local models (Ollama) - free models
     try:
         # Small fast model
-        llama_small = OllamaModel(model_name="llama3.2:1b", base_url="http://localhost:11434")
+        llama_small = OllamaModel(
+            model_name="llama3.2:1b", base_url="http://localhost:11434"
+        )
         llama_small.capabilities.domains = ["general"]
         llama_small.capabilities.speed_rating = "fast"
         llama_small.capabilities.accuracy_score = 0.75
@@ -36,7 +35,9 @@ async def setup_test_registry() -> ModelRegistry:
 
     try:
         # Medium general model
-        llama_medium = OllamaModel(model_name="llama3.1:8b", base_url="http://localhost:11434")
+        llama_medium = OllamaModel(
+            model_name="llama3.1:8b", base_url="http://localhost:11434"
+        )
         llama_medium.capabilities.domains = ["general", "technical"]
         llama_medium.capabilities.speed_rating = "medium"
         llama_medium.capabilities.accuracy_score = 0.85
@@ -106,7 +107,9 @@ async def test_basic_selection(registry: ModelRegistry):
 
     # Test 2: Select a free model
     print("\n2. Selecting a free model:")
-    criteria = ModelSelectionCriteria(prefer_free_models=True, selection_strategy="cost_optimized")
+    criteria = ModelSelectionCriteria(
+        prefer_free_models=True, selection_strategy="cost_optimized"
+    )
 
     try:
         model = await selector.select_model(criteria)
@@ -199,7 +202,9 @@ async def test_real_generation(registry: ModelRegistry):
 
     # Select a fast free model for testing
     criteria = ModelSelectionCriteria(
-        prefer_free_models=True, speed_preference="fast", selection_strategy="cost_optimized"
+        prefer_free_models=True,
+        speed_preference="fast",
+        selection_strategy="cost_optimized",
     )
 
     try:

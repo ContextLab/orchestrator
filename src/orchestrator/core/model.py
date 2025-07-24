@@ -21,7 +21,9 @@ class ModelCapabilities:
     temperature_range: tuple[float, float] = (0.0, 2.0)
 
     # Enhanced capabilities for intelligent routing
-    domains: List[str] = field(default_factory=list)  # e.g., ["medical", "legal", "creative"]
+    domains: List[str] = field(
+        default_factory=list
+    )  # e.g., ["medical", "legal", "creative"]
     vision_capable: bool = False
     audio_capable: bool = False
     code_specialized: bool = False
@@ -285,7 +287,7 @@ class Model(ABC):
             Structured output matching schema
         """
         pass
-    
+
     async def generate_multimodal(
         self,
         messages: List[Dict[str, Any]],
@@ -295,7 +297,7 @@ class Model(ABC):
     ) -> str:
         """
         Generate text from multimodal input (text, images, etc.).
-        
+
         Default implementation converts to generate() call.
         Models with native multimodal support should override this.
 
@@ -317,7 +319,7 @@ class Model(ABC):
                 for block in msg["content"]:
                     if block.get("type") == "text":
                         text_parts.append(block.get("text", ""))
-        
+
         prompt = "\n".join(text_parts)
         return await self.generate(prompt, temperature, max_tokens, **kwargs)
 
@@ -370,7 +372,9 @@ class Model(ABC):
         # Check context window
         if "context_window" in requirements:
             if self.capabilities.context_window < requirements["context_window"]:
-                print(f">> DEBUG: Model {self.name} failed context_window check: {self.capabilities.context_window} < {requirements['context_window']}")
+                print(
+                    f">> DEBUG: Model {self.name} failed context_window check: {self.capabilities.context_window} < {requirements['context_window']}"
+                )
                 return False
 
         # Check function calling
@@ -387,7 +391,9 @@ class Model(ABC):
         if "tasks" in requirements:
             required_tasks = requirements["tasks"]
             if not all(self.can_handle_task(task) for task in required_tasks):
-                print(f">> DEBUG: Model {self.name} failed task check. Required: {required_tasks}, Supported: {self.capabilities.supported_tasks}")
+                print(
+                    f">> DEBUG: Model {self.name} failed task check. Required: {required_tasks}, Supported: {self.capabilities.supported_tasks}"
+                )
                 return False
 
         # Check supported languages

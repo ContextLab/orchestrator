@@ -116,7 +116,9 @@ class DynamicFlowHandler:
 
         return all_deps
 
-    def apply_flow_jumps(self, execution_order: List[str], completed_tasks: Set[str]) -> List[str]:
+    def apply_flow_jumps(
+        self, execution_order: List[str], completed_tasks: Set[str]
+    ) -> List[str]:
         """Apply flow jumps to modify execution order.
 
         Args:
@@ -184,7 +186,10 @@ class DynamicFlowHandler:
         return graph
 
     async def process_step_flow_control(
-        self, step_def: Dict[str, Any], context: Dict[str, Any], step_results: Dict[str, Any]
+        self,
+        step_def: Dict[str, Any],
+        context: Dict[str, Any],
+        step_results: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Process flow control directives in step definition.
 

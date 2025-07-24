@@ -29,7 +29,7 @@ inputs:
 steps:
   - id: process
     action: <AUTO>process the message {{message}} and return a summary</AUTO>
-    
+
   - id: format
     action: <AUTO>format the processed result as a nice output</AUTO>
     depends_on: [process]
@@ -155,7 +155,8 @@ class TestPipelineSpec:
         # Non-existent dependency
         with pytest.raises(ValueError, match="depends on non-existent step"):
             PipelineSpec(
-                name="Test", steps=[TaskSpec(id="step1", action="action1", depends_on=["missing"])]
+                name="Test",
+                steps=[TaskSpec(id="step1", action="action1", depends_on=["missing"])],
             )
 
     def test_input_validation(self):

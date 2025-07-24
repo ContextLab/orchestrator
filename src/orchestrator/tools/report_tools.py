@@ -28,7 +28,9 @@ class ReportGeneratorTool(Tool):
         self.add_parameter("search_results", "object", "Search results data")
         self.add_parameter("extraction_results", "object", "Content extraction data")
         self.add_parameter("findings", "array", "Key findings", required=False)
-        self.add_parameter("recommendations", "array", "Recommendations", required=False)
+        self.add_parameter(
+            "recommendations", "array", "Recommendations", required=False
+        )
         self.add_parameter("quality_score", "number", "Quality score", required=False)
 
     async def execute(self, **kwargs) -> Dict[str, Any]:
@@ -62,7 +64,9 @@ class ReportGeneratorTool(Tool):
         report_lines.extend(["---", "", "## Executive Summary", ""])
 
         # Generate content-based executive summary
-        executive_summary = self._generate_executive_summary(query, search_results, findings)
+        executive_summary = self._generate_executive_summary(
+            query, search_results, findings
+        )
         report_lines.extend([executive_summary, ""])
 
         # Add key findings if available
@@ -198,7 +202,11 @@ class ReportGeneratorTool(Tool):
             if "best practices" in query.lower():
                 summary_parts.append("Key best practices identified include:")
                 summary_parts.extend(content_insights[:3])
-            elif "latest" in query.lower() or "recent" in query.lower() or "2024" in query:
+            elif (
+                "latest" in query.lower()
+                or "recent" in query.lower()
+                or "2024" in query
+            ):
                 summary_parts.append("Recent developments reveal:")
                 summary_parts.extend(content_insights[:3])
             elif "technologies" in query.lower():
@@ -213,23 +221,42 @@ class ReportGeneratorTool(Tool):
                 summary_parts.append(
                     f"This analysis examines best practices for {query.lower().replace('best practices for ', '')}."
                 )
-            elif "latest" in query.lower() or "recent" in query.lower() or "2024" in query:
+            elif (
+                "latest" in query.lower()
+                or "recent" in query.lower()
+                or "2024" in query
+            ):
                 summary_parts.append(
                     f"This research explores recent developments in {query.lower().replace('latest developments in ', '').replace(' 2024', '')}."
                 )
             else:
-                summary_parts.append(f"This research provides insights into {query.lower()}.")
+                summary_parts.append(
+                    f"This research provides insights into {query.lower()}."
+                )
 
         # Add conceptual themes if meaningful ones were found
         meaningful_concepts = [
             c
             for c in key_concepts
             if len(c) > 3
-            and c not in {"with", "from", "that", "this", "they", "your", "code", "data", "using"}
+            and c
+            not in {
+                "with",
+                "from",
+                "that",
+                "this",
+                "they",
+                "your",
+                "code",
+                "data",
+                "using",
+            }
         ]
         if len(meaningful_concepts) >= 2:
             concept_list = list(meaningful_concepts)[:4]
-            summary_parts.append(f"Key areas covered include {', '.join(concept_list)}.")
+            summary_parts.append(
+                f"Key areas covered include {', '.join(concept_list)}."
+            )
 
         return " ".join(summary_parts)
 
@@ -314,7 +341,8 @@ class ReportGeneratorTool(Tool):
                 clean_word = word.strip(".,()[]{}").lower()
                 if (
                     len(clean_word) > 4
-                    and clean_word not in {"which", "where", "there", "their", "these", "those"}
+                    and clean_word
+                    not in {"which", "where", "there", "their", "these", "those"}
                     and not clean_word.isdigit()
                 ):
                     key_concepts.add(clean_word)
@@ -325,7 +353,8 @@ class PDFCompilerTool(Tool):
 
     def __init__(self):
         super().__init__(
-            name="pdf-compiler", description="Compile markdown reports to PDF using pandoc"
+            name="pdf-compiler",
+            description="Compile markdown reports to PDF using pandoc",
         )
         self.add_parameter("markdown_content", "string", "Markdown content to compile")
         self.add_parameter("output_path", "string", "Output PDF file path")
@@ -367,7 +396,9 @@ class PDFCompilerTool(Tool):
         processed_markdown = self._fix_list_formatting(markdown_content)
 
         # Create temporary markdown file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as temp_md:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False
+        ) as temp_md:
             temp_md.write(processed_markdown)
             temp_md_path = temp_md.name
 
@@ -423,7 +454,10 @@ class PDFCompilerTool(Tool):
                         "message": f"PDF generated successfully (using pdflatex): {output_path}",
                     }
                 else:
-                    return {"success": False, "error": f"Pandoc failed: {result.stderr}"}
+                    return {
+                        "success": False,
+                        "error": f"Pandoc failed: {result.stderr}",
+                    }
 
         except Exception as e:
             return {"success": False, "error": f"PDF compilation failed: {str(e)}"}
@@ -453,16 +487,24 @@ class PDFCompilerTool(Tool):
                         ["brew", "install", "pandoc"], capture_output=True, text=True
                     )
                     if result.returncode == 0:
-                        return {"success": True, "message": "Pandoc installed via Homebrew"}
+                        return {
+                            "success": True,
+                            "message": "Pandoc installed via Homebrew",
+                        }
 
                 # Try MacPorts
                 if self._command_exists("port"):
                     logger.info("Installing pandoc via MacPorts...")
                     result = subprocess.run(
-                        ["sudo", "port", "install", "pandoc"], capture_output=True, text=True
+                        ["sudo", "port", "install", "pandoc"],
+                        capture_output=True,
+                        text=True,
                     )
                     if result.returncode == 0:
-                        return {"success": True, "message": "Pandoc installed via MacPorts"}
+                        return {
+                            "success": True,
+                            "message": "Pandoc installed via MacPorts",
+                        }
 
                 # Download installer
                 return await self._download_and_install_pandoc("macos")
@@ -471,14 +513,19 @@ class PDFCompilerTool(Tool):
                 # Try apt-get (Debian/Ubuntu)
                 if self._command_exists("apt-get"):
                     logger.info("Installing pandoc via apt-get...")
-                    result = subprocess.run(["sudo", "apt-get", "update"], capture_output=True)
+                    result = subprocess.run(
+                        ["sudo", "apt-get", "update"], capture_output=True
+                    )
                     result = subprocess.run(
                         ["sudo", "apt-get", "install", "-y", "pandoc", "texlive-xetex"],
                         capture_output=True,
                         text=True,
                     )
                     if result.returncode == 0:
-                        return {"success": True, "message": "Pandoc installed via apt-get"}
+                        return {
+                            "success": True,
+                            "message": "Pandoc installed via apt-get",
+                        }
 
                 # Try yum (RHEL/CentOS/Fedora)
                 if self._command_exists("yum"):
@@ -510,10 +557,15 @@ class PDFCompilerTool(Tool):
                 if self._command_exists("choco"):
                     logger.info("Installing pandoc via Chocolatey...")
                     result = subprocess.run(
-                        ["choco", "install", "pandoc", "-y"], capture_output=True, text=True
+                        ["choco", "install", "pandoc", "-y"],
+                        capture_output=True,
+                        text=True,
                     )
                     if result.returncode == 0:
-                        return {"success": True, "message": "Pandoc installed via Chocolatey"}
+                        return {
+                            "success": True,
+                            "message": "Pandoc installed via Chocolatey",
+                        }
 
                 # Try scoop
                 if self._command_exists("scoop"):
@@ -522,13 +574,19 @@ class PDFCompilerTool(Tool):
                         ["scoop", "install", "pandoc"], capture_output=True, text=True
                     )
                     if result.returncode == 0:
-                        return {"success": True, "message": "Pandoc installed via Scoop"}
+                        return {
+                            "success": True,
+                            "message": "Pandoc installed via Scoop",
+                        }
 
                 # Download installer
                 return await self._download_and_install_pandoc("windows")
 
             else:
-                return {"success": False, "error": f"Unsupported operating system: {system}"}
+                return {
+                    "success": False,
+                    "error": f"Unsupported operating system: {system}",
+                }
 
         except Exception as e:
             return {"success": False, "error": f"Failed to install pandoc: {str(e)}"}
@@ -541,7 +599,7 @@ class PDFCompilerTool(Tool):
                 capture_output=True,
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     async def _download_and_install_pandoc(self, os_type: str) -> Dict[str, Any]:
@@ -576,7 +634,10 @@ class PDFCompilerTool(Tool):
                     break
 
             if not download_url:
-                return {"success": False, "error": f"Could not find download URL for {asset_name}"}
+                return {
+                    "success": False,
+                    "error": f"Could not find download URL for {asset_name}",
+                }
 
             # Download the file
             logger.info(f"Downloading pandoc from {download_url}...")
@@ -590,35 +651,50 @@ class PDFCompilerTool(Tool):
             # Install based on OS
             if os_type == "macos":
                 result = subprocess.run(
-                    ["sudo", "installer", "-pkg", tmp_path, "-target", "/"], capture_output=True
+                    ["sudo", "installer", "-pkg", tmp_path, "-target", "/"],
+                    capture_output=True,
                 )
             elif os_type == "linux":
                 # Extract and install
                 extract_dir = tempfile.mkdtemp()
-                subprocess.run(["tar", "-xzf", tmp_path, "-C", extract_dir], capture_output=True)
+                subprocess.run(
+                    ["tar", "-xzf", tmp_path, "-C", extract_dir], capture_output=True
+                )
                 # Find pandoc binary
-                pandoc_binary = Path(extract_dir) / f"pandoc-{version}" / "bin" / "pandoc"
+                pandoc_binary = (
+                    Path(extract_dir) / f"pandoc-{version}" / "bin" / "pandoc"
+                )
                 if pandoc_binary.exists():
                     subprocess.run(
-                        ["sudo", "cp", str(pandoc_binary), "/usr/local/bin/"], capture_output=True
+                        ["sudo", "cp", str(pandoc_binary), "/usr/local/bin/"],
+                        capture_output=True,
                     )
                     subprocess.run(
-                        ["sudo", "chmod", "+x", "/usr/local/bin/pandoc"], capture_output=True
+                        ["sudo", "chmod", "+x", "/usr/local/bin/pandoc"],
+                        capture_output=True,
                     )
                 result = subprocess.CompletedProcess([], 0)  # Assume success
             elif os_type == "windows":
-                result = subprocess.run(["msiexec", "/i", tmp_path, "/quiet"], capture_output=True)
+                result = subprocess.run(
+                    ["msiexec", "/i", tmp_path, "/quiet"], capture_output=True
+                )
 
             # Clean up
             os.unlink(tmp_path)
 
             if result.returncode == 0:
-                return {"success": True, "message": f"Pandoc {version} installed successfully"}
+                return {
+                    "success": True,
+                    "message": f"Pandoc {version} installed successfully",
+                }
             else:
                 return {"success": False, "error": "Failed to install pandoc"}
 
         except Exception as e:
-            return {"success": False, "error": f"Failed to download/install pandoc: {str(e)}"}
+            return {
+                "success": False,
+                "error": f"Failed to download/install pandoc: {str(e)}",
+            }
 
     def _fix_list_formatting(self, markdown_content: str) -> str:
         """Fix list formatting by ensuring empty lines before lists for proper pandoc rendering."""
@@ -631,7 +707,9 @@ class PDFCompilerTool(Tool):
                 line.strip().startswith("- ")  # Bulleted list
                 or line.strip().startswith("* ")  # Alternative bullet
                 or line.strip().startswith("+ ")  # Alternative bullet
-                or (line.strip() and line.strip()[0].isdigit() and ". " in line)  # Numbered list
+                or (
+                    line.strip() and line.strip()[0].isdigit() and ". " in line
+                )  # Numbered list
             )
 
             if is_list_item:

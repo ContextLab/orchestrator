@@ -4,7 +4,9 @@ import pytest
 
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler
-from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
+from orchestrator.control_systems.model_based_control_system import (
+    ModelBasedControlSystem,
+)
 from orchestrator.utils.api_keys import load_api_keys
 
 

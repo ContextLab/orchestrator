@@ -6,8 +6,6 @@ import sys
 import os
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 # Mark all tests in this file as local-only (not run in CI)
 pytestmark = pytest.mark.local
 

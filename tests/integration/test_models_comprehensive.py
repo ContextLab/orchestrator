@@ -7,9 +7,6 @@ import os
 import subprocess
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-
 def check_dependencies():
     """Check if required dependencies are installed."""
     dependencies = {
@@ -57,7 +54,9 @@ def detect_environment():
 
     # Check for Ollama availability
     try:
-        result = subprocess.run(["ollama", "--version"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(
+            ["ollama", "--version"], capture_output=True, text=True, timeout=5
+        )
         if result.returncode == 0:
             return "local_ollama"
     except (subprocess.TimeoutExpired, FileNotFoundError):

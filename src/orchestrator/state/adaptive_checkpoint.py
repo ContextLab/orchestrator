@@ -6,10 +6,13 @@ from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
 
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+
+if TYPE_CHECKING:
+    from .state_manager import StateManager
 
 
 class CheckpointTrigger(Enum):
@@ -35,7 +38,9 @@ class CheckpointConfig:
     retention_days: int = 7
 
     # Adaptive parameters
-    error_rate_threshold: float = 0.1  # 10% error rate triggers more frequent checkpoints
+    error_rate_threshold: float = (
+        0.1  # 10% error rate triggers more frequent checkpoints
+    )
     task_duration_multiplier: float = 2.0  # Checkpoint every N*average_task_duration
     memory_usage_threshold: float = 0.8  # 80% memory usage triggers checkpoint
 
@@ -138,7 +143,10 @@ class AdaptiveStrategy(CheckpointStrategy):
             return time_since_last >= config.min_interval
 
         # High resource usage - create checkpoint for safety
-        if metrics.memory_usage > config.memory_usage_threshold or metrics.cpu_usage > 0.9:
+        if (
+            metrics.memory_usage > config.memory_usage_threshold
+            or metrics.cpu_usage > 0.9
+        ):
             return time_since_last >= config.min_interval * 0.5
 
         # Task completion milestones
@@ -178,11 +186,15 @@ class AdaptiveStrategy(CheckpointStrategy):
         base_interval = config.min_interval
 
         # Adjust based on error rate
-        error_factor = 1.0 - min(metrics.error_rate * 2, 0.8)  # More errors = shorter interval
+        error_factor = 1.0 - min(
+            metrics.error_rate * 2, 0.8
+        )  # More errors = shorter interval
 
         # Adjust based on task duration
         if metrics.average_task_duration > 0:
-            duration_factor = config.task_duration_multiplier * metrics.average_task_duration
+            duration_factor = (
+                config.task_duration_multiplier * metrics.average_task_duration
+            )
             duration_factor = min(duration_factor, config.max_interval)
         else:
             duration_factor = base_interval
@@ -247,7 +259,9 @@ class ProgressBasedStrategy(CheckpointStrategy):
                 progress_rate = metrics.progress_percentage / metrics.execution_time
                 remaining_progress = next_milestone - metrics.progress_percentage
                 return (
-                    remaining_progress / progress_rate if progress_rate > 0 else config.max_interval
+                    remaining_progress / progress_rate
+                    if progress_rate > 0
+                    else config.max_interval
                 )
 
         return config.max_interval
@@ -268,7 +282,9 @@ class AdaptiveCheckpointManager:
 
         # Execution tracking
         self.execution_metrics: Dict[str, CheckpointMetrics] = {}
-        self.checkpoint_history: Dict[str, List[str]] = {}  # execution_id -> checkpoint_ids
+        self.checkpoint_history: Dict[str, List[str]] = (
+            {}
+        )  # execution_id -> checkpoint_ids
         self.task_durations: Dict[str, deque] = {}  # execution_id -> task durations
 
         # Background checkpoint scheduler
@@ -338,7 +354,9 @@ class AdaptiveCheckpointManager:
             durations = self.task_durations[execution_id]
             metrics.average_task_duration = sum(durations) / len(durations)
 
-    async def record_task_completion(self, execution_id: str, task: Task, duration: float):
+    async def record_task_completion(
+        self, execution_id: str, task: Task, duration: float
+    ):
         """Record task completion for metrics."""
         if execution_id in self.task_durations:
             self.task_durations[execution_id].append(duration)
@@ -410,7 +428,9 @@ class AdaptiveCheckpointManager:
         while not self._shutdown and execution_id in self.execution_metrics:
             try:
                 metrics = self.execution_metrics[execution_id]
-                next_checkpoint_time = self.strategy.get_next_checkpoint_time(metrics, self.config)
+                next_checkpoint_time = self.strategy.get_next_checkpoint_time(
+                    metrics, self.config
+                )
 
                 # Wait for next checkpoint time
                 await asyncio.sleep(next_checkpoint_time)
@@ -437,7 +457,9 @@ class AdaptiveCheckpointManager:
                 to_remove = checkpoints[: -self.config.max_checkpoints]
                 for checkpoint_id in to_remove:
                     await self._remove_checkpoint(checkpoint_id)
-                self.checkpoint_history[execution_id] = checkpoints[-self.config.max_checkpoints :]
+                self.checkpoint_history[execution_id] = checkpoints[
+                    -self.config.max_checkpoints :
+                ]
 
         elif self.config.cleanup_policy == "time_based":
             # Remove checkpoints older than retention period
@@ -504,7 +526,9 @@ class AdaptiveCheckpointManager:
 
         # Wait for tasks to complete
         if self._checkpoint_tasks:
-            await asyncio.gather(*self._checkpoint_tasks.values(), return_exceptions=True)
+            await asyncio.gather(
+                *self._checkpoint_tasks.values(), return_exceptions=True
+            )
 
         self._checkpoint_tasks.clear()
 
@@ -574,7 +598,9 @@ class AdaptiveCheckpointStrategy(CheckpointStrategy):
 
         # Handle keyword arguments
         if "pipeline_id" in kwargs and "task_id" in kwargs:
-            return self._should_checkpoint_for_task(kwargs["pipeline_id"], kwargs["task_id"])
+            return self._should_checkpoint_for_task(
+                kwargs["pipeline_id"], kwargs["task_id"]
+            )
 
         return False
 
@@ -587,7 +613,9 @@ class AdaptiveCheckpointStrategy(CheckpointStrategy):
             self.task_history[pipeline_id] = []
 
         # Add a minimal record for counting purposes
-        self.task_history[pipeline_id].append({"task_id": task_id, "timestamp": time.time()})
+        self.task_history[pipeline_id].append(
+            {"task_id": task_id, "timestamp": time.time()}
+        )
 
         task_count = len(self.task_history[pipeline_id])
 
@@ -663,7 +691,10 @@ class AdaptiveCheckpointStrategy(CheckpointStrategy):
 
     def optimize_checkpoint_frequency(self, pipeline_id: str) -> None:
         """Optimize checkpoint frequency based on pipeline performance."""
-        if pipeline_id not in self.task_history or len(self.task_history[pipeline_id]) < 10:
+        if (
+            pipeline_id not in self.task_history
+            or len(self.task_history[pipeline_id]) < 10
+        ):
             return  # Need sufficient data
 
         failure_rate = self._get_failure_rate(pipeline_id)
@@ -674,10 +705,16 @@ class AdaptiveCheckpointStrategy(CheckpointStrategy):
         # Adjust interval based on stability
         if failure_rate < 0.05:  # Very stable (< 5% failure rate)
             self.checkpoint_interval = min(10, self.checkpoint_interval + 1)
-        elif failure_rate > 0.3:  # High instability (> 30% failure rate) - be aggressive
-            self.checkpoint_interval = max(1, self.checkpoint_interval - 2)  # Decrease by 2
+        elif (
+            failure_rate > 0.3
+        ):  # High instability (> 30% failure rate) - be aggressive
+            self.checkpoint_interval = max(
+                1, self.checkpoint_interval - 2
+            )  # Decrease by 2
         elif failure_rate > 0.2:  # Moderate instability (> 20% failure rate)
-            self.checkpoint_interval = max(1, self.checkpoint_interval - 1)  # Decrease by 1
+            self.checkpoint_interval = max(
+                1, self.checkpoint_interval - 1
+            )  # Decrease by 1
         elif failure_rate > 0.1:  # Low instability (> 10% failure rate)
             self.checkpoint_interval = max(2, self.checkpoint_interval - 1)
 
@@ -717,8 +754,12 @@ class AdaptiveCheckpointStrategy(CheckpointStrategy):
                     total_successful += 1
                 total_duration += record["duration"]
 
-        success_rate = total_successful / total_executions if total_executions > 0 else 0.0
-        avg_duration = total_duration / total_executions if total_executions > 0 else 0.0
+        success_rate = (
+            total_successful / total_executions if total_executions > 0 else 0.0
+        )
+        avg_duration = (
+            total_duration / total_executions if total_executions > 0 else 0.0
+        )
 
         return {
             "total_pipelines": total_pipelines,
@@ -798,7 +839,9 @@ class AdaptiveCheckpointStrategy(CheckpointStrategy):
         base_interval = (config.min_interval + config.max_interval) / 2
 
         # Adjust based on current checkpoint interval setting
-        adjusted_interval = base_interval * (self.checkpoint_interval / 5.0)  # 5 is default
+        adjusted_interval = base_interval * (
+            self.checkpoint_interval / 5.0
+        )  # 5 is default
 
         # Adjust based on error rate
         if metrics.error_rate > self.failure_rate_threshold:

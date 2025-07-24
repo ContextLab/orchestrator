@@ -218,7 +218,8 @@ This concludes the test report.
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(
-        not os.path.exists("/usr/bin/pandoc") and not os.path.exists("/usr/local/bin/pandoc"),
+        not os.path.exists("/usr/bin/pandoc")
+        and not os.path.exists("/usr/local/bin/pandoc"),
         reason="Pandoc not installed",
     )
     async def test_pdf_with_special_characters(self, pdf_compiler):

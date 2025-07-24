@@ -111,13 +111,17 @@ class DockerSandboxExecutor(SandboxExecutor):
             try:
                 # Get Docker image and command
                 image = self._get_docker_image(language)
-                command = self._get_execution_command(language, os.path.basename(code_file))
+                command = self._get_execution_command(
+                    language, os.path.basename(code_file)
+                )
 
                 # Create and run container with detached mode to capture both stdout and stderr
                 container = client.containers.run(
                     image=image,
                     command=command,
-                    volumes={os.path.dirname(code_file): {"bind": "/code", "mode": "ro"}},
+                    volumes={
+                        os.path.dirname(code_file): {"bind": "/code", "mode": "ro"}
+                    },
                     working_dir="/code",
                     mem_limit=self.config.memory_limit,
                     cpu_quota=self.config.cpu_quota,
@@ -179,7 +183,7 @@ class DockerSandboxExecutor(SandboxExecutor):
                 # Cleanup
                 try:
                     os.unlink(code_file)
-                except:
+                except Exception:
                     pass
 
         except ImportError:
@@ -286,7 +290,7 @@ class ProcessSandboxExecutor(SandboxExecutor):
             # Cleanup
             try:
                 os.unlink(code_file)
-            except:
+            except Exception:
                 pass
 
     def _get_file_extension(self, language: str) -> str:
@@ -720,8 +724,12 @@ class ResourceManager:
         """Monitor resource usage of allocated tasks."""
         return {
             "total_allocated": len(self.allocated_resources),
-            "memory_used": sum(r.get("memory", 0) for r in self.allocated_resources.values()),
-            "cpu_used": sum(r.get("cpu_cores", 0) for r in self.allocated_resources.values()),
+            "memory_used": sum(
+                r.get("memory", 0) for r in self.allocated_resources.values()
+            ),
+            "cpu_used": sum(
+                r.get("cpu_cores", 0) for r in self.allocated_resources.values()
+            ),
             "tasks": list(self.allocated_resources.keys()),
         }
 

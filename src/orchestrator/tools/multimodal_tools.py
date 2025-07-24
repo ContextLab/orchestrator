@@ -56,7 +56,8 @@ class ImageAnalysisTool(Tool):
 
     def __init__(self):
         super().__init__(
-            name="image-analysis", description="Analyze images for content, objects, text, and more"
+            name="image-analysis",
+            description="Analyze images for content, objects, text, and more",
         )
         self.add_parameter("image", "string", "Image file path or base64 encoded data")
         self.add_parameter(
@@ -64,15 +65,26 @@ class ImageAnalysisTool(Tool):
             "string",
             "Type of analysis: describe, detect_objects, extract_text, detect_faces, classify",
         )
-        self.add_parameter("model", "string", "Model to use for analysis", required=False)
         self.add_parameter(
-            "detail_level", "string", "Level of detail: low, medium, high", default="medium"
+            "model", "string", "Model to use for analysis", required=False
         )
         self.add_parameter(
-            "output_format", "string", "Output format: json, text, structured", default="json"
+            "detail_level",
+            "string",
+            "Level of detail: low, medium, high",
+            default="medium",
         )
         self.add_parameter(
-            "confidence_threshold", "number", "Minimum confidence for detections", default=0.5
+            "output_format",
+            "string",
+            "Output format: json, text, structured",
+            default="json",
+        )
+        self.add_parameter(
+            "confidence_threshold",
+            "number",
+            "Minimum confidence for detections",
+            default=0.5,
         )
 
         self.logger = logging.getLogger(__name__)
@@ -120,12 +132,16 @@ class ImageAnalysisTool(Tool):
         except Exception as e:
             raise ValueError(f"Failed to load image: {e}")
 
-    def _prepare_image_for_model(self, image_data: ImageData, max_size: int = 1024) -> str:
+    def _prepare_image_for_model(
+        self, image_data: ImageData, max_size: int = 1024
+    ) -> str:
         """Prepare image for model input (resize and encode)."""
         img = image_data.data
         if isinstance(img, (bytes, np.ndarray)):
             img = (
-                Image.fromarray(img) if isinstance(img, np.ndarray) else Image.open(io.BytesIO(img))
+                Image.fromarray(img)
+                if isinstance(img, np.ndarray)
+                else Image.open(io.BytesIO(img))
             )
 
         # Resize if too large
@@ -140,7 +156,11 @@ class ImageAnalysisTool(Tool):
         return base64.b64encode(buffer.read()).decode("utf-8")
 
     async def _analyze_with_model(
-        self, image_b64: str, analysis_type: str, detail_level: str, model_name: Optional[str]
+        self,
+        image_b64: str,
+        analysis_type: str,
+        detail_level: str,
+        model_name: Optional[str],
     ) -> Dict[str, Any]:
         """Analyze image using AI model."""
         # Get model registry
@@ -182,8 +202,8 @@ class ImageAnalysisTool(Tool):
                         "source": {
                             "type": "base64",
                             "media_type": "image/png",
-                            "data": image_b64
-                        }
+                            "data": image_b64,
+                        },
                     },
                 ],
             }
@@ -194,9 +214,7 @@ class ImageAnalysisTool(Tool):
             # Check if model has generate_multimodal method
             if hasattr(model, "generate_multimodal"):
                 response = await model.generate_multimodal(
-                    messages=messages,
-                    temperature=0.1,
-                    max_tokens=1000
+                    messages=messages, temperature=0.1, max_tokens=1000
                 )
             else:
                 # Fall back to generate with messages in kwargs for models like Anthropic
@@ -204,7 +222,7 @@ class ImageAnalysisTool(Tool):
                     prompt="",  # Empty prompt since content is in messages
                     temperature=0.1,
                     max_tokens=1000,
-                    messages=messages
+                    messages=messages,
                 )
 
             return {
@@ -212,7 +230,7 @@ class ImageAnalysisTool(Tool):
                 "analysis": response,
                 "usage": {
                     "prompt_tokens": len(prompt.split()) + 100,  # Estimate for image
-                    "completion_tokens": len(response.split())
+                    "completion_tokens": len(response.split()),
                 },
             }
 
@@ -230,7 +248,13 @@ class ImageAnalysisTool(Tool):
         kwargs.get("confidence_threshold", 0.5)
 
         # Validate analysis type
-        valid_types = ["describe", "detect_objects", "extract_text", "detect_faces", "classify"]
+        valid_types = [
+            "describe",
+            "detect_objects",
+            "extract_text",
+            "detect_faces",
+            "classify",
+        ]
         if analysis_type not in valid_types:
             return {
                 "success": False,
@@ -268,7 +292,7 @@ class ImageAnalysisTool(Tool):
                         formatted_result = json.loads(json_match.group())
                     else:
                         formatted_result = {"description": analysis_result}
-                except:
+                except Exception:
                     formatted_result = {"description": analysis_result}
             else:  # json
                 formatted_result = {
@@ -304,23 +328,39 @@ class ImageGenerationTool(Tool):
 
     def __init__(self):
         super().__init__(
-            name="image-generation", description="Generate images from text descriptions"
+            name="image-generation",
+            description="Generate images from text descriptions",
         )
-        self.add_parameter("prompt", "string", "Text description of the image to generate")
-        self.add_parameter("model", "string", "Model to use for generation", required=False)
         self.add_parameter(
-            "size", "string", "Image size: 256x256, 512x512, 1024x1024", default="512x512"
+            "prompt", "string", "Text description of the image to generate"
+        )
+        self.add_parameter(
+            "model", "string", "Model to use for generation", required=False
+        )
+        self.add_parameter(
+            "size",
+            "string",
+            "Image size: 256x256, 512x512, 1024x1024",
+            default="512x512",
         )
         self.add_parameter("style", "string", "Art style or aesthetic", required=False)
         self.add_parameter(
             "negative_prompt", "string", "What to avoid in the image", required=False
         )
-        self.add_parameter("num_images", "integer", "Number of images to generate", default=1)
         self.add_parameter(
-            "output_format", "string", "Output format: url, base64, file", default="file"
+            "num_images", "integer", "Number of images to generate", default=1
         )
         self.add_parameter(
-            "output_path", "string", "Directory to save images", default="generated_images"
+            "output_format",
+            "string",
+            "Output format: url, base64, file",
+            default="file",
+        )
+        self.add_parameter(
+            "output_path",
+            "string",
+            "Directory to save images",
+            default="generated_images",
         )
 
         self.logger = logging.getLogger(__name__)
@@ -341,7 +381,10 @@ class ImageGenerationTool(Tool):
                 raise ValueError(f"Model '{model_name}' not found")
         else:
             # Select model with image generation capabilities
-            requirements = {"capabilities": ["image-generation"], "tasks": ["generate-image"]}
+            requirements = {
+                "capabilities": ["image-generation"],
+                "tasks": ["generate-image"],
+            }
             try:
                 model = await registry.select_model(requirements)
             except Exception:
@@ -349,7 +392,9 @@ class ImageGenerationTool(Tool):
 
             if not model:
                 # Fallback to using a text model to generate image description
-                self.logger.warning("No image generation model available, using placeholder")
+                self.logger.warning(
+                    "No image generation model available, using placeholder"
+                )
                 return await self._generate_placeholder(prompt, size, num_images)
 
         # Generate images
@@ -362,7 +407,10 @@ class ImageGenerationTool(Tool):
                     result = await model.generate_image(prompt=prompt, size=size, n=1)
                     if "data" in result:
                         images.extend(
-                            [img.get("url") or img.get("b64_json") for img in result["data"]]
+                            [
+                                img.get("url") or img.get("b64_json")
+                                for img in result["data"]
+                            ]
                         )
                     elif "images" in result:
                         images.extend(result["images"])
@@ -375,7 +423,9 @@ class ImageGenerationTool(Tool):
             self.logger.error(f"Image generation failed: {e}")
             raise
 
-    async def _generate_placeholder(self, prompt: str, size: str, num_images: int) -> List[str]:
+    async def _generate_placeholder(
+        self, prompt: str, size: str, num_images: int
+    ) -> List[str]:
         """Generate placeholder images when no image model is available."""
         images = []
         width, height = map(int, size.split("x"))
@@ -509,12 +559,18 @@ class AudioProcessingTool(Tool):
         self.add_parameter(
             "operation", "string", "Operation: transcribe, analyze, enhance, convert"
         )
-        self.add_parameter("model", "string", "Model to use for processing", required=False)
-        self.add_parameter("language", "string", "Language code for transcription", default="en")
+        self.add_parameter(
+            "model", "string", "Model to use for processing", required=False
+        )
+        self.add_parameter(
+            "language", "string", "Language code for transcription", default="en"
+        )
         self.add_parameter(
             "output_format", "string", "Output format for conversion", required=False
         )
-        self.add_parameter("enhance_options", "object", "Enhancement options", required=False)
+        self.add_parameter(
+            "enhance_options", "object", "Enhancement options", required=False
+        )
 
         self.logger = logging.getLogger(__name__)
 
@@ -579,7 +635,11 @@ class AudioProcessingTool(Tool):
             "duration": audio_data.duration,
             "sample_rate": audio_data.sample_rate,
             "channels": audio_data.channels,
-            "analysis": {"volume_levels": "normal", "noise_level": "low", "clarity": "good"},
+            "analysis": {
+                "volume_levels": "normal",
+                "noise_level": "low",
+                "clarity": "good",
+            },
         }
 
     async def execute(self, **kwargs) -> Dict[str, Any]:
@@ -653,9 +713,13 @@ class VideoProcessingTool(Tool):
         )
         self.add_parameter("video", "string", "Video file path or URL")
         self.add_parameter(
-            "operation", "string", "Operation: analyze, extract_frames, extract_audio, summarize"
+            "operation",
+            "string",
+            "Operation: analyze, extract_frames, extract_audio, summarize",
         )
-        self.add_parameter("model", "string", "Model to use for analysis", required=False)
+        self.add_parameter(
+            "model", "string", "Model to use for analysis", required=False
+        )
         self.add_parameter(
             "frame_interval", "number", "Seconds between frame extraction", default=1.0
         )
@@ -676,7 +740,11 @@ class VideoProcessingTool(Tool):
         # In production, use cv2 or ffmpeg-python
         return VideoData(
             data=video_path,
-            format=os.path.splitext(video_path)[1][1:] if os.path.exists(video_path) else "mp4",
+            format=(
+                os.path.splitext(video_path)[1][1:]
+                if os.path.exists(video_path)
+                else "mp4"
+            ),
             duration=60.0,  # Placeholder
             fps=30.0,
             width=1920,

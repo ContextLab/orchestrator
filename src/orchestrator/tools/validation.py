@@ -33,8 +33,12 @@ class ValidationResult(BaseModel):
     """Result of validation operation."""
 
     valid: bool = Field(description="Whether validation passed")
-    errors: List[Dict[str, Any]] = Field(default_factory=list, description="Validation errors")
-    warnings: List[Dict[str, Any]] = Field(default_factory=list, description="Validation warnings")
+    errors: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Validation errors"
+    )
+    warnings: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Validation warnings"
+    )
     data: Optional[Any] = Field(default=None, description="Validated/coerced data")
     schema_used: Optional[Dict[str, Any]] = Field(
         default=None, description="Schema used for validation"
@@ -53,7 +57,9 @@ class FormatValidator:
         """Register orchestrator-specific format validators."""
         # Model ID format
         self.register_pattern(
-            "model-id", r"^[\w\-]+\/[\w\-\.:]+$", "Model identifier (provider/model-name)"
+            "model-id",
+            r"^[\w\-]+\/[\w\-\.:]+$",
+            "Model identifier (provider/model-name)",
         )
 
         # Tool name format
@@ -65,11 +71,15 @@ class FormatValidator:
 
         # File path format
         self.register_function(
-            "file-path", lambda x: len(x) > 0 and not x.startswith(" "), "Valid file system path"
+            "file-path",
+            lambda x: len(x) > 0 and not x.startswith(" "),
+            "Valid file system path",
         )
 
         # YAML/JSONPath format
-        self.register_pattern("yaml-path", r"^\$?\.?[\w\[\]\.\*]+$", "JSONPath expression")
+        self.register_pattern(
+            "yaml-path", r"^\$?\.?[\w\[\]\.\*]+$", "JSONPath expression"
+        )
 
         # Pipeline reference format
         self.register_pattern("pipeline-ref", r"^[\w\-]+$", "Pipeline identifier")
@@ -86,7 +96,9 @@ class FormatValidator:
         compiled_pattern = re.compile(pattern)
         self._validators[name] = lambda x: bool(compiled_pattern.fullmatch(str(x)))
 
-    def register_function(self, name: str, validator: Callable[[Any], bool], description: str = ""):
+    def register_function(
+        self, name: str, validator: Callable[[Any], bool], description: str = ""
+    ):
         """Register a function-based format validator."""
         self._validators[name] = validator
 
@@ -133,11 +145,15 @@ class SchemaValidator:
             )
 
         self.validator_class = jsonschema.validators.create(
-            meta_schema=Draft7Validator.META_SCHEMA, validators=Draft7Validator.VALIDATORS
+            meta_schema=Draft7Validator.META_SCHEMA,
+            validators=Draft7Validator.VALIDATORS,
         )
 
     def validate(
-        self, data: Any, schema: Dict[str, Any], mode: ValidationMode = ValidationMode.STRICT
+        self,
+        data: Any,
+        schema: Dict[str, Any],
+        mode: ValidationMode = ValidationMode.STRICT,
     ) -> ValidationResult:
         """Validate data against a JSON Schema."""
         result = ValidationResult(valid=True, schema_used=schema)
@@ -245,7 +261,11 @@ class SchemaValidator:
         except jsonschema.SchemaError as e:
             result.valid = False
             result.errors.append(
-                {"message": f"Invalid schema: {str(e)}", "path": [], "severity": "error"}
+                {
+                    "message": f"Invalid schema: {str(e)}",
+                    "path": [],
+                    "severity": "error",
+                }
             )
 
         return result
@@ -331,7 +351,9 @@ class ValidationTool(Tool):
         self.add_parameter(
             "data", "any", "Data to validate or text to extract from", required=False
         )
-        self.add_parameter("schema", "object", "JSON Schema for validation", required=False)
+        self.add_parameter(
+            "schema", "object", "JSON Schema for validation", required=False
+        )
         self.add_parameter(
             "mode",
             "string",
@@ -342,9 +364,14 @@ class ValidationTool(Tool):
         self.add_parameter(
             "model", "string", "Model to use for structured extraction", required=False
         )
-        self.add_parameter("text", "string", "Text to extract structured data from", required=False)
         self.add_parameter(
-            "pydantic_model", "string", "Pydantic model class name for validation", required=False
+            "text", "string", "Text to extract structured data from", required=False
+        )
+        self.add_parameter(
+            "pydantic_model",
+            "string",
+            "Pydantic model class name for validation",
+            required=False,
         )
 
         # Core components
@@ -353,7 +380,9 @@ class ValidationTool(Tool):
         self.model = model
         self.model_name = None
 
-    def register_format(self, name: str, validator: Union[str, Callable], description: str = ""):
+    def register_format(
+        self, name: str, validator: Union[str, Callable], description: str = ""
+    ):
         """Register a custom format validator."""
         if isinstance(validator, str):
             self.format_validator.register_pattern(name, validator, description)
@@ -436,7 +465,7 @@ class ValidationTool(Tool):
 
             # Build extraction prompt
             prompt = f"""Extract structured data from the following text according to the provided schema.
-            
+
 Text:
 {text}
 
@@ -468,7 +497,9 @@ Return the extracted data as a JSON object that matches the schema."""
                     }
 
                 # Validate extracted data against schema
-                validation_result = self.schema_validator.validate(extracted_data, schema)
+                validation_result = self.schema_validator.validate(
+                    extracted_data, schema
+                )
 
                 return {
                     "success": True,

@@ -49,24 +49,45 @@ class PipelineExecutorTool(Tool):
         self.add_parameter(
             "pipeline", "string", "Pipeline definition (YAML path, ID, or inline YAML)"
         )
-        self.add_parameter("inputs", "object", "Input parameters for the pipeline", default={})
         self.add_parameter(
-            "inherit_context", "boolean", "Inherit context from parent pipeline", default=True
+            "inputs", "object", "Input parameters for the pipeline", default={}
         )
         self.add_parameter(
-            "wait_for_completion", "boolean", "Wait for pipeline to complete", default=True
+            "inherit_context",
+            "boolean",
+            "Inherit context from parent pipeline",
+            default=True,
         )
         self.add_parameter(
-            "timeout", "number", "Execution timeout in seconds (0 for no timeout)", default=0
+            "wait_for_completion",
+            "boolean",
+            "Wait for pipeline to complete",
+            default=True,
         )
         self.add_parameter(
-            "output_mapping", "object", "Map pipeline outputs to parent context", default={}
+            "timeout",
+            "number",
+            "Execution timeout in seconds (0 for no timeout)",
+            default=0,
         )
         self.add_parameter(
-            "error_handling", "string", "Error handling: fail, continue, retry", default="fail"
+            "output_mapping",
+            "object",
+            "Map pipeline outputs to parent context",
+            default={},
         )
-        self.add_parameter("retry_count", "integer", "Number of retries on failure", default=3)
-        self.add_parameter("retry_delay", "number", "Delay between retries in seconds", default=1.0)
+        self.add_parameter(
+            "error_handling",
+            "string",
+            "Error handling: fail, continue, retry",
+            default="fail",
+        )
+        self.add_parameter(
+            "retry_count", "integer", "Number of retries on failure", default=3
+        )
+        self.add_parameter(
+            "retry_delay", "number", "Delay between retries in seconds", default=1.0
+        )
 
         self.logger = logging.getLogger(__name__)
 
@@ -80,18 +101,17 @@ class PipelineExecutorTool(Tool):
             from ..orchestrator import Orchestrator
             from ..models.registry_singleton import get_model_registry
             from ..control_systems.hybrid_control_system import HybridControlSystem
-            
+
             # Get the global model registry
             model_registry = get_model_registry()
-            
+
             # Create control system if we have models
             control_system = None
             if model_registry and model_registry.models:
                 control_system = HybridControlSystem(model_registry)
-            
+
             self._orchestrator = Orchestrator(
-                model_registry=model_registry,
-                control_system=control_system
+                model_registry=model_registry, control_system=control_system
             )
         return self._orchestrator
 
@@ -135,7 +155,9 @@ class PipelineExecutorTool(Tool):
 
         raise ValueError(f"Could not resolve pipeline: {pipeline_spec}")
 
-    def _check_recursion_limits(self, pipeline_id: str, context: RecursionContext) -> None:
+    def _check_recursion_limits(
+        self, pipeline_id: str, context: RecursionContext
+    ) -> None:
         """Check if recursion limits are exceeded."""
         # Check depth
         if context.depth >= context.max_depth:
@@ -153,14 +175,19 @@ class PipelineExecutorTool(Tool):
             )
 
         # Check for direct recursion (same pipeline calling itself)
-        if pipeline_id in context.call_stack[-3:]:  # Check last 3 to allow some patterns
+        if (
+            pipeline_id in context.call_stack[-3:]
+        ):  # Check last 3 to allow some patterns
             self.logger.warning(
                 f"Potential infinite recursion detected: '{pipeline_id}' "
                 f"appears multiple times in recent call stack"
             )
 
     def _merge_contexts(
-        self, parent_context: Dict[str, Any], child_inputs: Dict[str, Any], inherit: bool
+        self,
+        parent_context: Dict[str, Any],
+        child_inputs: Dict[str, Any],
+        inherit: bool,
     ) -> Dict[str, Any]:
         """Merge parent context with child inputs."""
         if not inherit:
@@ -186,7 +213,9 @@ class PipelineExecutorTool(Tool):
             if source_key in pipeline_outputs:
                 mapped[target_key] = pipeline_outputs[source_key]
             else:
-                self.logger.warning(f"Output key '{source_key}' not found in pipeline outputs")
+                self.logger.warning(
+                    f"Output key '{source_key}' not found in pipeline outputs"
+                )
 
         return mapped
 
@@ -224,12 +253,16 @@ class PipelineExecutorTool(Tool):
                     outputs=result.get("outputs", {}),
                     execution_time=execution_time,
                     steps_executed=result.get("steps_executed", 0),
-                    recursion_depth=self._recursion_context.depth if self._recursion_context else 0,
+                    recursion_depth=(
+                        self._recursion_context.depth if self._recursion_context else 0
+                    ),
                 )
 
             except Exception as e:
                 last_error = str(e)
-                self.logger.error(f"Pipeline execution failed (attempt {attempt + 1}): {e}")
+                self.logger.error(
+                    f"Pipeline execution failed (attempt {attempt + 1}): {e}"
+                )
 
                 if attempt < retry_count - 1:
                     await asyncio.sleep(retry_delay)
@@ -241,7 +274,9 @@ class PipelineExecutorTool(Tool):
             pipeline_id=pipeline_id,
             outputs={},
             error=last_error,
-            recursion_depth=self._recursion_context.depth if self._recursion_context else 0,
+            recursion_depth=(
+                self._recursion_context.depth if self._recursion_context else 0
+            ),
         )
 
     async def execute(self, **kwargs) -> Dict[str, Any]:
@@ -258,7 +293,10 @@ class PipelineExecutorTool(Tool):
 
         # Validate error handling
         if error_handling not in ["fail", "continue", "retry"]:
-            return {"success": False, "error": f"Invalid error_handling: {error_handling}"}
+            return {
+                "success": False,
+                "error": f"Invalid error_handling: {error_handling}",
+            }
 
         try:
             # Resolve pipeline definition
@@ -289,7 +327,9 @@ class PipelineExecutorTool(Tool):
             if timeout > 0 and wait_for_completion:
                 try:
                     result = await asyncio.wait_for(
-                        self._execute_with_retry(pipeline_def, inputs, retry_count, retry_delay),
+                        self._execute_with_retry(
+                            pipeline_def, inputs, retry_count, retry_delay
+                        ),
                         timeout=timeout,
                     )
                 except asyncio.TimeoutError:
@@ -326,7 +366,9 @@ class PipelineExecutorTool(Tool):
                 if error_handling == "fail":
                     raise RuntimeError(f"Sub-pipeline failed: {result.error}")
                 elif error_handling == "continue":
-                    self.logger.warning(f"Sub-pipeline failed, continuing: {result.error}")
+                    self.logger.warning(
+                        f"Sub-pipeline failed, continuing: {result.error}"
+                    )
                     return {
                         "success": False,
                         "pipeline_id": result.pipeline_id,
@@ -341,7 +383,9 @@ class PipelineExecutorTool(Tool):
             return {
                 "success": False,
                 "error": str(e),
-                "recursion_depth": self._recursion_context.depth if self._recursion_context else 0,
+                "recursion_depth": (
+                    self._recursion_context.depth if self._recursion_context else 0
+                ),
             }
 
         finally:
@@ -361,16 +405,26 @@ class RecursionControlTool(Tool):
             description="Control recursive pipeline execution with conditions and limits",
         )
         self.add_parameter(
-            "action", "string", "Action: check_condition, update_state, get_state, reset"
+            "action",
+            "string",
+            "Action: check_condition, update_state, get_state, reset",
         )
         self.add_parameter(
             "condition", "string", "Termination condition expression", required=False
         )
         self.add_parameter("state_key", "string", "Key for state value", required=False)
-        self.add_parameter("state_value", "any", "Value to set for state", required=False)
-        self.add_parameter("increment", "number", "Increment state value by amount", required=False)
-        self.add_parameter("max_iterations", "integer", "Maximum iterations allowed", default=1000)
-        self.add_parameter("depth_limit", "integer", "Maximum recursion depth", default=10)
+        self.add_parameter(
+            "state_value", "any", "Value to set for state", required=False
+        )
+        self.add_parameter(
+            "increment", "number", "Increment state value by amount", required=False
+        )
+        self.add_parameter(
+            "max_iterations", "integer", "Maximum iterations allowed", default=1000
+        )
+        self.add_parameter(
+            "depth_limit", "integer", "Maximum recursion depth", default=10
+        )
         self.add_parameter("time_limit", "number", "Time limit in seconds", default=0)
 
         self.logger = logging.getLogger(__name__)
@@ -523,7 +577,10 @@ class RecursionControlTool(Tool):
             elif action == "update_state":
                 state_key = kwargs.get("state_key")
                 if not state_key:
-                    return {"success": False, "error": "state_key required for update_state action"}
+                    return {
+                        "success": False,
+                        "error": "state_key required for update_state action",
+                    }
 
                 context = self._get_or_create_context(context_id)
 

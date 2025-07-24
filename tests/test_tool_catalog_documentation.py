@@ -3,13 +3,9 @@
 
 import asyncio
 import os
-import sys
-from pathlib import Path
 from datetime import datetime
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from orchestrator import Orchestrator, init_models
 
 
@@ -56,19 +52,19 @@ steps:
         + datetime.now().isoformat()
         + """"
       mode: "w"
-      
+
   - id: verify_write
     tool: filesystem
     action: exists
     parameters:
       path: "{report_path}"
-      
+
   - id: read_report
     tool: filesystem
     action: read
     parameters:
       path: "{report_path}"
-      
+
   - id: list_tmp
     tool: filesystem
     action: list
@@ -84,7 +80,9 @@ steps:
         result = await orchestrator.execute_yaml(pipeline_yaml)
 
         # Verify results
-        assert result.get("verify_write", {}).get("exists") is True, "File should exist after write"
+        assert (
+            result.get("verify_write", {}).get("exists") is True
+        ), "File should exist after write"
         assert "Test Report" in result.get("read_report", {}).get(
             "content", ""
         ), "Content should match"
@@ -111,7 +109,6 @@ async def test_terminal_tool():
     # Create test Python script
     test_script = """
 import json
-import sys
 
 # Simple analysis script
 data = {"result": "Analysis complete", "items": 5}
@@ -141,7 +138,7 @@ steps:
       command: "python {script_path} --input {data_path}"
       cwd: "{tempfile.gettempdir()}"
       timeout: 30
-      
+
   - id: check_python_version
     tool: terminal
     action: execute
@@ -193,7 +190,7 @@ steps:
     parameters:
       query: "machine learning best practices 2024"
       max_results: 5
-      
+
   - id: verify_results
     tool: report-generator
     action: generate
@@ -202,9 +199,9 @@ steps:
       format: "markdown"
       content: |
         # Web Search Test Results
-        
+
         Found {{ research_topic.results | length }} results for the query.
-        
+
         {% if research_topic.results %}
         First result title: {{ research_topic.results[0].title }}
         {% endif %}
@@ -268,7 +265,7 @@ steps:
         - type: sort
           by: "score"
           ascending: false
-          
+
   - id: verify_processing
     tool: report-generator
     action: generate
@@ -277,9 +274,9 @@ steps:
       format: "markdown"
       content: |
         # Processing Test Results
-        
+
         Processed {{ process_csv.result | length }} records.
-        
+
         {% if process_csv.result %}
         Top scorer: {{ process_csv.result[0].name }} with score {{ process_csv.result[0].score }}
         {% endif %}
@@ -296,11 +293,15 @@ steps:
         assert len(processed_data) > 0, "Should have processed data"
 
         # Check filtering (age > 18)
-        assert all(record["age"] > 18 for record in processed_data), "All ages should be > 18"
+        assert all(
+            record["age"] > 18 for record in processed_data
+        ), "All ages should be > 18"
 
         # Check sorting (by score descending)
         scores = [record["score"] for record in processed_data]
-        assert scores == sorted(scores, reverse=True), "Should be sorted by score descending"
+        assert scores == sorted(
+            scores, reverse=True
+        ), "Should be sorted by score descending"
 
         print("✅ DataProcessingTool test passed")
         return True
@@ -343,16 +344,16 @@ steps:
       format: "markdown"
       template: |
         # {{ title }}
-        
+
         ## Summary
         {{ summary }}
-        
+
         ## Data Analysis
         {{ analysis_results }}
       metadata:
         author: "AI Assistant"
         date: "{{ current_date }}"
-        
+
   - id: save_report
     tool: filesystem
     action: write
@@ -404,9 +405,9 @@ description: Test LLMGenerateTool from documentation
 
 inputs:
   article_content: |
-    Artificial intelligence continues to transform industries worldwide. 
-    Recent advances in machine learning have enabled new applications in 
-    healthcare, finance, and transportation. However, challenges remain 
+    Artificial intelligence continues to transform industries worldwide.
+    Recent advances in machine learning have enabled new applications in
+    healthcare, finance, and transportation. However, challenges remain
     in ensuring AI systems are ethical, transparent, and beneficial to all.
 
 steps:
@@ -419,7 +420,7 @@ steps:
         {{ article_content }}
       temperature: 0.3
       max_tokens: 200
-      
+
   - id: verify_summary
     tool: report-generator
     action: generate
@@ -428,10 +429,10 @@ steps:
       format: "markdown"
       content: |
         # LLM Generation Test
-        
+
         Original length: {{ article_content | length }} characters
         Summary length: {{ write_summary.result | length }} characters
-        
+
         Summary:
         {{ write_summary.result }}
 """
@@ -440,9 +441,9 @@ steps:
 
     try:
         inputs = {
-            "article_content": """Artificial intelligence continues to transform industries worldwide. 
-Recent advances in machine learning have enabled new applications in 
-healthcare, finance, and transportation. However, challenges remain 
+            "article_content": """Artificial intelligence continues to transform industries worldwide.
+Recent advances in machine learning have enabled new applications in
+healthcare, finance, and transportation. However, challenges remain
 in ensuring AI systems are ethical, transparent, and beneficial to all."""
         }
 
@@ -451,7 +452,9 @@ in ensuring AI systems are ethical, transparent, and beneficial to all."""
         # Verify results
         summary = result.get("write_summary", {}).get("result", "")
         assert len(summary) > 0, "Should generate a summary"
-        assert len(summary) < len(inputs["article_content"]), "Summary should be shorter"
+        assert len(summary) < len(
+            inputs["article_content"]
+        ), "Summary should be shorter"
 
         print("✅ LLMGenerateTool test passed")
         return True
@@ -474,8 +477,8 @@ description: Test LLMAnalyzeTool from documentation
 
 inputs:
   customer_feedback: |
-    The product works great and I'm very happy with my purchase. 
-    The customer service was excellent and shipping was fast. 
+    The product works great and I'm very happy with my purchase.
+    The customer service was excellent and shipping was fast.
     I would definitely recommend this to others!
 
 steps:
@@ -497,7 +500,7 @@ steps:
             type: array
             items:
               type: string
-              
+
   - id: verify_analysis
     tool: report-generator
     action: generate
@@ -506,10 +509,10 @@ steps:
       format: "markdown"
       content: |
         # Analysis Results
-        
+
         Sentiment: {{ analyze_sentiment.result.sentiment }}
         Confidence: {{ analyze_sentiment.result.confidence }}
-        
+
         Key Points:
         {% for point in analyze_sentiment.result.key_points %}
         - {{ point }}
@@ -520,8 +523,8 @@ steps:
 
     try:
         inputs = {
-            "customer_feedback": """The product works great and I'm very happy with my purchase. 
-The customer service was excellent and shipping was fast. 
+            "customer_feedback": """The product works great and I'm very happy with my purchase.
+The customer service was excellent and shipping was fast.
 I would definitely recommend this to others!"""
         }
 
@@ -536,7 +539,9 @@ I would definitely recommend this to others!"""
             "neutral",
         ], "Sentiment should be valid"
         assert "confidence" in analysis, "Should have confidence score"
-        assert isinstance(analysis.get("key_points"), list), "Should have key points list"
+        assert isinstance(
+            analysis.get("key_points"), list
+        ), "Should have key points list"
 
         print("✅ LLMAnalyzeTool test passed")
         return True
@@ -579,7 +584,7 @@ steps:
             minimum: 18
         required: ["email", "age"]
       mode: "STRICT"
-      
+
   - id: test_invalid
     tool: validation
     action: validate
@@ -613,7 +618,9 @@ steps:
 
         invalid_result = result.get("test_invalid", {})
         assert invalid_result.get("is_valid") is False, "Invalid data should fail"
-        assert len(invalid_result.get("errors", [])) > 0, "Should report validation errors"
+        assert (
+            len(invalid_result.get("errors", [])) > 0
+        ), "Should report validation errors"
 
         print("✅ ValidationTool test passed")
         return True
@@ -644,7 +651,7 @@ steps:
         Analyze this data and provide a brief summary:
         {{ data }}
       max_tokens: 100
-      
+
 outputs:
   analysis_result: "{{ analyze.result }}"
 """
@@ -674,7 +681,7 @@ steps:
         data: "{{ processed_data }}"
         config: "{{ analysis_config }}"
       inherit_context: true
-      
+
   - id: show_results
     tool: report-generator
     action: generate
@@ -683,7 +690,7 @@ steps:
       format: "markdown"
       content: |
         # Analysis Complete
-        
+
         Result: {{ run_analysis.outputs.analysis_result }}
 """
 
@@ -700,7 +707,9 @@ steps:
         # Verify results
         sub_result = result.get("run_analysis", {})
         assert "outputs" in sub_result, "Should have sub-pipeline outputs"
-        assert "analysis_result" in sub_result.get("outputs", {}), "Should have analysis result"
+        assert "analysis_result" in sub_result.get(
+            "outputs", {}
+        ), "Should have analysis result"
 
         print("✅ SubPipelineTool test passed")
         return True
@@ -736,7 +745,7 @@ steps:
     parameters:
       query: "{{ research_topic }}"
       max_results: 3
-      
+
   # Analyze results
   - id: analyze
     tool: llm-analyze
@@ -757,7 +766,7 @@ steps:
               type: string
           summary:
             type: string
-      
+
   # Generate report
   - id: report
     tool: report-generator
@@ -767,15 +776,15 @@ steps:
       format: "markdown"
       content: |
         # {{ title }}
-        
+
         ## Summary
         {{ analyze.result.summary }}
-        
+
         ## Main Themes
         {% for theme in analyze.result.main_themes %}
         - {{ theme }}
         {% endfor %}
-        
+
         ## Sources
         {% for result in search.results %}
         - [{{ result.title }}]({{ result.url }})

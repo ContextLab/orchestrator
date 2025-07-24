@@ -3,10 +3,7 @@
 
 import asyncio
 import os
-import sys
 import tempfile
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from orchestrator import Orchestrator
 from orchestrator.models.openai_model import OpenAIModel
@@ -90,7 +87,7 @@ steps:
       action: "read"
     parameters:
       path: "{{ data_file }}"
-      
+
   - id: analyze_data
     action: llm-generate
     parameters:
@@ -98,7 +95,7 @@ steps:
         Analyze this CSV data and provide insights:
         {{ read_data.result }}
       analysis_type: <AUTO>Based on the data which appears to be CSV with names and scores, should we use 'statistical', 'qualitative', or 'mixed' analysis? Just answer with one word.</AUTO>
-      
+
   - id: save_analysis
     action: filesystem
     tool_config:
@@ -108,7 +105,7 @@ steps:
       content: |
         # Analysis Report
         Type: {{ analyze_data.analysis_type }}
-        
+
         {{ analyze_data.result }}
 """
 
@@ -119,7 +116,9 @@ steps:
 
         # Execute pipeline
         orchestrator, _ = await setup_orchestrator()
-        result = await orchestrator.execute_yaml(pipeline_file, inputs={"data_file": test_file})
+        result = await orchestrator.execute_yaml(
+            pipeline_file, inputs={"data_file": test_file}
+        )
 
         print("✓ Pipeline executed successfully")
         print(
@@ -160,7 +159,7 @@ steps:
     error_handling:
       retry:
         max_attempts: <AUTO>For searching AI news which is moderately important, how many retry attempts should we make? Answer with just a number between 1-5.</AUTO>
-        
+
   - id: process_results
     action: llm-generate
     condition: "{{ risky_operation.status != 'failed' }}"
@@ -182,7 +181,9 @@ steps:
         result = await orchestrator.execute_yaml(pipeline_file)
 
         print("✓ Pipeline executed successfully")
-        print(f"  Web search status: {result.get('risky_operation', {}).get('status', 'N/A')}")
+        print(
+            f"  Web search status: {result.get('risky_operation', {}).get('status', 'N/A')}"
+        )
 
         return True
 
@@ -217,14 +218,14 @@ steps:
       questions:
         approach: <AUTO>For researching '{{ topic }}', is it better to use 'web_search', 'academic_sources', or 'both'? Answer with just one of these options.</AUTO>
         include_visuals: <AUTO>For the topic '{{ topic }}', would visual data be helpful? Answer just 'yes' or 'no'.</AUTO>
-        
+
   - id: web_research
     action: web-search
     condition: "'web_search' in determine_approach.approach or 'both' in determine_approach.approach"
     parameters:
       query: "{{ topic }}"
       num_results: <AUTO>For the topic '{{ topic }}', how many search results would be appropriate? Answer with just a number between 3-10.</AUTO>
-      
+
   - id: summarize
     action: llm-generate
     parameters:
@@ -235,7 +236,7 @@ steps:
         {% if web_research.result %}
         Web results: {{ web_research.result }}
         {% endif %}
-        
+
         Provide a brief summary of the research approach and findings.
 """
 
@@ -252,7 +253,9 @@ steps:
         )
 
         print("✓ Pipeline executed successfully")
-        print(f"  Approach chosen: {result.get('determine_approach', {}).get('approach', 'N/A')}")
+        print(
+            f"  Approach chosen: {result.get('determine_approach', {}).get('approach', 'N/A')}"
+        )
         print(
             f"  Include visuals: {result.get('determine_approach', {}).get('include_visuals', 'N/A')}"
         )
@@ -296,7 +299,7 @@ steps:
       action: "read"
     parameters:
       path: "{{ data_file }}"
-      
+
   - id: check_data_quality
     action: validation
     parameters:
@@ -308,13 +311,13 @@ steps:
             type: string
           size:
             type: number
-      
+
   - id: decide_processing
     action: llm-generate
     parameters:
       prompt: "Data validation passed. Determine processing approach."
       should_process: <AUTO>The data has quality='high' and size=1000. Should we proceed with processing? Answer only 'true' or 'false'.</AUTO>
-      
+
   - id: process_data
     action: llm-generate
     condition: "{{ decide_processing.should_process == 'true' }}"
@@ -333,14 +336,18 @@ steps:
 
         # Execute pipeline
         orchestrator, _ = await setup_orchestrator()
-        result = await orchestrator.execute_yaml(pipeline_file, inputs={"data_file": test_file})
+        result = await orchestrator.execute_yaml(
+            pipeline_file, inputs={"data_file": test_file}
+        )
 
         print("✓ Pipeline executed successfully")
         print(
             f"  Should process decision: {result.get('decide_processing', {}).get('should_process', 'N/A')}"
         )
         if "process_data" in result:
-            print(f"  Processing method: {result.get('process_data', {}).get('method', 'N/A')}")
+            print(
+                f"  Processing method: {result.get('process_data', {}).get('method', 'N/A')}"
+            )
 
         return True
 
@@ -367,7 +374,7 @@ steps:
     parameters:
       prompt: "Generate a report"
       format: <AUTO>Choose output format: 'json', 'yaml', or 'xml'</AUTO>
-      
+
   - id: good_context_aware
     action: llm-generate
     parameters:
@@ -375,14 +382,14 @@ steps:
       data_size: "50MB"
       num_columns: "20"
       analysis_depth: <AUTO>Given that this is a 50MB dataset with 20 columns, choose analysis depth: 'quick' (5 min), 'standard' (15 min), or 'comprehensive' (1 hour). Answer with just one word: quick, standard, or comprehensive.</AUTO>
-      
+
   - id: good_type_hints
     action: llm-generate
     parameters:
       prompt: "Configure system"
       num_retries: <AUTO type="integer">For a moderately important operation, how many retries are appropriate? Answer with just a number between 1 and 5.</AUTO>
       include_logs: <AUTO type="boolean">Should we include detailed logs? Answer only 'true' or 'false'.</AUTO>
-      
+
   - id: good_fallback
     action: llm-generate
     parameters:
@@ -408,12 +415,18 @@ steps:
         result = await orchestrator.execute_yaml(pipeline_file)
 
         print("✓ Pipeline executed successfully")
-        print(f"  Format chosen: {result.get('good_specific_choice', {}).get('format', 'N/A')}")
+        print(
+            f"  Format chosen: {result.get('good_specific_choice', {}).get('format', 'N/A')}"
+        )
         print(
             f"  Analysis depth: {result.get('good_context_aware', {}).get('analysis_depth', 'N/A')}"
         )
-        print(f"  Num retries: {result.get('good_type_hints', {}).get('num_retries', 'N/A')}")
-        print(f"  Include logs: {result.get('good_type_hints', {}).get('include_logs', 'N/A')}")
+        print(
+            f"  Num retries: {result.get('good_type_hints', {}).get('num_retries', 'N/A')}"
+        )
+        print(
+            f"  Include logs: {result.get('good_type_hints', {}).get('include_logs', 'N/A')}"
+        )
         print(f"  Strategy: {result.get('good_fallback', {}).get('strategy', 'N/A')}")
 
         # Verify type constraints
@@ -423,7 +436,7 @@ steps:
                 retry_int = int(num_retries)
                 if 1 <= retry_int <= 5:
                     print("✓ Retry count within valid range")
-            except:
+            except Exception:
                 pass
 
         return True
@@ -451,7 +464,7 @@ steps:
         output_format: <AUTO>What's the best format for a technical report: 'pdf', 'html', or 'markdown'? Answer with just one word.</AUTO>
         include_summary: <AUTO>Should a technical report include an executive summary? Answer only 'true' or 'false'.</AUTO>
         detail_level: <AUTO>For a technical audience, what detail level is appropriate: 'low', 'medium', or 'high'? Answer with just one word.</AUTO>
-        
+
   - id: use_decisions
     action: report-generator
     parameters:
@@ -479,11 +492,15 @@ steps:
 
         print("✓ Pipeline executed successfully")
         print("  Batched decisions made:")
-        print(f"    - Format: {result.get('batch_decisions', {}).get('output_format', 'N/A')}")
+        print(
+            f"    - Format: {result.get('batch_decisions', {}).get('output_format', 'N/A')}"
+        )
         print(
             f"    - Include summary: {result.get('batch_decisions', {}).get('include_summary', 'N/A')}"
         )
-        print(f"    - Detail level: {result.get('batch_decisions', {}).get('detail_level', 'N/A')}")
+        print(
+            f"    - Detail level: {result.get('batch_decisions', {}).get('detail_level', 'N/A')}"
+        )
 
         return True
 

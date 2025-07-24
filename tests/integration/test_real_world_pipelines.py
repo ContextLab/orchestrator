@@ -16,8 +16,6 @@ from datetime import datetime
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import ControlSystem
 from orchestrator.core.task import Task, TaskStatus
@@ -195,7 +193,9 @@ class RealDataControlSystem(ControlSystem):
                         if isinstance(topic, dict) and topic.get("Text"):
                             results.append(
                                 {
-                                    "title": topic.get("Text", "").split(" - ")[0][:100],
+                                    "title": topic.get("Text", "").split(" - ")[0][
+                                        :100
+                                    ],
                                     "url": topic.get("FirstURL", ""),
                                     "snippet": topic.get("Text", "")[:200] + "...",
                                 }
@@ -224,7 +224,11 @@ class RealDataControlSystem(ControlSystem):
             # If real search fails, return error info
             return {
                 "results": [
-                    {"title": "Search Error", "url": "", "snippet": f"Search failed: {str(e)}"}
+                    {
+                        "title": "Search Error",
+                        "url": "",
+                        "snippet": f"Search failed: {str(e)}",
+                    }
                 ],
                 "total": 1,
                 "query": query,
@@ -289,10 +293,14 @@ class RealDataControlSystem(ControlSystem):
                     unique_domains.add(domain)
 
         if len(unique_domains) > 2:
-            findings.append(f"Diverse sources from {len(unique_domains)} different domains")
+            findings.append(
+                f"Diverse sources from {len(unique_domains)} different domains"
+            )
 
         # Calculate confidence based on real factors
-        confidence = min(0.95, 0.3 + (len(results) * 0.1) + (len(unique_domains) * 0.05))
+        confidence = min(
+            0.95, 0.3 + (len(results) * 0.1) + (len(unique_domains) * 0.05)
+        )
 
         return {
             "findings": findings,
@@ -324,7 +332,9 @@ Source Types: {content.get('source_types', [])}
 
 Format as a markdown report with Key Findings and Insights sections."""
 
-                summary_text = await model.generate(prompt, max_tokens=300, temperature=0.3)
+                summary_text = await model.generate(
+                    prompt, max_tokens=300, temperature=0.3
+                )
 
                 # Ensure markdown formatting
                 if not summary_text.startswith("#"):
@@ -347,7 +357,9 @@ Format as a markdown report with Key Findings and Insights sections."""
             for i, finding in enumerate(findings, 1):
                 summary_text += f"{i}. {finding}\\n"
 
-            summary_text += f"\\n## Insights\\n{content.get('insights', 'No insights available')}"
+            summary_text += (
+                f"\\n## Insights\\n{content.get('insights', 'No insights available')}"
+            )
 
             return {
                 "summary": summary_text,
@@ -364,13 +376,18 @@ Format as a markdown report with Key Findings and Insights sections."""
         # Read actual file if it exists
         code_content = ""
         test_data_path = (
-            Path(__file__).parent.parent.parent / "examples" / "test_data" / "sample_code.py"
+            Path(__file__).parent.parent.parent
+            / "examples"
+            / "test_data"
+            / "sample_code.py"
         )
         if test_data_path.exists():
             with open(test_data_path, "r") as f:
                 code_content = f.read()
         else:
-            code_content = "# Sample code for testing\\ndef hello():\\n    return 'Hello World'"
+            code_content = (
+                "# Sample code for testing\\ndef hello():\\n    return 'Hello World'"
+            )
 
         # Basic code analysis
         lines = code_content.split("\\n")
@@ -589,9 +606,11 @@ Format as a markdown report with Key Findings and Insights sections."""
                 try:
                     salary = float(record["salary"]) if record["salary"] else 0
                     new_record["salary_grade"] = (
-                        "high" if salary > 50000 else "medium" if salary > 30000 else "low"
+                        "high"
+                        if salary > 50000
+                        else "medium" if salary > 30000 else "low"
                     )
-                except:
+                except Exception:
                     new_record["salary_grade"] = "unknown"
 
             transformed.append(new_record)
@@ -612,7 +631,9 @@ Format as a markdown report with Key Findings and Insights sections."""
         records = data.get("data", {}).get("records", [])
 
         complete_records = sum(
-            1 for r in records if all(str(v).strip() for v in r.values() if v is not None)
+            1
+            for r in records
+            if all(str(v).strip() for v in r.values() if v is not None)
         )
         completeness = complete_records / len(records) if records else 0
 
@@ -670,9 +691,13 @@ class RealAutoResolver(Model):
 
     def __init__(self):
         capabilities = ModelCapabilities(
-            supported_tasks=["reasoning", "generation"], context_window=4096, languages=["en"]
+            supported_tasks=["reasoning", "generation"],
+            context_window=4096,
+            languages=["en"],
         )
-        super().__init__(name="Real Auto Resolver", provider="openai", capabilities=capabilities)
+        super().__init__(
+            name="Real Auto Resolver", provider="openai", capabilities=capabilities
+        )
 
         # Try to get a real model from the registry
         from orchestrator.models.model_registry import ModelRegistry
@@ -686,7 +711,7 @@ class RealAutoResolver(Model):
                 self.actual_model = self.registry.get_model(model_name)
                 if self.actual_model:
                     break
-            except:
+            except Exception:
                 continue
 
     async def generate(self, prompt, **kwargs):
@@ -721,8 +746,10 @@ class RealAutoResolver(Model):
         """Generate structured response."""
         if self.actual_model and hasattr(self.actual_model, "generate_structured"):
             try:
-                return await self.actual_model.generate_structured(prompt, schema, **kwargs)
-            except:
+                return await self.actual_model.generate_structured(
+                    prompt, schema, **kwargs
+                )
+            except Exception:
                 pass
 
         # Fallback
@@ -734,7 +761,7 @@ class RealAutoResolver(Model):
         if self.actual_model and hasattr(self.actual_model, "validate_response"):
             try:
                 return await self.actual_model.validate_response(response, schema)
-            except:
+            except Exception:
                 pass
 
         # Basic validation
@@ -763,7 +790,9 @@ def orchestrator_with_real_data():
     except ValueError as e:
         if "already registered" in str(e):
             # Model already registered, use the existing one
-            real_model = orchestrator.model_registry.get_model("Real Auto Resolver", "openai")
+            real_model = orchestrator.model_registry.get_model(
+                "Real Auto Resolver", "openai"
+            )
         else:
             raise
     orchestrator.yaml_compiler.ambiguity_resolver.model = real_model
@@ -771,16 +800,25 @@ def orchestrator_with_real_data():
     return orchestrator
 
 
-async def run_pipeline_test(orchestrator, pipeline_file, context, expected_outputs=None):
+async def run_pipeline_test(
+    orchestrator, pipeline_file, context, expected_outputs=None
+):
     """Run a single pipeline test."""
     try:
         # Load pipeline
         pipeline_path = (
-            Path(__file__).parent.parent.parent / "docs" / "tutorials" / "examples" / pipeline_file
+            Path(__file__).parent.parent.parent
+            / "docs"
+            / "tutorials"
+            / "examples"
+            / pipeline_file
         )
         if not pipeline_path.exists():
             pipeline_path = (
-                Path(__file__).parent.parent.parent / "examples" / "pipelines" / pipeline_file
+                Path(__file__).parent.parent.parent
+                / "examples"
+                / "pipelines"
+                / pipeline_file
             )
 
         if not pipeline_path.exists():
@@ -806,7 +844,9 @@ async def run_pipeline_test(orchestrator, pipeline_file, context, expected_outpu
                     if expected in step_name:
                         found = True
                         break
-                assert found, f"Missing expected output: {expected} in steps: {list(steps.keys())}"
+                assert (
+                    found
+                ), f"Missing expected output: {expected} in steps: {list(steps.keys())}"
 
         return True, results
 
@@ -912,8 +952,12 @@ async def test_research_report_template(orchestrator_with_real_data):
 @pytest.mark.integration
 def test_pipeline_files_exist():
     """Test that all referenced pipeline files exist."""
-    docs_examples_dir = Path(__file__).parent.parent.parent / "docs" / "tutorials" / "examples"
-    examples_pipelines_dir = Path(__file__).parent.parent.parent / "examples" / "pipelines"
+    docs_examples_dir = (
+        Path(__file__).parent.parent.parent / "docs" / "tutorials" / "examples"
+    )
+    examples_pipelines_dir = (
+        Path(__file__).parent.parent.parent / "examples" / "pipelines"
+    )
 
     required_pipelines = [
         "simple_research.yaml",
@@ -926,7 +970,9 @@ def test_pipeline_files_exist():
         docs_path = docs_examples_dir / pipeline
         examples_path = examples_pipelines_dir / pipeline
 
-        assert docs_path.exists() or examples_path.exists(), f"Pipeline file not found: {pipeline}"
+        assert (
+            docs_path.exists() or examples_path.exists()
+        ), f"Pipeline file not found: {pipeline}"
 
 
 @pytest.mark.integration
@@ -964,7 +1010,7 @@ if __name__ == "__main__":
                 if real_model:
                     print(f"Using {model_id} for AUTO resolution")
                     break
-            except:
+            except Exception:
                 continue
 
         if real_model:

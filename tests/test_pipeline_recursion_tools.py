@@ -19,7 +19,7 @@ async def setup_models():
     """Setup models for testing."""
     # Get registry and check if models already initialized
     registry = get_model_registry()
-    
+
     # Only initialize if not already done
     if not registry.models:
         # Always use real models as per user requirement
@@ -63,7 +63,9 @@ steps:
         # Skip if no real models available
         try:
             result = await tool.execute(
-                pipeline=pipeline_path, inputs={"message": "test"}, wait_for_completion=True
+                pipeline=pipeline_path,
+                inputs={"message": "test"},
+                wait_for_completion=True,
             )
 
             assert result["success"] is True
@@ -169,7 +171,7 @@ steps:
     parameters:
       state_key: counter
       increment: 1
-      
+
   - id: recurse
     tool: pipeline-executor
     action: execute
@@ -216,7 +218,10 @@ async def test_recursion_control_check_condition():
 
     # Update state and check again
     await tool.execute(
-        action="update_state", state_key="counter", state_value=5, context_id="test_context"
+        action="update_state",
+        state_key="counter",
+        state_value=5,
+        context_id="test_context",
     )
 
     result = await tool.execute(
@@ -236,7 +241,10 @@ async def test_recursion_control_state_management():
 
     # Test update_state with value
     result = await tool.execute(
-        action="update_state", state_key="user_name", state_value="Alice", context_id=context_id
+        action="update_state",
+        state_key="user_name",
+        state_value="Alice",
+        context_id=context_id,
     )
 
     assert result["success"] is True
@@ -254,7 +262,9 @@ async def test_recursion_control_state_management():
     assert result["new_value"] == 15
 
     # Test get_state for specific key
-    result = await tool.execute(action="get_state", state_key="score", context_id=context_id)
+    result = await tool.execute(
+        action="get_state", state_key="score", context_id=context_id
+    )
 
     assert result["value"] == 15
     assert result["exists"] is True
@@ -296,14 +306,20 @@ async def test_recursion_control_limits():
     # Simulate multiple iterations
     for i in range(5):
         await tool.execute(
-            action="update_state", state_key=f"iteration_{i}", state_value=i, context_id=context_id
+            action="update_state",
+            state_key=f"iteration_{i}",
+            state_value=i,
+            context_id=context_id,
         )
         # Update execution count manually (normally done by PipelineExecutorTool)
         tool._recursion_states[context_id].execution_count["test"] = i + 1
 
     # Check should now fail due to iteration limit
     result = await tool.execute(
-        action="check_condition", condition="False", max_iterations=5, context_id=context_id
+        action="check_condition",
+        condition="False",
+        max_iterations=5,
+        context_id=context_id,
     )
 
     assert result["should_terminate"] is True
@@ -376,12 +392,16 @@ steps:
         try:
             with pytest.raises(RuntimeError):
                 await tool.execute(
-                    pipeline=pipeline_path, error_handling="fail", wait_for_completion=True
+                    pipeline=pipeline_path,
+                    error_handling="fail",
+                    wait_for_completion=True,
                 )
 
             # Test continue strategy
             result = await tool.execute(
-                pipeline=pipeline_path, error_handling="continue", wait_for_completion=True
+                pipeline=pipeline_path,
+                error_handling="continue",
+                wait_for_completion=True,
             )
 
             assert result["success"] is False
@@ -412,7 +432,7 @@ steps:
     parameters:
       condition: "state.get('n', {{ parameters.n }}) <= 1"
       context_id: "fib_{{ parameters.n }}"
-      
+
   - id: return_base
     tool: recursion-control
     action: update_state
@@ -423,7 +443,7 @@ steps:
     dependencies:
       - check_base_case
     condition: "{{ check_base_case.should_terminate }}"
-    
+
   - id: calc_n_minus_1
     tool: pipeline-executor
     action: execute
@@ -435,7 +455,7 @@ steps:
     dependencies:
       - check_base_case
     condition: "not {{ check_base_case.should_terminate }}"
-    
+
   - id: calc_n_minus_2
     tool: pipeline-executor
     action: execute
@@ -447,7 +467,7 @@ steps:
     dependencies:
       - check_base_case
     condition: "not {{ check_base_case.should_terminate }}"
-    
+
   - id: combine_results
     tool: recursion-control
     action: update_state

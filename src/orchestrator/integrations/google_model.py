@@ -156,7 +156,9 @@ class GoogleModel(Model):
             )
 
         # Get model configuration
-        config = self.MODEL_CONFIGS.get(model_name, self.MODEL_CONFIGS["gemini-1.5-flash"])
+        config = self.MODEL_CONFIGS.get(
+            model_name, self.MODEL_CONFIGS["gemini-1.5-flash"]
+        )
 
         super().__init__(
             name=model_name,
@@ -222,7 +224,7 @@ class GoogleModel(Model):
             "temperature": temperature,
             "max_output_tokens": max_tokens or self.capabilities.max_tokens,
         }
-        
+
         # Remove generation config params from kwargs
         for key in ["temperature", "max_output_tokens"]:
             kwargs.pop(key, None)
@@ -275,10 +277,10 @@ class GoogleModel(Model):
         # Create prompt with schema instructions
         structured_prompt = f"""
         {prompt}
-        
+
         Please respond with a JSON object that matches this schema:
         {json.dumps(schema, indent=2)}
-        
+
         Return only the JSON object, no additional text.
         """
 
@@ -310,7 +312,9 @@ class GoogleModel(Model):
                     raise ValueError("Could not parse JSON from response")
 
         except Exception as e:
-            raise RuntimeError(f"Google AI structured generation error: {str(e)}") from e
+            raise RuntimeError(
+                f"Google AI structured generation error: {str(e)}"
+            ) from e
 
     async def health_check(self) -> bool:
         """
@@ -562,7 +566,7 @@ class GoogleModel(Model):
         """
         # Convert our format to Google format
         contents = []
-        
+
         for msg in messages:
             if isinstance(msg.get("content"), list):
                 # Build parts for multimodal content
@@ -576,7 +580,7 @@ class GoogleModel(Model):
                             import base64
                             from PIL import Image
                             import io
-                            
+
                             image_data = base64.b64decode(block["source"]["data"])
                             image = Image.open(io.BytesIO(image_data))
                             parts.append(image)
@@ -584,7 +588,7 @@ class GoogleModel(Model):
             else:
                 # Simple text content
                 contents.append(msg["content"])
-        
+
         kwargs["contents"] = contents
         return await self.generate("", temperature, max_tokens, **kwargs)
 

@@ -90,7 +90,9 @@ class RuntimeAutoResolver:
             return resolved
 
         except Exception as e:
-            raise RuntimeError(f"Failed to resolve AUTO tag '{auto_content}': {e}") from e
+            raise RuntimeError(
+                f"Failed to resolve AUTO tag '{auto_content}': {e}"
+            ) from e
 
     async def _select_model(
         self,
@@ -164,7 +166,9 @@ class RuntimeAutoResolver:
                     result_str = str(result)[:100] + "..."
                 context_summary.append(f"  - {step_id}: {result_str}")
 
-        context_str = "\n".join(context_summary) if context_summary else "No context available"
+        context_str = (
+            "\n".join(context_summary) if context_summary else "No context available"
+        )
 
         # Build the prompt
         prompt = f"""You are an AI assistant helping to resolve ambiguous task descriptions into concrete, executable actions.

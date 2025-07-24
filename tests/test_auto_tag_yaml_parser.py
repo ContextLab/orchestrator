@@ -1,6 +1,9 @@
 """Test the AUTO tag parser with complex YAML cases."""
 
-from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser, parse_yaml_with_auto_tags
+from orchestrator.compiler.auto_tag_yaml_parser import (
+    AutoTagYAMLParser,
+    parse_yaml_with_auto_tags,
+)
 
 
 class TestAutoTagYAMLParser:
@@ -64,7 +67,7 @@ steps:
       input: "{{ topic }}"
       analysis_type: <AUTO>Determine the best analysis approach for this topic</AUTO>
       output_format: <AUTO>Choose appropriate format: bullet_points, narrative, or structured</AUTO>
-    
+
   - id: research_planning
     action: plan
     parameters:
@@ -72,14 +75,14 @@ steps:
       research_depth: <AUTO>Based on topic complexity, choose: shallow, medium, or deep</AUTO>
       sources: <AUTO>Determine number and types of sources needed</AUTO>
     dependencies: [topic_analysis]
-    
+
   - id: web_search
     action: search
     parameters:
       queries: <AUTO>Generate search queries based on research plan</AUTO>
       num_results: <AUTO>Determine optimal number of results per query</AUTO>
     dependencies: [research_planning]
-    
+
   - id: content_synthesis
     action: synthesize
     parameters:
@@ -87,7 +90,7 @@ steps:
       style: <AUTO>Choose writing style: academic, business, or general</AUTO>
       length: <AUTO>Determine appropriate length based on topic</AUTO>
     dependencies: [web_search]
-    
+
   - id: report_generation
     action: generate_report
     parameters:

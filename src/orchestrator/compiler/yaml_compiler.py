@@ -108,7 +108,9 @@ class YAMLCompiler:
             self.schema_validator.validate(raw_pipeline)
 
             # Step 3: Merge default values with context
-            merged_context = self._merge_defaults_with_context(raw_pipeline, context or {})
+            merged_context = self._merge_defaults_with_context(
+                raw_pipeline, context or {}
+            )
 
             # Step 4: Process templates
             processed = self._process_templates(raw_pipeline, merged_context)
@@ -230,14 +232,14 @@ class YAMLCompiler:
 
                         # Match both simple step references ({{step_id}}) and dotted ones ({{step_id.result}})
                         # Also match expressions with operators like > < == etc
-                        step_ref_pattern = (
-                            r"\{\{[^}]*[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*[^}]*\}\}"
-                        )
+                        step_ref_pattern = r"\{\{[^}]*[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*[^}]*\}\}"
 
                         if re.search(step_ref_pattern, value):
                             return value  # Keep template for runtime resolution
 
-                    raise TemplateRenderError(f"Failed to render template '{value}': {e}") from e
+                    raise TemplateRenderError(
+                        f"Failed to render template '{value}': {e}"
+                    ) from e
             elif isinstance(value, dict):
                 return {k: process_value(v) for k, v in value.items()}
             elif isinstance(value, list):
@@ -246,7 +248,9 @@ class YAMLCompiler:
 
         return process_value(pipeline_def)
 
-    async def _resolve_ambiguities(self, pipeline_def: Dict[str, Any]) -> Dict[str, Any]:
+    async def _resolve_ambiguities(
+        self, pipeline_def: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Detect and resolve AUTO tags.
 
@@ -270,7 +274,10 @@ class YAMLCompiler:
                     result[key] = await process_auto_tags(value, new_path)
                 return result
             elif isinstance(obj, list):
-                return [await process_auto_tags(item, f"{path}[{i}]") for i, item in enumerate(obj)]
+                return [
+                    await process_auto_tags(item, f"{path}[{i}]")
+                    for i, item in enumerate(obj)
+                ]
             return obj
 
         return await process_auto_tags(pipeline_def)
@@ -302,9 +309,13 @@ class YAMLCompiler:
             resolved_value = await self.ambiguity_resolver.resolve(match.strip(), path)
             # Convert resolved value to string for substitution
             resolved_str = (
-                str(resolved_value) if not isinstance(resolved_value, str) else resolved_value
+                str(resolved_value)
+                if not isinstance(resolved_value, str)
+                else resolved_value
             )
-            resolved_content = resolved_content.replace(f"<AUTO>{match}</AUTO>", resolved_str)
+            resolved_content = resolved_content.replace(
+                f"<AUTO>{match}</AUTO>", resolved_str
+            )
 
         return resolved_content
 
@@ -451,7 +462,11 @@ class YAMLCompiler:
                         # Handle numeric group references
                         if isinstance(group, str) and group.startswith("\\"):
                             group_num = int(group[1:])
-                            return match.group(group_num) if group_num <= match.lastindex else ""
+                            return (
+                                match.group(group_num)
+                                if group_num <= match.lastindex
+                                else ""
+                            )
                         return match.group(group)
                     except (IndexError, ValueError):
                         return ""
@@ -465,7 +480,9 @@ class YAMLCompiler:
         self.template_engine.filters["default"] = lambda v, d="": v if v else d
         self.template_engine.filters["lower"] = lambda v: str(v).lower()
         self.template_engine.filters["upper"] = lambda v: str(v).upper()
-        self.template_engine.filters["replace"] = lambda v, old, new: str(v).replace(old, new)
+        self.template_engine.filters["replace"] = lambda v, old, new: str(v).replace(
+            old, new
+        )
 
     def get_template_variables(self, yaml_content: str) -> List[str]:
         """

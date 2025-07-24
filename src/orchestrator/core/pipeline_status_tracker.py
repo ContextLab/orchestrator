@@ -44,7 +44,9 @@ class ExecutionMetrics:
     @property
     def average_task_duration(self) -> float:
         """Get average task execution duration."""
-        durations = [m.get("duration", 0) for m in self.task_metrics.values() if "duration" in m]
+        durations = [
+            m.get("duration", 0) for m in self.task_metrics.values() if "duration" in m
+        ]
         return sum(durations) / len(durations) if durations else 0.0
 
 
@@ -134,7 +136,10 @@ class PipelineStatusTracker:
         self.task_status_handlers: List[Any] = []
 
     async def start_execution(
-        self, execution_id: str, pipeline: Pipeline, context: Optional[Dict[str, Any]] = None
+        self,
+        execution_id: str,
+        pipeline: Pipeline,
+        context: Optional[Dict[str, Any]] = None,
     ) -> PipelineExecution:
         """Start tracking a new pipeline execution."""
         async with self._lock:
@@ -222,7 +227,11 @@ class PipelineStatusTracker:
 
     def get_running_executions(self) -> List[PipelineExecution]:
         """Get all currently running executions."""
-        return [exec for exec in self.executions.values() if exec.status == PipelineStatus.RUNNING]
+        return [
+            exec
+            for exec in self.executions.values()
+            if exec.status == PipelineStatus.RUNNING
+        ]
 
     def get_execution_summary(self, execution_id: str) -> Optional[Dict[str, Any]]:
         """Get a summary of an execution."""
@@ -257,7 +266,9 @@ class PipelineStatusTracker:
     def add_error(self, execution_id: str, error: Dict[str, Any]) -> None:
         """Add an error to an execution."""
         if execution_id in self.executions:
-            self.executions[execution_id].metrics.errors.append({**error, "timestamp": time.time()})
+            self.executions[execution_id].metrics.errors.append(
+                {**error, "timestamp": time.time()}
+            )
 
     def add_warning(self, execution_id: str, warning: Dict[str, Any]) -> None:
         """Add a warning to an execution."""

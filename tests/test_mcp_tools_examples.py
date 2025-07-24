@@ -205,7 +205,10 @@ class TestMCPToolsExamples:
         assert custom_tool["name"] == "my-custom-tool"
         assert "enum" in custom_tool["inputSchema"]["properties"]["action"]
         assert (
-            "default" in custom_tool["inputSchema"]["properties"]["options"]["properties"]["format"]
+            "default"
+            in custom_tool["inputSchema"]["properties"]["options"]["properties"][
+                "format"
+            ]
         )
 
     def test_complete_pipeline_example(self):
@@ -276,10 +279,10 @@ steps:
     parameters:
       template: |
         # Research Report: {{ topic }}
-        
+
         ## Summary
         {{ results.analyze_content | summarize }}
-        
+
         ## Key Findings
         {{ results.analyze_content | format_findings }}
 

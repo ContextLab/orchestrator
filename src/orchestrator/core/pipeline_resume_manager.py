@@ -71,7 +71,9 @@ class PipelineResumeManager:
     """Manages pipeline resume and restart operations."""
 
     def __init__(
-        self, state_manager: StateManager, default_strategy: Optional[ResumeStrategy] = None
+        self,
+        state_manager: StateManager,
+        default_strategy: Optional[ResumeStrategy] = None,
     ):
         """Initialize resume manager.
 
@@ -131,7 +133,9 @@ class PipelineResumeManager:
         )
 
         resume_state.checkpoint_id = checkpoint_id
-        self.logger.info(f"Created resume checkpoint {checkpoint_id} for execution {execution_id}")
+        self.logger.info(
+            f"Created resume checkpoint {checkpoint_id} for execution {execution_id}"
+        )
 
         return checkpoint_id
 
@@ -154,7 +158,9 @@ class PipelineResumeManager:
 
         return False
 
-    async def get_resume_state(self, execution_id: str) -> Optional[Tuple[Pipeline, ResumeState]]:
+    async def get_resume_state(
+        self, execution_id: str
+    ) -> Optional[Tuple[Pipeline, ResumeState]]:
         """Get resume state for an execution.
 
         Args:
@@ -222,7 +228,10 @@ class PipelineResumeManager:
             elif task_id in resume_state.failed_tasks:
                 retry_count = resume_state.failed_tasks[task_id]
 
-                if strategy.retry_failed_tasks and retry_count < strategy.max_retry_attempts:
+                if (
+                    strategy.retry_failed_tasks
+                    and retry_count < strategy.max_retry_attempts
+                ):
                     task.reset()
                     task.metadata["retry_count"] = retry_count
                 else:
@@ -263,7 +272,9 @@ class PipelineResumeManager:
         pipeline, resume_state = result
 
         # Prepare pipeline
-        prepared_pipeline = await self.prepare_pipeline_for_resume(pipeline, resume_state, strategy)
+        prepared_pipeline = await self.prepare_pipeline_for_resume(
+            pipeline, resume_state, strategy
+        )
 
         # Prepare context with resume information
         context = resume_state.context.copy()
@@ -318,7 +329,9 @@ class PipelineResumeManager:
         task = asyncio.create_task(checkpoint_loop())
         self._checkpoint_tasks[execution_id] = task
 
-        self.logger.info(f"Started periodic checkpointing for {execution_id} every {interval}s")
+        self.logger.info(
+            f"Started periodic checkpointing for {execution_id} every {interval}s"
+        )
 
     async def stop_periodic_checkpointing(self, execution_id: str):
         """Stop periodic checkpointing for an execution.
@@ -337,7 +350,9 @@ class PipelineResumeManager:
 
             self.logger.info(f"Stopped periodic checkpointing for {execution_id}")
 
-    async def get_resume_history(self, pipeline_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    async def get_resume_history(
+        self, pipeline_id: str, limit: int = 10
+    ) -> List[Dict[str, Any]]:
         """Get resume history for a pipeline.
 
         Args:
@@ -358,7 +373,9 @@ class PipelineResumeManager:
 
             if metadata.get("type") == "resume_checkpoint":
                 # Load checkpoint to check pipeline ID
-                restored = await self.state_manager.restore_checkpoint(checkpoint["checkpoint_id"])
+                restored = await self.state_manager.restore_checkpoint(
+                    checkpoint["checkpoint_id"]
+                )
 
                 if restored:
                     state = restored["state"]

@@ -90,7 +90,9 @@ class RetryStrategy:
         """Check if an error type is retryable."""
         if not self.retryable_errors:
             return True  # Retry all errors if no specific list provided
-        return any(isinstance(exception, error_type) for error_type in self.retryable_errors)
+        return any(
+            isinstance(exception, error_type) for error_type in self.retryable_errors
+        )
 
     def get_delay(self, attempt: int) -> float:
         """Get delay before next retry attempt."""
@@ -159,7 +161,9 @@ class RetryStrategyABC(ABC):
 class ExponentialBackoffRetry(RetryStrategyABC):
     """Exponential backoff retry strategy."""
 
-    def __init__(self, max_retries: int = 3, base_delay: float = 1.0, max_delay: float = 60.0):
+    def __init__(
+        self, max_retries: int = 3, base_delay: float = 1.0, max_delay: float = 60.0
+    ):
         self.max_retries = max_retries
         self.base_delay = base_delay
         self.max_delay = max_delay
@@ -270,7 +274,9 @@ class CircuitBreaker:
             else:
                 self.state = CircuitBreakerState.HALF_OPEN
                 self.success_count = 0
-                self.logger.info(f"Circuit breaker {self.name} transitioning to half-open")
+                self.logger.info(
+                    f"Circuit breaker {self.name} transitioning to half-open"
+                )
 
         try:
             # Execute with timeout
@@ -417,7 +423,9 @@ class ErrorClassifier:
         # Default classification
         return ErrorCategory.UNKNOWN, ErrorSeverity.MEDIUM
 
-    def create_error_info(self, exception: Exception, context: Dict[str, Any] = None) -> ErrorInfo:
+    def create_error_info(
+        self, exception: Exception, context: Dict[str, Any] = None
+    ) -> ErrorInfo:
         """Create ErrorInfo from exception."""
         category, severity = self.classify(exception)
 
@@ -473,7 +481,9 @@ class ErrorHandler:
 
         # Default retry strategies
         self.retry_strategies["default"] = ExponentialBackoffRetry()
-        self.retry_strategies["network"] = ExponentialBackoffRetry(max_retries=5, base_delay=2.0)
+        self.retry_strategies["network"] = ExponentialBackoffRetry(
+            max_retries=5, base_delay=2.0
+        )
         self.retry_strategies["resource"] = LinearRetry(max_retries=2, delay=5.0)
 
         # For test compatibility
@@ -488,7 +498,9 @@ class ErrorHandler:
         """Register a custom retry strategy."""
         self.retry_strategies[name] = strategy
 
-    def get_circuit_breaker(self, name: str, config: CircuitBreakerConfig = None) -> CircuitBreaker:
+    def get_circuit_breaker(
+        self, name: str, config: CircuitBreakerConfig = None
+    ) -> CircuitBreaker:
         """Get or create circuit breaker."""
         if name not in self.circuit_breakers:
             self.circuit_breakers[name] = CircuitBreaker(name, config)
@@ -507,7 +519,8 @@ class ErrorHandler:
 
         # Timeout patterns
         if any(
-            pattern in error_message for pattern in ["timeout", "timed out", "deadline exceeded"]
+            pattern in error_message
+            for pattern in ["timeout", "timed out", "deadline exceeded"]
         ):
             return ErrorCategory.TIMEOUT
 
@@ -708,7 +721,9 @@ class ErrorHandler:
             result["timeout"] = context["timeout"] * 2  # Double the timeout
 
         elif action == "switch_system":
-            result["reason"] = category.value if hasattr(category, "value") else str(category)
+            result["reason"] = (
+                category.value if hasattr(category, "value") else str(category)
+            )
 
         elif action == "sanitize_input":
             result["sanitized_input"] = context.get("input_data", "")
@@ -727,7 +742,9 @@ class ErrorHandler:
         **kwargs,
     ) -> Any:
         """Execute function with retry logic."""
-        strategy = self.retry_strategies.get(strategy_name, self.retry_strategies["default"])
+        strategy = self.retry_strategies.get(
+            strategy_name, self.retry_strategies["default"]
+        )
         attempt = 0
 
         while True:
@@ -748,7 +765,9 @@ class ErrorHandler:
                     raise
 
                 delay = strategy.get_delay(attempt)
-                self.logger.info(f"Retrying {func.__name__} after {delay}s (attempt {attempt + 1})")
+                self.logger.info(
+                    f"Retrying {func.__name__} after {delay}s (attempt {attempt + 1})"
+                )
 
                 await asyncio.sleep(delay)
                 attempt += 1
@@ -821,7 +840,8 @@ class ErrorHandler:
             "category_distribution": dict(category_counts),
             "severity_distribution": dict(severity_counts),
             "circuit_breakers": {
-                name: breaker.get_state() for name, breaker in self.circuit_breakers.items()
+                name: breaker.get_state()
+                for name, breaker in self.circuit_breakers.items()
             },
         }
 
@@ -905,7 +925,9 @@ class RecoveryManager:
             "dominant_error": dominant_error,
             "error_frequency": error_counts,
             "recommendation": (
-                "check_network" if "timeout" in dominant_error.lower() else "increase_timeout"
+                "check_network"
+                if "timeout" in dominant_error.lower()
+                else "increase_timeout"
             ),
         }
 
@@ -945,11 +967,17 @@ class RecoveryManager:
             }
 
         total_attempts = len(self.recovery_attempts)
-        successful_attempts = sum(1 for attempt in self.recovery_attempts if attempt["success"])
-        success_rate = successful_attempts / total_attempts if total_attempts > 0 else 0.0
+        successful_attempts = sum(
+            1 for attempt in self.recovery_attempts if attempt["success"]
+        )
+        success_rate = (
+            successful_attempts / total_attempts if total_attempts > 0 else 0.0
+        )
 
         total_duration = sum(attempt["duration"] for attempt in self.recovery_attempts)
-        average_duration = total_duration / total_attempts if total_attempts > 0 else 0.0
+        average_duration = (
+            total_duration / total_attempts if total_attempts > 0 else 0.0
+        )
 
         # Calculate strategy success rates
         strategy_stats = {}

@@ -191,7 +191,10 @@ class ConditionalHandler:
         return adjusted_deps
 
     async def process_conditional_step(
-        self, step_def: Dict[str, Any], context: Dict[str, Any], step_results: Dict[str, Any]
+        self,
+        step_def: Dict[str, Any],
+        context: Dict[str, Any],
+        step_results: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Process a step definition with conditional execution.
 

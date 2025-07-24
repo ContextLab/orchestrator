@@ -43,16 +43,25 @@ class TaskDelegationTool(Tool):
         )
         self.add_parameter("task", "string", "The task to be executed")
         self.add_parameter(
-            "requirements", "object", "Task requirements and constraints", required=False
+            "requirements",
+            "object",
+            "Task requirements and constraints",
+            required=False,
         )
         self.add_parameter(
-            "fallback_enabled", "boolean", "Enable fallback to alternative models", default=True
+            "fallback_enabled",
+            "boolean",
+            "Enable fallback to alternative models",
+            default=True,
         )
         self.add_parameter(
             "cost_weight", "number", "Weight for cost optimization (0-1)", default=0.3
         )
         self.add_parameter(
-            "quality_weight", "number", "Weight for quality optimization (0-1)", default=0.7
+            "quality_weight",
+            "number",
+            "Weight for quality optimization (0-1)",
+            default=0.7,
         )
 
         self.logger = logging.getLogger(__name__)
@@ -60,7 +69,12 @@ class TaskDelegationTool(Tool):
 
         # Task type mappings
         self.task_type_keywords = {
-            "code_generation": ["write code", "implement", "create function", "generate code"],
+            "code_generation": [
+                "write code",
+                "implement",
+                "create function",
+                "generate code",
+            ],
             "code_analysis": ["analyze code", "review code", "debug", "find bugs"],
             "creative_writing": ["write story", "creative", "poem", "narrative"],
             "analysis": ["analyze", "examine", "investigate", "evaluate"],
@@ -74,7 +88,12 @@ class TaskDelegationTool(Tool):
         self.model_expertise = {
             "gpt-4": ["code_generation", "analysis", "creative_writing", "general"],
             "gpt-4o": ["code_generation", "analysis", "multimodal", "general"],
-            "claude-3-5-sonnet": ["code_analysis", "creative_writing", "analysis", "general"],
+            "claude-3-5-sonnet": [
+                "code_analysis",
+                "creative_writing",
+                "analysis",
+                "general",
+            ],
             "claude-3-opus": ["complex_reasoning", "creative_writing", "analysis"],
             "gemini-2.5-pro": ["multimodal", "analysis", "data_processing", "general"],
             "deepseek-r1": ["code_generation", "reasoning", "technical"],
@@ -183,12 +202,16 @@ class TaskDelegationTool(Tool):
                 reasons.append(f"Low success rate: {success_rate:.0%}")
 
         # Cost estimation (simplified)
-        estimated_cost = getattr(model, "_cost_per_1k_tokens", 0.01) * 2  # Assume 2k tokens
+        estimated_cost = (
+            getattr(model, "_cost_per_1k_tokens", 0.01) * 2
+        )  # Assume 2k tokens
         cost_score = 100 - (estimated_cost * 10)  # Lower cost = higher score
 
         # Latency estimation
         estimated_latency = (
-            getattr(model.metrics, "latency_p50", 1.0) if hasattr(model, "metrics") else 1.0
+            getattr(model.metrics, "latency_p50", 1.0)
+            if hasattr(model, "metrics")
+            else 1.0
         )
         latency_score = 100 - (estimated_latency * 10)  # Lower latency = higher score
 
@@ -286,7 +309,9 @@ class MultiModelRoutingTool(Tool):
             description="Route requests across multiple models with load balancing and cost optimization",
         )
         self.add_parameter("request", "string", "The request to route")
-        self.add_parameter("models", "array", "List of models to route between", required=False)
+        self.add_parameter(
+            "models", "array", "List of models to route between", required=False
+        )
         self.add_parameter(
             "strategy",
             "string",
@@ -294,9 +319,14 @@ class MultiModelRoutingTool(Tool):
             default="capability_based",
         )
         self.add_parameter(
-            "max_concurrent", "integer", "Maximum concurrent requests per model", default=5
+            "max_concurrent",
+            "integer",
+            "Maximum concurrent requests per model",
+            default=5,
         )
-        self.add_parameter("timeout", "number", "Request timeout in seconds", default=30.0)
+        self.add_parameter(
+            "timeout", "number", "Request timeout in seconds", default=30.0
+        )
 
         self.logger = logging.getLogger(__name__)
         self.model_registry = get_model_registry()
@@ -334,7 +364,9 @@ class MultiModelRoutingTool(Tool):
         if len(times) > 100:
             self.model_request_times[model_key] = times[-100:]
 
-    async def _route_round_robin(self, models: List[str], request: str) -> Tuple[str, str]:
+    async def _route_round_robin(
+        self, models: List[str], request: str
+    ) -> Tuple[str, str]:
         """Round-robin routing strategy."""
         if not models:
             raise ValueError("No models available for routing")
@@ -344,7 +376,9 @@ class MultiModelRoutingTool(Tool):
 
         return selected, "Round-robin selection"
 
-    async def _route_least_loaded(self, models: List[str], request: str) -> Tuple[str, str]:
+    async def _route_least_loaded(
+        self, models: List[str], request: str
+    ) -> Tuple[str, str]:
         """Route to least loaded model."""
         if not models:
             raise ValueError("No models available for routing")
@@ -356,7 +390,9 @@ class MultiModelRoutingTool(Tool):
         selected = loads[0][0]
         return selected, f"Least loaded (current load: {loads[0][1]})"
 
-    async def _route_cost_optimized(self, models: List[str], request: str) -> Tuple[str, str]:
+    async def _route_cost_optimized(
+        self, models: List[str], request: str
+    ) -> Tuple[str, str]:
         """Route based on cost optimization."""
         if not models:
             raise ValueError("No models available for routing")
@@ -373,7 +409,7 @@ class MultiModelRoutingTool(Tool):
                     model = self.model_registry.get_model(model_key)
                 cost = getattr(model, "_cost_per_1k_tokens", 0.01)
                 costs.append((model_key, cost))
-            except:
+            except Exception:
                 costs.append((model_key, 0.01))  # Default cost
 
         # Sort by cost
@@ -382,7 +418,9 @@ class MultiModelRoutingTool(Tool):
         selected = costs[0][0]
         return selected, f"Lowest cost (${costs[0][1]:.3f}/1k tokens)"
 
-    async def _route_capability_based(self, models: List[str], request: str) -> Tuple[str, str]:
+    async def _route_capability_based(
+        self, models: List[str], request: str
+    ) -> Tuple[str, str]:
         """Route based on model capabilities and request analysis."""
         if not models:
             raise ValueError("No models available for routing")
@@ -392,7 +430,10 @@ class MultiModelRoutingTool(Tool):
         result = await delegation_tool.execute(task=request)
 
         if result["success"] and result["selected_model"] in models:
-            return result["selected_model"], f"Best for task: {', '.join(result['reasons'][:2])}"
+            return (
+                result["selected_model"],
+                f"Best for task: {', '.join(result['reasons'][:2])}",
+            )
 
         # Fallback to least loaded
         return await self._route_least_loaded(models, request)
@@ -413,7 +454,9 @@ class MultiModelRoutingTool(Tool):
             return {"success": False, "error": "No models available for routing"}
 
         # Filter models by load
-        available_models = [m for m in models if self._get_model_load(m) < max_concurrent]
+        available_models = [
+            m for m in models if self._get_model_load(m) < max_concurrent
+        ]
 
         if not available_models:
             return {
@@ -425,11 +468,17 @@ class MultiModelRoutingTool(Tool):
         # Route based on strategy
         try:
             if strategy == "round_robin":
-                selected_model, reason = await self._route_round_robin(available_models, request)
+                selected_model, reason = await self._route_round_robin(
+                    available_models, request
+                )
             elif strategy == "least_loaded":
-                selected_model, reason = await self._route_least_loaded(available_models, request)
+                selected_model, reason = await self._route_least_loaded(
+                    available_models, request
+                )
             elif strategy == "cost_optimized":
-                selected_model, reason = await self._route_cost_optimized(available_models, request)
+                selected_model, reason = await self._route_cost_optimized(
+                    available_models, request
+                )
             else:  # capability_based
                 selected_model, reason = await self._route_capability_based(
                     available_models, request
@@ -461,15 +510,21 @@ class PromptOptimizationTool(Tool):
             description="Optimize prompts for specific models, including formatting and token management",
         )
         self.add_parameter("prompt", "string", "The prompt to optimize")
-        self.add_parameter("model", "string", "Target model for optimization", required=False)
+        self.add_parameter(
+            "model", "string", "Target model for optimization", required=False
+        )
         self.add_parameter(
             "optimization_goals",
             "array",
             "Goals: clarity, brevity, specificity, model_specific",
             default=["clarity", "model_specific"],
         )
-        self.add_parameter("max_tokens", "integer", "Maximum token limit", required=False)
-        self.add_parameter("preserve_intent", "boolean", "Preserve original intent", default=True)
+        self.add_parameter(
+            "max_tokens", "integer", "Maximum token limit", required=False
+        )
+        self.add_parameter(
+            "preserve_intent", "boolean", "Preserve original intent", default=True
+        )
 
         self.logger = logging.getLogger(__name__)
         self.model_registry = get_model_registry()
@@ -508,10 +563,14 @@ class PromptOptimizationTool(Tool):
         clarified = prompt
 
         # Add structure if missing
-        if not any(marker in prompt.lower() for marker in ["step", "first", "then", "finally"]):
+        if not any(
+            marker in prompt.lower() for marker in ["step", "first", "then", "finally"]
+        ):
             if "?" in prompt:
                 clarified = f"Question: {prompt}"
-            elif any(word in prompt.lower() for word in ["create", "write", "generate"]):
+            elif any(
+                word in prompt.lower() for word in ["create", "write", "generate"]
+            ):
                 clarified = f"Task: {prompt}"
 
         # Add explicit output format if missing
@@ -519,7 +578,9 @@ class PromptOptimizationTool(Tool):
             if "list" in prompt.lower():
                 clarified += "\n\nProvide the output as a bulleted list."
             elif "code" in prompt.lower():
-                clarified += "\n\nProvide the code with appropriate syntax highlighting."
+                clarified += (
+                    "\n\nProvide the code with appropriate syntax highlighting."
+                )
 
         return clarified
 
@@ -569,7 +630,8 @@ class PromptOptimizationTool(Tool):
 
         # Add context if missing
         if not any(
-            word in specific.lower() for word in ["following", "below", "above", "attached"]
+            word in specific.lower()
+            for word in ["following", "below", "above", "attached"]
         ):
             if context.get("has_context"):
                 specific += "\n\nUse the provided context to inform your response."
@@ -598,7 +660,9 @@ class PromptOptimizationTool(Tool):
         elif "gemini" in model_base:
             # Gemini works well with structured prompts
             if "steps" not in prompt.lower():
-                optimized = f"Objective: {prompt}\n\nPlease approach this systematically."
+                optimized = (
+                    f"Objective: {prompt}\n\nPlease approach this systematically."
+                )
 
         return optimized
 
@@ -606,7 +670,9 @@ class PromptOptimizationTool(Tool):
         """Execute prompt optimization."""
         prompt = kwargs["prompt"]
         model = kwargs.get("model")
-        optimization_goals = kwargs.get("optimization_goals", ["clarity", "model_specific"])
+        optimization_goals = kwargs.get(
+            "optimization_goals", ["clarity", "model_specific"]
+        )
         max_tokens = kwargs.get("max_tokens")
         preserve_intent = kwargs.get("preserve_intent", True)
 
@@ -645,7 +711,9 @@ class PromptOptimizationTool(Tool):
                 allowed_chars = max_tokens * 4  # Rough estimate
                 if len(optimized) > allowed_chars:
                     mid = allowed_chars // 2
-                    optimized = optimized[:mid] + "\n[...truncated...]\n" + optimized[-mid:]
+                    optimized = (
+                        optimized[:mid] + "\n[...truncated...]\n" + optimized[-mid:]
+                    )
             else:
                 optimized = optimized[: max_tokens * 4]
             applied_optimizations.append("truncation")
@@ -681,7 +749,9 @@ class PromptOptimizationTool(Tool):
 
         # Check for missing elements
         if "example" not in original.lower() and "for example" not in original.lower():
-            if any(word in original.lower() for word in ["create", "write", "generate"]):
+            if any(
+                word in original.lower() for word in ["create", "write", "generate"]
+            ):
                 recommendations.append("Consider adding examples of desired output")
 
         if "format" not in original.lower() and "json" not in original.lower():
@@ -691,6 +761,8 @@ class PromptOptimizationTool(Tool):
             recommendations.append("Consider breaking complex prompts into steps")
 
         if context.get("model") and "claude" in context["model"]:
-            recommendations.append("Claude works well with conversational, context-rich prompts")
+            recommendations.append(
+                "Claude works well with conversational, context-rich prompts"
+            )
 
         return recommendations

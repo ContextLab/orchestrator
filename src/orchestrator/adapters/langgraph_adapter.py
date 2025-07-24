@@ -160,7 +160,9 @@ class LangGraphWorkflow:
 class LangGraphAdapter(ControlSystem):
     """Adapter for integrating Orchestrator with LangGraph workflows."""
 
-    def __init__(self, config: Dict[str, Any] = None, model_registry: ModelRegistry = None):
+    def __init__(
+        self, config: Dict[str, Any] = None, model_registry: ModelRegistry = None
+    ):
         if config is None:
             config = {"name": "langgraph_adapter"}
 
@@ -267,7 +269,9 @@ class LangGraphAdapter(ControlSystem):
         elif state_data:
             # Use state data as previous results if not explicitly set
             context["previous_results"] = {
-                k: v for k, v in state_data.items() if k not in ["execution_id", "workflow_name"]
+                k: v
+                for k, v in state_data.items()
+                if k not in ["execution_id", "workflow_name"]
             }
 
         try:
@@ -283,7 +287,9 @@ class LangGraphAdapter(ControlSystem):
 
         except Exception as e:
             # Log the error and raise with context
-            error_msg = f"Failed to execute task {task.id} in LangGraph workflow: {str(e)}"
+            error_msg = (
+                f"Failed to execute task {task.id} in LangGraph workflow: {str(e)}"
+            )
             raise RuntimeError(error_msg) from e
 
     async def execute_workflow(
@@ -340,7 +346,9 @@ class LangGraphAdapter(ControlSystem):
 
         # Count active executions for this workflow
         active_count = sum(
-            1 for exec_id in self.active_executions if exec_id.startswith(f"{workflow_name}_")
+            1
+            for exec_id in self.active_executions
+            if exec_id.startswith(f"{workflow_name}_")
         )
 
         return {

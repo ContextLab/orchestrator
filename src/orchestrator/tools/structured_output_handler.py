@@ -34,10 +34,14 @@ class ToolCallResponse(BaseModel):
 class FileOperationResponse(BaseModel):
     """Structured response for file operations."""
 
-    operation: str = Field(description="Type of operation: 'read', 'write', 'append', 'delete'")
+    operation: str = Field(
+        description="Type of operation: 'read', 'write', 'append', 'delete'"
+    )
     filepath: str = Field(description="Full path to the file")
     content: Optional[str] = Field(description="Content for write/append operations")
-    success: bool = Field(default=True, description="Whether the operation should succeed")
+    success: bool = Field(
+        default=True, description="Whether the operation should succeed"
+    )
 
     class Config:
         json_schema_extra = {
@@ -55,7 +59,9 @@ class CodeExecutionResponse(BaseModel):
 
     language: str = Field(description="Programming language")
     code: str = Field(description="Code to execute")
-    timeout: Optional[int] = Field(default=30, description="Execution timeout in seconds")
+    timeout: Optional[int] = Field(
+        default=30, description="Execution timeout in seconds"
+    )
     capture_output: bool = Field(default=True, description="Whether to capture output")
 
     class Config:
@@ -74,14 +80,19 @@ class AnalysisResponse(BaseModel):
 
     analysis_type: str = Field(description="Type of analysis performed")
     findings: List[str] = Field(description="Key findings from the analysis")
-    recommendations: Optional[List[str]] = Field(description="Recommendations based on analysis")
+    recommendations: Optional[List[str]] = Field(
+        description="Recommendations based on analysis"
+    )
     data: Optional[Dict[str, Any]] = Field(description="Structured data from analysis")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "analysis_type": "code_quality",
-                "findings": ["Code follows PEP8 standards", "Good test coverage at 85%"],
+                "findings": [
+                    "Code follows PEP8 standards",
+                    "Good test coverage at 85%",
+                ],
                 "recommendations": [
                     "Add more edge case tests",
                     "Consider refactoring large functions",
@@ -97,8 +108,12 @@ class StructuredOutputHandler:
     def __init__(self):
         self.parsers = {
             "tool_call": PydanticOutputParser(pydantic_object=ToolCallResponse),
-            "file_operation": PydanticOutputParser(pydantic_object=FileOperationResponse),
-            "code_execution": PydanticOutputParser(pydantic_object=CodeExecutionResponse),
+            "file_operation": PydanticOutputParser(
+                pydantic_object=FileOperationResponse
+            ),
+            "code_execution": PydanticOutputParser(
+                pydantic_object=CodeExecutionResponse
+            ),
             "analysis": PydanticOutputParser(pydantic_object=AnalysisResponse),
         }
 
@@ -106,7 +121,9 @@ class StructuredOutputHandler:
         """Get the appropriate parser for the output type."""
         return self.parsers.get(output_type, self.parsers["tool_call"])
 
-    def create_prompt_with_format(self, base_prompt: str, output_type: str = "tool_call") -> str:
+    def create_prompt_with_format(
+        self, base_prompt: str, output_type: str = "tool_call"
+    ) -> str:
         """Create a prompt with format instructions."""
         parser = self.get_parser(output_type)
         format_instructions = parser.get_format_instructions()

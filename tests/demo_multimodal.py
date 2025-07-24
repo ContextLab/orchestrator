@@ -69,7 +69,9 @@ async def demo_image_analysis():
 
     # Analyze (will use placeholder without real model)
     result = await tool.execute(
-        image=f"data:image/png;base64,{img_b64}", analysis_type="describe", detail_level="low"
+        image=f"data:image/png;base64,{img_b64}",
+        analysis_type="describe",
+        detail_level="low",
     )
 
     if result["success"]:
@@ -101,7 +103,9 @@ async def demo_audio_processing():
 
     # Transcribe
     result = await tool.execute(
-        audio=f"data:audio/wav;base64,{audio_b64}", operation="transcribe", language="en"
+        audio=f"data:audio/wav;base64,{audio_b64}",
+        operation="transcribe",
+        language="en",
     )
 
     if result["success"]:
@@ -109,7 +113,9 @@ async def demo_audio_processing():
         print(f"  Language: {result['metadata']['language']}")
 
     # Analyze
-    result = await tool.execute(audio=f"data:audio/wav;base64,{audio_b64}", operation="analyze")
+    result = await tool.execute(
+        audio=f"data:audio/wav;base64,{audio_b64}", operation="analyze"
+    )
 
     if result["success"]:
         print("✓ Audio analysis completed")

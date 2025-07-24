@@ -5,9 +5,6 @@ import asyncio
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-
 async def test_yaml_compilation():
     """Test YAML compilation with AUTO resolution."""
     print("📄 Testing YAML Compilation with AUTO")
@@ -23,7 +20,9 @@ async def test_yaml_compilation():
         compiler = YAMLCompiler()
         compiler.ambiguity_resolver.model = model
 
-        print(f"   Compiler created with model: {compiler.ambiguity_resolver.model.name}")
+        print(
+            f"   Compiler created with model: {compiler.ambiguity_resolver.model.name}"
+        )
 
         # Step 2: Test simple YAML without AUTO
         print("2️⃣ Testing simple YAML...")

@@ -21,7 +21,9 @@ class UniversalTaskExecutor:
         self.auto_resolver = EnhancedAutoResolver()
         self.execution_context = {}
 
-    async def execute_task(self, task_spec: TaskSpec, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_task(
+        self, task_spec: TaskSpec, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute a single task from its specification."""
         logger.info(f"Executing task: {task_spec.id}")
 
@@ -95,7 +97,9 @@ class UniversalTaskExecutor:
                     if isinstance(value, dict) and part in value:
                         value = value[part]
                     else:
-                        logger.warning(f"Template variable path '{var_path}' not found in context")
+                        logger.warning(
+                            f"Template variable path '{var_path}' not found in context"
+                        )
                         return match.group(0)  # Return original if not found
 
                 return str(value)
@@ -104,12 +108,16 @@ class UniversalTaskExecutor:
                 if var_path in context:
                     return str(context[var_path])
                 else:
-                    logger.warning(f"Template variable '{var_path}' not found in context")
+                    logger.warning(
+                        f"Template variable '{var_path}' not found in context"
+                    )
                     return match.group(0)  # Return original if not found
 
         return re.sub(r"\{\{([^}]+)\}\}", replace_var, prompt)
 
-    def _get_required_tools(self, task_spec: TaskSpec, resolved_spec: Dict[str, Any]) -> List[Tool]:
+    def _get_required_tools(
+        self, task_spec: TaskSpec, resolved_spec: Dict[str, Any]
+    ) -> List[Tool]:
         """Get tools required for task execution."""
         tool_names = set()
 
@@ -151,10 +159,16 @@ class UniversalTaskExecutor:
             return await self._execute_with_model_only(prompt, task_spec, output_format)
 
         else:
-            raise ValueError(f"No tools or models available to execute task: {task_spec.id}")
+            raise ValueError(
+                f"No tools or models available to execute task: {task_spec.id}"
+            )
 
     async def _execute_with_tools(
-        self, prompt: str, tools: List[Tool], task_spec: TaskSpec, context: Dict[str, Any]
+        self,
+        prompt: str,
+        tools: List[Tool],
+        task_spec: TaskSpec,
+        context: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute task using specified tools."""
         results = {}
@@ -166,7 +180,9 @@ class UniversalTaskExecutor:
                 logger.debug(f"Executing tool: {tool.name}")
 
                 # Extract parameters for tool from context and task inputs
-                tool_params = self._extract_tool_parameters(tool, task_spec, context, prompt)
+                tool_params = self._extract_tool_parameters(
+                    tool, task_spec, context, prompt
+                )
 
                 # Execute tool
                 tool_result = await tool.execute(**tool_params)
@@ -197,9 +213,12 @@ class UniversalTaskExecutor:
         if output_format == "json" or output_format == "structured":
             # Try to get structured output
             try:
-                schema = {"type": "object", "properties": {"result": {"type": "string"}}}
+                schema = {
+                    "type": "object",
+                    "properties": {"result": {"type": "string"}},
+                }
                 return await model.generate_structured(prompt, schema)
-            except:
+            except Exception:
                 # Fallback to regular generation
                 return await model.generate(prompt)
         else:
@@ -254,7 +273,9 @@ class UniversalTaskExecutor:
             min_size = task_spec.model_requirements.get("min_size")
 
             if hasattr(self.model_registry, "get_best_model"):
-                return self.model_registry.get_best_model(required_capabilities, min_size)
+                return self.model_registry.get_best_model(
+                    required_capabilities, min_size
+                )
 
         # Default to general purpose model
         if hasattr(self.model_registry, "get_default_model"):
@@ -302,7 +323,9 @@ class UniversalTaskExecutor:
         self, task_spec: TaskSpec, error: Exception, context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Handle task error based on on_error specification."""
-        logger.info(f"Handling error for task {task_spec.id} with strategy: {task_spec.on_error}")
+        logger.info(
+            f"Handling error for task {task_spec.id} with strategy: {task_spec.on_error}"
+        )
 
         if task_spec.on_error.startswith("<AUTO>"):
             # Execute error handling as another AUTO task
@@ -311,7 +334,9 @@ class UniversalTaskExecutor:
             error_context["error"] = str(error)
             error_context["failed_task"] = task_spec.id
 
-            error_spec = TaskSpec(id=f"{task_spec.id}_error_handler", action=task_spec.on_error)
+            error_spec = TaskSpec(
+                id=f"{task_spec.id}_error_handler", action=task_spec.on_error
+            )
 
             return await self.execute_task(error_spec, error_context)
 

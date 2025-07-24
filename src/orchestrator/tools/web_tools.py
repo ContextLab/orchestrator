@@ -66,7 +66,8 @@ class DuckDuckGoSearchBackend(WebSearchBackend):
                         "url": result.get("href", ""),
                         "snippet": result.get("body", ""),
                         "source": "duckduckgo",
-                        "relevance": 1.0 - (idx * 0.1),  # Decreasing relevance by position
+                        "relevance": 1.0
+                        - (idx * 0.1),  # Decreasing relevance by position
                         "date": datetime.now().isoformat(),
                         "rank": idx + 1,
                     }
@@ -89,7 +90,9 @@ class BingSearchBackend(WebSearchBackend):
             self.logger.error("Bing API key not configured")
             return []
 
-        endpoint = self.config.get("endpoint", "https://api.bing.microsoft.com/v7.0/search")
+        endpoint = self.config.get(
+            "endpoint", "https://api.bing.microsoft.com/v7.0/search"
+        )
 
         headers = {
             "Ocp-Apim-Subscription-Key": api_key,
@@ -121,7 +124,9 @@ class BingSearchBackend(WebSearchBackend):
                             "snippet": page.get("snippet", ""),
                             "source": "bing",
                             "relevance": 1.0 - (idx * 0.1),
-                            "date": page.get("dateLastCrawled", datetime.now().isoformat()),
+                            "date": page.get(
+                                "dateLastCrawled", datetime.now().isoformat()
+                            ),
                             "rank": idx + 1,
                         }
                     )
@@ -196,7 +201,8 @@ class WebScraper:
         self.session.headers.update(
             {
                 "User-Agent": config.get(
-                    "user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    "user_agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 )
             }
         )
@@ -249,7 +255,9 @@ class WebScraper:
                 text = soup.get_text()
                 # Clean up whitespace
                 lines = (line.strip() for line in text.splitlines())
-                chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+                chunks = (
+                    phrase.strip() for line in lines for phrase in line.split("  ")
+                )
                 text = " ".join(chunk for chunk in chunks if chunk)
 
                 result["text"] = text
@@ -270,7 +278,9 @@ class WebScraper:
                 result["meta_tags"] = meta_tags
 
                 # Extract description
-                description = meta_tags.get("description") or meta_tags.get("og:description")
+                description = meta_tags.get("description") or meta_tags.get(
+                    "og:description"
+                )
                 if description:
                     result["description"] = description
 
@@ -301,7 +311,11 @@ class WebScraper:
                         src = urljoin(url, src)
 
                     images.append(
-                        {"url": src, "alt": img.get("alt", ""), "title": img.get("title", "")}
+                        {
+                            "url": src,
+                            "alt": img.get("alt", ""),
+                            "title": img.get("title", ""),
+                        }
                     )
 
                 result["images"] = images
@@ -310,7 +324,11 @@ class WebScraper:
 
         except Exception as e:
             self.logger.error(f"Failed to scrape {url}: {e}")
-            return {"url": url, "error": str(e), "scrape_time": datetime.now().isoformat()}
+            return {
+                "url": url,
+                "error": str(e),
+                "scrape_time": datetime.now().isoformat(),
+            }
 
     async def verify_url(self, url: str) -> Dict[str, Any]:
         """Verify if a URL is accessible."""
@@ -387,13 +405,16 @@ class BrowserAutomation:
         else:
             raise ValueError(f"Unsupported browser type: {browser_type}")
 
-        self.browser = await browser_class.launch(headless=self.config.get("headless", True))
+        self.browser = await browser_class.launch(
+            headless=self.config.get("headless", True)
+        )
 
         viewport = self.config.get("viewport", {"width": 1920, "height": 1080})
         self.context = await self.browser.new_context(
             viewport=viewport,
             user_agent=self.config.get(
-                "user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                "user_agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             ),
         )
 
@@ -467,7 +488,11 @@ class BrowserAutomation:
 
         except Exception as e:
             self.logger.error(f"Failed to scrape {url} with browser: {e}")
-            return {"url": url, "error": str(e), "scrape_time": datetime.now().isoformat()}
+            return {
+                "url": url,
+                "error": str(e),
+                "scrape_time": datetime.now().isoformat(),
+            }
 
 
 class RateLimiter:
@@ -522,7 +547,9 @@ class WebCache:
         """Remove expired entries from cache."""
         now = time.time()
         expired_keys = [
-            key for key, value in self.cache.items() if now - value["timestamp"] > self.ttl
+            key
+            for key, value in self.cache.items()
+            if now - value["timestamp"] > self.ttl
         ]
 
         for key in expired_keys:
@@ -566,10 +593,16 @@ class HeadlessBrowserTool(Tool):
             description="Perform web browsing, search, and verification tasks using a headless browser",
         )
         self.add_parameter(
-            "action", "string", "Action to perform: 'search', 'verify', 'scrape', 'scrape_js'"
+            "action",
+            "string",
+            "Action to perform: 'search', 'verify', 'scrape', 'scrape_js'",
         )
-        self.add_parameter("url", "string", "URL to visit (for verify/scrape)", required=False)
-        self.add_parameter("query", "string", "Search query (for search)", required=False)
+        self.add_parameter(
+            "url", "string", "URL to visit (for verify/scrape)", required=False
+        )
+        self.add_parameter(
+            "query", "string", "Search query (for search)", required=False
+        )
         self.add_parameter(
             "sources",
             "array",
@@ -578,10 +611,17 @@ class HeadlessBrowserTool(Tool):
             default=["web"],
         )
         self.add_parameter(
-            "max_results", "integer", "Maximum number of search results", required=False, default=10
+            "max_results",
+            "integer",
+            "Maximum number of search results",
+            required=False,
+            default=10,
         )
         self.add_parameter(
-            "backend", "string", "Search backend to use (duckduckgo, bing, google)", required=False
+            "backend",
+            "string",
+            "Search backend to use (duckduckgo, bing, google)",
+            required=False,
         )
 
         # Initialize configuration
@@ -605,7 +645,8 @@ class HeadlessBrowserTool(Tool):
         cache_config = self.web_config.get("caching", {})
         self.cache = (
             WebCache(
-                max_size=cache_config.get("max_cache_size", 100), ttl=cache_config.get("ttl", 3600)
+                max_size=cache_config.get("max_cache_size", 100),
+                ttl=cache_config.get("ttl", 3600),
             )
             if cache_config.get("enabled", True)
             else None
@@ -626,19 +667,27 @@ class HeadlessBrowserTool(Tool):
 
         # Initialize Bing backend
         if backends_config.get("bing", {}).get("enabled", False):
-            self.search_backends["bing"] = BingSearchBackend(backends_config.get("bing", {}))
+            self.search_backends["bing"] = BingSearchBackend(
+                backends_config.get("bing", {})
+            )
 
         # Initialize Google backend
         if backends_config.get("google", {}).get("enabled", False):
-            self.search_backends["google"] = GoogleSearchBackend(backends_config.get("google", {}))
+            self.search_backends["google"] = GoogleSearchBackend(
+                backends_config.get("google", {})
+            )
 
-    def _get_search_backend(self, backend_name: Optional[str] = None) -> WebSearchBackend:
+    def _get_search_backend(
+        self, backend_name: Optional[str] = None
+    ) -> WebSearchBackend:
         """Get search backend by name or default."""
         if backend_name and backend_name in self.search_backends:
             return self.search_backends[backend_name]
 
         # Use default backend
-        default_backend = self.web_config.get("search", {}).get("default_backend", "duckduckgo")
+        default_backend = self.web_config.get("search", {}).get(
+            "default_backend", "duckduckgo"
+        )
         if default_backend in self.search_backends:
             return self.search_backends[default_backend]
 
@@ -669,7 +718,11 @@ class HeadlessBrowserTool(Tool):
                 raise ValueError(f"Unknown browser action: {action}")
         except Exception as e:
             self.logger.error(f"Error executing action {action}: {e}")
-            return {"error": str(e), "action": action, "timestamp": datetime.now().isoformat()}
+            return {
+                "error": str(e),
+                "action": action,
+                "timestamp": datetime.now().isoformat(),
+            }
 
     async def _web_search(self, kwargs) -> Dict[str, Any]:
         """Perform web search."""
@@ -760,7 +813,11 @@ class HeadlessBrowserTool(Tool):
         url = kwargs.get("url", "")
 
         if not url:
-            return {"error": "No URL provided", "url": url, "timestamp": datetime.now().isoformat()}
+            return {
+                "error": "No URL provided",
+                "url": url,
+                "timestamp": datetime.now().isoformat(),
+            }
 
         # Check cache first
         cache_key = f"scrape:{url}"
@@ -784,7 +841,11 @@ class HeadlessBrowserTool(Tool):
         url = kwargs.get("url", "")
 
         if not url:
-            return {"error": "No URL provided", "url": url, "timestamp": datetime.now().isoformat()}
+            return {
+                "error": "No URL provided",
+                "url": url,
+                "timestamp": datetime.now().isoformat(),
+            }
 
         # Check cache first
         cache_key = f"scrape_js:{url}"
@@ -804,10 +865,14 @@ class HeadlessBrowserTool(Tool):
                 import sys
 
                 # Install playwright package
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright"])
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "playwright"]
+                )
 
                 # Install browser binaries
-                subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])
+                subprocess.check_call(
+                    [sys.executable, "-m", "playwright", "install", "chromium"]
+                )
 
                 # Try importing again
                 self.logger.info("Playwright installed successfully")
@@ -842,7 +907,9 @@ class WebSearchTool(Tool):
     """Simplified web search tool."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(name="web-search", description="Perform web search and return results")
+        super().__init__(
+            name="web-search", description="Perform web search and return results"
+        )
         self.add_parameter("query", "string", "Search query")
         self.add_parameter(
             "max_results",
@@ -852,7 +919,10 @@ class WebSearchTool(Tool):
             default=10,
         )
         self.add_parameter(
-            "backend", "string", "Search backend to use (duckduckgo, bing, google)", required=False
+            "backend",
+            "string",
+            "Search backend to use (duckduckgo, bing, google)",
+            required=False,
         )
 
         # Initialize with headless browser tool

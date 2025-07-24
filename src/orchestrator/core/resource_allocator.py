@@ -145,7 +145,9 @@ class PriorityBasedStrategy(ResourceAllocationStrategy):
             adjusted_request = requested * priority_multiplier
 
             if available_amount >= adjusted_request:
-                allocation[resource_type] = min(adjusted_request, requested * 1.2)  # Max 20% bonus
+                allocation[resource_type] = min(
+                    adjusted_request, requested * 1.2
+                )  # Max 20% bonus
             elif available_amount >= request.min_resources.get(resource_type, 0.0):
                 allocation[resource_type] = available_amount
             else:
@@ -271,7 +273,9 @@ class ResourcePool:
                 "allocated": usage.used,
                 "reserved": usage.reserved,
                 "utilization": (
-                    (usage.used + usage.reserved) / self.quota.limit if self.quota.limit > 0 else 0
+                    (usage.used + usage.reserved) / self.quota.limit
+                    if self.quota.limit > 0
+                    else 0
                 ),
                 "active_allocations": len(self.allocations),
                 "active_reservations": len(self.reservations),
@@ -300,7 +304,9 @@ class ResourceAllocator:
         if resource_type in self.pools:
             # Release all allocations
             pool = self.pools[resource_type]
-            for task_id in list(pool.allocations.keys()) + list(pool.reservations.keys()):
+            for task_id in list(pool.allocations.keys()) + list(
+                pool.reservations.keys()
+            ):
                 pool.release(task_id)
 
             del self.pools[resource_type]
@@ -327,7 +333,8 @@ class ResourceAllocator:
 
             # Check if allocation meets minimum requirements
             allocation_viable = all(
-                allocation.get(res_type, 0.0) >= request.min_resources.get(res_type, 0.0)
+                allocation.get(res_type, 0.0)
+                >= request.min_resources.get(res_type, 0.0)
                 for res_type in request.resources
             )
 
@@ -435,7 +442,9 @@ class ResourceAllocator:
         """Get current resource allocation for a task."""
         return self.task_allocations.get(task_id, {})
 
-    def get_resource_usage(self, resource_type: ResourceType) -> Optional[ResourceUsage]:
+    def get_resource_usage(
+        self, resource_type: ResourceType
+    ) -> Optional[ResourceUsage]:
         """Get usage for a specific resource type."""
         if resource_type in self.pools:
             return self.pools[resource_type].get_usage()

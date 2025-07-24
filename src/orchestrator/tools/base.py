@@ -108,8 +108,16 @@ def register_default_tools():
     from .report_tools import PDFCompilerTool, ReportGeneratorTool
     from .system_tools import FileSystemTool, TerminalTool
     from .web_tools import HeadlessBrowserTool, WebSearchTool
-    from .llm_tools import TaskDelegationTool, MultiModelRoutingTool, PromptOptimizationTool
-    from .user_interaction_tools import UserPromptTool, ApprovalGateTool, FeedbackCollectionTool
+    from .llm_tools import (
+        TaskDelegationTool,
+        MultiModelRoutingTool,
+        PromptOptimizationTool,
+    )
+    from .user_interaction_tools import (
+        UserPromptTool,
+        ApprovalGateTool,
+        FeedbackCollectionTool,
+    )
     from .pipeline_recursion_tools import PipelineExecutorTool, RecursionControlTool
     from .multimodal_tools import (
         ImageAnalysisTool,

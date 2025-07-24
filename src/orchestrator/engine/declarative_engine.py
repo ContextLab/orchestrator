@@ -17,13 +17,17 @@ logger = logging.getLogger(__name__)
 class DeclarativePipelineEngine:
     """Executes YAML pipelines with complete automation - no custom code required."""
 
-    def __init__(self, model_registry: Optional[ModelRegistry] = None, tool_registry=None):
+    def __init__(
+        self, model_registry: Optional[ModelRegistry] = None, tool_registry=None
+    ):
         self.model_registry = model_registry
         self.tool_registry = tool_registry or default_registry
         self.task_executor = AdvancedTaskExecutor(model_registry, tool_registry)
         self.execution_history = []
 
-    async def execute_pipeline(self, yaml_content: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_pipeline(
+        self, yaml_content: str, inputs: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute a complete pipeline from YAML content with provided inputs."""
         logger.info("Starting declarative pipeline execution")
 
@@ -114,7 +118,10 @@ class DeclarativePipelineEngine:
                 "description": pipeline_spec.description,
             },
             "config": pipeline_spec.config,
-            "execution": {"start_time": datetime.now().isoformat(), "engine_version": "1.0.0"},
+            "execution": {
+                "start_time": datetime.now().isoformat(),
+                "engine_version": "1.0.0",
+            },
         }
 
         # Add input values directly to context for easy template access
@@ -195,7 +202,10 @@ class DeclarativePipelineEngine:
         return step_context
 
     def _extract_outputs(
-        self, pipeline_spec: PipelineSpec, results: Dict[str, Any], context: Dict[str, Any]
+        self,
+        pipeline_spec: PipelineSpec,
+        results: Dict[str, Any],
+        context: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Extract final outputs from pipeline execution results."""
         outputs = {}
@@ -269,7 +279,9 @@ class DeclarativePipelineEngine:
             # Check for required tools
             required_tools = pipeline_spec.get_required_tools()
             available_tools = self.tool_registry.list_tools()
-            missing_tools = [tool for tool in required_tools if tool not in available_tools]
+            missing_tools = [
+                tool for tool in required_tools if tool not in available_tools
+            ]
 
             validation_result = {
                 "valid": True,
@@ -278,7 +290,9 @@ class DeclarativePipelineEngine:
                 "auto_tag_steps": len(auto_steps),
                 "required_tools": required_tools,
                 "missing_tools": missing_tools,
-                "execution_order": [step.id for step in pipeline_spec.get_execution_order()],
+                "execution_order": [
+                    step.id for step in pipeline_spec.get_execution_order()
+                ],
                 "warnings": [],
             }
 

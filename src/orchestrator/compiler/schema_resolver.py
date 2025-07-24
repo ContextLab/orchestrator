@@ -36,7 +36,9 @@ class GraphEdge:
 
     source: str
     target: str
-    data_mapping: Dict[str, str] = field(default_factory=dict)  # source_field -> target_field
+    data_mapping: Dict[str, str] = field(
+        default_factory=dict
+    )  # source_field -> target_field
     transform: Optional[str] = None  # Optional transformation expression
 
 
@@ -72,7 +74,9 @@ class PipelineGraph:
 
     def get_roots(self) -> List[str]:
         """Get root nodes (no dependencies)."""
-        return [node_id for node_id, node in self.nodes.items() if not node.predecessors]
+        return [
+            node_id for node_id, node in self.nodes.items() if not node.predecessors
+        ]
 
     def get_leaves(self) -> List[str]:
         """Get leaf nodes (no successors)."""
@@ -80,7 +84,9 @@ class PipelineGraph:
 
     def topological_sort(self) -> List[str]:
         """Get topological ordering of nodes."""
-        in_degree = {node_id: len(node.predecessors) for node_id, node in self.nodes.items()}
+        in_degree = {
+            node_id: len(node.predecessors) for node_id, node in self.nodes.items()
+        }
 
         queue = deque([node_id for node_id, degree in in_degree.items() if degree == 0])
         result = []
@@ -204,7 +210,9 @@ class SchemaResolver:
             for succ_id in node.successors:
                 succ_node = graph.nodes.get(succ_id)
                 if succ_node and succ_node.input_schema:
-                    successor_inputs.append({"task_id": succ_id, "schema": succ_node.input_schema})
+                    successor_inputs.append(
+                        {"task_id": succ_id, "schema": succ_node.input_schema}
+                    )
 
             # Try to infer output schema from successors
             if not node.output_schema and successor_inputs:
@@ -213,7 +221,9 @@ class SchemaResolver:
                 )
                 if node.output_schema:
                     node.schema_state = (
-                        SchemaState.PARTIAL if not node.input_schema else SchemaState.FIXED
+                        SchemaState.PARTIAL
+                        if not node.input_schema
+                        else SchemaState.FIXED
                     )
 
     async def _apply_constraints(self, graph: PipelineGraph):
@@ -303,7 +313,10 @@ class SchemaResolver:
                 properties[pred_id] = pred["schema"]
             else:
                 # Wrap non-object schemas
-                properties[pred_id] = {"type": "object", "properties": {"result": pred["schema"]}}
+                properties[pred_id] = {
+                    "type": "object",
+                    "properties": {"result": pred["schema"]},
+                }
 
         return {"type": "object", "properties": properties}
 
