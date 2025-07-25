@@ -19,6 +19,11 @@ class TestResearchAssistantWithReport:
         """Test complete research pipeline with PDF generation."""
         # Import the example module
         try:
+            import sys
+            from pathlib import Path
+            # Add examples directory to path
+            examples_dir = Path(__file__).parent.parent.parent / "examples"
+            sys.path.insert(0, str(examples_dir))
             from research_assistant_with_report import ResearchAssistantWithReport
         except ImportError:
             pytest.skip("Research Assistant example not available")
@@ -206,6 +211,11 @@ This concludes the test report.
         """Test research quality scoring logic."""
         # Import the example module
         try:
+            import sys
+            from pathlib import Path
+            # Add examples directory to path
+            examples_dir = Path(__file__).parent.parent.parent / "examples"
+            sys.path.insert(0, str(examples_dir))
             from research_assistant_with_report import ResearchAssistantWithReport
         except ImportError:
             pytest.skip("Research Assistant example not available")
@@ -213,15 +223,38 @@ This concludes the test report.
         # Create assistant
         assistant = ResearchAssistantWithReport({})
 
-        # Test quality scoring
-        search_results = {"results": [{"title": "Result 1"}, {"title": "Result 2"}]}
+        # Test quality scoring with realistic data
+        search_results = {
+            "results": [
+                {
+                    "title": "Result 1",
+                    "url": "https://example1.com/page1",
+                    "relevance": 0.9
+                },
+                {
+                    "title": "Result 2", 
+                    "url": "https://example2.com/page2",
+                    "relevance": 0.8
+                },
+                {
+                    "title": "Result 3",
+                    "url": "https://example3.com/page3", 
+                    "relevance": 0.7
+                }
+            ]
+        }
         extraction_results = {"success": True, "word_count": 1500}
 
         score = assistant._calculate_quality_score(search_results, extraction_results)
 
         # Verify score calculation
         assert 0 <= score <= 1
-        # With 2 results and 1500 words, score should be reasonably high
+        # With 3 results, good relevance, URLs, and 1500 words:
+        # Results: 3/10 * 0.3 = 0.09
+        # Content: 1500/2000 * 0.3 = 0.225
+        # Relevance: 0.8 * 0.2 = 0.16
+        # Diversity: 3/5 * 0.2 = 0.12
+        # Total: ~0.595
         assert score > 0.5
 
 
