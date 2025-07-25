@@ -90,6 +90,17 @@ def init_models(config_path: str = None) -> ModelRegistry:
     available_keys = load_api_keys_optional()
     if available_keys:
         print(f">> Found API keys for: {', '.join(available_keys.keys())}")
+        # Also set them in environment for backward compatibility
+        provider_env_map = {
+            "anthropic": "ANTHROPIC_API_KEY",
+            "google": "GOOGLE_AI_API_KEY",
+            "huggingface": "HF_TOKEN",
+            "openai": "OPENAI_API_KEY",
+        }
+        for provider, api_key in available_keys.items():
+            env_var = provider_env_map.get(provider)
+            if env_var and not os.environ.get(env_var):
+                os.environ[env_var] = api_key
     else:
         print(">> No API keys found - only local models will be available")
 
@@ -181,9 +192,9 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 except Exception as e:
                     print(f">>   ⚠️  Failed to register HuggingFace model {name}: {e}")
 
-            elif provider == "openai" and os.environ.get("OPENAI_API_KEY"):
+            elif provider == "openai" and "openai" in available_keys:
                 # Only register if API key is available
-                model = OpenAIModel(model_name=name)
+                model = OpenAIModel(model_name=name, api_key=available_keys["openai"])
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
@@ -192,9 +203,9 @@ def init_models(config_path: str = None) -> ModelRegistry:
                     f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)"
                 )
 
-            elif provider == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
+            elif provider == "anthropic" and "anthropic" in available_keys:
                 # Only register if API key is available
-                model = AnthropicModel(model_name=name)
+                model = AnthropicModel(model_name=name, api_key=available_keys["anthropic"])
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
@@ -203,11 +214,9 @@ def init_models(config_path: str = None) -> ModelRegistry:
                     f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)"
                 )
 
-            elif provider == "google" and (
-                os.environ.get("GOOGLE_AI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-            ):
+            elif provider == "google" and "google" in available_keys:
                 # Only register if API key is available
-                model = GoogleModel(model_name=name)
+                model = GoogleModel(model_name=name, api_key=available_keys["google"])
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
