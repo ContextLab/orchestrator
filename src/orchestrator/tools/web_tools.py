@@ -691,6 +691,15 @@ class HeadlessBrowserTool(Tool):
 
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
+    def __del__(self):
+        """Clean up resources on destruction."""
+        try:
+            # Clean up scraper session
+            if hasattr(self, 'scraper') and hasattr(self.scraper, 'session'):
+                self.scraper.session.close()
+        except Exception:
+            pass
+
     def _init_search_backends(self):
         """Initialize search backends based on configuration."""
         search_config = self.web_config.get("search", {})
