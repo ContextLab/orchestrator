@@ -146,9 +146,21 @@ class OpenAIModel(Model):
             **kwargs: Additional arguments passed to parent class
         """
         if not OPENAI_AVAILABLE:
-            raise ImportError(
-                "OpenAI library not available. Install with: pip install openai"
-            )
+            # Try to install on demand
+            import subprocess
+            import sys
+            try:
+                global openai, OpenAI, OPENAI_AVAILABLE
+                print("OpenAI library not found. Installing...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])
+                # Re-import after installation
+                import openai
+                from openai import OpenAI
+                OPENAI_AVAILABLE = True
+            except Exception as e:
+                raise ImportError(
+                    f"Failed to install OpenAI library: {e}. Install manually with: pip install openai"
+                )
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(model_name)

@@ -205,9 +205,26 @@ class HuggingFaceModel(Model):
             **kwargs: Additional arguments passed to parent class
         """
         if not TRANSFORMERS_AVAILABLE:
-            raise ImportError(
-                "Transformers library not available. Install with: pip install transformers torch"
-            )
+            # Try to install on demand
+            import subprocess
+            import sys
+            try:
+                global torch, AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig, TRANSFORMERS_AVAILABLE
+                print("Transformers library not found. Installing...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "transformers", "torch"])
+                # Re-import after installation
+                import torch
+                from transformers import (
+                    AutoModelForCausalLM,
+                    AutoTokenizer,
+                    pipeline,
+                    BitsAndBytesConfig,
+                )
+                TRANSFORMERS_AVAILABLE = True
+            except Exception as e:
+                raise ImportError(
+                    f"Failed to install Transformers library: {e}. Install manually with: pip install transformers torch"
+                )
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(

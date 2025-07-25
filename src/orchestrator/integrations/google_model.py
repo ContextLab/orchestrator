@@ -151,9 +151,21 @@ class GoogleModel(Model):
             **kwargs: Additional arguments passed to parent class
         """
         if not GOOGLE_AI_AVAILABLE:
-            raise ImportError(
-                "Google AI library not available. Install with: pip install google-generativeai"
-            )
+            # Try to install on demand
+            import subprocess
+            import sys
+            try:
+                global genai, GenerativeModel, GOOGLE_AI_AVAILABLE
+                print("Google AI library not found. Installing...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai"])
+                # Re-import after installation
+                import google.generativeai as genai
+                from google.generativeai import GenerativeModel
+                GOOGLE_AI_AVAILABLE = True
+            except Exception as e:
+                raise ImportError(
+                    f"Failed to install Google AI library: {e}. Install manually with: pip install google-generativeai"
+                )
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(

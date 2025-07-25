@@ -147,9 +147,21 @@ class AnthropicModel(Model):
             **kwargs: Additional arguments passed to parent class
         """
         if not ANTHROPIC_AVAILABLE:
-            raise ImportError(
-                "Anthropic library not available. Install with: pip install anthropic"
-            )
+            # Try to install on demand
+            import subprocess
+            import sys
+            try:
+                global anthropic, Anthropic, ANTHROPIC_AVAILABLE
+                print("Anthropic library not found. Installing...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "anthropic"])
+                # Re-import after installation
+                import anthropic
+                from anthropic import Anthropic
+                ANTHROPIC_AVAILABLE = True
+            except Exception as e:
+                raise ImportError(
+                    f"Failed to install Anthropic library: {e}. Install manually with: pip install anthropic"
+                )
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(
