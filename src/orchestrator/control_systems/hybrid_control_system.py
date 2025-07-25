@@ -325,12 +325,65 @@ class HybridControlSystem(ModelBasedControlSystem):
                 else:
                     resolved_params[key] = value
             
-            # Use DataProcessingTool
+            # Special handling for transform_spec
+            if "transform_spec" in resolved_params:
+                import json
+                transform_spec = resolved_params["transform_spec"]
+                data_str = resolved_params.get("data", "")
+                
+                # Parse the JSON data if it's a string
+                parsed_data = None
+                try:
+                    if isinstance(data_str, str):
+                        parsed_data = json.loads(data_str)
+                    else:
+                        parsed_data = data_str
+                except:
+                    parsed_data = data_str
+                
+                # Apply transformations
+                processed_data = {}
+                for field, expr in transform_spec.items():
+                    try:
+                        # Create safe evaluation context with necessary builtins
+                        safe_builtins = {
+                            "sum": sum,
+                            "len": len,
+                            "min": min,
+                            "max": max,
+                            "abs": abs,
+                            "round": round,
+                            "int": int,
+                            "float": float,
+                            "str": str,
+                            "bool": bool,
+                            "list": list,
+                            "dict": dict,
+                            "set": set,
+                            "tuple": tuple,
+                        }
+                        # Provide both raw string data and parsed data in context
+                        eval_context = {
+                            "data": data_str,  # Raw string data for json.loads(data)
+                            "parsed_data": parsed_data,  # Pre-parsed data
+                            "json": json
+                        }
+                        # Evaluate the expression
+                        processed_data[field] = eval(expr, {"__builtins__": safe_builtins}, eval_context)
+                    except Exception as e:
+                        processed_data[field] = f"Error: {str(e)}"
+                
+                return {"processed_data": processed_data, "success": True}
+            
+            # Use DataProcessingTool for standard operations
             result = await self.data_processing_tool.execute(**resolved_params)
             
             # If the result contains processed_data, return it in the expected format
             if isinstance(result, dict) and "processed_data" in result:
                 return result
+            elif isinstance(result, dict) and "result" in result:
+                # Convert result to processed_data format
+                return {"processed_data": result["result"], "success": True}
             else:
                 # Wrap the result to match expected format
                 return {"processed_data": result, "success": True}
@@ -347,7 +400,27 @@ class HybridControlSystem(ModelBasedControlSystem):
             resolved_params = {}
             for key, value in task.parameters.items():
                 if isinstance(value, str) and "{{" in value:
-                    resolved_params[key] = self._resolve_templates(value, template_context)
+                    # Special handling for 'data' parameter - preserve structure
+                    if key == "data":
+                        # Extract the referenced value directly from context
+                        import re
+                        match = re.search(r"\{\{(.+?)\}\}", value)
+                        if match:
+                            ref_path = match.group(1).strip()
+                            parts = ref_path.split(".")
+                            result = template_context
+                            for part in parts:
+                                if isinstance(result, dict) and part in result:
+                                    result = result[part]
+                                else:
+                                    # Fallback to string resolution
+                                    result = self._resolve_templates(value, template_context)
+                                    break
+                            resolved_params[key] = result
+                        else:
+                            resolved_params[key] = value
+                    else:
+                        resolved_params[key] = self._resolve_templates(value, template_context)
                 else:
                     resolved_params[key] = value
             

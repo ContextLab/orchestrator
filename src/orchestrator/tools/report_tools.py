@@ -409,13 +409,12 @@ class PDFCompilerTool(Tool):
                 temp_md_path,
                 "-o",
                 output_path,
-                "--pdf-engine=xelatex",  # Use xelatex for better Unicode support
+                "-f", "markdown",  # Explicitly specify input format
+                "--pdf-engine=pdflatex",  # Use pdflatex which is more commonly available
                 "-V",
-                "geometry:margin=1in",
+                "geometry=margin=1in",
                 "-V",
                 "fontsize=12pt",
-                "-V",
-                "mainfont=DejaVu Sans",  # Cross-platform font
                 "--highlight-style=tango",
                 f"--metadata=title:{title}",
                 f"--metadata=author:{author}",
