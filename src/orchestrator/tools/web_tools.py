@@ -207,6 +207,13 @@ class WebScraper:
             }
         )
 
+    def __del__(self):
+        """Clean up session on destruction."""
+        try:
+            self.session.close()
+        except Exception:
+            pass
+
     async def scrape_url(self, url: str) -> Dict[str, Any]:
         """Scrape content from a URL."""
         try:
@@ -222,7 +229,11 @@ class WebScraper:
                 response.raise_for_status()
                 return response
 
-            response = await loop.run_in_executor(None, _get_content)
+            # Add timeout to the executor call
+            response = await asyncio.wait_for(
+                loop.run_in_executor(None, _get_content),
+                timeout=self.config.get("timeout", 30) + 5  # Add 5 seconds for overhead
+            )
 
             # Check content length
             max_length = self.config.get("max_content_length", 1048576)  # 1MB
@@ -343,7 +354,11 @@ class WebScraper:
                 )
                 return response
 
-            response = await loop.run_in_executor(None, _head_request)
+            # Add timeout to the executor call
+            response = await asyncio.wait_for(
+                loop.run_in_executor(None, _head_request),
+                timeout=self.config.get("timeout", 30) + 5  # Add 5 seconds for overhead
+            )
 
             return {
                 "url": url,
