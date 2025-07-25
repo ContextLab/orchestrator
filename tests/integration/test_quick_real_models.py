@@ -3,7 +3,6 @@
 
 import asyncio
 import sys
-import os
 
 from orchestrator.integrations.ollama_model import OllamaModel
 

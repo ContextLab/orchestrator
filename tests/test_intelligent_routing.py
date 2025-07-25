@@ -3,7 +3,6 @@
 
 import os
 import pytest
-import sys
 
 from orchestrator.models.model_registry import ModelRegistry
 from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria

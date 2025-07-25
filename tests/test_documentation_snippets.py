@@ -1,9 +1,7 @@
 """Test code snippets from documentation to ensure they work correctly."""
 
 import os
-import sys
 import tempfile
-from pathlib import Path
 import pytest
 import yaml
 

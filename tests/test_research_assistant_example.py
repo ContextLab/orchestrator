@@ -8,7 +8,6 @@ with real API keys and produces high-quality outputs.
 import asyncio
 import os
 import pytest
-import sys
 import yaml
 from typing import Dict, Any
 

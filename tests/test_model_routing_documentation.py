@@ -3,6 +3,7 @@
 
 import asyncio
 import os
+import sys
 
 # Add parent directory to path
 from orchestrator import Orchestrator, init_models

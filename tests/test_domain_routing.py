@@ -2,7 +2,6 @@
 """Test domain-specific model routing."""
 
 import os
-import sys
 import pytest
 
 from orchestrator.models.model_registry import ModelRegistry

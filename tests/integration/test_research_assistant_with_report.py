@@ -18,7 +18,6 @@ class TestResearchAssistantWithReport:
     async def test_full_research_pipeline(self):
         """Test complete research pipeline with PDF generation."""
         # Import the example module
-        import sys
 
         examples_dir = Path(__file__).parent.parent.parent / "examples"
         try:
@@ -210,7 +209,6 @@ This concludes the test report.
     async def test_research_quality_scoring(self):
         """Test research quality scoring logic."""
         # Import the example module
-        import sys
 
         examples_dir = Path(__file__).parent.parent.parent / "examples"
         try:

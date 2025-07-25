@@ -8,7 +8,6 @@ the Orchestrator framework works correctly in production scenarios.
 
 import asyncio
 import pytest
-import sys
 import os
 import json
 import csv

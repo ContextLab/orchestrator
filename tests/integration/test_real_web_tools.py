@@ -6,8 +6,6 @@ This script shows how to use the updated web tools with real web search and cont
 """
 
 import asyncio
-import sys
-import os
 
 # Add the src directory to the path
 from orchestrator.tools.web_tools import HeadlessBrowserTool, WebSearchTool

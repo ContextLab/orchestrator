@@ -2,7 +2,6 @@
 """Local Ollama testing - only runs when Ollama is available."""
 
 import sys
-import os
 import subprocess
 import pytest
 

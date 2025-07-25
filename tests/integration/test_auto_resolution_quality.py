@@ -3,7 +3,6 @@
 
 import asyncio
 import sys
-import os
 
 from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
 from orchestrator.integrations.ollama_model import OllamaModel

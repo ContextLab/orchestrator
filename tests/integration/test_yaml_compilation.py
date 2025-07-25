@@ -3,7 +3,6 @@
 
 import asyncio
 import sys
-import os
 
 async def test_yaml_compilation():
     """Test YAML compilation with AUTO resolution."""

@@ -3,7 +3,6 @@
 
 import asyncio
 import sys
-import os
 import pytest
 
 # Mark all tests in this file as local-only (not run in CI)

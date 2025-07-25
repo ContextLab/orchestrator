@@ -3,7 +3,6 @@
 
 import asyncio
 import sys
-import os
 
 from orchestrator.orchestrator import Orchestrator
 from orchestrator.core.control_system import ControlSystem
