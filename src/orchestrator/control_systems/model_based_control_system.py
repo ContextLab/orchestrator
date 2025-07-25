@@ -110,8 +110,6 @@ class ModelBasedControlSystem(ControlSystem):
                 and "{" in prompt_text
                 and "}" in prompt_text
             ):
-                import re
-
                 template_vars = re.findall(r"\{(\w+)\}", prompt_text)
                 for var in template_vars:
                     if var in context.get("previous_results", {}):

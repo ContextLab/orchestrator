@@ -77,6 +77,10 @@ class HybridControlSystem(ModelBasedControlSystem):
 
     def _is_file_operation(self, action: str) -> bool:
         """Check if action is a file operation."""
+        # Simple check for 'file' action
+        if action.strip() == "file":
+            return True
+            
         # More specific patterns that indicate file operations
         file_patterns = [
             r"write.*to\s+(?:a\s+)?(?:file|path)",  # Write ... to file/path
@@ -141,9 +145,26 @@ class HybridControlSystem(ModelBasedControlSystem):
     async def _handle_file_operation(
         self, task: Task, context: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Handle file write operations."""
+        """Handle file operations."""
         action_text = str(task.action)
 
+        # If the action is simply "file", use the FileSystemTool
+        if action_text.strip() == "file" and task.parameters:
+            # Build template context with all available data
+            template_context = self._build_template_context(context)
+            
+            # Resolve templates in parameters
+            resolved_params = {}
+            for key, value in task.parameters.items():
+                if isinstance(value, str) and "{{" in value:
+                    resolved_params[key] = self._resolve_templates(value, template_context)
+                else:
+                    resolved_params[key] = value
+            
+            # Use FileSystemTool directly
+            return await self.filesystem_tool.execute(**resolved_params)
+        
+        # Otherwise handle as a write operation
         # Extract file path from action
         file_path = self._extract_file_path(action_text, task.parameters)
         if not file_path:
