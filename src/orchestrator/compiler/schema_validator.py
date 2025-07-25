@@ -108,45 +108,123 @@ class SchemaValidator:
                     "type": "array",
                     "minItems": 1,
                     "items": {
-                        "type": "object",
-                        "required": ["id", "action"],
-                        "properties": {
-                            "id": {
-                                "type": "string",
-                                "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
-                            },
-                            "name": {"type": "string"},
-                            "action": {"type": "string", "minLength": 1},
-                            "parameters": {"type": "object"},
-                            "dependencies": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
-                                },
-                            },
-                            "timeout": {"type": "integer", "minimum": 1},
-                            "max_retries": {"type": "integer", "minimum": 0},
-                            "on_failure": {
-                                "type": "string",
-                                "enum": ["continue", "fail", "retry", "skip"],
-                            },
-                            "requires_model": {
+                        "oneOf": [
+                            # Regular action step
+                            {
                                 "type": "object",
+                                "required": ["id", "action"],
                                 "properties": {
-                                    "min_size": {"type": "string"},
-                                    "expertise": {
+                                    "id": {
                                         "type": "string",
-                                        "enum": ["low", "medium", "high", "very-high"],
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
                                     },
-                                    "capabilities": {
+                                    "name": {"type": "string"},
+                                    "action": {"type": "string", "minLength": 1},
+                                    "parameters": {"type": "object"},
+                                    "dependencies": {
                                         "type": "array",
-                                        "items": {"type": "string"},
+                                        "items": {
+                                            "type": "string",
+                                            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                        },
+                                    },
+                                    "timeout": {"type": "integer", "minimum": 1},
+                                    "max_retries": {"type": "integer", "minimum": 0},
+                                    "on_failure": {
+                                        "type": "string",
+                                        "enum": ["continue", "fail", "retry", "skip"],
+                                    },
+                                    "requires_model": {
+                                        "type": "object",
+                                        "properties": {
+                                            "min_size": {"type": "string"},
+                                            "expertise": {
+                                                "oneOf": [
+                                                    {
+                                                        "type": "string",
+                                                        "enum": ["low", "medium", "high", "very-high"],
+                                                    },
+                                                    {
+                                                        "type": "array",
+                                                        "items": {"type": "string"},
+                                                    },
+                                                ],
+                                            },
+                                            "capabilities": {
+                                                "type": "array",
+                                                "items": {"type": "string"},
+                                            },
+                                        },
+                                    },
+                                    "metadata": {"type": "object"},
+                                    # Allow conditional fields on action steps
+                                    "condition": {"type": "string"},
+                                    "if": {"type": "string"},
+                                    "tool": {"type": "string"},
+                                    "depends_on": {
+                                        "oneOf": [
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                                },
+                                            },
+                                            {
+                                                "type": "string",  # Allow string for AUTO tags
+                                            },
+                                        ],
+                                    },
+                                    "foreach": {"type": "string"},
+                                    "parallel": {"type": "boolean"},
+                                },
+                            },
+                            # Control flow step (for_each, while loops)
+                            {
+                                "type": "object",
+                                "required": ["id"],
+                                "anyOf": [
+                                    {"required": ["for_each"]},
+                                    {"required": ["while"]},
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                    },
+                                    "name": {"type": "string"},
+                                    "for_each": {"type": "string"},
+                                    "while": {"type": "string"},
+                                    "steps": {"type": "array"},
+                                    "max_parallel": {"type": "integer", "minimum": 1},
+                                    "parameters": {"type": "object"},
+                                    "dependencies": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                        },
+                                    },
+                                    "timeout": {"type": "integer", "minimum": 1},
+                                    "max_retries": {"type": "integer", "minimum": 0},
+                                    "metadata": {"type": "object"},
+                                    "depends_on": {
+                                        "oneOf": [
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                                },
+                                            },
+                                            {
+                                                "type": "string",  # Allow string for AUTO tags
+                                            },
+                                        ],
                                     },
                                 },
                             },
-                            "metadata": {"type": "object"},
-                        },
+                        ],
                     },
                 },
                 "inputs": {"type": "object"},

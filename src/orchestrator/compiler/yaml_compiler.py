@@ -65,7 +65,7 @@ class YAMLCompiler:
             self.ambiguity_resolver = ambiguity_resolver
         else:
             try:
-                self.ambiguity_resolver = AmbiguityResolver(model_registry)
+                self.ambiguity_resolver = AmbiguityResolver(model_registry=model_registry)
             except ValueError:
                 # No model available, use mock resolver
                 from .mock_ambiguity_resolver import MockAmbiguityResolver
@@ -197,7 +197,24 @@ class YAMLCompiler:
 
         def process_value(value: Any) -> Any:
             if isinstance(value, str):
+                # Skip processing special variables that start with $
+                if any(var in value for var in ['$item', '$index', '$is_first', '$is_last', 
+                                                  '$iteration', '$loop']):
+                    return value  # Keep as-is for control flow handling
+                
                 try:
+                    # Convert ternary operator syntax to Jinja2 if-else expression
+                    if "?" in value and ":" in value:
+                        # Simple pattern to convert `condition ? true_val : false_val` to Jinja2 syntax
+                        import re
+                        ternary_pattern = r'\{\{(.+?)\?(.+?):(.+?)\}\}'
+                        match = re.search(ternary_pattern, value)
+                        if match:
+                            condition, true_val, false_val = match.groups()
+                            # Convert to Jinja2 if-else expression
+                            jinja_expr = f"{{{{ {true_val.strip()} if {condition.strip()} else {false_val.strip()} }}}}"
+                            value = re.sub(ternary_pattern, jinja_expr, value)
+                    
                     template = self.template_engine.from_string(value)
                     return template.render(**context)
                 except Exception as e:
@@ -377,9 +394,31 @@ class YAMLCompiler:
         # Extract task properties
         task_id = task_def["id"]
         task_name = task_def.get("name", task_id)
-        action = task_def["action"]
+        
+        # Handle both 'action' and 'tool' fields
+        action = task_def.get("action")
+        if not action and "tool" in task_def:
+            # Map tool to action for compatibility
+            action = task_def["tool"]
+        if not action:
+            # Check for control flow steps
+            if any(key in task_def for key in ["for_each", "while", "if", "condition"]):
+                # This is a control flow step, will be handled separately
+                action = "control_flow"
+            else:
+                raise ValueError(f"Step {task_id} missing 'action' field")
+        
         parameters = task_def.get("parameters", {})
+        
+        # Handle dependencies which may be string or array
         dependencies = task_def.get("depends_on", [])
+        if isinstance(dependencies, str):
+            # Handle single dependency as string or comma-separated list
+            if "," in dependencies:
+                dependencies = [dep.strip() for dep in dependencies.split(",")]
+            else:
+                dependencies = [dependencies.strip()] if dependencies.strip() else []
+        
         timeout = task_def.get("timeout")
         max_retries = task_def.get("max_retries", 3)
         metadata = task_def.get("metadata", {})
@@ -389,6 +428,12 @@ class YAMLCompiler:
             metadata["on_failure"] = task_def["on_failure"]
         if "requires_model" in task_def:
             metadata["requires_model"] = task_def["requires_model"]
+        
+        # Add control flow metadata
+        for cf_key in ["for_each", "while", "if", "condition", "steps", 
+                       "max_iterations", "max_parallel", "foreach", "parallel"]:
+            if cf_key in task_def:
+                metadata[cf_key] = task_def[cf_key]
 
         return Task(
             id=task_id,
@@ -486,6 +531,72 @@ class YAMLCompiler:
         self.template_engine.filters["replace"] = lambda v, old, new: str(v).replace(
             old, new
         )
+        
+        # Add missing filters
+        import json
+        from datetime import datetime
+        import re as re_module
+        
+        # Slugify filter
+        def slugify(value):
+            """Convert string to slug format."""
+            value = str(value).lower()
+            # Replace spaces and underscores with hyphens
+            value = re_module.sub(r'[\s_]+', '-', value)
+            # Remove non-alphanumeric characters except hyphens
+            value = re_module.sub(r'[^a-z0-9-]', '', value)
+            # Remove multiple consecutive hyphens
+            value = re_module.sub(r'-+', '-', value)
+            # Strip hyphens from start and end
+            return value.strip('-')
+        
+        # Date filter
+        def date_filter(value, format='%Y-%m-%d'):
+            """Format datetime value."""
+            if isinstance(value, str):
+                # Parse ISO format
+                try:
+                    value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                except:
+                    value = datetime.now()
+            elif not isinstance(value, datetime):
+                value = datetime.now()
+            
+            # Handle special format strings
+            format = format.replace('Y', '%Y').replace('m', '%m').replace('d', '%d')
+            format = format.replace('H', '%H').replace('i', '%M').replace('s', '%S')
+            return value.strftime(format)
+        
+        # JSON filter
+        def json_filter(value, indent=None):
+            """Convert value to JSON string."""
+            return json.dumps(value, indent=indent, default=str)
+        
+        # Now function for templates
+        def now():
+            """Return current datetime."""
+            return datetime.now()
+        
+        # from_json filter
+        def from_json(value):
+            """Parse JSON string to object."""
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except:
+                    return value
+            return value
+        
+        self.template_engine.filters["slugify"] = slugify
+        self.template_engine.filters["date"] = date_filter
+        self.template_engine.filters["json"] = json_filter
+        self.template_engine.filters["from_json"] = from_json
+        self.template_engine.filters["to_json"] = json_filter  # Alias for json
+        self.template_engine.globals["now"] = now
+        
+        # Add special variables that should not be processed as regular templates
+        # These will be handled by the control flow system
+        self.special_vars = {'$item', '$index', '$is_first', '$is_last'}
 
     def get_template_variables(self, yaml_content: str) -> List[str]:
         """
