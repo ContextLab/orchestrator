@@ -342,6 +342,9 @@ class YAMLCompiler:
             metadata["inputs"] = pipeline_def["inputs"]
         if "outputs" in pipeline_def:
             metadata["outputs"] = pipeline_def["outputs"]
+        # Include model specification if present
+        if "model" in pipeline_def:
+            metadata["model"] = pipeline_def["model"]
 
         # Create pipeline
         pipeline = Pipeline(

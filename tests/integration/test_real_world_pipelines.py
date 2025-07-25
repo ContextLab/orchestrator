@@ -690,7 +690,7 @@ class RealAutoResolver(Model):
 
     def __init__(self):
         capabilities = ModelCapabilities(
-            supported_tasks=["reasoning", "generation"],
+            supported_tasks=["reasoning", "generate"],
             context_window=4096,
             languages=["en"],
         )
@@ -932,7 +932,6 @@ async def test_error_recovery_pipeline(orchestrator_with_real_data):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="AUTO tag parsing issue with research-report-template.yaml")
 async def test_research_report_template(orchestrator_with_real_data):
     """Test research report template pipeline."""
     success, results = await run_pipeline_test(

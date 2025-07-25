@@ -82,12 +82,16 @@ def init_models(config_path: str = None) -> ModelRegistry:
     from .integrations.openai_model import OpenAIModel
     from .utils.model_utils import check_ollama_installed
     from .utils.model_config_loader import get_model_config_loader
-    from .utils.api_keys import load_api_keys
+    from .utils.api_keys_flexible import load_api_keys_optional
 
     print(">> Initializing model pool...")
 
-    # Load API keys first - this will raise an error if keys are missing
-    load_api_keys()
+    # Load available API keys (doesn't require all keys to be present)
+    available_keys = load_api_keys_optional()
+    if available_keys:
+        print(f">> Found API keys for: {', '.join(available_keys.keys())}")
+    else:
+        print(">> No API keys found - only local models will be available")
 
     _model_registry = get_model_registry()
 
@@ -162,13 +166,13 @@ def init_models(config_path: str = None) -> ModelRegistry:
                         )
 
                         hf_model = LazyHuggingFaceModel(model_name=name)
-                    # Add dynamic attributes for model selection
-                    setattr(hf_model, "_expertise", expertise)
-                    setattr(hf_model, "_size_billions", size_billions)
-                    _model_registry.register_model(hf_model)
-                    print(
-                        f">>   📦 Registered HuggingFace model: {name} ({size_billions}B params) - will download on first use"
-                    )
+                        # Add dynamic attributes for model selection
+                        setattr(hf_model, "_expertise", expertise)
+                        setattr(hf_model, "_size_billions", size_billions)
+                        _model_registry.register_model(hf_model)
+                        print(
+                            f">>   📦 Registered HuggingFace model: {name} ({size_billions}B params) - will download on first use"
+                        )
                 except ImportError:
                     print(
                         f">>   ⚠️  HuggingFace model {name} configured but transformers not installed"

@@ -127,6 +127,7 @@ class Orchestrator:
         # Create execution context early to avoid UnboundLocalError
         context = {
             "pipeline_id": pipeline.id,
+            "pipeline_metadata": pipeline.metadata,  # Include pipeline metadata for model selection
             "execution_id": execution_id,
             "checkpoint_enabled": checkpoint_enabled,
             "max_retries": max_retries,
@@ -721,6 +722,20 @@ class Orchestrator:
         self, task: Task, context: Dict[str, Any]
     ) -> Optional[Any]:
         """Select appropriate model for task execution."""
+        # Check if pipeline specifies a default model
+        pipeline_metadata = context.get("pipeline_metadata", {})
+        if pipeline_metadata.get("model"):
+            # Use pipeline-level model specification
+            model_spec = pipeline_metadata["model"]
+            if isinstance(model_spec, str):
+                # Handle format: "gpt-4o-mini" or "openai:gpt-4o-mini"
+                if ":" in model_spec:
+                    provider, model_name = model_spec.split(":", 1)
+                    return self.model_registry.get_model(model_name, provider)
+                else:
+                    # Try to get model by name, letting registry figure out provider
+                    return self.model_registry.get_model(model_spec)
+        
         # Check if task specifies model requirements
         if "requires_model" in task.metadata:
             model_req = task.metadata["requires_model"]

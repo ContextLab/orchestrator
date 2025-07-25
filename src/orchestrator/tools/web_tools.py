@@ -405,9 +405,31 @@ class BrowserAutomation:
         else:
             raise ValueError(f"Unsupported browser type: {browser_type}")
 
-        self.browser = await browser_class.launch(
-            headless=self.config.get("headless", True)
-        )
+        try:
+            self.browser = await browser_class.launch(
+                headless=self.config.get("headless", True)
+            )
+        except Exception as e:
+            if "Executable doesn't exist" in str(e) or "Looks like Playwright" in str(e):
+                # Browser binaries not installed, install them
+                self.logger.info(f"Browser binaries not found. Installing {browser_type}...")
+                import subprocess
+                import sys
+                try:
+                    subprocess.check_call(
+                        [sys.executable, "-m", "playwright", "install", browser_type]
+                    )
+                    # Try launching again
+                    self.browser = await browser_class.launch(
+                        headless=self.config.get("headless", True)
+                    )
+                except Exception as install_error:
+                    raise RuntimeError(
+                        f"Failed to install browser binaries: {install_error}. "
+                        f"Please run: playwright install {browser_type}"
+                    )
+            else:
+                raise
 
         viewport = self.config.get("viewport", {"width": 1920, "height": 1080})
         self.context = await self.browser.new_context(
