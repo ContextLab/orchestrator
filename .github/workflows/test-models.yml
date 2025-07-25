@@ -30,12 +30,20 @@ jobs:
     - name: Test HuggingFace model integration
       env:
         CI: true
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python tests/integration/test_models_comprehensive.py
     
     - name: Test pipeline with real models
       env:
         CI: true
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         cd examples
         timeout 300 python -c "
