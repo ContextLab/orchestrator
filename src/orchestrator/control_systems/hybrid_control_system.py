@@ -9,6 +9,8 @@ from .model_based_control_system import ModelBasedControlSystem
 from ..core.task import Task
 from ..models.model_registry import ModelRegistry
 from ..tools.system_tools import FileSystemTool
+from ..tools.data_tools import DataProcessingTool
+from ..tools.validation import ValidationTool
 from ..compiler.template_renderer import TemplateRenderer
 
 
@@ -57,8 +59,10 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         super().__init__(model_registry, name, config)
 
-        # Initialize filesystem tool for file operations
+        # Initialize tools
         self.filesystem_tool = FileSystemTool()
+        self.data_processing_tool = DataProcessingTool()
+        self.validation_tool = ValidationTool()
 
     async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task with support for both models and tools."""
@@ -71,6 +75,14 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if this is a file operation
         if self._is_file_operation(action_str):
             return await self._handle_file_operation(task, context)
+            
+        # Check if this is a data processing operation
+        if action_str == "process":
+            return await self._handle_data_processing(task, context)
+            
+        # Check if this is a validation operation
+        if action_str == "validate":
+            return await self._handle_validation(task, context)
 
         # Otherwise use model-based execution
         return await super().execute_task(task, context)
@@ -298,3 +310,48 @@ class HybridControlSystem(ModelBasedControlSystem):
         """Resolve template variables in text."""
         # Use the TemplateRenderer for consistent behavior
         return TemplateRenderer.render(text, context)
+    
+    async def _handle_data_processing(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle data processing operations."""
+        if task.parameters:
+            # Build template context
+            template_context = self._build_template_context(context)
+            
+            # Resolve templates in parameters
+            resolved_params = {}
+            for key, value in task.parameters.items():
+                if isinstance(value, str) and "{{" in value:
+                    resolved_params[key] = self._resolve_templates(value, template_context)
+                else:
+                    resolved_params[key] = value
+            
+            # Use DataProcessingTool
+            result = await self.data_processing_tool.execute(**resolved_params)
+            
+            # If the result contains processed_data, return it in the expected format
+            if isinstance(result, dict) and "processed_data" in result:
+                return result
+            else:
+                # Wrap the result to match expected format
+                return {"processed_data": result, "success": True}
+        
+        return {"error": "No parameters provided for data processing", "success": False}
+    
+    async def _handle_validation(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle validation operations."""
+        if task.parameters:
+            # Build template context
+            template_context = self._build_template_context(context)
+            
+            # Resolve templates in parameters
+            resolved_params = {}
+            for key, value in task.parameters.items():
+                if isinstance(value, str) and "{{" in value:
+                    resolved_params[key] = self._resolve_templates(value, template_context)
+                else:
+                    resolved_params[key] = value
+            
+            # Use ValidationTool
+            return await self.validation_tool.execute(**resolved_params)
+        
+        return {"error": "No parameters provided for validation", "success": False}
