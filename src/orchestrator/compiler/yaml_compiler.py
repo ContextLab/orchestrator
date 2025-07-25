@@ -60,17 +60,22 @@ class YAMLCompiler:
         """
         self.schema_validator = schema_validator or SchemaValidator()
 
-        # Try to create ambiguity resolver, fall back to mock if no model
+        # Create ambiguity resolver - require real model
         if ambiguity_resolver:
             self.ambiguity_resolver = ambiguity_resolver
         else:
+            if not model_registry:
+                raise ValueError(
+                    "No model registry provided for ambiguity resolution. "
+                    "AUTO tags require an AI model to resolve ambiguities."
+                )
             try:
+                # Try structured resolver first
+                from .structured_ambiguity_resolver import StructuredAmbiguityResolver
+                self.ambiguity_resolver = StructuredAmbiguityResolver(model_registry=model_registry)
+            except (ValueError, ImportError):
+                # Fall back to regular resolver
                 self.ambiguity_resolver = AmbiguityResolver(model_registry=model_registry)
-            except ValueError:
-                # No model available, use mock resolver
-                from .mock_ambiguity_resolver import MockAmbiguityResolver
-
-                self.ambiguity_resolver = MockAmbiguityResolver()
 
         self.template_engine = Environment(undefined=StrictUndefined)
 
@@ -155,6 +160,9 @@ class YAMLCompiler:
                 # Apply default value if specified
                 if isinstance(input_spec, dict) and "default" in input_spec:
                     merged[input_name] = input_spec["default"]
+                elif not isinstance(input_spec, dict):
+                    # Direct value (e.g., batch_size: 100)
+                    merged[input_name] = input_spec
 
         return merged
 
@@ -224,7 +232,7 @@ class YAMLCompiler:
 
                     # Check if this is a runtime reference that should be preserved
                     runtime_patterns = [
-                        "inputs.",
+                        # "inputs." removed - inputs are available at compile time
                         "outputs.",
                         "$results.",
                         "steps.",
