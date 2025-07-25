@@ -204,11 +204,11 @@ class HuggingFaceModel(Model):
             use_auth_token: HuggingFace authentication token
             **kwargs: Additional arguments passed to parent class
         """
+        global TRANSFORMERS_AVAILABLE, torch, AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig
         if not TRANSFORMERS_AVAILABLE:
             # Try to install on demand
             import subprocess
             import sys
-            global torch, AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig, TRANSFORMERS_AVAILABLE
             try:
                 print("Transformers library not found. Installing...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "transformers", "torch"])

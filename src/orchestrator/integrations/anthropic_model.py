@@ -146,11 +146,11 @@ class AnthropicModel(Model):
             timeout: Request timeout in seconds
             **kwargs: Additional arguments passed to parent class
         """
+        global ANTHROPIC_AVAILABLE, anthropic, Anthropic
         if not ANTHROPIC_AVAILABLE:
             # Try to install on demand
             import subprocess
             import sys
-            global anthropic, Anthropic, ANTHROPIC_AVAILABLE
             try:
                 print("Anthropic library not found. Installing...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "anthropic"])

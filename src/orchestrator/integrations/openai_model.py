@@ -145,11 +145,11 @@ class OpenAIModel(Model):
             timeout: Request timeout in seconds
             **kwargs: Additional arguments passed to parent class
         """
+        global OPENAI_AVAILABLE, openai, OpenAI
         if not OPENAI_AVAILABLE:
             # Try to install on demand
             import subprocess
             import sys
-            global openai, OpenAI, OPENAI_AVAILABLE
             try:
                 print("OpenAI library not found. Installing...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])

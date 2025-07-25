@@ -150,11 +150,11 @@ class GoogleModel(Model):
             timeout: Request timeout in seconds
             **kwargs: Additional arguments passed to parent class
         """
+        global GOOGLE_AI_AVAILABLE, genai, GenerativeModel
         if not GOOGLE_AI_AVAILABLE:
             # Try to install on demand
             import subprocess
             import sys
-            global genai, GenerativeModel, GOOGLE_AI_AVAILABLE
             try:
                 print("Google AI library not found. Installing...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai"])
