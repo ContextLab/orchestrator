@@ -150,8 +150,8 @@ class AnthropicModel(Model):
             # Try to install on demand
             import subprocess
             import sys
+            global anthropic, Anthropic, ANTHROPIC_AVAILABLE
             try:
-                global anthropic, Anthropic, ANTHROPIC_AVAILABLE
                 print("Anthropic library not found. Installing...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "anthropic"])
                 # Re-import after installation

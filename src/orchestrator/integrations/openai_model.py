@@ -149,8 +149,8 @@ class OpenAIModel(Model):
             # Try to install on demand
             import subprocess
             import sys
+            global openai, OpenAI, OPENAI_AVAILABLE
             try:
-                global openai, OpenAI, OPENAI_AVAILABLE
                 print("OpenAI library not found. Installing...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])
                 # Re-import after installation

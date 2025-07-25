@@ -154,8 +154,8 @@ class GoogleModel(Model):
             # Try to install on demand
             import subprocess
             import sys
+            global genai, GenerativeModel, GOOGLE_AI_AVAILABLE
             try:
-                global genai, GenerativeModel, GOOGLE_AI_AVAILABLE
                 print("Google AI library not found. Installing...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai"])
                 # Re-import after installation

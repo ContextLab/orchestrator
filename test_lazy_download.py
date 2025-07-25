@@ -21,7 +21,7 @@ async def test_lazy_download():
     result = await model.generate("What is 2+2?", max_tokens=10)
     print(f"Result: {result}")
     
-    print("\nTest completed successfully\!")
+    print("\nTest completed successfully!")
 
 if __name__ == "__main__":
     asyncio.run(test_lazy_download())

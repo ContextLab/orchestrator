@@ -208,8 +208,8 @@ class HuggingFaceModel(Model):
             # Try to install on demand
             import subprocess
             import sys
+            global torch, AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig, TRANSFORMERS_AVAILABLE
             try:
-                global torch, AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig, TRANSFORMERS_AVAILABLE
                 print("Transformers library not found. Installing...")
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "transformers", "torch"])
                 # Re-import after installation
