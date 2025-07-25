@@ -98,23 +98,48 @@ class ModelBasedControlSystem(ControlSystem):
             model = await self.model_registry.select_model(requirements)
 
         # Extract the actual action/prompt from the task
-        action_text = str(task.action)  # Convert to string in case it's not
+        if task.action in ["generate", "generate_text"] and task.parameters.get("prompt"):
+            # For generate actions, use the prompt parameter
+            prompt_text = task.parameters["prompt"]
+            
+            # Substitute template variables from previous results
+            if isinstance(prompt_text, str) and "{" in prompt_text and "}" in prompt_text:
+                import re
+                template_vars = re.findall(r"\{(\w+)\}", prompt_text)
+                for var in template_vars:
+                    if var in context.get("previous_results", {}):
+                        result_value = context["previous_results"][var]
+                        # Handle different result types
+                        if isinstance(result_value, dict) and "result" in result_value:
+                            result_value = result_value["result"]
+                        elif isinstance(result_value, dict) and "output" in result_value:
+                            result_value = result_value["output"]
+                        prompt_text = prompt_text.replace(f"{{{var}}}", str(result_value))
+            
+            prompt = prompt_text
+        else:
+            # For other actions, use the action as the prompt
+            action_text = str(task.action)  # Convert to string in case it's not
 
-        # Handle AUTO tags by extracting the content
-        auto_tag_pattern = r"<AUTO>(.*?)</AUTO>"
-        auto_match = re.search(auto_tag_pattern, action_text, re.DOTALL)
-        if auto_match:
-            action_text = auto_match.group(1).strip()
+            # Handle AUTO tags by extracting the content
+            auto_tag_pattern = r"<AUTO>(.*?)</AUTO>"
+            auto_match = re.search(auto_tag_pattern, action_text, re.DOTALL)
+            if auto_match:
+                action_text = auto_match.group(1).strip()
 
-        # Build the full prompt with context
-        prompt = self._build_prompt(task, action_text, context)
+            # Build the full prompt with context
+            prompt = self._build_prompt(task, action_text, context)
 
         try:
             # Use the model to generate result
+            # Get generation parameters from task
+            temperature = task.parameters.get("temperature", 0.7) if task.parameters else 0.7
+            max_tokens = task.parameters.get("max_tokens", 1000) if task.parameters else 1000
+            
             result = await model.generate(
                 prompt=prompt,
-                temperature=0.7,
-                max_tokens=1000,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
 
             # Parse the result based on expected format
