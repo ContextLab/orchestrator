@@ -735,7 +735,7 @@ class Orchestrator:
                 else:
                     # Try to get model by name, letting registry figure out provider
                     return self.model_registry.get_model(model_spec)
-        
+
         # Check if task specifies model requirements
         if "requires_model" in task.metadata:
             model_req = task.metadata["requires_model"]

@@ -209,9 +209,12 @@ class HuggingFaceModel(Model):
             # Try to install on demand
             import subprocess
             import sys
+
             try:
                 print("Transformers library not found. Installing...")
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "transformers", "torch"])
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "transformers", "torch"]
+                )
                 # Re-import after installation
                 import torch
                 from transformers import (
@@ -220,6 +223,7 @@ class HuggingFaceModel(Model):
                     pipeline,
                     BitsAndBytesConfig,
                 )
+
                 TRANSFORMERS_AVAILABLE = True
             except Exception as e:
                 raise ImportError(

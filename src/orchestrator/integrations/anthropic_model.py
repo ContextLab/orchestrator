@@ -151,12 +151,16 @@ class AnthropicModel(Model):
             # Try to install on demand
             import subprocess
             import sys
+
             try:
                 print("Anthropic library not found. Installing...")
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "anthropic"])
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "anthropic"]
+                )
                 # Re-import after installation
                 import anthropic
                 from anthropic import Anthropic
+
                 ANTHROPIC_AVAILABLE = True
             except Exception as e:
                 raise ImportError(
@@ -327,8 +331,9 @@ class AnthropicModel(Model):
         try:
             # Run synchronous client in thread pool to avoid blocking
             import asyncio
+
             loop = asyncio.get_event_loop()
-            
+
             def _sync_health_check():
                 self.client.messages.create(
                     model=self.model_name,
@@ -338,11 +343,10 @@ class AnthropicModel(Model):
                     timeout=5.0,  # Add explicit timeout
                 )
                 return True
-            
+
             # Run in executor with timeout
             result = await asyncio.wait_for(
-                loop.run_in_executor(None, _sync_health_check),
-                timeout=10.0
+                loop.run_in_executor(None, _sync_health_check), timeout=10.0
             )
             self._is_available = result
             return result

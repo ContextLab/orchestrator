@@ -21,6 +21,7 @@ class TestResearchAssistantWithReport:
         try:
             import sys
             from pathlib import Path
+
             # Add examples directory to path
             examples_dir = Path(__file__).parent.parent.parent / "examples"
             sys.path.insert(0, str(examples_dir))
@@ -213,6 +214,7 @@ This concludes the test report.
         try:
             import sys
             from pathlib import Path
+
             # Add examples directory to path
             examples_dir = Path(__file__).parent.parent.parent / "examples"
             sys.path.insert(0, str(examples_dir))
@@ -229,18 +231,18 @@ This concludes the test report.
                 {
                     "title": "Result 1",
                     "url": "https://example1.com/page1",
-                    "relevance": 0.9
+                    "relevance": 0.9,
                 },
                 {
-                    "title": "Result 2", 
+                    "title": "Result 2",
                     "url": "https://example2.com/page2",
-                    "relevance": 0.8
+                    "relevance": 0.8,
                 },
                 {
                     "title": "Result 3",
-                    "url": "https://example3.com/page3", 
-                    "relevance": 0.7
-                }
+                    "url": "https://example3.com/page3",
+                    "relevance": 0.7,
+                },
             ]
         }
         extraction_results = {"success": True, "word_count": 1500}

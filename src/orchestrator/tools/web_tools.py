@@ -232,7 +232,8 @@ class WebScraper:
             # Add timeout to the executor call
             response = await asyncio.wait_for(
                 loop.run_in_executor(None, _get_content),
-                timeout=self.config.get("timeout", 30) + 5  # Add 5 seconds for overhead
+                timeout=self.config.get("timeout", 30)
+                + 5,  # Add 5 seconds for overhead
             )
 
             # Check content length
@@ -357,7 +358,8 @@ class WebScraper:
             # Add timeout to the executor call
             response = await asyncio.wait_for(
                 loop.run_in_executor(None, _head_request),
-                timeout=self.config.get("timeout", 30) + 5  # Add 5 seconds for overhead
+                timeout=self.config.get("timeout", 30)
+                + 5,  # Add 5 seconds for overhead
             )
 
             return {
@@ -425,11 +427,16 @@ class BrowserAutomation:
                 headless=self.config.get("headless", True)
             )
         except Exception as e:
-            if "Executable doesn't exist" in str(e) or "Looks like Playwright" in str(e):
+            if "Executable doesn't exist" in str(e) or "Looks like Playwright" in str(
+                e
+            ):
                 # Browser binaries not installed, install them
-                self.logger.info(f"Browser binaries not found. Installing {browser_type}...")
+                self.logger.info(
+                    f"Browser binaries not found. Installing {browser_type}..."
+                )
                 import subprocess
                 import sys
+
                 try:
                     subprocess.check_call(
                         [sys.executable, "-m", "playwright", "install", browser_type]
@@ -695,7 +702,7 @@ class HeadlessBrowserTool(Tool):
         """Clean up resources on destruction."""
         try:
             # Clean up scraper session
-            if hasattr(self, 'scraper') and hasattr(self.scraper, 'session'):
+            if hasattr(self, "scraper") and hasattr(self.scraper, "session"):
                 self.scraper.session.close()
         except Exception:
             pass

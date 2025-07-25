@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any, Dict, List, Optional
 
 from ..core.control_system import ControlSystem
@@ -98,13 +97,20 @@ class ModelBasedControlSystem(ControlSystem):
             model = await self.model_registry.select_model(requirements)
 
         # Extract the actual action/prompt from the task
-        if task.action in ["generate", "generate_text"] and task.parameters.get("prompt"):
+        if task.action in ["generate", "generate_text"] and task.parameters.get(
+            "prompt"
+        ):
             # For generate actions, use the prompt parameter
             prompt_text = task.parameters["prompt"]
-            
+
             # Substitute template variables from previous results
-            if isinstance(prompt_text, str) and "{" in prompt_text and "}" in prompt_text:
+            if (
+                isinstance(prompt_text, str)
+                and "{" in prompt_text
+                and "}" in prompt_text
+            ):
                 import re
+
                 template_vars = re.findall(r"\{(\w+)\}", prompt_text)
                 for var in template_vars:
                     if var in context.get("previous_results", {}):
@@ -112,10 +118,14 @@ class ModelBasedControlSystem(ControlSystem):
                         # Handle different result types
                         if isinstance(result_value, dict) and "result" in result_value:
                             result_value = result_value["result"]
-                        elif isinstance(result_value, dict) and "output" in result_value:
+                        elif (
+                            isinstance(result_value, dict) and "output" in result_value
+                        ):
                             result_value = result_value["output"]
-                        prompt_text = prompt_text.replace(f"{{{var}}}", str(result_value))
-            
+                        prompt_text = prompt_text.replace(
+                            f"{{{var}}}", str(result_value)
+                        )
+
             prompt = prompt_text
         else:
             # For other actions, use the action as the prompt
@@ -133,9 +143,13 @@ class ModelBasedControlSystem(ControlSystem):
         try:
             # Use the model to generate result
             # Get generation parameters from task
-            temperature = task.parameters.get("temperature", 0.7) if task.parameters else 0.7
-            max_tokens = task.parameters.get("max_tokens", 1000) if task.parameters else 1000
-            
+            temperature = (
+                task.parameters.get("temperature", 0.7) if task.parameters else 0.7
+            )
+            max_tokens = (
+                task.parameters.get("max_tokens", 1000) if task.parameters else 1000
+            )
+
             result = await model.generate(
                 prompt=prompt,
                 temperature=temperature,

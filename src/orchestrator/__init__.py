@@ -205,7 +205,9 @@ def init_models(config_path: str = None) -> ModelRegistry:
 
             elif provider == "anthropic" and "anthropic" in available_keys:
                 # Only register if API key is available
-                model = AnthropicModel(model_name=name, api_key=available_keys["anthropic"])
+                model = AnthropicModel(
+                    model_name=name, api_key=available_keys["anthropic"]
+                )
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)

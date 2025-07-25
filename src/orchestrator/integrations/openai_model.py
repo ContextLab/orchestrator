@@ -150,12 +150,16 @@ class OpenAIModel(Model):
             # Try to install on demand
             import subprocess
             import sys
+
             try:
                 print("OpenAI library not found. Installing...")
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "openai"]
+                )
                 # Re-import after installation
                 import openai
                 from openai import OpenAI
+
                 OPENAI_AVAILABLE = True
             except Exception as e:
                 raise ImportError(
@@ -336,8 +340,9 @@ class OpenAIModel(Model):
         try:
             # Run synchronous client in thread pool to avoid blocking
             import asyncio
+
             loop = asyncio.get_event_loop()
-            
+
             def _sync_health_check():
                 self.client.chat.completions.create(
                     model=self.model_name,
@@ -347,11 +352,10 @@ class OpenAIModel(Model):
                     timeout=5.0,  # Add explicit timeout
                 )
                 return True
-            
+
             # Run in executor with timeout
             result = await asyncio.wait_for(
-                loop.run_in_executor(None, _sync_health_check),
-                timeout=10.0
+                loop.run_in_executor(None, _sync_health_check), timeout=10.0
             )
             self._is_available = result
             return result
