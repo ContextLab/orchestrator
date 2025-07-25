@@ -1,3 +1,4 @@
+id: control-flow-advanced
 # Advanced Control Flow Example
 # Combines conditionals, loops, and dynamic flow control
 name: Adaptive Research Pipeline
@@ -120,7 +121,7 @@ steps:
       - id: gap_research
         action: web-search
         parameters:
-          query: <AUTO>Generate search query to fill gap: {{ identify_gaps.result }}</AUTO>
+          query: "<AUTO>Generate search query to fill gap: {{ identify_gaps.result }}</AUTO>"
           max_results: 10
         depends_on: [identify_gaps]
         
@@ -148,7 +149,7 @@ steps:
   - id: select_report_type
     action: task-delegation
     parameters:
-      task: <AUTO>Based on research quality {{ check_completion.research_quality }} and completeness, what report type should we generate: 'executive_summary', 'detailed_analysis', or 'preliminary_findings'?</AUTO>
+      task: "<AUTO>Based on research quality {{ check_completion.research_quality }} and completeness, what report type should we generate: 'executive_summary', 'detailed_analysis', or 'preliminary_findings'?</AUTO>"
     goto: "{{ select_report_type.result }}_report"
     depends_on: [check_completion]
     

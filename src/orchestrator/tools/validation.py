@@ -7,7 +7,26 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import jsonschema
 from jsonschema import Draft7Validator, ValidationError
-from pydantic import BaseModel, Field, create_model
+
+# Try to import pydantic, install if needed
+try:
+    from pydantic import BaseModel, Field, create_model
+except ImportError:
+    import subprocess
+    import sys
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.info("Pydantic not found. Installing...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "pydantic"])
+        from pydantic import BaseModel, Field, create_model
+
+        logger.info("Pydantic installed successfully")
+    except Exception as e:
+        raise ImportError(
+            f"Failed to install pydantic: {e}. Please install manually with: pip install pydantic"
+        )
 
 from ..core.model import Model
 from .base import Tool

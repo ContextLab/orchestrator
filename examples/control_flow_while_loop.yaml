@@ -1,3 +1,4 @@
+id: control-flow-while-loop
 # While Loop Example
 # Demonstrates iterative improvement with AUTO-resolved conditions
 name: Iterative Refinement Pipeline
@@ -41,7 +42,7 @@ steps:
       - id: select_method
         action: task-delegation
         parameters:
-          task: <AUTO>Based on quality analysis {{ analyze_quality.result }}, what improvement method should we use: grammar_fix, clarity_enhance, structure_improve, or fact_check?</AUTO>
+          task: "<AUTO>Based on quality analysis {{ analyze_quality.result }}, what improvement method should we use: grammar_fix, clarity_enhance, structure_improve, or fact_check?</AUTO>"
           context:
             current_score: "{{ analyze_quality.result.score }}"
             iteration: "{{$iteration}}"
@@ -54,7 +55,7 @@ steps:
           action: refine
           content: "{{ analyze_quality.data }}"
           method: "{{ select_method.result }}"
-          intensity: <AUTO>Based on how far we are from target (current: {{ analyze_quality.result.score }}, target: {{ target_quality }}), choose intensity: light, moderate, or aggressive</AUTO>
+          intensity: "<AUTO>Based on how far we are from target (current: {{ analyze_quality.result.score }}, target: {{ target_quality }}), choose intensity: light, moderate, or aggressive</AUTO>"
         depends_on: [select_method]
         
       # Validate improvement

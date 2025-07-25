@@ -124,11 +124,18 @@ class TestHeadlessBrowserTool:
             url="https://example.com", action="scrape_js"
         )
 
-        # scrape_js might fail if playwright is not installed
+        # The tool should handle playwright installation automatically
         if "error" in result:
-            # Check if it's a playwright error
-            if "playwright" in result["error"].lower():
-                pytest.skip("Playwright not installed")
+            # Only fail if it's not a transient network error
+            if "Failed to install Playwright" in result["error"]:
+                # Installation failed - this is a real error
+                pytest.fail(f"Playwright installation failed: {result['error']}")
+            elif (
+                "timeout" in result["error"].lower()
+                or "network" in result["error"].lower()
+            ):
+                # Network issues - skip this test
+                pytest.skip(f"Network issue: {result['error']}")
             else:
                 pytest.fail(f"JS scraping failed: {result['error']}")
 
@@ -699,7 +706,11 @@ outputs:
         )
 
         # Verify results
-        assert result["validate_results"]["valid"] is True
+        # Check if result has the new structure with steps/outputs
+        if "steps" in result:
+            assert result["steps"]["validate_results"]["valid"] is True
+        else:
+            assert result["validate_results"]["valid"] is True
         assert (temp_workspace / "output_data.json").exists()
 
 

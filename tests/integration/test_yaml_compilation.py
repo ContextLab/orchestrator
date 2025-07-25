@@ -4,6 +4,7 @@
 import asyncio
 import sys
 
+
 async def test_yaml_compilation():
     """Test YAML compilation with AUTO resolution."""
     print("📄 Testing YAML Compilation with AUTO")

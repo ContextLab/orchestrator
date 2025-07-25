@@ -857,7 +857,10 @@ class HeadlessBrowserTool(Tool):
 
         # Try to import playwright and install if needed
         try:
-            from playwright.async_api import async_playwright
+            import importlib.util
+
+            if importlib.util.find_spec("playwright") is None:
+                raise ImportError("Playwright not available")
         except ImportError:
             self.logger.info("Playwright not installed. Installing now...")
             try:

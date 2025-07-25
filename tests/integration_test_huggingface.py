@@ -24,9 +24,12 @@ import pytest
 def check_huggingface_available():
     """Check if HuggingFace libraries are available."""
     try:
-        import torch
-        import transformers
+        import importlib.util
 
+        if importlib.util.find_spec("torch") is None:
+            return False
+        if importlib.util.find_spec("transformers") is None:
+            return False
         return True
     except ImportError:
         return False

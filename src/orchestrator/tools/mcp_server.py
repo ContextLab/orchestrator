@@ -74,7 +74,6 @@ class MCPToolServer:
             # Start actual MCP server process
             try:
                 # Import aiohttp for the actual server
-                import aiohttp
                 from aiohttp import web
 
                 # Create the web application

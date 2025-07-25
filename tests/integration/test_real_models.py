@@ -278,6 +278,20 @@ Write a concise executive summary (2-3 sentences)."""
         summary += f"\\n## Confidence Score: {content.get('confidence_score', 0.8):.2f}"
         return summary
 
+    async def execute_pipeline(self, pipeline, context=None):
+        """Execute a pipeline (not implemented for this system)."""
+        raise NotImplementedError(
+            "RealModelControlSystem doesn't support pipeline execution"
+        )
+
+    def get_capabilities(self):
+        """Get control system capabilities."""
+        return self.config.get("capabilities", {})
+
+    async def health_check(self):
+        """Perform health check."""
+        return {"status": "healthy", "name": self.name}
+
 
 def get_available_model():
     """Get the best available model for testing."""

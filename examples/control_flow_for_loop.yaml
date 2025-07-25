@@ -1,3 +1,4 @@
+id: control-flow-for-loop
 # For Loop Example
 # Demonstrates dynamic iteration with AUTO-resolved collections
 name: Multi-Task Processing Pipeline
@@ -38,7 +39,7 @@ steps:
       - id: determine_strategy
         action: task-delegation
         parameters:
-          task: <AUTO>What's the best approach for subtask: {{$item}}? Choose one: research, implement, validate</AUTO>
+          task: "<AUTO>What's the best approach for subtask: {{$item}}? Choose one: research, implement, validate</AUTO>"
           
       # Execute subtask based on strategy
       - id: execute_subtask

@@ -1,3 +1,4 @@
+id: control-flow-dynamic
 # Dynamic Flow Control Example
 # Demonstrates goto and dynamic dependencies with AUTO resolution
 name: Error Handling Pipeline
@@ -24,7 +25,7 @@ steps:
   - id: assess_risk
     action: task-delegation
     parameters:
-      task: <AUTO>Assess the risk level of operation '{{ operation }}': low, medium, or high</AUTO>
+      task: "<AUTO>Assess the risk level of operation '{{ operation }}': low, medium, or high</AUTO>"
     depends_on: [validate_input]
     
   # Dynamic dependency based on risk
@@ -67,7 +68,7 @@ steps:
     parameters:
       task: "Process execution result"
       result: "{{ check_result.result }}"
-    goto: <AUTO>Based on execution result {{ check_result.result }}, which handler should we jump to: 'success_handler', 'retry_handler', or 'failure_handler'?</AUTO>
+    goto: "<AUTO>Based on execution result {{ check_result.result }}, which handler should we jump to: 'success_handler', 'retry_handler', or 'failure_handler'?</AUTO>"
     depends_on: [check_result]
     
   # Retry handler

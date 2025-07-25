@@ -75,6 +75,20 @@ class SimpleControlSystem(ControlSystem):
         self._results[task.id] = result
         return result
 
+    async def execute_pipeline(self, pipeline, context=None):
+        """Execute a pipeline (not implemented for this simple system)."""
+        raise NotImplementedError(
+            "SimpleControlSystem doesn't support pipeline execution"
+        )
+
+    def get_capabilities(self):
+        """Get control system capabilities."""
+        return self.config.get("capabilities", {})
+
+    async def health_check(self):
+        """Perform health check."""
+        return {"status": "healthy", "name": self.name}
+
 
 async def test_auto_resolution():
     """Test AUTO tag resolution with real Ollama model."""

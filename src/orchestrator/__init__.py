@@ -161,7 +161,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
                             LazyHuggingFaceModel,
                         )
 
-                    hf_model = LazyHuggingFaceModel(model_name=name)
+                        hf_model = LazyHuggingFaceModel(model_name=name)
                     # Add dynamic attributes for model selection
                     setattr(hf_model, "_expertise", expertise)
                     setattr(hf_model, "_size_billions", size_billions)

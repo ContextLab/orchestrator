@@ -5,6 +5,7 @@ import tempfile
 import pytest
 import yaml
 
+
 # Add the project root to the path
 class TestReadmeCodeSnippets:
     """Test code snippets from README.md."""

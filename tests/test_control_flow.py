@@ -432,13 +432,13 @@ class TestControlFlowEngine:
     async def test_execute_loop_flow(self, populated_model_registry):
         """Test executing a pipeline with loops using real models."""
         # Create engine with model registry
-        engine = ControlFlowEngine(populated_model_registry)
+        # engine = ControlFlowEngine(populated_model_registry)
 
         # Create a pipeline with a for loop
-        pipeline = Pipeline(id="loop_test", name="Loop Test Pipeline")
+        # pipeline = Pipeline(id="loop_test", name="Loop Test Pipeline")
 
         # Add a for loop that processes items
-        for_handler = ForLoopHandler()
+        # for_handler = ForLoopHandler()
 
         # This would normally be done through YAML compilation
         # For testing, we'll simulate the structure

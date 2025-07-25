@@ -6,7 +6,26 @@ from typing import Any, Dict, List, Optional, Union
 from langchain.schema import BaseOutputParser
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
-from pydantic import BaseModel, Field
+
+# Try to import pydantic, install if needed
+try:
+    from pydantic import BaseModel, Field
+except ImportError:
+    import subprocess
+    import sys
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.info("Pydantic not found. Installing...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "pydantic"])
+        from pydantic import BaseModel, Field
+
+        logger.info("Pydantic installed successfully")
+    except Exception as e:
+        raise ImportError(
+            f"Failed to install pydantic: {e}. Please install manually with: pip install pydantic"
+        )
 
 
 class ToolCallResponse(BaseModel):

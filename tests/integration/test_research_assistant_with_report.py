@@ -18,8 +18,6 @@ class TestResearchAssistantWithReport:
     async def test_full_research_pipeline(self):
         """Test complete research pipeline with PDF generation."""
         # Import the example module
-
-        examples_dir = Path(__file__).parent.parent.parent / "examples"
         try:
             from research_assistant_with_report import ResearchAssistantWithReport
         except ImportError:
@@ -130,9 +128,7 @@ class TestResearchAssistantWithReport:
         """Test PDFCompilerTool independently."""
         tool = PDFCompilerTool()
 
-        # Check if pandoc is available
-        if not tool._is_pandoc_installed():
-            pytest.skip("Pandoc not installed - skipping PDF test")
+        # Don't skip - let the tool install pandoc if needed
 
         # Test markdown
         markdown_content = """# Test Report
@@ -164,7 +160,7 @@ This concludes the test report.
                 output_path=str(output_path),
                 title="Test Report",
                 author="Test Suite",
-                install_if_missing=False,
+                install_if_missing=True,
             )
 
             # Verify result
@@ -209,8 +205,6 @@ This concludes the test report.
     async def test_research_quality_scoring(self):
         """Test research quality scoring logic."""
         # Import the example module
-
-        examples_dir = Path(__file__).parent.parent.parent / "examples"
         try:
             from research_assistant_with_report import ResearchAssistantWithReport
         except ImportError:

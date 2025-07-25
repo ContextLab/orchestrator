@@ -1,6 +1,5 @@
 """Tests for report generation and PDF compilation tools."""
 
-import os
 import tempfile
 from pathlib import Path
 
@@ -184,18 +183,13 @@ This concludes the test report.
                 output_path=str(output_path),
                 title="Test Report",
                 author="Test Author",
-                install_if_missing=False,  # Don't auto-install in tests
+                install_if_missing=True,  # Allow auto-install in tests
             )
 
-            if pdf_compiler._is_pandoc_installed():
-                # If pandoc is installed, PDF should be generated
-                assert result["success"] is True
-                assert output_path.exists()
-                assert result["file_size"] > 0
-            else:
-                # If pandoc is not installed, should fail gracefully
-                assert result["success"] is False
-                assert "Pandoc is not installed" in result["error"]
+            # With auto-install, it should always succeed
+            assert result["success"] is True
+            assert output_path.exists()
+            assert result["file_size"] > 0
 
     @pytest.mark.asyncio
     async def test_empty_markdown_handling(self, pdf_compiler):
@@ -217,11 +211,6 @@ This concludes the test report.
         assert pdf_compiler._command_exists("nonexistentcommand123") is False
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not os.path.exists("/usr/bin/pandoc")
-        and not os.path.exists("/usr/local/bin/pandoc"),
-        reason="Pandoc not installed",
-    )
     async def test_pdf_with_special_characters(self, pdf_compiler):
         """Test PDF generation with special characters."""
         markdown_with_special = """# Test Report with Special Characters
@@ -246,7 +235,7 @@ def hello():
                 markdown_content=markdown_with_special,
                 output_path=str(output_path),
                 title="Special Characters Test",
-                install_if_missing=False,
+                install_if_missing=True,
             )
 
             if result["success"]:

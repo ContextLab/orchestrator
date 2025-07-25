@@ -7,6 +7,7 @@ import os
 import subprocess
 from pathlib import Path
 
+
 def check_dependencies():
     """Check if required dependencies are installed."""
     dependencies = {
