@@ -336,7 +336,11 @@ class ModelRegistry:
     async def _check_model_health(self, model_key: str, model: Model) -> None:
         """Check health of a single model."""
         try:
-            is_healthy = await model.health_check()
+            # Add timeout to individual health checks
+            is_healthy = await asyncio.wait_for(
+                model.health_check(),
+                timeout=15.0  # 15 second timeout per model
+            )
             self._model_health_cache[model_key] = is_healthy
         except Exception:
             self._model_health_cache[model_key] = False

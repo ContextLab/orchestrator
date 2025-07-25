@@ -322,15 +322,27 @@ class OpenAIModel(Model):
             True if healthy, False otherwise
         """
         try:
-            # Simple test request
-            self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": "Test"}],
-                max_tokens=1,
-                temperature=0.0,
+            # Run synchronous client in thread pool to avoid blocking
+            import asyncio
+            loop = asyncio.get_event_loop()
+            
+            def _sync_health_check():
+                self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[{"role": "user", "content": "Test"}],
+                    max_tokens=1,
+                    temperature=0.0,
+                    timeout=5.0,  # Add explicit timeout
+                )
+                return True
+            
+            # Run in executor with timeout
+            result = await asyncio.wait_for(
+                loop.run_in_executor(None, _sync_health_check),
+                timeout=10.0
             )
-            self._is_available = True
-            return True
+            self._is_available = result
+            return result
 
         except Exception:
             self._is_available = False

@@ -324,18 +324,29 @@ class GoogleModel(Model):
             True if healthy, False otherwise
         """
         try:
-            # Simple test request
-            generation_config = {
-                "temperature": 0.0,
-                "max_output_tokens": 1,
-            }
-
-            self.model.generate_content(
-                "Test",
-                generation_config=generation_config,
+            # Run synchronous client in thread pool to avoid blocking
+            import asyncio
+            loop = asyncio.get_event_loop()
+            
+            def _sync_health_check():
+                generation_config = {
+                    "temperature": 0.0,
+                    "max_output_tokens": 1,
+                }
+                self.model.generate_content(
+                    "Test",
+                    generation_config=generation_config,
+                    request_options={"timeout": 5.0},  # Add timeout
+                )
+                return True
+            
+            # Run in executor with timeout
+            result = await asyncio.wait_for(
+                loop.run_in_executor(None, _sync_health_check),
+                timeout=10.0
             )
-            self._is_available = True
-            return True
+            self._is_available = result
+            return result
 
         except Exception:
             self._is_available = False
