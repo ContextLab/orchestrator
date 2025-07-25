@@ -11,7 +11,7 @@ from orchestrator.compiler import YAMLCompiler
 from orchestrator.control_systems.model_based_control_system import (
     ModelBasedControlSystem,
 )
-from orchestrator.utils.api_keys import load_api_keys
+from orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
 pytestmark = pytest.mark.integration
@@ -21,7 +21,9 @@ pytestmark = pytest.mark.integration
 def setup_environment():
     """Setup test environment."""
     try:
-        load_api_keys()
+        api_keys = load_api_keys_optional()
+        if not api_keys:
+            pytest.skip("No API keys configured")
         return True
     except Exception as e:
         pytest.skip(f"API keys not configured: {e}")
