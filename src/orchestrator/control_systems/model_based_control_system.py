@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional
 
 from ..core.control_system import ControlSystem
@@ -232,8 +233,6 @@ class ModelBasedControlSystem(ControlSystem):
                     # Check if value contains template variables
                     if isinstance(value, str) and "{" in value and "}" in value:
                         # Try to resolve template variables from context
-                        import re
-
                         template_vars = re.findall(r"\{(\w+)\}", value)
                         for var in template_vars:
                             if var in context.get("previous_results", {}):
