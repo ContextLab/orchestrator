@@ -210,7 +210,7 @@ steps:
         # Check nested values were resolved
         assert len(captured) == 2
         assert "Connect to localhost:5432" in captured
-        assert "Cache enabled: true, TTL: 3600" in captured
+        assert "Cache enabled: True, TTL: 3600" in captured
         
     @pytest.mark.asyncio 
     async def test_no_auto_tag_resolution_without_models(self):

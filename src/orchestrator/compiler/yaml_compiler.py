@@ -160,6 +160,10 @@ class YAMLCompiler:
                 # Apply default value if specified
                 if isinstance(input_spec, dict) and "default" in input_spec:
                     merged[input_name] = input_spec["default"]
+                elif isinstance(input_spec, dict) and not any(key in input_spec for key in ["type", "description", "required", "default"]):
+                    # If it's a dict but not an input definition (no type/description/etc),
+                    # treat it as a nested value structure
+                    merged[input_name] = input_spec
                 elif not isinstance(input_spec, dict):
                     # Direct value (e.g., batch_size: 100)
                     merged[input_name] = input_spec
@@ -210,61 +214,11 @@ class YAMLCompiler:
                                                   '$iteration', '$loop']):
                     return value  # Keep as-is for control flow handling
                 
-                try:
-                    # Convert ternary operator syntax to Jinja2 if-else expression
-                    if "?" in value and ":" in value:
-                        # Simple pattern to convert `condition ? true_val : false_val` to Jinja2 syntax
-                        import re
-                        ternary_pattern = r'\{\{(.+?)\?(.+?):(.+?)\}\}'
-                        match = re.search(ternary_pattern, value)
-                        if match:
-                            condition, true_val, false_val = match.groups()
-                            # Convert to Jinja2 if-else expression
-                            jinja_expr = f"{{{{ {true_val.strip()} if {condition.strip()} else {false_val.strip()} }}}}"
-                            value = re.sub(ternary_pattern, jinja_expr, value)
-                    
-                    template = self.template_engine.from_string(value)
-                    return template.render(**context)
-                except Exception as e:
-                    # If template rendering fails due to undefined variables,
-                    # preserve templates that reference runtime values
-                    error_str = str(e).lower()
-
-                    # Check if this is a runtime reference that should be preserved
-                    runtime_patterns = [
-                        # "inputs." removed - inputs are available at compile time
-                        "outputs.",
-                        "$results.",
-                        "steps.",
-                        ".result",
-                        ".output",
-                        ".value",
-                        ".data",
-                        "$item",
-                        "$index",
-                        "$iteration",
-                        "$loop",
-                    ]
-
-                    # Check if any runtime pattern is in the original template
-                    if any(ref in value for ref in runtime_patterns):
-                        return value  # Keep template for runtime resolution
-
-                    # Check for specific error patterns that indicate runtime references
-                    if "undefined" in error_str or "has no attribute" in error_str:
-                        # Also check if it references a step ID (pattern: word or word.word)
-                        import re
-
-                        # Match both simple step references ({{step_id}}) and dotted ones ({{step_id.result}})
-                        # Also match expressions with operators like > < == etc
-                        step_ref_pattern = r"\{\{[^}]*[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*[^}]*\}\}"
-
-                        if re.search(step_ref_pattern, value):
-                            return value  # Keep template for runtime resolution
-
-                    raise TemplateRenderError(
-                        f"Failed to render template '{value}': {e}"
-                    ) from e
+                # If the string contains templates, process them individually
+                if "{{" in value and "}}" in value:
+                    return self._process_mixed_templates(value, context)
+                else:
+                    return value
             elif isinstance(value, dict):
                 return {k: process_value(v) for k, v in value.items()}
             elif isinstance(value, list):
@@ -629,3 +583,75 @@ class YAMLCompiler:
                 variables.append(var_name)
 
         return variables
+
+    def _process_mixed_templates(self, value: str, context: Dict[str, Any]) -> str:
+        """
+        Process a string that may contain both compile-time and runtime templates.
+        
+        This method processes each template individually, resolving compile-time
+        templates while preserving runtime templates.
+        
+        Args:
+            value: String containing templates
+            context: Template context
+            
+        Returns:
+            String with compile-time templates resolved
+        """
+        import re
+        
+        # Find all templates in the string
+        template_pattern = re.compile(r'\{\{[^}]+\}\}')
+        templates = template_pattern.findall(value)
+        
+        if not templates:
+            return value
+            
+        # Process each template individually
+        result = value
+        for template in templates:
+            try:
+                # Try to render this specific template
+                template_engine = self.template_engine.from_string(template)
+                rendered = template_engine.render(**context)
+                result = result.replace(template, rendered, 1)
+            except Exception as e:
+                # If rendering fails, check if it's a runtime reference
+                error_str = str(e).lower()
+                
+                # Runtime patterns that should be preserved
+                runtime_patterns = [
+                    "outputs.",
+                    "$results.",
+                    "steps.",
+                    ".result",
+                    ".output",
+                    ".value",
+                    ".data",
+                    "$item",
+                    "$index",
+                    "$iteration",
+                    "$loop",
+                ]
+                
+                # Check if this template contains runtime references
+                if any(ref in template for ref in runtime_patterns):
+                    # Keep this template for runtime resolution
+                    continue
+                    
+                # Also check for undefined step references
+                if "undefined" in error_str or "has no attribute" in error_str:
+                    # Extract the variable name from the template
+                    var_match = re.match(r'\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)', template)
+                    if var_match:
+                        var_name = var_match.group(1)
+                        # If it's not in context and looks like a step reference, preserve it
+                        if var_name not in context:
+                            continue
+                
+                # If it's not a runtime reference and still fails, it's an error
+                raise TemplateRenderError(
+                    f"Failed to render template '{template}': {e}"
+                ) from e
+                
+        return result
