@@ -409,7 +409,8 @@ class PDFCompilerTool(Tool):
                 temp_md_path,
                 "-o",
                 output_path,
-                "-f", "markdown",  # Explicitly specify input format
+                "-f",
+                "markdown",  # Explicitly specify input format
                 "--pdf-engine=pdflatex",  # Use pdflatex which is more commonly available
                 "-V",
                 "geometry=margin=1in",

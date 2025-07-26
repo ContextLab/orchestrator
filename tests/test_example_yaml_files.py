@@ -118,10 +118,13 @@ class TestExampleYAMLFiles:
                             errors.append(
                                 f"{yaml_file.name}: Step {i} missing 'id' field"
                             )
-                        
+
                         # Control flow steps (for_each, while, etc.) don't need action
-                        is_control_flow = any(key in step for key in ["for_each", "while", "if", "condition"])
-                        
+                        is_control_flow = any(
+                            key in step
+                            for key in ["for_each", "while", "if", "condition"]
+                        )
+
                         if "action" not in step and not is_control_flow:
                             errors.append(
                                 f"{yaml_file.name}: Step {i} missing 'action' field"
@@ -148,7 +151,7 @@ class TestExampleYAMLFiles:
                 # Read the YAML content
                 with open(yaml_file, "r") as f:
                     yaml_content = f.read()
-                
+
                 # Compile the pipeline
                 pipeline = await compiler.compile(yaml_content)
                 assert pipeline is not None

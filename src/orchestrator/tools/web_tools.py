@@ -924,29 +924,37 @@ class HeadlessBrowserTool(Tool):
                 proc = subprocess.Popen(
                     [sys.executable, "-m", "pip", "install", "playwright"],
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
+                    stderr=subprocess.PIPE,
                 )
                 try:
                     stdout, stderr = proc.communicate(timeout=60)
                     if proc.returncode != 0:
-                        raise subprocess.CalledProcessError(proc.returncode, proc.args, stdout, stderr)
+                        raise subprocess.CalledProcessError(
+                            proc.returncode, proc.args, stdout, stderr
+                        )
                 except subprocess.TimeoutExpired:
                     proc.kill()
-                    raise TimeoutError("Playwright package installation timed out after 60 seconds")
+                    raise TimeoutError(
+                        "Playwright package installation timed out after 60 seconds"
+                    )
 
                 # Install browser binaries with timeout
                 proc = subprocess.Popen(
                     [sys.executable, "-m", "playwright", "install", "chromium"],
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
+                    stderr=subprocess.PIPE,
                 )
                 try:
                     stdout, stderr = proc.communicate(timeout=120)
                     if proc.returncode != 0:
-                        raise subprocess.CalledProcessError(proc.returncode, proc.args, stdout, stderr)
+                        raise subprocess.CalledProcessError(
+                            proc.returncode, proc.args, stdout, stderr
+                        )
                 except subprocess.TimeoutExpired:
                     proc.kill()
-                    raise TimeoutError("Playwright browser installation timed out after 120 seconds")
+                    raise TimeoutError(
+                        "Playwright browser installation timed out after 120 seconds"
+                    )
 
                 # Try importing again
                 self.logger.info("Playwright installed successfully")

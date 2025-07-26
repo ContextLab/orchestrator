@@ -72,10 +72,15 @@ class YAMLCompiler:
             try:
                 # Try structured resolver first
                 from .structured_ambiguity_resolver import StructuredAmbiguityResolver
-                self.ambiguity_resolver = StructuredAmbiguityResolver(model_registry=model_registry)
+
+                self.ambiguity_resolver = StructuredAmbiguityResolver(
+                    model_registry=model_registry
+                )
             except (ValueError, ImportError):
                 # Fall back to regular resolver
-                self.ambiguity_resolver = AmbiguityResolver(model_registry=model_registry)
+                self.ambiguity_resolver = AmbiguityResolver(
+                    model_registry=model_registry
+                )
 
         self.template_engine = Environment(undefined=StrictUndefined)
 
@@ -160,7 +165,10 @@ class YAMLCompiler:
                 # Apply default value if specified
                 if isinstance(input_spec, dict) and "default" in input_spec:
                     merged[input_name] = input_spec["default"]
-                elif isinstance(input_spec, dict) and not any(key in input_spec for key in ["type", "description", "required", "default"]):
+                elif isinstance(input_spec, dict) and not any(
+                    key in input_spec
+                    for key in ["type", "description", "required", "default"]
+                ):
                     # If it's a dict but not an input definition (no type/description/etc),
                     # treat it as a nested value structure
                     merged[input_name] = input_spec
@@ -210,10 +218,19 @@ class YAMLCompiler:
         def process_value(value: Any) -> Any:
             if isinstance(value, str):
                 # Skip processing special variables that start with $
-                if any(var in value for var in ['$item', '$index', '$is_first', '$is_last', 
-                                                  '$iteration', '$loop']):
+                if any(
+                    var in value
+                    for var in [
+                        "$item",
+                        "$index",
+                        "$is_first",
+                        "$is_last",
+                        "$iteration",
+                        "$loop",
+                    ]
+                ):
                     return value  # Keep as-is for control flow handling
-                
+
                 # If the string contains templates, process them individually
                 if "{{" in value and "}}" in value:
                     return self._process_mixed_templates(value, context)
@@ -356,7 +373,7 @@ class YAMLCompiler:
         # Extract task properties
         task_id = task_def["id"]
         task_name = task_def.get("name", task_id)
-        
+
         # Handle both 'action' and 'tool' fields
         action = task_def.get("action")
         if not action and "tool" in task_def:
@@ -369,9 +386,9 @@ class YAMLCompiler:
                 action = "control_flow"
             else:
                 raise ValueError(f"Step {task_id} missing 'action' field")
-        
+
         parameters = task_def.get("parameters", {})
-        
+
         # Handle dependencies which may be string or array
         dependencies = task_def.get("depends_on", [])
         if isinstance(dependencies, str):
@@ -380,7 +397,7 @@ class YAMLCompiler:
                 dependencies = [dep.strip() for dep in dependencies.split(",")]
             else:
                 dependencies = [dependencies.strip()] if dependencies.strip() else []
-        
+
         timeout = task_def.get("timeout")
         max_retries = task_def.get("max_retries", 3)
         metadata = task_def.get("metadata", {})
@@ -390,10 +407,19 @@ class YAMLCompiler:
             metadata["on_failure"] = task_def["on_failure"]
         if "requires_model" in task_def:
             metadata["requires_model"] = task_def["requires_model"]
-        
+
         # Add control flow metadata
-        for cf_key in ["for_each", "while", "if", "condition", "steps", 
-                       "max_iterations", "max_parallel", "foreach", "parallel"]:
+        for cf_key in [
+            "for_each",
+            "while",
+            "if",
+            "condition",
+            "steps",
+            "max_iterations",
+            "max_parallel",
+            "foreach",
+            "parallel",
+        ]:
             if cf_key in task_def:
                 metadata[cf_key] = task_def[cf_key]
 
@@ -493,72 +519,72 @@ class YAMLCompiler:
         self.template_engine.filters["replace"] = lambda v, old, new: str(v).replace(
             old, new
         )
-        
+
         # Add missing filters
         import json
         from datetime import datetime
         import re as re_module
-        
+
         # Slugify filter
         def slugify(value):
             """Convert string to slug format."""
             value = str(value).lower()
             # Replace spaces and underscores with hyphens
-            value = re_module.sub(r'[\s_]+', '-', value)
+            value = re_module.sub(r"[\s_]+", "-", value)
             # Remove non-alphanumeric characters except hyphens
-            value = re_module.sub(r'[^a-z0-9-]', '', value)
+            value = re_module.sub(r"[^a-z0-9-]", "", value)
             # Remove multiple consecutive hyphens
-            value = re_module.sub(r'-+', '-', value)
+            value = re_module.sub(r"-+", "-", value)
             # Strip hyphens from start and end
-            return value.strip('-')
-        
+            return value.strip("-")
+
         # Date filter
-        def date_filter(value, format='%Y-%m-%d'):
+        def date_filter(value, format="%Y-%m-%d"):
             """Format datetime value."""
             if isinstance(value, str):
                 # Parse ISO format
                 try:
-                    value = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                except:
+                    value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                except Exception:
                     value = datetime.now()
             elif not isinstance(value, datetime):
                 value = datetime.now()
-            
+
             # Handle special format strings
-            format = format.replace('Y', '%Y').replace('m', '%m').replace('d', '%d')
-            format = format.replace('H', '%H').replace('i', '%M').replace('s', '%S')
+            format = format.replace("Y", "%Y").replace("m", "%m").replace("d", "%d")
+            format = format.replace("H", "%H").replace("i", "%M").replace("s", "%S")
             return value.strftime(format)
-        
+
         # JSON filter
         def json_filter(value, indent=None):
             """Convert value to JSON string."""
             return json.dumps(value, indent=indent, default=str)
-        
+
         # Now function for templates
         def now():
             """Return current datetime."""
             return datetime.now()
-        
+
         # from_json filter
         def from_json(value):
             """Parse JSON string to object."""
             if isinstance(value, str):
                 try:
                     return json.loads(value)
-                except:
+                except Exception:
                     return value
             return value
-        
+
         self.template_engine.filters["slugify"] = slugify
         self.template_engine.filters["date"] = date_filter
         self.template_engine.filters["json"] = json_filter
         self.template_engine.filters["from_json"] = from_json
         self.template_engine.filters["to_json"] = json_filter  # Alias for json
         self.template_engine.globals["now"] = now
-        
+
         # Add special variables that should not be processed as regular templates
         # These will be handled by the control flow system
-        self.special_vars = {'$item', '$index', '$is_first', '$is_last'}
+        self.special_vars = {"$item", "$index", "$is_first", "$is_last"}
 
     def get_template_variables(self, yaml_content: str) -> List[str]:
         """
@@ -587,26 +613,26 @@ class YAMLCompiler:
     def _process_mixed_templates(self, value: str, context: Dict[str, Any]) -> str:
         """
         Process a string that may contain both compile-time and runtime templates.
-        
+
         This method processes each template individually, resolving compile-time
         templates while preserving runtime templates.
-        
+
         Args:
             value: String containing templates
             context: Template context
-            
+
         Returns:
             String with compile-time templates resolved
         """
         import re
-        
+
         # Find all templates in the string
-        template_pattern = re.compile(r'\{\{[^}]+\}\}')
+        template_pattern = re.compile(r"\{\{[^}]+\}\}")
         templates = template_pattern.findall(value)
-        
+
         if not templates:
             return value
-            
+
         # Process each template individually
         result = value
         for template in templates:
@@ -618,7 +644,7 @@ class YAMLCompiler:
             except Exception as e:
                 # If rendering fails, check if it's a runtime reference
                 error_str = str(e).lower()
-                
+
                 # Runtime patterns that should be preserved
                 runtime_patterns = [
                     "outputs.",
@@ -633,25 +659,25 @@ class YAMLCompiler:
                     "$iteration",
                     "$loop",
                 ]
-                
+
                 # Check if this template contains runtime references
                 if any(ref in template for ref in runtime_patterns):
                     # Keep this template for runtime resolution
                     continue
-                    
+
                 # Also check for undefined step references
                 if "undefined" in error_str or "has no attribute" in error_str:
                     # Extract the variable name from the template
-                    var_match = re.match(r'\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)', template)
+                    var_match = re.match(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)", template)
                     if var_match:
                         var_name = var_match.group(1)
                         # If it's not in context and looks like a step reference, preserve it
                         if var_name not in context:
                             continue
-                
+
                 # If it's not a runtime reference and still fails, it's an error
                 raise TemplateRenderError(
                     f"Failed to render template '{template}': {e}"
                 ) from e
-                
+
         return result

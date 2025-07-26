@@ -75,11 +75,11 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if this is a file operation
         if self._is_file_operation(action_str):
             return await self._handle_file_operation(task, context)
-            
+
         # Check if this is a data processing operation
         if action_str == "process":
             return await self._handle_data_processing(task, context)
-            
+
         # Check if this is a validation operation
         if action_str == "validate":
             return await self._handle_validation(task, context)
@@ -92,7 +92,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Simple check for 'file' action
         if action.strip() == "file":
             return True
-            
+
         # More specific patterns that indicate file operations
         file_patterns = [
             r"write.*to\s+(?:a\s+)?(?:file|path)",  # Write ... to file/path
@@ -164,18 +164,20 @@ class HybridControlSystem(ModelBasedControlSystem):
         if action_text.strip() == "file" and task.parameters:
             # Build template context with all available data
             template_context = self._build_template_context(context)
-            
+
             # Resolve templates in parameters
             resolved_params = {}
             for key, value in task.parameters.items():
                 if isinstance(value, str) and "{{" in value:
-                    resolved_params[key] = self._resolve_templates(value, template_context)
+                    resolved_params[key] = self._resolve_templates(
+                        value, template_context
+                    )
                 else:
                     resolved_params[key] = value
-            
+
             # Use FileSystemTool directly
             return await self.filesystem_tool.execute(**resolved_params)
-        
+
         # Otherwise handle as a write operation
         # Extract file path from action
         file_path = self._extract_file_path(action_text, task.parameters)
@@ -310,27 +312,30 @@ class HybridControlSystem(ModelBasedControlSystem):
         """Resolve template variables in text."""
         # Use the TemplateRenderer for consistent behavior
         return TemplateRenderer.render(text, context)
-    
+
     async def _handle_data_processing(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle data processing operations."""
         if task.parameters:
             # Build template context
             template_context = self._build_template_context(context)
-            
+
             # Resolve templates in parameters
             resolved_params = {}
             for key, value in task.parameters.items():
                 if isinstance(value, str) and "{{" in value:
-                    resolved_params[key] = self._resolve_templates(value, template_context)
+                    resolved_params[key] = self._resolve_templates(
+                        value, template_context
+                    )
                 else:
                     resolved_params[key] = value
-            
+
             # Special handling for transform_spec
             if "transform_spec" in resolved_params:
                 import json
+
                 transform_spec = resolved_params["transform_spec"]
                 data_str = resolved_params.get("data", "")
-                
+
                 # Parse the JSON data if it's a string
                 parsed_data = None
                 try:
@@ -338,9 +343,9 @@ class HybridControlSystem(ModelBasedControlSystem):
                         parsed_data = json.loads(data_str)
                     else:
                         parsed_data = data_str
-                except:
+                except Exception:
                     parsed_data = data_str
-                
+
                 # Apply transformations
                 processed_data = {}
                 for field, expr in transform_spec.items():
@@ -366,18 +371,20 @@ class HybridControlSystem(ModelBasedControlSystem):
                         eval_context = {
                             "data": data_str,  # Raw string data for json.loads(data)
                             "parsed_data": parsed_data,  # Pre-parsed data
-                            "json": json
+                            "json": json,
                         }
                         # Evaluate the expression
-                        processed_data[field] = eval(expr, {"__builtins__": safe_builtins}, eval_context)
+                        processed_data[field] = eval(
+                            expr, {"__builtins__": safe_builtins}, eval_context
+                        )
                     except Exception as e:
                         processed_data[field] = f"Error: {str(e)}"
-                
+
                 return {"processed_data": processed_data, "success": True}
-            
+
             # Use DataProcessingTool for standard operations
             result = await self.data_processing_tool.execute(**resolved_params)
-            
+
             # If the result contains processed_data, return it in the expected format
             if isinstance(result, dict) and "processed_data" in result:
                 return result
@@ -387,15 +394,15 @@ class HybridControlSystem(ModelBasedControlSystem):
             else:
                 # Wrap the result to match expected format
                 return {"processed_data": result, "success": True}
-        
+
         return {"error": "No parameters provided for data processing", "success": False}
-    
+
     async def _handle_validation(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle validation operations."""
         if task.parameters:
             # Build template context
             template_context = self._build_template_context(context)
-            
+
             # Resolve templates in parameters
             resolved_params = {}
             for key, value in task.parameters.items():
@@ -404,6 +411,7 @@ class HybridControlSystem(ModelBasedControlSystem):
                     if key == "data":
                         # Extract the referenced value directly from context
                         import re
+
                         match = re.search(r"\{\{(.+?)\}\}", value)
                         if match:
                             ref_path = match.group(1).strip()
@@ -414,17 +422,21 @@ class HybridControlSystem(ModelBasedControlSystem):
                                     result = result[part]
                                 else:
                                     # Fallback to string resolution
-                                    result = self._resolve_templates(value, template_context)
+                                    result = self._resolve_templates(
+                                        value, template_context
+                                    )
                                     break
                             resolved_params[key] = result
                         else:
                             resolved_params[key] = value
                     else:
-                        resolved_params[key] = self._resolve_templates(value, template_context)
+                        resolved_params[key] = self._resolve_templates(
+                            value, template_context
+                        )
                 else:
                     resolved_params[key] = value
-            
+
             # Use ValidationTool
             return await self.validation_tool.execute(**resolved_params)
-        
+
         return {"error": "No parameters provided for validation", "success": False}

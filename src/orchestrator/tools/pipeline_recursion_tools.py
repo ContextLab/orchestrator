@@ -241,8 +241,20 @@ class PipelineExecutorTool(Tool):
 
                 # Execute the pipeline
                 start_time = time.time()
+                # Don't pass RecursionContext directly - it's not JSON serializable
+                # Instead, pass relevant recursion info in the context
+                context = {
+                    "recursion_depth": (
+                        self._recursion_context.depth if self._recursion_context else 0
+                    ),
+                    "pipeline_stack": (
+                        self._recursion_context.call_stack.copy()
+                        if self._recursion_context
+                        else []
+                    ),
+                }
                 result = await orchestrator.execute_pipeline_from_dict(
-                    pipeline_def, inputs=inputs, context=self._recursion_context
+                    pipeline_def, inputs=inputs, context=context
                 )
                 execution_time = time.time() - start_time
 

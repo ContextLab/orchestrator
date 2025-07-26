@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 
 from ..core.model import Model
 from ..models.model_registry import ModelRegistry
-from .utils import async_retry, is_transient_error
+from .utils import async_retry
 
 
 class AmbiguityType(Enum):
@@ -148,7 +148,7 @@ class AmbiguityResolver:
         @async_retry(exceptions=(Exception,), max_attempts=3, delay=1.0)
         async def _call_generate():
             return await self.model.generate(prompt, temperature=0.1, max_tokens=100)
-        
+
         response = await _call_generate()
 
         # Debug logging

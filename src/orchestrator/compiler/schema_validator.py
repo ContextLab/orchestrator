@@ -142,7 +142,12 @@ class SchemaValidator:
                                                 "oneOf": [
                                                     {
                                                         "type": "string",
-                                                        "enum": ["low", "medium", "high", "very-high"],
+                                                        "enum": [
+                                                            "low",
+                                                            "medium",
+                                                            "high",
+                                                            "very-high",
+                                                        ],
                                                     },
                                                     {
                                                         "type": "array",
