@@ -85,6 +85,45 @@ def check_ollama_installed() -> bool:
         return False
 
 
+def check_ollama_running() -> bool:
+    """Check if Ollama server is running."""
+    try:
+        import requests
+        response = requests.get("http://localhost:11434/api/tags", timeout=1)
+        return response.status_code == 200
+    except Exception:
+        return False
+
+
+def start_ollama_server() -> bool:
+    """Start Ollama server if installed but not running."""
+    if not check_ollama_installed():
+        return False
+        
+    if check_ollama_running():
+        return True
+        
+    try:
+        # Start Ollama server in the background
+        subprocess.Popen(
+            ["ollama", "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True  # Detach from parent process
+        )
+        
+        # Wait a bit for server to start
+        import time
+        for _ in range(5):  # Try for up to 5 seconds
+            time.sleep(1)
+            if check_ollama_running():
+                return True
+                
+        return False
+    except Exception:
+        return False
+
+
 def check_ollama_model(model_name: str) -> bool:
     """Check if an Ollama model is available locally."""
     if not check_ollama_installed():

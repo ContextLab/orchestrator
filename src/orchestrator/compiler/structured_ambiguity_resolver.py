@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from ..core.model import Model
 from ..models.model_registry import ModelRegistry
-from .ambiguity_resolver import AmbiguityResolutionError
+from .ambiguity_resolver import AmbiguityResolver, AmbiguityResolutionError
 from .utils import async_retry
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class StringResponse(BaseModel):
     reasoning: Optional[str] = Field(None, description="Brief explanation")
 
 
-class StructuredAmbiguityResolver:
+class StructuredAmbiguityResolver(AmbiguityResolver):
     """
     Enhanced ambiguity resolver using structured outputs.
 
@@ -83,8 +83,7 @@ class StructuredAmbiguityResolver:
         Raises:
             ValueError: If no model is provided and registry has no models
         """
-        self.model = model
-        self.model_registry = model_registry
+        super().__init__(model=model, model_registry=model_registry)
         self.resolution_cache: Dict[str, Any] = {}
 
         # If no model provided and we have a registry, defer model selection

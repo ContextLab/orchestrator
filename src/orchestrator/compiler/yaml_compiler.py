@@ -48,7 +48,7 @@ class YAMLCompiler:
         self,
         schema_validator: Optional[SchemaValidator] = None,
         ambiguity_resolver: Optional[AmbiguityResolver] = None,
-        model_registry=None,
+        model_registry: Optional[Any] = None,
     ) -> None:
         """
         Initialize YAML compiler.

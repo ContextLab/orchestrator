@@ -25,7 +25,6 @@ class TestTemplateResolution:
         """Test that compile-time templates are resolved before AUTO tags."""
         # Track what the ambiguity resolver receives
         captured_prompts = []
-        original_resolve = yaml_compiler.ambiguity_resolver.resolve
 
         async def capture_resolve(content, context_path):
             captured_prompts.append(
@@ -91,7 +90,6 @@ steps:
     async def test_runtime_template_preservation(self, yaml_compiler):
         """Test that runtime templates are preserved for later resolution."""
         captured_prompts = []
-        original_resolve = yaml_compiler.ambiguity_resolver.resolve
 
         async def capture_resolve(content, context_path):
             captured_prompts.append(content)
@@ -140,7 +138,6 @@ steps:
     async def test_input_default_resolution(self, yaml_compiler):
         """Test that input defaults are properly resolved."""
         captured = []
-        original_resolve = yaml_compiler.ambiguity_resolver.resolve
 
         async def capture_resolve(content, context_path):
             captured.append(content)
@@ -168,7 +165,7 @@ steps:
       auto2: <AUTO>Default value is {{with_default}}</AUTO>
 """
 
-        pipeline = await yaml_compiler.compile(yaml_content)
+        await yaml_compiler.compile(yaml_content)
 
         # Both formats should work
         assert len(captured) == 2
@@ -179,7 +176,6 @@ steps:
     async def test_nested_input_resolution(self, yaml_compiler):
         """Test resolution of nested input values."""
         captured = []
-        original_resolve = yaml_compiler.ambiguity_resolver.resolve
 
         async def capture_resolve(content, context_path):
             captured.append(content)
@@ -207,7 +203,7 @@ steps:
       cache_auto: <AUTO>Cache enabled: {{config.cache.enabled}}, TTL: {{config.cache.ttl}}</AUTO>
 """
 
-        pipeline = await yaml_compiler.compile(yaml_content)
+        await yaml_compiler.compile(yaml_content)
 
         # Check nested values were resolved
         assert len(captured) == 2
@@ -224,7 +220,6 @@ steps:
     async def test_mixed_compile_and_runtime_templates(self, yaml_compiler):
         """Test AUTO tags with both compile-time and runtime templates."""
         captured = []
-        original_resolve = yaml_compiler.ambiguity_resolver.resolve
 
         async def capture_resolve(content, context_path):
             captured.append(content)
@@ -253,7 +248,7 @@ steps:
     depends_on: [fetch]
 """
 
-        pipeline = await yaml_compiler.compile(yaml_content)
+        await yaml_compiler.compile(yaml_content)
 
         # The AUTO tag should have compile-time value resolved but runtime preserved
         assert len(captured) == 1

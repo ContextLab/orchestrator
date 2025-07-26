@@ -232,7 +232,31 @@ class OllamaModel(Model):
             else:
                 self._is_available = False
         except Exception:
-            self._is_available = False
+            # Ollama might not be running, try to start it
+            if self._start_ollama_if_installed():
+                # Try again after starting
+                try:
+                    response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+                    if response.status_code == 200:
+                        self._is_available = True
+                        # Check if our specific model is available
+                        models = response.json().get("models", [])
+                        model_names = [model["name"] for model in models]
+                        if self.model_name not in model_names:
+                            # Try to pull the model
+                            self._pull_model()
+                    else:
+                        self._is_available = False
+                except Exception:
+                    self._is_available = False
+            else:
+                self._is_available = False
+
+    def _start_ollama_if_installed(self) -> bool:
+        """Try to start Ollama service if it's installed but not running."""
+        # Use the centralized function from model_utils
+        from orchestrator.utils.model_utils import start_ollama_server
+        return start_ollama_server()
 
     def _pull_model(self) -> None:
         """Pull model if not available locally."""
@@ -400,6 +424,37 @@ Return only the JSON object, no additional text.
             return True
 
         except Exception:
+            # Try to start Ollama if it's not running
+            if await asyncio.to_thread(self._start_ollama_if_installed):
+                # Try health check again after starting
+                try:
+                    response = await asyncio.to_thread(
+                        requests.get, f"{self.base_url}/api/tags", timeout=5
+                    )
+                    if response.status_code == 200:
+                        # Check if our model is available
+                        models = response.json().get("models", [])
+                        model_names = [model["name"] for model in models]
+                        if self.model_name not in model_names:
+                            # Try to pull the model
+                            await asyncio.to_thread(self._pull_model)
+                            # Check again
+                            response = await asyncio.to_thread(
+                                requests.get, f"{self.base_url}/api/tags", timeout=5
+                            )
+                            models = response.json().get("models", [])
+                            model_names = [model["name"] for model in models]
+                            if self.model_name not in model_names:
+                                self._is_available = False
+                                return False
+                        
+                        # Simple test generation
+                        await self.generate("Test", max_tokens=1, temperature=0.0)
+                        self._is_available = True
+                        return True
+                except Exception:
+                    pass
+                    
             self._is_available = False
             return False
 

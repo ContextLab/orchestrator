@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Optional
 
-from ..utils.model_utils import check_ollama_model, install_ollama_model
+from ..utils.model_utils import check_ollama_model, install_ollama_model, start_ollama_server
 from .ollama_model import OllamaModel
 
 
@@ -38,6 +38,12 @@ class LazyOllamaModel(OllamaModel):
             return False
 
         self._download_attempted = True
+
+        # First ensure Ollama server is running
+        if not start_ollama_server():
+            print(">> ❌ Ollama is not installed or could not be started")
+            self._is_available = False
+            return False
 
         # Check if model is already available
         if check_ollama_model(self.model_name):
