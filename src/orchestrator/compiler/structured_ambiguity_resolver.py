@@ -205,7 +205,8 @@ class StructuredAmbiguityResolver:
             logger.debug(f"Calling generate_structured with schema: {schema}")
 
             @async_retry(exceptions=(Exception,), max_attempts=3, delay=1.0)
-            async def _call_structured():
+            async def _call_structured() -> Dict[str, Any]:
+                assert self.model is not None  # Type guard for mypy
                 return await self.model.generate_structured(
                     prompt=prompt,
                     schema=schema,
@@ -238,7 +239,8 @@ class StructuredAmbiguityResolver:
             prompt = self._build_fallback_prompt(content, expected_type)
 
             @async_retry(exceptions=(Exception,), max_attempts=2, delay=0.5)
-            async def _call_generate():
+            async def _call_generate() -> str:
+                assert self.model is not None  # Type guard for mypy
                 return await self.model.generate(
                     prompt, temperature=0.1, max_tokens=100
                 )
@@ -447,17 +449,17 @@ Do not explain. Answer only."""
                 validated = BooleanResponse(**response)
                 return validated.value
             elif expected_type == "number":
-                validated = NumberResponse(**response)
-                return validated.value
+                validated_num = NumberResponse(**response)
+                return validated_num.value
             elif expected_type == "list":
-                validated = ListResponse(**response)
-                return validated.items
+                validated_list = ListResponse(**response)
+                return validated_list.items
             elif expected_type == "choice":
-                validated = ChoiceResponse(**response)
-                return validated.choice
+                validated_choice = ChoiceResponse(**response)
+                return validated_choice.choice
             else:  # string
-                validated = StringResponse(**response)
-                return validated.value
+                validated_str = StringResponse(**response)
+                return validated_str.value
         except ValidationError as e:
             logger.warning(f"Validation error for {expected_type}: {e}")
             # Try to extract value directly if validation fails
