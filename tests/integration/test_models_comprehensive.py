@@ -103,15 +103,24 @@ async def test_huggingface_model():
     try:
         from orchestrator.integrations.huggingface_model import HuggingFaceModel
 
-        # Use TinyLlama for fast testing
-        print("📥 Loading TinyLlama model...")
-        model = HuggingFaceModel(model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+        # Use SmolLM for fast testing - it's smaller and faster
+        print("📥 Loading SmolLM model...")
+        model = HuggingFaceModel(model_name="HuggingFaceTB/SmolLM-1.7B-Instruct")
 
         # Test health check
         print("🏥 Running health check...")
-        healthy = await model.health_check()
-        if not healthy:
-            print("❌ Health check failed")
+        try:
+            healthy = await model.health_check()
+            if not healthy:
+                print("❌ Health check returned False")
+                # Try to get more info
+                print(f"   Model loaded: {hasattr(model, 'model') and model.model is not None}")
+                print(f"   Tokenizer loaded: {hasattr(model, 'tokenizer') and model.tokenizer is not None}")
+                return False
+        except Exception as health_err:
+            print(f"❌ Health check raised exception: {health_err}")
+            import traceback
+            traceback.print_exc()
             return False
 
         # Test generation
@@ -122,6 +131,8 @@ async def test_huggingface_model():
 
     except Exception as e:
         print(f"❌ HuggingFace test failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 

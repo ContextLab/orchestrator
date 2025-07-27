@@ -308,8 +308,14 @@ class HuggingFaceModel(Model):
         if self._model_loaded:
             return
 
+        print(f"[HuggingFace] Loading model: {self.model_name}")
+        print(f"[HuggingFace] Device: {self.device}, Quantization: {self.quantization}")
+        print(f"[HuggingFace] Cache dir: {self.cache_dir}")
+        print(f"[HuggingFace] Auth token: {'Set' if self.use_auth_token else 'Not set'}")
+        
         try:
             # Load tokenizer
+            print(f"[HuggingFace] Loading tokenizer...")
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
                 cache_dir=self.cache_dir,
@@ -321,6 +327,7 @@ class HuggingFaceModel(Model):
                 self.tokenizer.pad_token = self.tokenizer.eos_token
 
             # Load model
+            print(f"Loading model (this may take a while)...")
             model_kwargs = {
                 "cache_dir": self.cache_dir,
                 "use_auth_token": self.use_auth_token,
@@ -468,14 +475,39 @@ class HuggingFaceModel(Model):
             True if healthy, False otherwise
         """
         try:
+            print(f"[HuggingFace] Starting health check for {self.model_name}")
+            
+            # Check if transformers is available
+            if not TRANSFORMERS_AVAILABLE:
+                print(f"[HuggingFace] Transformers library not available")
+                return False
+                
+            # Try to load the model
+            print(f"[HuggingFace] Loading model...")
             await self._load_model()
+            
+            # Check if model was loaded
+            if not hasattr(self, 'model') or self.model is None:
+                print(f"[HuggingFace] Model failed to load")
+                return False
+                
+            if not hasattr(self, 'tokenizer') or self.tokenizer is None:
+                print(f"[HuggingFace] Tokenizer failed to load")
+                return False
 
             # Simple test generation
-            await self.generate("Test", max_tokens=1, temperature=0.0)
+            print(f"[HuggingFace] Testing generation...")
+            result = await self.generate("Test", max_tokens=1, temperature=0.0)
+            print(f"[HuggingFace] Test generation result: {result}")
+            
             self._is_available = True
+            print(f"[HuggingFace] Health check passed")
             return True
 
-        except Exception:
+        except Exception as e:
+            print(f"[HuggingFace] Health check failed for {self.model_name}: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             self._is_available = False
             return False
 

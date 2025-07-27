@@ -67,7 +67,7 @@ jobs:
         
         async def test():
             try:
-                model = HuggingFaceModel('TinyLlama/TinyLlama-1.1B-Chat-v1.0')
+                model = HuggingFaceModel('HuggingFaceTB/SmolLM-1.7B-Instruct')
                 resolver = AmbiguityResolver(model=model)
                 result = await resolver.resolve('Choose format: json or csv', 'test.format')
                 print(f'✅ Resolved: {result}')
