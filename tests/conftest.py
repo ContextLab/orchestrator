@@ -17,16 +17,16 @@ def populated_model_registry() -> ModelRegistry:
         ModelRegistry: Registry populated with all configured models
 
     Raises:
-        AssertionError: If no models are available (likely due to missing API keys)
+        pytest.skip.Exception: If no models are available (likely due to missing API keys)
     """
     registry = init_models()
 
     # Verify we have models available
     available_models = registry.list_models()
     if not available_models:
-        raise AssertionError(
+        pytest.skip(
             "No models available in registry. "
-            "Please configure API keys in ~/.orchestrator/.env"
+            "Please configure API keys in ~/.orchestrator/.env or environment variables"
         )
 
     return registry

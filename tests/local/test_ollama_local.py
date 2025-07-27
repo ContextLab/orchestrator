@@ -101,7 +101,7 @@ class TestOllamaIntegration:
         # Create a model registry and register an Ollama model
         registry = ModelRegistry()
         model_name = available_models[0] if available_models else "llama3.2:1b"
-        model = OllamaModel(name=model_name, model_size="1b")
+        model = OllamaModel(model_name=model_name)
         registry.register_model(model)
 
         # Create resolver with registry
