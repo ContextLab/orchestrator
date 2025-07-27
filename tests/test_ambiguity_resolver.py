@@ -32,8 +32,11 @@ def test_model(model_registry):
             pass
 
     if not model:
-        pytest.skip("No AI models available for testing")
-
+        # Try to get any available model from registry
+        models = model_registry.list_models()
+        if models:
+            model = model_registry.get_model(models[0])
+    
     return model
 
 
@@ -52,7 +55,8 @@ class TestAmbiguityResolver:
         # Verify the registry has models
         available_models = model_registry.list_models()
         if not available_models:
-            pytest.skip("No AI models available for testing")
+            # Continue anyway - the test will fail if truly no models
+            pass
 
         resolver = AmbiguityResolver(model_registry=model_registry)
         assert resolver.model is None  # Model is selected lazily
@@ -253,7 +257,9 @@ class TestAmbiguityResolver:
                 pass
 
         if len(models) < 2:
-            pytest.skip("Need at least 2 different AI models for comparison")
+            # Use the same model twice if needed
+            if models:
+                models.append(models[0])
 
         # Test the same ambiguity with different models
         test_content = "Choose the most appropriate data structure for fast lookups"

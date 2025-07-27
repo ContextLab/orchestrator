@@ -51,10 +51,8 @@ class TestLangGraphAdapter:
         registry = populated_model_registry
         available_models = registry.list_models()
         if not available_models:
-            pytest.skip(
-                "No AI models available for testing. "
-                "Please configure API keys in ~/.orchestrator/.env"
-            )
+            print("Warning: No AI models available for testing")
+            # Continue anyway - test will fail if truly no models
 
         config = {"name": "langgraph", "version": "1.0.0"}
         adapter = LangGraphAdapter(config, model_registry=registry)
@@ -108,10 +106,8 @@ class TestMCPAdapter:
         registry = populated_model_registry
         available_models = registry.list_models()
         if not available_models:
-            pytest.skip(
-                "No AI models available for testing. "
-                "Please configure API keys in ~/.orchestrator/.env"
-            )
+            print("Warning: No AI models available for testing")
+            # Continue anyway - test will fail if truly no models
 
         config = {"name": "mcp", "version": "1.0.0"}
         adapter = MCPAdapter(config, model_registry=registry)
@@ -144,10 +140,8 @@ class TestAdapterIntegration:
         registry = populated_model_registry
         available_models = registry.list_models()
         if not available_models:
-            pytest.skip(
-                "No AI models available for testing. "
-                "Please configure API keys in ~/.orchestrator/.env"
-            )
+            print("Warning: No AI models available for testing")
+            # Continue anyway - test will fail if truly no models
 
         config = {"name": "test", "version": "1.0.0"}
 
@@ -193,7 +187,10 @@ class TestAdapterIntegration:
             )
         except Exception as e:
             if "No models meet the specified requirements" in str(e):
-                pytest.skip("No suitable models available for this test")
+                print("Warning: No suitable models available for this test")
+                # Use the first available model
+                if available_models:
+                    llm = registry.get_model(available_models[0])
             raise
 
     def test_adapter_configuration_validation(self):
@@ -234,10 +231,8 @@ class TestAdapterIntegration:
         registry = populated_model_registry
         available_models = registry.list_models()
         if not available_models:
-            pytest.skip(
-                "No AI models available for testing. "
-                "Please configure API keys in ~/.orchestrator/.env"
-            )
+            print("Warning: No AI models available for testing")
+            # Continue anyway - test will fail if truly no models
 
         adapter = LangGraphAdapter()
 
@@ -275,7 +270,10 @@ class TestAdapterIntegration:
             assert len(final_state.data["analysis"]) > 10
         except Exception as e:
             if "No models meet the specified requirements" in str(e):
-                pytest.skip("No suitable models available for this test")
+                print("Warning: No suitable models available for this test")
+                # Use the first available model
+                if available_models:
+                    llm = registry.get_model(available_models[0])
             raise
 
     @pytest.mark.asyncio

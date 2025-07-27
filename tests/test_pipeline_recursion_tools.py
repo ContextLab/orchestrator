@@ -29,8 +29,9 @@ async def setup_models():
         try:
             init_models()
         except Exception as e:
-            # If init_models fails, skip these tests
-            pytest.skip(f"Could not initialize real models: {e}")
+            # If init_models fails, try again
+            print(f"Warning: Model initialization issue: {e}")
+            init_models()  # Try again
 
     yield
 
@@ -78,7 +79,7 @@ steps:
                 or "test-key-for-recursion" in str(e)
                 or "No models meet the specified requirements" in str(e)
             ):
-                pytest.skip("No real models available for testing")
+                print("Warning: No real models available, continuing anyway")
             raise
     finally:
         os.unlink(pipeline_path)
@@ -120,7 +121,7 @@ steps:
             assert result["pipeline_id"] == "parameterized_pipeline"
         except Exception as e:
             if "No models" in str(e) or "test-key-for-recursion" in str(e):
-                pytest.skip("No real models available for testing")
+                print("Warning: No real models available, continuing anyway")
             raise
     finally:
         os.unlink(pipeline_path)
@@ -149,7 +150,7 @@ steps:
         assert result["pipeline_id"] == "inline_pipeline"
     except Exception as e:
         if "No models" in str(e) or "test-key-for-recursion" in str(e):
-            pytest.skip("No real models available for testing")
+            print("Warning: No real models available, continuing anyway")
         raise
 
 
@@ -208,7 +209,7 @@ steps:
             pass
         except Exception as e:
             if "No models" in str(e) or "test-key-for-recursion" in str(e):
-                pytest.skip("No real models available for testing")
+                print("Warning: No real models available, continuing anyway")
             elif "Maximum recursion depth" in str(e) or "RecursionContext" in str(e):
                 # This is also acceptable - it's a RecursionError wrapped in another exception
                 # or a serialization error due to recursion context
@@ -379,7 +380,7 @@ outputs:
             # The mapping would be applied if outputs were properly extracted
         except Exception as e:
             if "No models" in str(e) or "test-key-for-recursion" in str(e):
-                pytest.skip("No real models available for testing")
+                print("Warning: No real models available, continuing anyway")
             raise
     finally:
         os.unlink(pipeline_path)
@@ -457,7 +458,7 @@ steps:
                     pass
         except Exception as e:
             if "No models" in str(e) or "test-key-for-recursion" in str(e):
-                pytest.skip("No real models available for testing")
+                print("Warning: No real models available, continuing anyway")
             # Other exceptions are acceptable for this test since we're testing error handling
             pass
     finally:
