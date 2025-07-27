@@ -103,9 +103,12 @@ async def test_huggingface_model():
     try:
         from orchestrator.integrations.huggingface_model import HuggingFaceModel
 
-        # Use SmolLM for fast testing - it's smaller and faster
-        print("📥 Loading SmolLM model...")
-        model = HuggingFaceModel(model_name="HuggingFaceTB/SmolLM-1.7B-Instruct")
+        print("📥 Loading HuggingFace model...")
+        # Use a small model for testing, force CPU to avoid CUDA OOM
+        model = HuggingFaceModel(
+            model_name="HuggingFaceTB/SmolLM-1.7B-Instruct",
+            device="cpu"  # Force CPU for tests to avoid CUDA memory issues
+        )
 
         # Test health check
         print("🏥 Running health check...")

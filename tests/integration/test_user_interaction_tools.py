@@ -235,7 +235,7 @@ class TestApprovalGateTool:
     @pytest.mark.asyncio
     async def test_rejection_flow(self, approval_tool):
         """Test rejection flow."""
-        with RealInputSimulator(["reject"]):
+        with RealInputSimulator(["reject", "Not ready for production yet"]):
             result = await approval_tool.execute(
                 title="Deploy to Production",
                 content="Ready to deploy version 1.2.3?",

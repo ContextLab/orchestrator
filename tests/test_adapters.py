@@ -145,9 +145,9 @@ class TestAdapterIntegration:
 
         config = {"name": "test", "version": "1.0.0"}
 
-        # Create adapters with real AI capabilities
-        langgraph_adapter = LangGraphAdapter(config)
-        mcp_adapter = MCPAdapter(config)
+        # Create adapters with real AI capabilities and populated registry
+        langgraph_adapter = LangGraphAdapter(config, model_registry=registry)
+        mcp_adapter = MCPAdapter(config, model_registry=registry)
 
         # Create pipeline with tasks
         pipeline = Pipeline("test_pipeline", "Test Pipeline")
