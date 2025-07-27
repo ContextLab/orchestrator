@@ -147,18 +147,25 @@ async def test_model_auto_detection():
             
         print(f"✅ Found {len(available_models)} models in registry")
 
-        # Create resolver with model registry (should auto-detect)
+        # Create resolver with model registry
         resolver = AmbiguityResolver(model_registry=registry)
-        print(f"✅ Auto-detected model: {resolver.model.name if resolver.model else 'None'}")
-        if resolver.model:
-            print(f"   Provider: {resolver.model.provider}")
-
-            # Test simple resolution
+        
+        # Model selection happens lazily on first resolve() call
+        try:
+            # Test simple resolution - this will trigger model selection
             resolved = await resolver.resolve("Choose format", "test.format")
             print(f"✅ Resolved 'Choose format': '{resolved}'")
-            return True
-        else:
-            print("❌ No model was auto-detected")
+            
+            # Now check which model was selected
+            if resolver.model:
+                print(f"✅ Auto-detected model: {resolver.model.name}")
+                print(f"   Provider: {resolver.model.provider}")
+                return True
+            else:
+                print("❌ No model was auto-detected after resolution")
+                return False
+        except Exception as e:
+            print(f"❌ Resolution failed: {e}")
             return False
 
     except Exception as e:
