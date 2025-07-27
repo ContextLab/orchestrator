@@ -200,7 +200,7 @@ class HuggingFaceModel(Model):
         device: Optional[str] = None,
         quantization: Optional[str] = None,
         cache_dir: Optional[str] = None,
-        use_auth_token: Optional[str] = None,
+        token: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -211,7 +211,7 @@ class HuggingFaceModel(Model):
             device: Device to load model on ('cpu', 'cuda', 'auto')
             quantization: Quantization mode ('8bit', '4bit', None)
             cache_dir: Directory to cache models
-            use_auth_token: HuggingFace authentication token
+            token: HuggingFace authentication token
             **kwargs: Additional arguments passed to parent class
         """
         global TRANSFORMERS_AVAILABLE, torch, AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig
@@ -287,7 +287,7 @@ class HuggingFaceModel(Model):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.quantization = quantization
         self.cache_dir = cache_dir
-        self.use_auth_token = use_auth_token or os.getenv("HF_TOKEN")
+        self.token = token or os.getenv("HF_TOKEN")
 
         # Initialize model and tokenizer
         self.model = None
@@ -311,7 +311,7 @@ class HuggingFaceModel(Model):
         print(f"[HuggingFace] Loading model: {self.model_name}")
         print(f"[HuggingFace] Device: {self.device}, Quantization: {self.quantization}")
         print(f"[HuggingFace] Cache dir: {self.cache_dir}")
-        print(f"[HuggingFace] Auth token: {'Set' if self.use_auth_token else 'Not set'}")
+        print(f"[HuggingFace] Auth token: {'Set' if self.token else 'Not set'}")
         
         try:
             # Load tokenizer
@@ -319,7 +319,7 @@ class HuggingFaceModel(Model):
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
                 cache_dir=self.cache_dir,
-                use_auth_token=self.use_auth_token,
+                token=self.token,
             )
 
             # Add pad token if not present
@@ -395,7 +395,7 @@ class HuggingFaceModel(Model):
             # Generate with pipeline
             outputs = self.pipeline(
                 prompt,
-                max_length=len(prompt.split()) + max_tokens,
+                max_new_tokens=max_tokens,
                 temperature=temperature,
                 do_sample=temperature > 0.0,
                 pad_token_id=self.tokenizer.pad_token_id,

@@ -386,7 +386,7 @@ class ModelUpdater:
         elif provider == "huggingface":
             entry["config"] = {
                 "model_name": model_id,
-                "use_auth_token": "${HUGGINGFACE_TOKEN}",
+                "token": "${HUGGINGFACE_TOKEN}",
                 "device": "auto",
                 "torch_dtype": "auto",
             }
