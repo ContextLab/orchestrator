@@ -330,7 +330,7 @@ class HuggingFaceModel(Model):
             print(f"Loading model (this may take a while)...")
             model_kwargs = {
                 "cache_dir": self.cache_dir,
-                "use_auth_token": self.use_auth_token,
+                "token": self.token,
             }
 
             if self.quantization_config:
