@@ -6,19 +6,29 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
-try:
-    import torch
-    from transformers import (
-        AutoModelForCausalLM,
-        AutoTokenizer,
-        BitsAndBytesConfig,
-        pipeline,
-    )
+from orchestrator.utils.auto_install import safe_import, ensure_packages
 
-    TRANSFORMERS_AVAILABLE = True
-except ImportError:
+# Try to import required packages with auto-installation
+torch = safe_import("torch")
+transformers = safe_import("transformers")
+
+if transformers:
+    try:
+        from transformers import (
+            AutoModelForCausalLM,
+            AutoTokenizer,
+            BitsAndBytesConfig,
+            pipeline,
+        )
+        TRANSFORMERS_AVAILABLE = True
+    except ImportError:
+        TRANSFORMERS_AVAILABLE = False
+        AutoModelForCausalLM = None
+        AutoTokenizer = None
+        pipeline = None
+        BitsAndBytesConfig = None
+else:
     TRANSFORMERS_AVAILABLE = False
-    torch = None
     AutoModelForCausalLM = None
     AutoTokenizer = None
     pipeline = None
