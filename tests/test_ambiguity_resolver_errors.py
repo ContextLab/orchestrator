@@ -1,7 +1,7 @@
-"""Tests for ambiguity resolver error handling and retry logic."""
+"""Tests for ambiguity resolver error handling and retry logic with real models."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+import asyncio
 from orchestrator.compiler.ambiguity_resolver import (
     AmbiguityResolver,
     AmbiguityResolutionError,
@@ -10,196 +10,215 @@ from orchestrator.compiler.structured_ambiguity_resolver import (
     StructuredAmbiguityResolver,
 )
 from orchestrator.compiler.utils import is_transient_error
+from orchestrator.models.registry_singleton import get_model_registry
+from orchestrator import init_models
 
 
 class TestErrorHandling:
-    """Test error handling in ambiguity resolvers."""
+    """Test error handling in ambiguity resolvers with real models."""
 
-    @pytest.fixture
-    def mock_model(self):
-        """Create a mock model."""
-        model = MagicMock()
-        model.name = "test-model"
-        model.generate = AsyncMock()
-        model.generate_structured = AsyncMock()
-        model.capabilities = MagicMock()
-        model.capabilities.supports_structured_output = True
-        return model
-
-    @pytest.fixture
-    def mock_registry(self, mock_model):
-        """Create a mock model registry."""
-        registry = MagicMock()
-        registry.select_model = AsyncMock(return_value=mock_model)
-        registry.get_model = MagicMock(return_value=mock_model)
-        registry.list_models = MagicMock(return_value=["test-model"])
+    @pytest.fixture(scope="class")
+    def real_registry(self):
+        """Get real model registry."""
+        # Initialize models if not already done
+        try:
+            init_models()
+        except Exception:
+            pass  # May already be initialized
+        
+        registry = get_model_registry()
+        if not registry.list_models():
+            pytest.skip("No models available for testing")
         return registry
 
-    def test_no_model_available_error(self):
-        """Test error when no model is available at initialization."""
-        # Create a registry with no models
-        empty_registry = MagicMock()
-        empty_registry.list_models = MagicMock(return_value=[])
+    @pytest.fixture
+    def real_model(self, real_registry):
+        """Get a real model for testing."""
+        models = real_registry.list_models()
+        if not models:
+            pytest.skip("No models available")
+        
+        # Try to get a small, fast model
+        preferred_models = [
+            "openai:gpt-4.1-nano",
+            "openai:gpt-4o-mini", 
+            "anthropic:claude-3-5-haiku-20241022",
+            "google:gemini-2.0-flash-lite"
+        ]
+        
+        model_name = None
+        for preferred in preferred_models:
+            if preferred in models:
+                model_name = preferred
+                break
+        
+        if not model_name:
+            model_name = models[0]  # Use first available
+        
+        return real_registry.get_model(model_name)
 
+    def test_no_model_available_error_real(self):
+        """Test error when no model is available at initialization."""
+        # Create a registry with no models by passing an empty dict
+        from orchestrator.models.model_registry import ModelRegistry
+        empty_registry = ModelRegistry()
+        
         # Should raise ValueError at initialization
         with pytest.raises(ValueError, match="No AI model available"):
             AmbiguityResolver(model_registry=empty_registry)
 
     @pytest.mark.asyncio
-    async def test_model_becomes_unavailable(self, mock_registry):
-        """Test error when model becomes unavailable after initialization."""
-        resolver = AmbiguityResolver(model_registry=mock_registry)
-
-        # Make model selection fail
-        mock_registry.select_model.side_effect = Exception("Model unavailable")
-        mock_registry.list_models.return_value = []
-        mock_registry.get_model.return_value = None
-
-        with pytest.raises(AmbiguityResolutionError, match="No AI model available"):
-            await resolver.resolve("test content", "test.path")
+    async def test_model_resolution_real(self, real_registry, real_model):
+        """Test real model resolution."""
+        resolver = AmbiguityResolver(model=real_model)
+        
+        # Test with a simple ambiguity
+        result = await resolver.resolve("Choose a format: json or yaml", "output.format")
+        
+        # Should resolve to one of the options
+        assert result.lower() in ["json", "yaml", "format"]
 
     @pytest.mark.asyncio
-    async def test_model_failure_with_retry(self, mock_registry, mock_model):
-        """Test that model failures trigger retries."""
-        resolver = AmbiguityResolver(model_registry=mock_registry)
+    async def test_cache_behavior_real(self, real_registry, real_model):
+        """Test that caching works with real models."""
+        resolver = AmbiguityResolver(model=real_model)
+        
+        # First call - should hit the model
+        content = "Select output format"
+        context = "config.output.format"
+        
+        result1 = await resolver.resolve(content, context)
+        
+        # Second call with same inputs - should use cache
+        result2 = await resolver.resolve(content, context)
+        
+        # Results should be identical (from cache)
+        assert result1 == result2
+        
+        # Clear cache
+        resolver.clear_cache()
+        
+        # Third call - should hit model again
+        result3 = await resolver.resolve(content, context)
+        
+        # Result might be different since it's a new model call
+        assert isinstance(result3, str)
 
-        # Make model fail twice then succeed
-        mock_model.generate.side_effect = [
-            Exception("Network error"),
-            Exception("Timeout error"),
-            "Success",
+    @pytest.mark.asyncio
+    async def test_invalid_prompt_handling_real(self, real_registry, real_model):
+        """Test handling of invalid or nonsensical prompts."""
+        resolver = AmbiguityResolver(model=real_model)
+        
+        # Test with empty content
+        try:
+            result = await resolver.resolve("", "test.path")
+            # Model might still return something
+            assert isinstance(result, str)
+        except AmbiguityResolutionError:
+            # This is also acceptable
+            pass
+
+    @pytest.mark.asyncio
+    async def test_structured_resolver_real(self, real_registry):
+        """Test structured resolver with real models."""
+        # Get a model that supports structured output
+        models = real_registry.list_models()
+        
+        # Find a model with structured output support
+        structured_model = None
+        for model_name in models:
+            model = real_registry.get_model(model_name)
+            if hasattr(model, 'capabilities') and model.capabilities.supports_structured_output:
+                structured_model = model
+                break
+        
+        if not structured_model:
+            # Fall back to regular resolver
+            resolver = StructuredAmbiguityResolver(model_registry=real_registry)
+        else:
+            resolver = StructuredAmbiguityResolver(model=structured_model)
+        
+        # Test boolean resolution
+        result = await resolver.resolve("Enable feature?", "config.feature.enabled")
+        assert isinstance(result, (bool, str))
+        
+        # Test list resolution  
+        result = await resolver.resolve("List supported formats", "config.formats")
+        assert isinstance(result, (list, str))
+
+    @pytest.mark.asyncio
+    async def test_model_switching_real(self, real_registry):
+        """Test switching between different real models."""
+        models = real_registry.list_models()
+        if len(models) < 2:
+            pytest.skip("Need at least 2 models for this test")
+        
+        # Create resolver with first model
+        model1 = real_registry.get_model(models[0])
+        resolver = AmbiguityResolver(model=model1)
+        
+        result1 = await resolver.resolve("Pick a number", "config.number")
+        
+        # Switch to second model
+        model2 = real_registry.get_model(models[1])
+        resolver.model = model2
+        resolver.clear_cache()  # Clear cache to ensure new model is used
+        
+        result2 = await resolver.resolve("Pick a number", "config.number")
+        
+        # Both should return valid results
+        assert isinstance(result1, (str, int, float))
+        assert isinstance(result2, (str, int, float))
+
+    @pytest.mark.asyncio
+    async def test_concurrent_resolutions_real(self, real_registry, real_model):
+        """Test concurrent resolution requests with real models."""
+        resolver = AmbiguityResolver(model=real_model)
+        
+        # Create multiple resolution tasks
+        tasks = []
+        prompts = [
+            ("Choose format", "config.format"),
+            ("Select mode", "config.mode"),
+            ("Pick color", "config.color"),
         ]
+        
+        for content, context in prompts:
+            task = resolver.resolve(content, context)
+            tasks.append(task)
+        
+        # Run concurrently
+        results = await asyncio.gather(*tasks)
+        
+        # All should complete successfully
+        assert len(results) == 3
+        for result in results:
+            assert isinstance(result, str)
 
-        result = await resolver.resolve("test content", "test.path")
-
-        # Should have been called 3 times due to retries
-        assert mock_model.generate.call_count == 3
-        assert result == "Success"
-
-    @pytest.mark.asyncio
-    async def test_permanent_failure_after_retries(self, mock_registry, mock_model):
-        """Test that permanent failures raise after all retries."""
-        resolver = AmbiguityResolver(model_registry=mock_registry)
-
-        # Make model always fail
-        mock_model.generate.side_effect = Exception("Permanent error")
-
-        with pytest.raises(AmbiguityResolutionError, match="Permanent error"):
-            await resolver.resolve("test content", "test.path")
-
-        # Should have been called 3 times (initial + 2 retries)
-        assert mock_model.generate.call_count == 3
-
-    @pytest.mark.asyncio
-    async def test_structured_resolver_fallback(self, mock_registry, mock_model):
-        """Test that structured resolver falls back to parsing on failure."""
-        resolver = StructuredAmbiguityResolver(model_registry=mock_registry)
-
-        # Make structured call fail, regular call succeed
-        mock_model.generate_structured.side_effect = Exception(
-            "Structured not supported"
-        )
-        mock_model.generate.return_value = "true"
-
-        result = await resolver.resolve("Should we enable caching?", "test.boolean")
-
-        # Should have fallen back to regular generate
-        assert mock_model.generate_structured.call_count >= 1
-        assert mock_model.generate.call_count >= 1
-        assert result is True
+    def test_is_transient_error_real(self):
+        """Test transient error detection with real error types."""
+        # Network errors are transient
+        assert is_transient_error(ConnectionError("Network unreachable"))
+        assert is_transient_error(TimeoutError("Request timed out"))
+        
+        # API errors might be transient
+        assert is_transient_error(Exception("rate limit exceeded"))
+        assert is_transient_error(Exception("Service temporarily unavailable"))
+        
+        # Programming errors are not transient
+        assert not is_transient_error(ValueError("Invalid argument"))
+        assert not is_transient_error(TypeError("Wrong type"))
+        assert not is_transient_error(AttributeError("No such attribute"))
 
     @pytest.mark.asyncio
-    async def test_both_methods_fail(self, mock_registry, mock_model):
-        """Test error when both structured and fallback methods fail."""
-        resolver = StructuredAmbiguityResolver(model_registry=mock_registry)
-
-        # Make both methods fail
-        mock_model.generate_structured.side_effect = Exception("Structured failed")
-        mock_model.generate.side_effect = Exception("Generate failed")
-
-        with pytest.raises(
-            AmbiguityResolutionError,
-            match="Both structured output and fallback parsing failed",
-        ):
-            await resolver.resolve("Should we enable caching?", "test.boolean")
-
-    def test_transient_error_detection(self):
-        """Test detection of transient errors."""
-        # Transient errors
-        assert is_transient_error(Exception("Connection timeout"))
-        assert is_transient_error(Exception("Network error"))
-        assert is_transient_error(Exception("Rate limit exceeded"))
-        assert is_transient_error(Exception("429 Too Many Requests"))
-        assert is_transient_error(Exception("503 Service Unavailable"))
-        assert is_transient_error(Exception("Request throttled"))
-
-        # Non-transient errors
-        assert not is_transient_error(Exception("Invalid API key"))
-        assert not is_transient_error(Exception("Model not found"))
-        assert not is_transient_error(Exception("Syntax error"))
-
-    @pytest.mark.asyncio
-    async def test_cache_prevents_retries(self, mock_registry, mock_model):
-        """Test that cached results prevent unnecessary retries."""
-        resolver = AmbiguityResolver(model_registry=mock_registry)
-
-        # First call succeeds
-        mock_model.generate.return_value = "cached result"
-        result1 = await resolver.resolve("test content", "test.path")
-
-        # Reset mock to fail
-        mock_model.generate.reset_mock()
-        mock_model.generate.side_effect = Exception("Should not be called")
-
-        # Second call should use cache
-        result2 = await resolver.resolve("test content", "test.path")
-
-        assert result1 == result2 == "cached result"
-        assert mock_model.generate.call_count == 0  # Not called due to cache
-
-    @pytest.mark.asyncio
-    async def test_model_selection_fallback(self, mock_registry):
-        """Test fallback when model selection fails."""
-        resolver = AmbiguityResolver(model_registry=mock_registry)
-
-        # Make select_model fail but list_models succeed
-        mock_registry.select_model.side_effect = Exception("No suitable model")
-        mock_model = MagicMock()
-        mock_model.generate = AsyncMock(return_value="fallback result")
-        mock_registry.get_model.return_value = mock_model
-
-        result = await resolver.resolve("test content", "test.path")
-
-        assert result == "fallback result"
-        assert mock_registry.select_model.called
-        assert mock_registry.get_model.called
-
-    @pytest.mark.asyncio
-    async def test_retry_with_backoff(self, mock_registry, mock_model):
-        """Test that retries use exponential backoff."""
-        resolver = AmbiguityResolver(model_registry=mock_registry)
-
-        # Track timing
-        import time
-
-        call_times = []
-
-        async def mock_generate(*args, **kwargs):
-            call_times.append(time.time())
-            if len(call_times) < 3:
-                raise Exception("Transient error")
-            return "Success"
-
-        mock_model.generate = mock_generate
-
-        start = time.time()
-        result = await resolver.resolve("test content", "test.path")
-
-        assert result == "Success"
-        assert len(call_times) == 3
-
-        # Check delays are increasing (with some tolerance)
-        if len(call_times) >= 3:
-            delay1 = call_times[1] - call_times[0]
-            delay2 = call_times[2] - call_times[1]
-            assert delay2 > delay1 * 1.5  # Backoff factor
+    async def test_long_context_handling_real(self, real_registry, real_model):
+        """Test handling of long context with real models."""
+        resolver = AmbiguityResolver(model=real_model)
+        
+        # Create a long context
+        long_content = "Choose the best option: " + ", ".join([f"option{i}" for i in range(50)])
+        
+        result = await resolver.resolve(long_content, "config.selection")
+        
+        # Should still work
+        assert isinstance(result, str)

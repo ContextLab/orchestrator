@@ -23,10 +23,6 @@ from orchestrator.tools.base import default_registry
 from orchestrator.control_systems import ToolIntegratedControlSystem
 
 
-@pytest.mark.skipif(
-    not os.environ.get("OPENAI_API_KEY") or not os.environ.get("ANTHROPIC_API_KEY"),
-    reason="Requires API keys for real model testing"
-)
 async def test_input_agnostic_pipeline():
     """Test input-agnostic pipeline with different topics."""
     print("=" * 60)
