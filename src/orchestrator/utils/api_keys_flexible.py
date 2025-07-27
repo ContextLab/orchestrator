@@ -16,14 +16,20 @@ def load_api_keys_optional() -> Dict[str, str]:
     Returns:
         Dict mapping provider names to their API keys (if available)
     """
+    # Debug logging
+    is_github_actions = os.getenv("GITHUB_ACTIONS")
+    if is_github_actions:
+        print(f">> Running in GitHub Actions (GITHUB_ACTIONS={is_github_actions})")
+    
     # Check if running in GitHub Actions
-    if os.getenv("GITHUB_ACTIONS"):
+    if is_github_actions:
         # Use environment variables directly - they're injected as secrets
-        pass
+        print(">> Using environment variables from GitHub secrets")
     else:
         # Load from ~/.orchestrator/.env for local development
         env_path = Path.home() / ".orchestrator" / ".env"
         if env_path.exists():
+            print(f">> Loading API keys from {env_path}")
             load_dotenv(env_path)
         else:
             # Try legacy location
@@ -46,8 +52,13 @@ def load_api_keys_optional() -> Dict[str, str]:
     for provider, env_var in provider_keys.items():
         value = os.getenv(env_var)
         if value:
+            # Don't log the actual key value for security
             available[provider] = value
+            print(f">> Found API key for {provider} (length: {len(value)})")
+        else:
+            print(f">> No API key found for {provider} ({env_var})")
 
+    print(f">> Total API keys found: {len(available)}")
     return available
 
 

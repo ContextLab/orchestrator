@@ -85,6 +85,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
     from .utils.api_keys_flexible import load_api_keys_optional
 
     print(">> Initializing model pool...")
+    print(f">> Current environment: CI={os.environ.get('CI', 'false')}, GITHUB_ACTIONS={os.environ.get('GITHUB_ACTIONS', 'false')}")
 
     # Load available API keys (doesn't require all keys to be present)
     available_keys = load_api_keys_optional()

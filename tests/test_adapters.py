@@ -49,7 +49,7 @@ class TestLangGraphAdapter:
         """Test LangGraphAdapter task execution with real AI models."""
         # Skip if no AI models available
         registry = populated_model_registry
-        available_models = await registry.get_available_models()
+        available_models = registry.list_models()
         if not available_models:
             pytest.skip(
                 "No AI models available for testing. "
@@ -106,7 +106,7 @@ class TestMCPAdapter:
         """Test MCPAdapter task execution with real AI models."""
         # Skip if no AI models available
         registry = populated_model_registry
-        available_models = await registry.get_available_models()
+        available_models = registry.list_models()
         if not available_models:
             pytest.skip(
                 "No AI models available for testing. "
@@ -142,7 +142,7 @@ class TestAdapterIntegration:
         """Test adapters working with pipeline execution using real AI models."""
         # Skip if no AI models available
         registry = populated_model_registry
-        available_models = await registry.get_available_models()
+        available_models = registry.list_models()
         if not available_models:
             pytest.skip(
                 "No AI models available for testing. "
@@ -232,7 +232,7 @@ class TestAdapterIntegration:
         """Test LangGraph workflow functionality with real AI."""
         # Skip if no AI models available
         registry = populated_model_registry
-        available_models = await registry.get_available_models()
+        available_models = registry.list_models()
         if not available_models:
             pytest.skip(
                 "No AI models available for testing. "

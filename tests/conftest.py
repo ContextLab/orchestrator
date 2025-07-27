@@ -19,15 +19,18 @@ def populated_model_registry() -> ModelRegistry:
     Raises:
         pytest.skip.Exception: If no models are available (likely due to missing API keys)
     """
+    print("\n>> Test fixture: Initializing model registry...")
     registry = init_models()
 
     # Verify we have models available
     available_models = registry.list_models()
+    print(f">> Test fixture: Found {len(available_models)} models: {available_models}")
+    
     if not available_models:
-        pytest.skip(
-            "No models available in registry. "
-            "Please configure API keys in ~/.orchestrator/.env or environment variables"
-        )
+        # Can't use pytest.skip in a session-scoped fixture
+        # Return None instead and let tests handle it
+        print(">> Test fixture: No models available - returning empty registry")
+        return registry
 
     return registry
 
