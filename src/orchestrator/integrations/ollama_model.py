@@ -255,12 +255,17 @@ class OllamaModel(Model):
     def _start_ollama_if_installed(self) -> bool:
         """Try to start Ollama service if it's installed but not running."""
         try:
-            # Import inside try block to handle missing module gracefully
-            from orchestrator.utils.model_utils import start_ollama_server
-            return start_ollama_server()
+            # Use the service manager for better service control
+            from orchestrator.utils.service_manager import ensure_service_running
+            return ensure_service_running("ollama")
         except ImportError:
-            logger.warning("model_utils module not found, cannot auto-start Ollama")
-            return False
+            # Fallback to old method
+            try:
+                from orchestrator.utils.model_utils import start_ollama_server
+                return start_ollama_server()
+            except ImportError:
+                logger.warning("Service management modules not found, cannot auto-start Ollama")
+                return False
 
     def _pull_model(self) -> None:
         """Pull model if not available locally."""
