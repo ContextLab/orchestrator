@@ -27,6 +27,10 @@ jobs:
         pip install -e .
         pip install transformers torch requests
     
+    - name: Debug CI Environment
+      run: |
+        python test_ci_env.py || true
+    
     - name: Test HuggingFace model integration
       env:
         CI: true

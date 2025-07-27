@@ -132,19 +132,39 @@ async def test_model_auto_detection():
 
     try:
         from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        from orchestrator import init_models
+        from orchestrator.models.registry_singleton import get_model_registry
 
-        # Create resolver without specifying model (should auto-detect)
-        resolver = AmbiguityResolver()
-        print(f"✅ Auto-detected model: {resolver.model.name}")
-        print(f"   Provider: {resolver.model.provider}")
+        # Initialize models first
+        init_models()
+        registry = get_model_registry()
+        
+        # Check if we have any models available
+        available_models = registry.list_models()
+        if not available_models:
+            print("❌ No models available in registry after init_models()")
+            return False
+            
+        print(f"✅ Found {len(available_models)} models in registry")
 
-        # Test simple resolution
-        resolved = await resolver.resolve("Choose format", "test.format")
-        print(f"✅ Resolved 'Choose format': '{resolved}'")
-        return True
+        # Create resolver with model registry (should auto-detect)
+        resolver = AmbiguityResolver(model_registry=registry)
+        print(f"✅ Auto-detected model: {resolver.model.name if resolver.model else 'None'}")
+        if resolver.model:
+            print(f"   Provider: {resolver.model.provider}")
+
+            # Test simple resolution
+            resolved = await resolver.resolve("Choose format", "test.format")
+            print(f"✅ Resolved 'Choose format': '{resolved}'")
+            return True
+        else:
+            print("❌ No model was auto-detected")
+            return False
 
     except Exception as e:
         print(f"❌ Auto-detection test failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
