@@ -89,6 +89,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
 
     # Load available API keys (doesn't require all keys to be present)
     available_keys = load_api_keys_optional()
+    print(f">> Available keys returned: {list(available_keys.keys()) if available_keys else 'None'}")
     if available_keys:
         print(f">> Found API keys for: {', '.join(available_keys.keys())}")
         # Also set them in environment for backward compatibility

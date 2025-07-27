@@ -28,6 +28,12 @@ jobs:
         pip install transformers torch requests
     
     - name: Debug CI Environment
+      env:
+        CI: true
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python test_ci_env.py || true
     
