@@ -63,8 +63,23 @@ class TestLangGraphAdapter:
         result = await adapter.execute_task(task, {})
 
         # Verify we got actual AI-generated response
-        assert isinstance(result, str)
-        assert len(result) > 5  # Should have actual content
+        assert isinstance(result, str), f"Expected string result, got {type(result)}: {result}"
+        
+        # If result is empty, provide detailed debugging info
+        if not result or len(result) == 0:
+            # Get debug info
+            models_list = registry.list_models()
+            selected = await registry.select_model({"tasks": ["generate"], "context_window": 14, "expertise": ["general"]})
+            
+            pytest.fail(
+                f"Empty result from LangGraph adapter.\n"
+                f"Available models: {len(models_list)}\n"
+                f"Selected model: {selected.name if selected else 'None'}\n"
+                f"Registry state: {registry._models is not None}\n"
+                f"Result: {repr(result)}"
+            )
+        
+        assert len(result) > 5, f"Result too short ({len(result)} chars): {repr(result)}"
         # Result should relate to the prompt
         assert any(word in result.lower() for word in ["hello", "langgraph", "three"])
 
