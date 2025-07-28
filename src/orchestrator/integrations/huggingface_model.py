@@ -9,30 +9,42 @@ from typing import Any, Dict, List, Optional
 from orchestrator.utils.auto_install import safe_import, ensure_packages
 
 # Try to import required packages with auto-installation
-torch = safe_import("torch")
-transformers = safe_import("transformers")
-
-if transformers:
-    try:
-        from transformers import (
-            AutoModelForCausalLM,
-            AutoTokenizer,
-            BitsAndBytesConfig,
-            pipeline,
-        )
-        TRANSFORMERS_AVAILABLE = True
-    except ImportError:
+try:
+    import torch
+    import transformers
+    from transformers import (
+        AutoModelForCausalLM,
+        AutoTokenizer,
+        BitsAndBytesConfig,
+        pipeline,
+    )
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    # Try safe import with auto-installation
+    torch = safe_import("torch")
+    transformers = safe_import("transformers")
+    
+    if transformers and torch:
+        try:
+            from transformers import (
+                AutoModelForCausalLM,
+                AutoTokenizer,
+                BitsAndBytesConfig,
+                pipeline,
+            )
+            TRANSFORMERS_AVAILABLE = True
+        except ImportError:
+            TRANSFORMERS_AVAILABLE = False
+            AutoModelForCausalLM = None
+            AutoTokenizer = None
+            pipeline = None
+            BitsAndBytesConfig = None
+    else:
         TRANSFORMERS_AVAILABLE = False
         AutoModelForCausalLM = None
         AutoTokenizer = None
         pipeline = None
         BitsAndBytesConfig = None
-else:
-    TRANSFORMERS_AVAILABLE = False
-    AutoModelForCausalLM = None
-    AutoTokenizer = None
-    pipeline = None
-    BitsAndBytesConfig = None
 
 from orchestrator.core.model import (
     Model,
@@ -214,31 +226,10 @@ class HuggingFaceModel(Model):
             token: HuggingFace authentication token
             **kwargs: Additional arguments passed to parent class
         """
-        global TRANSFORMERS_AVAILABLE, torch, AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig
         if not TRANSFORMERS_AVAILABLE:
-            # Try to install on demand
-            import subprocess
-            import sys
-
-            try:
-                print("Transformers library not found. Installing...")
-                subprocess.check_call(
-                    [sys.executable, "-m", "pip", "install", "transformers", "torch"]
-                )
-                # Re-import after installation
-                import torch
-                from transformers import (
-                    AutoModelForCausalLM,
-                    AutoTokenizer,
-                    pipeline,
-                    BitsAndBytesConfig,
-                )
-
-                TRANSFORMERS_AVAILABLE = True
-            except Exception as e:
-                raise ImportError(
-                    f"Failed to install Transformers library: {e}. Install manually with: pip install transformers torch"
-                )
+            raise ImportError(
+                "Transformers library not available. Install with: pip install transformers torch"
+            )
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(
