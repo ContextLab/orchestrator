@@ -50,7 +50,7 @@ class TestProcessPoolExecution:
     @pytest.mark.asyncio
     async def test_process_pool_timeout(self):
         """Test process pool timeout."""
-        config = ExecutionConfig(execution_mode=ExecutionMode.PROCESS)
+        config = ExecutionConfig(execution_mode=ExecutionMode.PROCESS, timeout=0.5)
         worker_pool = WorkerPool(config)
 
         # Initialize real process pool
