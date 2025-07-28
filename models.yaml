@@ -412,47 +412,47 @@ models:
       - efficient
     size: 600b  # Estimated
     
-  # Claude 3.x Series
-  - source: anthropic
-    name: claude-3-7-sonnet-20250219
-    expertise:
-      - general
-      - reasoning
-      - analysis
-      - extended-thinking
-    size: 400b  # Estimated
-    
-  - source: anthropic
-    name: claude-3-5-sonnet-20241022
-    expertise:
-      - general
-      - fast
-      - balanced
-    size: 200b  # Estimated
-    
-  - source: anthropic
-    name: claude-3-5-haiku-20241022
-    expertise:
-      - fast
-      - efficient
-      - compact
-    size: 20b  # Estimated
-    
-  # Legacy models
-  - source: anthropic
-    name: claude-3-opus-20240229
-    expertise:
-      - general
-      - reasoning
-      - analysis
-    size: 2000b  # Estimated
-    
-  - source: anthropic
-    name: claude-3-haiku-20240307
-    expertise:
-      - fast
-      - efficient
-    size: 20b  # Estimated
+  # Claude 3.x Series (Deprecated - use 4th generation models instead)
+  # - source: anthropic
+  #   name: claude-3-7-sonnet-20250219
+  #   expertise:
+  #     - general
+  #     - reasoning
+  #     - analysis
+  #     - extended-thinking
+  #   size: 400b  # Estimated
+  #   
+  # - source: anthropic
+  #   name: claude-3-5-sonnet-20241022
+  #   expertise:
+  #     - general
+  #     - fast
+  #     - balanced
+  #   size: 200b  # Estimated
+  #   
+  # - source: anthropic
+  #   name: claude-3-5-haiku-20241022
+  #   expertise:
+  #     - fast
+  #     - efficient
+  #     - compact
+  #   size: 20b  # Estimated
+  #   
+  # # Legacy models
+  # - source: anthropic
+  #   name: claude-3-opus-20240229
+  #   expertise:
+  #     - general
+  #     - reasoning
+  #     - analysis
+  #   size: 2000b  # Estimated
+  #   
+  # - source: anthropic
+  #   name: claude-3-haiku-20240307
+  #   expertise:
+  #     - fast
+  #     - efficient
+  #   size: 20b  # Estimated
 
   # Google models (require GOOGLE_API_KEY)
   # Gemini 2.5 Series
