@@ -423,8 +423,18 @@ class BrowserAutomation:
             raise ValueError(f"Unsupported browser type: {browser_type}")
 
         try:
-            self.browser = await browser_class.launch(
-                headless=self.config.get("headless", True)
+            # Add timeout for browser launch
+            import asyncio
+            self.browser = await asyncio.wait_for(
+                browser_class.launch(
+                    headless=self.config.get("headless", True)
+                ),
+                timeout=30.0  # 30 second timeout for browser launch
+            )
+        except asyncio.TimeoutError:
+            raise RuntimeError(
+                f"Browser launch timed out after 30 seconds. "
+                f"This might indicate resource exhaustion or playwright issues."
             )
         except Exception as e:
             if "Executable doesn't exist" in str(e) or "Looks like Playwright" in str(
@@ -441,9 +451,17 @@ class BrowserAutomation:
                     subprocess.check_call(
                         [sys.executable, "-m", "playwright", "install", browser_type]
                     )
-                    # Try launching again
-                    self.browser = await browser_class.launch(
-                        headless=self.config.get("headless", True)
+                    # Try launching again with timeout
+                    self.browser = await asyncio.wait_for(
+                        browser_class.launch(
+                            headless=self.config.get("headless", True)
+                        ),
+                        timeout=30.0
+                    )
+                except asyncio.TimeoutError:
+                    raise RuntimeError(
+                        f"Browser launch timed out after installing binaries. "
+                        f"System may be under heavy load."
                     )
                 except Exception as install_error:
                     raise RuntimeError(

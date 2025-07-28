@@ -112,24 +112,45 @@ class TestHeadlessBrowserTool:
     @pytest.mark.timeout(240)  # Increased timeout to allow for playwright installation
     async def test_scrape_with_javascript(self, browser_tool):
         """Test scraping with JavaScript support."""
+        import time
+        start_time = time.time()
+        
         result = await browser_tool.execute(
             url="https://example.com", action="scrape_js"
         )
-
+        
+        elapsed = time.time() - start_time
+        
         # The tool should handle playwright installation automatically
         if "error" in result:
+            # Get more diagnostic info
+            error_msg = result["error"]
+            
+            # Check if playwright is installed
+            try:
+                import playwright
+                from playwright.async_api import async_playwright
+                playwright_info = f"Playwright version: {playwright.__version__}"
+            except ImportError:
+                playwright_info = "Playwright not installed"
+            
             # Only fail if it's not a transient network error
-            if "Failed to install Playwright" in result["error"]:
+            if "Failed to install Playwright" in error_msg:
                 # Installation failed - this is a real error
-                pytest.fail(f"Playwright installation failed: {result['error']}")
-            elif (
-                "timeout" in result["error"].lower()
-                or "network" in result["error"].lower()
-            ):
+                pytest.fail(f"Playwright installation failed: {error_msg}")
+            elif "timeout" in error_msg.lower():
+                # Timeout - but example.com should load instantly
+                pytest.fail(
+                    f"Timeout after {elapsed:.1f}s loading example.com (should be instant).\n"
+                    f"Error: {error_msg}\n"
+                    f"{playwright_info}\n"
+                    f"This suggests a browser launch issue, not a network issue."
+                )
+            elif "network" in error_msg.lower():
                 # Network issues - skip this test
-                pytest.skip(f"Network issue: {result['error']}")
+                pytest.skip(f"Network issue: {error_msg}")
             else:
-                pytest.fail(f"JS scraping failed: {result['error']}")
+                pytest.fail(f"JS scraping failed after {elapsed:.1f}s: {error_msg}")
 
         # Should have scraped content
         assert "url" in result
