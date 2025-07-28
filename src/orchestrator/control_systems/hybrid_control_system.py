@@ -85,7 +85,7 @@ class HybridControlSystem(ModelBasedControlSystem):
             return await self._handle_echo_operation(task, context)
 
         # Check if this is a file operation
-        if self._is_file_operation(action_str):
+        if self._is_file_operation(action_str) or action_str == "filesystem":
             return await self._handle_file_operation(task, context)
 
         # Check if this is a data processing operation

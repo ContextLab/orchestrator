@@ -587,14 +587,32 @@ steps:
     depends_on: [search_web]
 
   - id: generate_report
-    action: generate_report
+    action: generate
     parameters:
-      title: "Research Report: {{topic}}"
-      query: "{{topic}}"
-      search_results: "{{search_web}}"
-      extraction_results: "{{scrape_first_result}}"
-      output_path: "{{output_dir}}/report.md"
+      prompt: |
+        Create a research report about {{topic}} based on the following information:
+        
+        Search Results:
+        {{search_web}}
+        
+        Extracted Content:
+        {{scrape_first_result}}
+        
+        Please format as a markdown report with:
+        - Title: Research Report: {{topic}}
+        - Executive Summary
+        - Key Findings
+        - Detailed Analysis
+        - Conclusion
     depends_on: [search_web, scrape_first_result]
+    
+  - id: save_report
+    action: filesystem
+    parameters:
+      action: write
+      path: "{{output_dir}}/report.md"
+      content: "{{generate_report}}"
+    depends_on: [generate_report]
 
 outputs:
   report_path: "{{output_dir}}/report.md"
@@ -643,16 +661,16 @@ outputs:
                     print(f"Step {step_name} failed: {step_result['error']}")
             
             assert (
-                "search_web" in result["steps"] or "generate_report" in result["steps"]
+                "search_web" in result["steps"] or "save_report" in result["steps"]
             ), f"Missing expected steps. Found: {list(result['steps'].keys())}"
             
-            # The test is passing if we got a report generated
-            assert "generate_report" in result["steps"], "generate_report step not found"
+            # The test is passing if we got a report saved
+            assert "save_report" in result["steps"], "save_report step not found"
             
-            # Check if generate_report succeeded
-            gen_report = result["steps"]["generate_report"]
-            if isinstance(gen_report, dict) and "error" in gen_report:
-                pytest.fail(f"generate_report failed: {gen_report['error']}")
+            # Check if save_report succeeded
+            save_report = result["steps"]["save_report"]
+            if isinstance(save_report, dict) and "error" in save_report:
+                pytest.fail(f"save_report failed: {save_report['error']}")
         else:
             # Old structure - for backward compatibility
             assert "search_web" in result
@@ -660,34 +678,25 @@ outputs:
             assert "generate_report" in result
             assert result["generate_report"]["success"] is True
 
-        # Check if generate_report action actually creates a file or just returns content
-        gen_report_result = result["steps"].get("generate_report", {})
-        print(f"generate_report result type: {type(gen_report_result)}")
-        if isinstance(gen_report_result, dict):
-            print(f"generate_report keys: {gen_report_result.keys()}")
-        elif isinstance(gen_report_result, str):
-            print(f"generate_report returned string of length: {len(gen_report_result)}")
-        
-        # The test expects a file to be created, but generate_report might just return content
+        # Check report was created by the save_report step
         report_path = temp_workspace / "report.md"
         if not report_path.exists():
-            # Provide more debugging info
+            # Provide debugging info
             print(f"Expected report path: {report_path}")
             print(f"Directory contents: {list(temp_workspace.iterdir())}")
             if "outputs" in result:
                 print(f"Outputs: {result['outputs']}")
             
-            # If generate_report returned content as a string, that's still a success
-            if isinstance(gen_report_result, str) and len(gen_report_result) > 100:
-                print("generate_report returned content as string, not creating a file")
-                # Test passes - the action worked, just didn't create a file
-                assert "artificial intelligence" in gen_report_result.lower()
-                return
+            # Check what happened with save_report
+            if "save_report" in result["steps"]:
+                save_result = result["steps"]["save_report"]
+                print(f"save_report result: {save_result}")
                 
-        assert report_path.exists(), f"Report not created at {report_path} and no content returned"
+        assert report_path.exists(), f"Report not created at {report_path}"
         
         content = report_path.read_text()
-        assert "artificial intelligence" in content.lower()
+        assert len(content) > 100, f"Report too short: {len(content)} characters"
+        assert "artificial intelligence" in content.lower(), "Report doesn't mention the topic"
 
     @pytest.mark.asyncio
     async def test_file_processing_pipeline(self, orchestrator, temp_workspace):
