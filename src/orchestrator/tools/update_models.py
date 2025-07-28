@@ -106,36 +106,6 @@ class ModelUpdater:
                 "provider": "anthropic",
                 "type": "anthropic",
             },
-            {
-                "id": "claude-3-7-sonnet-20250219",
-                "provider": "anthropic",
-                "type": "anthropic",
-            },
-            {
-                "id": "claude-3-5-sonnet-20241022",
-                "provider": "anthropic",
-                "type": "anthropic",
-            },
-            {
-                "id": "claude-3-5-haiku-20241022",
-                "provider": "anthropic",
-                "type": "anthropic",
-            },
-            {
-                "id": "claude-3-opus-20240229",
-                "provider": "anthropic",
-                "type": "anthropic",
-            },
-            {
-                "id": "claude-3-sonnet-20240229",
-                "provider": "anthropic",
-                "type": "anthropic",
-            },
-            {
-                "id": "claude-3-haiku-20240307",
-                "provider": "anthropic",
-                "type": "anthropic",
-            },
             {"id": "claude-2.1", "provider": "anthropic", "type": "anthropic"},
             {"id": "claude-2", "provider": "anthropic", "type": "anthropic"},
             {"id": "claude-instant-1.2", "provider": "anthropic", "type": "anthropic"},
@@ -433,7 +403,7 @@ class ModelUpdater:
             "default": "gpt-4o-mini",
             "fallback": [
                 "gpt-3.5-turbo",
-                "claude-3-haiku-20240307",
+                "claude-sonnet-4-20250514",
                 "ollama:llama3.2:1b",
             ],
         }
@@ -441,7 +411,7 @@ class ModelUpdater:
         # Cost-optimized selection (smaller, cheaper models)
         config["cost_optimized"] = [
             "gpt-4o-mini",
-            "claude-3-haiku-20240307",
+            "claude-sonnet-4-20250514",
             "gemini-2.0-flash-lite",
             "ollama:llama3.2:1b",
             "ollama:gemma3:1b",

@@ -88,13 +88,13 @@ class TaskDelegationTool(Tool):
         self.model_expertise = {
             "gpt-4": ["code_generation", "analysis", "creative_writing", "general"],
             "gpt-4o": ["code_generation", "analysis", "multimodal", "general"],
-            "claude-3-5-sonnet": [
+            "claude-sonnet-4-20250514": [
                 "code_analysis",
                 "creative_writing",
                 "analysis",
                 "general",
             ],
-            "claude-3-opus": ["complex_reasoning", "creative_writing", "analysis"],
+            "claude-opus-4-20250514": ["complex_reasoning", "creative_writing", "analysis"],
             "gemini-2.5-pro": ["multimodal", "analysis", "data_processing", "general"],
             "deepseek-r1": ["code_generation", "reasoning", "technical"],
             "qwen2.5-coder": ["code_generation", "code_analysis", "technical"],
