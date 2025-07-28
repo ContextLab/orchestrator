@@ -8,11 +8,6 @@ Each test:
 4. Ensures tools integrate properly with the orchestrator
 """
 
-import os
-
-# Skip HuggingFace models in tests to avoid timeout issues
-os.environ["ORCHESTRATOR_SKIP_HUGGINGFACE"] = "true"
-
 import json
 import shutil
 import tempfile
@@ -117,7 +112,7 @@ class TestHeadlessBrowserTool:
         assert "url" in result
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(30)
+    @pytest.mark.timeout(240)  # Increased timeout to allow for playwright installation
     async def test_scrape_with_javascript(self, browser_tool):
         """Test scraping with JavaScript support."""
         result = await browser_tool.execute(

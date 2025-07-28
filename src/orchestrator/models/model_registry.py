@@ -131,8 +131,8 @@ class ModelRegistry:
         Get a model by name.
 
         Args:
-            model_name: Model name
-            provider: Provider name (optional)
+            model_name: Model name (can include provider prefix like "openai:gpt-4")
+            provider: Provider name (optional, ignored if model_name includes provider)
 
         Returns:
             Model instance
@@ -140,7 +140,12 @@ class ModelRegistry:
         Raises:
             ModelNotFoundError: If model not found
         """
-        if provider:
+        # Check if model_name already includes provider prefix
+        if ":" in model_name and not provider:
+            # Model name includes provider, use it directly
+            model_key = model_name
+        elif provider:
+            # Provider specified separately
             model_key = f"{provider}:{model_name}"
         else:
             # Find model by name only

@@ -207,17 +207,13 @@ class TestSpecificExamples:
         assert len(parsed["steps"]) > 0
 
         # Check for data processing actions
-        actions = [step["action"] for step in parsed["steps"]]
+        # The YAML uses tool/action pairs, not single action values
+        tools_and_actions = [(step.get("tool", ""), step.get("action", "")) for step in parsed["steps"]]
+        
+        # Check that we have relevant data processing operations
         assert any(
-            action
-            in [
-                "process_data",
-                "transform_data",
-                "analyze_data",
-                "generate_text",
-                "validate",
-            ]
-            for action in actions
+            tool == "data-processing" or action in ["transform", "read", "write"]
+            for tool, action in tools_and_actions
         )
 
     def test_research_pipeline_example(self):

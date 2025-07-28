@@ -234,7 +234,7 @@ class TestAdapterIntegration:
             print("Warning: No AI models available for testing")
             # Continue anyway - test will fail if truly no models
 
-        adapter = LangGraphAdapter()
+        adapter = LangGraphAdapter(model_registry=registry)
 
         # Create a simple workflow
         workflow = LangGraphWorkflow("test_workflow")

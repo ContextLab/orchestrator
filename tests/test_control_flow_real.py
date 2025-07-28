@@ -72,8 +72,15 @@ steps:
     # Register test tool
     default_registry.register(RealTestTool())
 
-    # Create engine without model requirements
-    engine = ControlFlowEngine(tool_registry=default_registry)
+    # Initialize model registry for control flow
+    from orchestrator import init_models
+    from orchestrator.models.registry_singleton import get_model_registry
+    
+    init_models()
+    model_registry = get_model_registry()
+    
+    # Create engine with model registry
+    engine = ControlFlowEngine(model_registry=model_registry, tool_registry=default_registry)
 
     # Execute
     result = await engine.execute_yaml(yaml_content, {})
@@ -110,18 +117,27 @@ steps:
 
   - id: process_each
     for_each: '["apple", "banana", "cherry"]'
-    action: test_tool
-    parameters:
-      action: process
-      type: "fruit_{{$index}}"
+    steps:
+      - id: process_item
+        action: test_tool
+        parameters:
+          action: process
+          type: "fruit_{{$index}}"
     depends_on: [get_items]
 """
 
     # Register test tool
     default_registry.register(RealTestTool())
 
-    # Create engine
-    engine = ControlFlowEngine(tool_registry=default_registry)
+    # Initialize model registry for control flow
+    from orchestrator import init_models
+    from orchestrator.models.registry_singleton import get_model_registry
+    
+    init_models()
+    model_registry = get_model_registry()
+    
+    # Create engine with model registry
+    engine = ControlFlowEngine(model_registry=model_registry, tool_registry=default_registry)
 
     # Execute
     result = await engine.execute_yaml(yaml_content, {})
@@ -138,7 +154,7 @@ steps:
 
     # Verify iteration results
     for i in range(3):
-        task_id = f"process_each_{i}_process_each_item"
+        task_id = f"process_each_{i}_process_item"
         assert result["results"][task_id]["type"] == f"fruit_{i}"
 
 
@@ -191,8 +207,15 @@ steps:
     # Register test tool
     default_registry.register(RealTestTool())
 
-    # Create engine
-    engine = ControlFlowEngine(tool_registry=default_registry)
+    # Initialize model registry for control flow
+    from orchestrator import init_models
+    from orchestrator.models.registry_singleton import get_model_registry
+    
+    init_models()
+    model_registry = get_model_registry()
+    
+    # Create engine with model registry
+    engine = ControlFlowEngine(model_registry=model_registry, tool_registry=default_registry)
 
     # Execute
     result = await engine.execute_yaml(yaml_content, {})
@@ -277,11 +300,15 @@ steps:
       type: "above_threshold"
 """
 
-    # Create compiler without model dependency
-    compiler = ControlFlowCompiler()
-    # Mock the ambiguity resolver to avoid model requirements
-    compiler.ambiguity_resolver.model = None
-    compiler.ambiguity_resolver.resolve = lambda x, y: x  # Just return the content
+    # Initialize model registry for control flow
+    from orchestrator import init_models
+    from orchestrator.models.registry_singleton import get_model_registry
+    
+    init_models()
+    model_registry = get_model_registry()
+    
+    # Create compiler with model registry
+    compiler = ControlFlowCompiler(model_registry=model_registry)
 
     # Compile pipeline
     pipeline = await compiler.compile(

@@ -74,9 +74,23 @@ def is_transient_error(error: Exception) -> bool:
     Returns:
         True if the error is transient
     """
+    # Check error type first
+    transient_error_types = (
+        TimeoutError,
+        ConnectionError,
+        ConnectionResetError,
+        ConnectionAbortedError,
+        ConnectionRefusedError,
+    )
+    
+    if isinstance(error, transient_error_types):
+        return True
+    
+    # Then check error message
     error_str = str(error).lower()
     transient_indicators = [
         "timeout",
+        "timed out",
         "connection",
         "network",
         "rate limit",
