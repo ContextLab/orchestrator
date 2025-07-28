@@ -13,7 +13,7 @@ Orchestrator is an AI pipeline orchestration framework that provides a unified i
 ### What models are supported?
 Orchestrator supports models from:
 - OpenAI (gpt-4.1, o3, gpt-03-mini)
-- Anthropic (claude-4-opus, claude-4-sonnet, claude-3-7-sonnet)
+- Anthropic (claude-opus-4-20250514, claude-sonnet-4-20250514)
 - Google (gemini-2.5-pro, gemini-2.5-flash)
 - Ollama (any model that can run locally)
 - HuggingFace (any model that can run locally)

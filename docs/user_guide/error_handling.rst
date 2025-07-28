@@ -173,7 +173,7 @@ Define fallback strategies for critical operations:
      - id: primary_analysis
        action: analyze_with_ai
        parameters:
-         model: "claude-3-opus"
+         model: "claude-opus-4-20250514"
          data: "{{ inputs.document }}"
        error_handling:
          fallback:

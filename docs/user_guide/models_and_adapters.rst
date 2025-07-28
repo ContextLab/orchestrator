@@ -115,9 +115,9 @@ Anthropic Models
    
    # API key should be set in environment variable or ~/.orchestrator/.env
    model = AnthropicModel(
-       name="claude-3.5-sonnet",
+       name="claude-sonnet-4",
        api_key=os.environ.get("ANTHROPIC_API_KEY"),  # Loaded from environment
-       model="claude-3.5-sonnet"
+       model="claude-sonnet-4-20250514"
    )
 
 Local Models

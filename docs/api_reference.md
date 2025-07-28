@@ -196,7 +196,7 @@ import os
 from orchestrator.integrations.anthropic_model import AnthropicModel
 
 model = AnthropicModel(
-    model_name="claude-3-5-sonnet-20241022",
+    model_name="claude-sonnet-4-20250514",
     api_key=os.environ.get("ANTHROPIC_API_KEY")
 )
 ```
@@ -469,7 +469,7 @@ orchestrator:
 models:
   default_model: "gpt-4o-mini"
   fallback_models:
-    - "claude-3-5-sonnet"
+    - "claude-sonnet-4-20250514"
     - "gemini-1.5-flash"
 
 control_system:

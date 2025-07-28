@@ -39,9 +39,9 @@ The tool fetches models from the following providers:
    - Embedding models
 
 2. **Anthropic** - Hardcoded list (API doesn't provide model listing)
-   - Claude 3 Opus/Sonnet/Haiku
-   - Claude 2 variants
-   - Legacy Claude models
+   - Claude 4th generation models (Opus/Sonnet)
+   - Claude 3 variants (legacy)
+   - Claude 2 variants (legacy)
 
 3. **Google** - Via Gemini API (requires `GOOGLE_API_KEY`)
    - Gemini Pro variants
@@ -79,17 +79,17 @@ preferences:
   default: gpt-4o-mini  # Default model for general use
   fallback:  # Fallback chain if default unavailable
     - gpt-3.5-turbo
-    - claude-3-haiku
+    - claude-sonnet-4-20250514
     - gemini-1.5-flash
 
 cost_optimized:  # Models optimized for cost
   - gpt-4o-mini
-  - claude-3-haiku
+  - claude-sonnet-4-20250514
   - gemini-1.5-flash
 
 performance_optimized:  # Models optimized for quality
   - gpt-4
-  - claude-3-opus
+  - claude-opus-4-20250514
   - gemini-2.5-pro
 ```
 

@@ -334,7 +334,7 @@ config:
     auto_tags:
       simple_decisions: "gpt-3.5-turbo"  # Fast, cheap model
       complex_analysis: "gpt-4"          # Powerful model
-      creative_tasks: "claude-3-opus"    # Creative model
+      creative_tasks: "claude-opus-4-20250514"    # Creative model
 
 steps:
   - id: simple_choice

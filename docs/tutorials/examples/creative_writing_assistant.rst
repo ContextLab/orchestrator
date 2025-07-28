@@ -77,7 +77,7 @@ Pipeline Configuration (YAML)
        temperature: 0.8
      character_developer:
        provider: "anthropic"
-       model: "claude-3-opus"
+       model: "claude-opus-4-20250514"
        temperature: 0.7
      dialogue_writer:
        provider: "openai"
@@ -85,7 +85,7 @@ Pipeline Configuration (YAML)
        temperature: 0.9
      consistency_checker:
        provider: "anthropic"
-       model: "claude-3-opus"
+       model: "claude-opus-4-20250514"
        temperature: 0.2
    
    context:

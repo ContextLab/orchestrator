@@ -76,7 +76,7 @@ The ModelRegistry manages all available models and provides intelligent selectio
     models = [
         OpenAIModel(name="gpt-4", api_key=os.environ.get("OPENAI_API_KEY")),
         OpenAIModel(name="gpt-3.5-turbo", api_key=os.environ.get("OPENAI_API_KEY")),
-        AnthropicModel(name="claude-3-opus", api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        AnthropicModel(name="claude-opus-4-20250514", api_key=os.environ.get("ANTHROPIC_API_KEY"))
     ]
     
     for model in models:

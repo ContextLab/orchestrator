@@ -83,7 +83,7 @@ Pipeline Configuration (YAML)
        temperature: 0.2
      entity_extractor:
        provider: "anthropic"
-       model: "claude-3-opus"
+       model: "claude-opus-4-20250514"
        temperature: 0.1
    
    context:

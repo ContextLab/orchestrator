@@ -126,9 +126,9 @@ from orchestrator.integrations.anthropic_model import AnthropicModel
 
 # API key should be set in environment variable or ~/.orchestrator/.env
 model = AnthropicModel(
-    name="claude-3-sonnet",
+    name="claude-sonnet-4",
     api_key=os.environ.get("ANTHROPIC_API_KEY"),  # Loaded from environment 
-    model="claude-3-sonnet-20240229"
+    model="claude-sonnet-4-20250514"
 )
 ```
 

@@ -327,7 +327,7 @@ Track AI model usage and costs:
        
        anthropic:
          models:
-           claude-3-opus:
+           claude-opus-4-20250514:
              input_cost_per_1k: 0.015
              output_cost_per_1k: 0.075
      

@@ -81,7 +81,7 @@ Pipeline Configuration (YAML)
        rate_limit: 1000  # requests per minute
      sentiment_analyzer:
        provider: "anthropic"
-       model: "claude-3-opus"
+       model: "claude-opus-4-20250514"
        temperature: 0.1
        rate_limit: 500
      response_generator:
@@ -1193,7 +1193,7 @@ Running the System
                },
                'sentiment_analyzer': {
                    'provider': 'anthropic',
-                   'model': 'claude-3-opus',
+                   'model': 'claude-opus-4-20250514',
                    'api_key': os.getenv('ANTHROPIC_API_KEY')
                },
                'response_generator': {

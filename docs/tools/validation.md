@@ -91,7 +91,7 @@ Validates AI model identifiers in the format `provider/model-name`.
 
 **Examples:**
 - ✅ `openai/gpt-4`
-- ✅ `anthropic/claude-3-5-sonnet`
+- ✅ `anthropic/claude-sonnet-4-20250514`
 - ✅ `google/gemini-pro`
 - ❌ `gpt-4` (missing provider)
 - ❌ `invalid model` (contains space)

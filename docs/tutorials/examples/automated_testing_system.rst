@@ -78,7 +78,7 @@ Pipeline Configuration (YAML)
        temperature: 0.3
      failure_analyzer:
        provider: "anthropic"
-       model: "claude-3-opus"
+       model: "claude-opus-4-20250514"
        temperature: 0.2
      test_optimizer:
        provider: "openai"

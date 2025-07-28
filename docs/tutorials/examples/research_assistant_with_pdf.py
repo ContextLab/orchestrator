@@ -136,7 +136,7 @@ class ResearchAssistantWithReport:
         if self.config.get("anthropic_api_key"):
             try:
                 claude = AnthropicModel(
-                    model_name="claude-3-sonnet-20240229",
+                    model_name="claude-sonnet-4-20250514",
                     api_key=self.config["anthropic_api_key"],
                     max_retries=3,
                     timeout=30.0

@@ -159,7 +159,7 @@ Anthropic Integration
     
     # Initialize Anthropic model
     anthropic_model = AnthropicModel(
-        name="claude-3-opus",
+        name="claude-opus-4",
         api_key=os.environ.get("ANTHROPIC_API_KEY")
     )
     
@@ -403,7 +403,7 @@ Configure models through YAML files:
           max_requests_per_minute: 100
           cost_per_token: 0.00003
       
-      - name: "claude-3-opus"
+      - name: "claude-opus-4-20250514"
         provider: "anthropic"
         config:
           api_key: "${ANTHROPIC_API_KEY}"

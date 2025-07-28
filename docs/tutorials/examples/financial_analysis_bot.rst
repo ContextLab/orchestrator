@@ -79,7 +79,7 @@ Pipeline Configuration (YAML)
        temperature: 0.2
      risk_assessor:
        provider: "anthropic"
-       model: "claude-3-opus"
+       model: "claude-opus-4-20250514"
        temperature: 0.1
      report_generator:
        provider: "openai"

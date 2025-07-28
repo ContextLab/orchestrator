@@ -76,7 +76,7 @@ Pipeline Configuration (YAML)
        temperature: 0.7
      intent_classifier:
        provider: "anthropic"
-       model: "claude-3-opus"
+       model: "claude-opus-4-20250514"
        temperature: 0.3
      safety_checker:
        provider: "openai"
