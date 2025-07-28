@@ -263,7 +263,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_timeout_recovery(self):
         """Test circuit breaker timeout recovery."""
-        breaker = CircuitBreaker(failure_threshold=2)
+        breaker = CircuitBreaker(failure_threshold=2, timeout=0.1)
 
         # Open circuit
         breaker.record_failure("test_system")
@@ -292,7 +292,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_state_transitions(self):
         """Test circuit breaker state transitions."""
-        breaker = CircuitBreaker(failure_threshold=2)
+        breaker = CircuitBreaker(failure_threshold=2, timeout=0.1)
 
         # Initial state: CLOSED
         assert breaker.is_open("test_system") is False
