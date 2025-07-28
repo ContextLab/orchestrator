@@ -153,6 +153,7 @@ class TestResourceRequest:
             task_id="priority_task",
             resources=resources,
             priority=10,
+            timeout=600.0,
             min_resources=min_resources)
 
         assert request.task_id == "priority_task"
