@@ -111,6 +111,7 @@ class HybridControlSystem(ModelBasedControlSystem):
             "headless-browser": self._handle_headless_browser,
             "report-generator": self._handle_report_generator,
             "pdf-compiler": self._handle_pdf_compiler,
+            "pipeline-executor": self._handle_pipeline_executor,
         }
         
         if tool_name in tool_handlers:
@@ -508,3 +509,14 @@ class HybridControlSystem(ModelBasedControlSystem):
         params = task.parameters.copy()
         params["action"] = task.action
         return await self.pdf_compiler_tool.execute(**params)
+    
+    async def _handle_pipeline_executor(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle pipeline execution operations."""
+        # Execute using pipeline executor tool
+        from orchestrator.tools.pipeline_recursion_tools import PipelineExecutorTool
+        
+        if not hasattr(self, 'pipeline_executor_tool'):
+            self.pipeline_executor_tool = PipelineExecutorTool()
+        
+        params = task.parameters.copy()
+        return await self.pipeline_executor_tool.execute(**params)
