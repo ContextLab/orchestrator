@@ -411,7 +411,13 @@ steps:
                 # by returning an error message instead of raising an exception
                 outputs = result.get("outputs", {})
                 if any(
-                    "error" in str(v).lower() or "fail" in str(v).lower()
+                    "error" in str(v).lower() or 
+                    "fail" in str(v).lower() or
+                    "unable to complete" in str(v).lower() or
+                    "doesn't exist" in str(v).lower() or
+                    "cannot be completed" in str(v).lower() or
+                    "non-existent" in str(v).lower() or
+                    "undefined" in str(v).lower()
                     for v in outputs.values()
                 ):
                     # The model recognized the error and returned an error message
