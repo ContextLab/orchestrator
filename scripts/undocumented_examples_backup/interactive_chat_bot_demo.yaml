@@ -192,7 +192,7 @@ steps:
       
       **Participants:**
       - User ({{user_persona}}): Simulated by GPT-4o-mini
-      - Bot ({{bot_persona}}): Powered by Claude 3 Haiku
+      - Bot ({{bot_persona}}): Powered by Claude Sonnet 4
       
       ---
       
@@ -223,7 +223,7 @@ steps:
       - **Topic**: {{conversation_topic}}
       - **Total Exchanges**: 5
       - **User Model**: OpenAI GPT-4o-mini
-      - **Bot Model**: Anthropic Claude 3 Haiku
+      - **Bot Model**: Anthropic Claude Sonnet 4
       - **Generated on**: {{execution.timestamp}}
     depends_on: [bot_response_5]
 
@@ -287,5 +287,5 @@ outputs:
   conversation_file: "examples/output/chatbot_demo_{{conversation_topic | replace(' ', '_') | lower}}.md"
   total_messages: "10"
   user_model: "openai/gpt-4o"
-  bot_model: "anthropic/claude-3-5-sonnet-20241022"
+  bot_model: "anthropic/claude-sonnet-4-20250514"
   formatted_conversation: "{{format_conversation.result}}"

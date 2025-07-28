@@ -190,7 +190,7 @@ outputs:
 
     "creative_simple.yaml": '''name: "Creative Writer Simple"
 description: "Simple creative writing pipeline"
-model: "anthropic/claude-3-sonnet-20240229"
+model: "anthropic/claude-sonnet-4-20250514"
 
 inputs:
   theme:
@@ -263,7 +263,7 @@ steps:
       
       *A {{genre}} {{length}} fiction*
       *Generated on: {{execution.timestamp}}*
-      *Model: Anthropic Claude 3 Sonnet*
+      *Model: Anthropic Claude Sonnet 4*
       
       {{write_story.result}}
       

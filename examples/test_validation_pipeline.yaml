@@ -5,7 +5,7 @@ description: Test pipeline for validating data with AUTO tags
 # Model specification for validation
 models:
   default: openai/gpt-4
-  validation: anthropic/claude-3-sonnet
+  validation: anthropic/claude-sonnet-4-20250514
 
 steps:
   - id: generate_data

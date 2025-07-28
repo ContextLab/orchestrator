@@ -58,7 +58,7 @@ steps:
     dependencies:
       - data_validation
     metadata:
-      requires_model: "anthropic/claude-3-5-sonnet-20241022"
+      requires_model: "anthropic/claude-sonnet-4-20250514"
       cpu_cores: 4
       memory_mb: 2048
       priority: 0.9
@@ -114,7 +114,7 @@ steps:
       - generate_insights
       - create_visualizations
     metadata:
-      requires_model: "anthropic/claude-3-5-sonnet-20241022"
+      requires_model: "anthropic/claude-sonnet-4-20250514"
       priority: 0.6
       on_failure: continue
       

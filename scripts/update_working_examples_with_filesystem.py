@@ -220,7 +220,7 @@ outputs:
 
     "chatbot_with_save.yaml": '''name: "Interactive Chat Bot with Save"
 description: "Chatbot demo that saves conversation to file"
-model: "anthropic/claude-3-haiku-20240307"
+model: "anthropic/claude-sonnet-4-20250514"
 version: "1.0.0"
 
 inputs:
@@ -322,7 +322,7 @@ steps:
       - Topic: {{conversation_topic}}
       - Number of Exchanges: 2
       - User Model: OpenAI GPT-4o-mini (simulating {{user_persona}})
-      - Assistant Model: Anthropic Claude 3 Haiku (as {{bot_persona}})
+      - Assistant Model: Anthropic Claude Sonnet 4 (as {{bot_persona}})
       
       ## How to Use with Real Users
       
