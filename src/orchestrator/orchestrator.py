@@ -704,17 +704,20 @@ class Orchestrator:
 
         # Add model-specific requirements
         if "requires_model" in task.metadata:
-            model_name = task.metadata["requires_model"]
-            model = self.model_registry.get_model(model_name)
-            if model:
-                requirements.update(
-                    {
-                        "model_memory": model.requirements.memory_gb * 1024,
-                        "model_gpu": model.requirements.requires_gpu,
-                        "model_gpu_memory": (model.requirements.gpu_memory_gb or 0)
-                        * 1024,
-                    }
-                )
+            model_req = task.metadata["requires_model"]
+            
+            # Only look up model if it's a string (specific model name)
+            if isinstance(model_req, str):
+                model = self.model_registry.get_model(model_req)
+                if model:
+                    requirements.update(
+                        {
+                            "model_memory": model.requirements.memory_gb * 1024,
+                            "model_gpu": model.requirements.requires_gpu,
+                            "model_gpu_memory": (model.requirements.gpu_memory_gb or 0)
+                            * 1024,
+                        }
+                    )
 
         return requirements
 

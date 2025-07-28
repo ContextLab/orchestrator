@@ -131,6 +131,10 @@ class ToolIntegratedControlSystem(ControlSystem):
         # Check for explicit tool specification
         if hasattr(task, "tool") and task.tool:
             return task.tool
+        
+        # Check metadata for tool specification
+        if "tool" in task.metadata:
+            return task.metadata["tool"]
 
         # Infer tool from action name
         if action in ["search_web", "verify_url", "scrape_page"]:

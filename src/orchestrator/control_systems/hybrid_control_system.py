@@ -8,9 +8,11 @@ from datetime import datetime
 from .model_based_control_system import ModelBasedControlSystem
 from ..core.task import Task
 from ..models.model_registry import ModelRegistry
-from ..tools.system_tools import FileSystemTool
+from ..tools.system_tools import FileSystemTool, TerminalTool
 from ..tools.data_tools import DataProcessingTool
 from ..tools.validation import ValidationTool
+from ..tools.web_tools import WebSearchTool, HeadlessBrowserTool
+from ..tools.report_tools import ReportGeneratorTool, PDFCompilerTool
 from ..compiler.template_renderer import TemplateRenderer
 
 
@@ -61,12 +63,22 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # Initialize tools
         self.filesystem_tool = FileSystemTool()
+        self.terminal_tool = TerminalTool()
         self.data_processing_tool = DataProcessingTool()
         self.validation_tool = ValidationTool()
+        self.web_search_tool = WebSearchTool()
+        self.headless_browser_tool = HeadlessBrowserTool()
+        self.report_generator_tool = ReportGeneratorTool()
+        self.pdf_compiler_tool = PDFCompilerTool()
 
     async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task with support for both models and tools."""
         action_str = str(task.action).lower()
+
+        # Check if a specific tool is requested
+        tool_name = task.metadata.get("tool")
+        if tool_name:
+            return await self._handle_tool_execution(task, tool_name, context)
 
         # Check if this is a simple echo/print operation
         if self._is_echo_operation(action_str):
@@ -86,6 +98,27 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # Otherwise use model-based execution
         return await super().execute_task(task, context)
+
+    async def _handle_tool_execution(self, task: Task, tool_name: str, context: Dict[str, Any]) -> Any:
+        """Handle execution with a specific tool."""
+        # Map tool names to handlers
+        tool_handlers = {
+            "filesystem": self._handle_file_operation,
+            "terminal": self._handle_terminal_operation,
+            "data-processing": self._handle_data_processing,
+            "validation": self._handle_validation,
+            "web-search": self._handle_web_search,
+            "headless-browser": self._handle_headless_browser,
+            "report-generator": self._handle_report_generator,
+            "pdf-compiler": self._handle_pdf_compiler,
+        }
+        
+        if tool_name in tool_handlers:
+            return await tool_handlers[tool_name](task, context)
+        else:
+            # Tool not found - this is an error, not a fallback situation
+            available_tools = ", ".join(tool_handlers.keys())
+            raise ValueError(f"Tool '{tool_name}' not found in hybrid control system. Available tools: {available_tools}")
 
     def _is_file_operation(self, action: str) -> bool:
         """Check if action is a file operation."""
@@ -440,3 +473,38 @@ class HybridControlSystem(ModelBasedControlSystem):
             return await self.validation_tool.execute(**resolved_params)
 
         return {"error": "No parameters provided for validation", "success": False}
+    
+    async def _handle_terminal_operation(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle terminal/command execution operations."""
+        # Execute using terminal tool
+        params = task.parameters.copy()
+        params["action"] = task.action
+        return await self.terminal_tool.execute(**params)
+    
+    async def _handle_web_search(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle web search operations."""
+        # Execute using web search tool
+        params = task.parameters.copy()
+        params["action"] = task.action
+        return await self.web_search_tool.execute(**params)
+    
+    async def _handle_headless_browser(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle headless browser operations."""
+        # Execute using headless browser tool
+        params = task.parameters.copy()
+        params["action"] = task.action
+        return await self.headless_browser_tool.execute(**params)
+    
+    async def _handle_report_generator(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle report generation operations."""
+        # Execute using report generator tool
+        params = task.parameters.copy()
+        params["action"] = task.action
+        return await self.report_generator_tool.execute(**params)
+    
+    async def _handle_pdf_compiler(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle PDF compilation operations."""
+        # Execute using PDF compiler tool
+        params = task.parameters.copy()
+        params["action"] = task.action
+        return await self.pdf_compiler_tool.execute(**params)

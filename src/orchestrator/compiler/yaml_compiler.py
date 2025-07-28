@@ -407,6 +407,8 @@ class YAMLCompiler:
             metadata["on_failure"] = task_def["on_failure"]
         if "requires_model" in task_def:
             metadata["requires_model"] = task_def["requires_model"]
+        if "tool" in task_def:
+            metadata["tool"] = task_def["tool"]
 
         # Add control flow metadata
         for cf_key in [
