@@ -285,17 +285,17 @@ class TestSpecificExamples:
                 )
 
             elif "for_loop" in filename:
-                # Should have for_each action
+                # Should have for_each property
                 assert any(
-                    step.get("action") == "for_each"
+                    "for_each" in step
                     for step in parsed["steps"]
                     if isinstance(step, dict)
                 )
 
             elif "while_loop" in filename:
-                # Should have while_loop action
+                # Should have while property
                 assert any(
-                    step.get("action") == "while_loop"
+                    "while" in step
                     for step in parsed["steps"]
                     if isinstance(step, dict)
                 )
