@@ -221,6 +221,7 @@ class TestTask:
             action="test_action",
             parameters={"key": "value"},
             dependencies=["dep1"],
+            timeout=60,
             max_retries=2,
             metadata={"meta": "data"})
 
