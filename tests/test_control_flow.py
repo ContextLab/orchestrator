@@ -268,8 +268,7 @@ class TestWhileLoopHandler:
             context=context,
             step_results={},
             iteration=0,
-            max_iterations=100,
-        )
+            max_iterations=100)
         assert should_continue is True
 
         # Test when condition is false
@@ -282,8 +281,7 @@ class TestWhileLoopHandler:
             context=context,
             step_results={},
             iteration=0,
-            max_iterations=100,
-        )
+            max_iterations=100)
         assert should_continue is False
 
     @pytest.mark.asyncio
@@ -302,8 +300,7 @@ class TestWhileLoopHandler:
             context=context,
             step_results={},
             iteration=0,
-            max_iterations=100,
-        )
+            max_iterations=100)
         assert should_continue is True  # 2 < 3, so should continue
 
 
@@ -351,8 +348,7 @@ class TestDynamicFlowHandler:
             {},
             metadata={
                 "goto": "<AUTO>validation_passed={{ validation_passed }}. Choose next step: 'error_handler' or 'process'. Reply with only one word: error_handler OR process</AUTO>"
-            },
-        )
+            })
 
         target = await handler.process_goto(goto_task, context, {}, all_tasks)
         assert (
@@ -398,8 +394,7 @@ class TestControlFlowEngine:
                 "Then Path",
                 "log",
                 {"message": "Value is large"},
-                dependencies=["check_value"],
-            )
+                dependencies=["check_value"])
         )
         pipeline.add_task(
             Task(
@@ -407,8 +402,7 @@ class TestControlFlowEngine:
                 "Else Path",
                 "log",
                 {"message": "Value is small"},
-                dependencies=["check_value"],
-            )
+                dependencies=["check_value"])
         )
 
         # Set else reference

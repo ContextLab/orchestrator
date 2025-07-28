@@ -13,8 +13,7 @@ from src.orchestrator.state.adaptive_checkpoint import (
     CheckpointStrategy,
     CheckpointTrigger,
     ProgressBasedStrategy,
-    TimeBasedStrategy,
-)
+    TimeBasedStrategy)
 
 
 class TestCheckpointConfig:
@@ -45,8 +44,7 @@ class TestCheckpointConfig:
             retention_days=14,
             error_rate_threshold=0.05,
             task_duration_multiplier=3.0,
-            memory_usage_threshold=0.9,
-        )
+            memory_usage_threshold=0.9)
 
         assert config.max_checkpoints == 20
         assert config.min_interval == 30.0
@@ -89,8 +87,7 @@ class TestCheckpointMetrics:
             checkpoint_count=3,
             average_task_duration=8.0,
             error_rate=0.13,
-            progress_percentage=0.65,
-        )
+            progress_percentage=0.65)
 
         assert metrics.execution_time == 120.5
         assert metrics.completed_tasks == 15

@@ -126,8 +126,7 @@ async def test_input_agnostic_pipeline():
                 search_result = await default_registry.execute_tool(
                     "web-search",
                     query="machine learning transformers 2024",
-                    max_results=3,
-                )
+                    max_results=3)
                 if search_result.get("success"):
                     results = search_result.get("results", [])
                     print(f"      ✅ Found {len(results)} search results")
@@ -142,8 +141,7 @@ async def test_input_agnostic_pipeline():
                 terminal_result = await default_registry.execute_tool(
                     "terminal",
                     command="echo 'Tool integration test successful'",
-                    working_dir="./output/tool_integrated",
-                )
+                    working_dir="./output/tool_integrated")
                 if terminal_result.get("success"):
                     output = terminal_result.get("stdout", "").strip()
                     print(f"      ✅ Command output: {output}")
@@ -165,8 +163,7 @@ async def test_input_agnostic_pipeline():
                     "filesystem",
                     action="write",
                     path=str(test_file),
-                    content="Integration test successful\nTimestamp: 2024-07-15",
-                )
+                    content="Integration test successful\nTimestamp: 2024-07-15")
 
                 if write_result.get("success"):
                     read_result = await default_registry.execute_tool(

@@ -171,7 +171,7 @@ class RealDataControlSystem(ControlSystem):
 
             # DuckDuckGo API endpoint
             search_url = f"https://api.duckduckgo.com/?q={quote(query)}&format=json"
-            response = requests.get(search_url, timeout=10)
+            response = requests.get(search_url)
 
             results = []
             if response.status_code == 200:
@@ -692,8 +692,7 @@ class RealAutoResolver(Model):
         capabilities = ModelCapabilities(
             supported_tasks=["reasoning", "generate"],
             context_window=4096,
-            languages=["en"],
-        )
+            languages=["en"])
         super().__init__(
             name="Real Auto Resolver", provider="openai", capabilities=capabilities
         )
@@ -861,8 +860,7 @@ async def test_simple_research_pipeline(orchestrator_with_real_data):
         orchestrator_with_real_data,
         "simple_research.yaml",
         {"topic": "Python asyncio programming"},
-        ["summarize"],
-    )
+        ["summarize"])
 
     assert success
     # The results have 'steps' and 'outputs' structure
@@ -883,8 +881,7 @@ async def test_code_optimization_pipeline(orchestrator_with_real_data):
             "optimization_level": "performance",
             "language": "python",
         },
-        ["create_report", "generate_fixes"],
-    )
+        ["create_report", "generate_fixes"])
 
     assert success
     if "analyze_code" in results:
@@ -903,8 +900,7 @@ async def test_data_processing_pipeline(orchestrator_with_real_data):
             "processing_mode": "batch",
             "error_tolerance": 0.1,
         },
-        ["save_results", "transform_data"],
-    )
+        ["save_results", "transform_data"])
 
     assert success
     if "data_ingestion" in results:
@@ -923,8 +919,7 @@ async def test_error_recovery_pipeline(orchestrator_with_real_data):
             "processing_mode": "batch",
             "error_tolerance": 0.2,
         },
-        ["save_results"],
-    )
+        ["save_results"])
 
     assert success
     # Should complete even with errors due to error tolerance
@@ -940,8 +935,7 @@ async def test_research_report_template(orchestrator_with_real_data):
         {
             "topic": "machine_learning",
             "instructions": "Focus on recent advances in transformer architectures",
-        },
-    )
+        })
 
     assert success
     assert len(results) > 0
@@ -1023,8 +1017,7 @@ if __name__ == "__main__":
                 orchestrator,
                 "simple_research.yaml",
                 {"topic": "Python asyncio programming"},
-                ["summarize"],
-            )
+                ["summarize"])
             print(f"   {'✅ PASS' if success else '❌ FAIL'}")
         except Exception as e:
             print(f"   ❌ FAIL: {e}")
@@ -1040,8 +1033,7 @@ if __name__ == "__main__":
                     "optimization_level": "performance",
                     "language": "python",
                 },
-                ["create_report", "generate_fixes"],
-            )
+                ["create_report", "generate_fixes"])
             print(f"   {'✅ PASS' if success else '❌ FAIL'}")
         except Exception as e:
             print(f"   ❌ FAIL: {e}")
@@ -1057,8 +1049,7 @@ if __name__ == "__main__":
                     "processing_mode": "batch",
                     "error_tolerance": 0.1,
                 },
-                ["data_export", "generate_report"],
-            )
+                ["data_export", "generate_report"])
             print(f"   {'✅ PASS' if success else '❌ FAIL'}")
         except Exception as e:
             print(f"   ❌ FAIL: {e}")

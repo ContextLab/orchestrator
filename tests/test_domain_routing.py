@@ -92,53 +92,45 @@ async def test_domain_detection(router: DomainRouter):
         (
             "The patient presented with symptoms of acute respiratory distress. "
             "Initial diagnosis suggests pneumonia, requiring immediate antibiotic treatment.",
-            "medical",
-        ),
+            "medical"),
         # Legal
         (
             "According to Section 5.2 of the contract, the liability for damages "
             "shall not exceed the total contract value. This clause is subject to "
             "jurisdiction of the state court.",
-            "legal",
-        ),
+            "legal"),
         # Creative
         (
             "Write a short story about a robot who discovers it can feel emotions. "
             "The narrative should explore themes of consciousness and identity.",
-            "creative",
-        ),
+            "creative"),
         # Technical
         (
             "We need to implement a microservices architecture with proper API "
             "gateway integration. The system should handle 10k requests per second.",
-            "technical",
-        ),
+            "technical"),
         # Scientific
         (
             "Our hypothesis suggests that increased CO2 levels correlate with "
             "temperature rise. The experimental methodology includes controlled "
             "variables and peer-reviewed analysis.",
-            "scientific",
-        ),
+            "scientific"),
         # Financial
         (
             "The portfolio shows a 15% return on investment this quarter. "
             "Risk assessment indicates moderate exposure to market volatility.",
-            "financial",
-        ),
+            "financial"),
         # Educational
         (
             "Can you explain how photosynthesis works? I'm a student trying "
             "to understand the concept for my biology class.",
-            "educational",
-        ),
+            "educational"),
         # Multi-domain
         (
             "As a medical researcher, I need to analyze patient data to test "
             "my hypothesis about treatment efficacy. The results will be "
             "published in a peer-reviewed journal.",
-            "medical/scientific",
-        ),
+            "medical/scientific"),
     ]
 
     for text, expected in test_texts:
@@ -231,8 +223,7 @@ async def test_custom_domain(router: DomainRouter):
         ],
         preferred_models=["gpt-4", "claude-3-opus"],
         required_capabilities=["creative", "gaming"],
-        min_accuracy_score=0.8,
-    )
+        min_accuracy_score=0.8)
 
     # Register the domain
     router.register_domain(gaming_domain)
@@ -350,8 +341,7 @@ async def test_real_generation_with_domain(
                 model,
                 success=True,
                 latency=0.5,
-                cost=0.0 if model.cost.is_free else 0.002,
-            )
+                cost=0.0 if model.cost.is_free else 0.002)
 
             print("✓ Generation successful")
 

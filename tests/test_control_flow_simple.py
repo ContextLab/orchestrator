@@ -4,6 +4,7 @@
 import asyncio
 from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
 from src.orchestrator.core.task import Task
+from src.orchestrator import init_models
 
 
 async def test_simple_condition():
@@ -26,8 +27,9 @@ steps:
       note: "Should not execute"
 """
 
-    # Create compiler
-    compiler = ControlFlowCompiler()
+    # Initialize models and create compiler
+    model_registry = init_models()
+    compiler = ControlFlowCompiler(model_registry=model_registry)
 
     # Compile without resolving AUTO tags
     pipeline = await compiler.compile(yaml_content, {}, resolve_ambiguities=False)

@@ -43,8 +43,7 @@ async def load_balancer(registry):
                 {"model": models_registered[0], "weight": 1.0, "max_concurrent": 10}
             ],
             always_available=False,
-            fallback_pool="backup",
-        )
+            fallback_pool="backup")
         load_balancer.configure_pool("primary", primary_config)
 
         # Backup pool
@@ -52,8 +51,7 @@ async def load_balancer(registry):
             models=[
                 {"model": models_registered[0], "weight": 1.0, "max_concurrent": 5}
             ],
-            always_available=True,
-        )
+            always_available=True)
         load_balancer.configure_pool("backup", backup_config)
 
     return load_balancer
@@ -111,15 +109,13 @@ async def setup_models_and_pools():
             },  # 60% of traffic
         ],
         fallback_pool="emergency",
-        retry_config={"max_retries": 3, "backoff": "exponential", "initial_delay": 0.5},
-    )
+        retry_config={"max_retries": 3, "backoff": "exponential", "initial_delay": 0.5})
 
     # Emergency fallback pool
     emergency_pool = ModelPoolConfig(
         models=[{"model": "ollama:llama3.2:1b", "weight": 1.0, "max_concurrent": 10}],
         always_available=True,  # Always consider this pool available
-        retry_config={"max_retries": 5, "backoff": "linear", "initial_delay": 1.0},
-    )
+        retry_config={"max_retries": 5, "backoff": "linear", "initial_delay": 1.0})
 
     # High-performance pool (if API models available)
     if "openai:gpt-3.5-turbo" in models_registered:
@@ -128,8 +124,7 @@ async def setup_models_and_pools():
                 {"model": "openai:gpt-3.5-turbo", "weight": 0.8, "max_concurrent": 20},
                 {"model": "ollama:llama3.1:8b", "weight": 0.2, "max_concurrent": 5},
             ],
-            fallback_pool="primary",
-        )
+            fallback_pool="primary")
         load_balancer.configure_pool("performance", perf_pool)
 
     load_balancer.configure_pool("primary", primary_pool)

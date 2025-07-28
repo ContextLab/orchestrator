@@ -7,8 +7,7 @@ import pytest
 from orchestrator.core.pipeline import (
     CircularDependencyError,
     InvalidDependencyError,
-    Pipeline,
-)
+    Pipeline)
 from orchestrator.core.task import Task, TaskStatus
 
 
@@ -23,8 +22,7 @@ class TestPipeline:
             context={"key": "value"},
             metadata={"meta": "data"},
             description="Test description",
-            version="1.0.0",
-        )
+            version="1.0.0")
 
         assert pipeline.id == "test_pipeline"
         assert pipeline.name == "Test Pipeline"
@@ -125,8 +123,7 @@ class TestPipeline:
                 id="task1",
                 name="Task 1",
                 action="action1",
-                dependencies=["nonexistent"],
-            )
+                dependencies=["nonexistent"])
             pipeline.add_task(task)
 
     def test_circular_dependency_simple(self):
@@ -411,8 +408,7 @@ class TestPipeline:
             context={"key": "value"},
             metadata={"meta": "data"},
             description="Test description",
-            version="1.0.0",
-        )
+            version="1.0.0")
 
         task = Task(id="task1", name="Task 1", action="action1")
         pipeline.add_task(task)

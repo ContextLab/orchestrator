@@ -35,8 +35,7 @@ def install_dependencies():
                 subprocess.run(
                     [sys.executable, "-m", "pip", "install", package],
                     check=True,
-                    capture_output=True,
-                )
+                    capture_output=True)
                 print(f"✅ Installed {package}")
             except subprocess.CalledProcessError as e:
                 print(f"❌ Failed to install {package}: {e}")
@@ -56,8 +55,7 @@ def detect_environment():
     # Check for Ollama availability
     try:
         result = subprocess.run(
-            ["ollama", "--version"], capture_output=True, text=True, timeout=5
-        )
+            ["ollama", "--version"], capture_output=True, text=True)
         if result.returncode == 0:
             return "local_ollama"
     except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -80,7 +78,7 @@ async def test_ollama_model():
             return False
 
         # Try to create model
-        model = OllamaModel(model_name="llama3.2:1b", timeout=10)
+        model = OllamaModel(model_name="llama3.2:1b")
         if not model._is_available:
             print("❌ Ollama model not available")
             return False

@@ -28,8 +28,7 @@ def check_postgres_available():
 
         conn_string = os.getenv(
             "TEST_POSTGRES_URL",
-            "postgresql://postgres:password@localhost:5432/test_orchestrator",
-        )
+            "postgresql://postgres:password@localhost:5432/test_orchestrator")
         with psycopg2.connect(conn_string):
             return True
     except (ImportError, Exception):
@@ -100,8 +99,7 @@ class PostgresBackend:
                 """,
                     checkpoint_id,
                     execution_id,
-                    json.dumps(data),
-                )
+                    json.dumps(data))
                 return True
             except Exception as e:
                 if "duplicate key" in str(e).lower():
@@ -117,8 +115,7 @@ class PostgresBackend:
                 FROM {self.table_name}
                 WHERE checkpoint_id = $1
             """,
-                checkpoint_id,
-            )
+                checkpoint_id)
 
             if row:
                 return {
@@ -139,8 +136,7 @@ class PostgresBackend:
                 WHERE execution_id = $1
                 ORDER BY created_at DESC
             """,
-                execution_id,
-            )
+                execution_id)
 
             return [
                 {
@@ -158,8 +154,7 @@ class PostgresBackend:
                 f"""
                 DELETE FROM {self.table_name} WHERE checkpoint_id = $1
             """,
-                checkpoint_id,
-            )
+                checkpoint_id)
             return result.split()[-1] == "1"  # Check if one row was deleted
 
     async def delete_execution_checkpoints(self, execution_id: str) -> int:
@@ -169,8 +164,7 @@ class PostgresBackend:
                 f"""
                 DELETE FROM {self.table_name} WHERE execution_id = $1
             """,
-                execution_id,
-            )
+                execution_id)
             return int(result.split()[-1])  # Number of deleted rows
 
     async def cleanup(self):
@@ -204,8 +198,7 @@ class RedisBackend:
         checkpoint_id: str,
         execution_id: str,
         data: Dict[str, Any],
-        ttl: int = 3600,
-    ) -> bool:
+        ttl: int = 3600) -> bool:
         """Save checkpoint to Redis."""
         key = f"{self.key_prefix}{checkpoint_id}"
         checkpoint_data = {
@@ -312,8 +305,7 @@ class TestPostgresIntegration:
         """Create and initialize PostgreSQL backend."""
         conn_string = os.getenv(
             "TEST_POSTGRES_URL",
-            "postgresql://postgres:password@localhost:5432/test_orchestrator",
-        )
+            "postgresql://postgres:password@localhost:5432/test_orchestrator")
         backend = PostgresBackend(conn_string, "test_checkpoints_integration")
         await backend.initialize()
         yield backend
@@ -649,8 +641,7 @@ class TestDatabaseConsistency:
         # Setup both backends
         postgres_conn = os.getenv(
             "TEST_POSTGRES_URL",
-            "postgresql://postgres:password@localhost:5432/test_orchestrator",
-        )
+            "postgresql://postgres:password@localhost:5432/test_orchestrator")
         redis_url = os.getenv("TEST_REDIS_URL", "redis://localhost:6379/1")
 
         postgres = PostgresBackend(postgres_conn, "test_consistency_pg")

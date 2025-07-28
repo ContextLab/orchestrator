@@ -2,8 +2,7 @@
 
 from orchestrator.compiler.auto_tag_yaml_parser import (
     AutoTagYAMLParser,
-    parse_yaml_with_auto_tags,
-)
+    parse_yaml_with_auto_tags)
 
 
 class TestAutoTagYAMLParser:

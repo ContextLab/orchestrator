@@ -8,8 +8,7 @@ import pytest
 from src.orchestrator.core.pipeline import (
     CircularDependencyError,
     InvalidDependencyError,
-    Pipeline,
-)
+    Pipeline)
 from src.orchestrator.core.task import Task
 
 
@@ -65,8 +64,7 @@ class TestPipeline:
             context=context,
             metadata=metadata,
             version="2.0.0",
-            description="A comprehensive test pipeline",
-        )
+            description="A comprehensive test pipeline")
 
         assert pipeline.id == "full_pipeline"
         assert pipeline.name == "Full Test Pipeline"
@@ -131,8 +129,7 @@ class TestPipeline:
             Pipeline(
                 id="complex_circular_pipeline",
                 name="Complex Circular Pipeline",
-                tasks=tasks,
-            )
+                tasks=tasks)
 
     def test_pipeline_add_task(self):
         """Test adding tasks to pipeline."""
@@ -257,8 +254,7 @@ class TestPipeline:
         pipeline = Pipeline(
             id="test",
             name="Test",
-            tasks={"task1": task1, "task2": task2, "task3": task3, "task4": task4},
-        )
+            tasks={"task1": task1, "task2": task2, "task3": task3, "task4": task4})
 
         execution_order = pipeline.get_execution_order()
 
@@ -290,8 +286,7 @@ class TestPipeline:
         pipeline = Pipeline(
             id="test",
             name="Test",
-            tasks={"task1": task1, "task2": task2, "task3": task3},
-        )
+            tasks={"task1": task1, "task2": task2, "task3": task3})
 
         # Initially, only tasks without dependencies should be ready
         ready_tasks = pipeline.get_ready_tasks(set())
@@ -335,8 +330,7 @@ class TestPipeline:
         pipeline = Pipeline(
             id="test",
             name="Test",
-            tasks={"task1": task1, "task2": task2, "task3": task3},
-        )
+            tasks={"task1": task1, "task2": task2, "task3": task3})
 
         dependents = pipeline.get_dependents("task1")
         assert set(dependents) == {"task2", "task3"}
@@ -404,8 +398,7 @@ class TestPipeline:
             context={"env": "test"},
             metadata={"version": "1.0"},
             version="2.0.0",
-            description="Test description",
-        )
+            description="Test description")
 
         pipeline_dict = pipeline.to_dict()
 
@@ -536,8 +529,7 @@ class TestPipeline:
         pipeline = Pipeline(
             id="test",
             name="Test",
-            tasks={"task1": task1, "task2": task2, "task3": task3},
-        )
+            tasks={"task1": task1, "task2": task2, "task3": task3})
 
         execution_order = pipeline.get_execution_order()
 
@@ -598,8 +590,7 @@ class TestPipeline:
         pipeline = Pipeline(
             id="test",
             name="Test",
-            tasks={"task1": task1, "task2": task2, "task3": task3},
-        )
+            tasks={"task1": task1, "task2": task2, "task3": task3})
 
         # Test flat execution order
         flat_order = pipeline.get_execution_order_flat()

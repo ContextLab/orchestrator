@@ -137,8 +137,7 @@ class FileIOManager:
         filename: str,
         data: List[List[str]],
         headers: Optional[List[str]] = None,
-        subdir: str = "",
-    ) -> str:
+        subdir: str = "") -> str:
         """Create a CSV file."""
         if subdir:
             dir_path = os.path.join(self.base_dir, subdir)

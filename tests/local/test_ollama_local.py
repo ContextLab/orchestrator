@@ -14,8 +14,7 @@ def check_ollama_available():
     try:
         # Check if ollama command exists
         result = subprocess.run(
-            ["ollama", "list"], capture_output=True, text=True, timeout=10
-        )
+            ["ollama", "list"], capture_output=True, text=True)
         if result.returncode == 0:
             # Check for specific models
             output = result.stdout
@@ -59,7 +58,7 @@ class TestOllamaIntegration:
         from orchestrator.integrations.ollama_model import OllamaModel
 
         model_name = available_models[0] if available_models else "llama3.2:1b"
-        model = OllamaModel(model_name=model_name, timeout=30)
+        model = OllamaModel(model_name=model_name)
 
         result = await model.generate("2+2=", max_tokens=5, temperature=0.0)
         assert isinstance(result, str)
@@ -83,7 +82,7 @@ class TestOllamaIntegration:
         from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
 
         model_name = available_models[0] if available_models else "llama3.2:1b"
-        model = OllamaModel(model_name=model_name, timeout=20)
+        model = OllamaModel(model_name=model_name)
         resolver = AmbiguityResolver(model=model)
 
         # Test simple resolution
@@ -131,7 +130,7 @@ async def test_performance_comparison():
     results = {}
 
     for model_name in available_models[:3]:  # Test up to 3 models
-        model = OllamaModel(model_name=model_name, timeout=30)
+        model = OllamaModel(model_name=model_name)
 
         start_time = time.time()
         try:

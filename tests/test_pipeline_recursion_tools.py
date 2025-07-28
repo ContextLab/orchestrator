@@ -9,8 +9,7 @@ import yaml
 # Don't use src. prefix - it creates duplicate module paths
 from orchestrator.tools.pipeline_recursion_tools import (
     PipelineExecutorTool,
-    RecursionControlTool,
-)
+    RecursionControlTool)
 from orchestrator.models.registry_singleton import get_model_registry
 
 
@@ -66,8 +65,7 @@ steps:
             result = await tool.execute(
                 pipeline=pipeline_path,
                 inputs={"message": "test"},
-                wait_for_completion=True,
-            )
+                wait_for_completion=True)
 
             assert result["success"] is True
             assert result["pipeline_id"] == "sub_pipeline"
@@ -114,8 +112,7 @@ steps:
             result = await tool.execute(
                 pipeline=pipeline_path,
                 inputs={"parameters": {"name": "Alice"}},
-                wait_for_completion=True,
-            )
+                wait_for_completion=True)
 
             assert result["success"] is True
             assert result["pipeline_id"] == "parameterized_pipeline"
@@ -229,8 +226,7 @@ async def test_recursion_control_check_condition():
     result = await tool.execute(
         action="check_condition",
         condition="state.get('counter', 0) >= 5",
-        context_id="test_context",
-    )
+        context_id="test_context")
 
     assert result["success"] is True
     assert result["should_terminate"] is False  # Counter not set yet
@@ -240,14 +236,12 @@ async def test_recursion_control_check_condition():
         action="update_state",
         state_key="counter",
         state_value=5,
-        context_id="test_context",
-    )
+        context_id="test_context")
 
     result = await tool.execute(
         action="check_condition",
         condition="state.get('counter', 0) >= 5",
-        context_id="test_context",
-    )
+        context_id="test_context")
 
     assert result["should_terminate"] is True
 
@@ -263,8 +257,7 @@ async def test_recursion_control_state_management():
         action="update_state",
         state_key="user_name",
         state_value="Alice",
-        context_id=context_id,
-    )
+        context_id=context_id)
 
     assert result["success"] is True
     assert result["new_value"] == "Alice"
@@ -316,8 +309,7 @@ async def test_recursion_control_limits():
         action="check_condition",
         condition="False",  # Never terminate naturally
         max_iterations=5,
-        context_id=context_id,
-    )
+        context_id=context_id)
 
     assert result["success"] is True
     assert result["should_terminate"] is False
@@ -328,8 +320,7 @@ async def test_recursion_control_limits():
             action="update_state",
             state_key=f"iteration_{i}",
             state_value=i,
-            context_id=context_id,
-        )
+            context_id=context_id)
         # Update execution count manually (normally done by PipelineExecutorTool)
         tool._recursion_states[context_id].execution_count["test"] = i + 1
 
@@ -338,8 +329,7 @@ async def test_recursion_control_limits():
         action="check_condition",
         condition="False",
         max_iterations=5,
-        context_id=context_id,
-    )
+        context_id=context_id)
 
     assert result["should_terminate"] is True
     assert "max_iterations exceeded" in result["reason"]
@@ -372,8 +362,7 @@ outputs:
             result = await tool.execute(
                 pipeline=pipeline_path,
                 output_mapping={"result_status": "mapped_status"},
-                wait_for_completion=True,
-            )
+                wait_for_completion=True)
 
             assert result["success"] is True
             assert "outputs" in result
@@ -412,8 +401,7 @@ steps:
             result = await tool.execute(
                 pipeline=pipeline_path,
                 error_handling="fail",
-                wait_for_completion=True,
-            )
+                wait_for_completion=True)
             # Check if the result indicates failure
             if isinstance(result, dict) and not result.get("success", True):
                 # This is acceptable - the pipeline failed as expected
@@ -445,8 +433,7 @@ steps:
             result = await tool.execute(
                 pipeline=pipeline_path,
                 error_handling="continue",
-                wait_for_completion=True,
-            )
+                wait_for_completion=True)
 
             # With continue strategy, it should return a result indicating failure but continued
             if isinstance(result, dict):

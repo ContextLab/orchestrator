@@ -6,8 +6,7 @@ from orchestrator.tools.validation import (
     ValidationTool,
     ValidationMode,
     SchemaValidator,
-    FormatValidator,
-)
+    FormatValidator)
 
 
 class TestFormatValidator:
@@ -198,8 +197,7 @@ class TestValidationTool:
                 "name": "Test Item",
                 "active": True,
             },
-            schema=schema,
-        )
+            schema=schema)
 
         assert result["success"]
         assert result["valid"]
@@ -209,8 +207,7 @@ class TestValidationTool:
         result = await validation_tool.execute(
             action="validate",
             data={"id": "not-a-uuid", "active": "yes"},  # Wrong type
-            schema=schema,
-        )
+            schema=schema)
 
         assert result["success"]  # Tool executed successfully
         assert not result["valid"]  # But validation failed
@@ -264,8 +261,7 @@ class TestValidationTool:
         result = await validation_tool.execute(
             action="validate",
             data={"order_id": "ORD-123456", "model_id": "openai/gpt-4"},
-            schema=schema,
-        )
+            schema=schema)
 
         assert result["valid"]
 
@@ -276,8 +272,7 @@ class TestValidationTool:
                 "order_id": "ORDER-123",
                 "model_id": "gpt-4",
             },  # Wrong format  # Missing provider
-            schema=schema,
-        )
+            schema=schema)
 
         assert not result["valid"]
 
@@ -302,8 +297,7 @@ class TestValidationTool:
                 "active": "true",  # String to bool
             },
             schema=schema,
-            mode="lenient",
-        )
+            mode="lenient")
 
         assert result["valid"]
         assert len(result["warnings"]) == 3  # All values were coerced

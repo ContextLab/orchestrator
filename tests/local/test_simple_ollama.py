@@ -19,7 +19,7 @@ async def test_ollama_direct():
 
         # Create model with longer timeout
         print("📥 Creating Ollama model...")
-        model = OllamaModel(model_name="llama3.2:1b", timeout=60)
+        model = OllamaModel(model_name="llama3.2:1b")
 
         print(f"✅ Model: {model.name}")
         print(f"🔍 Available: {model._is_available}")

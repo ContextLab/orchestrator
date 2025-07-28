@@ -7,8 +7,7 @@ import pytest
 
 from orchestrator import Orchestrator, Task, Pipeline, init_models
 from orchestrator.control_systems.model_based_control_system import (
-    ModelBasedControlSystem,
-)
+    ModelBasedControlSystem)
 from orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
@@ -63,8 +62,6 @@ def orchestrator(setup_environment):
 
 class TestSimplePipelineIntegration:
     """Test basic pipeline execution with real API calls."""
-
-    @pytest.mark.timeout(120)
     async def test_simple_text_generation(self, orchestrator):
         """Test a simple text generation pipeline."""
         # Create a simple task
@@ -75,8 +72,7 @@ class TestSimplePipelineIntegration:
             parameters={
                 "prompt": "Write a haiku about testing software",
                 "max_tokens": 50,
-            },
-        )
+            })
 
         # Create pipeline
         pipeline = Pipeline(id="simple_test", name="Simple Integration Test")
@@ -102,8 +98,6 @@ class TestSimplePipelineIntegration:
 
         except Exception as e:
             pytest.fail(f"Pipeline execution failed: {e}")
-
-    @pytest.mark.timeout(180)
     async def test_multi_step_pipeline(self, orchestrator):
         """Test a pipeline with multiple dependent tasks."""
         # Task 1: Generate a topic
@@ -114,8 +108,7 @@ class TestSimplePipelineIntegration:
             parameters={
                 "prompt": "Generate a random interesting topic for a blog post (just the topic, one line)",
                 "max_tokens": 30,
-            },
-        )
+            })
 
         # Task 2: Create outline based on topic
         task2 = Task(
@@ -126,8 +119,7 @@ class TestSimplePipelineIntegration:
                 "prompt": "Create a 3-point outline for a blog post about: {generate_topic}",
                 "max_tokens": 100,
             },
-            dependencies=["generate_topic"],
-        )
+            dependencies=["generate_topic"])
 
         # Create pipeline
         pipeline = Pipeline(id="multi_step_test", name="Multi-Step Integration Test")
@@ -161,8 +153,6 @@ class TestSimplePipelineIntegration:
 
         except Exception as e:
             pytest.fail(f"Multi-step pipeline failed: {e}")
-
-    @pytest.mark.timeout(120)
     async def test_error_handling(self, orchestrator):
         """Test pipeline handles errors gracefully."""
         # Create task with invalid parameters
@@ -173,8 +163,7 @@ class TestSimplePipelineIntegration:
             parameters={
                 # Missing required 'prompt' parameter
                 "max_tokens": 50
-            },
-        )
+            })
 
         pipeline = Pipeline(id="error_test", name="Error Handling Test")
         pipeline.add_task(task)

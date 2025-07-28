@@ -71,9 +71,7 @@ class ResearchAssistant:
                 gpt4 = OpenAIModel(
                     model_name="gpt-4.1",
                     api_key=self.config["openai_api_key"],
-                    max_retries=3,
-                    timeout=30.0,
-                )
+                    max_retries=3)
                 self.orchestrator.model_registry.register_model(gpt4)
             except Exception as e:
                 print(f"Failed to register OpenAI model: {e}")
@@ -85,9 +83,7 @@ class ResearchAssistant:
                 claude = AnthropicModel(
                     model_name="claude-sonnet-4-20250514",
                     api_key=self.config["anthropic_api_key"],
-                    max_retries=3,
-                    timeout=30.0,
-                )
+                    max_retries=3)
                 self.orchestrator.model_registry.register_model(claude)
             except Exception as e:
                 print(f"Failed to register Anthropic model: {e}")
@@ -366,8 +362,7 @@ class TestResearchAssistant:
         checkpoint_id = await assistant.state_manager.save_checkpoint(
             execution_id="test_execution",
             state=test_state,
-            metadata={"task_id": "web_search"},
-        )
+            metadata={"task_id": "web_search"})
 
         # Load checkpoint
         loaded_state = await assistant.state_manager.restore_checkpoint(
@@ -577,8 +572,7 @@ if __name__ == "__main__":
         print("Testing Research Assistant...")
         result = await assistant.conduct_research(
             "artificial intelligence trends 2024",
-            "Focus on recent developments and applications",
-        )
+            "Focus on recent developments and applications")
 
         print(f"Test completed: {result['success']}")
         print(f"Quality score: {result['quality_score']:.2f}")

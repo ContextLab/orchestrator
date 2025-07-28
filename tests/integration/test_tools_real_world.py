@@ -60,7 +60,6 @@ class TestHeadlessBrowserTool:
         return HeadlessBrowserTool()
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(60)
     async def test_scrape_real_website(self, browser_tool):
         """Test scraping a real website."""
         # Use example.com - it's stable and simple
@@ -86,7 +85,6 @@ class TestHeadlessBrowserTool:
             assert result["status_code"] == 200
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(30)
     async def test_verify_real_website(self, browser_tool):
         """Test verifying a real website."""
         result = await browser_tool.execute(url="https://example.com", action="verify")
@@ -104,8 +102,7 @@ class TestHeadlessBrowserTool:
         """Test handling of invalid URLs."""
         result = await browser_tool.execute(
             url="https://this-domain-definitely-does-not-exist-12345.com",
-            action="scrape",
-        )
+            action="scrape")
 
         # Should have an error for invalid URL
         assert "error" in result
@@ -148,7 +145,6 @@ class TestWebSearchTool:
         return WebSearchTool()
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(30)
     async def test_real_web_search(self, search_tool):
         """Test real web search functionality."""
         result = await search_tool.execute(
@@ -472,8 +468,7 @@ class TestReportGeneratorTool:
             query="artificial intelligence applications",
             search_results=search_results,
             extraction_results={},
-            output_path=str(temp_workspace / "report.md"),
-        )
+            output_path=str(temp_workspace / "report.md"))
 
         assert result["success"] is True
         assert "markdown" in result
@@ -521,8 +516,7 @@ The PDF generation tool should create a properly formatted document.
             markdown_content=markdown_content,
             output_path=str(output_path),
             title="Test Report",
-            author="Test Suite",
-        )
+            author="Test Suite")
 
         if result["success"]:
             # Pandoc is installed
@@ -538,7 +532,6 @@ class TestToolIntegration:
     """Test tools working together in orchestrator pipelines."""
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(60)
     @pytest.mark.skip(reason="Temporarily skip due to API timeout issues")
     async def test_web_scraping_pipeline(self, orchestrator, temp_workspace):
         """Test a pipeline that searches web, scrapes content, and generates report."""

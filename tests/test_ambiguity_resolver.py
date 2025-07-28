@@ -4,8 +4,7 @@ import pytest
 
 from orchestrator.compiler.ambiguity_resolver import (
     AmbiguityResolutionError,
-    AmbiguityResolver,
-)
+    AmbiguityResolver)
 from orchestrator import init_models
 
 
@@ -66,8 +65,7 @@ class TestAmbiguityResolver:
         # Use a clearer prompt that's more likely to get a direct answer
         result = await resolver.resolve(
             "Select either 'option1' or 'option2'. Reply with only the option name.",
-            "test.choice",
-        )
+            "test.choice")
 
         # Now the model should be selected
         assert resolver.model is not None
@@ -88,8 +86,7 @@ class TestAmbiguityResolver:
 
         result = await resolver.resolve(
             "Choose the best output format for structured data: json, yaml, or xml",
-            "output.format",
-        )
+            "output.format")
 
         # AI should choose one of the valid formats
         assert result in ["json", "yaml", "xml"]
@@ -101,8 +98,7 @@ class TestAmbiguityResolver:
 
         result = await resolver.resolve(
             "Should we enable caching for better performance? Consider memory constraints.",
-            "config.enable_cache",
-        )
+            "config.enable_cache")
 
         # AI should return a boolean
         assert isinstance(result, bool)
@@ -114,8 +110,7 @@ class TestAmbiguityResolver:
 
         result = await resolver.resolve(
             "Choose an optimal batch size between 8 and 128 for processing large datasets",
-            "config.batch_size",
-        )
+            "config.batch_size")
 
         # AI should return a reasonable number
         assert isinstance(result, (int, float))
@@ -128,8 +123,7 @@ class TestAmbiguityResolver:
 
         result = await resolver.resolve(
             "Select the most important programming languages to support: python, javascript, java, go, rust, c++",
-            "config.languages",
-        )
+            "config.languages")
 
         # AI might return a list or comma-separated string
         if isinstance(result, str):
@@ -216,8 +210,7 @@ class TestAmbiguityResolver:
 
         result = await resolver.resolve(
             "Choose the most suitable sorting algorithm for a nearly sorted large dataset",
-            "algorithm.sort",
-        )
+            "algorithm.sort")
 
         # AI should choose an algorithm suitable for nearly sorted data
         # Good choices would be insertion sort, timsort, or similar
@@ -294,8 +287,7 @@ class TestAmbiguityResolver:
         result = await resolver.resolve(
             "For a web application expecting 1000-10000 concurrent users with read-heavy workload, "
             "choose the most appropriate database system considering scalability, consistency, and cost",
-            "infrastructure.database",
-        )
+            "infrastructure.database")
 
         # AI should provide a thoughtful response
         assert result is not None

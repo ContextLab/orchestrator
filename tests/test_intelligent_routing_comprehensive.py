@@ -53,8 +53,7 @@ async def setup_comprehensive_registry():
                 ["general", "reasoning", "code", "technical", "medical", "legal"],
                 0.95,
                 "medium",
-                True,
-            ),
+                True),
         ]
 
         for model_name, domains, accuracy, speed, is_code_specialized in openai_models:
@@ -189,8 +188,7 @@ async def test_cost_optimized_routing(registry: ModelRegistry):
             criteria = ModelSelectionCriteria(
                 prefer_free_models=True,
                 selection_strategy="cost_optimized",
-                max_cost_per_1k_tokens=0.01,
-            )
+                max_cost_per_1k_tokens=0.01)
 
             model = await selector.select_model(criteria)
             model_key = f"{model.provider}:{model.name}"

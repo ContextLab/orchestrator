@@ -9,8 +9,7 @@ from src.orchestrator.tools.mcp_tools import (
     MCPResourceTool,
     MCPConnection,
     MCPToolInfo,
-    MCPResourceInfo,
-)
+    MCPResourceInfo)
 
 
 @pytest.mark.asyncio
@@ -26,8 +25,7 @@ async def test_mcp_server_connect():
             "command": "node",
             "args": ["test-server.js"],
             "env": {"TEST": "true"},
-        },
-    )
+        })
 
     assert result["success"] is True
     assert result["server_name"] == "test-server"
@@ -78,8 +76,7 @@ async def test_mcp_server_execute_tool():
         action="execute_tool",
         server_name="test-server",
         tool_name="search",
-        tool_params={"query": "test query"},
-    )
+        tool_params={"query": "test query"})
 
     assert result["success"] is True
     assert result["tool_name"] == "search"
@@ -344,8 +341,7 @@ async def test_mcp_tool_info_dataclass():
         name="search",
         description="Search the web",
         input_schema={"type": "object"},
-        server="test-server",
-    )
+        server="test-server")
 
     assert tool_info.name == "search"
     assert tool_info.description == "Search the web"
@@ -359,8 +355,7 @@ async def test_mcp_resource_info_dataclass():
         uri="file:///test.json",
         name="Test File",
         description="A test file",
-        mime_type="application/json",
-    )
+        mime_type="application/json")
 
     assert resource.uri == "file:///test.json"
     assert resource.name == "Test File"

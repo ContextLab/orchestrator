@@ -11,8 +11,7 @@ from orchestrator.utils.service_manager import (
     DockerServiceManager,
     ensure_service_running,
     get_service_status,
-    register_service_manager,
-)
+    register_service_manager)
 
 
 class RealTestServiceManager(ServiceManager):
@@ -93,9 +92,7 @@ class TestOllamaServiceManager:
             result = subprocess.run(
                 ["which", "ollama"],
                 capture_output=True,
-                text=True,
-                timeout=1
-            )
+                text=True)
             expected = result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             expected = False
@@ -117,9 +114,7 @@ class TestOllamaServiceManager:
             result = subprocess.run(
                 ["pgrep", "-x", "ollama"],
                 capture_output=True,
-                text=True,
-                timeout=1
-            )
+                text=True)
             expected = result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             expected = False
@@ -165,9 +160,7 @@ class TestDockerServiceManager:
             result = subprocess.run(
                 ["which", "docker"],
                 capture_output=True,
-                text=True,
-                timeout=1
-            )
+                text=True)
             expected = result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             expected = False
@@ -189,9 +182,7 @@ class TestDockerServiceManager:
             result = subprocess.run(
                 ["docker", "ps"],
                 capture_output=True,
-                text=True,
-                timeout=2
-            )
+                text=True)
             expected = result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             expected = False

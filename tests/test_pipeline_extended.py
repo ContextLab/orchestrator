@@ -35,8 +35,7 @@ class TestPipelineExtended:
             id="task1_circular",
             name="Task 1 Circular",
             action="action1",
-            dependencies=["task3"],
-        )
+            dependencies=["task3"])
 
         # Temporarily modify task1 to depend on task3 to create a cycle
         task1.dependencies = ["task3"]

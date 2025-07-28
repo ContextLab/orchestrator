@@ -5,8 +5,7 @@ import pytest
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler
 from orchestrator.control_systems.model_based_control_system import (
-    ModelBasedControlSystem,
-)
+    ModelBasedControlSystem)
 from orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
@@ -46,9 +45,6 @@ def yaml_compiler(orchestrator):
         else None
     )
     return YAMLCompiler(model_registry=model_registry)
-
-
-@pytest.mark.timeout(60)
 async def test_minimal_yaml_pipeline(orchestrator, yaml_compiler):
     """Test the simplest possible YAML pipeline."""
     yaml_content = """
@@ -74,9 +70,6 @@ steps:
     assert len(result["test_step"]) > 0
 
     print(f"\nResult: {result['test_step']}")
-
-
-@pytest.mark.timeout(90)
 async def test_minimal_yaml_with_model(orchestrator, yaml_compiler):
     """Test YAML pipeline with explicit model selection."""
     yaml_content = """

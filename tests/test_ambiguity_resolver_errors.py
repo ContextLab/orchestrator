@@ -4,11 +4,9 @@ import pytest
 import asyncio
 from orchestrator.compiler.ambiguity_resolver import (
     AmbiguityResolver,
-    AmbiguityResolutionError,
-)
+    AmbiguityResolutionError)
 from orchestrator.compiler.structured_ambiguity_resolver import (
-    StructuredAmbiguityResolver,
-)
+    StructuredAmbiguityResolver)
 from orchestrator.compiler.utils import is_transient_error
 from orchestrator.models.registry_singleton import get_model_registry
 from orchestrator import init_models

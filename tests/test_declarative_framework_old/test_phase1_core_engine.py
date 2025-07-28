@@ -143,8 +143,7 @@ class TestPipelineSpec:
             steps=[
                 TaskSpec(id="step1", action="action1"),
                 TaskSpec(id="step2", action="action2", depends_on=["step1"]),
-            ],
-        )
+            ])
 
         assert spec.name == "Test Pipeline"
         assert len(spec.steps) == 2
@@ -156,8 +155,7 @@ class TestPipelineSpec:
         with pytest.raises(ValueError, match="depends on non-existent step"):
             PipelineSpec(
                 name="Test",
-                steps=[TaskSpec(id="step1", action="action1", depends_on=["missing"])],
-            )
+                steps=[TaskSpec(id="step1", action="action1", depends_on=["missing"])])
 
     def test_input_validation(self):
         """Test input validation."""
@@ -167,8 +165,7 @@ class TestPipelineSpec:
                 "required_input": {"type": "string", "required": True},
                 "optional_input": {"type": "string", "required": False},
             },
-            steps=[TaskSpec(id="step1", action="test")],
-        )
+            steps=[TaskSpec(id="step1", action="test")])
 
         # Missing required input
         with pytest.raises(ValueError, match="Required input"):

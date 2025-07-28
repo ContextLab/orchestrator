@@ -7,8 +7,7 @@ from src.orchestrator.core.control_system import ControlSystem
 from src.orchestrator.core.resource_allocator import (
     ResourceAllocator,
     ResourceType,
-    ResourceQuota,
-)
+    ResourceQuota)
 
 
 class FailingModelRegistry(ModelRegistry):
@@ -73,12 +72,10 @@ class TrackingResourceAllocator(ResourceAllocator):
         # Add default resource pools
         self.add_resource_pool(
             ResourceType.CPU,
-            ResourceQuota(ResourceType.CPU, limit=8.0, unit="cores", renewable=False),
-        )
+            ResourceQuota(ResourceType.CPU, limit=8.0, unit="cores", renewable=False))
         self.add_resource_pool(
             ResourceType.MEMORY,
-            ResourceQuota(ResourceType.MEMORY, limit=16.0, unit="GB", renewable=False),
-        )
+            ResourceQuota(ResourceType.MEMORY, limit=16.0, unit="GB", renewable=False))
 
     async def request_resources(self, request: Any) -> bool:
         """Track resource requests and return configured result."""

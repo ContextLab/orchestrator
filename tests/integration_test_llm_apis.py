@@ -41,8 +41,7 @@ class OpenAIModel:
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=kwargs.get("max_tokens", 100),
-                temperature=kwargs.get("temperature", 0.7),
-            )
+                temperature=kwargs.get("temperature", 0.7))
 
             return response.choices[0].message.content
 
@@ -78,8 +77,7 @@ class AnthropicModel:
                 model=self.model,
                 max_tokens=kwargs.get("max_tokens", 100),
                 temperature=kwargs.get("temperature", 0.7),
-                messages=[{"role": "user", "content": prompt}],
-            )
+                messages=[{"role": "user", "content": prompt}])
 
             return response.content[0].text
 
@@ -116,9 +114,7 @@ class GoogleModel:
                 prompt,
                 generation_config=genai.types.GenerationConfig(
                     max_output_tokens=kwargs.get("max_tokens", 100),
-                    temperature=kwargs.get("temperature", 0.7),
-                ),
-            )
+                    temperature=kwargs.get("temperature", 0.7)))
 
             return response.text
 
@@ -376,8 +372,7 @@ class TestLLMIntegrationConsistency:
     @pytest.mark.asyncio
     @pytest.mark.skipif(
         not (HAS_OPENAI_KEY and HAS_ANTHROPIC_KEY),
-        reason="Both OpenAI and Anthropic keys needed",
-    )
+        reason="Both OpenAI and Anthropic keys needed")
     async def test_cross_provider_consistency(self):
         """Test that different providers give reasonable responses to same prompt."""
         openai_model = OpenAIModel(os.getenv("OPENAI_API_KEY"))
@@ -440,8 +435,7 @@ class TestLLMIntegrationConsistency:
 
         try:
             result = await asyncio.wait_for(
-                model.generate(very_long_prompt, max_tokens=10),
-                timeout=30.0,  # 30 second timeout
+                model.generate(very_long_prompt, max_tokens=10),  # 30 second timeout
             )
             # If it succeeds, verify response format
             assert isinstance(result, str)

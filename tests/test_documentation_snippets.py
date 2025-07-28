@@ -194,8 +194,7 @@ outputs:
             # Run with inputs
             result = await pipeline.run_async(
                 topic="quantum computing applications in medicine",
-                instructions="Focus on recent breakthroughs and future potential",
-            )
+                instructions="Focus on recent breakthroughs and future potential")
 
             assert result is not None
             assert isinstance(result, dict)
@@ -406,8 +405,7 @@ class TestDesignDocCodeSnippets:
             name="Test Task",
             action="generate_text",
             parameters={"prompt": "Hello"},
-            dependencies=[],
-        )
+            dependencies=[])
 
         # Verify interface
         assert hasattr(task, "id")

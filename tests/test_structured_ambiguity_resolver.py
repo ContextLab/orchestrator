@@ -3,8 +3,7 @@
 import pytest
 import logging
 from orchestrator.compiler.structured_ambiguity_resolver import (
-    StructuredAmbiguityResolver,
-)
+    StructuredAmbiguityResolver)
 from orchestrator import init_models
 
 # Enable debug logging for tests
@@ -48,8 +47,7 @@ class TestStructuredAmbiguityResolver:
             (
                 "Choose the strategy: aggressive, moderate, or conservative",
                 "config.strategy",
-                "choice",
-            ),
+                "choice"),
             ("Select output format: json or yaml", "output.format", "choice"),
             ("Which approach: parallel or sequential?", "processing.mode", "choice"),
             # String cases (default)
@@ -69,8 +67,7 @@ class TestStructuredAmbiguityResolver:
         test_cases = [
             (
                 "Should we enable caching for better performance?",
-                True,
-            ),  # Positive framing
+                True),  # Positive framing
             ("Should we disable logging in production?", None),  # Model decides
             ("Is 5 greater than 3?", True),  # Factual
             ("Is 2 greater than 10?", False),  # Factual
@@ -89,8 +86,7 @@ class TestStructuredAmbiguityResolver:
         """Test number value resolution."""
         result = await structured_resolver.resolve(
             "For a dataset with 1000 items, what's a good batch size?",
-            "config.batch_size",
-        )
+            "config.batch_size")
 
         assert isinstance(result, (int, float)), f"Expected number, got {type(result)}"
         assert 1 <= result <= 1000, f"Batch size {result} seems unreasonable"
@@ -100,8 +96,7 @@ class TestStructuredAmbiguityResolver:
         """Test list value resolution."""
         result = await structured_resolver.resolve(
             "What are the top 3 programming languages for data science?",
-            "config.languages",
-        )
+            "config.languages")
 
         assert isinstance(result, list), f"Expected list, got {type(result)}"
         assert len(result) >= 1, "Expected at least one item"
@@ -114,8 +109,7 @@ class TestStructuredAmbiguityResolver:
         """Test choice selection."""
         result = await structured_resolver.resolve(
             "For high-performance computing, which is better: CPU or GPU?",
-            "config.processor",
-        )
+            "config.processor")
 
         assert isinstance(result, str), f"Expected string, got {type(result)}"
         assert result.upper() in ["CPU", "GPU"], f"Unexpected choice: {result}"

@@ -113,8 +113,7 @@ class TestResearchAssistantWithReport:
             extraction_results=extraction_results,
             findings=["Finding 1", "Finding 2"],
             recommendations=["Recommendation 1", "Recommendation 2"],
-            quality_score=0.85,
-        )
+            quality_score=0.85)
 
         # Verify report
         assert result["success"] is True
@@ -166,8 +165,7 @@ This concludes the test report.
                 output_path=str(output_path),
                 title="Test Report",
                 author="Test Suite",
-                install_if_missing=True,
-            )
+                install_if_missing=True)
 
             # Verify result
             if result["success"]:

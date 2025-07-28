@@ -14,7 +14,7 @@ async def test_auto_resolution():
     print("=" * 50)
 
     # Create resolver with real model
-    model = OllamaModel(model_name="llama3.2:1b", timeout=30)
+    model = OllamaModel(model_name="llama3.2:1b")
     if not model._is_available:
         print("❌ Ollama model not available")
         return False
@@ -28,8 +28,7 @@ async def test_auto_resolution():
         (
             "Choose best sources for healthcare AI research",
             "parameters.sources",
-            "list",
-        ),
+            "list"),
         ("Determine appropriate search depth", "parameters.depth", "string"),
         ("Select analysis method for research data", "parameters.method", "string"),
         ("Set relevance threshold", "parameters.threshold", "number"),
@@ -118,7 +117,7 @@ async def test_specific_resolutions():
     print("\n🔧 TESTING SPECIFIC RESOLUTIONS")
     print("=" * 50)
 
-    model = OllamaModel(model_name="llama3.2:1b", timeout=30)
+    model = OllamaModel(model_name="llama3.2:1b")
     if not model._is_available:
         return False
 

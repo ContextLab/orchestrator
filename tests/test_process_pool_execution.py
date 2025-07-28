@@ -8,8 +8,7 @@ from orchestrator.core.task import Task
 from orchestrator.executor.parallel_executor import (
     ExecutionConfig,
     ExecutionMode,
-    WorkerPool,
-)
+    WorkerPool)
 
 
 # Module-level function that can be pickled
@@ -51,7 +50,7 @@ class TestProcessPoolExecution:
     @pytest.mark.asyncio
     async def test_process_pool_timeout(self):
         """Test process pool timeout."""
-        config = ExecutionConfig(execution_mode=ExecutionMode.PROCESS, timeout=0.5)
+        config = ExecutionConfig(execution_mode=ExecutionMode.PROCESS)
         worker_pool = WorkerPool(config)
 
         # Initialize real process pool

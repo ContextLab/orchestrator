@@ -61,8 +61,7 @@ class TestReportGeneratorTool:
             context="test context",
             search_results=sample_search_results,
             extraction_results=sample_extraction_results,
-            quality_score=0.75,
-        )
+            quality_score=0.75)
 
         assert result["success"] is True
         assert "markdown" in result
@@ -85,8 +84,7 @@ class TestReportGeneratorTool:
             search_results=sample_search_results,
             extraction_results={},
             findings=findings,
-            recommendations=recommendations,
-        )
+            recommendations=recommendations)
 
         assert result["success"] is True
         markdown = result["markdown"]
@@ -106,8 +104,7 @@ class TestReportGeneratorTool:
             title="Empty Report",
             query="no results query",
             search_results={"results": [], "total_results": 0},
-            extraction_results={},
-        )
+            extraction_results={})
 
         assert result["success"] is True
         assert "No search results found" in result["markdown"]
@@ -121,8 +118,7 @@ class TestReportGeneratorTool:
             title="Structured Report",
             query="test query",
             search_results=sample_search_results,
-            extraction_results=sample_extraction_results,
-        )
+            extraction_results=sample_extraction_results)
 
         markdown = result["markdown"]
 
@@ -235,8 +231,7 @@ def hello():
                 markdown_content=markdown_with_special,
                 output_path=str(output_path),
                 title="Special Characters Test",
-                install_if_missing=True,
-            )
+                install_if_missing=True)
 
             if result["success"]:
                 assert output_path.exists()

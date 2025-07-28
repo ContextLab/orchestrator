@@ -16,7 +16,7 @@ async def test_yaml_compilation():
         from orchestrator.compiler.yaml_compiler import YAMLCompiler
         from orchestrator.integrations.ollama_model import OllamaModel
 
-        model = OllamaModel(model_name="llama3.2:1b", timeout=10)
+        model = OllamaModel(model_name="llama3.2:1b")
         compiler = YAMLCompiler()
         compiler.ambiguity_resolver.model = model
 

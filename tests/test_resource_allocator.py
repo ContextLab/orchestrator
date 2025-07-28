@@ -12,8 +12,7 @@ from src.orchestrator.core.resource_allocator import (
     ResourceQuota,
     ResourceRequest,
     ResourceType,
-    ResourceUsage,
-)
+    ResourceUsage)
 
 
 class TestResourceType:
@@ -52,8 +51,7 @@ class TestResourceQuota:
             unit="GB",
             renewable=False,
             renewal_period=7200.0,
-            burst_limit=10.0,
-        )
+            burst_limit=10.0)
 
         assert quota.resource_type == ResourceType.MEMORY
         assert quota.limit == 8.0
@@ -92,8 +90,7 @@ class TestResourceUsage:
             used=4.0,
             reserved=2.0,
             timestamp=custom_time,
-            task_id="task_123",
-        )
+            task_id="task_123")
 
         assert usage.resource_type == ResourceType.MEMORY
         assert usage.used == 4.0
@@ -156,9 +153,7 @@ class TestResourceRequest:
             task_id="priority_task",
             resources=resources,
             priority=10,
-            timeout=600.0,
-            min_resources=min_resources,
-        )
+            min_resources=min_resources)
 
         assert request.task_id == "priority_task"
         assert request.resources == resources
@@ -191,8 +186,7 @@ class TestFairShareStrategy:
 
         request = ResourceRequest(
             task_id="test_task",
-            resources={ResourceType.CPU: 4.0, ResourceType.MEMORY: 8.0},
-        )
+            resources={ResourceType.CPU: 4.0, ResourceType.MEMORY: 8.0})
 
         available = {ResourceType.CPU: 10.0, ResourceType.MEMORY: 16.0}
         current_usage = {
@@ -212,8 +206,7 @@ class TestFairShareStrategy:
 
         request = ResourceRequest(
             task_id="test_task",
-            resources={ResourceType.CPU: 8.0, ResourceType.MEMORY: 16.0},
-        )
+            resources={ResourceType.CPU: 8.0, ResourceType.MEMORY: 16.0})
 
         available = {ResourceType.CPU: 4.0, ResourceType.MEMORY: 8.0}
         current_usage = {}
@@ -231,8 +224,7 @@ class TestFairShareStrategy:
 
         request = ResourceRequest(
             task_id="test_task",
-            resources={ResourceType.CPU: 6.0, ResourceType.MEMORY: 12.0},
-        )
+            resources={ResourceType.CPU: 6.0, ResourceType.MEMORY: 12.0})
 
         available = {ResourceType.CPU: 8.0, ResourceType.MEMORY: 6.0}
         current_usage = {}
@@ -255,8 +247,7 @@ class TestPriorityBasedStrategy:
         request = ResourceRequest(
             task_id="high_priority_task",
             resources={ResourceType.CPU: 4.0, ResourceType.MEMORY: 8.0},
-            priority=10,
-        )
+            priority=10)
 
         available = {ResourceType.CPU: 10.0, ResourceType.MEMORY: 16.0}
         current_usage = {}
@@ -275,8 +266,7 @@ class TestPriorityBasedStrategy:
         request = ResourceRequest(
             task_id="low_priority_task",
             resources={ResourceType.CPU: 4.0, ResourceType.MEMORY: 8.0},
-            priority=1,
-        )
+            priority=1)
 
         available = {ResourceType.CPU: 3.0, ResourceType.MEMORY: 6.0}
         current_usage = {}

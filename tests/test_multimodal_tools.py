@@ -14,8 +14,7 @@ from src.orchestrator.tools.multimodal_tools import (
     AudioProcessingTool,
     VideoProcessingTool,
     ImageData,
-    AudioData,
-)
+    AudioData)
 
 
 @pytest.fixture
@@ -156,8 +155,7 @@ async def test_image_generation_placeholder():
         prompt="A beautiful sunset",
         size="256x256",
         num_images=2,
-        output_format="base64",
-    )
+        output_format="base64")
 
     assert result["success"] is True
     assert len(result["images"]) == 2
@@ -177,8 +175,7 @@ async def test_image_generation_file_output():
             prompt="A mountain landscape",
             size="512x512",
             output_format="file",
-            output_path=tmpdir,
-        )
+            output_path=tmpdir)
 
         assert result["success"] is True
         assert len(result["images"]) == 1
@@ -258,8 +255,7 @@ async def test_video_extract_frames():
             video="test_video.mp4",
             operation="extract_frames",
             frame_interval=2.0,
-            output_path=tmpdir,
-        )
+            output_path=tmpdir)
 
         assert result["success"] is True
         assert "frames" in result

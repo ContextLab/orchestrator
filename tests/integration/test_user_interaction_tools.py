@@ -15,8 +15,7 @@ import time
 from src.orchestrator.tools.user_interaction_tools import (
     UserPromptTool,
     ApprovalGateTool,
-    FeedbackCollectionTool,
-)
+    FeedbackCollectionTool)
 
 
 class RealInputSimulator:
@@ -125,8 +124,7 @@ class TestUserPromptTool:
                 prompt="Choose a fruit:",
                 input_type="choice",
                 choices=choices,
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         assert result["value"] == "banana"
@@ -139,8 +137,7 @@ class TestUserPromptTool:
                 choices=choices,
                 context="cli",
                 retry_on_invalid=True,
-                max_retries=3,
-            )
+                max_retries=3)
 
         assert result["success"] is True
         assert result["value"] == "apple"
@@ -154,8 +151,7 @@ class TestUserPromptTool:
                 prompt="Name (default: Anonymous):",
                 input_type="text",
                 default="Anonymous",
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         assert result["value"] == "Anonymous"
@@ -174,8 +170,7 @@ class TestUserPromptTool:
                 prompt="Enter email:",
                 input_type="text",
                 validation_pattern=email_pattern,
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         assert result["value"] == "user@example.com"
@@ -187,8 +182,7 @@ class TestUserPromptTool:
                 input_type="text",
                 validation_pattern=email_pattern,
                 retry_on_invalid=True,
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         assert result["value"] == "user@example.com"
@@ -200,8 +194,7 @@ class TestUserPromptTool:
             prompt="API prompt test",
             input_type="text",
             context="api",
-            default="API default response",
-        )
+            default="API default response")
 
         # API context should return default or error
         assert "error" in result or result["value"] == "API default response"
@@ -224,8 +217,7 @@ class TestApprovalGateTool:
                 title="Deploy to Production",
                 content="Ready to deploy version 1.2.3?",
                 options=["approve", "reject"],
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         assert result["approved"] is True
@@ -240,8 +232,7 @@ class TestApprovalGateTool:
                 title="Deploy to Production",
                 content="Ready to deploy version 1.2.3?",
                 options=["approve", "reject"],
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         assert result["approved"] is False
@@ -260,8 +251,7 @@ class TestApprovalGateTool:
                 content="Proposed changes to database schema",
                 options=["approve", "reject", "modify"],
                 require_reason=True,
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         assert result["approved"] is True  # Modification implies approval
@@ -283,8 +273,7 @@ class TestApprovalGateTool:
             title="Auto Approval Test",
             content=content,
             auto_approve_hash=content_hash,
-            context="cli",
-        )
+            context="cli")
 
         assert result["success"] is True
         assert result["approved"] is True
@@ -305,8 +294,7 @@ class TestApprovalGateTool:
                 title="Deploy with Metadata",
                 content="Deploy with additional context",
                 metadata=metadata,
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         assert result["approved"] is True
@@ -409,8 +397,7 @@ class TestFeedbackCollectionTool:
                 questions=questions,
                 title="Anonymous Feedback",
                 anonymous=True,
-                context="cli",
-            )
+                context="cli")
 
         assert result["success"] is True
         # Anonymous setting affects internal tracking but isn't returned in result
@@ -502,8 +489,7 @@ async def test_all_tools_integration():
         approval_result = await approval_tool.execute(
             title=f"Welcome {user_name}",
             content="Do you approve the terms of service?",
-            context="cli",
-        )
+            context="cli")
 
         assert approval_result["success"] is True
         assert approval_result["approved"] is True
@@ -520,8 +506,7 @@ async def test_all_tools_integration():
                 {"id": "comments", "text": "Comments:", "type": "text"},
             ],
             title="User Experience",
-            context="cli",
-        )
+            context="cli")
 
         assert feedback_result["success"] is True
         assert len(feedback_result["responses"]) == 2

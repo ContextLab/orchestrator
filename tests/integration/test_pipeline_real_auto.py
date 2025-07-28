@@ -116,7 +116,7 @@ async def test_auto_resolution():
             try:
                 from orchestrator.integrations.ollama_model import OllamaModel
 
-                model = OllamaModel(model_name="llama3.2:1b", timeout=15)
+                model = OllamaModel(model_name="llama3.2:1b")
                 if model._is_available:
                     print(f"✅ Using Ollama model: {model.name}")
                 else:
@@ -208,7 +208,7 @@ steps:
             try:
                 from orchestrator.integrations.ollama_model import OllamaModel
 
-                model = OllamaModel(model_name="llama3.2:1b", timeout=15)
+                model = OllamaModel(model_name="llama3.2:1b")
                 if not model._is_available:
                     print("❌ No models available")
                     return False

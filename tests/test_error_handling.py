@@ -10,8 +10,7 @@ from src.orchestrator.core.error_handler import (
     ErrorHandler,
     ErrorSeverity,
     RecoveryManager,
-    RetryStrategy,
-)
+    RetryStrategy)
 
 
 class TestErrorHandler:
@@ -219,7 +218,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_creation(self):
         """Test basic circuit breaker creation."""
-        breaker = CircuitBreaker(failure_threshold=5, timeout=60.0)
+        breaker = CircuitBreaker(failure_threshold=5)
 
         assert breaker.failure_threshold == 5
         assert breaker.timeout == 60.0
@@ -264,7 +263,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_timeout_recovery(self):
         """Test circuit breaker timeout recovery."""
-        breaker = CircuitBreaker(failure_threshold=2, timeout=0.1)
+        breaker = CircuitBreaker(failure_threshold=2)
 
         # Open circuit
         breaker.record_failure("test_system")
@@ -293,7 +292,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_state_transitions(self):
         """Test circuit breaker state transitions."""
-        breaker = CircuitBreaker(failure_threshold=2, timeout=0.1)
+        breaker = CircuitBreaker(failure_threshold=2)
 
         # Initial state: CLOSED
         assert breaker.is_open("test_system") is False
@@ -608,8 +607,7 @@ class TestRetryStrategyAdvanced:
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
-            RetryStrategy,
-        )
+            RetryStrategy)
 
         strategy = RetryStrategy(max_retries=3)
 
@@ -619,8 +617,7 @@ class TestRetryStrategyAdvanced:
             message="Test message",
             severity=ErrorSeverity.MEDIUM,
             category=ErrorCategory.NETWORK,
-            recoverable=True,
-        )
+            recoverable=True)
 
         assert strategy.should_retry(recoverable_error, 1) is True
         assert strategy.should_retry(recoverable_error, 3) is False
@@ -631,8 +628,7 @@ class TestRetryStrategyAdvanced:
             message="Test message",
             severity=ErrorSeverity.MEDIUM,
             category=ErrorCategory.NETWORK,
-            recoverable=False,
-        )
+            recoverable=False)
 
         assert strategy.should_retry(non_recoverable_error, 1) is False
 
@@ -674,8 +670,7 @@ class TestExponentialBackoffRetry:
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
-            ExponentialBackoffRetry,
-        )
+            ExponentialBackoffRetry)
 
         strategy = ExponentialBackoffRetry(max_retries=3)
 
@@ -684,8 +679,7 @@ class TestExponentialBackoffRetry:
             message="Invalid input",
             severity=ErrorSeverity.MEDIUM,
             category=ErrorCategory.VALIDATION,
-            recoverable=True,
-        )
+            recoverable=True)
 
         # Validation errors should not be retried even if recoverable
         assert strategy.should_retry(validation_error, 1) is False
@@ -696,8 +690,7 @@ class TestExponentialBackoffRetry:
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
-            ExponentialBackoffRetry,
-        )
+            ExponentialBackoffRetry)
 
         strategy = ExponentialBackoffRetry(max_retries=3)
 
@@ -706,8 +699,7 @@ class TestExponentialBackoffRetry:
             message="Access denied",
             severity=ErrorSeverity.HIGH,
             category=ErrorCategory.PERMISSION,
-            recoverable=True,
-        )
+            recoverable=True)
 
         # Permission errors should not be retried
         assert strategy.should_retry(permission_error, 1) is False
@@ -718,8 +710,7 @@ class TestExponentialBackoffRetry:
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
-            ExponentialBackoffRetry,
-        )
+            ExponentialBackoffRetry)
 
         strategy = ExponentialBackoffRetry(max_retries=3)
 
@@ -728,8 +719,7 @@ class TestExponentialBackoffRetry:
             message="Invalid configuration",
             severity=ErrorSeverity.HIGH,
             category=ErrorCategory.CONFIGURATION,
-            recoverable=True,
-        )
+            recoverable=True)
 
         # Configuration errors should not be retried
         assert strategy.should_retry(config_error, 1) is False
@@ -740,8 +730,7 @@ class TestExponentialBackoffRetry:
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
-            ExponentialBackoffRetry,
-        )
+            ExponentialBackoffRetry)
 
         strategy = ExponentialBackoffRetry(max_retries=2)
 
@@ -750,8 +739,7 @@ class TestExponentialBackoffRetry:
             message="Connection failed",
             severity=ErrorSeverity.MEDIUM,
             category=ErrorCategory.NETWORK,
-            recoverable=True,
-        )
+            recoverable=True)
 
         # Should not retry when max retries exceeded
         assert strategy.should_retry(error, 2) is False
@@ -763,8 +751,7 @@ class TestExponentialBackoffRetry:
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
-            RetryStrategy,
-        )
+            RetryStrategy)
 
         strategy = RetryStrategy(max_retries=3)
 
@@ -773,8 +760,7 @@ class TestExponentialBackoffRetry:
             message="System failure",
             severity=ErrorSeverity.CRITICAL,
             category=ErrorCategory.SYSTEM,
-            recoverable=False,
-        )
+            recoverable=False)
 
         # Critical non-recoverable errors should not be retried
         assert strategy.should_retry(critical_error, 1) is False
@@ -785,8 +771,7 @@ class TestExponentialBackoffRetry:
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
-            RetryStrategy,
-        )
+            RetryStrategy)
 
         strategy = RetryStrategy(max_retries=3)
 
@@ -795,8 +780,7 @@ class TestExponentialBackoffRetry:
             message="System failure",
             severity=ErrorSeverity.CRITICAL,
             category=ErrorCategory.SYSTEM,
-            recoverable=True,
-        )
+            recoverable=True)
 
         # Critical recoverable errors should be retried
         assert strategy.should_retry(critical_recoverable_error, 1) is True

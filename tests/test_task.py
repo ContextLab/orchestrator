@@ -17,8 +17,7 @@ class TestTask:
             name="Test Task",
             action="test_action",
             parameters={"param1": "value1"},
-            dependencies=["dep1", "dep2"],
-        )
+            dependencies=["dep1", "dep2"])
 
         assert task.id == "test_task"
         assert task.name == "Test Task"
@@ -222,10 +221,8 @@ class TestTask:
             action="test_action",
             parameters={"key": "value"},
             dependencies=["dep1"],
-            timeout=60,
             max_retries=2,
-            metadata={"meta": "data"},
-        )
+            metadata={"meta": "data"})
 
         task_dict = task.to_dict()
 

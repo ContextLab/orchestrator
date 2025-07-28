@@ -58,10 +58,8 @@ class TestTask:
             action="complex_action",
             parameters={"param1": "value1", "param2": 42},
             dependencies=["dep1", "dep2"],
-            timeout=300,
             max_retries=5,
-            metadata={"group": "test_group", "version": "1.0"},
-        )
+            metadata={"group": "test_group", "version": "1.0"})
 
         assert task.id == "full_task"
         assert task.name == "Full Test Task"
@@ -292,10 +290,8 @@ class TestTask:
             action="convert",
             parameters={"key": "value"},
             dependencies=["dep1"],
-            timeout=60,
             max_retries=2,
-            metadata={"group": "test"},
-        )
+            metadata={"group": "test"})
 
         task.start()
         task.complete("result")

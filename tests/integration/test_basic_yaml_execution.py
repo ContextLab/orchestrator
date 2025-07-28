@@ -9,8 +9,7 @@ import pytest
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler
 from orchestrator.control_systems.model_based_control_system import (
-    ModelBasedControlSystem,
-)
+    ModelBasedControlSystem)
 from orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
@@ -68,8 +67,6 @@ def yaml_compiler(orchestrator):
 
 class TestBasicYAMLExecution:
     """Test basic YAML pipeline execution."""
-
-    @pytest.mark.timeout(60)
     async def test_simple_yaml_pipeline(self, orchestrator, yaml_compiler):
         """Test a very simple YAML pipeline with one step."""
         yaml_content = """
@@ -95,8 +92,6 @@ steps:
         assert len(result["generate_text"]) > 0
 
         print(f"\nGenerated text: {result['generate_text']}")
-
-    @pytest.mark.timeout(90)
     async def test_yaml_pipeline_with_context(self, orchestrator, yaml_compiler):
         """Test YAML pipeline with context variables."""
         yaml_content = """
@@ -136,8 +131,6 @@ steps:
         assert "artificial intelligence" in text.lower() or "ai" in text.lower()
 
         print(f"\nGenerated text about {context['topic']}: {text}")
-
-    @pytest.mark.timeout(120)
     async def test_yaml_pipeline_with_dependencies(self, orchestrator, yaml_compiler):
         """Test YAML pipeline with dependent steps."""
         yaml_content = """

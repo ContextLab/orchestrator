@@ -89,8 +89,7 @@ class DockerExecutor:
                 remove=True,  # Auto-remove after execution
                 detach=True,
                 stdout=True,
-                stderr=True,
-            )
+                stderr=True)
 
             # Start container and wait for completion
             start_time = time.time()
@@ -257,7 +256,7 @@ time.sleep(10)  # Sleep longer than timeout
 print("This should not appear")
 """
 
-        result = await docker_executor.execute_code(code, "python", timeout=2)
+        result = await docker_executor.execute_code(code, "python")
 
         assert result["success"] is False
         assert (
@@ -297,7 +296,7 @@ except Exception as e:
         code = """
 import urllib.request
 try:
-    response = urllib.request.urlopen("https://httpbin.org/ip", timeout=5)
+    response = urllib.request.urlopen("https://httpbin.org/ip")
     print("NETWORK ACCESS ALLOWED!")
 except Exception as e:
     print(f"Network access blocked: {e}")
@@ -366,8 +365,7 @@ except Exception as e:
             name="test-resource-limits",
             mem_limit="64m",
             cpu_quota=25000,  # 25% CPU
-            pids_limit=50,
-        )
+            pids_limit=50)
 
         container.start()
 
@@ -454,8 +452,7 @@ print("Task {task_id} completed")
                 "alpine:latest",
                 command=["cat", "/mounted/file"],
                 volumes={test_file: {"bind": "/mounted/file", "mode": "ro"}},
-                name="test-volume-mount",
-            )
+                name="test-volume-mount")
 
             container.start()
             result = container.wait()

@@ -73,14 +73,12 @@ class HuggingFaceModelManager:
                     cache_dir=self.cache_dir,
                     trust_remote_code=False,
                     torch_dtype="auto",
-                    device_map="auto" if self._has_gpu() else "cpu",
-                )
+                    device_map="auto" if self._has_gpu() else "cpu")
 
             elif model_type == "text-classification":
                 from transformers import (
                     AutoModelForSequenceClassification,
-                    AutoTokenizer,
-                )
+                    AutoTokenizer)
 
                 tokenizer = AutoTokenizer.from_pretrained(
                     model_name, cache_dir=self.cache_dir
@@ -131,8 +129,7 @@ class HuggingFaceModelManager:
                 num_return_sequences=1,
                 temperature=0.7,
                 do_sample=True,
-                pad_token_id=tokenizer.eos_token_id,
-            )
+                pad_token_id=tokenizer.eos_token_id)
 
         # Decode output
         generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -151,8 +148,7 @@ class HuggingFaceModelManager:
         classifier = pipeline(
             "text-classification",
             model=self.models[model_name],
-            tokenizer=self.tokenizers[model_name],
-        )
+            tokenizer=self.tokenizers[model_name])
 
         # Classify
         results = classifier(text)
@@ -563,16 +559,14 @@ class TestHuggingFaceIntegrationAdvanced:
                 target=download_model_thread,
                 args=(
                     "distilbert-base-uncased-finetuned-sst-2-english",
-                    "text-classification",
-                ),
-            )
+                    "text-classification"))
 
             thread1.start()
             time.sleep(0.1)  # Small delay
             thread2.start()
 
-            thread1.join(timeout=60)  # Wait up to 60 seconds
-            thread2.join(timeout=60)
+            thread1.join()  # Wait up to 60 seconds
+            thread2.join()
 
             # At least one should succeed (or both should handle concurrency gracefully)
             success_count = sum(1 for result in results.values() if result is True)

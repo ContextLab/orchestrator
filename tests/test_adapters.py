@@ -5,8 +5,7 @@ import pytest
 from src.orchestrator.adapters.langgraph_adapter import (
     LangGraphAdapter,
     LangGraphWorkflow,
-    LangGraphNode,
-)
+    LangGraphNode)
 from src.orchestrator.adapters.mcp_adapter import MCPAdapter
 from src.orchestrator.core.pipeline import Pipeline
 from src.orchestrator.core.task import Task
@@ -253,8 +252,7 @@ class TestAdapterIntegration:
             name="analyzer",
             function=analyze_node,
             inputs=["number"],
-            outputs=["analysis"],
-        )
+            outputs=["analysis"])
         workflow.add_node(node)
 
         # Register and execute workflow

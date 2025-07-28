@@ -203,8 +203,7 @@ async def test_real_generation(registry: ModelRegistry):
     criteria = ModelSelectionCriteria(
         prefer_free_models=True,
         speed_preference="fast",
-        selection_strategy="cost_optimized",
-    )
+        selection_strategy="cost_optimized")
 
     try:
         model = await selector.select_model(criteria)

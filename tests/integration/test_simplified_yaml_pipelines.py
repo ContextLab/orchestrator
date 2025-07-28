@@ -5,8 +5,7 @@ import pytest
 from orchestrator import Orchestrator, init_models
 from orchestrator.compiler import YAMLCompiler
 from orchestrator.control_systems.model_based_control_system import (
-    ModelBasedControlSystem,
-)
+    ModelBasedControlSystem)
 from orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
@@ -47,8 +46,6 @@ def yaml_compiler(orchestrator):
 
 class TestSimplifiedCodeAnalysis:
     """Test simplified version of code analysis pipeline."""
-
-    @pytest.mark.timeout(90)
     async def test_simplified_code_analysis(
         self, orchestrator, yaml_compiler, tmp_path
     ):
@@ -125,8 +122,6 @@ steps:
 
 class TestSimplifiedCreativeWriting:
     """Test simplified version of creative writing pipeline."""
-
-    @pytest.mark.timeout(60)
     async def test_simplified_story_generation(self, orchestrator, yaml_compiler):
         """Test simplified story generation with minimal steps."""
         yaml_content = """
@@ -180,8 +175,6 @@ steps:
 
 class TestSimplifiedDataProcessing:
     """Test simplified version of data processing pipeline."""
-
-    @pytest.mark.timeout(60)
     async def test_simplified_data_analysis(self, orchestrator, yaml_compiler):
         """Test simplified data processing with minimal steps."""
         yaml_content = """

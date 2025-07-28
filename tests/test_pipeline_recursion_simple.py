@@ -7,8 +7,7 @@ import yaml
 from src.orchestrator.tools.pipeline_recursion_tools import (
     PipelineExecutorTool,
     RecursionControlTool,
-    RecursionContext,
-)
+    RecursionContext)
 
 
 @pytest.mark.asyncio
@@ -179,8 +178,7 @@ async def test_recursion_control_state_operations():
         action="update_state",
         state_key="name",
         state_value="test_value",
-        context_id="test1",
-    )
+        context_id="test1")
     assert result["success"] is True
     assert result["new_value"] == "test_value"
 
