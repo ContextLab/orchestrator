@@ -1,1 +1,0 @@
-I’m ready to generate the markdown research report. Please provide the JSON data and the search results to parse.
