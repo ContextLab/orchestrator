@@ -21,7 +21,7 @@ steps:
     action: generate_text
     parameters:
       prompt: |
-        Summarize the key findings from these search results about {{topic}}:
+        Analyze these search results about {{topic}} and provide a structured response:
         
         {% for result in search_web.results %}
         {{loop.index}}. {{result.title}}
@@ -29,9 +29,22 @@ steps:
            Source: {{result.url}}
         {% endfor %}
         
-        Provide a concise summary of the main points.
+        Return a JSON object with the following structure:
+        {
+          "topic": "{{topic}}",
+          "overview": "Brief one-sentence overview",
+          "key_points": [
+            "First main point (1-2 sentences)",
+            "Second main point (1-2 sentences)",
+            "Third main point (1-2 sentences)"
+          ],
+          "summary": "Concise 2-3 sentence summary of the main findings"
+        }
+        
+        Ensure the response is valid JSON and contains only factual information from the sources.
       model: <AUTO task="summarize">Select appropriate model for summarization</AUTO>
       max_tokens: 500
+      response_format: "json_object"
     dependencies:
       - search_web
   
@@ -46,9 +59,19 @@ steps:
         **Date:** {{ execution.timestamp }}
         **Sources Reviewed:** {{search_web.total_results}}
         
+        ## Overview
+        
+        {{(summarize_results.result | from_json).overview | default('Research overview not available')}}
+        
+        ## Key Findings
+        
+        {% for point in ((summarize_results.result | from_json).key_points | default([])) %}
+        {{loop.index}}. {{point}}
+        {% endfor %}
+        
         ## Summary
         
-        {{summarize_results.result}}
+        {{(summarize_results.result | from_json).summary | default('Summary not available')}}
         
         ## Sources
         
@@ -63,6 +86,6 @@ steps:
       - summarize_results
 
 outputs:
-  summary: "{{summarize_results.result}}"
+  summary: "{{summarize_results.result | from_json}}"
   search_count: "{{search_web.total_results}}"
   output_file: "{{save_summary.filepath}}"
