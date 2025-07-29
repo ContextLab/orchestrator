@@ -204,6 +204,34 @@ class TemplateRenderer:
         elif filter_expr == "to_json":
             import json
             return json.dumps(value, default=str)
+        elif filter_expr == "from_json":
+            import json
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except Exception:
+                    return value
+            return value
+        elif filter_expr.startswith("date"):
+            # Handle date filter
+            from datetime import datetime
+            format_str = "%Y-%m-%d %H:%M:%S"  # default format
+            
+            # Check if format is specified: date('%Y-%m-%d')
+            match = re.match(r'date\(["\']([^"\']*)["\']', filter_expr)
+            if match:
+                format_str = match.group(1)
+            
+            # Convert value to datetime if it's a string
+            if isinstance(value, str):
+                try:
+                    value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                except Exception:
+                    value = datetime.now()
+            elif not isinstance(value, datetime):
+                value = datetime.now()
+            
+            return value.strftime(format_str)
         elif filter_expr.startswith("default"):
             # Handle both default('value') and default without parentheses
             if "(" in filter_expr:

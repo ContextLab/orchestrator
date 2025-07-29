@@ -351,6 +351,7 @@ class HybridControlSystem(ModelBasedControlSystem):
             }
         )
 
+
         # Flatten previous_results for easier access
         if "previous_results" in context:
             for step_id, result in context["previous_results"].items():
@@ -361,10 +362,23 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # Add pipeline parameters if available
         if "pipeline_metadata" in context and isinstance(context["pipeline_metadata"], dict):
+            # Check for both 'parameters' and 'inputs' keys
             params = context["pipeline_metadata"].get("parameters", {})
             for param_name, param_value in params.items():
                 if param_name not in template_context:
                     template_context[param_name] = param_value
+            
+            # Also add inputs
+            inputs = context["pipeline_metadata"].get("inputs", {})
+            for input_name, input_value in inputs.items():
+                if input_name not in template_context:
+                    template_context[input_name] = input_value
+        
+        # Add pipeline context values (which should contain inputs)
+        if "pipeline_context" in context and isinstance(context["pipeline_context"], dict):
+            for key, value in context["pipeline_context"].items():
+                if key not in template_context:
+                    template_context[key] = value
         
         # Also check for results in the main context (from pipeline execution)
         # Look for any keys that look like task results

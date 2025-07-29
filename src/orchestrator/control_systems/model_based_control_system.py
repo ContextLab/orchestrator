@@ -104,26 +104,59 @@ class ModelBasedControlSystem(ControlSystem):
             # For generate actions, use the prompt parameter
             prompt_text = task.parameters["prompt"]
 
-            # Substitute template variables from previous results
+            # Process templates with Jinja2 for full template support
             if (
                 isinstance(prompt_text, str)
-                and "{" in prompt_text
-                and "}" in prompt_text
+                and "{{" in prompt_text
+                and "}}" in prompt_text
             ):
-                template_vars = re.findall(r"\{(\w+)\}", prompt_text)
-                for var in template_vars:
-                    if var in context.get("previous_results", {}):
-                        result_value = context["previous_results"][var]
-                        # Handle different result types
-                        if isinstance(result_value, dict) and "result" in result_value:
-                            result_value = result_value["result"]
-                        elif (
-                            isinstance(result_value, dict) and "output" in result_value
-                        ):
-                            result_value = result_value["output"]
-                        prompt_text = prompt_text.replace(
-                            f"{{{var}}}", str(result_value)
-                        )
+                try:
+                    from jinja2 import Template, Environment, StrictUndefined
+                    # Create environment with custom filters
+                    env = Environment(undefined=StrictUndefined)
+                    
+                    # Add date filter
+                    from datetime import datetime
+                    def date_filter(value, format="%Y-%m-%d"):
+                        if isinstance(value, str):
+                            try:
+                                value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                            except:
+                                value = datetime.now()
+                        elif not isinstance(value, datetime):
+                            value = datetime.now()
+                        return value.strftime(format)
+                    
+                    env.filters['date'] = date_filter
+                    
+                    # Add other common filters
+                    env.filters['slugify'] = lambda v: str(v).lower().replace(' ', '-').replace('_', '-')
+                    
+                    # Import JSON for from_json filter
+                    import json
+                    env.filters['from_json'] = lambda v: json.loads(v) if isinstance(v, str) else v
+                    env.filters['to_json'] = lambda v: json.dumps(v, default=str)
+                    
+                    template = env.from_string(prompt_text)
+                    prompt_text = template.render(**context)
+                except Exception as e:
+                    # Fall back to simple substitution if Jinja2 fails
+                    print(f">> Template rendering error: {e}")
+                    # Try simple variable substitution as fallback
+                    template_vars = re.findall(r"\{\{(\w+)\}\}", prompt_text)
+                    for var in template_vars:
+                        if var in context:
+                            result_value = context[var]
+                            # Handle different result types
+                            if isinstance(result_value, dict) and "result" in result_value:
+                                result_value = result_value["result"]
+                            elif (
+                                isinstance(result_value, dict) and "output" in result_value
+                            ):
+                                result_value = result_value["output"]
+                            prompt_text = prompt_text.replace(
+                                f"{{{{{var}}}}}", str(result_value)
+                            )
 
             prompt = prompt_text
         else:

@@ -126,8 +126,8 @@ class YAMLCompiler:
             else:
                 resolved = processed
 
-            # Step 6: Build pipeline object
-            return self._build_pipeline(resolved)
+            # Step 6: Build pipeline object with context
+            return self._build_pipeline(resolved, merged_context)
 
         except Exception as e:
             raise YAMLCompilerError(f"Failed to compile YAML: {e}") from e
@@ -210,7 +210,10 @@ class YAMLCompiler:
             TemplateRenderError: If template rendering fails
         """
 
-        def process_value(value: Any) -> Any:
+        def process_value(value: Any, path: List[str] = None) -> Any:
+            if path is None:
+                path = []
+                
             if isinstance(value, str):
                 # Skip processing special variables that start with $
                 if any(
@@ -226,15 +229,29 @@ class YAMLCompiler:
                 ):
                     return value  # Keep as-is for control flow handling
 
+                # Skip processing prompts and content fields that may reference step results
+                # These should be rendered at runtime, not compile time
+                current_key = path[-1] if path else ""
+                parent_key = path[-2] if len(path) >= 2 else ""
+                
+                # Skip template processing for:
+                # 1. prompt parameters in steps
+                # 2. content parameters in filesystem operations
+                # 3. Any field that references step results
+                if current_key in ["prompt", "content"] and parent_key == "parameters":
+                    # Check if it references step results
+                    if any(step_ref in value for step_ref in ["search_web", "summarize_results", "extract_", "analyze_", "generate_"]):
+                        return value  # Keep as-is for runtime rendering
+                
                 # If the string contains templates, process them individually
                 if "{{" in value and "}}" in value:
                     return self._process_mixed_templates(value, context)
                 else:
                     return value
             elif isinstance(value, dict):
-                return {k: process_value(v) for k, v in value.items()}
+                return {k: process_value(v, path + [k]) for k, v in value.items()}
             elif isinstance(value, list):
-                return [process_value(item) for item in value]
+                return [process_value(item, path) for item in value]
             return value
 
         return process_value(pipeline_def)
@@ -310,12 +327,13 @@ class YAMLCompiler:
 
         return resolved_content
 
-    def _build_pipeline(self, pipeline_def: Dict[str, Any]) -> Pipeline:
+    def _build_pipeline(self, pipeline_def: Dict[str, Any], compile_context: Dict[str, Any] = None) -> Pipeline:
         """
         Build Pipeline object from definition.
 
         Args:
             pipeline_def: Processed pipeline definition
+            compile_context: Context used during compilation (includes inputs)
 
         Returns:
             Pipeline object
@@ -325,7 +343,8 @@ class YAMLCompiler:
         pipeline_name = pipeline_def.get("name", pipeline_id)
         version = pipeline_def.get("version", "1.0.0")
         description = pipeline_def.get("description")
-        context = pipeline_def.get("context", {})
+        # Use compile_context if provided, otherwise fallback to pipeline_def context
+        context = compile_context or pipeline_def.get("context", {})
         metadata = pipeline_def.get("metadata", {})
 
         # Include inputs and outputs in metadata for runtime access

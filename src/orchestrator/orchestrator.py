@@ -126,11 +126,15 @@ class Orchestrator:
         context = {
             "pipeline_id": pipeline.id,
             "pipeline_metadata": pipeline.metadata,  # Include pipeline metadata for model selection
+            "pipeline_context": pipeline.context,  # Include pipeline context with inputs
             "execution_id": execution_id,
             "checkpoint_enabled": checkpoint_enabled,
             "max_retries": max_retries,
             "start_time": time.time(),
         }
+        
+        # Also merge pipeline context directly into execution context for backward compatibility
+        context.update(pipeline.context)
 
         try:
             # Register pipeline as running

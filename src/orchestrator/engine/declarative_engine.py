@@ -190,8 +190,11 @@ class DeclarativePipelineEngine:
 
         # Add results from individual steps for easy access
         for step_id, result in results.items():
+            # Add the full step result for template access
+            step_context[step_id] = result
+            
             if isinstance(result, dict):
-                # Extract common result fields
+                # Also extract common result fields for backward compatibility
                 if "result" in result:
                     step_context[f"{step_id}_result"] = result["result"]
                 if "content" in result:
