@@ -28,7 +28,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "outputs/simple_data_processing/output_{{ execution.timestamp | slugify }}.csv"
+      path: "examples/outputs/simple_data_processing/output_{{ execution.timestamp | slugify }}.csv"
       content: "{{ process_data.processed_data }}"
     dependencies:
       - process_data
@@ -37,7 +37,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "outputs/simple_data_processing/report_{{ execution.timestamp | slugify }}.md"
+      path: "examples/outputs/simple_data_processing/report_{{ execution.timestamp | slugify }}.md"
       content: |
         # Simple Data Processing Report
         
@@ -48,7 +48,7 @@ steps:
         
         - **Input File:** data/input.csv
         - **Filter Applied:** status = "active"
-        - **Output File:** outputs/simple_data_processing/output_{{ execution.timestamp | slugify }}.csv
+        - **Output File:** examples/outputs/simple_data_processing/output_{{ execution.timestamp | slugify }}.csv
         
         ## Results
         
