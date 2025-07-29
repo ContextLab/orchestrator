@@ -209,9 +209,10 @@ class HybridControlSystem(ModelBasedControlSystem):
             for key, value in task.parameters.items():
                 if isinstance(value, str):
                     # Always resolve templates for string values
-                    resolved_params[key] = self._resolve_templates(
+                    resolved_value = self._resolve_templates(
                         value, template_context
                     )
+                    resolved_params[key] = resolved_value
                 else:
                     resolved_params[key] = value
 
@@ -232,9 +233,19 @@ class HybridControlSystem(ModelBasedControlSystem):
             for key, value in task.parameters.items():
                 if isinstance(value, str):
                     # Always resolve templates for string values
-                    resolved_params[key] = self._resolve_templates(
+                    resolved_value = self._resolve_templates(
                         value, template_context
                     )
+                    # Debug: Check if content parameter still has unrendered templates
+                    if key == "content" and ("{{" in resolved_value or "{%" in resolved_value):
+                        print(f">> WARNING: Content still has unrendered templates after resolution")
+                        print(f">> First unrendered template check:")
+                        print(f">> - summarize_results in context: {'summarize_results' in template_context}")
+                        if 'summarize_results' in template_context:
+                            print(f">> - summarize_results type: {type(template_context['summarize_results'])}")
+                            if isinstance(template_context['summarize_results'], dict):
+                                print(f">> - summarize_results keys: {list(template_context['summarize_results'].keys())}")
+                    resolved_params[key] = resolved_value
                 else:
                     resolved_params[key] = value
 
@@ -404,9 +415,61 @@ class HybridControlSystem(ModelBasedControlSystem):
         return template_context
 
     def _resolve_templates(self, text: str, context: Dict[str, Any]) -> str:
-        """Resolve template variables in text."""
-        # Use the TemplateRenderer for consistent behavior
-        return TemplateRenderer.render(text, context)
+        """Resolve template variables in text using Jinja2."""
+        try:
+            from jinja2 import Template, Environment, StrictUndefined
+            
+            # Create Jinja2 environment with custom filters
+            env = Environment(undefined=StrictUndefined)
+            
+            # Add custom filters
+            from datetime import datetime
+            import json
+            
+            # Date filter
+            def date_filter(value, format="%Y-%m-%d %H:%M:%S"):
+                if isinstance(value, str):
+                    try:
+                        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                    except:
+                        value = datetime.now()
+                elif not isinstance(value, datetime):
+                    value = datetime.now()
+                return value.strftime(format)
+            
+            # JSON filters
+            def from_json_filter(value):
+                if isinstance(value, str):
+                    try:
+                        return json.loads(value)
+                    except:
+                        return value
+                return value
+            
+            # Register filters
+            env.filters['date'] = date_filter
+            env.filters['from_json'] = from_json_filter
+            env.filters['to_json'] = lambda v: json.dumps(v, default=str)
+            env.filters['slugify'] = lambda v: str(v).lower().replace(' ', '-').replace('_', '-')
+            env.filters['default'] = lambda v, d='': v if v is not None else d
+            
+            # Render template
+            template = env.from_string(text)
+            return template.render(**context)
+        except Exception as e:
+            # If Jinja2 fails, it might be due to missing data
+            # Try to return the original text with basic variable substitution
+            result = text
+            
+            # Do basic variable substitution for common patterns
+            for key, value in context.items():
+                if isinstance(value, (str, int, float)):
+                    result = result.replace(f"{{{{{key}}}}}", str(value))
+            
+            # If we still have unrendered templates, return original
+            if "{{" in result or "{%" in result:
+                return text
+            return result
 
     async def _handle_data_processing(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle data processing operations."""
