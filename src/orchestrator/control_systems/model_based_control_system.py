@@ -144,8 +144,12 @@ class ModelBasedControlSystem(ControlSystem):
                     if "previous_results" in context:
                         for step_id, result in context["previous_results"].items():
                             if step_id not in template_context:
+                                # Check if this is a tool result that should preserve its structure
+                                if isinstance(result, dict) and any(key in result for key in ['results', 'total_results', 'query', 'search_time', 'backend']):
+                                    # This looks like a web search result - preserve its structure
+                                    template_context[step_id] = type("Result", (), result)()
                                 # Wrap results to have .result attribute for template compatibility
-                                if isinstance(result, str):
+                                elif isinstance(result, str):
                                     # Create an object with a result attribute
                                     template_context[step_id] = type(
                                         "Result", (), {"result": result}
