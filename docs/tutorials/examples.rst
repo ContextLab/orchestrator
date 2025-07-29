@@ -1,190 +1,184 @@
 Real-World Examples
 ====================
 
-This section provides comprehensive, real-world examples that demonstrate the depth and breadth of the Orchestrator toolbox. Each example includes complete implementations with detailed explanations, showing how to solve complex problems using the framework.
+This section provides comprehensive, real-world examples that demonstrate the depth and breadth of the Orchestrator framework. Each example includes complete implementations showing how to solve complex problems using pipelines.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Complete Examples
+Current Examples
+----------------
 
-   examples/research_assistant
-   examples/code_analysis_suite
-   examples/content_creation_pipeline
-   examples/data_processing_workflow
-   examples/multi_agent_collaboration
-   examples/automated_testing_system
-   examples/document_intelligence
-   examples/creative_writing_assistant
-   examples/financial_analysis_bot
-   examples/interactive_chat_bot
-   examples/scalable_customer_service_agent
-   examples/customer_support_automation
-
-Example Categories
-------------------
-
-Research & Analysis
-^^^^^^^^^^^^^^^^^^^
-
-.. grid:: 1 2 2 2
-
-    .. grid-item-card:: 🔬 Research Assistant
-        :link: examples/research_assistant
-        :link-type: doc
-
-        Complete research pipeline with web search, analysis, and report generation
-        
-        **Level:** Intermediate
-        **Duration:** 45-60 minutes
-
-    .. grid-item-card:: 📊 Financial Analysis Bot
-        :link: examples/financial_analysis_bot
-        :link-type: doc
-
-        Automated financial data analysis with visualization and insights
-        
-        **Level:** Advanced
-        **Duration:** 60-75 minutes
-
-    .. grid-item-card:: 📄 Document Intelligence
-        :link: examples/document_intelligence
-        :link-type: doc
-
-        Extract insights from documents using multi-modal AI
-        
-        **Level:** Intermediate
-        **Duration:** 45-60 minutes
-
-Development & Testing
-^^^^^^^^^^^^^^^^^^^^^
-
-.. grid:: 1 2 2 2
-
-    .. grid-item-card:: 🔍 Code Analysis Suite
-        :link: examples/code_analysis_suite
-        :link-type: doc
-
-        Comprehensive code analysis, review, and optimization pipeline
-        
-        **Level:** Advanced
-        **Duration:** 60-90 minutes
-
-    .. grid-item-card:: 🧪 Automated Testing System
-        :link: examples/automated_testing_system
-        :link-type: doc
-
-        Generate and execute comprehensive test suites automatically
-        
-        **Level:** Advanced
-        **Duration:** 75-90 minutes
-
-Content & Communication
+Core Framework Features
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. grid:: 1 2 2 2
+**AUTO Tags Demonstration** (``auto_tags_demo.yaml``)
+  Demonstrates the power of AUTO tags for dynamic intelligence in pipelines. Shows how to use AUTO tags for model selection, parameter tuning, and decision making.
 
-    .. grid-item-card:: 📝 Content Creation Pipeline
-        :link: examples/content_creation_pipeline
-        :link-type: doc
+**Model Routing Demo** (``model_routing_demo.yaml``)
+  Showcases intelligent model routing with cost optimization, performance considerations, and domain-specific selection.
 
-        Multi-format content generation with optimization and distribution
-        
-        **Level:** Intermediate
-        **Duration:** 45-60 minutes
+**LLM Routing Pipeline** (``llm_routing_pipeline.yaml``)
+  Advanced example of routing between different LLMs based on task requirements, capabilities, and availability.
 
-    .. grid-item-card:: ✍️ Creative Writing Assistant
-        :link: examples/creative_writing_assistant
-        :link-type: doc
+Control Flow Examples
+^^^^^^^^^^^^^^^^^^^^
 
-        AI-powered creative writing with character development and plot generation
-        
-        **Level:** Intermediate
-        **Duration:** 60-75 minutes
+**Conditional Execution** (``control_flow_conditional.yaml``)
+  Basic if/else branching in pipelines based on conditions and AUTO tag evaluations.
 
-    .. grid-item-card:: 💬 Interactive Chat Bot
-        :link: examples/interactive_chat_bot
-        :link-type: doc
+**For Loop Processing** (``control_flow_for_loop.yaml``)
+  Iterating over collections with for-each loops, including dynamic item processing.
 
-        Real-time conversational AI with context awareness and memory
-        
-        **Level:** Intermediate
-        **Duration:** 45-60 minutes
+**While Loop Control** (``control_flow_while_loop.yaml``)
+  Conditional looping with while constructs and AUTO-resolved termination conditions.
 
-    .. grid-item-card:: 🎧 Customer Support Automation
-        :link: examples/customer_support_automation
-        :link-type: doc
+**Dynamic Flow Control** (``control_flow_dynamic.yaml``)
+  Advanced flow control with goto-like jumps and dynamic step execution.
 
-        Intelligent customer support with multi-channel integration
-        
-        **Level:** Advanced
-        **Duration:** 75-90 minutes
+**Advanced Control Flow** (``control_flow_advanced.yaml``)
+  Combines multiple control flow features in a complex pipeline demonstrating real-world usage.
 
-    .. grid-item-card:: 📞 Scalable Customer Service Agent
-        :link: examples/scalable_customer_service_agent
-        :link-type: doc
+Data Processing
+^^^^^^^^^^^^^^^
 
-        Enterprise-grade customer service with intelligent routing and escalation
-        
-        **Level:** Expert
-        **Duration:** 90-120 minutes
+**Simple Data Processing** (``simple_data_processing.yaml``)
+  Basic data loading, transformation, and analysis pipeline suitable for beginners.
 
-Data & Processing
-^^^^^^^^^^^^^^^^^
+**Data Processing Pipeline** (``data_processing_pipeline.yaml``)
+  Comprehensive data processing with validation, transformation, and reporting.
 
-.. grid:: 1 2 2 2
+**Recursive Data Processing** (``recursive_data_processing.yaml``)
+  Demonstrates pipeline recursion for hierarchical data processing and analysis.
 
-    .. grid-item-card:: 🔄 Data Processing Workflow
-        :link: examples/data_processing_workflow
-        :link-type: doc
+**Modular Analysis Pipeline** (``modular_analysis_pipeline.yaml``)
+  Shows how to build modular, reusable pipeline components with sub-pipelines.
 
-        Large-scale data processing with validation and transformation
-        
-        **Level:** Advanced
-        **Duration:** 60-90 minutes
+Web and Research
+^^^^^^^^^^^^^^^^
 
-    .. grid-item-card:: 🤖 Multi-Agent Collaboration
-        :link: examples/multi_agent_collaboration
-        :link-type: doc
+**Web Research Pipeline** (``web_research_pipeline.yaml``)
+  Automated web research with search, content extraction, and summarization.
 
-        Coordinated multi-agent system for complex problem solving
-        
-        **Level:** Expert
-        **Duration:** 90-120 minutes
+**Working Web Search** (``working_web_search.yaml``)
+  Simple but effective web search implementation with result processing.
 
-Quick Reference
----------------
+**Research Pipeline** (``research_pipeline.yaml``)
+  Full research automation including literature review, analysis, and report generation.
 
-**Difficulty Levels:**
-- **Beginner:** Basic concepts, simple implementations
-- **Intermediate:** Real-world complexity, multiple components
-- **Advanced:** Production-ready, performance optimization
-- **Expert:** Complex architectures, custom extensions
+Creative and Multimodal
+^^^^^^^^^^^^^^^^^^^^^^^
 
-**Prerequisites:**
-- Basic Python knowledge
-- Familiarity with async/await
-- Understanding of AI/ML concepts
+**Creative Image Pipeline** (``creative_image_pipeline.yaml``)
+  AI-powered image generation with prompt engineering and style control.
+
+**Multimodal Processing** (``multimodal_processing.yaml``)
+  Handles multiple input types (text, images, audio) in a unified pipeline.
+
+Interactive and Integration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Interactive Pipeline** (``interactive_pipeline.yaml``)
+  User interaction with prompts, confirmations, and dynamic flow based on responses.
+
+**Terminal Automation** (``terminal_automation.yaml``)
+  Automates terminal commands and system operations with safety checks.
+
+**MCP Integration Pipeline** (``mcp_integration_pipeline.yaml``)
+  Demonstrates Model Context Protocol (MCP) tool integration.
+
+**MCP Memory Workflow** (``mcp_memory_workflow.yaml``)
+  Advanced MCP usage with persistent memory and context management.
+
+Validation and Testing
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Validation Pipeline** (``validation_pipeline.yaml``)
+  Data validation with schema enforcement and error reporting.
+
+**Test Validation Pipeline** (``test_validation_pipeline.yaml``)
+  Automated testing framework with validation and reporting.
+
+Sub-Pipelines
+^^^^^^^^^^^^^
+
+**Statistical Analysis** (``sub_pipelines/statistical_analysis.yaml``)
+  Reusable statistical analysis component that can be included in other pipelines.
+
+Pipeline Templates
+^^^^^^^^^^^^^^^^^^
+
+**Code Optimization** (``pipelines/code_optimization.yaml``)
+  Template for code analysis, optimization, and refactoring workflows.
+
+**Data Processing Template** (``pipelines/data_processing.yaml``)
+  Reusable template for data processing workflows.
+
+**Research Report Template** (``pipelines/research-report-template.yaml``)
+  Comprehensive template for generating research reports with citations.
+
+**Simple Research** (``pipelines/simple_research.yaml``)
+  Minimal research pipeline template for quick investigations.
+
+Running Examples
+----------------
+
+To run any example pipeline::
+
+    # Using the orchestrator CLI
+    orchestrator run examples/[pipeline-name].yaml
+
+    # With custom inputs
+    orchestrator run examples/data_processing_pipeline.yaml --input data_file=mydata.csv
+
+    # Using Python API
+    import orchestrator
+    
+    pipeline = orchestrator.compile("examples/web_research_pipeline.yaml")
+    results = await pipeline.run(topic="quantum computing")
+
+Example Structure
+-----------------
+
+Each example follows a consistent structure:
+
+1. **Metadata**: Pipeline ID, name, and description
+2. **Inputs**: Required and optional parameters
+3. **Steps**: Task definitions with actions and parameters
+4. **Control Flow**: Conditionals, loops, and dependencies
+5. **Outputs**: Result formatting and file generation
+
+Best Practices
+--------------
+
+When working with examples:
+
+- Start with simple examples and progress to complex ones
+- Modify parameters to understand their effects
+- Use examples as templates for your own pipelines
+- Check generated outputs in the ``outputs/`` directory
+- Enable debug mode for detailed execution logs
+
+Prerequisites
+-------------
+
+Before running examples, ensure you have:
+
 - Orchestrator framework installed
+- API keys configured for required services
+- Python 3.8 or higher
+- Required tools installed (e.g., playwright for web automation)
 
-**What's Included:**
-- Complete, runnable code examples
-- Step-by-step explanations
-- Configuration files and templates
-- Performance optimization tips
-- Error handling strategies
-- Testing and validation approaches
+Getting Help
+------------
 
-Getting Started with Examples
-------------------------------
+If you encounter issues:
 
-1. **Choose Your Path**: Select examples based on your use case and experience level
-2. **Set Up Environment**: Follow the setup instructions in each example
-3. **Run the Code**: Execute examples step by step
-4. **Experiment**: Modify parameters and configurations
-5. **Adapt**: Use examples as templates for your own projects
-
-.. tip::
-   Each example includes a "Quick Start" section to get you running immediately, plus detailed explanations for deeper understanding.
+1. Check the example's comments for requirements
+2. Verify your API keys are configured
+3. Run with ``--debug`` flag for detailed logs
+4. See the troubleshooting guide
+5. Open an issue on GitHub
 
 .. note::
-   All examples are tested with real models and include both development and production configurations.
+   All examples use real AI models and tools. Ensure you have appropriate API keys configured before running examples that require external services.
+
+.. tip::
+   Examples are designed to work out-of-the-box. If an example requires specific setup, it will be noted in the pipeline's description.

@@ -131,40 +131,23 @@ steps:
           
   # Step 6: Statistical analysis
   - id: analyze_trends
-    tool: llm-analyze
-    action: analyze
+    action: analyze_text
     parameters:
-      content: "{{ aggregate_monthly.result }}"
+      text: "{{ aggregate_monthly.result }}"
       analysis_type: "statistical_trends"
-      schema:
-        type: object
-        properties:
-          growth_rate:
-            type: number
-          top_products:
-            type: array
-            items:
-              type: object
-              properties:
-                product:
-                  type: string
-                revenue:
-                  type: number
-          seasonal_patterns:
-            type: array
-            items:
-              type: string
-          anomalies:
-            type: array
-            items:
-              type: object
-              properties:
-                month:
-                  type: string
-                metric:
-                  type: string
-                description:
-                  type: string
+      prompt: |
+        Analyze these monthly sales aggregations and provide:
+        1. Overall growth rate (as percentage)
+        2. Top 5 products by revenue
+        3. Any seasonal patterns observed
+        4. Any anomalies or unusual trends
+        
+        Format your response as JSON with these fields:
+        - growth_rate: number
+        - top_products: array of {product: string, revenue: number}
+        - seasonal_patterns: array of strings describing patterns
+        - anomalies: array of {month: string, metric: string, description: string}
+      model: <AUTO>Choose a model for data analysis</AUTO>
                   
   # Step 7: Create pivot table
   - id: pivot_analysis
@@ -182,21 +165,23 @@ steps:
       
   # Step 8: Quality check
   - id: quality_check
-    tool: llm-analyze
-    action: analyze
+    action: analyze_text
     parameters:
-      content: |
+      text: |
         Original data profile: {{ profile_data.result }}
         Validation results: {{ validate_schema.result }}
         Rows processed: {{ clean_data.row_count }}
       analysis_type: "quality_assessment"
-      schema:
-        type: object
-        properties:
-          quality_score:
-            type: number
-            minimum: 0
-            maximum: 1
+      prompt: |
+        Based on the data profile and validation results, assess the overall data quality.
+        Provide a quality score between 0 and 1, where:
+        - 1.0 = Perfect quality (no issues)
+        - 0.8-0.99 = High quality (minor issues)
+        - 0.6-0.79 = Acceptable quality (some issues but usable)
+        - Below 0.6 = Poor quality (significant issues)
+        
+        Also list any data quality issues found and recommendations.
+      model: <AUTO>Choose a model for quality assessment</AUTO>
           issues_found:
             type: array
             items:

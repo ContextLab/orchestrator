@@ -22,26 +22,30 @@ steps:
       
   # Step 2: Choose analysis method dynamically
   - id: select_analysis
-    tool: llm-generate
-    action: generate
+    action: generate_text
     parameters:
       prompt: |
         Given this data sample:
         {{ analyze_data_type.content | truncate(500) }}
         
         The analysis goal is: {{ analysis_goal }}
-      analysis_method: "<AUTO>Based on the data structure and analysis goal, choose the best method: 'statistical', 'ml_clustering', 'time_series', or 'correlation'</AUTO>"
-      confidence_threshold: <AUTO>What confidence threshold (0.0-1.0) is appropriate for this analysis?</AUTO>
+        
+        Based on the data structure and analysis goal, determine:
+        1. The best analysis method: 'statistical', 'ml_clustering', 'time_series', or 'correlation'
+        2. An appropriate confidence threshold (0.0-1.0)
+      model: <AUTO>Choose an appropriate model for analysis planning</AUTO>
       
   # Step 3: Determine processing requirements
   - id: assess_complexity
-    tool: llm-analyze
-    action: analyze
+    action: analyze_text
     parameters:
-      content: "{{ analyze_data_type.content }}"
+      text: "{{ analyze_data_type.content }}"
       analysis_type: "complexity"
-      processing_power: "<AUTO>Based on data size and complexity, what processing tier is needed: 'light', 'standard', or 'heavy'?</AUTO>"
-      parallel_tasks: <AUTO>How many parallel tasks would optimize this analysis? Choose between 1-10</AUTO>
+      prompt: |
+        Analyze this data and determine:
+        1. Processing power needed: 'light', 'standard', or 'heavy'
+        2. Optimal number of parallel tasks (1-10)
+      model: <AUTO>Choose a model for complexity assessment</AUTO>
       
   # Step 4: Dynamic error handling
   - id: process_data
@@ -56,14 +60,18 @@ steps:
       
   # Step 5: Generate insights with dynamic depth
   - id: generate_insights
-    tool: llm-analyze
-    action: analyze
+    action: analyze_text
     parameters:
-      content: "{{ process_data.result }}"
-      analysis_type: "{{ select_analysis.analysis_method }}"
-      insight_depth: "<AUTO>Given the executive summary preference, how detailed should insights be: 'high_level', 'balanced', or 'detailed'?</AUTO>"
-      visualization_needed: <AUTO>Would visualizations enhance this analysis? Answer 'yes' or 'no'</AUTO>
-      key_metrics: <AUTO>List 3-5 key metrics to highlight based on the data</AUTO>
+      text: "{{ process_data.result }}"
+      analysis_type: "insights"
+      prompt: |
+        Analyze this processed data for {{ analysis_goal }}.
+        
+        Provide:
+        1. Key insights (depth should match executive summary preference)
+        2. Whether visualizations would enhance the analysis (yes/no)
+        3. List 3-5 key metrics to highlight
+      model: <AUTO>Choose a model for insight generation</AUTO>
       
   # Step 6: Conditional visualization
   - id: create_charts
@@ -106,18 +114,17 @@ steps:
         
   # Step 8: Determine distribution list
   - id: distribution_plan
-    tool: llm-generate
-    action: generate
+    action: generate_text
     parameters:
-      prompt: "Based on the analysis of {{ analysis_goal }}"
-      recipients: <AUTO>Who should receive this report? List stakeholder groups</AUTO>
-      priority: "<AUTO>What priority level: 'urgent', 'high', 'normal', or 'low'?</AUTO>"
-      follow_up: <AUTO>What follow-up actions are recommended? List 2-3 items</AUTO>
+      prompt: |
+        Based on the analysis of {{ analysis_goal }}, determine:
+        1. Who should receive this report (list stakeholder groups)
+        2. Priority level: 'urgent', 'high', 'normal', or 'low'
+        3. Recommended follow-up actions (list 2-3 items)
+      model: <AUTO>Choose a model for distribution planning</AUTO>
 
 # Output definition
 outputs:
   report_path: "{{ create_report.filepath }}"
-  analysis_method: "{{ select_analysis.analysis_method }}"
-  confidence_level: "{{ select_analysis.confidence_threshold }}"
-  distribution_list: "{{ distribution_plan.recipients }}"
-  next_steps: "{{ distribution_plan.follow_up }}"
+  analysis_results: "{{ generate_insights.result }}"
+  distribution_plan: "{{ distribution_plan.result }}"

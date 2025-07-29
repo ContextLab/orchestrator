@@ -13,29 +13,28 @@ inputs:
 steps:
   # Step 1: Analyze task complexity to route appropriately
   - id: assess_requirements
-    tool: llm-router
-    action: analyze_requirements
+    tool: multi-model-routing
+    action: route
     parameters:
       tasks:
-        - name: "document_summary"
-          input_size: 5000
-          output_size: 200
-          complexity: "simple"
-        - name: "code_generation"
-          input_size: 500
-          output_size: 1000
-          complexity: "complex"
-        - name: "data_analysis"
-          input_size: 10000
-          output_size: 500
-          complexity: "moderate"
-      budget: "{{ task_budget }}"
-      priority: "{{ priority }}"
+        - task: "Summarize this document in 2-3 sentences"
+          context: |
+            Artificial intelligence continues to revolutionize industries worldwide.
+            From healthcare to finance, AI applications are becoming increasingly sophisticated.
+            Machine learning models can now process vast amounts of data in real-time,
+            enabling predictive analytics and automated decision-making at unprecedented scales.
+        - task: "Write a Python function to calculate fibonacci numbers"
+          context: "Should be efficient and handle large inputs"
+        - task: "Analyze sales data trends"
+          context: "Q4 2024 sales data showing 15% growth"
+      routing_strategy: "{{ priority }}"  # Maps to cost_optimized, balanced, or quality_optimized
+      constraints:
+        total_budget: "{{ task_budget }}"
+        max_latency: 30.0
       
   # Step 2: Simple task with cheap model
   - id: summarize_document
-    tool: llm-generate
-    action: generate
+    action: generate_text
     parameters:
       prompt: |
         Summarize this document in 2-3 sentences:
@@ -44,170 +43,106 @@ steps:
         From healthcare to finance, AI applications are becoming increasingly sophisticated.
         Machine learning models can now process vast amounts of data in real-time,
         enabling predictive analytics and automated decision-making at unprecedented scales.
-      # Let router choose based on requirements
-    requires_model:
-      cost_tier: "low"
-      task_type: "summarization"
-      max_cost_per_1k_tokens: 0.002
+      # Use routing recommendation
+      model: "{{ assess_requirements.recommendations[0].model }}"
+    dependencies:
+      - assess_requirements
       
-  # Step 3: Complex task requiring powerful model
+  # Step 3: Complex task with specialized model
   - id: generate_code
-    tool: llm-generate
-    action: generate
+    action: generate_text
     parameters:
       prompt: |
-        Write a Python class for a binary search tree with the following methods:
-        - insert(value)
-        - search(value) 
-        - delete(value)
-        - in_order_traversal()
-        Include proper error handling and docstrings.
-    requires_model:
-      expertise: ["coding", "algorithms"]
-      capabilities: ["code_generation"]
-      min_quality_score: 0.9
+        Write a Python function to calculate fibonacci numbers.
+        Requirements:
+        - Should be efficient and handle large inputs
+        - Include type hints
+        - Add docstring
+        - Handle edge cases
+      # Use routing recommendation
+      model: "{{ assess_requirements.recommendations[1].model }}"
+    dependencies:
+      - assess_requirements
       
-  # Step 4: Parallel analysis with different models
-  - id: analyze_financial
-    tool: llm-analyze
-    action: analyze
+  # Step 4: Data analysis with balanced model
+  - id: analyze_data
+    action: analyze_text
     parameters:
-      content: |
-        Q3 Financial Results:
-        - Revenue: $45.2M (up 23% YoY)
-        - Operating costs: $32.1M (up 18% YoY)  
-        - Net profit: $13.1M
-        - Customer acquisition cost: $127 (down from $145)
-      analysis_type: "financial_metrics"
-    requires_model:
-      expertise: ["finance", "analysis"]
-      response_format: "json"
+      text: |
+        Q4 2024 Sales Report:
+        - Total Revenue: $2.5M (15% growth YoY)
+        - Units Sold: 15,000 (12% growth YoY)
+        - Average Order Value: $167 (3% growth YoY)
+        - Top Product Categories: Electronics (45%), Home & Garden (30%), Clothing (25%)
+      analysis_type: "trends"
+      prompt: "Analyze the sales data trends and provide 3 key insights"
+      # Use routing recommendation
+      model: "{{ assess_requirements.recommendations[2].model }}"
+    dependencies:
+      - assess_requirements
       
-  - id: analyze_technical
-    tool: llm-analyze
-    action: analyze  
+  # Step 5: Cost optimization demonstration
+  - id: batch_processing
+    tool: multi-model-routing
+    action: optimize_batch
     parameters:
-      content: |
-        System Performance Metrics:
-        - API latency: 45ms average (p99: 120ms)
-        - Error rate: 0.02%
-        - Uptime: 99.97%
-        - Database queries/sec: 10,000
-      analysis_type: "technical_performance"
-    requires_model:
-      expertise: ["technical", "devops"]
-      structured_output: true
+      tasks:
+        - "Translate 'Hello World' to Spanish"
+        - "Translate 'Good morning' to French"
+        - "Translate 'Thank you' to German"
+        - "Translate 'Goodbye' to Italian"
+      optimization_goal: "minimize_cost"
+      constraints:
+        max_budget_per_task: 0.05
+    dependencies:
+      - analyze_data
       
-  # Step 5: Ensemble approach for critical decision
-  - id: investment_decision
-    tool: llm-router
-    action: ensemble
-    parameters:
-      prompt: |
-        Based on the financial and technical analysis:
-        Financial: {{ analyze_financial.result }}
-        Technical: {{ analyze_technical.result }}
-        
-        Should we increase investment in this product? Consider ROI and scalability.
-      ensemble_size: 3  # Use 3 different models
-      consensus_threshold: 0.66  # 2/3 must agree
-      model_diversity: "high"  # Use different model families
-      
-  # Step 6: Fallback strategy for unreliable task
-  - id: market_prediction
-    tool: llm-analyze
-    action: analyze
-    parameters:
-      content: "Predict market trends for next quarter based on current data"
-      analysis_type: "prediction"
-    requires_model:
-      capabilities: ["forecasting", "market_analysis"]
-      preference: "specialized"
-    on_failure: continue
-    
-  - id: fallback_prediction
-    condition: "{{ market_prediction.status == 'failed' }}"
-    tool: llm-generate
-    action: generate
-    parameters:
-      prompt: "Provide general market outlook based on historical patterns"
-    requires_model:
-      cost_tier: "low"  # Use cheaper model for fallback
-      basic_capability: "text_generation"
-      
-  # Step 7: Local model for sensitive data
-  - id: process_private_data
-    tool: llm-analyze
-    action: analyze
-    parameters:
-      content: "{{ sensitive_customer_data }}"
-      analysis_type: "pii_detection"
-    requires_model:
-      deployment: "local"  # Force local model
-      max_model_size_gb: 8  # Fit in available RAM
-      no_external_api: true
-      
-  # Step 8: Show routing decisions
+  # Step 6: Generate routing report
   - id: routing_report
-    tool: llm-router
-    action: get_metrics
-    parameters:
-      pipeline_id: "{{ pipeline.id }}"
-      include_model_selection: true
-      include_costs: true
-      include_performance: true
-      
-  - id: generate_report
     tool: report-generator
     action: generate
     parameters:
-      title: "Model Routing Demonstration Results"
+      title: "Model Routing Analysis"
       format: "markdown"
       content: |
-        # Model Routing Report
+        # Model Routing Results
         
-        ## Models Selected
+        ## Configuration
+        - Budget: ${{ task_budget }}
+        - Priority: {{ priority }}
         
-        | Task | Model Used | Cost | Latency | Reason |
-        |------|------------|------|---------|---------|
-        {% for task, info in routing_report.model_selections.items() %}
-        | {{ task }} | {{ info.model }} | ${{ info.cost }} | {{ info.latency_ms }}ms | {{ info.selection_reason }} |
-        {% endfor %}
-        
-        ## Performance Summary
-        
-        - Total Cost: ${{ routing_report.total_cost }}
-        - Average Latency: {{ routing_report.avg_latency_ms }}ms
-        - Success Rate: {{ routing_report.success_rate }}%
-        
-        ## Key Results
+        ## Task Routing
         
         ### Document Summary
-        {{ summarize_document.result }}
+        - Assigned Model: {{ assess_requirements.recommendations[0].model }}
+        - Estimated Cost: ${{ assess_requirements.recommendations[0].estimated_cost }}
+        - Result: {{ summarize_document.result }}
         
-        ### Generated Code
-        ```python
-        {{ generate_code.result }}
-        ```
+        ### Code Generation
+        - Assigned Model: {{ assess_requirements.recommendations[1].model }}
+        - Estimated Cost: ${{ assess_requirements.recommendations[1].estimated_cost }}
+        - Result Preview: {{ generate_code.result | truncate(200) }}
         
-        ### Investment Decision (Ensemble)
-        {{ investment_decision.result }}
-        - Consensus Level: {{ investment_decision.consensus_score }}
-        - Models Used: {{ investment_decision.models_used | join(', ') }}
+        ### Data Analysis
+        - Assigned Model: {{ assess_requirements.recommendations[2].model }}
+        - Estimated Cost: ${{ assess_requirements.recommendations[2].estimated_cost }}
+        - Insights: {{ analyze_data.result }}
         
-        ## Cost Optimization
+        ## Batch Translation Optimization
+        - Strategy: {{ batch_processing.strategy }}
+        - Total Tasks: {{ batch_processing.task_count }}
+        - Models Used: {{ batch_processing.models_used | join(', ') }}
+        - Total Cost: ${{ batch_processing.total_cost }}
+        - Average Cost per Task: ${{ batch_processing.average_cost }}
         
-        Budget: ${{ task_budget }}
-        Actual Spend: ${{ routing_report.total_cost }}
-        Savings: ${{ task_budget - routing_report.total_cost }}
-        
-        ## Recommendations
-        
-        Based on routing performance:
-        {{ routing_report.optimization_suggestions }}
-
+        ## Summary
+        - Total Pipeline Cost: ${{ assess_requirements.total_estimated_cost + batch_processing.total_cost }}
+        - Budget Remaining: ${{ task_budget - (assess_requirements.total_estimated_cost + batch_processing.total_cost) }}
+        - Optimization Achieved: {{ priority }} routing successfully implemented
+    dependencies:
+      - batch_processing
+      
 outputs:
-  total_cost: "{{ routing_report.total_cost }}"
-  models_used: "{{ routing_report.unique_models }}"
-  routing_efficiency: "{{ routing_report.routing_efficiency_score }}"
-  report_location: "{{ generate_report.filepath }}"
+  routing_report: "{{ routing_report.content }}"
+  total_cost: "{{ assess_requirements.total_estimated_cost + batch_processing.total_cost }}"
+  models_used: "{{ assess_requirements.models_selected + batch_processing.models_used }}"
