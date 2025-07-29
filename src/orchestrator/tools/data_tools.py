@@ -43,7 +43,7 @@ class DataProcessingTool(Tool):
             if action == "convert":
                 return await self._convert_data(data, format, operation)
             elif action == "filter":
-                return await self._filter_data(data, operation)
+                return await self._filter_data(data, operation, format)
             elif action == "aggregate":
                 return await self._aggregate_data(data, operation)
             elif action == "transform":
@@ -92,9 +92,16 @@ class DataProcessingTool(Tool):
             "success": True,
         }
 
-    async def _filter_data(self, data: Any, operation: Dict) -> Dict[str, Any]:
+    async def _filter_data(self, data: Any, operation: Dict, format: str = "json") -> Dict[str, Any]:
         """Filter data based on criteria."""
         criteria = operation.get("criteria", {})
+        
+        # If data is a string and looks like CSV, parse it first
+        if isinstance(data, str) and format == "csv":
+            import csv
+            import io
+            reader = csv.DictReader(io.StringIO(data))
+            data = list(reader)
 
         if isinstance(data, list):
             filtered_data = []
@@ -104,10 +111,21 @@ class DataProcessingTool(Tool):
         else:
             filtered_data = data if self._matches_criteria(data, criteria) else None
 
+        # Convert back to CSV if input format was CSV
+        result = filtered_data
+        if isinstance(filtered_data, list) and filtered_data and format == 'csv':
+            import io
+            output = io.StringIO()
+            if filtered_data:
+                writer = csv.DictWriter(output, fieldnames=filtered_data[0].keys())
+                writer.writeheader()
+                writer.writerows(filtered_data)
+                result = output.getvalue()
+        
         return {
             "action": "filter",
             "criteria": criteria,
-            "result": filtered_data,
+            "result": result,
             "original_count": len(data) if isinstance(data, list) else 1,
             "filtered_count": (
                 len(filtered_data)

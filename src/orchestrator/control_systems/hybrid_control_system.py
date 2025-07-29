@@ -196,10 +196,11 @@ class HybridControlSystem(ModelBasedControlSystem):
         self, task: Task, context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Handle file operations."""
-        action_text = str(task.action)
+        action_text = str(task.action).strip()
+        
 
-        # If the action is "file" or "write" with parameters, use the FileSystemTool
-        if action_text.strip() in ["file", "write"] and task.parameters:
+        # If task has parameters and tool is filesystem, use FileSystemTool for all operations
+        if task.metadata.get("tool") == "filesystem" and task.parameters:
             # Build template context with all available data
             template_context = self._build_template_context(context)
 
@@ -215,7 +216,30 @@ class HybridControlSystem(ModelBasedControlSystem):
                     resolved_params[key] = value
 
             # Add the action parameter from the task
-            resolved_params["action"] = str(task.action)
+            resolved_params["action"] = action_text
+            
+            # Use FileSystemTool directly
+            return await self.filesystem_tool.execute(**resolved_params)
+        
+        # If the action is a known filesystem operation, use FileSystemTool
+        filesystem_actions = ["read", "write", "copy", "move", "delete", "list", "file"]
+        if action_text in filesystem_actions and task.parameters:
+            # Build template context with all available data
+            template_context = self._build_template_context(context)
+
+            # Resolve templates in parameters
+            resolved_params = {}
+            for key, value in task.parameters.items():
+                if isinstance(value, str):
+                    # Always resolve templates for string values
+                    resolved_params[key] = self._resolve_templates(
+                        value, template_context
+                    )
+                else:
+                    resolved_params[key] = value
+
+            # Add the action parameter from the task
+            resolved_params["action"] = action_text
             
             # Use FileSystemTool directly
             return await self.filesystem_tool.execute(**resolved_params)
@@ -386,6 +410,9 @@ class HybridControlSystem(ModelBasedControlSystem):
                     )
                 else:
                     resolved_params[key] = value
+            
+            # Add the action parameter from the task
+            resolved_params["action"] = str(task.action).strip()
 
             # Special handling for transform_spec
             if "transform_spec" in resolved_params:
