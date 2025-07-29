@@ -61,7 +61,7 @@ class HuggingFaceModel(Model):
     MODEL_CONFIGS = {
         "microsoft/DialoGPT-medium": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "chat"],
+                supported_tasks=["generate", "chat", "analyze", "transform"],
                 context_window=1024,
                 supports_function_calling=False,
                 supports_structured_output=False,
@@ -90,7 +90,7 @@ class HuggingFaceModel(Model):
         },
         "microsoft/DialoGPT-small": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "chat"],
+                supported_tasks=["generate", "chat", "analyze", "transform"],
                 context_window=1024,
                 supports_function_calling=False,
                 supports_structured_output=False,
@@ -119,7 +119,7 @@ class HuggingFaceModel(Model):
         },
         "gpt2": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "complete"],
+                supported_tasks=["generate", "complete", "analyze", "transform"],
                 context_window=1024,
                 supports_function_calling=False,
                 supports_structured_output=False,
@@ -148,7 +148,7 @@ class HuggingFaceModel(Model):
         },
         "distilgpt2": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "complete"],
+                supported_tasks=["generate", "complete", "analyze", "transform"],
                 context_window=1024,
                 supports_function_calling=False,
                 supports_structured_output=False,
@@ -177,7 +177,7 @@ class HuggingFaceModel(Model):
         },
         "TinyLlama/TinyLlama-1.1B-Chat-v1.0": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "chat", "reasoning"],
+                supported_tasks=["generate", "chat", "reasoning", "analyze", "transform"],
                 context_window=2048,
                 supports_function_calling=False,
                 supports_structured_output=True,
@@ -236,7 +236,7 @@ class HuggingFaceModel(Model):
             model_name,
             {
                 "capabilities": ModelCapabilities(
-                    supported_tasks=["generate"],
+                    supported_tasks=["generate", "analyze", "transform"],
                     context_window=1024,
                     supports_function_calling=False,
                     supports_structured_output=False,
