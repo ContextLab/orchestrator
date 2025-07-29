@@ -208,6 +208,7 @@ __marimo__/
 
 # Project-specific
 checkpoints/
+examples/checkpoints/
 notes/
 CLAUDE.md
 .DS_Store

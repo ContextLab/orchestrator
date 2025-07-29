@@ -406,6 +406,41 @@ If you use Orchestrator in your research, please cite:
 }
 ```
 
+## Repository Organization
+
+```
+orchestrator/
+├── config/                 # Configuration files
+│   ├── models.yaml        # Model definitions and configurations
+│   ├── orchestrator.yaml  # Main orchestrator settings
+│   └── validation_schema.json  # Schema for YAML validation
+├── data/                  # Sample data files
+├── docs/                  # Documentation
+│   ├── tutorials/         # Step-by-step guides
+│   ├── api/              # API reference
+│   └── user_guide/       # User documentation
+├── examples/              # Example pipelines
+│   ├── *.yaml            # All example pipeline YAML files
+│   ├── data/             # Example data files
+│   ├── outputs/          # Generated outputs (gitignored)
+│   └── checkpoints/      # Pipeline checkpoints (gitignored)
+├── scripts/               # Utility scripts
+│   ├── run_pipeline.py   # Main pipeline runner
+│   ├── setup_api_keys.py # API key configuration
+│   └── install_web_deps.sh # Install web dependencies
+├── src/orchestrator/      # Source code
+│   ├── core/             # Core components (Pipeline, Task, etc.)
+│   ├── models/           # Model integrations
+│   ├── tools/            # Tool implementations
+│   ├── compiler/         # YAML compiler and template engine
+│   └── control_systems/  # Execution control systems
+├── tests/                 # Test suite
+│   ├── integration/      # Integration tests
+│   ├── local/           # Tests requiring local resources
+│   └── test_*.py        # Unit tests
+└── venv/                 # Virtual environment (gitignored)
+```
+
 ## Acknowledgments
 
 Orchestrator is developed and maintained by the [Contextual Dynamics Lab](https://www.context-lab.com/) at Dartmouth College.
