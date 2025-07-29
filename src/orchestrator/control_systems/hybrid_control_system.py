@@ -370,6 +370,17 @@ class HybridControlSystem(ModelBasedControlSystem):
                     template_context[step_id] = result
                 else:
                     template_context[step_id] = {"result": result}
+        
+        # DEBUG: Print what's available in the context for template rendering
+        task_id = context.get("task_id", context.get("current_task_id"))
+        if task_id == "save_report":
+            print(f">> DEBUG: Building template context for save_report")
+            print(f">> Available step IDs in previous_results: {list(context.get('previous_results', {}).keys())}")
+            print(f">> Available step IDs in template_context: {list(template_context.keys())}")
+            if "create_report" in template_context:
+                print(f">> create_report keys: {list(template_context['create_report'].keys()) if isinstance(template_context['create_report'], dict) else 'Not a dict'}")
+            if "distribution_plan" in template_context:
+                print(f">> distribution_plan keys: {list(template_context['distribution_plan'].keys()) if isinstance(template_context['distribution_plan'], dict) else 'Not a dict'}")
 
         # Add pipeline parameters if available
         if "pipeline_metadata" in context and isinstance(context["pipeline_metadata"], dict):

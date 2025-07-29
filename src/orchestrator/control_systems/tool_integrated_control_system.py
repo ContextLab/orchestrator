@@ -250,7 +250,10 @@ class ToolIntegratedControlSystem(ControlSystem):
         """Resolve $results and template references."""
         if not task.parameters:
             return
-
+        
+        # Import template renderer
+        from ..compiler.template_renderer import TemplateRenderer
+        
         for key, value in task.parameters.items():
             if isinstance(value, str):
                 # Handle $results references
@@ -267,6 +270,21 @@ class ToolIntegratedControlSystem(ControlSystem):
                                     result = None
                                     break
                             task.parameters[key] = result
+                # Handle template variables {{ }}
+                elif "{{" in value and "}}" in value:
+                    # Build rendering context with results
+                    render_context = context.copy()
+                    
+                    # Add all previous results
+                    render_context.update(self._results)
+                    
+                    # Add previous_results for compatibility
+                    if "previous_results" in context:
+                        render_context["previous_results"] = context["previous_results"]
+                    
+                    # Render the template
+                    rendered_value = TemplateRenderer.render(value, render_context)
+                    task.parameters[key] = rendered_value
 
     async def _compile_markdown(self, task: Task) -> Dict[str, Any]:
         """Compile search results into markdown."""

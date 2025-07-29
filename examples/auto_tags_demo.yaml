@@ -137,7 +137,7 @@ steps:
         
         ## Executive Summary
         
-        {{ create_report.content }}
+        {{ create_report.markdown }}
         
         ## Distribution Plan
         
