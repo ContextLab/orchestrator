@@ -1,106 +1,110 @@
 id: control-flow-for-loop
 # For Loop Example
-# Demonstrates dynamic iteration with AUTO-resolved collections
-name: Multi-Task Processing Pipeline
-description: Process multiple subtasks dynamically
+# Demonstrates iteration over a list of items
+name: Batch File Processing
+description: Process multiple files in parallel
 version: "1.0.0"
 
 parameters:
-  main_task:
+  file_list:
+    type: array
+    default: ["file1.txt", "file2.txt", "file3.txt"]
+    description: List of files to process
+  output_dir:
     type: string
-    description: Main task description
-  max_subtasks:
-    type: integer
-    default: 5
-
+    default: "output"
+    description: Output directory
+    
 steps:
-  # Analyze main task
-  - id: analyze_task
-    action: task-delegation
-    parameters:
-      task: "Analyze the following task and identify key components: {{ main_task }}"
-      requirements:
-        capabilities: ["analysis", "planning"]
-        
-  # Generate subtasks dynamically
-  - id: generate_subtasks
-    action: task-delegation
-    parameters:
-      task: <AUTO>Based on the task analysis {{ analyze_task.result }}, generate {{ max_subtasks }} specific subtasks. Return as a JSON array of task descriptions.</AUTO>
-      output_format: "json"
-    depends_on: [analyze_task]
+  # Create output directory
+  - id: create_output_dir
+    action: !mkdir -p {{ output_dir }}
     
-  # Process each subtask
-  - id: process_subtasks
-    for_each: "{{ generate_subtasks.result }}"
-    max_parallel: 3
+  # Process each file
+  - id: process_files
+    for_each: "{{ file_list }}"
+    max_parallel: 2
     steps:
-      # Determine strategy for each subtask
-      - id: determine_strategy
-        action: task-delegation
+      # Read the file
+      - id: read_file
+        tool: filesystem
+        action: read
         parameters:
-          task: "<AUTO>What's the best approach for subtask: {{$item}}? Choose one: research, implement, validate</AUTO>"
+          path: "data/{{ $item }}"
           
-      # Execute subtask based on strategy
-      - id: execute_subtask
-        action: task-delegation
+      # Analyze file content
+      - id: analyze_content
+        action: analyze_text
         parameters:
-          task: "Execute subtask: {{$item}}"
-          strategy: "{{ determine_strategy.result }}"
-          context:
-            subtask_index: "{{$index}}"
-            is_first: "{{$is_first}}"
-            is_last: "{{$is_last}}"
-        depends_on: [determine_strategy]
-        
-      # Validate subtask results
-      - id: validate_result
-        action: validation
+          text: "{{ read_file.content }}"
+          model: <AUTO task="analyze">Select a model for text analysis</AUTO>
+          analysis_type: "summary"
+        dependencies:
+          - read_file
+          
+      # Transform the content
+      - id: transform_content
+        action: generate_text
         parameters:
-          data: "{{ execute_subtask.result }}"
-          criteria: <AUTO>Define validation criteria for this subtask type</AUTO>
-        depends_on: [execute_subtask]
-    depends_on: [generate_subtasks]
+          prompt: |
+            Transform the following text to be more concise:
+            
+            {{ read_file.content }}
+            
+            Key points from analysis: {{ analyze_content.result }}
+          model: <AUTO task="generate">Select a model for text generation</AUTO>
+          max_tokens: 300
+        dependencies:
+          - analyze_content
+          
+      # Save processed file
+      - id: save_file
+        tool: filesystem
+        action: write
+        parameters:
+          path: "{{ output_dir }}/processed_{{ $item }}"
+          content: |
+            # Processed: {{ $item }}
+            
+            File index: {{ $index }}
+            Is first: {{ $is_first }}
+            Is last: {{ $is_last }}
+            
+            ## Original Size
+            {{ read_file.size }} bytes
+            
+            ## Analysis
+            {{ analyze_content.result }}
+            
+            ## Transformed Content
+            {{ transform_content.result }}
+        dependencies:
+          - transform_content
+    dependencies:
+      - create_output_dir
     
-  # Aggregate all results
-  - id: aggregate_results
-    action: data-processing
+  # Create summary report
+  - id: create_summary
+    tool: filesystem
+    action: write
     parameters:
-      action: aggregate
-      data: "{{ process_subtasks.*.validate_result.result }}"
-      aggregation_method: <AUTO>Choose best aggregation method based on result types</AUTO>
-    depends_on: [process_subtasks]
-    
-  # Generate summary report
-  - id: generate_summary
-    action: report-generator
-    parameters:
-      title: "Task Processing Summary"
+      path: "{{ output_dir }}/summary.md"
       content: |
-        # Main Task
-        {{ main_task }}
+        # Batch Processing Summary
         
-        ## Task Analysis
-        {{ analyze_task.result.summary }}
+        Total files processed: {{ file_list | length }}
         
-        ## Subtasks Processed
-        Total: {{ generate_subtasks.result | length }}
-        
-        ### Subtask Details
-        {% for i in range(generate_subtasks.result | length) %}
-        #### Subtask {{ i + 1 }}: {{ generate_subtasks.result[i] }}
-        - Strategy: {{ process_subtasks[i].determine_strategy.result }}
-        - Status: {{ process_subtasks[i].validate_result.status }}
-        - Score: {{ process_subtasks[i].validate_result.score }}
+        ## Files
+        {% for file in file_list %}
+        - {{ file }}
         {% endfor %}
         
-        ## Aggregated Results
-        {{ aggregate_results.result.summary }}
-      format: "markdown"
-    depends_on: [aggregate_results]
-
+        ## Results
+        All files have been processed and saved to {{ output_dir }}/
+    dependencies:
+      - process_files
+      
 outputs:
-  subtasks: "{{ generate_subtasks.result }}"
-  processed_count: "{{ generate_subtasks.result | length }}"
-  aggregated_results: "{{ aggregate_results.result }}"
-  summary_report: "{{ generate_summary.report }}"
+  processed_files: "{{ file_list | length }}"
+  output_directory: "{{ output_dir }}"
+  summary_file: "{{ create_summary.filepath }}"

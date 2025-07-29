@@ -1,200 +1,140 @@
 id: control-flow-advanced
 # Advanced Control Flow Example
-# Combines conditionals, loops, and dynamic flow control
-name: Adaptive Research Pipeline
-description: Research pipeline that adapts based on findings
+# Combines conditionals and loops in a practical scenario
+name: Multi-Stage Text Processing
+description: Process text through multiple stages with conditional paths
 version: "1.0.0"
 
 parameters:
-  research_topic:
+  input_text:
     type: string
-    description: Main research topic
-  time_budget:
-    type: integer
-    default: 3600  # seconds
-    description: Time budget for research
-  quality_target:
+    description: Text to process
+    default: "This is a sample text for processing."
+  languages:
+    type: array
+    default: ["es", "fr", "de"]
+    description: Languages to translate to
+  quality_threshold:
     type: number
-    default: 0.85
-
+    default: 0.7
+    description: Quality threshold for translations
+    
 steps:
-  # Initial research planning
-  - id: initial_research
-    action: web-search
+  # Initial analysis
+  - id: analyze_text
+    action: analyze_text
     parameters:
-      query: "{{ research_topic }}"
-      max_results: 10
+      text: "{{ input_text }}"
+      model: <AUTO task="analyze">Select a model for text analysis</AUTO>
+      analysis_type: "comprehensive"
       
-  # Analyze initial findings
-  - id: analyze_findings
-    action: task-delegation
+  # Determine if text needs enhancement
+  - id: check_quality
+    action: echo
     parameters:
-      task: "Analyze these search results and identify key themes: {{ initial_research.results }}"
-      output_format: "structured"
-    depends_on: [initial_research]
-    
-  # Determine research branches
-  - id: plan_branches
-    action: task-delegation
+      message: "Text quality analysis complete"
+    dependencies:
+      - analyze_text
+      
+  # Conditional enhancement
+  - id: enhance_text
+    action: generate_text
+    if: "{{ analyze_text.result contains 'improve' }}"
     parameters:
-      task: <AUTO>Based on findings {{ analyze_findings.result }}, how many research branches should we pursue? (1-5)</AUTO>
-      output_format: "number"
-    depends_on: [analyze_findings]
-    
-  # Generate branch topics
-  - id: generate_branches
-    action: task-delegation
+      prompt: |
+        Improve the following text based on this analysis:
+        Analysis: {{ analyze_text.result }}
+        
+        Text: {{ input_text }}
+      model: <AUTO task="generate">Select a model for text improvement</AUTO>
+      max_tokens: 500
+    dependencies:
+      - check_quality
+      
+  # Use enhanced or original text
+  - id: prepare_text
+    action: echo
     parameters:
-      task: <AUTO>Generate {{ plan_branches.result }} specific research directions based on the analysis. Return as JSON array.</AUTO>
-      output_format: "json"
-    depends_on: [plan_branches]
-    
-  # Research each branch
-  - id: research_branches
-    for_each: "{{ generate_branches.result }}"
+      message: "Using {{ enhance_text.result ? 'enhanced' : 'original' }} text for translation"
+    dependencies:
+      - enhance_text
+      - check_quality
+      
+  # Translate to multiple languages
+  - id: translate_text
+    for_each: "{{ languages }}"
     max_parallel: 2
     steps:
-      # Evaluate branch importance
-      - id: evaluate_importance
-        action: task-delegation
+      # Translate
+      - id: translate
+        action: generate_text
         parameters:
-          task: <AUTO>Rate the importance of researching '{{$item}}' for our main topic '{{ research_topic }}' (1-10)</AUTO>
-          
-      # Conditional deep research
-      - id: should_deep_research
-        action: task-delegation
-        parameters:
-          task: <AUTO>Given importance score {{ evaluate_importance.result }} and remaining time budget, should we do deep research? (true/false)</AUTO>
-        depends_on: [evaluate_importance]
-        
-      # Deep research branch
-      - id: deep_research
-        action: web-search
-        if: "{{ should_deep_research.result == true }}"
-        parameters:
-          query: "{{$item}} detailed analysis"
-          max_results: <AUTO>Based on importance {{ evaluate_importance.result }}, how many results to fetch? (5-20)</AUTO>
-        depends_on: [should_deep_research]
-        
-      # Surface research branch
-      - id: surface_research
-        action: web-search
-        if: "{{ should_deep_research.result == false }}"
-        parameters:
-          query: "{{$item}} overview"
-          max_results: 5
-        depends_on: [should_deep_research]
-        
-      # Synthesize branch findings
-      - id: synthesize_branch
-        action: task-delegation
-        parameters:
-          task: "Synthesize findings for branch '{{$item}}'"
-          deep_results: "{{ deep_research.results | default([]) }}"
-          surface_results: "{{ surface_research.results | default([]) }}"
-        depends_on: [deep_research, surface_research]
-    depends_on: [generate_branches]
-    
-  # Quality improvement loop
-  - id: quality_loop
-    while: <AUTO>Is our research quality {{ current_result.quality | default(0) }} below target {{ quality_target }} and do we have time remaining?</AUTO>
-    max_iterations: 3
-    steps:
-      # Assess current quality
-      - id: assess_quality
-        action: validation
-        parameters:
-          data: "{{ research_branches.*.synthesize_branch.result }}"
-          validation_type: "research_quality"
-          criteria:
-            completeness: <AUTO>Define completeness criteria for iteration {{$iteration}}</AUTO>
-            depth: <AUTO>Define depth criteria based on topic complexity</AUTO>
+          prompt: |
+            Translate the following text to {{ $item }}:
             
-      # Identify gaps
-      - id: identify_gaps
-        action: task-delegation
+            {{ enhance_text.result | default(input_text) }}
+          model: <AUTO task="translate">Select a model for translation to {{ $item }}</AUTO>
+          max_tokens: 600
+          
+      # Validate translation quality
+      - id: validate_translation
+        action: analyze_text
         parameters:
-          task: <AUTO>What are the main gaps in our research based on {{ assess_quality.result }}?</AUTO>
-        depends_on: [assess_quality]
+          text: "{{ translate.result }}"
+          model: <AUTO task="analyze">Select a model for quality assessment</AUTO>
+          analysis_type: "quality"
+        dependencies:
+          - translate
+          
+      # Save if quality is good
+      - id: save_translation
+        tool: filesystem
+        action: write
+        if: "{{ validate_translation.result contains 'good' or validate_translation.result contains 'excellent' }}"
+        parameters:
+          path: "translations/{{ $item }}_translation.txt"
+          content: |
+            # Translation to {{ $item }}
+            
+            ## Original Text
+            {{ enhance_text.result | default(input_text) }}
+            
+            ## Translated Text
+            {{ translate.result }}
+            
+            ## Quality Assessment
+            {{ validate_translation.result }}
+        dependencies:
+          - validate_translation
+    dependencies:
+      - prepare_text
+      
+  # Create final report
+  - id: create_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "final_report.md"
+      content: |
+        # Multi-Stage Text Processing Report
         
-      # Fill gaps with targeted research
-      - id: gap_research
-        action: web-search
-        parameters:
-          query: "<AUTO>Generate search query to fill gap: {{ identify_gaps.result }}</AUTO>"
-          max_results: 10
-        depends_on: [identify_gaps]
+        ## Original Text
+        {{ input_text }}
         
-      # Update research quality
-      - id: update_quality
-        action: data-processing
-        parameters:
-          action: merge
-          existing_research: "{{ research_branches.*.synthesize_branch.result }}"
-          new_findings: "{{ gap_research.results }}"
-          quality_score: "{{ assess_quality.result.score }}"
-        depends_on: [gap_research]
-    depends_on: [research_branches]
-    
-  # Decision point for report generation
-  - id: check_completion
-    action: validation
-    parameters:
-      research_quality: "{{ quality_loop.final_quality | default(0.5) }}"
-      time_used: "{{ execution_time }}"
-      time_budget: "{{ time_budget }}"
-    depends_on: [quality_loop]
-    
-  # Dynamic report type selection
-  - id: select_report_type
-    action: task-delegation
-    parameters:
-      task: "<AUTO>Based on research quality {{ check_completion.research_quality }} and completeness, what report type should we generate: 'executive_summary', 'detailed_analysis', or 'preliminary_findings'?</AUTO>"
-    goto: "{{ select_report_type.result }}_report"
-    depends_on: [check_completion]
-    
-  # Executive summary report
-  - id: executive_summary_report
-    action: report-generator
-    parameters:
-      title: "Executive Summary: {{ research_topic }}"
-      content: <AUTO>Create a concise executive summary of all research findings</AUTO>
-      style: "executive"
-    goto: "finalize"
-    
-  # Detailed analysis report
-  - id: detailed_analysis_report
-    action: report-generator
-    parameters:
-      title: "Detailed Analysis: {{ research_topic }}"
-      content: <AUTO>Create a comprehensive analysis including all branch findings and gap research</AUTO>
-      style: "academic"
-    goto: "finalize"
-    
-  # Preliminary findings report
-  - id: preliminary_findings_report
-    action: report-generator
-    parameters:
-      title: "Preliminary Findings: {{ research_topic }}"
-      content: <AUTO>Create a preliminary report noting areas needing further research</AUTO>
-      style: "informal"
-    goto: "finalize"
-    
-  # Finalize output
-  - id: finalize
-    action: data-processing
-    parameters:
-      action: finalize
-      report: "{{ executive_summary_report.report or detailed_analysis_report.report or preliminary_findings_report.report }}"
-      metadata:
-        total_sources: "{{ initial_research.results | length + research_branches.*.deep_research.results | sum + research_branches.*.surface_research.results | sum }}"
-        branches_researched: "{{ generate_branches.result | length }}"
-        quality_iterations: "{{ quality_loop.iterations | default(0) }}"
-        final_quality: "{{ check_completion.research_quality }}"
-
+        ## Analysis
+        {{ analyze_text.result }}
+        
+        ## Enhancement
+        {{ enhance_text.result ? 'Text was enhanced' : 'Original text was used' }}
+        
+        ## Translations
+        Attempted translations to: {{ languages | join(', ') }}
+        
+        Check the translations/ directory for successful translations.
+    dependencies:
+      - translate_text
+      
 outputs:
-  final_report: "{{ finalize.result.report }}"
-  research_quality: "{{ check_completion.research_quality }}"
-  branches_explored: "{{ generate_branches.result }}"
-  total_sources: "{{ finalize.result.metadata.total_sources }}"
-  report_type: "{{ select_report_type.result }}"
+  analysis: "{{ analyze_text.result }}"
+  enhanced: "{{ enhance_text.result | default('N/A') }}"
+  report_file: "{{ create_report.filepath }}"
