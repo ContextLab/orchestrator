@@ -60,109 +60,134 @@ class MCPToolServer:
         }
 
     async def start_server(self, port: int = 8000) -> bool:
-        """Start the MCP server."""
-        try:
-            # Create temporary config file
-            config = self.get_tools_manifest()
-            config_path = Path.cwd() / "mcp_tools_config.json"
-
-            with open(config_path, "w") as f:
-                json.dump(config, f, indent=2)
-
-            self.config_path = config_path
-
-            # Start actual MCP server process
+        """Start the MCP server, trying alternative ports if needed."""
+        import socket
+        
+        # Try a range of ports if the default is in use
+        ports_to_try = [port] + list(range(port + 1, port + 10))
+        
+        for try_port in ports_to_try:
             try:
-                # Import aiohttp for the actual server
-                from aiohttp import web
+                # First check if port is available
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(1)
+                result = sock.connect_ex(('localhost', try_port))
+                sock.close()
+                
+                if result == 0:
+                    # Port is in use, try next one
+                    logger.debug(f"Port {try_port} is already in use, trying next...")
+                    continue
+                
+                # Create temporary config file
+                config = self.get_tools_manifest()
+                config_path = Path.cwd() / "mcp_tools_config.json"
 
-                # Create the web application
-                app = web.Application()
+                with open(config_path, "w") as f:
+                    json.dump(config, f, indent=2)
 
-                # Add routes for MCP protocol
-                async def handle_tools_list(request):
-                    """Handle tools list request."""
-                    return web.json_response(self.get_tools_manifest())
+                self.config_path = config_path
 
-                async def handle_tool_call(request):
-                    """Handle tool call request."""
-                    data = await request.json()
-                    tool_name = data.get("tool")
-                    arguments = data.get("arguments", {})
-                    result = await self.handle_tool_call(tool_name, arguments)
-                    return web.json_response(result)
+                # Start actual MCP server process
+                try:
+                    # Import aiohttp for the actual server
+                    from aiohttp import web
 
-                app.router.add_get("/tools", handle_tools_list)
-                app.router.add_post("/tools/call", handle_tool_call)
+                    # Create the web application
+                    app = web.Application()
 
-                # Create the server runner
-                runner = web.AppRunner(app)
-                await runner.setup()
-                site = web.TCPSite(runner, "localhost", port)
-                await site.start()
+                    # Add routes for MCP protocol
+                    async def handle_tools_list(request):
+                        """Handle tools list request."""
+                        return web.json_response(self.get_tools_manifest())
 
-                # Store the runner for cleanup
-                self.server_runner = runner
+                    async def handle_tool_call(request):
+                        """Handle tool call request."""
+                        data = await request.json()
+                        tool_name = data.get("tool")
+                        arguments = data.get("arguments", {})
+                        result = await self.handle_tool_call(tool_name, arguments)
+                        return web.json_response(result)
 
-                logger.info(f"MCP tool server started on http://localhost:{port}")
-                logger.info(f"Tools available: {', '.join(self.registry.list_tools())}")
+                    app.router.add_get("/tools", handle_tools_list)
+                    app.router.add_post("/tools/call", handle_tool_call)
 
-                return True
+                    # Create the server runner
+                    runner = web.AppRunner(app)
+                    await runner.setup()
+                    site = web.TCPSite(runner, "localhost", try_port)
+                    await site.start()
 
-            except ImportError:
-                # Fallback to a basic HTTP server if aiohttp is not available
-                import http.server
-                import socketserver
-                import threading
+                    # Store the runner for cleanup
+                    self.server_runner = runner
 
-                class MCPHandler(http.server.BaseHTTPRequestHandler):
-                    def do_GET(self):
-                        if self.path == "/tools":
-                            self.send_response(200)
-                            self.send_header("Content-type", "application/json")
-                            self.end_headers()
-                            manifest = json.dumps(config)
-                            self.wfile.write(manifest.encode())
+                    logger.info(f"MCP tool server started on http://localhost:{try_port}")
+                    logger.info(f"Tools available: {', '.join(self.registry.list_tools())}")
 
-                    def do_POST(self):
-                        if self.path == "/tools/call":
-                            content_length = int(self.headers["Content-Length"])
-                            post_data = self.rfile.read(content_length)
-                            json.loads(post_data.decode())
+                    return True
 
-                            # Simple synchronous handling for basic server
-                            self.send_response(200)
-                            self.send_header("Content-type", "application/json")
-                            self.end_headers()
-                            response = json.dumps(
-                                {
-                                    "success": True,
-                                    "result": {"message": "Tool call received"},
-                                }
-                            )
-                            self.wfile.write(response.encode())
+                except ImportError:
+                    # Fallback to a basic HTTP server if aiohttp is not available
+                    import http.server
+                    import socketserver
+                    import threading
 
-                    def log_message(self, format, *args):
-                        # Suppress default logging
-                        pass
+                    class MCPHandler(http.server.BaseHTTPRequestHandler):
+                        def do_GET(self):
+                            if self.path == "/tools":
+                                self.send_response(200)
+                                self.send_header("Content-type", "application/json")
+                                self.end_headers()
+                                manifest = json.dumps(config)
+                                self.wfile.write(manifest.encode())
 
-                # Start server in a thread
-                handler = MCPHandler
-                httpd = socketserver.TCPServer(("", port), handler)
-                server_thread = threading.Thread(target=httpd.serve_forever)
-                server_thread.daemon = True
-                server_thread.start()
+                        def do_POST(self):
+                            if self.path == "/tools/call":
+                                content_length = int(self.headers["Content-Length"])
+                                post_data = self.rfile.read(content_length)
+                                json.loads(post_data.decode())
 
-                self.httpd = httpd
+                                # Simple synchronous handling for basic server
+                                self.send_response(200)
+                                self.send_header("Content-type", "application/json")
+                                self.end_headers()
+                                response = json.dumps(
+                                    {
+                                        "success": True,
+                                        "result": {"message": "Tool call received"},
+                                    }
+                                )
+                                self.wfile.write(response.encode())
 
-                logger.info(f"MCP tool server started (basic HTTP) on port {port}")
-                logger.info(f"Tools available: {', '.join(self.registry.list_tools())}")
+                        def log_message(self, format, *args):
+                            # Suppress default logging
+                            pass
 
-                return True
+                    # Start server in a thread
+                    handler = MCPHandler
+                    httpd = socketserver.TCPServer(("", try_port), handler)
+                    server_thread = threading.Thread(target=httpd.serve_forever)
+                    server_thread.daemon = True
+                    server_thread.start()
 
-        except Exception as e:
-            logger.error(f"Failed to start MCP server: {e}")
-            return False
+                    self.httpd = httpd
+
+                    logger.info(f"MCP tool server started (basic HTTP) on port {try_port}")
+                    logger.info(f"Tools available: {', '.join(self.registry.list_tools())}")
+
+                    return True
+
+            except Exception as e:
+                logger.error(f"Failed to start MCP server on port {try_port}: {e}")
+                if try_port == ports_to_try[-1]:
+                    # This was the last port to try
+                    logger.error(f"Failed to start MCP server on any port from {port} to {try_port}")
+                    return False
+                continue
+        
+        # If we get here, all ports failed
+        logger.error(f"Failed to start MCP server: all ports from {port} to {port + 9} are in use")
+        return False
 
     async def stop_server(self):
         """Stop the MCP server."""

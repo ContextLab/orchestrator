@@ -194,8 +194,8 @@ class HybridControlSystem(ModelBasedControlSystem):
         """Handle file operations."""
         action_text = str(task.action)
 
-        # If the action is simply "file", use the FileSystemTool
-        if action_text.strip() == "file" and task.parameters:
+        # If the action is "file" or "write" with parameters, use the FileSystemTool
+        if action_text.strip() in ["file", "write"] and task.parameters:
             # Build template context with all available data
             template_context = self._build_template_context(context)
 
