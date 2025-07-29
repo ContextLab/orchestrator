@@ -137,8 +137,42 @@ class ModelBasedControlSystem(ControlSystem):
                     env.filters['from_json'] = lambda v: json.loads(v) if isinstance(v, str) else v
                     env.filters['to_json'] = lambda v: json.dumps(v, default=str)
                     
+                    # Build template context with step results at top level
+                    template_context = context.copy()
+                    
+                    # Add previous results as top-level variables for Jinja2
+                    if "previous_results" in context:
+                        for step_id, result in context["previous_results"].items():
+                            if step_id not in template_context:
+                                # Wrap results to have .result attribute for template compatibility
+                                if isinstance(result, str):
+                                    # Create an object with a result attribute
+                                    template_context[step_id] = type(
+                                        "Result", (), {"result": result}
+                                    )()
+                                elif isinstance(result, dict):
+                                    # For dicts, check if they already have result key
+                                    if "result" in result:
+                                        template_context[step_id] = type("Result", (), result)()
+                                    else:
+                                        # Otherwise wrap the entire dict as result
+                                        template_context[step_id] = type(
+                                            "Result", (), {"result": result}
+                                        )()
+                                else:
+                                    # For other types, wrap as result
+                                    template_context[step_id] = type(
+                                        "Result", (), {"result": result}
+                                    )()
+                    
+                    # Also add pipeline inputs if available
+                    if "topic" in context:
+                        template_context["topic"] = context["topic"]
+                    if "depth" in context:
+                        template_context["depth"] = context["depth"]
+                    
                     template = env.from_string(prompt_text)
-                    prompt_text = template.render(**context)
+                    prompt_text = template.render(**template_context)
                 except Exception as e:
                     # Fall back to simple substitution if Jinja2 fails
                     print(f">> Template rendering error: {e}")
