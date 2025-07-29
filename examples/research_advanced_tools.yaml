@@ -19,8 +19,8 @@ steps:
     tool: web-search
     action: search
     parameters:
-      query: "{{ parameters.topic }} latest developments 2024"
-      max_results: "{{ parameters.max_results }}"
+      query: "{{ topic }} latest developments 2024"
+      max_results: 10
       backend: "duckduckgo"
     
   - id: extract_content
@@ -36,8 +36,8 @@ steps:
     tool: report-generator
     action: generate
     parameters:
-      title: "Research Report: {{ parameters.topic }}"
-      query: "{{ parameters.topic }}"
+      title: "Research Report: {{ topic }}"
+      query: "{{ topic }}"
       context: "Latest developments and applications in 2024"
       search_results: "{{ search_topic }}"
       extraction_results: "{{ extract_content }}"
@@ -56,7 +56,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/research_advanced_tools/research_{{ parameters.topic | slugify }}.md"
+      path: "examples/outputs/research_advanced_tools/research_{{ topic | slugify }}.md"
       content: "{{ generate_report.markdown }}"
     dependencies:
       - generate_report
@@ -66,8 +66,8 @@ steps:
     action: compile
     parameters:
       markdown_content: "{{ generate_report.markdown }}"
-      output_path: "examples/outputs/research_advanced_tools/research_{{ parameters.topic | slugify }}.pdf"
-      title: "Research Report: {{ parameters.topic }}"
+      output_path: "examples/outputs/research_advanced_tools/research_{{ topic | slugify }}.pdf"
+      title: "Research Report: {{ topic }}"
       author: "AI Research Assistant"
       install_if_missing: true
     dependencies:

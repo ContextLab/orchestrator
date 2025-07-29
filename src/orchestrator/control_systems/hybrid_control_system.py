@@ -612,17 +612,41 @@ class HybridControlSystem(ModelBasedControlSystem):
     
     async def _handle_web_search(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle web search operations."""
+        # Build template context
+        template_context = self._build_template_context(context)
+        
+        # Resolve templates in parameters
+        resolved_params = {}
+        for key, value in task.parameters.items():
+            if isinstance(value, str) and ("{{" in value or "{%" in value):
+                resolved_params[key] = self._resolve_templates(value, template_context)
+            else:
+                resolved_params[key] = value
+        
+        # Add the action parameter
+        resolved_params["action"] = task.action
+        
         # Execute using web search tool
-        params = task.parameters.copy()
-        params["action"] = task.action
-        return await self.web_search_tool.execute(**params)
+        return await self.web_search_tool.execute(**resolved_params)
     
     async def _handle_headless_browser(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle headless browser operations."""
+        # Build template context
+        template_context = self._build_template_context(context)
+        
+        # Resolve templates in parameters
+        resolved_params = {}
+        for key, value in task.parameters.items():
+            if isinstance(value, str) and ("{{" in value or "{%" in value):
+                resolved_params[key] = self._resolve_templates(value, template_context)
+            else:
+                resolved_params[key] = value
+        
+        # Add the action parameter
+        resolved_params["action"] = task.action
+        
         # Execute using headless browser tool
-        params = task.parameters.copy()
-        params["action"] = task.action
-        return await self.headless_browser_tool.execute(**params)
+        return await self.headless_browser_tool.execute(**resolved_params)
     
     async def _handle_control_flow(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle control flow operations."""
@@ -665,10 +689,31 @@ class HybridControlSystem(ModelBasedControlSystem):
 
     async def _handle_report_generator(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle report generation operations."""
+        # Build template context
+        template_context = self._build_template_context(context)
+        
+        # Resolve templates in parameters
+        resolved_params = {}
+        for key, value in task.parameters.items():
+            if isinstance(value, str) and ("{{" in value or "{%" in value):
+                resolved_params[key] = self._resolve_templates(value, template_context)
+            elif isinstance(value, list):
+                # Handle lists with templates
+                resolved_list = []
+                for item in value:
+                    if isinstance(item, str) and ("{{" in item or "{%" in item):
+                        resolved_list.append(self._resolve_templates(item, template_context))
+                    else:
+                        resolved_list.append(item)
+                resolved_params[key] = resolved_list
+            else:
+                resolved_params[key] = value
+        
+        # Add the action parameter
+        resolved_params["action"] = task.action
+        
         # Execute using report generator tool
-        params = task.parameters.copy()
-        params["action"] = task.action
-        return await self.report_generator_tool.execute(**params)
+        return await self.report_generator_tool.execute(**resolved_params)
     
     async def _handle_pdf_compiler(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle PDF compilation operations."""
