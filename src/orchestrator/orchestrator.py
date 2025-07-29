@@ -19,12 +19,10 @@ from .executor.parallel_executor import ParallelExecutor
 from .models.model_registry import ModelRegistry
 from .models.registry_singleton import get_model_registry
 from .state.state_manager import StateManager
+from .core.exceptions import PipelineExecutionError
 
-
-class ExecutionError(Exception):
-    """Raised when pipeline execution fails."""
-
-    pass
+# Use PipelineExecutionError instead of custom ExecutionError
+ExecutionError = PipelineExecutionError
 
 
 class Orchestrator:

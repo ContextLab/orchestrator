@@ -458,9 +458,45 @@ class TestDesignDocCodeSnippets:
 
     def test_error_handling_hierarchy(self):
         """Test error handling class hierarchy from design."""
-        # These error classes are not yet implemented in the current codebase
-        # The design document specifies them but they haven't been created yet
-        pytest.skip("Error hierarchy classes not yet implemented")
+        from orchestrator.core.exceptions import (
+            OrchestratorError,
+            PipelineError,
+            TaskError,
+            ModelError,
+            ValidationError,
+            ResourceError,
+            StateError,
+            ToolError,
+            ControlSystemError,
+            CompilationError,
+            NetworkError,
+            ConfigurationError,
+            get_error_hierarchy
+        )
+        
+        # Test that base error exists and is an Exception
+        assert issubclass(OrchestratorError, Exception)
+        
+        # Test main error categories exist and inherit from base
+        error_categories = [
+            PipelineError, TaskError, ModelError, ValidationError,
+            ResourceError, StateError, ToolError, ControlSystemError,
+            CompilationError, NetworkError, ConfigurationError
+        ]
+        
+        for error_class in error_categories:
+            assert issubclass(error_class, OrchestratorError)
+            
+        # Test that we can create and raise errors
+        try:
+            raise PipelineError("Test pipeline error")
+        except OrchestratorError as e:
+            assert str(e) == "Test pipeline error"
+            
+        # Test error hierarchy helper function
+        hierarchy = get_error_hierarchy()
+        assert isinstance(hierarchy, dict)
+        assert "OrchestratorError" in hierarchy
 
     @pytest.mark.asyncio
     async def test_model_registry_interface(self, populated_model_registry):

@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Type
 
+from .exceptions import CircuitBreakerOpenError, SystemUnavailableError
+
 
 class ErrorSeverity(Enum):
     """Error severity levels."""
@@ -373,16 +375,7 @@ class CircuitBreaker:
         self._record_success()
 
 
-class CircuitBreakerOpenError(Exception):
-    """Raised when circuit breaker is open."""
-
-    pass
-
-
-class SystemUnavailableError(Exception):
-    """Raised when system is unavailable."""
-
-    pass
+# Error classes are now imported from exceptions module
 
 
 class ErrorClassifier:

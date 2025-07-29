@@ -695,7 +695,9 @@ outputs:
         assert report_path.exists(), f"Report not created at {report_path}"
         
         content = report_path.read_text()
-        assert len(content) > 100, f"Report too short: {len(content)} characters"
+        print(f"Report content length: {len(content)}")
+        print(f"Report content preview: {content[:200]}...")
+        assert len(content) > 100, f"Report too short: {len(content)} characters. Content: {content}"
         assert "artificial intelligence" in content.lower(), "Report doesn't mention the topic"
 
     @pytest.mark.asyncio

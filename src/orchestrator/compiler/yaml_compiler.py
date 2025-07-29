@@ -10,15 +10,10 @@ from jinja2 import Environment, StrictUndefined
 
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..core.exceptions import YAMLCompilerError
 from .ambiguity_resolver import AmbiguityResolver
 from .auto_tag_yaml_parser import AutoTagYAMLParser
 from .schema_validator import SchemaValidator
-
-
-class YAMLCompilerError(Exception):
-    """Base exception for YAML compiler errors."""
-
-    pass
 
 
 class AutoTagNotFoundError(YAMLCompilerError):

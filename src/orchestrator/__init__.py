@@ -33,6 +33,31 @@ from .control_flow import (
 )
 from .engine.control_flow_engine import ControlFlowEngine
 
+# Error hierarchy
+from .core.exceptions import (
+    OrchestratorError,
+    PipelineError,
+    TaskError,
+    ModelError,
+    ValidationError,
+    ResourceError,
+    StateError,
+    ToolError,
+    ControlSystemError,
+    CompilationError,
+    AdapterError,
+    ConfigurationError,
+    NetworkError,
+    TimeoutError,
+    # Commonly used specific errors
+    ModelNotFoundError,
+    NoEligibleModelsError,
+    TaskExecutionError,
+    PipelineExecutionError,
+    CircularDependencyError,
+    InvalidDependencyError,
+)
+
 __version__ = "0.1.0"
 
 __all__ = [

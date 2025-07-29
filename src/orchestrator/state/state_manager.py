@@ -13,12 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from .adaptive_checkpoint import AdaptiveStrategy
 from .backends import create_backend
-
-
-class StateManagerError(Exception):
-    """Raised when state management operations fail."""
-
-    pass
+from ..core.exceptions import StateManagerError
 
 
 class StateManager:

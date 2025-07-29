@@ -8,18 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .task import Task, TaskStatus
-
-
-class CircularDependencyError(Exception):
-    """Raised when a circular dependency is detected in the pipeline."""
-
-    pass
-
-
-class InvalidDependencyError(Exception):
-    """Raised when a dependency refers to a non-existent task."""
-
-    pass
+from .exceptions import CircularDependencyError, InvalidDependencyError
 
 
 @dataclass

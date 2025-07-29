@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 
 from ..core.model import Model
 from ..models.model_registry import ModelRegistry
+from ..core.exceptions import AmbiguityResolutionError
 from .utils import async_retry
 
 
@@ -19,12 +20,6 @@ class AmbiguityType(Enum):
     PARAMETER = "parameter"
     MODEL = "model"
     RESOURCE = "resource"
-
-
-class AmbiguityResolutionError(Exception):
-    """Raised when ambiguity resolution fails."""
-
-    pass
 
 
 class AmbiguityResolver:

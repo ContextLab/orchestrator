@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from ..core.task import Task
+from ..core.exceptions import ResourceAllocationError
 
 
 @dataclass
@@ -734,7 +735,5 @@ class ResourceManager:
         }
 
 
-class ResourceError(Exception):
-    """Raised when resource allocation fails."""
-
-    pass
+# Use ResourceAllocationError from the error hierarchy
+ResourceError = ResourceAllocationError

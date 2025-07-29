@@ -7,18 +7,7 @@ import math
 from typing import Any, Dict, List, Optional
 
 from ..core.model import Model, ModelMetrics
-
-
-class ModelNotFoundError(Exception):
-    """Raised when a requested model is not found."""
-
-    pass
-
-
-class NoEligibleModelsError(Exception):
-    """Raised when no models meet the requirements."""
-
-    pass
+from ..core.exceptions import ModelNotFoundError, NoEligibleModelsError
 
 
 class ModelRegistry:

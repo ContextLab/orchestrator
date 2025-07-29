@@ -6,11 +6,7 @@ from typing import Any, Dict, List, Optional
 
 import jsonschema
 
-
-class SchemaValidationError(Exception):
-    """Raised when schema validation fails."""
-
-    pass
+from ..core.exceptions import SchemaValidationError
 
 
 class SchemaValidator:
