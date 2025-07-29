@@ -1,6 +1,6 @@
-id: simple-research
-name: Simple Research Pipeline
-description: A basic research pipeline that searches the web and summarizes findings
+id: research_minimal
+name: Minimal Research Pipeline
+description: Simplest possible research - just search and summarize (requires only web-search tool)
 version: "1.0.0"
 
 parameters:

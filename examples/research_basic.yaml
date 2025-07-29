@@ -1,6 +1,6 @@
-id: research-report-template
-name: Research Report Template
-description: Generate comprehensive research reports with web search
+id: research_basic
+name: Basic Research Pipeline
+description: Generate research reports using only standard LLM actions (no specialized tools required)
 version: "1.0.0"
 
 parameters:

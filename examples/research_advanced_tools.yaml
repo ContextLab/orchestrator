@@ -1,8 +1,9 @@
-# Research Pipeline Example
-# Uses web search, content extraction, and report generation
-id: research_pipeline
-name: Research and Report Generation Pipeline
-description: Search for information, extract content, and generate a comprehensive report
+# Research Pipeline with Advanced Tools
+# Uses specialized tools: web-search, headless-browser, report-generator, pdf-compiler
+# Requires these tools to be available in your environment
+id: research_advanced_tools
+name: Research Pipeline with Advanced Tools
+description: Advanced research pipeline using specialized tools for web scraping and PDF generation
 version: "1.0.0"
 
 parameters:

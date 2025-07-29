@@ -15,6 +15,30 @@ With inputs:
 python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i another_key="complex value"
 ```
 
+## Research Pipelines
+
+We provide three research pipeline examples with increasing complexity:
+
+### 1. research_minimal.yaml
+- Simplest approach - just search and summarize
+- Requires only web-search tool
+- Quick results with minimal setup
+- Best for: Quick topic overviews
+
+### 2. research_basic.yaml  
+- Uses standard LLM actions (analyze_text, generate_text)
+- No specialized tools required (beyond web-search)
+- Structured report with sections
+- Best for: Detailed research without special tools
+
+### 3. research_advanced_tools.yaml
+- Uses specialized tools (headless-browser, report-generator, pdf-compiler)
+- Can scrape full web pages and generate PDFs
+- Most comprehensive output
+- Best for: Professional reports with PDF output
+
+Choose based on your available tools and output requirements.
+
 ## Available Examples
 
 ### Core Features
