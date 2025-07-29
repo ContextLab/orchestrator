@@ -37,11 +37,12 @@ steps:
       capture_output: true
     
   - id: create_report
-    tool: filesystem
-    action: write
+    tool: report-generator
+    action: generate
     parameters:
-      path: "system_report.md"
-      content: |
+      title: "System Information Report"
+      format: "markdown"
+      template: |
         # System Information Report
         
         ## Python Environment
