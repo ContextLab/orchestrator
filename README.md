@@ -340,6 +340,31 @@ result = pipeline.run(
 print(f"Report saved to: {result}")
 ```
 
+## Examples
+
+The `examples/` directory contains working demonstrations of Orchestrator's capabilities. Here's a highlighted example:
+
+### Simple Data Processing Pipeline
+
+The [simple_data_processing.yaml](examples/simple_data_processing.yaml) pipeline demonstrates fundamental concepts:
+
+**What it does:**
+- Reads a CSV file containing project data
+- Filters records based on criteria (status = "active")
+- Generates both filtered data and an analysis report
+
+**Key concepts demonstrated:**
+- File I/O with the `filesystem` tool
+- Data processing with the `data-processing` tool
+- Template variable usage between pipeline steps
+- Multi-format output generation
+
+**Example outputs:**
+- [Filtered CSV data](examples/outputs/simple_data_processing/filtered_output.csv) - Active projects only
+- [Analysis report](examples/outputs/simple_data_processing/analysis_report.md) - Human-readable summary with data preview
+
+Browse more examples in the [examples directory](examples/) including web research, model routing, recursive processing, and more.
+
 ## Documentation
 
 Comprehensive documentation is available at [orc.readthedocs.io](https://orc.readthedocs.io/), including:

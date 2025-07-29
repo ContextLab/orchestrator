@@ -65,8 +65,11 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
 
 9. **[simple_data_processing.yaml](simple_data_processing.yaml)** - Simple Data Processing
    - Read CSV files
-   - Basic processing
-   - Save results
+   - Filter data based on criteria
+   - Save filtered results and generate report
+   - **Example outputs:**
+     - [Filtered CSV output](outputs/simple_data_processing/filtered_output.csv)
+     - [Analysis report](outputs/simple_data_processing/analysis_report.md)
 
 10. **[recursive_data_processing.yaml](recursive_data_processing.yaml)** - Recursive Data Processing
     - Process data recursively
@@ -279,6 +282,26 @@ When adding new examples:
 3. Add comments explaining non-obvious logic
 4. Test the example thoroughly
 5. Update this README with a description
+
+## Example Outputs
+
+Some pipelines include example outputs to demonstrate their functionality:
+
+### Simple Data Processing Pipeline
+
+The [simple_data_processing.yaml](simple_data_processing.yaml) pipeline demonstrates basic CSV data filtering:
+
+- **Input**: A CSV file with 10 project records containing name, status, value, and date
+- **Processing**: Filters records to include only those with status="active"
+- **Output**: 
+  - [filtered_output.csv](outputs/simple_data_processing/filtered_output.csv) - Contains 5 filtered records (only active projects)
+  - [analysis_report.md](outputs/simple_data_processing/analysis_report.md) - Markdown report with processing summary and data preview
+
+This example shows:
+- How to read files using the filesystem tool
+- How to process CSV data with the data-processing tool
+- How to use template variables to pass data between pipeline steps
+- How to generate both data files and human-readable reports
 
 ## Troubleshooting
 
