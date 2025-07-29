@@ -147,7 +147,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "outputs/model_routing_demo/report_{{ execution.timestamp | slugify }}.md"
+      path: "examples/outputs/model-routing-demo/outputs/model_routing_demo/report_{{ execution.timestamp | slugify }}.md"
       content: |
         # Model Routing Demo Report
         
@@ -168,4 +168,4 @@ outputs:
   routing_report: "{{ routing_report.content }}"
   total_cost: "{{ assess_requirements.total_estimated_cost + batch_processing.total_cost }}"
   models_used: "{{ assess_requirements.models_selected + batch_processing.models_used }}"
-  report_path: "{{ save_report.filepath }}"
+  report_path: "examples/outputs/model-routing-demo/{{ save_report.filepath }}"

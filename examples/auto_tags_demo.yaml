@@ -128,7 +128,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "outputs/auto_tags_demo/analysis_report_{{ execution.timestamp | slugify }}.md"
+      path: "examples/outputs/auto_tags_demo/analysis_report_{{ execution.timestamp | slugify }}.md"
       content: |
         # AUTO Tags Demo Analysis Report
         

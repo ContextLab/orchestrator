@@ -92,7 +92,7 @@ steps:
         action: write
         if: "{{ validate_translation.result contains 'good' or validate_translation.result contains 'excellent' }}"
         parameters:
-          path: "translations/{{ $item }}_translation.txt"
+          path: "examples/outputs/control_flow_advanced/translations/{{ $item }}_translation.txt"
           content: |
             # Translation to {{ $item }}
             
@@ -114,7 +114,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "final_report.md"
+      path: "examples/outputs/control_flow_advanced/final_report.md"
       content: |
         # Multi-Stage Text Processing Report
         
@@ -130,7 +130,7 @@ steps:
         ## Translations
         Attempted translations to: {{ languages | join(', ') }}
         
-        Check the translations/ directory for successful translations.
+        Check the examples/outputs/control_flow_advanced/translations/ directory for successful translations.
     dependencies:
       - translate_text
       

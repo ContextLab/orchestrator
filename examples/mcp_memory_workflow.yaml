@@ -106,7 +106,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "mcp_memory_export.json"
+      path: "examples/outputs/mcp_memory_workflow/mcp_memory_export.json"
       content: |
         {
           "namespace": "conversation",
@@ -145,5 +145,5 @@ steps:
 outputs:
   context_keys: "{{ get_full_context.keys }}"
   user_profile_found: "{{ check_expiration.found }}"
-  memory_export_path: "mcp_memory_export.json"
+  memory_export_path: "examples/outputs/mcp_memory_workflow/mcp_memory_export.json"
   context_summary: "{{ build_context_summary.report }}"

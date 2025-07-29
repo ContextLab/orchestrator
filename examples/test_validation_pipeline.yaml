@@ -111,7 +111,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "validation_reports/test_validation_{{ execution.timestamp | slugify }}.md"
+      path: "examples/outputs/test-validation-pipeline/validation_reports/test_validation_{{ execution.timestamp | slugify }}.md"
       content: |
         # Validation Test Report
         

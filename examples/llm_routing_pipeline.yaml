@@ -103,7 +103,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "reports/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
+      path: "examples/outputs/llm_routing_pipeline/reports/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
       content: "{{ generate_report.markdown }}"
     dependencies:
       - generate_report

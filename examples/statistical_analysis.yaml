@@ -20,7 +20,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "data/input_data.json"
+      path: "examples/outputs/statistical_analysis/data/input_data.json"
       content: "{{ parameters.data | to_json }}"
     
   - id: descriptive_stats
@@ -74,7 +74,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "analysis/statistical_report_{{ execution.timestamp | slugify }}.md"
+      path: "examples/outputs/statistical_analysis/analysis/statistical_report_{{ execution.timestamp | slugify }}.md"
       content: |
         # Statistical Analysis Report
         

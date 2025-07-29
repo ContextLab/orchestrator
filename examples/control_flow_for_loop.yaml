@@ -12,7 +12,7 @@ parameters:
     description: List of files to process
   output_dir:
     type: string
-    default: "output"
+    default: "examples/outputs/control_flow_for_loop"
     description: Output directory
     
 steps:

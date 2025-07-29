@@ -58,7 +58,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "output/processed_{{ input_file | basename }}"
+      path: "examples/outputs/control_flow_conditional/processed_{{ input_file | basename }}"
       content: |
         # Processed File
         

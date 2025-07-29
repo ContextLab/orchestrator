@@ -37,7 +37,7 @@ steps:
     tool: filesystem
     action: read
     parameters:
-      path: "{{ parameters.input_file }}"
+      path: "examples/outputs/interactive_pipeline/{{ parameters.input_file }}"
     dependencies:
       - get_output_format
     
@@ -69,7 +69,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "data/output.{{ get_output_format.value }}"
+      path: "examples/outputs/interactive_pipeline/data/output.{{ get_output_format.value }}"
       content: "{{ approve_results.modified_content | default(process_data.result) }}"
     dependencies:
       - approve_results

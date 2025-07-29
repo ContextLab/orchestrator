@@ -40,7 +40,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "reports/system_info_report.md"
+      path: "examples/outputs/terminal_automation/reports/system_info_report.md"
       content: |
         # System Information Report
         

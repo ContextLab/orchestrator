@@ -83,7 +83,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "reports/research_{{topic | slugify}}.md"
+      path: "examples/outputs/research_basic/research_{{topic | slugify}}.md"
       content: |
         # Research Report: {{topic}}
         

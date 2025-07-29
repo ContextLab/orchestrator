@@ -305,6 +305,27 @@ steps:
             <p><em>Report generated on {{ current_date }}</em></p>
         </body>
         </html>
+        
+  # Step 11: Save report to outputs folder
+  - id: save_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "examples/outputs/data_processing_pipeline/data_processing_report.html"
+      content: "{{ generate_report.content }}"
+    dependencies:
+      - generate_report
+      
+  # Step 12: Save processed data to outputs folder
+  - id: save_processed_output
+    tool: filesystem
+    action: write
+    parameters:
+      path: "examples/outputs/data_processing_pipeline/processed_data.{{ output_format }}"
+      content: "{{ export_data.result }}"
+      mode: "wb"  # Binary write for parquet
+    dependencies:
+      - export_data
 
 outputs:
   processed_file: "processed_data.{{ output_format }}"

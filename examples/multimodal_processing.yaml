@@ -49,7 +49,7 @@ steps:
       style: "digital art"
       num_images: 3
       output_format: "file"
-      output_path: "{{ parameters.output_dir }}/generated_images"
+      output_path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/generated_images"
     dependencies:
       - analyze_image
     
@@ -86,7 +86,7 @@ steps:
       video: "{{ parameters.input_video }}"
       operation: "extract_frames"
       frame_interval: 5.0
-      output_path: "{{ parameters.output_dir }}/video_frames"
+      output_path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/video_frames"
     dependencies:
       - analyze_video
     
@@ -160,7 +160,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "{{ parameters.output_dir }}/analysis_report.md"
+      path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/analysis_report.md"
       content: "{{ generate_summary_report.report }}"
     dependencies:
       - generate_summary_report

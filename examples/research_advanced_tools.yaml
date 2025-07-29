@@ -56,7 +56,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "reports/research_{{ parameters.topic | slugify }}.md"
+      path: "examples/outputs/research_advanced_tools/research_{{ parameters.topic | slugify }}.md"
       content: "{{ generate_report.markdown }}"
     dependencies:
       - generate_report
@@ -66,7 +66,7 @@ steps:
     action: compile
     parameters:
       markdown_content: "{{ generate_report.markdown }}"
-      output_path: "reports/research_{{ parameters.topic | slugify }}.pdf"
+      output_path: "examples/outputs/research_advanced_tools/research_{{ parameters.topic | slugify }}.pdf"
       title: "Research Report: {{ parameters.topic }}"
       author: "AI Research Assistant"
       install_if_missing: true

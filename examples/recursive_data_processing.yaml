@@ -121,7 +121,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "processed_data_final.csv"
+      path: "examples/outputs/recursive_data_processor/processed_data_final.csv"
       content: "{{ update_current_data.full_state.current_data }}"
     dependencies:
       - check_termination

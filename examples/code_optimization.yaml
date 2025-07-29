@@ -58,7 +58,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "optimized_{{code_file | basename}}"
+      path: "examples/outputs/code_optimization/optimized_{{code_file | basename}}"
       content: "{{optimize_code.result}}"
     dependencies:
       - optimize_code
@@ -67,7 +67,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "code_optimization_report_{{ execution.timestamp | slugify }}.md"
+      path: "examples/outputs/code_optimization/code_optimization_report_{{ execution.timestamp | slugify }}.md"
       content: |
         # Code Optimization Report
         
@@ -81,7 +81,7 @@ steps:
         
         ## Optimization Summary
         
-        The optimized code has been saved to: optimized_{{code_file | basename}}
+        The optimized code has been saved to: examples/outputs/code_optimization/optimized_{{code_file | basename}}
     dependencies:
       - analyze_code
       - optimize_code
