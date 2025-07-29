@@ -18,7 +18,11 @@ parameters:
 steps:
   # Create output directory
   - id: create_output_dir
-    action: !mkdir -p {{ output_dir }}
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output_dir }}/.gitkeep"
+      content: "# Output directory for batch processing"
     
   # Process each file
   - id: process_files

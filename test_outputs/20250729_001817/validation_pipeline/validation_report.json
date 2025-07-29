@@ -1,5 +1,0 @@
-{
-  "validation_result": {{ validate_data | to_json }},
-  "extracted_data": {{ extract_info | to_json }},
-  "timestamp": "2025-07-29 00:18:33.069438"
-}

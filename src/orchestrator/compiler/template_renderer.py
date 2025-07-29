@@ -11,8 +11,12 @@ class TemplateRenderer:
     @staticmethod
     def render(text: str, context: Dict[str, Any]) -> str:
         """Render template variables in text."""
-        if not text or not context:
+        if not text:
             return text
+        
+        # Use empty dict if context is None
+        if context is None:
+            context = {}
 
         # Handle Jinja2-style templates
         text = TemplateRenderer._render_jinja2(text, context)
@@ -29,11 +33,7 @@ class TemplateRenderer:
         def replace_var(match) -> str:
             var_expr = match.group(1).strip()
 
-            # Special variables
-            if var_expr == "execution.timestamp":
-                return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            # Handle simple variables
+            # Handle simple variables first
             if var_expr in context:
                 return str(context[var_expr])
 
@@ -42,6 +42,10 @@ class TemplateRenderer:
                 value = TemplateRenderer._get_nested_value(var_expr, context)
                 if value is not None:
                     return str(value)
+                
+                # Special case for execution.timestamp when not in context
+                if var_expr == "execution.timestamp":
+                    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # Handle filters
             if "|" in var_expr:
@@ -71,9 +75,17 @@ class TemplateRenderer:
 
             # Render each iteration
             results = []
-            for item in collection:
+            for idx, item in enumerate(collection):
                 loop_context = context.copy()
                 loop_context[var_name] = item
+                # Add loop object for Jinja2 compatibility
+                loop_context["loop"] = {
+                    "index": idx + 1,  # 1-based index
+                    "index0": idx,     # 0-based index
+                    "first": idx == 0,
+                    "last": idx == len(collection) - 1,
+                    "length": len(collection)
+                }
                 rendered = TemplateRenderer.render(loop_body, loop_context)
                 results.append(rendered)
 
@@ -133,6 +145,15 @@ class TemplateRenderer:
             if "." in var_name
             else context.get(var_name)
         )
+        
+        # Special handling for default filter - it should work even with None values
+        if filter_expr.startswith("default"):
+            if "(" in filter_expr:
+                match = re.match(r'default\(["\']([^"\']*)["\']', filter_expr)
+                if match:
+                    return value if value is not None else match.group(1)
+            return value if value is not None else ""
+        
         if value is None:
             return None
 
@@ -166,6 +187,30 @@ class TemplateRenderer:
             if match and isinstance(value, (list, tuple)):
                 separator = match.group(1)
                 return separator.join(str(v) for v in value)
+        elif filter_expr == "slugify":
+            # Convert to slug format
+            value = str(value).lower()
+            # Replace spaces and underscores with hyphens
+            value = re.sub(r"[\s_]+", "-", value)
+            # Remove non-alphanumeric characters except hyphens
+            value = re.sub(r"[^a-z0-9-]", "", value)
+            # Remove multiple consecutive hyphens
+            value = re.sub(r"-+", "-", value)
+            # Strip hyphens from start and end
+            return value.strip("-")
+        elif filter_expr == "json":
+            import json
+            return json.dumps(value, default=str)
+        elif filter_expr == "to_json":
+            import json
+            return json.dumps(value, default=str)
+        elif filter_expr.startswith("default"):
+            # Handle both default('value') and default without parentheses
+            if "(" in filter_expr:
+                match = re.match(r'default\(["\']([^"\']*)["\']', filter_expr)
+                if match:
+                    return value if value else match.group(1)
+            return value if value else ""
 
         return value
 
@@ -173,6 +218,26 @@ class TemplateRenderer:
     def _evaluate_expression(expr: str, context: Dict[str, Any]) -> Any:
         """Evaluate a simple expression."""
         expr = expr.strip()
+        
+        # Handle comparison operators
+        for op in ["==", "!=", ">=", "<=", ">", "<"]:
+            if op in expr:
+                left, right = expr.split(op, 1)
+                left_val = TemplateRenderer._evaluate_expression(left.strip(), context)
+                right_val = TemplateRenderer._evaluate_expression(right.strip(), context)
+                
+                if op == "==":
+                    return left_val == right_val
+                elif op == "!=":
+                    return left_val != right_val
+                elif op == ">=":
+                    return left_val >= right_val
+                elif op == "<=":
+                    return left_val <= right_val
+                elif op == ">":
+                    return left_val > right_val
+                elif op == "<":
+                    return left_val < right_val
 
         # Handle string literals
         if (expr.startswith('"') and expr.endswith('"')) or (

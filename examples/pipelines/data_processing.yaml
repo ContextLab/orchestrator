@@ -2,7 +2,7 @@ id: data-processing
 name: Data Processing Pipeline
 description: Process and validate data from various sources
 
-inputs:
+parameters:
   data_source:
     type: string
     required: true
@@ -14,46 +14,52 @@ inputs:
 
 steps:
   - id: load_data
-    action: data_processing
+    tool: filesystem
+    action: read
     parameters:
-      action: load
-      source: "{{data_source}}"
+      path: "{{data_source}}"
   
   - id: validate_data
-    action: data_processing
+    tool: validation
+    action: validate
     parameters:
-      action: validate
-      data: "{{load_data.data}}"
+      data: "{{load_data.content | from_json}}"
       schema:
         type: object
         properties:
           records:
             type: array
-    depends_on: [load_data]
+      mode: strict
+    dependencies:
+      - load_data
   
   - id: transform_data
-    action: data_processing
+    tool: data-processing
+    action: transform
     parameters:
-      action: transform
-      data: "{{load_data.data}}"
-      operations:
-        - type: filter
-          field: active
-          value: true
-        - type: aggregate
-          operation: sum
-          field: value
-    depends_on: [validate_data]
+      data: "{{load_data.content | from_json}}"
+      operation:
+        transformations:
+          - type: filter
+            field: active
+            value: true
+          - type: aggregate
+            operation: sum
+            field: value
+    dependencies:
+      - validate_data
   
   - id: save_results
-    action: file
+    tool: filesystem
+    action: write
     parameters:
-      action: write
-      path: "/tmp/processed_data.{{output_format}}"
-      content: "{{transform_data.result}}"
-    depends_on: [transform_data]
+      path: "processed_data.{{output_format}}"
+      content: "{{transform_data.result | to_json}}"
+    dependencies:
+      - transform_data
 
 outputs:
-  original_count: "{{load_data.stats.records_loaded}}"
-  processed_count: "{{transform_data.stats.records_processed}}"
-  output_file: "/tmp/processed_data.{{output_format}}"
+  original_data: "{{load_data.content}}"
+  validated: "{{validate_data.is_valid}}"
+  transformed: "{{transform_data.result}}"
+  output_file: "{{save_results.filepath}}"

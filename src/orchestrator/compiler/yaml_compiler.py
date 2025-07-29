@@ -385,7 +385,8 @@ class YAMLCompiler:
         parameters = task_def.get("parameters", {})
 
         # Handle dependencies which may be string or array
-        dependencies = task_def.get("depends_on", [])
+        # Support both 'dependencies' and 'depends_on' for backward compatibility
+        dependencies = task_def.get("dependencies", task_def.get("depends_on", []))
         if isinstance(dependencies, str):
             # Handle single dependency as string or comma-separated list
             if "," in dependencies:
@@ -572,11 +573,18 @@ class YAMLCompiler:
                     return value
             return value
 
+        # Basename filter
+        def basename(value):
+            """Get the basename of a path."""
+            import os
+            return os.path.basename(str(value))
+        
         self.template_engine.filters["slugify"] = slugify
         self.template_engine.filters["date"] = date_filter
         self.template_engine.filters["json"] = json_filter
         self.template_engine.filters["from_json"] = from_json
         self.template_engine.filters["to_json"] = json_filter  # Alias for json
+        self.template_engine.filters["basename"] = basename
         self.template_engine.globals["now"] = now
 
         # Add special variables that should not be processed as regular templates

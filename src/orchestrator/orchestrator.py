@@ -233,8 +233,13 @@ class Orchestrator:
                 # Handle failures based on policy
                 await self._handle_task_failures(pipeline, failed_tasks, context)
 
-            # Update results
+            # Update results with level results
             results.update(level_results)
+            
+            # IMPORTANT: Update context with step results for template rendering
+            # This ensures that subsequent steps can access previous step results
+            # via template variables like {{ step_id.result }}
+            context["previous_results"] = results.copy()
 
             # Save checkpoint after each level
             if context.get("checkpoint_enabled", False):

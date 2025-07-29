@@ -2,7 +2,7 @@ id: code-optimization
 name: Code Optimization Pipeline
 description: Analyze and optimize code for performance and best practices
 
-inputs:
+parameters:
   code_file:
     type: string
     required: true
@@ -14,15 +14,15 @@ inputs:
 
 steps:
   - id: read_code
-    action: file
+    tool: filesystem
+    action: read
     parameters:
-      action: read
       path: "{{code_file}}"
   
   - id: analyze_code
-    action: llm
+    action: analyze_text
     parameters:
-      prompt: |
+      text: |
         Analyze this {{language}} code for optimization opportunities:
         
         ```{{language}}
@@ -34,10 +34,13 @@ steps:
         2. Code quality issues
         3. Best practice violations
       model: <AUTO>Select model best suited for code analysis</AUTO>
-    depends_on: [read_code]
+      model: <AUTO task="analyze">Select model best suited for code analysis</AUTO>
+      analysis_type: "code_quality"
+    dependencies:
+      - read_code
   
   - id: optimize_code
-    action: llm
+    action: generate_text
     parameters:
       prompt: |
         Based on this analysis:
@@ -46,23 +49,26 @@ steps:
         Provide optimized version of the code that addresses the identified issues.
         Return only the optimized code, no explanations.
       model: <AUTO>Select model for code generation</AUTO>
-    depends_on: [analyze_code]
+      model: <AUTO task="generate">Select model for code generation</AUTO>
+      max_tokens: 2000
+    dependencies:
+      - analyze_code
   
   - id: save_optimized_code
-    action: file
+    tool: filesystem
+    action: write
     parameters:
-      action: write
       path: "optimized_{{code_file | basename}}"
       content: "{{optimize_code.result}}"
-    depends_on: [optimize_code]
+    dependencies:
+      - optimize_code
   
   - id: save_analysis_report
-    tool: report-generator
-    action: generate
+    tool: filesystem
+    action: write
     parameters:
-      title: "Code Optimization Report"
-      format: "markdown"
-      template: |
+      path: "code_optimization_report_{{ execution.timestamp | slugify }}.md"
+      content: |
         # Code Optimization Report
         
         **File:** {{code_file}}
@@ -76,7 +82,9 @@ steps:
         ## Optimization Summary
         
         The optimized code has been saved to: optimized_{{code_file | basename}}
-    depends_on: [analyze_code, optimize_code]
+    dependencies:
+      - analyze_code
+      - optimize_code
 
 outputs:
   analysis: "{{analyze_code.result}}"
