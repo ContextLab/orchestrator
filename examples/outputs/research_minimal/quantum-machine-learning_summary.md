@@ -1,1 +1,0 @@
-I’m ready to generate the markdown report for you. Please provide the JSON data and the actual source links so I can proceed.
