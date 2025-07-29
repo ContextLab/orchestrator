@@ -181,12 +181,19 @@ class ModelBasedControlSystem(ControlSystem):
             max_tokens = (
                 task.parameters.get("max_tokens", 1000) if task.parameters else 1000
             )
+            
+            # Build generation kwargs
+            gen_kwargs = {
+                "prompt": prompt,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            
+            # Add response_format if specified
+            if task.parameters and "response_format" in task.parameters:
+                gen_kwargs["response_format"] = task.parameters["response_format"]
 
-            result = await model.generate(
-                prompt=prompt,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            result = await model.generate(**gen_kwargs)
 
             # Parse the result based on expected format
             return self._parse_result(result, task)

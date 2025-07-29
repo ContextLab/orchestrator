@@ -1,30 +1,34 @@
 # Research Summary: quantum computing
-**Date:** 2025-07-29 16:27:19
+**Date:** 2025-07-29 16:59:41
 **Sources Reviewed:** 5 sources reviewed
 
 ## Overview
-{% set summary_data = summarize_results.result | from_json %}
-{{summary_data.overview}}
+
+Quantum computing leverages the principles of quantum mechanics to process information far more efficiently for certain problems than classical computers.
 
 ## Key Findings
-{% for point in summary_data.key_points %}
-{{loop.index}}. {{point}}
-{% endfor %}
+
+1. Quantum computers use quantum bits (qubits) that can exist in multiple states simultaneously, enabling parallel computations and exponential increases in processing power for specific tasks.
+
+2. They have the potential to revolutionize fields such as cryptography, materials science, and complex system simulations by solving problems that are currently intractable for classical computers.
+
+3. Despite rapid progress, quantum computing remains in an experimental stage with significant technical challenges, such as error correction, qubit stability, and scalability, yet several companies and research institutions are actively developing practical quantum systems.
+
 
 ## Summary
-{{summary_data.summary}}
+Quantum computing represents a transformative approach to computation, offering significant advantages over classical computers for particular problems due to the unique properties of qubits. While the technology shows great promise in areas like cryptography and scientific research, it is still maturing, and overcoming technical hurdles is necessary before widespread practical applications become a reality.
 
 ## Sources
 
 1. [Quantum computing](https://en.wikipedia.org/wiki/Quantum_computing)
 
-2. [What is quantum computing? - IBM](https://www.ibm.com/think/topics/quantum-computing)
+2. [IBM What Is Quantum Computing? | IBM](https://www.ibm.com/think/topics/quantum-computing)
 
-3. [Quantum Computing Explained | NIST](https://www.nist.gov/quantum-information-science/quantum-computing-explained)
+3. [Quantum Computing Inc Quantum Computing Inc](https://quantumcomputinginc.com/)
 
-4. [What Is Quantum Computing? - Azure Quantum | Microsoft Learn](https://learn.microsoft.com/en-us/azure/quantum/overview-understanding-quantum-computing)
+4. [Barchart Rigetti vs. Quantum Computing: Which Quantum Stock Is a Smarter Bet?](https://www.barchart.com/story/news/33720216/rigetti-vs-quantum-computing-which-quantum-stock-is-a-smarter-bet)
 
-5. [Understanding Quantum Computing: The Next Tech Frontier](https://www.sciencenewstoday.org/understanding-quantum-computing-the-next-tech-frontier)
+5. [Department of Energy DOE Explains...Quantum Computing | Department of Energy](https://www.energy.gov/science/doe-explainsquantum-computing)
 
 
 ---

@@ -257,6 +257,18 @@ class OpenAIModel(Model):
             else:
                 messages = [{"role": "user", "content": prompt}]
 
+            # Handle response_format conversion
+            if "response_format" in kwargs:
+                rf = kwargs.pop("response_format")
+                if isinstance(rf, str):
+                    if rf == "json_object":
+                        kwargs["response_format"] = {"type": "json_object"}
+                    else:
+                        # Keep as-is if it's already a dict or other format
+                        kwargs["response_format"] = rf
+                else:
+                    kwargs["response_format"] = rf
+
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,

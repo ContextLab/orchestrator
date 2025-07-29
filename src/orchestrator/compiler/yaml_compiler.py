@@ -238,9 +238,11 @@ class YAMLCompiler:
                 # 1. prompt parameters in steps
                 # 2. content parameters in filesystem operations
                 # 3. Any field that references step results
+                # 4. Any field that contains Jinja2 control structures
                 if current_key in ["prompt", "content"] and parent_key == "parameters":
-                    # Check if it references step results
-                    if any(step_ref in value for step_ref in ["search_web", "summarize_results", "extract_", "analyze_", "generate_"]):
+                    # Check if it references step results or contains Jinja2 control structures
+                    if any(step_ref in value for step_ref in ["search_web", "summarize_results", "extract_", "analyze_", "generate_"]) or \
+                       any(ctrl in value for ctrl in ["{% for", "{% if", "{% set", "{% endfor", "{% endif"]):
                         return value  # Keep as-is for runtime rendering
                 
                 # If the string contains templates, process them individually
@@ -661,6 +663,14 @@ class YAMLCompiler:
         result = value
         for template in templates:
             try:
+                # Extract variable name from template
+                var_match = re.match(r"\{\{\s*([^|}\s]+)", template)
+                if var_match:
+                    var_name = var_match.group(1).strip()
+                    # Skip templates that reference step results
+                    if any(step_ref in var_name for step_ref in ["search_web", "summarize_results", "extract_", "analyze_", "generate_"]):
+                        continue  # Skip this template, keep it as-is
+                
                 # Try to render this specific template
                 template_engine = self.template_engine.from_string(template)
                 rendered = template_engine.render(**context)
