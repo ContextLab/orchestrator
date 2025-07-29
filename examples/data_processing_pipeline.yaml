@@ -181,15 +181,12 @@ steps:
         - Below 0.6 = Poor quality (significant issues)
         
         Also list any data quality issues found and recommendations.
+        
+        Return as JSON with fields:
+        - quality_score: number between 0 and 1
+        - issues_found: array of strings
+        - recommendations: array of strings
       model: <AUTO>Choose a model for quality assessment</AUTO>
-          issues_found:
-            type: array
-            items:
-              type: string
-          recommendations:
-            type: array
-            items:
-              type: string
               
   # Step 9: Export processed data
   - id: export_data
