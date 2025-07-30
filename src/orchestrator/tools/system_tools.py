@@ -31,7 +31,7 @@ class TerminalTool(Tool):
             default=True,
         )
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute terminal command."""
         command = kwargs.get("command", "")
         working_dir = kwargs.get("working_dir", ".")
@@ -121,7 +121,7 @@ class FileSystemTool(Tool):
             "destination", "string", "Destination path (for copy/move)", required=False
         )
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute file system operation."""
         action = kwargs.get("action", "")
         path = kwargs.get("path", "")

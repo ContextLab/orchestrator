@@ -413,7 +413,7 @@ class ValidationTool(Tool):
             lambda instance: self.format_validator.validate_format(name, instance)
         )
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute validation action."""
         action = kwargs.get("action", "validate")
 

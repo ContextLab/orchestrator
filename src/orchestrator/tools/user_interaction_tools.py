@@ -217,7 +217,7 @@ class UserPromptTool(Tool):
             skipped=True,
         )
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute user prompt."""
         prompt = kwargs["prompt"]
         input_type = kwargs.get("input_type", "text")
@@ -448,7 +448,7 @@ class ApprovalGateTool(Tool):
 
         return result
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute approval gate."""
         title = kwargs["title"]
         content = kwargs["content"]
@@ -671,7 +671,7 @@ class FeedbackCollectionTool(Tool):
         print("\nThank you for your feedback!")
         return responses
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute feedback collection."""
         title = kwargs["title"]
         questions = kwargs["questions"]

@@ -768,7 +768,7 @@ class HeadlessBrowserTool(Tool):
 
         raise ValueError("No search backends available")
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute browser action."""
         action = kwargs.get("action", "search")
 
@@ -1028,7 +1028,7 @@ class WebSearchTool(Tool):
         # Initialize with headless browser tool
         self.browser_tool = HeadlessBrowserTool(config)
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute web search."""
         query = kwargs.get("query", "")
         max_results = kwargs.get("max_results", 10)

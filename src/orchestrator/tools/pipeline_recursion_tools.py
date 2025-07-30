@@ -291,7 +291,7 @@ class PipelineExecutorTool(Tool):
             ),
         )
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute sub-pipeline."""
         pipeline_spec = kwargs["pipeline"]
         inputs = kwargs.get("inputs", {})
@@ -527,7 +527,7 @@ class RecursionControlTool(Tool):
 
         return {"limit_exceeded": False}
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute recursion control action."""
         action = kwargs["action"]
 

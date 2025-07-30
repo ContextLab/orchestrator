@@ -186,7 +186,7 @@ class MCPServerTool(Tool):
         else:
             return {"error": f"Unknown tool: {tool_name}"}
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute MCP server operations."""
         action = kwargs["action"]
 
@@ -314,7 +314,7 @@ class MCPMemoryTool(Tool):
         expires_at = meta.get("stored_at", 0) + meta.get("ttl", 0)
         return time.time() > expires_at
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute memory operations."""
         action = kwargs["action"]
         namespace = kwargs.get("namespace", "default")
@@ -529,7 +529,7 @@ class MCPResourceTool(Tool):
 
         return subscription_id
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute resource operations."""
         action = kwargs["action"]
         server_name = kwargs.get("server_name", "default")

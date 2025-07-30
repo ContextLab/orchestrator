@@ -231,7 +231,7 @@ class TaskDelegationTool(Tool):
             estimated_latency=estimated_latency,
         )
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute task delegation."""
         task = kwargs["task"]
         requirements = kwargs.get("requirements", {})
@@ -438,7 +438,7 @@ class MultiModelRoutingTool(Tool):
         # Fallback to least loaded
         return await self._route_least_loaded(models, request)
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute request routing."""
         request = kwargs["request"]
         models = kwargs.get("models")
@@ -666,7 +666,7 @@ class PromptOptimizationTool(Tool):
 
         return optimized
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute prompt optimization."""
         prompt = kwargs["prompt"]
         model = kwargs.get("model")

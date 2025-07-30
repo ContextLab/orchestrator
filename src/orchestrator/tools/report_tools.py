@@ -33,7 +33,7 @@ class ReportGeneratorTool(Tool):
         )
         self.add_parameter("quality_score", "number", "Quality score", required=False)
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Generate a markdown report from research data."""
         title = kwargs.get("title", "Research Report")
         query = kwargs.get("query", "")
@@ -368,7 +368,7 @@ class PDFCompilerTool(Tool):
             default=True,
         )
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Compile markdown to PDF."""
         markdown_content = kwargs.get("markdown_content", "")
         output_path = kwargs.get("output_path", "report.pdf")

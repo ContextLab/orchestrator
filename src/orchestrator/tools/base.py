@@ -2,7 +2,10 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..core.template_manager import TemplateManager
 
 
 @dataclass
@@ -24,10 +27,31 @@ class Tool(ABC):
         self.description = description
         self.parameters: List[ToolParameter] = []
 
-    @abstractmethod
     async def execute(self, **kwargs) -> Dict[str, Any]:
-        """Execute the tool with given parameters."""
+        """Execute the tool with given parameters (with automatic template rendering)."""
+        # Extract template manager from kwargs if available
+        template_manager = kwargs.pop('template_manager', None)
+        
+        # Render templates in parameters if template manager is available
+        if template_manager:
+            rendered_kwargs = self._render_parameters(kwargs, template_manager)
+        else:
+            rendered_kwargs = kwargs
+        
+        # Validate rendered parameters
+        self.validate_parameters(rendered_kwargs)
+        
+        # Execute the actual implementation
+        return await self._execute_impl(**rendered_kwargs)
+    
+    @abstractmethod
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
+        """Execute the tool implementation (to be overridden by subclasses)."""
         pass
+    
+    def _render_parameters(self, kwargs: Dict[str, Any], template_manager: 'TemplateManager') -> Dict[str, Any]:
+        """Automatically render all string parameters using the template manager."""
+        return template_manager.render_dict(kwargs)
 
     def add_parameter(
         self,

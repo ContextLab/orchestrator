@@ -238,7 +238,7 @@ class ImageAnalysisTool(Tool):
             self.logger.error(f"Model analysis failed: {e}")
             raise
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute image analysis."""
         image_input = kwargs["image"]
         analysis_type = kwargs["analysis_type"]
@@ -485,7 +485,7 @@ class ImageGenerationTool(Tool):
 
         return filepath
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute image generation."""
         prompt = kwargs["prompt"]
         model_name = kwargs.get("model")
@@ -642,7 +642,7 @@ class AudioProcessingTool(Tool):
             },
         }
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute audio processing."""
         audio_input = kwargs["audio"]
         operation = kwargs["operation"]
@@ -804,7 +804,7 @@ class VideoProcessingTool(Tool):
 
         return frames
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute video processing."""
         video_input = kwargs["video"]
         operation = kwargs["operation"]

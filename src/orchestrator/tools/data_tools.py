@@ -32,7 +32,7 @@ class DataProcessingTool(Tool):
             "operation", "object", "Operation details", required=False, default={}
         )
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute data processing operation."""
         action = kwargs.get("action", "")
         data = kwargs.get("data", {})

@@ -15,6 +15,7 @@ from .core.pipeline_status_tracker import PipelineStatusTracker
 from .core.pipeline_resume_manager import PipelineResumeManager, ResumeStrategy
 from .core.resource_allocator import ResourceAllocator
 from .core.task import Task, TaskStatus
+from .core.template_manager import TemplateManager
 from .executor.parallel_executor import ParallelExecutor
 from .models.model_registry import ModelRegistry
 from .models.registry_singleton import get_model_registry
@@ -42,7 +43,9 @@ class Orchestrator:
         error_handler: Optional[ErrorHandler] = None,
         resource_allocator: Optional[ResourceAllocator] = None,
         parallel_executor: Optional[ParallelExecutor] = None,
+        template_manager: Optional[TemplateManager] = None,
         max_concurrent_tasks: int = 10,
+        debug_templates: bool = False,
     ) -> None:
         """
         Initialize orchestrator.
@@ -55,7 +58,9 @@ class Orchestrator:
             error_handler: Error handler for fault tolerance
             resource_allocator: Resource allocator for task scheduling
             parallel_executor: Parallel executor for concurrent execution
+            template_manager: Template manager for deferred rendering
             max_concurrent_tasks: Maximum concurrent tasks
+            debug_templates: Enable debug mode for template rendering
         """
         self.model_registry = model_registry or get_model_registry()
 
@@ -75,6 +80,9 @@ class Orchestrator:
         self.control_system = control_system
         self.state_manager = state_manager or StateManager()
 
+        # Initialize template manager
+        self.template_manager = template_manager or TemplateManager(debug_mode=debug_templates)
+        
         # No default models - must be explicitly initialized
         self.yaml_compiler = yaml_compiler or YAMLCompiler(
             model_registry=self.model_registry
@@ -135,6 +143,13 @@ class Orchestrator:
         
         # Also merge pipeline context directly into execution context for backward compatibility
         context.update(pipeline.context)
+        
+        # Initialize template manager context with pipeline parameters and execution metadata
+        self.template_manager.clear_context()
+        self.template_manager.register_context("pipeline_id", pipeline.id)
+        self.template_manager.register_context("execution_id", execution_id)
+        for key, value in pipeline.context.items():
+            self.template_manager.register_context(key, value)
 
         try:
             # Register pipeline as running
@@ -244,6 +259,9 @@ class Orchestrator:
             # This ensures that subsequent steps can access previous step results
             # via template variables like {{ step_id.result }}
             context["previous_results"] = results.copy()
+            
+            # Register all results with template manager for deferred rendering
+            self.template_manager.register_all_results(results)
 
             # Save checkpoint after each level
             if context.get("checkpoint_enabled", False):
@@ -306,6 +324,7 @@ class Orchestrator:
                     "task_id": task_id,
                     "previous_results": previous_results,
                     "resource_allocation": resource_allocations[task_id],
+                    "template_manager": self.template_manager,
                 }
                 execution_tasks.append(
                     self._execute_task_with_resources(task, task_context)
