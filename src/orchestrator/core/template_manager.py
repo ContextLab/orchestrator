@@ -143,6 +143,9 @@ class TemplateManager:
         
         def date_format(date_obj: Any, format_str: str = '%Y-%m-%d %H:%M:%S') -> str:
             """Format date object or string."""
+            # Debug logging
+            logger.debug(f"date_format called with date_obj={date_obj}, format_str={format_str}")
+            
             if isinstance(date_obj, str):
                 if date_obj == 'now':
                     date_obj = datetime.now()
@@ -168,12 +171,24 @@ class TemplateManager:
             elif not isinstance(date_obj, datetime):
                 return str(date_obj)
             
-            # Fix the format string parameter name issue
+            # Now we have a datetime object
             try:
-                return date_obj.strftime(format_str)
+                # Ensure format_str is a string
+                if not isinstance(format_str, str):
+                    logger.warning(f"Format string is not a string: {format_str} (type: {type(format_str)})")
+                    format_str = '%Y-%m-%d %H:%M:%S'
+                
+                result = date_obj.strftime(format_str)
+                logger.debug(f"date_format returning: {result}")
+                return result
             except Exception as e:
-                logger.warning(f"Date formatting error with format '{format_str}': {e}")
-                return date_obj.strftime('%Y-%m-%d %H:%M:%S')
+                logger.error(f"Date formatting error with format '{format_str}': {e}")
+                logger.error(f"Date object type: {type(date_obj)}, value: {date_obj}")
+                # Try to return something sensible
+                try:
+                    return date_obj.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    return str(date_obj)
         
         def markdown_format(text: str) -> str:
             """Basic markdown formatting improvements."""
@@ -379,9 +394,20 @@ class TemplateManager:
             # Only render if it contains template syntax
             if self.has_templates(data):
                 try:
-                    return self.render(data, additional_context)
+                    # Log large templates
+                    if len(data) > 1000:
+                        logger.debug(f"Rendering large template ({len(data)} chars)")
+                        logger.debug(f"Template starts with: {data[:100]}...")
+                    result = self.render(data, additional_context)
+                    if len(data) > 1000:
+                        logger.debug(f"Rendered result starts with: {result[:100]}...")
+                    return result
                 except Exception as e:
-                    logger.error(f"Error rendering template '{data[:100]}...': {e}")
+                    # More detailed error logging
+                    import traceback
+                    logger.error(f"Error rendering template: {e}")
+                    logger.error(f"Template preview: {data[:200]}...")
+                    logger.debug(f"Full traceback: {traceback.format_exc()}")
                     # Return original string if rendering fails
                     return data
             return data

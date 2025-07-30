@@ -202,27 +202,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         # If task has parameters and tool is filesystem, use FileSystemTool for all operations
         if task.metadata.get("tool") == "filesystem" and task.parameters:
             print(f">> DEBUG: Handling filesystem operation for task: {task.id if hasattr(task, 'id') else 'unknown'}")
-            # Use deep template rendering with full Jinja2 support
-            from ..core.template_manager import TemplateManager
-            template_manager = TemplateManager()
-            
-            # Build template context and register directly without wrapping
-            template_context = self._build_template_context(context)
-            
-            # Register all previous results directly from the original context
-            # to avoid the wrapping issue in _build_template_context
-            if "previous_results" in context:
-                template_manager.register_all_results(context["previous_results"])
-            
-            # Add other context values (but skip the wrapped versions)
-            for key, value in template_context.items():
-                if key not in ["previous_results"] and not key.startswith("_"):
-                    # Skip if this is a step result that was already registered
-                    if "previous_results" in context and key in context["previous_results"]:
-                        continue
-                    template_manager.register_context(key, value)
-            
-            # Parameters are already rendered by the base class
+            # Parameters are already rendered by the base class - just use them directly
             resolved_params = task.parameters.copy()
             resolved_params["action"] = action_text
             
@@ -231,27 +211,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         # If the action is a known filesystem operation, use FileSystemTool
         filesystem_actions = ["read", "write", "copy", "move", "delete", "list", "file"]
         if action_text in filesystem_actions and task.parameters:
-            # Use deep template rendering with full Jinja2 support
-            from ..core.template_manager import TemplateManager
-            template_manager = TemplateManager()
-            
-            # Build template context and register directly without wrapping
-            template_context = self._build_template_context(context)
-            
-            # Register all previous results directly from the original context
-            # to avoid the wrapping issue in _build_template_context
-            if "previous_results" in context:
-                template_manager.register_all_results(context["previous_results"])
-            
-            # Add other context values (but skip the wrapped versions)
-            for key, value in template_context.items():
-                if key not in ["previous_results"] and not key.startswith("_"):
-                    # Skip if this is a step result that was already registered
-                    if "previous_results" in context and key in context["previous_results"]:
-                        continue
-                    template_manager.register_context(key, value)
-            
-            # Parameters are already rendered by the base class
+            # Parameters are already rendered by the base class - just use them directly
             resolved_params = task.parameters.copy()
             resolved_params["action"] = action_text
             
