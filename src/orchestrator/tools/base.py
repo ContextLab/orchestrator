@@ -146,6 +146,7 @@ def register_default_tools():
     """Register all default tools with the global registry."""
     # Import here to avoid circular imports
     from .data_tools import DataProcessingTool
+    from .validation import ValidationTool
     from .report_tools import PDFCompilerTool, ReportGeneratorTool
     from .system_tools import FileSystemTool, TerminalTool
     from .web_tools import HeadlessBrowserTool, WebSearchTool
@@ -167,6 +168,7 @@ def register_default_tools():
         VideoProcessingTool,
     )
     from .mcp_tools import MCPServerTool, MCPMemoryTool, MCPResourceTool
+    from .code_execution import PythonExecutorTool
 
     tools = [
         HeadlessBrowserTool(),
@@ -174,6 +176,7 @@ def register_default_tools():
         TerminalTool(),
         FileSystemTool(),
         DataProcessingTool(),
+        ValidationTool(),
         ReportGeneratorTool(),
         PDFCompilerTool(),
         TaskDelegationTool(),
@@ -191,6 +194,7 @@ def register_default_tools():
         MCPServerTool(),
         MCPMemoryTool(),
         MCPResourceTool(),
+        PythonExecutorTool(),
     ]
 
     for tool in tools:
