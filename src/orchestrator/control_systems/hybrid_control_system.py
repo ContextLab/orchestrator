@@ -201,59 +201,48 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # If task has parameters and tool is filesystem, use FileSystemTool for all operations
         if task.metadata.get("tool") == "filesystem" and task.parameters:
-            # Build template context with all available data
-            template_context = self._build_template_context(context)
-
-            # Resolve templates in parameters
-            resolved_params = {}
-            for key, value in task.parameters.items():
-                if isinstance(value, str):
-                    # Always resolve templates for string values
-                    resolved_value = self._resolve_templates(
-                        value, template_context
-                    )
-                    resolved_params[key] = resolved_value
-                else:
-                    resolved_params[key] = value
-
-            # Add the action parameter from the task
-            resolved_params["action"] = action_text
-            
-            # Use FileSystemTool directly
-            return await self.filesystem_tool.execute(**resolved_params)
+            # If template_manager is available, let the tool handle template rendering
+            if "template_manager" in context:
+                # Pass parameters directly to tool with template_manager
+                resolved_params = task.parameters.copy()
+                resolved_params["action"] = action_text
+                resolved_params["template_manager"] = context["template_manager"]
+                return await self.filesystem_tool.execute(**resolved_params)
+            else:
+                # Fall back to control system template resolution
+                template_context = self._build_template_context(context)
+                resolved_params = {}
+                for key, value in task.parameters.items():
+                    if isinstance(value, str):
+                        resolved_value = self._resolve_templates(value, template_context)
+                        resolved_params[key] = resolved_value
+                    else:
+                        resolved_params[key] = value
+                resolved_params["action"] = action_text
+                return await self.filesystem_tool.execute(**resolved_params)
         
         # If the action is a known filesystem operation, use FileSystemTool
         filesystem_actions = ["read", "write", "copy", "move", "delete", "list", "file"]
         if action_text in filesystem_actions and task.parameters:
-            # Build template context with all available data
-            template_context = self._build_template_context(context)
-
-            # Resolve templates in parameters
-            resolved_params = {}
-            for key, value in task.parameters.items():
-                if isinstance(value, str):
-                    # Always resolve templates for string values
-                    resolved_value = self._resolve_templates(
-                        value, template_context
-                    )
-                    # Debug: Check if content parameter still has unrendered templates
-                    if key == "content" and ("{{" in resolved_value or "{%" in resolved_value):
-                        print(f">> WARNING: Content still has unrendered templates after resolution")
-                        print(f">> First unrendered template check:")
-                        print(f">> - summarize_results in context: {'summarize_results' in template_context}")
-                        if 'summarize_results' in template_context:
-                            print(f">> - summarize_results type: {type(template_context['summarize_results'])}")
-                            if isinstance(template_context['summarize_results'], dict):
-                                print(f">> - summarize_results keys: {list(template_context['summarize_results'].keys())}")
-                    resolved_params[key] = resolved_value
-                else:
-                    resolved_params[key] = value
-
-            # Add the action parameter from the task
-            resolved_params["action"] = action_text
-            
-            # Use FileSystemTool directly
-            return await self.filesystem_tool.execute(**resolved_params)
+            # If template_manager is available, let the tool handle template rendering
+            if "template_manager" in context:
+                # Pass parameters directly to tool with template_manager
+                resolved_params = task.parameters.copy()
+                resolved_params["action"] = action_text
+                resolved_params["template_manager"] = context["template_manager"]
+                return await self.filesystem_tool.execute(**resolved_params)
+            else:
+                # Fall back to control system template resolution
+                template_context = self._build_template_context(context)
+                resolved_params = {}
+                for key, value in task.parameters.items():
+                    if isinstance(value, str):
+                        resolved_value = self._resolve_templates(value, template_context)
+                        resolved_params[key] = resolved_value
+                    else:
+                        resolved_params[key] = value
+                resolved_params["action"] = action_text
+                return await self.filesystem_tool.execute(**resolved_params)
 
         # Otherwise handle as a write operation
         # Extract file path from action
