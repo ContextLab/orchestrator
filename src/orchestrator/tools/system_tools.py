@@ -125,13 +125,15 @@ class FileSystemTool(Tool):
         """Execute file system operation."""
         action = kwargs.get("action", "")
         path = kwargs.get("path", "")
+        # Extract template manager if available
+        _template_manager = kwargs.get("_template_manager")
 
         try:
             if action == "read":
                 return await self._read_file(path)
             elif action == "write":
                 content = kwargs.get("content", "")
-                return await self._write_file(path, content)
+                return await self._write_file(path, content, _template_manager)
             elif action == "copy":
                 destination = kwargs.get("destination", "")
                 return await self._copy_file(path, destination)
@@ -168,12 +170,25 @@ class FileSystemTool(Tool):
             "success": True,
         }
 
-    async def _write_file(self, path: str, content: str) -> Dict[str, Any]:
-        """Write content to file."""
+    async def _write_file(self, path: str, content: str, _template_manager=None) -> Dict[str, Any]:
+        """Write content to file with optional runtime template rendering."""
         path_obj = Path(path)
 
         # Create parent directories if they don't exist
         path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+        # If template manager is available and content has templates, render at runtime
+        if _template_manager and isinstance(content, str) and ('{{' in content or '{%' in content):
+            try:
+                # Import here to avoid circular dependency
+                from ..core.template_manager import TemplateManager
+                if isinstance(_template_manager, TemplateManager):
+                    # Use deep_render to handle complex nested templates
+                    content = _template_manager.deep_render(content)
+            except Exception as e:
+                # If rendering fails, log but continue with original content
+                import logging
+                logging.warning(f"Failed to render templates in content: {e}")
 
         path_obj.write_text(content, encoding="utf-8")
 

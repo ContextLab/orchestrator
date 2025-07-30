@@ -222,8 +222,23 @@ class ControlSystem(ABC):
                     continue
                 template_manager.register_context(key, value)
         
-        # Deep render all parameters
-        rendered_task.parameters = template_manager.deep_render(rendered_task.parameters)
+        # Deep render all parameters, but skip content for filesystem write operations
+        if (rendered_task.metadata.get("tool") == "filesystem" and 
+            rendered_task.action == "write" and 
+            rendered_task.parameters and 
+            "content" in rendered_task.parameters):
+            # Render all parameters except content
+            rendered_params = {}
+            for key, value in rendered_task.parameters.items():
+                if key == "content":
+                    # Keep content as-is for runtime rendering
+                    rendered_params[key] = value
+                else:
+                    rendered_params[key] = template_manager.deep_render(value)
+            rendered_task.parameters = rendered_params
+        else:
+            # Normal deep render for all other cases
+            rendered_task.parameters = template_manager.deep_render(rendered_task.parameters)
         
         # Also render the action if it's a string with templates
         if isinstance(rendered_task.action, str):

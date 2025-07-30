@@ -41,6 +41,10 @@ class Tool(ABC):
         # Validate rendered parameters
         self.validate_parameters(rendered_kwargs)
         
+        # Pass template_manager to implementation if it needs runtime rendering
+        if template_manager and self.name == "filesystem":
+            rendered_kwargs['_template_manager'] = template_manager
+        
         # Execute the actual implementation
         return await self._execute_impl(**rendered_kwargs)
     
