@@ -148,6 +148,16 @@ class Orchestrator:
         self.template_manager.clear_context()
         self.template_manager.register_context("pipeline_id", pipeline.id)
         self.template_manager.register_context("execution_id", execution_id)
+        
+        # Add execution metadata
+        from datetime import datetime
+        execution_timestamp = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+        self.template_manager.register_context("execution", {
+            "timestamp": execution_timestamp,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "time": datetime.now().strftime("%H:%M:%S")
+        })
+        
         for key, value in pipeline.context.items():
             self.template_manager.register_context(key, value)
 
