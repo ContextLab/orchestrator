@@ -391,8 +391,29 @@ class Orchestrator:
             if model:
                 context["model"] = model
 
-            # Execute task using _execute_step (allows test override)
-            result = await self._execute_step(task, context)
+            # Determine timeout - check task.timeout, then metadata, then pipeline config
+            timeout_seconds = None
+            if task.timeout:
+                timeout_seconds = task.timeout
+            elif task.metadata.get("timeout"):
+                timeout_seconds = task.metadata.get("timeout")
+            elif context.get("pipeline_metadata", {}).get("default_timeout"):
+                timeout_seconds = context["pipeline_metadata"]["default_timeout"]
+
+            # Execute task with timeout if specified
+            if timeout_seconds:
+                try:
+                    result = await asyncio.wait_for(
+                        self._execute_step(task, context),
+                        timeout=timeout_seconds
+                    )
+                except asyncio.TimeoutError:
+                    raise TimeoutError(
+                        f"Task '{task.id}' exceeded timeout of {timeout_seconds} seconds"
+                    )
+            else:
+                # Execute without timeout
+                result = await self._execute_step(task, context)
 
             # Mark task as completed
             task.complete(result)

@@ -79,15 +79,20 @@ steps:
       prompt: |
         You are an expert research analyst. Analyze the search results and extracted content for "{{ topic }}".
         
-        Provide:
-        1. Executive Summary (200-300 words) - Start with the most significant finding
-        2. Key Findings (5-8 specific, substantive points with examples/data)
-        3. Technical Analysis - Deep dive into implementation details, methodologies
-        4. Current Trends and Future Directions
-        5. Critical Evaluation - Strengths, limitations, controversies
+        Create a comprehensive analysis with the following structure:
+        
+        Start with a 2-3 paragraph overview that synthesizes the most important insights about {{ topic }}, highlighting recent developments and key themes.
+        
+        Then provide:
+        1. Key Findings - 5-8 specific, substantive points with examples and data from the sources
+        2. Technical Analysis - Deep dive into implementation details, methodologies, and specific technologies
+        3. Current Trends and Future Directions - What's emerging and where the field is heading
+        4. Critical Evaluation - Strengths, limitations, controversies, and gaps in current approaches
         
         Be specific, use examples from the sources, and avoid generic statements.
         Write in professional, analytical style suitable for an advanced research report.
+        Do NOT include headers like "Executive Summary" or "Prepared by" statements.
+        Start directly with the overview content.
       model: <AUTO task="analyze">Select model for comprehensive analysis</AUTO>
       max_tokens: 2000
       analysis_type: "comprehensive"
@@ -105,14 +110,19 @@ steps:
         
         {{ analyze_findings.result }}
         
-        Generate 4-6 specific, actionable recommendations that:
+        Create a strategic recommendations section:
+        
+        Start with a brief paragraph (2-3 sentences) summarizing the key opportunities and challenges that drive your recommendations.
+        
+        Then provide 4-6 specific, actionable recommendations that:
         - Address identified gaps or challenges
         - Leverage emerging opportunities
         - Provide clear next steps for researchers/practitioners
         - Consider both short-term and long-term perspectives
         
-        Format as numbered list with brief explanations for each recommendation.
+        Format as a numbered list with substantive explanations (3-4 sentences each).
         Be specific to {{ topic }} - avoid generic advice.
+        Do NOT include any "Prepared by" statements or attribution.
       model: <AUTO task="generate">Select model for recommendations</AUTO>
       max_tokens: 1500
     dependencies:
@@ -132,11 +142,7 @@ steps:
         
         ---
         
-        ## Executive Summary
-        
-        This report analyzes {{ topic }} based on {{ search_topic.total_results + deep_search.total_results }} sources from web searches and extracted content.
-        
-        ## Comprehensive Analysis
+        ## Analysis
         
         {{ analyze_findings.result }}
         
@@ -146,18 +152,17 @@ steps:
         
         ## Search Results
         
-        ### Primary Search Results ({{ search_topic.total_results }} found)
-        {% for result in search_topic.results[:10] %}
-        ### {{ loop.index }}. {{ result.title }}
-        **URL:** [{{ result.url }}]({{ result.url }})
-        **Relevance:** {{ result.relevance }}
-        **Summary:** {{ result.snippet }}
+        The analysis is based on {{ search_topic.total_results + deep_search.total_results }} sources discovered through systematic web searches. The primary search focused on recent developments in {{ topic }}, while the technical search targeted research papers and implementation details.
         
+        ### Primary Sources (Top {{ search_topic.results[:10] | length }} of {{ search_topic.total_results }})
+        {% for result in search_topic.results[:10] %}
+        {{ loop.index }}. **[{{ result.title }}]({{ result.url }})**
+           - {{ result.snippet }}
         {% endfor %}
         
-        ### Technical Research ({{ deep_search.total_results }} results)
-        {% for result in deep_search.results %}
-        {{ loop.index }}. [{{ result.title }}]({{ result.url }})
+        ### Technical Sources ({{ deep_search.total_results }} results)
+        {% for result in deep_search.results[:5] %}
+        {{ loop.index }}. **[{{ result.title }}]({{ result.url }})**
            - {{ result.snippet }}
         {% endfor %}
         
@@ -173,29 +178,24 @@ steps:
         
         ## Methodology
         
-        This report was generated using advanced AI research tools including:
-        - Web search across multiple sources using DuckDuckGo
-        - Content extraction from primary sources using headless browser technology
-        - Multi-stage analysis with specialized AI models
-        - Synthesis of findings into actionable recommendations
+        This comprehensive research report was generated through a multi-stage process combining automated web searches, content extraction, and AI-powered analysis. The methodology ensures broad coverage of current developments while maintaining analytical depth.
+        
+        ### Search Strategy
+        - **Primary search**: "{{ topic }} latest developments" (yielded {{ search_topic.total_results }} results)
+        - **Technical search**: "{{ topic }} research papers technical details implementation" (yielded {{ deep_search.total_results }} results)
+        - **Content extraction**: Automated extraction from primary sources when accessible
+        - **Analysis performed**: {{ execution.timestamp }}
         
         ## References
         
-        ### Primary Sources
+        All sources were accessed on {{ execution.date }} and are listed in order of relevance.
+        
         {% for result in search_topic.results[:5] %}
-        {{ loop.index }}. {{ result.title }}. Retrieved from {{ result.url }}
+        {{ loop.index }}. {{ result.title }}. Available at: {{ result.url }}
         {% endfor %}
-        
-        ### Technical Sources  
-        {% for result in deep_search.results %}
-        {{ loop.index + 5 }}. {{ result.title }}. Retrieved from {{ result.url }}
+        {% for result in deep_search.results[:5] %}
+        {{ loop.index + 5 }}. {{ result.title }}. Available at: {{ result.url }}
         {% endfor %}
-        
-        ### Methodology
-        - Primary search query: "{{ topic }} latest developments 2024 2025"
-        - Technical search query: "{{ topic }} research papers technical details implementation"
-        - Search backend: DuckDuckGo
-        - Analysis performed: {{ execution.timestamp }}
         
         ---
         *This report was automatically generated by the Orchestrator Advanced Research Pipeline v2.0*

@@ -1,0 +1,15 @@
+name: simple_timeout_test
+description: Simple test for timeout functionality
+
+steps:
+  - id: test_timeout
+    action: "Sleep for 5 seconds to test timeout"
+    tool: python-executor
+    parameters:
+      code: |
+        import time
+        print("Starting sleep...")
+        time.sleep(5)
+        print("Finished sleeping")
+        return {"status": "completed"}
+    timeout: 2  # This should timeout after 2 seconds

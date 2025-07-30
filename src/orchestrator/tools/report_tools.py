@@ -403,7 +403,7 @@ class PDFCompilerTool(Tool):
             temp_md_path = temp_md.name
 
         try:
-            # Prepare pandoc command
+            # Prepare pandoc command with xelatex for Unicode support
             cmd = [
                 "pandoc",
                 temp_md_path,
@@ -411,11 +411,15 @@ class PDFCompilerTool(Tool):
                 output_path,
                 "-f",
                 "markdown",  # Explicitly specify input format
-                "--pdf-engine=pdflatex",  # Use pdflatex which is more commonly available
+                "--pdf-engine=xelatex",  # Use xelatex for better Unicode support
                 "-V",
                 "geometry=margin=1in",
                 "-V",
                 "fontsize=12pt",
+                "-V",
+                "mainfont=DejaVu Sans",  # Unicode-capable font
+                "-V",
+                "monofont=DejaVu Sans Mono",  # Unicode-capable monospace font
                 "--highlight-style=tango",
                 f"--metadata=title:{title}",
                 f"--metadata=author:{author}",
@@ -438,26 +442,60 @@ class PDFCompilerTool(Tool):
                     "message": f"PDF generated successfully: {output_path}",
                 }
             else:
-                # If xelatex fails, try with default PDF engine
-                cmd[3] = "--pdf-engine=pdflatex"
-                cmd.remove("-V")
-                cmd.remove("mainfont=DejaVu Sans")
-
+                # If xelatex fails, try with lualatex (also has good Unicode support)
+                cmd[cmd.index("--pdf-engine=xelatex")] = "--pdf-engine=lualatex"
+                
                 result = subprocess.run(cmd, capture_output=True, text=True)
-
+                
                 if result.returncode == 0:
                     file_size = os.path.getsize(output_path)
                     return {
                         "success": True,
                         "output_path": output_path,
                         "file_size": file_size,
-                        "message": f"PDF generated successfully (using pdflatex): {output_path}",
+                        "message": f"PDF generated successfully (using lualatex): {output_path}",
                     }
                 else:
-                    return {
-                        "success": False,
-                        "error": f"Pandoc failed: {result.stderr}",
-                    }
+                    # Last resort: try pdflatex with inputenc for basic Unicode support
+                    cmd = [
+                        "pandoc",
+                        temp_md_path,
+                        "-o",
+                        output_path,
+                        "-f",
+                        "markdown",
+                        "--pdf-engine=pdflatex",
+                        "-V",
+                        "geometry=margin=1in",
+                        "-V",
+                        "fontsize=12pt",
+                        "-V",
+                        "header-includes=\\usepackage[utf8]{inputenc}",  # Enable UTF-8 input
+                        "-V",
+                        "header-includes=\\usepackage[T1]{fontenc}",  # Better font encoding
+                        "--highlight-style=tango",
+                        f"--metadata=title:{title}",
+                        f"--metadata=author:{author}",
+                        "--metadata=date:" + datetime.now().strftime("%B %d, %Y"),
+                        "--toc",
+                        "--toc-depth=2",
+                    ]
+                    
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+
+                    if result.returncode == 0:
+                        file_size = os.path.getsize(output_path)
+                        return {
+                            "success": True,
+                            "output_path": output_path,
+                            "file_size": file_size,
+                            "message": f"PDF generated successfully (using pdflatex): {output_path}",
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "error": f"Pandoc failed with all engines: {result.stderr}",
+                        }
 
         except Exception as e:
             return {"success": False, "error": f"PDF compilation failed: {str(e)}"}
@@ -517,7 +555,7 @@ class PDFCompilerTool(Tool):
                         ["sudo", "apt-get", "update"], capture_output=True
                     )
                     result = subprocess.run(
-                        ["sudo", "apt-get", "install", "-y", "pandoc", "texlive-xetex"],
+                        ["sudo", "apt-get", "install", "-y", "pandoc", "texlive-xetex", "texlive-luatex", "texlive-fonts-recommended", "texlive-fonts-extra"],
                         capture_output=True,
                         text=True,
                     )
@@ -531,7 +569,7 @@ class PDFCompilerTool(Tool):
                 if self._command_exists("yum"):
                     logger.info("Installing pandoc via yum...")
                     result = subprocess.run(
-                        ["sudo", "yum", "install", "-y", "pandoc", "texlive-xetex"],
+                        ["sudo", "yum", "install", "-y", "pandoc", "texlive-xetex", "texlive-luatex-bin", "texlive-collection-fontsrecommended"],
                         capture_output=True,
                         text=True,
                     )
@@ -542,7 +580,7 @@ class PDFCompilerTool(Tool):
                 if self._command_exists("dnf"):
                     logger.info("Installing pandoc via dnf...")
                     result = subprocess.run(
-                        ["sudo", "dnf", "install", "-y", "pandoc", "texlive-xetex"],
+                        ["sudo", "dnf", "install", "-y", "pandoc", "texlive-xetex", "texlive-luatex-bin", "texlive-collection-fontsrecommended"],
                         capture_output=True,
                         text=True,
                     )
