@@ -60,7 +60,7 @@ class ModelBasedControlSystem(ControlSystem):
         self.model_registry = model_registry
         self._execution_history = []
 
-    async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
+    async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """
         Execute a task using appropriate AI model.
 

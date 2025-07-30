@@ -55,7 +55,7 @@ class ToolIntegratedControlSystem(ControlSystem):
         # Register default tools
         self.tool_server.register_default_tools()
 
-    async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
+    async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task using integrated tools."""
         print(f"\n⚙️  Executing task: {task.id} ({task.action})")
 
@@ -161,9 +161,44 @@ class ToolIntegratedControlSystem(ControlSystem):
 
             # Map task parameters to tool parameters
             tool_params = self._map_task_to_tool_params(task, tool_name)
+            
+            # Deep render all template parameters before passing to tool
+            from ..core.template_manager import TemplateManager
+            template_manager = TemplateManager()
+            
+            # Register context in template manager
+            # Handle both 'results' and 'previous_results' keys
+            if "results" in context:
+                template_manager.register_all_results(context["results"])
+            elif "previous_results" in context:
+                template_manager.register_all_results(context["previous_results"])
+            
+            # Also add results from self._results
+            if self._results:
+                template_manager.register_all_results(self._results)
+            
+            # Add other context values
+            for key, value in context.items():
+                if key not in ["results", "previous_results"] and not key.startswith("_"):
+                    template_manager.register_context(key, value)
+            
+            # Deep render tool parameters to handle all template strings
+            print(f"   📝 Original parameters: {tool_params}")
+            print(f"   📝 Available context keys: {list(template_manager.context.keys())}")
+            
+            # For debugging filesystem tool specifically
+            if tool_name == "filesystem" and "content" in tool_params:
+                print(f"   📝 Content preview (first 200 chars): {tool_params['content'][:200]}...")
+                
+            rendered_params = template_manager.deep_render(tool_params)
+            
+            if tool_name == "filesystem" and "content" in rendered_params:
+                print(f"   📝 Rendered content preview (first 200 chars): {rendered_params['content'][:200]}...")
+                
+            print(f"   📝 Rendered parameters keys: {list(rendered_params.keys()) if isinstance(rendered_params, dict) else 'Not a dict'}")
 
-            # Execute tool
-            result = await self.tool_server.handle_tool_call(tool_name, tool_params)
+            # Execute tool with rendered parameters
+            result = await self.tool_server.handle_tool_call(tool_name, rendered_params)
 
             if result.get("success", False):
                 print("   ✅ Tool execution successful")

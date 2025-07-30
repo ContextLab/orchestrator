@@ -37,7 +37,7 @@ This report analyzes {{ topic }} based on {{ search_topic.total_results + deep_s
 
 ## Extracted Content Analysis
 
-{% if extract_content.success %}
+{% if not extract_content.error and extract_content.word_count %}
 **Primary Source:** {{ extract_content.title }}
 **URL:** {{ extract_content.url }}
 **Content Summary:** Successfully extracted {{ extract_content.word_count }} words from the primary source.

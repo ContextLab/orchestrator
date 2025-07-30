@@ -168,7 +168,12 @@ class TemplateManager:
             elif not isinstance(date_obj, datetime):
                 return str(date_obj)
             
-            return date_obj.strftime(format_str)
+            # Fix the format string parameter name issue
+            try:
+                return date_obj.strftime(format_str)
+            except Exception as e:
+                logger.warning(f"Date formatting error with format '{format_str}': {e}")
+                return date_obj.strftime('%Y-%m-%d %H:%M:%S')
         
         def markdown_format(text: str) -> str:
             """Basic markdown formatting improvements."""
@@ -205,9 +210,14 @@ class TemplateManager:
         if self.debug_mode:
             logger.info(f"Registering template context: {key} = {type(value).__name__}")
         
+        # For dictionaries that already have structured data (like web search results),
+        # register them directly without wrapping
+        if isinstance(value, dict) and any(k in value for k in ['results', 'total_results', 'query', 'backend']):
+            # This looks like a tool result with direct properties - don't wrap it
+            self.context[key] = value
         # Handle special case where value is a dict with 'result' attribute
         # This maintains backward compatibility with existing templates
-        if isinstance(value, dict) and 'result' in value:
+        elif isinstance(value, dict) and 'result' in value:
             # Create object with result attribute for template compatibility
             class ResultWrapper:
                 def __init__(self, data):
@@ -277,9 +287,21 @@ class TemplateManager:
             
         except UndefinedError as e:
             logger.warning(f"Undefined variable in template '{template_string}': {e}")
+            # Print more context about what's available
+            logger.warning(f"Available variables in context: {list(context.keys())}")
+            if '.' in str(e):
+                # Try to identify which variable is causing the issue
+                var_parts = str(e).split("'")
+                if len(var_parts) >= 2:
+                    var_name = var_parts[1].split('.')[0]
+                    if var_name in context:
+                        logger.warning(f"Variable '{var_name}' exists but has type: {type(context[var_name])}")
+                        logger.warning(f"Variable '{var_name}' value: {context[var_name]}")
             return template_string
         except Exception as e:
             logger.error(f"Error rendering template '{template_string}': {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Available variables in context: {list(context.keys())}")
             return template_string
     
     def render_dict(self, data: Dict[str, Any], additional_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -334,3 +356,46 @@ class TemplateManager:
         """Clear all context except base context."""
         self.context.clear()
         self._setup_base_context()
+    
+    def deep_render(self, data: Any, additional_context: Optional[Dict[str, Any]] = None) -> Any:
+        """
+        Recursively render all template strings in any data structure.
+        
+        This is the universal template rendering function that handles:
+        - Strings with template syntax
+        - Dictionaries (renders all values)
+        - Lists (renders all items)
+        - Nested structures of any depth
+        - Preserves non-string types
+        
+        Args:
+            data: Any data structure that may contain template strings
+            additional_context: Additional context variables for rendering
+            
+        Returns:
+            The same data structure with all templates rendered
+        """
+        if isinstance(data, str):
+            # Only render if it contains template syntax
+            if self.has_templates(data):
+                try:
+                    return self.render(data, additional_context)
+                except Exception as e:
+                    logger.error(f"Error rendering template '{data[:100]}...': {e}")
+                    # Return original string if rendering fails
+                    return data
+            return data
+        elif isinstance(data, dict):
+            # Recursively render all dictionary values
+            return {key: self.deep_render(value, additional_context) 
+                    for key, value in data.items()}
+        elif isinstance(data, list):
+            # Recursively render all list items
+            return [self.deep_render(item, additional_context) 
+                    for item in data]
+        elif isinstance(data, tuple):
+            # Handle tuples by converting to list, rendering, then back to tuple
+            return tuple(self.deep_render(list(data), additional_context))
+        else:
+            # Return all other types as-is (int, float, bool, None, objects, etc.)
+            return data

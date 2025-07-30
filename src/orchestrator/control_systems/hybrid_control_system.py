@@ -71,7 +71,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.report_generator_tool = ReportGeneratorTool()
         self.pdf_compiler_tool = PDFCompilerTool()
 
-    async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
+    async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task with support for both models and tools."""
         action_str = str(task.action).lower()
 
@@ -101,7 +101,7 @@ class HybridControlSystem(ModelBasedControlSystem):
             return await self._handle_validation(task, context)
 
         # Otherwise use model-based execution
-        return await super().execute_task(task, context)
+        return await super()._execute_task_impl(task, context)
 
     async def _handle_tool_execution(self, task: Task, tool_name: str, context: Dict[str, Any]) -> Any:
         """Handle execution with a specific tool."""
@@ -201,48 +201,61 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # If task has parameters and tool is filesystem, use FileSystemTool for all operations
         if task.metadata.get("tool") == "filesystem" and task.parameters:
-            # If template_manager is available, let the tool handle template rendering
-            if "template_manager" in context:
-                # Pass parameters directly to tool with template_manager
-                resolved_params = task.parameters.copy()
-                resolved_params["action"] = action_text
-                resolved_params["template_manager"] = context["template_manager"]
-                return await self.filesystem_tool.execute(**resolved_params)
-            else:
-                # Fall back to control system template resolution
-                template_context = self._build_template_context(context)
-                resolved_params = {}
-                for key, value in task.parameters.items():
-                    if isinstance(value, str):
-                        resolved_value = self._resolve_templates(value, template_context)
-                        resolved_params[key] = resolved_value
-                    else:
-                        resolved_params[key] = value
-                resolved_params["action"] = action_text
-                return await self.filesystem_tool.execute(**resolved_params)
+            print(f">> DEBUG: Handling filesystem operation for task: {task.id if hasattr(task, 'id') else 'unknown'}")
+            # Use deep template rendering with full Jinja2 support
+            from ..core.template_manager import TemplateManager
+            template_manager = TemplateManager()
+            
+            # Build template context and register directly without wrapping
+            template_context = self._build_template_context(context)
+            
+            # Register all previous results directly from the original context
+            # to avoid the wrapping issue in _build_template_context
+            if "previous_results" in context:
+                template_manager.register_all_results(context["previous_results"])
+            
+            # Add other context values (but skip the wrapped versions)
+            for key, value in template_context.items():
+                if key not in ["previous_results"] and not key.startswith("_"):
+                    # Skip if this is a step result that was already registered
+                    if "previous_results" in context and key in context["previous_results"]:
+                        continue
+                    template_manager.register_context(key, value)
+            
+            # Parameters are already rendered by the base class
+            resolved_params = task.parameters.copy()
+            resolved_params["action"] = action_text
+            
+            return await self.filesystem_tool.execute(**resolved_params)
         
         # If the action is a known filesystem operation, use FileSystemTool
         filesystem_actions = ["read", "write", "copy", "move", "delete", "list", "file"]
         if action_text in filesystem_actions and task.parameters:
-            # If template_manager is available, let the tool handle template rendering
-            if "template_manager" in context:
-                # Pass parameters directly to tool with template_manager
-                resolved_params = task.parameters.copy()
-                resolved_params["action"] = action_text
-                resolved_params["template_manager"] = context["template_manager"]
-                return await self.filesystem_tool.execute(**resolved_params)
-            else:
-                # Fall back to control system template resolution
-                template_context = self._build_template_context(context)
-                resolved_params = {}
-                for key, value in task.parameters.items():
-                    if isinstance(value, str):
-                        resolved_value = self._resolve_templates(value, template_context)
-                        resolved_params[key] = resolved_value
-                    else:
-                        resolved_params[key] = value
-                resolved_params["action"] = action_text
-                return await self.filesystem_tool.execute(**resolved_params)
+            # Use deep template rendering with full Jinja2 support
+            from ..core.template_manager import TemplateManager
+            template_manager = TemplateManager()
+            
+            # Build template context and register directly without wrapping
+            template_context = self._build_template_context(context)
+            
+            # Register all previous results directly from the original context
+            # to avoid the wrapping issue in _build_template_context
+            if "previous_results" in context:
+                template_manager.register_all_results(context["previous_results"])
+            
+            # Add other context values (but skip the wrapped versions)
+            for key, value in template_context.items():
+                if key not in ["previous_results"] and not key.startswith("_"):
+                    # Skip if this is a step result that was already registered
+                    if "previous_results" in context and key in context["previous_results"]:
+                        continue
+                    template_manager.register_context(key, value)
+            
+            # Parameters are already rendered by the base class
+            resolved_params = task.parameters.copy()
+            resolved_params["action"] = action_text
+            
+            return await self.filesystem_tool.execute(**resolved_params)
 
         # Otherwise handle as a write operation
         # Extract file path from action

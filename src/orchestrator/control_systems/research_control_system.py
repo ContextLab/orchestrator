@@ -46,7 +46,7 @@ class ResearchReportControlSystem(ControlSystem):
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._results = {}
 
-    async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
+    async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute a research task."""
         print(f"\n⚙️  Executing task: {task.id} ({task.action})")
 

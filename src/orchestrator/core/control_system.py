@@ -38,13 +38,30 @@ class ControlSystem(ABC):
         self.config = config or {}
         self._capabilities = self._load_capabilities()
 
-    @abstractmethod
     async def execute_task(self, task: Task, context: Dict[str, Any]) -> Any:
         """
-        Execute a single task.
+        Execute a single task with automatic template rendering.
 
         Args:
             task: Task to execute
+            context: Execution context
+
+        Returns:
+            Task execution result
+        """
+        # Pre-process task parameters with template rendering
+        rendered_task = self._render_task_templates(task, context)
+        
+        # Call the implementation-specific execution
+        return await self._execute_task_impl(rendered_task, context)
+    
+    @abstractmethod
+    async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
+        """
+        Execute a single task (to be implemented by subclasses).
+
+        Args:
+            task: Task to execute (with templates already rendered)
             context: Execution context
 
         Returns:
@@ -143,3 +160,73 @@ class ControlSystem(ABC):
     def __hash__(self) -> int:
         """Hash based on name."""
         return hash(self.name)
+    
+    def _render_task_templates(self, task: Task, context: Dict[str, Any]) -> Task:
+        """
+        Render all template strings in task parameters using deep template rendering.
+        
+        Args:
+            task: Task with potential template strings
+            context: Execution context with previous results
+            
+        Returns:
+            Task with all templates rendered
+        """
+        # Import here to avoid circular dependency
+        from .template_manager import TemplateManager
+        
+        # Create a copy of the task to avoid modifying the original
+        import copy
+        rendered_task = copy.deepcopy(task)
+        
+        # Skip if no parameters to render
+        if not rendered_task.parameters:
+            return rendered_task
+        
+        # Create template manager and register context
+        template_manager = TemplateManager()
+        
+        # Register previous results if available
+        if "previous_results" in context:
+            template_manager.register_all_results(context["previous_results"])
+        
+        # Register pipeline parameters if available
+        if "pipeline_metadata" in context and isinstance(context["pipeline_metadata"], dict):
+            params = context["pipeline_metadata"].get("parameters", {})
+            for param_name, param_value in params.items():
+                template_manager.register_context(param_name, param_value)
+            
+            # Also check for inputs
+            inputs = context["pipeline_metadata"].get("inputs", {})
+            for input_name, input_value in inputs.items():
+                template_manager.register_context(input_name, input_value)
+        
+        # Register pipeline context values (which should contain inputs)
+        if "pipeline_context" in context and isinstance(context["pipeline_context"], dict):
+            for key, value in context["pipeline_context"].items():
+                template_manager.register_context(key, value)
+        
+        # Add execution metadata
+        from datetime import datetime
+        template_manager.register_context("execution", {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "time": datetime.now().strftime("%H:%M:%S")
+        })
+        
+        # Register other context values
+        for key, value in context.items():
+            if key not in ["previous_results", "_template_manager", "pipeline_metadata", "pipeline_context"] and not key.startswith("_"):
+                # Skip if already registered as a result
+                if "previous_results" in context and key in context["previous_results"]:
+                    continue
+                template_manager.register_context(key, value)
+        
+        # Deep render all parameters
+        rendered_task.parameters = template_manager.deep_render(rendered_task.parameters)
+        
+        # Also render the action if it's a string with templates
+        if isinstance(rendered_task.action, str):
+            rendered_task.action = template_manager.deep_render(rendered_task.action)
+        
+        return rendered_task
