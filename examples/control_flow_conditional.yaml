@@ -25,9 +25,11 @@ steps:
       
   # Check file size
   - id: check_size
-    action: echo
+    action: generate_text
     parameters:
-      message: "File size is {{ read_file.size }} bytes"
+      prompt: "File size analysis: The file is {{ read_file.size }} bytes"
+      model: <AUTO task="analyze">Select a model for analysis</AUTO>
+      max_tokens: 50
     dependencies:
       - read_file
     

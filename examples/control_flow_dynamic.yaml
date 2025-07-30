@@ -16,73 +16,84 @@ parameters:
 steps:
   # Initial validation
   - id: validate_input
-    action: validation
+    tool: validation
+    action: validate
     parameters:
       data: "{{ operation }}"
       validation_type: "operation_check"
       
   # Determine operation risk level
   - id: assess_risk
-    action: task-delegation
+    tool: task-delegation
+    action: delegate
     parameters:
       task: "<AUTO>Assess the risk level of operation '{{ operation }}': low, medium, or high</AUTO>"
     depends_on: [validate_input]
     
   # Dynamic dependency based on risk
   - id: prepare_operation
-    action: data-processing
+    tool: data-processing
+    action: process
     parameters:
-      action: prepare
-      operation: "{{ operation }}"
+      operation: prepare
+      data: "{{ operation }}"
       safety_level: "{{ assess_risk.result }}"
     depends_on: <AUTO>Based on risk level {{ assess_risk.result }}, should we depend on 'validate_input' only or also add 'safety_check'?</AUTO>
     
   # Optional safety check (created dynamically)
   - id: safety_check
-    action: validation
+    tool: validation
+    action: validate
     if: "{{ assess_risk.result == 'high' }}"
     parameters:
       validation_type: "safety"
-      operation: "{{ operation }}"
+      data: "{{ operation }}"
     depends_on: [assess_risk]
     
   # Execute operation
   - id: execute_operation
-    action: terminal
+    tool: terminal
+    action: execute
     parameters:
       command: "{{ operation }}"
-      safe_mode: "{{ assess_risk.result != 'low' }}"
     depends_on: [prepare_operation]
     
   # Check execution result
   - id: check_result
-    action: validation
+    tool: validation
+    action: validate
     parameters:
       data: "{{ execute_operation.result }}"
-      expected_status: "success"
+      validation_type: "result_check"
     depends_on: [execute_operation]
     
   # Dynamic flow control based on result
   - id: handle_result
-    action: task-delegation
+    tool: task-delegation
+    action: delegate
     parameters:
       task: "Process execution result"
-      result: "{{ check_result.result }}"
+      context: "{{ check_result.result }}"
     goto: "<AUTO>Based on execution result {{ check_result.result }}, which handler should we jump to: 'success_handler', 'retry_handler', or 'failure_handler'?</AUTO>"
     depends_on: [check_result]
     
   # Retry handler
   - id: retry_handler
-    action: data-processing
+    tool: data-processing
+    action: process
     parameters:
-      action: prepare_retry
-      attempt: "{{ (metadata.retry_count | default(0)) + 1 }}"
-      max_attempts: "{{ retry_limit }}"
+      operation: prepare_retry
+      data: |
+        {
+          "attempt": {{ (metadata.retry_count | default(0)) + 1 }},
+          "max_attempts": {{ retry_limit }}
+        }
     goto: "{{ metadata.retry_count < retry_limit ? 'execute_operation' : 'failure_handler' }}"
     
   # Success handler
   - id: success_handler
-    action: report-generator
+    tool: report-generator
+    action: generate
     parameters:
       title: "Operation Successful"
       content: |
@@ -95,7 +106,8 @@ steps:
     
   # Failure handler
   - id: failure_handler
-    action: report-generator
+    tool: report-generator
+    action: generate
     parameters:
       title: "Operation Failed"
       content: |
@@ -108,11 +120,15 @@ steps:
     
   # Cleanup (always executed)
   - id: cleanup
-    action: data-processing
+    tool: data-processing
+    action: process
     parameters:
-      action: cleanup
-      operation_id: "{{ execute_operation.id }}"
-      status: "{{ check_result.result.status }}"
+      operation: cleanup
+      data: |
+        {
+          "operation_id": "{{ execute_operation.id }}",
+          "status": "{{ check_result.result.status }}"
+        }
       
   # Save final report
   - id: save_report

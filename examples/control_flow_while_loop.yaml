@@ -18,9 +18,11 @@ parameters:
 steps:
   # Initialize the process
   - id: initialize
-    action: echo
+    action: generate_text
     parameters:
-      message: "Starting number guessing game. Target is {{ target_number }}"
+      prompt: "Starting number guessing game. Target is {{ target_number }}"
+      model: <AUTO task="summarize">Select a model for initialization</AUTO>
+      max_tokens: 50
       
   # Create initial state file
   - id: init_state
@@ -61,9 +63,11 @@ steps:
           
       # Extract number from response
       - id: extract_number
-        action: echo
+        action: analyze_text
         parameters:
-          message: "Generated guess: {{ generate_guess.result | regex_search('[0-9]+') | default('25') }}"
+          text: "Generated guess: {{ generate_guess.result | regex_search('[0-9]+') | default('25') }}"
+          model: <AUTO task="analyze">Select a model for number extraction</AUTO>
+          analysis_type: "extract_number"
         dependencies:
           - generate_guess
           
@@ -93,9 +97,11 @@ steps:
           
       # Update loop state
       - id: update_loop_state
-        action: echo
+        action: generate_text
         parameters:
-          message: "Attempt {{ $iteration }} complete"
+          prompt: "Attempt {{ $iteration }} complete"
+          model: <AUTO task="summarize">Select a model for status update</AUTO>
+          max_tokens: 20
         dependencies:
           - log_attempt
     dependencies:

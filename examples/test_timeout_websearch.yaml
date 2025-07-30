@@ -6,24 +6,28 @@ metadata:
 
 steps:
   - id: quick_search
-    action: "Search for AI news"
     tool: web-search
+    action: search
     parameters:
       query: "artificial intelligence news"
       max_results: 5
     timeout: 10  # 10 second timeout for quick search
     
   - id: test_model_timeout
-    action: "Generate a very long text that might timeout"
+    action: generate_text
     parameters:
       prompt: "Write a short summary about AI"
+      model: <AUTO task="generate">Select a model for text generation</AUTO>
+      max_tokens: 5000
     timeout: 5  # Very short timeout to test timeout behavior
     metadata:
       model_requirements:
         min_params: 1000000
         
   - id: normal_task
-    action: "Process the search results"
+    action: analyze_text
     parameters:
-      data: "{{ steps.quick_search.results }}"
+      text: "{{ steps.quick_search.results | tojson }}"
+      model: <AUTO task="analyze">Select a model for analysis</AUTO>
+      analysis_type: "summarize"
     # Uses default_timeout from metadata (120 seconds)

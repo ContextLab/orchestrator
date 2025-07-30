@@ -30,9 +30,11 @@ steps:
       
   # Determine if text needs enhancement
   - id: check_quality
-    action: echo
+    action: generate_text
     parameters:
-      message: "Text quality analysis complete"
+      prompt: "Text quality analysis complete. The analysis shows: {{ analyze_text.result }}"
+      model: <AUTO task="summarize">Select a model for summary</AUTO>
+      max_tokens: 50
     dependencies:
       - analyze_text
       
@@ -53,9 +55,11 @@ steps:
       
   # Use enhanced or original text
   - id: prepare_text
-    action: echo
+    action: generate_text
     parameters:
-      message: "Using {{ enhance_text.result ? 'enhanced' : 'original' }} text for translation"
+      prompt: "Preparing text for translation. Using {% if enhance_text.result %}enhanced{% else %}original{% endif %} text."
+      model: <AUTO task="summarize">Select a model for status update</AUTO>
+      max_tokens: 50
     dependencies:
       - enhance_text
       - check_quality
