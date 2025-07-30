@@ -50,7 +50,7 @@ class DuckDuckGoSearchBackend(WebSearchBackend):
                             region=self.config.get("region", "us-en"),
                             safesearch=self.config.get("safe_search", "moderate"),
                             timelimit=self.config.get("time_range", None),
-                            max_results=max_results,
+                            max_results=int(max_results) if isinstance(max_results, str) else max_results,
                         )
                     )
                 return results
