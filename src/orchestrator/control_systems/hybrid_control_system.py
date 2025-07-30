@@ -201,10 +201,13 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # If task has parameters and tool is filesystem, use FileSystemTool for all operations
         if task.metadata.get("tool") == "filesystem" and task.parameters:
-            print(f">> DEBUG: Handling filesystem operation for task: {task.id if hasattr(task, 'id') else 'unknown'}")
             # Parameters are already rendered by the base class - just use them directly
             resolved_params = task.parameters.copy()
             resolved_params["action"] = action_text
+            
+            # Pass template_manager from context if available
+            if "_template_manager" in context:
+                resolved_params["template_manager"] = context["_template_manager"]
             
             return await self.filesystem_tool.execute(**resolved_params)
         
@@ -214,6 +217,10 @@ class HybridControlSystem(ModelBasedControlSystem):
             # Parameters are already rendered by the base class - just use them directly
             resolved_params = task.parameters.copy()
             resolved_params["action"] = action_text
+            
+            # Pass template_manager from context if available
+            if "_template_manager" in context:
+                resolved_params["template_manager"] = context["_template_manager"]
             
             return await self.filesystem_tool.execute(**resolved_params)
 

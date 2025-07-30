@@ -25,11 +25,6 @@ async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = No
     # Initialize orchestrator with models
     orchestrator = Orchestrator(model_registry=model_registry)
     
-    # Set output directory if specified
-    if output_dir:
-        # Ensure output directory exists
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-    
     # Read pipeline YAML
     yaml_path = Path(yaml_file)
     if not yaml_path.exists():
@@ -37,6 +32,14 @@ async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = No
         return 1
     
     yaml_content = yaml_path.read_text()
+    
+    # Set output directory if specified
+    if output_dir:
+        # Ensure output directory exists
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        # Add output_path to inputs if not already specified
+        if 'output_path' not in inputs:
+            inputs['output_path'] = output_dir
     
     # Run pipeline
     print(f"Running pipeline: {yaml_path.name}")

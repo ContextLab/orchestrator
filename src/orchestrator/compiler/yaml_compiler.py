@@ -171,6 +171,30 @@ class YAMLCompiler:
                     # Direct value (e.g., batch_size: 100)
                     merged[input_name] = input_spec
 
+        # Also merge parameters section (similar to inputs)
+        if "parameters" in pipeline_def:
+            params_def = pipeline_def["parameters"]
+
+            # Process each parameter definition
+            for param_name, param_spec in params_def.items():
+                # Skip if parameter already provided in context
+                if param_name in merged:
+                    continue
+
+                # Apply default value if specified
+                if isinstance(param_spec, dict) and "default" in param_spec:
+                    merged[param_name] = param_spec["default"]
+                elif isinstance(param_spec, dict) and not any(
+                    key in param_spec
+                    for key in ["type", "description", "required", "default"]
+                ):
+                    # If it's a dict but not a parameter definition (no type/description/etc),
+                    # treat it as a nested value structure
+                    merged[param_name] = param_spec
+                elif not isinstance(param_spec, dict):
+                    # Direct value (e.g., max_results: 10)
+                    merged[param_name] = param_spec
+
         return merged
 
     def _parse_yaml(self, yaml_content: str) -> Dict[str, Any]:

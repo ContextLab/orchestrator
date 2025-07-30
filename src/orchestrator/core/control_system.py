@@ -229,4 +229,7 @@ class ControlSystem(ABC):
         if isinstance(rendered_task.action, str):
             rendered_task.action = template_manager.deep_render(rendered_task.action)
         
+        # Store template_manager in context for tools to use
+        context["_template_manager"] = template_manager
+        
         return rendered_task

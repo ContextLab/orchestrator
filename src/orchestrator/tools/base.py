@@ -50,8 +50,21 @@ class Tool(ABC):
         pass
     
     def _render_parameters(self, kwargs: Dict[str, Any], template_manager: 'TemplateManager') -> Dict[str, Any]:
-        """Automatically render all string parameters using the template manager."""
-        return template_manager.render_dict(kwargs)
+        """
+        Automatically render all template strings in parameters using deep template rendering.
+        
+        This ensures that all string values containing Jinja2 templates are properly rendered
+        before being passed to the tool implementation.
+        
+        Args:
+            kwargs: Tool parameters that may contain template strings
+            template_manager: Template manager with registered context
+            
+        Returns:
+            Parameters with all templates rendered
+        """
+        # Use deep_render to handle nested structures and all template syntax
+        return template_manager.deep_render(kwargs)
 
     def add_parameter(
         self,
