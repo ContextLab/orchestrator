@@ -1,13 +1,11 @@
 # Batch Processing Summary
 
-Total files processed: 2
+Total files processed: 3
 
 ## Files
-
-- test.csv
-
-- input.csv
-
+- file1.txt
+- file2.txt
+- file3.txt
 
 ## Results
 All files have been processed and saved to examples/outputs/control_flow_for_loop/

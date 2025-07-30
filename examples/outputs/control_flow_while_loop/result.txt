@@ -1,0 +1,5 @@
+# Number Guessing Results
+
+Target number: {{ target_number }}
+Total attempts: {{ guessing_loop.$iterations | default(0) }}
+Success: {{ guessing_loop.$completed | default(false) }}
