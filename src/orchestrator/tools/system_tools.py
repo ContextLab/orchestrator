@@ -183,12 +183,29 @@ class FileSystemTool(Tool):
                 # Import here to avoid circular dependency
                 from ..core.template_manager import TemplateManager
                 if isinstance(_template_manager, TemplateManager):
+                    print(f"DEBUG: FileSystemTool rendering templates...")
+                    print(f"DEBUG: Template manager context keys: {list(_template_manager.context.keys())}")
+                    # Debug specific variables
+                    if 'analyze_findings' in _template_manager.context:
+                        print(f"DEBUG: analyze_findings type: {type(_template_manager.context['analyze_findings'])}")
+                        print(f"DEBUG: analyze_findings value preview: {str(_template_manager.context['analyze_findings'])[:100]}...")
+                    if 'search_topic' in _template_manager.context:
+                        print(f"DEBUG: search_topic type: {type(_template_manager.context['search_topic'])}")
+                        if hasattr(_template_manager.context['search_topic'], 'total_results'):
+                            print(f"DEBUG: search_topic.total_results: {_template_manager.context['search_topic'].total_results}")
                     # Use deep_render to handle complex nested templates
-                    content = _template_manager.deep_render(content)
+                    rendered = _template_manager.deep_render(content)
+                    print(f"DEBUG: Rendered content length: {len(rendered)} (original: {len(content)})")
+                    content = rendered
+                else:
+                    print(f"DEBUG: _template_manager is not a TemplateManager: {type(_template_manager)}")
             except Exception as e:
                 # If rendering fails, log but continue with original content
                 import logging
                 logging.warning(f"Failed to render templates in content: {e}")
+                print(f"DEBUG: Template rendering failed: {e}")
+        else:
+            print(f"DEBUG: Not rendering templates - manager: {_template_manager is not None}, has templates: {('{{' in content or '{%' in content) if isinstance(content, str) else False}")
 
         path_obj.write_text(content, encoding="utf-8")
 

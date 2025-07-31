@@ -378,6 +378,8 @@ class Orchestrator:
                     else:
                         # Task succeeded
                         results[task_id] = result
+                        # Register result immediately with template manager so subsequent tasks can use it
+                        self.template_manager.register_context(task_id, result)
 
             # Note: Skipped tasks are already handled above at line 236
             # This loop was redundant and has been removed
