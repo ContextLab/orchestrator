@@ -183,11 +183,6 @@ class FileSystemTool(Tool):
                 # Import here to avoid circular dependency
                 from ..core.template_manager import TemplateManager
                 if isinstance(_template_manager, TemplateManager):
-                    # Debug: print available context
-                    if "{{topic}}" in content:
-                        print(f"DEBUG: Template manager has 'topic' in context: {'topic' in _template_manager.context}")
-                        if 'topic' not in _template_manager.context:
-                            print(f"DEBUG: Available context keys: {sorted(list(_template_manager.context.keys()))}")
                     # Use deep_render to handle complex nested templates
                     content = _template_manager.deep_render(content)
             except Exception as e:
