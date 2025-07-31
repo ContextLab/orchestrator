@@ -186,6 +186,9 @@ class ControlSystem(ABC):
         # Use template manager from context if available, otherwise create new one
         template_manager = context.get("template_manager")
         if template_manager is None:
+            # Log warning that we're creating a new template manager
+            import logging
+            logging.warning("Creating new TemplateManager in ControlSystem - pipeline inputs may be lost!")
             # Create new template manager only if not provided
             template_manager = TemplateManager()
             
@@ -306,6 +309,7 @@ class ControlSystem(ABC):
             rendered_task.action = template_manager.deep_render(rendered_task.action)
         
         # Store template_manager in context for tools to use
+        # This ensures tools get the same template_manager with all registered context
         context["_template_manager"] = template_manager
         
         return rendered_task
