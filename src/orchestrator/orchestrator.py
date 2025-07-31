@@ -163,8 +163,13 @@ class Orchestrator:
             "time": datetime.now().strftime("%H:%M:%S")
         })
         
+        # Register all pipeline context (including inputs)
         for key, value in pipeline.context.items():
             self.template_manager.register_context(key, value)
+            
+        # Also register 'inputs' as a separate object for backward compatibility
+        if pipeline.context:
+            self.template_manager.register_context("inputs", pipeline.context)
 
         try:
             # Register pipeline as running
