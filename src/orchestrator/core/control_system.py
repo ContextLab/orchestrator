@@ -287,10 +287,34 @@ class ControlSystem(ABC):
                             template_manager.register_context(simple_name, result_value)
         
         # Deep render all parameters, but skip content for filesystem write operations
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Checking filesystem special case: tool={rendered_task.metadata.get('tool')}, action={rendered_task.action}")
+        if rendered_task.parameters and "action" in rendered_task.parameters:
+            logger.debug(f"Parameters contain action={rendered_task.parameters.get('action')}")
+        
+        # Check both cases:
+        # 1. tool="filesystem" with action="write" (new style)
+        # 2. action="filesystem" with parameters.action="write" (YAML tool style)
+        is_filesystem_write = False
+        
+        # Case 1: Direct action="write" with tool="filesystem"
         if (rendered_task.metadata.get("tool") == "filesystem" and 
             rendered_task.action == "write" and 
             rendered_task.parameters and 
             "content" in rendered_task.parameters):
+            is_filesystem_write = True
+            
+        # Case 2: action="filesystem" with write in parameters
+        elif (rendered_task.action == "filesystem" and 
+              rendered_task.parameters and 
+              rendered_task.parameters.get("action") == "write" and
+              "content" in rendered_task.parameters):
+            is_filesystem_write = True
+            
+        if is_filesystem_write:
+            logger.debug("FileSystemTool write detected - preserving content parameter for runtime rendering")
             # Render all parameters except content
             rendered_params = {}
             for key, value in rendered_task.parameters.items():
