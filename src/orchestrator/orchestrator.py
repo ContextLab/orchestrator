@@ -337,6 +337,9 @@ class Orchestrator:
                 # Skip tasks that are already marked as skipped
                 if task.status == TaskStatus.SKIPPED:
                     results[task_id] = {"status": "skipped"}
+                    # Register skipped task with None value in template manager
+                    # This allows Jinja conditionals like {% if enhance_text.result %} to work
+                    self.template_manager.register_context(task_id, None)
                     continue
 
                 task_context = {
@@ -345,6 +348,7 @@ class Orchestrator:
                     "previous_results": previous_results,
                     "resource_allocation": resource_allocations[task_id],
                     "template_manager": self.template_manager,
+                    "_template_manager": self.template_manager,  # Also add with underscore for compatibility
                 }
                 execution_tasks.append(
                     self._execute_task_with_resources(task, task_context)

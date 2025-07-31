@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from .base import ToolRegistry, default_registry
 from .data_tools import DataProcessingTool
+from .report_tools import PDFCompilerTool, ReportGeneratorTool
 from .system_tools import FileSystemTool, TerminalTool
 from .web_tools import HeadlessBrowserTool, WebSearchTool
 
@@ -32,6 +33,8 @@ class MCPToolServer:
             TerminalTool(),
             FileSystemTool(),
             DataProcessingTool(),
+            PDFCompilerTool(),
+            ReportGeneratorTool(),
         ]
 
         for tool in tools:

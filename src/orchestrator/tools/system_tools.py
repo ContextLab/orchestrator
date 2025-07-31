@@ -123,11 +123,6 @@ class FileSystemTool(Tool):
 
     async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute file system operation."""
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"FileSystemTool._execute_impl called with action: {kwargs.get('action', 'NONE')}")
-        logger.warning(f"FileSystemTool kwargs keys: {list(kwargs.keys())}")
-        
         action = kwargs.get("action", "")
         path = kwargs.get("path", "")
         # Extract template manager if available
@@ -177,14 +172,6 @@ class FileSystemTool(Tool):
 
     async def _write_file(self, path: str, content: str, _template_manager=None) -> Dict[str, Any]:
         """Write content to file with optional runtime template rendering."""
-        # Debug logging
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.debug(f"FileSystemTool._write_file called")
-        logger.debug(f"Path: {path}")
-        logger.debug(f"Content preview: {content[:100] if content else 'None'}...")
-        logger.debug(f"Template manager provided: {_template_manager is not None}")
-        
         path_obj = Path(path)
 
         # Create parent directories if they don't exist
@@ -196,11 +183,6 @@ class FileSystemTool(Tool):
                 # Import here to avoid circular dependency
                 from ..core.template_manager import TemplateManager
                 if isinstance(_template_manager, TemplateManager):
-                    # Debug: log what variables are available
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.debug(f"FileSystemTool: Rendering content with template_manager")
-                    logger.debug(f"Available context keys: {list(_template_manager.context.keys())}")
                     # Use deep_render to handle complex nested templates
                     content = _template_manager.deep_render(content)
             except Exception as e:

@@ -14,7 +14,7 @@ parameters:
     default: 10
   compile_to_pdf:
     type: boolean
-    default: false
+    default: true
   output_path:
     type: string
     default: "examples/outputs/research_advanced_tools"

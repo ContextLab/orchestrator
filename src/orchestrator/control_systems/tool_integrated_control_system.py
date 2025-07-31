@@ -164,38 +164,48 @@ class ToolIntegratedControlSystem(ControlSystem):
             
             # Deep render all template parameters before passing to tool
             from ..core.template_manager import TemplateManager
-            template_manager = TemplateManager()
             
-            # Register context in template manager
-            # Handle both 'results' and 'previous_results' keys
-            if "results" in context:
-                template_manager.register_all_results(context["results"])
-            elif "previous_results" in context:
-                template_manager.register_all_results(context["previous_results"])
-            
-            # Also add results from self._results
-            if self._results:
-                template_manager.register_all_results(self._results)
-            
-            # Add other context values
-            for key, value in context.items():
-                if key not in ["results", "previous_results"] and not key.startswith("_"):
-                    template_manager.register_context(key, value)
+            # Use the template manager from context if available (which has pipeline inputs)
+            # Otherwise create a new one
+            if "_template_manager" in context and isinstance(context["_template_manager"], TemplateManager):
+                template_manager = context["_template_manager"]
+            else:
+                template_manager = TemplateManager()
+                
+                # Register context in template manager
+                # Handle both 'results' and 'previous_results' keys
+                if "results" in context:
+                    template_manager.register_all_results(context["results"])
+                elif "previous_results" in context:
+                    template_manager.register_all_results(context["previous_results"])
+                
+                # Also add results from self._results
+                if self._results:
+                    template_manager.register_all_results(self._results)
+                
+                # Add other context values
+                for key, value in context.items():
+                    if key not in ["results", "previous_results", "_template_manager"] and not key.startswith("_"):
+                        template_manager.register_context(key, value)
             
             # Deep render tool parameters to handle all template strings
-            print(f"   📝 Original parameters: {tool_params}")
-            print(f"   📝 Available context keys: {list(template_manager.context.keys())}")
-            
-            # For debugging filesystem tool specifically
-            if tool_name == "filesystem" and "content" in tool_params:
-                print(f"   📝 Content preview (first 200 chars): {tool_params['content'][:200]}...")
                 
-            rendered_params = template_manager.deep_render(tool_params)
-            
-            if tool_name == "filesystem" and "content" in rendered_params:
-                print(f"   📝 Rendered content preview (first 200 chars): {rendered_params['content'][:200]}...")
-                
-            print(f"   📝 Rendered parameters keys: {list(rendered_params.keys()) if isinstance(rendered_params, dict) else 'Not a dict'}")
+            # For filesystem tool with write action, pass template_manager for runtime rendering
+            if tool_name == "filesystem" and tool_params.get("action") == "write":
+                # Don't render the content parameter - let FileSystemTool do it at runtime
+                rendered_params = {}
+                for key, value in tool_params.items():
+                    if key == "content":
+                        # Keep content as-is for runtime rendering
+                        rendered_params[key] = value
+                    else:
+                        # Render other parameters
+                        rendered_params[key] = template_manager.deep_render(value)
+                # Pass template_manager to the tool
+                rendered_params["_template_manager"] = template_manager
+            else:
+                # For other tools, render all parameters
+                rendered_params = template_manager.deep_render(tool_params)
 
             # Execute tool with rendered parameters
             result = await self.tool_server.handle_tool_call(tool_name, rendered_params)

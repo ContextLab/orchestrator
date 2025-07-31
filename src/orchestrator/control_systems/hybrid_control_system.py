@@ -209,6 +209,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             # Pass template_manager from context if available
             if "_template_manager" in context:
                 resolved_params["_template_manager"] = context["_template_manager"]
+                print(f"   📋 Passing _template_manager to filesystem tool")
+            else:
+                print(f"   ⚠️  No _template_manager in context! Available keys: {list(context.keys())}")
             
             return await self.filesystem_tool.execute(**resolved_params)
         
@@ -223,6 +226,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             # Pass template_manager from context if available
             if "_template_manager" in context:
                 resolved_params["_template_manager"] = context["_template_manager"]
+                print(f"   📋 Passing _template_manager to filesystem tool")
+            else:
+                print(f"   ⚠️  No _template_manager in context! Available keys: {list(context.keys())}")
             
             return await self.filesystem_tool.execute(**resolved_params)
 

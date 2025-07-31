@@ -224,9 +224,6 @@ class TemplateManager:
         """Register a value for template resolution."""
         if self.debug_mode:
             logger.info(f"Registering template context: {key} = {type(value).__name__}")
-        # Always log critical variables like 'topic'
-        if key == "topic":
-            logger.warning(f"REGISTERING TOPIC: {value}")
         
         # For dictionaries that already have structured data (like web search results),
         # register them directly without wrapping
@@ -255,12 +252,15 @@ class TemplateManager:
                         # Create a new string instance
                         instance = str.__new__(cls, result_value)
                         instance.result = result_value
+                        instance._value = result_value
                         return instance
                         
                     def __getattr__(self, name):
                         if name == 'result':
-                            return str(self)
-                        return ChainableUndefined(name=f"{key}.{name}")
+                            return self._value if hasattr(self, '_value') else str(self)
+                        # For other attributes, return None instead of undefined
+                        # This allows Jinja2 conditionals to work properly
+                        return None
                 
                 self.context[key] = StringResultWrapper(value)
             else:
@@ -296,6 +296,15 @@ class TemplateManager:
             template = self.env.from_string(template_string)
             context = {**self.context, **(additional_context or {})}
             
+            # Debug: Check specific variables
+            if 'analyze_findings' in context and '{{ analyze_findings.result }}' in template_string:
+                logger.debug(f"analyze_findings type: {type(context['analyze_findings'])}")
+                logger.debug(f"analyze_findings value: {str(context['analyze_findings'])[:100]}...")
+                if hasattr(context['analyze_findings'], 'result'):
+                    logger.debug(f"analyze_findings.result exists: {str(context['analyze_findings'].result)[:100]}...")
+                else:
+                    logger.debug("analyze_findings.result DOES NOT EXIST")
+                    
             result = template.render(context)
             
             if self.debug_mode:
@@ -304,17 +313,29 @@ class TemplateManager:
             return result
             
         except UndefinedError as e:
-            logger.warning(f"Undefined variable in template '{template_string}': {e}")
+            error_msg = str(e)
+            # Don't show the whole template if it's large
+            template_preview = template_string[:200] + "..." if len(template_string) > 200 else template_string
+            logger.warning(f"Undefined variable in template '{template_preview}': {error_msg}")
             # Print more context about what's available
             logger.warning(f"Available variables in context: {list(context.keys())}")
-            if '.' in str(e):
-                # Try to identify which variable is causing the issue
-                var_parts = str(e).split("'")
-                if len(var_parts) >= 2:
-                    var_name = var_parts[1].split('.')[0]
-                    if var_name in context:
-                        logger.warning(f"Variable '{var_name}' exists but has type: {type(context[var_name])}")
-                        logger.warning(f"Variable '{var_name}' value: {context[var_name]}")
+            
+            # Try to extract the specific undefined variable from the error message
+            import re
+            # Look for patterns like "'variable_name' is undefined"
+            match = re.search(r"'([^']+)' is undefined", error_msg)
+            if match:
+                undefined_var = match.group(1)
+                logger.warning(f"Specifically, '{undefined_var}' is undefined")
+                # Check if it's a nested access
+                if '.' in undefined_var:
+                    base_var = undefined_var.split('.')[0]
+                    if base_var in context:
+                        logger.warning(f"Base variable '{base_var}' exists with type: {type(context[base_var])}")
+                        logger.warning(f"Trying to access attribute: {undefined_var}")
+                else:
+                    logger.warning(f"Variable '{undefined_var}' not found in context")
+            
             return template_string
         except Exception as e:
             logger.error(f"Error rendering template '{template_string}': {e}")
@@ -397,13 +418,7 @@ class TemplateManager:
             # Only render if it contains template syntax
             if self.has_templates(data):
                 try:
-                    # Log large templates
-                    if len(data) > 1000:
-                        logger.debug(f"Rendering large template ({len(data)} chars)")
-                        logger.debug(f"Template starts with: {data[:100]}...")
                     result = self.render(data, additional_context)
-                    if len(data) > 1000:
-                        logger.debug(f"Rendered result starts with: {result[:100]}...")
                     return result
                 except Exception as e:
                     # More detailed error logging
@@ -411,6 +426,9 @@ class TemplateManager:
                     logger.error(f"Error rendering template: {e}")
                     logger.error(f"Template preview: {data[:200]}...")
                     logger.debug(f"Full traceback: {traceback.format_exc()}")
+                    # Check if it's an undefined variable error
+                    if "is undefined" in str(e):
+                        logger.warning(f"Template contains undefined variables, returning original")
                     # Return original string if rendering fails
                     return data
             return data
