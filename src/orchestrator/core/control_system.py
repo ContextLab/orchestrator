@@ -183,72 +183,105 @@ class ControlSystem(ABC):
         if not rendered_task.parameters:
             return rendered_task
         
-        # Create template manager and register context
-        template_manager = TemplateManager()
-        
-        # Register previous results if available
-        if "previous_results" in context:
-            template_manager.register_all_results(context["previous_results"])
-        
-        # Register pipeline parameters if available
-        if "pipeline_metadata" in context and isinstance(context["pipeline_metadata"], dict):
-            params = context["pipeline_metadata"].get("parameters", {})
-            for param_name, param_value in params.items():
-                template_manager.register_context(param_name, param_value)
+        # Use template manager from context if available, otherwise create new one
+        template_manager = context.get("template_manager")
+        if template_manager is None:
+            # Create new template manager only if not provided
+            template_manager = TemplateManager()
             
-            # Also check for inputs
-            inputs = context["pipeline_metadata"].get("inputs", {})
-            for input_name, input_value in inputs.items():
-                template_manager.register_context(input_name, input_value)
-        
-        # Register pipeline context values (which should contain inputs)
-        if "pipeline_context" in context and isinstance(context["pipeline_context"], dict):
-            for key, value in context["pipeline_context"].items():
-                template_manager.register_context(key, value)
-        
-        # Add execution metadata
-        from datetime import datetime
-        template_manager.register_context("execution", {
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "time": datetime.now().strftime("%H:%M:%S")
-        })
-        
-        # Register loop context if this is a for_each task
-        if "loop_context" in rendered_task.metadata:
-            loop_ctx = rendered_task.metadata["loop_context"]
-            for var_name, var_value in loop_ctx.items():
-                template_manager.register_context(var_name, var_value)
-        
-        # Register pipeline inputs if stored in task metadata
-        if "pipeline_inputs" in rendered_task.metadata:
-            pipeline_inputs = rendered_task.metadata["pipeline_inputs"]
-            for input_name, input_value in pipeline_inputs.items():
-                template_manager.register_context(input_name, input_value)
-        
-        # Special handling for loop task results
-        # If this is a task within a loop, register previous results from the same iteration
-        if "loop_id" in rendered_task.metadata and "loop_index" in rendered_task.metadata:
-            loop_id = rendered_task.metadata["loop_id"]
-            loop_index = rendered_task.metadata["loop_index"]
-            
-            # Look for results from the same loop iteration
+            # Register all context values since this is a new template manager
+            # Register previous results if available
             if "previous_results" in context:
-                for result_id, result_value in context["previous_results"].items():
-                    # Check if this result is from the same loop iteration
-                    if result_id.startswith(f"{loop_id}_{loop_index}_"):
-                        # Extract the simple task name (e.g., "translate" from "translate_text_0_translate")
-                        simple_name = result_id.replace(f"{loop_id}_{loop_index}_", "")
-                        # Register with simple name for use within loop templates
-                        template_manager.register_context(simple_name, result_value)
-        
-        # Register other context values
-        for key, value in context.items():
-            if key not in ["previous_results", "_template_manager", "pipeline_metadata", "pipeline_context"] and not key.startswith("_"):
-                # Skip if already registered as a result
-                if "previous_results" in context and key in context["previous_results"]:
-                    continue
-                template_manager.register_context(key, value)
+                template_manager.register_all_results(context["previous_results"])
+            
+            # Register pipeline parameters if available
+            if "pipeline_metadata" in context and isinstance(context["pipeline_metadata"], dict):
+                params = context["pipeline_metadata"].get("parameters", {})
+                for param_name, param_value in params.items():
+                    template_manager.register_context(param_name, param_value)
+                
+                # Also check for inputs
+                inputs = context["pipeline_metadata"].get("inputs", {})
+                for input_name, input_value in inputs.items():
+                    template_manager.register_context(input_name, input_value)
+            
+            # Register pipeline context values (which should contain inputs)
+            if "pipeline_context" in context and isinstance(context["pipeline_context"], dict):
+                for key, value in context["pipeline_context"].items():
+                    template_manager.register_context(key, value)
+            
+            # Add execution metadata
+            from datetime import datetime
+            template_manager.register_context("execution", {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "time": datetime.now().strftime("%H:%M:%S")
+            })
+            
+            # Register other context values (including direct pipeline inputs like 'topic')
+            # Skip only internal keys and already registered results
+            skip_keys = [
+                "previous_results", "_template_manager", "pipeline_metadata", 
+                "pipeline_context", "model", "pipeline", "pipeline_id",
+                "execution_id", "checkpoint_enabled", "max_retries", 
+                "start_time", "current_level", "resource_allocation",
+                "task_id", "template_manager"
+            ]
+            
+            for key, value in context.items():
+                if key not in skip_keys and not key.startswith("_"):
+                    # Skip if already registered as a result
+                    if "previous_results" in context and key in context["previous_results"]:
+                        continue
+                    # Register all other values (this includes pipeline inputs like 'topic')
+                    template_manager.register_context(key, value)
+        else:
+            # Template manager already exists, ensure all necessary context is registered
+            
+            # Ensure pipeline inputs like 'topic' are registered
+            # Skip only internal keys and already registered results
+            skip_keys = [
+                "previous_results", "_template_manager", "pipeline_metadata", 
+                "pipeline_context", "model", "pipeline", "pipeline_id",
+                "execution_id", "checkpoint_enabled", "max_retries", 
+                "start_time", "current_level", "resource_allocation",
+                "task_id", "template_manager"
+            ]
+            
+            # Register any missing context values (especially pipeline inputs)
+            for key, value in context.items():
+                if key not in skip_keys and not key.startswith("_"):
+                    # Only register if not already in template manager
+                    if key not in template_manager.context:
+                        template_manager.register_context(key, value)
+            
+            # Register loop context if this is a for_each task
+            if "loop_context" in rendered_task.metadata:
+                loop_ctx = rendered_task.metadata["loop_context"]
+                for var_name, var_value in loop_ctx.items():
+                    template_manager.register_context(var_name, var_value)
+            
+            # Register pipeline inputs if stored in task metadata
+            if "pipeline_inputs" in rendered_task.metadata:
+                pipeline_inputs = rendered_task.metadata["pipeline_inputs"]
+                for input_name, input_value in pipeline_inputs.items():
+                    template_manager.register_context(input_name, input_value)
+            
+            # Special handling for loop task results
+            # If this is a task within a loop, register previous results from the same iteration
+            if "loop_id" in rendered_task.metadata and "loop_index" in rendered_task.metadata:
+                loop_id = rendered_task.metadata["loop_id"]
+                loop_index = rendered_task.metadata["loop_index"]
+                
+                # Look for results from the same loop iteration
+                if "previous_results" in context:
+                    for result_id, result_value in context["previous_results"].items():
+                        # Check if this result is from the same loop iteration
+                        if result_id.startswith(f"{loop_id}_{loop_index}_"):
+                            # Extract the simple task name (e.g., "translate" from "translate_text_0_translate")
+                            simple_name = result_id.replace(f"{loop_id}_{loop_index}_", "")
+                            # Register with simple name for use within loop templates
+                            template_manager.register_context(simple_name, result_value)
         
         # Deep render all parameters, but skip content for filesystem write operations
         if (rendered_task.metadata.get("tool") == "filesystem" and 

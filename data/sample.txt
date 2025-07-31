@@ -1,0 +1,3 @@
+This is a sample text file for testing conditional processing.
+It contains multiple lines of text.
+The pipeline should process this based on its size.

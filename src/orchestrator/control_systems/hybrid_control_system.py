@@ -182,12 +182,8 @@ class HybridControlSystem(ModelBasedControlSystem):
         else:
             message = action_text
 
-        # Build template context
-        template_context = self._build_template_context(context)
-
-        # Resolve templates in message
-        if "{{" in message:
-            message = self._resolve_templates(message, template_context)
+        # Templates have already been rendered by ControlSystem._render_task_templates
+        # The action text already contains rendered values
 
         # Return the echoed message
         return {
@@ -205,44 +201,28 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # If task has parameters and tool is filesystem, use FileSystemTool for all operations
         if task.metadata.get("tool") == "filesystem" and task.parameters:
-            # Build template context with all available data
-            template_context = self._build_template_context(context)
-            
-            # Resolve templates in parameters
-            resolved_params = {}
-            for key, value in task.parameters.items():
-                if isinstance(value, str) and ("{{" in value or "{%" in value):
-                    resolved_params[key] = self._resolve_templates(value, template_context)
-                else:
-                    resolved_params[key] = value
-            
+            # Templates have already been rendered by ControlSystem._render_task_templates
+            # Just add the action and pass through
+            resolved_params = task.parameters.copy()
             resolved_params["action"] = action_text
             
             # Pass template_manager from context if available
             if "_template_manager" in context:
-                resolved_params["template_manager"] = context["_template_manager"]
+                resolved_params["_template_manager"] = context["_template_manager"]
             
             return await self.filesystem_tool.execute(**resolved_params)
         
         # If the action is a known filesystem operation, use FileSystemTool
         filesystem_actions = ["read", "write", "copy", "move", "delete", "list", "file"]
         if action_text in filesystem_actions and task.parameters:
-            # Build template context with all available data
-            template_context = self._build_template_context(context)
-            
-            # Resolve templates in parameters
-            resolved_params = {}
-            for key, value in task.parameters.items():
-                if isinstance(value, str) and ("{{" in value or "{%" in value):
-                    resolved_params[key] = self._resolve_templates(value, template_context)
-                else:
-                    resolved_params[key] = value
-            
+            # Templates have already been rendered by ControlSystem._render_task_templates
+            # Just add the action and pass through
+            resolved_params = task.parameters.copy()
             resolved_params["action"] = action_text
             
             # Pass template_manager from context if available
             if "_template_manager" in context:
-                resolved_params["template_manager"] = context["_template_manager"]
+                resolved_params["_template_manager"] = context["_template_manager"]
             
             return await self.filesystem_tool.execute(**resolved_params)
 
@@ -255,16 +235,8 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Extract content
         content = self._extract_content(action_text, task.parameters)
 
-        # Build template context with all available data
-        template_context = self._build_template_context(context)
-
-        # Resolve templates in file path
-        if "{{" in file_path:
-            file_path = self._resolve_templates(file_path, template_context)
-
-        # Resolve templates in content
-        if "{{" in content:
-            content = self._resolve_templates(content, template_context)
+        # Templates have already been rendered by ControlSystem._render_task_templates
+        # No need to render again
 
         # Ensure parent directory exists
         file_path_obj = Path(file_path)
@@ -476,19 +448,8 @@ class HybridControlSystem(ModelBasedControlSystem):
     async def _handle_data_processing(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle data processing operations."""
         if task.parameters:
-            # Build template context
-            template_context = self._build_template_context(context)
-
-            # Resolve templates in parameters
-            resolved_params = {}
-            for key, value in task.parameters.items():
-                if isinstance(value, str):
-                    # Always resolve templates for string values
-                    resolved_params[key] = self._resolve_templates(
-                        value, template_context
-                    )
-                else:
-                    resolved_params[key] = value
+            # Templates have already been rendered by ControlSystem._render_task_templates
+            resolved_params = task.parameters.copy()
             
             # Add the action parameter from the task
             resolved_params["action"] = str(task.action).strip()
@@ -564,44 +525,9 @@ class HybridControlSystem(ModelBasedControlSystem):
     async def _handle_validation(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle validation operations."""
         if task.parameters:
-            # Build template context
-            template_context = self._build_template_context(context)
-
-            # Resolve templates in parameters
-            resolved_params = {}
-            for key, value in task.parameters.items():
-                if isinstance(value, str) and "{{" in value:
-                    # Special handling for 'data' parameter - preserve structure
-                    if key == "data":
-                        # Extract the referenced value directly from context
-                        import re
-
-                        match = re.search(r"\{\{(.+?)\}\}", value)
-                        if match:
-                            ref_path = match.group(1).strip()
-                            parts = ref_path.split(".")
-                            result = template_context
-                            for part in parts:
-                                if isinstance(result, dict) and part in result:
-                                    result = result[part]
-                                else:
-                                    # Fallback to string resolution
-                                    result = self._resolve_templates(
-                                        value, template_context
-                                    )
-                                    break
-                            resolved_params[key] = result
-                        else:
-                            resolved_params[key] = value
-                    else:
-                        resolved_params[key] = self._resolve_templates(
-                            value, template_context
-                        )
-                else:
-                    resolved_params[key] = value
-
+            # Templates have already been rendered by ControlSystem._render_task_templates
             # Use ValidationTool
-            return await self.validation_tool.execute(**resolved_params)
+            return await self.validation_tool.execute(**task.parameters)
 
         return {"error": "No parameters provided for validation", "success": False}
     
@@ -614,41 +540,21 @@ class HybridControlSystem(ModelBasedControlSystem):
     
     async def _handle_web_search(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle web search operations."""
-        # Build template context
-        template_context = self._build_template_context(context)
-        
-        # Resolve templates in parameters
-        resolved_params = {}
-        for key, value in task.parameters.items():
-            if isinstance(value, str) and ("{{" in value or "{%" in value):
-                resolved_params[key] = self._resolve_templates(value, template_context)
-            else:
-                resolved_params[key] = value
-        
-        # Add the action parameter
-        resolved_params["action"] = task.action
+        # Templates have already been rendered by ControlSystem._render_task_templates
+        params = task.parameters.copy()
+        params["action"] = task.action
         
         # Execute using web search tool
-        return await self.web_search_tool.execute(**resolved_params)
+        return await self.web_search_tool.execute(**params)
     
     async def _handle_headless_browser(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle headless browser operations."""
-        # Build template context
-        template_context = self._build_template_context(context)
-        
-        # Resolve templates in parameters
-        resolved_params = {}
-        for key, value in task.parameters.items():
-            if isinstance(value, str) and ("{{" in value or "{%" in value):
-                resolved_params[key] = self._resolve_templates(value, template_context)
-            else:
-                resolved_params[key] = value
-        
-        # Add the action parameter
-        resolved_params["action"] = task.action
+        # Templates have already been rendered by ControlSystem._render_task_templates
+        params = task.parameters.copy()
+        params["action"] = task.action
         
         # Execute using headless browser tool
-        return await self.headless_browser_tool.execute(**resolved_params)
+        return await self.headless_browser_tool.execute(**params)
     
     async def _handle_control_flow(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle control flow operations."""
@@ -705,31 +611,12 @@ class HybridControlSystem(ModelBasedControlSystem):
 
     async def _handle_report_generator(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle report generation operations."""
-        # Build template context
-        template_context = self._build_template_context(context)
-        
-        # Resolve templates in parameters
-        resolved_params = {}
-        for key, value in task.parameters.items():
-            if isinstance(value, str) and ("{{" in value or "{%" in value):
-                resolved_params[key] = self._resolve_templates(value, template_context)
-            elif isinstance(value, list):
-                # Handle lists with templates
-                resolved_list = []
-                for item in value:
-                    if isinstance(item, str) and ("{{" in item or "{%" in item):
-                        resolved_list.append(self._resolve_templates(item, template_context))
-                    else:
-                        resolved_list.append(item)
-                resolved_params[key] = resolved_list
-            else:
-                resolved_params[key] = value
-        
-        # Add the action parameter
-        resolved_params["action"] = task.action
+        # Templates have already been rendered by ControlSystem._render_task_templates
+        params = task.parameters.copy()
+        params["action"] = task.action
         
         # Execute using report generator tool
-        return await self.report_generator_tool.execute(**resolved_params)
+        return await self.report_generator_tool.execute(**params)
     
     async def _handle_pdf_compiler(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle PDF compilation operations."""
