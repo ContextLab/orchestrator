@@ -225,6 +225,9 @@ class ControlFlowCompiler(YAMLCompiler):
 
         if task.metadata:
             step_def["metadata"] = task.metadata
+            # Extract tool field from metadata if present
+            if "tool" in task.metadata:
+                step_def["tool"] = task.metadata["tool"]
 
         if task.timeout:
             step_def["timeout"] = task.timeout

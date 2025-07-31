@@ -84,9 +84,14 @@ class Orchestrator:
         self.template_manager = template_manager or TemplateManager(debug_mode=debug_templates)
         
         # No default models - must be explicitly initialized
-        self.yaml_compiler = yaml_compiler or YAMLCompiler(
-            model_registry=self.model_registry
-        )
+        # Use ControlFlowCompiler to handle for_each, while, and conditionals
+        if yaml_compiler is None:
+            from .compiler.control_flow_compiler import ControlFlowCompiler
+            self.yaml_compiler = ControlFlowCompiler(
+                model_registry=self.model_registry
+            )
+        else:
+            self.yaml_compiler = yaml_compiler
         self.error_handler = error_handler or ErrorHandler()
         self.resource_allocator = resource_allocator or ResourceAllocator()
         self.parallel_executor = parallel_executor or ParallelExecutor()

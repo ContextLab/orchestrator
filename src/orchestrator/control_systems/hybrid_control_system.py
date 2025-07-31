@@ -100,6 +100,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         if action_str == "validate":
             return await self._handle_validation(task, context)
 
+        # Check if this is a loop completion marker
+        if action_str == "loop_complete":
+            return await self._handle_loop_complete(task, context)
+
         # Otherwise use model-based execution
         return await super()._execute_task_impl(task, context)
 
@@ -201,8 +205,17 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # If task has parameters and tool is filesystem, use FileSystemTool for all operations
         if task.metadata.get("tool") == "filesystem" and task.parameters:
-            # Parameters are already rendered by the base class - just use them directly
-            resolved_params = task.parameters.copy()
+            # Build template context with all available data
+            template_context = self._build_template_context(context)
+            
+            # Resolve templates in parameters
+            resolved_params = {}
+            for key, value in task.parameters.items():
+                if isinstance(value, str) and ("{{" in value or "{%" in value):
+                    resolved_params[key] = self._resolve_templates(value, template_context)
+                else:
+                    resolved_params[key] = value
+            
             resolved_params["action"] = action_text
             
             # Pass template_manager from context if available
@@ -214,8 +227,17 @@ class HybridControlSystem(ModelBasedControlSystem):
         # If the action is a known filesystem operation, use FileSystemTool
         filesystem_actions = ["read", "write", "copy", "move", "delete", "list", "file"]
         if action_text in filesystem_actions and task.parameters:
-            # Parameters are already rendered by the base class - just use them directly
-            resolved_params = task.parameters.copy()
+            # Build template context with all available data
+            template_context = self._build_template_context(context)
+            
+            # Resolve templates in parameters
+            resolved_params = {}
+            for key, value in task.parameters.items():
+                if isinstance(value, str) and ("{{" in value or "{%" in value):
+                    resolved_params[key] = self._resolve_templates(value, template_context)
+                else:
+                    resolved_params[key] = value
+            
             resolved_params["action"] = action_text
             
             # Pass template_manager from context if available
@@ -665,6 +687,20 @@ class HybridControlSystem(ModelBasedControlSystem):
             "status": "success",
             "control_flow_type": cf_type,
             "metadata": task.metadata
+        }
+
+    async def _handle_loop_complete(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle loop completion markers."""
+        loop_id = task.parameters.get("loop_id", "unknown")
+        iterations = task.parameters.get("iterations", 0)
+        cf_type = task.metadata.get("control_flow_type", "loop")
+        
+        return {
+            "result": f"Completed {iterations} iterations",
+            "status": "success",
+            "control_flow_type": cf_type,
+            "loop_id": loop_id,
+            "iterations": iterations,
         }
 
     async def _handle_report_generator(self, task: Task, context: Dict[str, Any]) -> Any:

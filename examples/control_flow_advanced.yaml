@@ -18,6 +18,10 @@ parameters:
     type: number
     default: 0.7
     description: Quality threshold for translations
+  output:
+    type: string
+    default: "examples/outputs/control_flow_advanced"
+    description: Output directory for results
     
 steps:
   # Initial analysis
@@ -32,8 +36,13 @@ steps:
   - id: check_quality
     action: generate_text
     parameters:
-      prompt: "Text quality analysis complete. The analysis shows: {{ analyze_text.result }}"
-      model: <AUTO task="summarize">Select a model for summary</AUTO>
+      prompt: |
+        Based on this text analysis, determine if the text quality is below {{ quality_threshold }} (out of 1.0) and needs improvement:
+        
+        Analysis: {{ analyze_text.result }}
+        
+        Respond with either "improve" or "acceptable" based on the quality assessment.
+      model: <AUTO task="analyze">Select a model for quality assessment</AUTO>
       max_tokens: 50
     dependencies:
       - analyze_text
@@ -41,7 +50,7 @@ steps:
   # Conditional enhancement
   - id: enhance_text
     action: generate_text
-    if: "{{ analyze_text.result contains 'improve' }}"
+    if: "{{ check_quality.result contains 'improve' }}"
     parameters:
       prompt: |
         Improve the following text based on this analysis:
@@ -76,7 +85,7 @@ steps:
           prompt: |
             Translate the following text to {{ $item }}:
             
-            {{ enhance_text.result | default(input_text) }}
+            {% if enhance_text.result %}{{ enhance_text.result }}{% else %}{{ input_text }}{% endif %}
           model: <AUTO task="translate">Select a model for translation to {{ $item }}</AUTO>
           max_tokens: 600
           
@@ -90,18 +99,17 @@ steps:
         dependencies:
           - translate
           
-      # Save if quality is good
+      # Save translation
       - id: save_translation
         tool: filesystem
         action: write
-        if: "{{ validate_translation.result contains 'good' or validate_translation.result contains 'excellent' }}"
         parameters:
-          path: "examples/outputs/control_flow_advanced/translations/{{ $item }}_translation.txt"
+          path: "{{ output }}/translations/{{ input_text[:50] | slugify }}_{{ $item }}.txt"
           content: |
             # Translation to {{ $item }}
             
             ## Original Text
-            {{ enhance_text.result | default(input_text) }}
+            {% if enhance_text.result %}{{ enhance_text.result }}{% else %}{{ input_text }}{% endif %}
             
             ## Translated Text
             {{ translate.result }}
@@ -118,7 +126,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/control_flow_advanced/final_report.md"
+      path: "{{ output }}/{{ input_text[:50] | slugify }}_report.md"
       content: |
         # Multi-Stage Text Processing Report
         
@@ -129,12 +137,12 @@ steps:
         {{ analyze_text.result }}
         
         ## Enhancement
-        {{ enhance_text.result ? 'Text was enhanced' : 'Original text was used' }}
+        {% if enhance_text.result %}Text was enhanced{% else %}Original text was used{% endif %}
         
         ## Translations
         Attempted translations to: {{ languages | join(', ') }}
         
-        Check the examples/outputs/control_flow_advanced/translations/ directory for successful translations.
+        Check the {{ output }}/translations/ directory for successful translations.
     dependencies:
       - translate_text
       

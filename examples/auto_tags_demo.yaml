@@ -8,7 +8,7 @@ version: "1.0.0"
 
 # Input parameters that will be used by AUTO tags
 inputs:
-  data_file: "sales_data.csv"
+  data_file: "examples/data/sales_data.csv"
   analysis_goal: "identify trends and anomalies"
   output_format_preference: "executive_summary"
 

@@ -1,0 +1,14 @@
+# Translation to es
+
+## Original Text
+Sure! Please provide the analysis and the text you'd like me to improve.
+## Translated Text
+Sure! Please provide the analysis and the text you'd like me to improve.
+## Quality Assessment
+In this task, we are asked to analyze the quality of the text provided based on the previous step results. The text we need to analyze is the result of the translation process, which is either the output of the enhance_text step or the input_text if enhance_text did not provide a result.
+
+To analyze the quality of the text, we will use the selected model for quality assessment. This model will help us evaluate various aspects of the text such as grammar, coherence, clarity, and overall quality.
+
+It is important to consider specific examples and concrete details from the text in our analysis. We should also ensure that our response is well-structured, concise, and maintains a professional tone.
+
+By following these guidelines and using the information from the previous steps, we can provide a comprehensive analysis of the text's quality.

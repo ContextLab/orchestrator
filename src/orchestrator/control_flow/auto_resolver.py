@@ -148,9 +148,23 @@ class ControlFlowAutoResolver:
                 # Remove brackets and split
                 inner = resolved_expr[1:-1]
                 if "," in inner:
-                    return [item.strip() for item in inner.split(",")]
+                    # Split and remove quotes if present
+                    items = []
+                    for item in inner.split(","):
+                        item = item.strip()
+                        # Remove surrounding quotes if present
+                        if ((item.startswith('"') and item.endswith('"')) or 
+                            (item.startswith("'") and item.endswith("'"))):
+                            item = item[1:-1]
+                        items.append(item)
+                    return items
                 elif inner.strip():
-                    return [inner.strip()]
+                    item = inner.strip()
+                    # Remove surrounding quotes if present
+                    if ((item.startswith('"') and item.endswith('"')) or 
+                        (item.startswith("'") and item.endswith("'"))):
+                        item = item[1:-1]
+                    return [item]
                 else:
                     return []
 

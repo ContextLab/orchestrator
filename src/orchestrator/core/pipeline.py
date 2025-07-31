@@ -157,7 +157,8 @@ class Pipeline:
             for dep in task.dependencies:
                 if dep not in self.tasks:
                     raise InvalidDependencyError(
-                        f"Task '{task_id}' depends on non-existent task '{dep}'"
+                        task_id=task_id,
+                        missing_dependency=dep
                     )
 
         # Check for circular dependencies

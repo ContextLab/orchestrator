@@ -175,6 +175,33 @@ class ModelBasedControlSystem(ControlSystem):
                     if "depth" in context:
                         template_context["depth"] = context["depth"]
                     
+                    # Add all pipeline parameters and inputs
+                    # Check if we have pipeline_metadata in context
+                    if "pipeline_metadata" in context and isinstance(context["pipeline_metadata"], dict):
+                        # Add parameters
+                        params = context["pipeline_metadata"].get("parameters", {})
+                        for param_name, param_value in params.items():
+                            if param_name not in template_context:
+                                template_context[param_name] = param_value
+                        
+                        # Add inputs 
+                        inputs = context["pipeline_metadata"].get("inputs", {})
+                        for input_name, input_value in inputs.items():
+                            if input_name not in template_context:
+                                template_context[input_name] = input_value
+                    
+                    # Also check for any top-level parameters that might be passed directly
+                    for key, value in context.items():
+                        if key not in template_context and key not in [
+                            "model", "pipeline", "execution", "task_id", "pipeline_id",
+                            "pipeline_metadata", "execution_id", "checkpoint_enabled",
+                            "max_retries", "start_time", "current_level", "resource_allocation",
+                            "previous_results", "_template_manager"
+                        ]:
+                            # Check if this might be a parameter or input
+                            if isinstance(value, (str, int, float, bool, list)):
+                                template_context[key] = value
+                    
                     template = env.from_string(prompt_text)
                     prompt_text = template.render(**template_context)
                 except Exception as e:

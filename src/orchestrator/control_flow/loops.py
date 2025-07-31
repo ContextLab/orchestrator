@@ -113,6 +113,18 @@ class ForLoopHandler:
                 task_def["metadata"]["loop_context"] = loop_context.to_dict()
                 task_def["metadata"]["loop_id"] = loop_id
                 task_def["metadata"]["loop_index"] = idx
+                
+                # Preserve pipeline inputs in metadata
+                if "inputs" in context:
+                    task_def["metadata"]["pipeline_inputs"] = context["inputs"]
+                elif isinstance(context, dict):
+                    # Extract input parameters from context
+                    pipeline_inputs = {}
+                    for key, value in context.items():
+                        if key not in ["all_step_ids", "_", "step_results"]:
+                            pipeline_inputs[key] = value
+                    if pipeline_inputs:
+                        task_def["metadata"]["pipeline_inputs"] = pipeline_inputs
 
                 # Process parameters with loop variables
                 if "parameters" in task_def:
@@ -145,6 +157,30 @@ class ForLoopHandler:
 
                 # Create task
                 expanded_tasks.append(self._create_task_from_def(task_def))
+
+        # Add a completion task to represent the whole for_each loop
+        if expanded_tasks:
+            # Get all the last tasks from each iteration
+            last_task_ids = []
+            for idx in range(len(items)):
+                if body_steps:
+                    last_step_id = body_steps[-1]["id"]
+                    last_task_ids.append(f"{loop_id}_{idx}_{last_step_id}")
+            
+            # Create completion task that depends on all iterations
+            completion_task = Task(
+                id=loop_id,  # Use the original loop ID
+                name=f"Complete {loop_id} loop",
+                action="loop_complete",
+                parameters={"loop_id": loop_id, "iterations": len(items)},
+                dependencies=last_task_ids,
+                metadata={
+                    "is_loop_completion": True,
+                    "loop_id": loop_id,
+                    "control_flow_type": "for_each",
+                },
+            )
+            expanded_tasks.append(completion_task)
 
         return expanded_tasks
 
@@ -228,13 +264,18 @@ class ForLoopHandler:
         Returns:
             Task instance
         """
+        # Ensure metadata includes the tool field if present
+        metadata = task_def.get("metadata", {})
+        if "tool" in task_def:
+            metadata["tool"] = task_def["tool"]
+            
         return Task(
             id=task_def["id"],
             name=task_def.get("name", task_def["id"]),
             action=task_def["action"],
             parameters=task_def.get("parameters", {}),
             dependencies=task_def.get("dependencies", []),
-            metadata=task_def.get("metadata", {}),
+            metadata=metadata,
             timeout=task_def.get("timeout"),
             max_retries=task_def.get("max_retries", 3),
         )
@@ -484,13 +525,18 @@ class WhileLoopHandler:
         Returns:
             Task instance
         """
+        # Ensure metadata includes the tool field if present
+        metadata = task_def.get("metadata", {})
+        if "tool" in task_def:
+            metadata["tool"] = task_def["tool"]
+            
         return Task(
             id=task_def["id"],
             name=task_def.get("name", task_def["id"]),
             action=task_def["action"],
             parameters=task_def.get("parameters", {}),
             dependencies=task_def.get("dependencies", []),
-            metadata=task_def.get("metadata", {}),
+            metadata=metadata,
             timeout=task_def.get("timeout"),
             max_retries=task_def.get("max_retries", 3),
         )

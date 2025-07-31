@@ -214,6 +214,34 @@ class ControlSystem(ABC):
             "time": datetime.now().strftime("%H:%M:%S")
         })
         
+        # Register loop context if this is a for_each task
+        if "loop_context" in rendered_task.metadata:
+            loop_ctx = rendered_task.metadata["loop_context"]
+            for var_name, var_value in loop_ctx.items():
+                template_manager.register_context(var_name, var_value)
+        
+        # Register pipeline inputs if stored in task metadata
+        if "pipeline_inputs" in rendered_task.metadata:
+            pipeline_inputs = rendered_task.metadata["pipeline_inputs"]
+            for input_name, input_value in pipeline_inputs.items():
+                template_manager.register_context(input_name, input_value)
+        
+        # Special handling for loop task results
+        # If this is a task within a loop, register previous results from the same iteration
+        if "loop_id" in rendered_task.metadata and "loop_index" in rendered_task.metadata:
+            loop_id = rendered_task.metadata["loop_id"]
+            loop_index = rendered_task.metadata["loop_index"]
+            
+            # Look for results from the same loop iteration
+            if "previous_results" in context:
+                for result_id, result_value in context["previous_results"].items():
+                    # Check if this result is from the same loop iteration
+                    if result_id.startswith(f"{loop_id}_{loop_index}_"):
+                        # Extract the simple task name (e.g., "translate" from "translate_text_0_translate")
+                        simple_name = result_id.replace(f"{loop_id}_{loop_index}_", "")
+                        # Register with simple name for use within loop templates
+                        template_manager.register_context(simple_name, result_value)
+        
         # Register other context values
         for key, value in context.items():
             if key not in ["previous_results", "_template_manager", "pipeline_metadata", "pipeline_context"] and not key.startswith("_"):
