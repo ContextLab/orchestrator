@@ -72,7 +72,7 @@ class ControlFlowCompiler(YAMLCompiler):
             )
 
             # Step 7: Build pipeline with expanded tasks
-            pipeline = self._build_pipeline(pipeline_def)
+            pipeline = self._build_pipeline(pipeline_def, merged_context)
 
             return pipeline
 

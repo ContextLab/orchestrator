@@ -224,6 +224,9 @@ class TemplateManager:
         """Register a value for template resolution."""
         if self.debug_mode:
             logger.info(f"Registering template context: {key} = {type(value).__name__}")
+        # Always log critical variables like 'topic'
+        if key == "topic":
+            logger.warning(f"REGISTERING TOPIC: {value}")
         
         # For dictionaries that already have structured data (like web search results),
         # register them directly without wrapping

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, Dict, List, Optional
 
@@ -14,6 +15,8 @@ from ..core.exceptions import YAMLCompilerError
 from .ambiguity_resolver import AmbiguityResolver
 from .auto_tag_yaml_parser import AutoTagYAMLParser
 from .schema_validator import SchemaValidator
+
+logger = logging.getLogger(__name__)
 
 
 class AutoTagNotFoundError(YAMLCompilerError):
@@ -382,6 +385,12 @@ class YAMLCompiler:
         if "model" in pipeline_def:
             metadata["model"] = pipeline_def["model"]
 
+        # Debug: log what's in context
+        if "topic" in context:
+            logger.warning(f"YAML Compiler: Creating pipeline with topic='{context['topic']}'")
+        else:
+            logger.warning(f"YAML Compiler: Creating pipeline WITHOUT topic. Context keys: {list(context.keys())}")
+        
         # Create pipeline
         pipeline = Pipeline(
             id=pipeline_id,
