@@ -123,19 +123,23 @@ class ConditionalHandler:
         Returns:
             ConditionalTask instance
         """
+        
         # Extract conditional properties
         condition = task_def.get("if") or task_def.get("condition")
         else_task_id = task_def.get("else")
         condition_cache_key = task_def.get("condition_cache_key")
 
         # Create base task parameters
+        # Start with the existing metadata to preserve all fields
+        existing_metadata = task_def.get("metadata", {}).copy()
+        
         task_params = {
             "id": task_def["id"],
             "name": task_def.get("name", task_def["id"]),
             "action": task_def.get("action", "conditional"),
             "parameters": task_def.get("parameters", {}),
             "dependencies": task_def.get("depends_on", []),
-            "metadata": task_def.get("metadata", {}),
+            "metadata": existing_metadata,
             "timeout": task_def.get("timeout"),
             "max_retries": task_def.get("max_retries", 3),
         }
@@ -148,6 +152,7 @@ class ConditionalHandler:
         if condition_cache_key:
             task_params["metadata"]["condition_cache_key"] = condition_cache_key
 
+        
         # Create conditional task
         return ConditionalTask(
             **task_params,

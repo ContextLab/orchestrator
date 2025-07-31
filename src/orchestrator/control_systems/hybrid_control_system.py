@@ -78,6 +78,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if a specific tool is requested
         tool_name = task.metadata.get("tool")
         if tool_name:
+            print(f"Routing to tool handler: {tool_name}")
             return await self._handle_tool_execution(task, tool_name, context)
 
         # Check if this is a control flow operation

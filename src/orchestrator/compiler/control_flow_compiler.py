@@ -254,6 +254,18 @@ class ControlFlowCompiler(YAMLCompiler):
         Returns:
             Task object
         """
+        # First, ensure metadata is properly built
+        # This is important for conditional tasks that also have tools
+        if "metadata" not in task_def:
+            task_def["metadata"] = {}
+        
+        # Copy important fields to metadata if not already there
+        # This ensures fields like 'tool' are preserved for conditional tasks
+        if "tool" in task_def and "tool" not in task_def["metadata"]:
+            task_def["metadata"]["tool"] = task_def["tool"]
+        if "continue_on_error" in task_def and "continue_on_error" not in task_def["metadata"]:
+            task_def["metadata"]["continue_on_error"] = task_def["continue_on_error"]
+            
         # Check for condition in task definition
         if "if" in task_def or "condition" in task_def:
             return self.conditional_handler.create_conditional_task(task_def)
