@@ -8,6 +8,7 @@ from .system_tools import FileSystemTool, TerminalTool
 from .web_tools import HeadlessBrowserTool, WebSearchTool
 from .llm_tools import TaskDelegationTool, MultiModelRoutingTool, PromptOptimizationTool
 from .code_execution import PythonExecutorTool
+from .checkpoint_tool import CheckpointTool
 
 __all__ = [
     "Tool",
@@ -24,4 +25,5 @@ __all__ = [
     "MultiModelRoutingTool",
     "PromptOptimizationTool",
     "PythonExecutorTool",
+    "CheckpointTool",
 ]

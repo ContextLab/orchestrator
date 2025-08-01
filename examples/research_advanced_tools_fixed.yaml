@@ -2,7 +2,6 @@ name: Advanced Research Tools Pipeline (Fixed)
 description: Comprehensive research pipeline using multiple tools with autonomous search and analysis
 
 # Pipeline configuration
-model: <AUTO>Use a capable model for comprehensive research tasks</AUTO>
 parameters:
   topic: <USER>Research topic to investigate</USER>
   max_results: 10

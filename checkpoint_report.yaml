@@ -1,0 +1,84 @@
+pipeline_execution:
+  pipeline_id: Advanced Research Tools Pipeline (Fixed)
+  execution_id: Advanced Research Tools Pipeline (Fixed)_1754064473
+  timestamp: '2025-08-01T12:09:16'
+  context:
+    topic: artificial intelligence
+    max_results: 10
+    compile_to_pdf: true
+    output_path: examples/outputs/research_advanced_tools
+    all_step_ids:
+    - search_topic
+    - deep_search
+    - extract_content
+    - analyze_findings
+    - generate_recommendations
+    - save_report
+    - read_report
+    - compile_pdf
+tasks:
+  search_topic:
+    status: completed
+    action: search
+    error: null
+    result:
+      query: artificial intelligence latest developments
+      results: '[10 items]'
+      total_results: 10
+      search_time: 4.1514952182769775
+      backend: DuckDuckGoSearchBackend
+      timestamp: '2025-08-01T12:07:57.249706'
+  deep_search:
+    status: completed
+    action: search
+    error: null
+    result:
+      query: artificial intelligence research papers technical details implementation
+      results: '[10 items]'
+      total_results: 10
+      search_time: 0.9937920570373535
+      backend: DuckDuckGoSearchBackend
+      timestamp: '2025-08-01T12:07:58.245220'
+  extract_content:
+    status: skipped
+    action: scrape
+    error: null
+    result: null
+  analyze_findings:
+    status: completed
+    action: analyze_text
+    error: null
+    result: '[5219 chars]'
+  generate_recommendations:
+    status: completed
+    action: generate_text
+    error: null
+    result: '[4721 chars]'
+  save_report:
+    status: completed
+    action: write
+    error: null
+    result:
+      action: write
+      path: examples/outputs/research_advanced_tools/research_artificial-intelligence.md
+      size: 2553
+      success: true
+  read_report:
+    status: completed
+    action: read
+    error: null
+    result:
+      action: read
+      path: examples/outputs/research_advanced_tools/research_artificial-intelligence.md
+      content: '[2553 chars]'
+      size: 2553
+      success: true
+  compile_pdf:
+    status: completed
+    action: compile
+    error: null
+    result:
+      success: true
+      output_path: examples/outputs/research_advanced_tools/research_artificial-intelligence.pdf
+      file_size: 28910
+      message: '[122 chars]'

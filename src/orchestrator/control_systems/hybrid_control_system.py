@@ -13,6 +13,7 @@ from ..tools.data_tools import DataProcessingTool
 from ..tools.validation import ValidationTool
 from ..tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from ..tools.report_tools import ReportGeneratorTool, PDFCompilerTool
+from ..tools.checkpoint_tool import CheckpointTool
 from ..compiler.template_renderer import TemplateRenderer
 
 
@@ -70,6 +71,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.headless_browser_tool = HeadlessBrowserTool()
         self.report_generator_tool = ReportGeneratorTool()
         self.pdf_compiler_tool = PDFCompilerTool()
+        self.checkpoint_tool = CheckpointTool()
 
     async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task with support for both models and tools."""
@@ -121,6 +123,7 @@ class HybridControlSystem(ModelBasedControlSystem):
             "report-generator": self._handle_report_generator,
             "pdf-compiler": self._handle_pdf_compiler,
             "pipeline-executor": self._handle_pipeline_executor,
+            "checkpoint": self._handle_checkpoint,
         }
         
         if tool_name in tool_handlers:
@@ -642,3 +645,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         
         params = task.parameters.copy()
         return await self.pipeline_executor_tool.execute(**params)
+    
+    async def _handle_checkpoint(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle checkpoint inspection operations."""
+        # Execute using checkpoint tool
+        params = task.parameters.copy()
+        params["action"] = task.action
+        return await self.checkpoint_tool.execute(**params)
