@@ -1,0 +1,40 @@
+name: Test Checkpoint Tool Pipeline
+description: Test the checkpoint extraction tool functionality
+
+inputs:
+  pipeline_name:
+    type: string
+    description: Pipeline name to analyze
+    default: "Advanced Research Tools"
+
+steps:
+  - id: list_checkpoints
+    action: list
+    metadata:
+      tool: checkpoint
+    parameters:
+      pipeline_name: "{{ pipeline_name }}"
+
+  - id: inspect_latest
+    action: inspect
+    metadata:
+      tool: checkpoint
+    parameters:
+      pipeline_name: "{{ pipeline_name }}"
+
+  - id: extract_to_markdown
+    action: extract
+    metadata:
+      tool: checkpoint
+    parameters:
+      pipeline_name: "{{ pipeline_name }}"
+      output_format: markdown
+      output_file: "checkpoint_analysis_{{ pipeline_name | slugify }}.md"
+
+  - id: show_results
+    action: "echo Checkpoint Analysis Complete: Found {{ list_checkpoints.total }} checkpoints, Latest pipeline: {{ inspect_latest.pipeline_id }}, Report saved to: {{ extract_to_markdown.output_file }}"
+
+outputs:
+  total_checkpoints: "{{ list_checkpoints.total }}"
+  latest_pipeline: "{{ inspect_latest.pipeline_id }}"
+  report_file: "{{ extract_to_markdown.output_file }}"
