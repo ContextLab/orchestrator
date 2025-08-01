@@ -38,7 +38,9 @@ steps:
       operation: prepare
       data: "{{ operation }}"
       safety_level: "{{ assess_risk.result }}"
-    depends_on: <AUTO>Based on risk level {{ assess_risk.result }}, should we depend on 'validate_input' only or also add 'safety_check'?</AUTO>
+    depends_on: 
+      - validate_input
+      - assess_risk
     
   # Optional safety check (created dynamically)
   - id: safety_check

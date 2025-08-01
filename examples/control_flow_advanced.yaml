@@ -50,7 +50,7 @@ steps:
   # Conditional enhancement
   - id: enhance_text
     action: generate_text
-    if: "{{ check_quality.result contains 'improve' }}"
+    if: "{{ 'improve' in check_quality.result }}"
     parameters:
       prompt: |
         Improve the following text based on this analysis:

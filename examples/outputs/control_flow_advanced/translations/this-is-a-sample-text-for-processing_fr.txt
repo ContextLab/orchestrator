@@ -1,0 +1,10 @@
+# Translation to fr
+
+## Original Text
+{% if enhance_text.result %}{{ enhance_text.result }}{% else %}{{ input_text }}{% endif %}
+
+## Translated Text
+{{ translate.result }}
+
+## Quality Assessment
+{{ validate_translation.result }}
