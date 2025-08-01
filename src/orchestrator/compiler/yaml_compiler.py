@@ -236,6 +236,15 @@ class YAMLCompiler:
         Raises:
             TemplateRenderError: If template rendering fails
         """
+        
+        # First, extract all step IDs from the pipeline
+        step_ids = []
+        if "steps" in pipeline_def:
+            for step in pipeline_def["steps"]:
+                if isinstance(step, dict) and "id" in step:
+                    step_ids.append(step["id"])
+        
+        # Remove debug print
 
         def process_value(value: Any, path: List[str] = None) -> Any:
             if path is None:
@@ -266,15 +275,22 @@ class YAMLCompiler:
                 # 2. content parameters in filesystem operations
                 # 3. Any field that references step results
                 # 4. Any field that contains Jinja2 control structures
-                if current_key in ["prompt", "content"] and parent_key == "parameters":
-                    # Check if it references step results or contains Jinja2 control structures
-                    if any(step_ref in value for step_ref in ["search_web", "summarize_results", "extract_", "analyze_", "generate_"]) or \
-                       any(ctrl in value for ctrl in ["{% for", "{% if", "{% set", "{% endfor", "{% endif"]):
+                # 5. URL parameters that might reference step results
+                if (current_key in ["prompt", "content", "url", "text"] and parent_key == "parameters") or \
+                   (current_key == "condition"):
+                    
+                    # Check if it references any actual step IDs from this pipeline
+                    if any(f"{step_id}." in value for step_id in step_ids) or \
+                       any(ctrl in value for ctrl in ["{% for", "{% if", "{% set", "{% endfor", "{% endif"]) or \
+                       any(attr in value for attr in [".results", ".result", ".content", ".output", ".data"]):
+                        # Debug print for verification
+                        if current_key == "url" and "search_topic" in value:
+                            print(f"YAML Compiler: Skipping URL template rendering for runtime: {value[:50]}...")
                         return value  # Keep as-is for runtime rendering
                 
                 # If the string contains templates, process them individually
                 if "{{" in value and "}}" in value:
-                    return self._process_mixed_templates(value, context)
+                    return self._process_mixed_templates(value, context, step_ids)
                 else:
                     return value
             elif isinstance(value, dict):
@@ -669,7 +685,7 @@ class YAMLCompiler:
 
         return variables
 
-    def _process_mixed_templates(self, value: str, context: Dict[str, Any]) -> str:
+    def _process_mixed_templates(self, value: str, context: Dict[str, Any], step_ids: List[str] = None) -> str:
         """
         Process a string that may contain both compile-time and runtime templates.
 
@@ -701,7 +717,11 @@ class YAMLCompiler:
                 if var_match:
                     var_name = var_match.group(1).strip()
                     # Skip templates that reference step results
-                    if any(step_ref in var_name for step_ref in ["search_web", "summarize_results", "extract_", "analyze_", "generate_"]):
+                    if step_ids and any(f"{step_id}." in var_name for step_id in step_ids):
+                        continue  # Skip this template, keep it as-is
+                    
+                    # Also skip if template contains any attribute access that might be runtime
+                    if "." in var_name and var_name.split(".")[0] not in context:
                         continue  # Skip this template, keep it as-is
                 
                 # Try to render this specific template
@@ -712,23 +732,14 @@ class YAMLCompiler:
                 # If rendering fails, check if it's a runtime reference
                 error_str = str(e).lower()
 
-                # Runtime patterns that should be preserved
-                runtime_patterns = [
-                    "outputs.",
-                    "$results.",
-                    "steps.",
-                    ".result",
-                    ".output",
-                    ".value",
-                    ".data",
-                    "$item",
-                    "$index",
-                    "$iteration",
-                    "$loop",
-                ]
-
                 # Check if this template contains runtime references
-                if any(ref in template for ref in runtime_patterns):
+                # Any template with a dot notation that failed to render is likely a runtime reference
+                if "." in template:
+                    # Keep this template for runtime resolution
+                    continue
+                
+                # Also check for loop variables
+                if any(ref in template for ref in ["$item", "$index", "$iteration", "$loop"]):
                     # Keep this template for runtime resolution
                     continue
 

@@ -316,8 +316,14 @@ class TemplateManager:
             error_msg = str(e)
             # Don't show the whole template if it's large
             template_preview = template_string[:200] + "..." if len(template_string) > 200 else template_string
-            logger.warning(f"Undefined variable in template '{template_preview}': {error_msg}")
+            # Check if this is the URL template we're tracking
+            if "search_topic.results[0].url" in template_string:
+                print(f"DEBUG: URL template rendering failed at runtime")
+                print(f"DEBUG: This suggests the template was preserved during compilation (good!)")
+            print(f"Undefined variable in template '{template_preview}': {error_msg}")
             # Print more context about what's available
+            print(f"Available variables in context: {list(context.keys())}")
+            logger.warning(f"Undefined variable in template '{template_preview}': {error_msg}")
             logger.warning(f"Available variables in context: {list(context.keys())}")
             
             # Try to extract the specific undefined variable from the error message
