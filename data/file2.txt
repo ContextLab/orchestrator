@@ -1,0 +1,3 @@
+This is the second test file.
+It has different content than the first file.
+The batch processing should handle each file independently.

@@ -1,0 +1,3 @@
+This is the third and final test file.
+It completes our test dataset for the for_each loop.
+Each file should be processed in parallel when possible.
