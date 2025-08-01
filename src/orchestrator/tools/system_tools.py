@@ -197,6 +197,23 @@ class FileSystemTool(Tool):
                 logger.info(f"Template manager type: {type(_template_manager)}")
                 if isinstance(_template_manager, TemplateManager):
                     logger.info("Attempting to render templates with deep_render...")
+                    
+                    # Debug: Check what's actually in the template manager context
+                    logger.info(f"Template manager has {len(_template_manager.context)} context items")
+                    
+                    # Check for key step results
+                    for key in ['search_topic', 'deep_search', 'analyze_findings', 'generate_recommendations']:
+                        if key in _template_manager.context:
+                            ctx_item = _template_manager.context[key]
+                            if isinstance(ctx_item, dict) and 'result' in ctx_item:
+                                logger.info(f"  ✓ {key} has result")
+                            elif hasattr(ctx_item, 'result'):
+                                logger.info(f"  ✓ {key} has result attribute")
+                            else:
+                                logger.info(f"  ✓ {key} exists (type: {type(ctx_item).__name__})")
+                        else:
+                            logger.warning(f"  ✗ {key} NOT in context!")
+                    
                     # Check first few template variables
                     import re
                     template_vars = re.findall(r'{{\s*(\w+(?:\.\w+)*)', content[:500])
@@ -205,6 +222,14 @@ class FileSystemTool(Tool):
                     # Use deep_render to handle complex nested templates
                     rendered = _template_manager.deep_render(content)
                     logger.info(f"Template rendering successful. Original had templates: {('{{' in content)}, Rendered has templates: {('{{' in rendered)}")
+                    
+                    # Check if rendering actually worked
+                    if rendered == content and '{{' in content:
+                        logger.warning("Template rendering returned original content unchanged!")
+                        logger.warning(f"First 200 chars of content: {content[:200]}")
+                    else:
+                        logger.info(f"Templates rendered: {len(content)} chars -> {len(rendered)} chars")
+                    
                     content = rendered
                 else:
                     logger.warning(f"Template manager is not TemplateManager type: {type(_template_manager)}")

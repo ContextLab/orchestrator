@@ -292,9 +292,11 @@ class TemplateManager:
         if not self.has_templates(template_string):
             return template_string
         
+        # Build context before try block so it's available in except blocks
+        context = {**self.context, **(additional_context or {})}
+        
         try:
             template = self.env.from_string(template_string)
-            context = {**self.context, **(additional_context or {})}
             
             # Debug: Check specific variables
             if 'analyze_findings' in context and '{{ analyze_findings.result }}' in template_string:
@@ -337,9 +339,17 @@ class TemplateManager:
             
             return template_string
         except Exception as e:
-            logger.error(f"Error rendering template '{template_string}': {e}")
+            logger.error(f"Error rendering template: {e}")
             logger.error(f"Error type: {type(e).__name__}")
+            # Don't show long templates in error messages
+            if len(template_string) > 200:
+                logger.error(f"Error rendering template (first 200 chars): {template_string[:200]}...")
+            else:
+                logger.error(f"Error rendering template: '{template_string}'")
             logger.error(f"Available variables in context: {list(context.keys())}")
+            # Import traceback to get more details
+            import traceback
+            logger.debug(f"Full traceback: {traceback.format_exc()}")
             return template_string
     
     def render_dict(self, data: Dict[str, Any], additional_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

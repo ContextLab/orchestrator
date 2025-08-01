@@ -1,9 +1,9 @@
 pipeline_execution:
-  pipeline_id: Advanced Research Tools Pipeline (Fixed)
-  execution_id: Advanced Research Tools Pipeline (Fixed)_1754064473
-  timestamp: '2025-08-01T12:09:16'
+  pipeline_id: research_advanced_tools
+  execution_id: research_advanced_tools_1754066420
+  timestamp: '2025-08-01T12:41:53'
   context:
-    topic: artificial intelligence
+    topic: template rendering debugging
     max_results: 10
     compile_to_pdf: true
     output_path: examples/outputs/research_advanced_tools
@@ -22,23 +22,23 @@ tasks:
     action: search
     error: null
     result:
-      query: artificial intelligence latest developments
+      query: template rendering debugging latest developments
       results: '[10 items]'
       total_results: 10
-      search_time: 4.1514952182769775
+      search_time: 4.078222274780273
       backend: DuckDuckGoSearchBackend
-      timestamp: '2025-08-01T12:07:57.249706'
+      timestamp: '2025-08-01T12:40:24.471303'
   deep_search:
     status: completed
     action: search
     error: null
     result:
-      query: artificial intelligence research papers technical details implementation
+      query: template rendering debugging research papers technical details implementation
       results: '[10 items]'
       total_results: 10
-      search_time: 0.9937920570373535
+      search_time: 1.098412036895752
       backend: DuckDuckGoSearchBackend
-      timestamp: '2025-08-01T12:07:58.245220'
+      timestamp: '2025-08-01T12:40:25.571120'
   extract_content:
     status: skipped
     action: scrape
@@ -48,19 +48,19 @@ tasks:
     status: completed
     action: analyze_text
     error: null
-    result: '[5219 chars]'
+    result: '[7403 chars]'
   generate_recommendations:
     status: completed
     action: generate_text
     error: null
-    result: '[4721 chars]'
+    result: '[4282 chars]'
   save_report:
     status: completed
     action: write
     error: null
     result:
       action: write
-      path: examples/outputs/research_advanced_tools/research_artificial-intelligence.md
+      path: examples/outputs/research_advanced_tools/research_template-rendering-debugging.md
       size: 2553
       success: true
   read_report:
@@ -69,16 +69,15 @@ tasks:
     error: null
     result:
       action: read
-      path: examples/outputs/research_advanced_tools/research_artificial-intelligence.md
-      content: '[2553 chars]'
-      size: 2553
-      success: true
+      path: examples/outputs/research_advanced_tools/research_template-rendering-debugging.md
+      success: false
+      error: 'File not found: examples/outputs/research_advanced_tools/research_template-rendering-debugging.md'
   compile_pdf:
     status: completed
     action: compile
     error: null
     result:
       success: true
-      output_path: examples/outputs/research_advanced_tools/research_artificial-intelligence.pdf
-      file_size: 28910
-      message: '[122 chars]'
+      output_path: examples/outputs/research_advanced_tools/research_template-rendering-debugging.pdf
+      file_size: 28867
+      message: '[127 chars]'
