@@ -294,9 +294,11 @@ class ControlSystem(ABC):
         # Debug logging
         import logging
         logger = logging.getLogger(__name__)
-        logger.debug(f"Checking filesystem special case: tool={rendered_task.metadata.get('tool')}, action={rendered_task.action}")
+        logger.info(f"_render_task_templates for task {rendered_task.id}: tool={rendered_task.metadata.get('tool')}, action={rendered_task.action}")
         if rendered_task.parameters and "action" in rendered_task.parameters:
-            logger.debug(f"Parameters contain action={rendered_task.parameters.get('action')}")
+            logger.info(f"Parameters contain action={rendered_task.parameters.get('action')}")
+        if rendered_task.parameters and "content" in rendered_task.parameters:
+            logger.info(f"Content parameter present, first 100 chars: {str(rendered_task.parameters.get('content'))[:100]}")
         
         # Check both cases:
         # 1. tool="filesystem" with action="write" (new style)
@@ -318,7 +320,7 @@ class ControlSystem(ABC):
             is_filesystem_write = True
             
         if is_filesystem_write:
-            logger.debug("FileSystemTool write detected - preserving content parameter for runtime rendering")
+            logger.info("FileSystemTool write detected - preserving content parameter for runtime rendering")
             # Render all parameters except content
             rendered_params = {}
             for key, value in rendered_task.parameters.items():

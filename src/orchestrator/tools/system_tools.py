@@ -177,19 +177,30 @@ class FileSystemTool(Tool):
         # Create parent directories if they don't exist
         path_obj.parent.mkdir(parents=True, exist_ok=True)
 
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"FileSystemTool._write_file called with path={path}")
+        logger.info(f"Template manager provided: {_template_manager is not None}")
+        logger.info(f"Content has templates: {isinstance(content, str) and ('{{' in content or '{%' in content)}")
+        
         # If template manager is available and content has templates, render at runtime
         if _template_manager and isinstance(content, str) and ('{{' in content or '{%' in content):
             try:
                 # Import here to avoid circular dependency
                 from ..core.template_manager import TemplateManager
+                logger.info(f"Template manager type: {type(_template_manager)}")
                 if isinstance(_template_manager, TemplateManager):
+                    logger.info("Attempting to render templates with deep_render...")
                     # Use deep_render to handle complex nested templates
                     rendered = _template_manager.deep_render(content)
+                    logger.info(f"Template rendering successful. Original had templates: {('{{' in content)}, Rendered has templates: {('{{' in rendered)}")
                     content = rendered
+                else:
+                    logger.warning(f"Template manager is not TemplateManager type: {type(_template_manager)}")
             except Exception as e:
                 # If rendering fails, log but continue with original content
-                import logging
-                logging.warning(f"Failed to render templates in content: {e}")
+                logger.error(f"Failed to render templates in content: {e}", exc_info=True)
 
         path_obj.write_text(content, encoding="utf-8")
 
