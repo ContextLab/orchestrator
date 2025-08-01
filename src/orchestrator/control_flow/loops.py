@@ -336,10 +336,29 @@ class WhileLoopHandler:
             }
         )
 
+        # First, render the condition template if it contains templates
+        rendered_condition = condition
+        if "{{" in condition and "}}" in condition:
+            # Use template manager to render the condition
+            template_manager = context.get("template_manager") or context.get("_template_manager")
+            if template_manager:
+                try:
+                    # Pass step_results and enhanced context for rendering
+                    all_context = {**step_results, **enhanced_context}
+                    rendered_condition = template_manager.render(condition, additional_context=all_context)
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"While loop {loop_id}: Rendered condition from '{condition}' to '{rendered_condition}'")
+                except Exception as e:
+                    # Log the error but try to continue with original condition
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Failed to render while loop condition template: {e}")
+        
         # Evaluate condition
         cache_key = f"{loop_id}_iter_{iteration}"
         result = await self.auto_resolver.resolve_condition(
-            condition, enhanced_context, step_results, cache_key
+            rendered_condition, enhanced_context, step_results, cache_key
         )
 
         return result

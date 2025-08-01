@@ -276,7 +276,8 @@ class YAMLCompiler:
                 # 4. Any field that contains Jinja2 control structures
                 # 5. URL parameters that might reference step results
                 # 6. Conditions - ALWAYS skip processing conditions
-                if current_key == "condition" or current_key == "if":
+                # This includes: if, condition, while (loop conditions), for_each conditions
+                if current_key in ["condition", "if", "while"]:
                     # Conditions should NEVER be processed at compile time
                     # They must be evaluated at runtime when step results are available
                     # Debug logging
