@@ -1,0 +1,210 @@
+name: Advanced Research Tools Pipeline (Fixed)
+description: Comprehensive research pipeline using multiple tools with autonomous search and analysis
+
+# Pipeline configuration
+model: <AUTO>Use a capable model for comprehensive research tasks</AUTO>
+parameters:
+  topic: <USER>Research topic to investigate</USER>
+  max_results: 10
+  compile_to_pdf: true
+  output_path: "examples/outputs/research_advanced_tools"
+
+# Main pipeline steps
+steps:
+  # Step 1: Initial web search for recent developments
+  - id: search_topic
+    tool: web-search
+    action: search
+    parameters:
+      query: "{{ topic }} latest developments"
+      max_results: "{{ max_results }}"
+    
+  # Step 2: Deep search for technical details
+  - id: deep_search
+    tool: web-search
+    action: search
+    parameters:
+      query: "{{ topic }} research papers technical details implementation"
+      max_results: "{{ max_results | int }}"
+      backend: "duckduckgo"
+    dependencies:
+      - search_topic
+      
+  # Step 3: Extract content from top result using headless browser
+  - id: extract_content
+    tool: headless-browser
+    action: scrape
+    parameters:
+      url: "{{ search_topic.results[0].url if search_topic.results and search_topic.results|length > 0 else deep_search.results[0].url if deep_search.results and deep_search.results|length > 0 else '' }}"
+    dependencies:
+      - search_topic
+      - deep_search
+    condition: "{{ (search_topic.results | length > 0) or (deep_search.results | length > 0) }}"
+    continue_on_error: true
+    
+  # Step 4: Analyze and synthesize findings
+  - id: analyze_findings
+    action: analyze_text
+    parameters:
+      text: |
+        Topic: {{ topic }}
+        
+        {% if extract_content.word_count and extract_content.word_count > 0 %}
+        Title: {{ extract_content.title }}
+        Key content: {{ extract_content.text | truncate(1500) }}...
+        {% endif %}
+        
+        Primary search results ({{ search_topic.total_results }} found):
+        {% for result in search_topic.results[:5] %}
+        - {{ result.title }} ({{ result.url }})
+          {{ result.snippet }}
+        {% endfor %}
+        
+        Technical search results ({{ deep_search.total_results }} found):
+        {% for result in deep_search.results[:5] %}
+        - {{ result.title }} ({{ result.url }})
+          {{ result.snippet }}
+        {% endfor %}
+      
+      instructions: |
+        Provide a comprehensive analysis of current developments in {{ topic }}.
+        - Identify key trends, breakthroughs, and challenges
+        - Extract technical details and implementation approaches
+        - Consider both recent developments and established research
+        - Structure response with clear sections: Overview, Key Findings, Technical Analysis, Current Trends, Critical Evaluation
+        Do NOT include any "Prepared by" statements or attribution.
+      
+      max_length: 3000
+    dependencies:
+      - search_topic
+      - deep_search
+      - extract_content
+      
+  # Step 5: Generate strategic recommendations
+  - id: generate_recommendations  
+    action: generate_text
+    parameters:
+      prompt: |
+        Based on the analysis of {{ topic }}:
+        
+        {{ analyze_findings.result }}
+        
+        Generate strategic recommendations (5-8 items) that:
+        - Address identified gaps and challenges
+        - Leverage emerging opportunities
+        - Provide actionable next steps for researchers/practitioners
+        - Consider both short-term and long-term perspectives
+        
+        Format as a numbered list with substantive explanations (3-4 sentences each).
+        Be specific to {{ topic }} - avoid generic advice.
+        Do NOT include any "Prepared by" statements or attribution.
+      model: <AUTO task="generate">Select model for recommendations</AUTO>
+      max_tokens: 1500
+    dependencies:
+      - analyze_findings
+    
+  # Step 6: Save comprehensive report directly
+  - id: save_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output_path }}/research_{{ topic | slugify }}.md"
+      content: |
+        # Research Report: {{ topic }}
+        
+        **Generated on:** {{ execution.timestamp }}
+        **Total Sources Analyzed:** {{ search_topic.total_results + deep_search.total_results }}
+        
+        ---
+        
+        ## Analysis
+        
+        {{ analyze_findings.result }}
+        
+        ## Strategic Recommendations
+        
+        {{ generate_recommendations.result }}
+        
+        ## Search Results
+        
+        The analysis is based on {{ search_topic.total_results + deep_search.total_results }} sources discovered through systematic web searches. The primary search focused on recent developments in {{ topic }}, while the technical search targeted research papers and implementation details.
+        
+        ### Primary Sources (Top {{ search_topic.results[:10] | length }} of {{ search_topic.total_results }})
+        {% for result in search_topic.results[:10] %}
+        {{ loop.index }}. **[{{ result.title }}]({{ result.url }})**
+           - {{ result.snippet }}
+        {% endfor %}
+        
+        ### Technical Sources ({{ deep_search.total_results }} results)
+        {% for result in deep_search.results[:5] %}
+        {{ loop.index }}. **[{{ result.title }}]({{ result.url }})**
+           - {{ result.snippet }}
+        {% endfor %}
+        
+        ## Extracted Content Analysis
+        
+        {% if extract_content.word_count and extract_content.word_count > 0 %}
+        **Primary Source:** {{ extract_content.title }}
+        **URL:** {{ extract_content.url }}
+        **Content Summary:** Successfully extracted {{ extract_content.word_count }} words from the primary source.
+        {% else %}
+        Content extraction was not successful or was skipped.
+        {% endif %}
+        
+        ## Methodology
+        
+        This comprehensive research report was generated through a multi-stage process combining automated web searches, content extraction, and AI-powered analysis. The methodology ensures broad coverage of current developments while maintaining analytical depth.
+        
+        ### Search Strategy
+        - **Primary search**: "{{ topic }} latest developments" (yielded {{ search_topic.total_results }} results)
+        - **Technical search**: "{{ topic }} research papers technical details implementation" (yielded {{ deep_search.total_results }} results)
+        - **Content extraction**: Automated extraction from primary sources when accessible
+        - **Analysis performed**: {{ execution.timestamp }}
+        
+        ## References
+        
+        All sources were accessed on {{ execution.date }} and are listed in order of relevance.
+        
+        {% for result in search_topic.results[:5] %}
+        {{ loop.index }}. {{ result.title }}. Available at: {{ result.url }}
+        {% endfor %}
+        {% for result in deep_search.results[:5] %}
+        {{ loop.index + 5 }}. {{ result.title }}. Available at: {{ result.url }}
+        {% endfor %}
+        
+        ---
+        *This report was automatically generated by the Orchestrator Advanced Research Pipeline v2.0*
+    dependencies:
+      - analyze_findings
+      - generate_recommendations
+      
+  # Step 7: Read the generated report for compilation
+  - id: read_report
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ output_path }}/research_{{ topic | slugify }}.md"
+    dependencies:
+      - save_report
+    
+  # Step 8: Compile to PDF
+  - id: compile_pdf
+    tool: pdf-compiler
+    action: compile
+    parameters:
+      markdown_content: "{{ read_report.content }}"
+      output_path: "{{ output_path }}/research_{{ topic | slugify }}.pdf"
+      title: "Research Report: {{ topic }}"
+      author: "AI Research Assistant"
+      date: "{{ execution.date }}"
+    dependencies:
+      - read_report
+    condition: "{{ compile_to_pdf }}"
+
+# Output configuration
+outputs:
+  report_file: "{{ save_report.path | default('') }}"
+  pdf_file: "{{ 'PDF generated at: ' + compile_pdf.output_path if compile_to_pdf and compile_pdf.success else 'PDF generation skipped' }}"
+  total_sources: "{{ search_topic.total_results + deep_search.total_results }}"
+  primary_source: "{{ extract_content.url if extract_content.url else 'No results found' }}"
+  analysis: "{{ analyze_findings.result }}"

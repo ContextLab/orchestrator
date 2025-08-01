@@ -183,6 +183,11 @@ class FileSystemTool(Tool):
         logger.info(f"FileSystemTool._write_file called with path={path}")
         logger.info(f"Template manager provided: {_template_manager is not None}")
         logger.info(f"Content has templates: {isinstance(content, str) and ('{{' in content or '{%' in content)}")
+        if _template_manager:
+            # Log available context
+            from ..core.template_manager import TemplateManager
+            if isinstance(_template_manager, TemplateManager):
+                logger.info(f"Template manager context keys: {list(_template_manager.context.keys())}")
         
         # If template manager is available and content has templates, render at runtime
         if _template_manager and isinstance(content, str) and ('{{' in content or '{%' in content):
@@ -192,6 +197,11 @@ class FileSystemTool(Tool):
                 logger.info(f"Template manager type: {type(_template_manager)}")
                 if isinstance(_template_manager, TemplateManager):
                     logger.info("Attempting to render templates with deep_render...")
+                    # Check first few template variables
+                    import re
+                    template_vars = re.findall(r'{{\s*(\w+(?:\.\w+)*)', content[:500])
+                    logger.info(f"First few template variables found: {template_vars[:5]}")
+                    
                     # Use deep_render to handle complex nested templates
                     rendered = _template_manager.deep_render(content)
                     logger.info(f"Template rendering successful. Original had templates: {('{{' in content)}, Rendered has templates: {('{{' in rendered)}")
