@@ -258,6 +258,8 @@ class Orchestrator:
             context["current_level"] = level_index
 
             # Execute tasks in parallel within the level
+            self.logger.warning(f"ORCHESTRATOR: Executing level {level_index} with tasks: {level}")
+            self.logger.warning(f"ORCHESTRATOR: Accumulated results so far: {list(results.keys())}")
             level_results = await self._execute_level(pipeline, level, context, results)
 
             # Check for failures
@@ -458,6 +460,16 @@ class Orchestrator:
             # Import here to avoid circular dependency
             from .control_flow.auto_resolver import ControlFlowAutoResolver
             resolver = ControlFlowAutoResolver(self.model_registry)
+            
+            # Register previous results with template manager before condition evaluation
+            # This ensures step results are available for condition template rendering
+            template_manager = context.get("template_manager") or context.get("_template_manager")
+            if template_manager and previous_results:
+                self.logger.warning(f"ORCHESTRATOR: Registering {len(previous_results)} previous results with template manager before condition evaluation for task '{task.id}'")
+                self.logger.warning(f"ORCHESTRATOR: Previous results keys: {list(previous_results.keys())}")
+                template_manager.register_all_results(previous_results)
+            else:
+                self.logger.warning(f"ORCHESTRATOR: No template manager or previous results for task '{task.id}'. TM: {template_manager is not None}, PR: {len(previous_results) if previous_results else 0}")
             
             # Now we can safely evaluate the condition
             try:

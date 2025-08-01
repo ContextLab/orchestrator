@@ -267,8 +267,15 @@ class ControlFlowCompiler(YAMLCompiler):
         if "continue_on_error" in task_def and "continue_on_error" not in task_def["metadata"]:
             task_def["metadata"]["continue_on_error"] = task_def["continue_on_error"]
             
+        # Extract condition before building base task to prevent early rendering
+        condition = task_def.pop("condition", None) or task_def.pop("if", None)
+        
         # First, let the parent build the base task with template analysis
         base_task = super()._build_task(task_def, available_steps)
+        
+        # Restore condition to task_def
+        if condition:
+            task_def["condition"] = condition
         
         # Check for condition in task definition
         if "if" in task_def or "condition" in task_def:

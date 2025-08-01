@@ -275,9 +275,17 @@ class YAMLCompiler:
                 # 3. Any field that references step results
                 # 4. Any field that contains Jinja2 control structures
                 # 5. URL parameters that might reference step results
-                if (current_key in ["prompt", "content", "url", "text"] and parent_key == "parameters") or \
-                   (current_key == "condition"):
+                # 6. Conditions - ALWAYS skip processing conditions
+                if current_key == "condition" or current_key == "if":
+                    # Conditions should NEVER be processed at compile time
+                    # They must be evaluated at runtime when step results are available
+                    # Debug logging
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Skipping condition template processing for key '{current_key}' at path {path}: {value}")
+                    return value
                     
+                if (current_key in ["prompt", "content", "url", "text"] and parent_key == "parameters"):
                     # Check if it references any actual step IDs from this pipeline
                     if any(f"{step_id}." in value for step_id in step_ids) or \
                        any(ctrl in value for ctrl in ["{% for", "{% if", "{% set", "{% endfor", "{% endif"]) or \
@@ -579,6 +587,10 @@ class YAMLCompiler:
         ]:
             if cf_key in task_def:
                 metadata[cf_key] = task_def[cf_key]
+                # Remove condition-related keys from task_def to prevent rendering
+                # They should only be evaluated at runtime
+                if cf_key in ["if", "condition"]:
+                    task_def.pop(cf_key, None)
 
         # Analyze templates in parameters
         template_metadata = self._analyze_parameter_templates(parameters, available_steps)

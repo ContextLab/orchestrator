@@ -295,6 +295,11 @@ class TemplateManager:
         # Build context before try block so it's available in except blocks
         context = {**self.context, **(additional_context or {})}
         
+        # Debug: Log when rendering conditions
+        if "read_file.size" in template_string and "{{ read_file.size" in template_string:
+            logger.warning(f"TEMPLATE MANAGER: Attempting to render condition template: {template_string[:100]}...")
+            logger.warning(f"Available context keys: {list(context.keys())}")
+        
         try:
             template = self.env.from_string(template_string)
             

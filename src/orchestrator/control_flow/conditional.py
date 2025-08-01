@@ -41,7 +41,8 @@ class ConditionalTask(Task):
             template_manager = context.get("template_manager") or context.get("_template_manager")
             if template_manager:
                 try:
-                    rendered_condition = template_manager.render(self.condition)
+                    # Pass step_results as additional context for rendering
+                    rendered_condition = template_manager.render(self.condition, additional_context=step_results)
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.info(f"Task {self.id}: Rendered condition from '{self.condition}' to '{rendered_condition}'")
@@ -155,7 +156,7 @@ class ConditionalHandler:
             "name": task_def.get("name", task_def["id"]),
             "action": task_def.get("action", "conditional"),
             "parameters": task_def.get("parameters", {}),
-            "dependencies": task_def.get("depends_on", []),
+            "dependencies": task_def.get("dependencies", task_def.get("depends_on", [])),
             "metadata": existing_metadata,
             "timeout": task_def.get("timeout"),
             "max_retries": task_def.get("max_retries", 3),
