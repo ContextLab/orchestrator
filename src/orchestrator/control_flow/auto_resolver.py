@@ -61,9 +61,10 @@ class ControlFlowAutoResolver:
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.debug(
-            f"Resolved condition: '{resolved_condition}' (type: {type(resolved_condition)})"
+        logger.info(
+            f"Evaluating condition: original='{condition}', resolved='{resolved_condition}' (type: {type(resolved_condition)})"
         )
+        logger.info(f"Available step results: {list(step_results.keys())}")
 
         # If the resolution already returned a boolean, use it directly
         if isinstance(resolved_condition, bool):

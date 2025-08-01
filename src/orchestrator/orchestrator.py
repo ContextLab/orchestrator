@@ -438,19 +438,41 @@ class Orchestrator:
         # Check if this is a conditional task that needs condition evaluation
         from .control_flow.conditional import ConditionalTask
         if isinstance(task, ConditionalTask) and hasattr(task, 'should_execute'):
+            # Check if all dependencies have been satisfied first
+            previous_results = context.get("previous_results", {})
+            missing_deps = []
+            for dep in task.dependencies:
+                if dep not in previous_results:
+                    missing_deps.append(dep)
+            
+            if missing_deps:
+                # Dependencies not satisfied, can't evaluate condition yet
+                self.logger.error(
+                    f"Task '{task.id}' has unsatisfied dependencies: {missing_deps}. "
+                    f"This should not happen - tasks should only be scheduled after dependencies complete."
+                )
+                raise ExecutionError(
+                    f"Task '{task.id}' scheduled before dependencies {missing_deps} completed"
+                )
+            
             # Import here to avoid circular dependency
             from .control_flow.auto_resolver import ControlFlowAutoResolver
             resolver = ControlFlowAutoResolver(self.model_registry)
             
-            # Get previous results from context
-            previous_results = context.get("previous_results", {})
-            
-            # Check if task should execute
-            should_execute = await task.should_execute(
-                context, 
-                previous_results,
-                resolver
-            )
+            # Now we can safely evaluate the condition
+            try:
+                should_execute = await task.should_execute(
+                    context, 
+                    previous_results,
+                    resolver
+                )
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to evaluate condition for task '{task.id}': {e}"
+                )
+                # If condition evaluation fails, skip the task with error details
+                task.skip(f"Condition evaluation failed: {e}")
+                return {"status": "skipped", "reason": "condition_error", "error": str(e)}
             
             if not should_execute:
                 # Skip this task

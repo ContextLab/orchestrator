@@ -34,9 +34,26 @@ class ConditionalTask(Task):
         if not self.condition:
             return True
 
-        # Now we can directly await the async method
+        # First, render the condition template if it contains templates
+        rendered_condition = self.condition
+        if "{{" in self.condition and "}}" in self.condition:
+            # Use template manager to render the condition
+            template_manager = context.get("template_manager") or context.get("_template_manager")
+            if template_manager:
+                try:
+                    rendered_condition = template_manager.render(self.condition)
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"Task {self.id}: Rendered condition from '{self.condition}' to '{rendered_condition}'")
+                except Exception as e:
+                    # Log the error but try to continue with original condition
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Failed to render condition template: {e}")
+
+        # Now we can directly await the async method with the rendered condition
         return await resolver.resolve_condition(
-            self.condition, context, step_results, self.condition_cache_key
+            rendered_condition, context, step_results, self.condition_cache_key
         )
 
 

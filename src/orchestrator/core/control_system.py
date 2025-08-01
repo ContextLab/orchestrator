@@ -172,6 +172,10 @@ class ControlSystem(ABC):
         Returns:
             Task with all templates rendered
         """
+        # No longer checking for pre-rendered parameters
+        # We'll render templates on-demand here
+        
+        # Fallback to legacy rendering for backward compatibility
         # Import here to avoid circular dependency
         from .template_manager import TemplateManager
         
