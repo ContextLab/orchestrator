@@ -165,6 +165,14 @@ class ControlFlowEngine:
             if task.status != TaskStatus.PENDING:
                 continue
 
+            # Skip while loop placeholder tasks - they are expanded separately
+            if (
+                hasattr(task, "metadata")
+                and task.metadata.get("is_while_loop")
+            ):
+                logger.info(f"Skipping while loop placeholder task: {task.id}")
+                continue
+
             # Check conditional execution
             should_execute = await self.conditional_handler.evaluate_condition(
                 task, context, self.step_results

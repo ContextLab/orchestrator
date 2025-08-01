@@ -47,6 +47,7 @@ async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = No
     
     try:
         start_time = datetime.now()
+        
         results = await orchestrator.execute_yaml(yaml_content, inputs or {})
         duration = (datetime.now() - start_time).total_seconds()
         

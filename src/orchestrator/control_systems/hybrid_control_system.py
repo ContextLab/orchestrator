@@ -576,8 +576,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         cf_type = None
         if "for_each" in task.metadata:
             cf_type = "for_each"
-        elif "while" in task.metadata:
+        elif "while" in task.metadata or task.metadata.get("is_while_loop"):
             cf_type = "while"
+            # While loops should NOT be executed - they need to be expanded
+            raise ValueError("While loop tasks should not be executed directly. They must be expanded by the orchestrator.")
         elif "if" in task.metadata:
             cf_type = "if"
         else:
