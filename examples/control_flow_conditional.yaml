@@ -36,7 +36,7 @@ steps:
   # Process large files (compress)
   - id: compress_large
     action: generate_text
-    if: "{{ read_file.size > size_threshold }}"
+    condition: "{{ read_file.size > size_threshold }}"
     parameters:
       prompt: "Summarize this text in 3 bullet points:\n\n{{ read_file.content }}"
       model: <AUTO task="summarize">Select a model for text summarization</AUTO>
@@ -47,7 +47,7 @@ steps:
   # Process small files (expand)
   - id: expand_small
     action: generate_text
-    if: "{{ read_file.size <= size_threshold }}"
+    condition: "{{ read_file.size <= size_threshold }}"
     parameters:
       prompt: "Expand on this text with more details:\n\n{{ read_file.content }}"
       model: <AUTO task="generate">Select a model for text generation</AUTO>
@@ -65,7 +65,7 @@ steps:
         # Processed File
         
         Original size: {{ read_file.size }} bytes
-        Processing type: {{ read_file.size > size_threshold ? 'Compressed' : 'Expanded' }}
+        Processing type: {% if read_file.size > size_threshold %}Compressed{% else %}Expanded{% endif %}
         
         ## Result
         {{ compress_large.result | default(expand_small.result) }}
