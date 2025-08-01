@@ -67,7 +67,10 @@ steps:
         Original size: {{ read_file.size }} bytes
         Processing type: {% if read_file.size > size_threshold %}Compressed{% else %}Expanded{% endif %}
         
+        
         ## Result
+
+
         {{ compress_large.result | default(expand_small.result) }}
     dependencies:
       - compress_large
