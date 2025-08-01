@@ -347,6 +347,20 @@ class TemplateManager:
             else:
                 logger.error(f"Error rendering template: '{template_string}'")
             logger.error(f"Available variables in context: {list(context.keys())}")
+            
+            # Check if it's an AttributeError on a specific variable
+            if isinstance(e, Exception) and "has no attribute" in str(e):
+                # Try to extract which variable/attribute caused the issue
+                import re
+                match = re.search(r"'(\w+)' object.* has no attribute '(\w+)'", str(e))
+                if match:
+                    obj_type, attr = match.groups()
+                    logger.error(f"AttributeError: '{obj_type}' object missing attribute '{attr}'")
+                    # Check if the base variable exists
+                    for var_name, var_value in context.items():
+                        if type(var_value).__name__ == obj_type or str(type(var_value)) == f"<class '{obj_type}'>":
+                            logger.error(f"Variable '{var_name}' is a {obj_type} with keys/attrs: {list(vars(var_value).keys()) if hasattr(var_value, '__dict__') else list(var_value.keys()) if isinstance(var_value, dict) else 'N/A'}")
+            
             # Import traceback to get more details
             import traceback
             logger.debug(f"Full traceback: {traceback.format_exc()}")

@@ -60,7 +60,7 @@ steps:
         Topic: {{ topic }}
         
         Primary search results ({{ search_topic.total_results }} total):
-        {% for result in search_topic.results[:{{ max_results | int }}] %}
+        {% for result in search_topic.results[:max_results] %}
         {{ loop.index }}. {{ result.title }}
            URL: {{ result.url }}
            Summary: {{ result.snippet }}
@@ -71,7 +71,7 @@ steps:
         - {{ result.title }}: {{ result.snippet }}
         {% endfor %}
         
-        {% if extract_content.word_count and extract_content.word_count > 0 %}
+        {% if extract_content is defined and 'word_count' in extract_content and extract_content.word_count > 0 %}
         Extracted content from primary source:
         Title: {{ extract_content.title }}
         Key content: {{ extract_content.text | truncate(1500) }}...
@@ -168,7 +168,7 @@ steps:
         
         ## Extracted Content Analysis
         
-        {% if extract_content.word_count and extract_content.word_count > 0 %}
+        {% if extract_content is defined and 'word_count' in extract_content and extract_content.word_count > 0 %}
         **Primary Source:** {{ extract_content.title }}
         **URL:** {{ extract_content.url }}
         **Content Summary:** Successfully extracted {{ extract_content.word_count }} words from the primary source.
