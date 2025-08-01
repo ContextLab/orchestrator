@@ -245,11 +245,12 @@ class ControlFlowCompiler(YAMLCompiler):
 
         return step_def
 
-    def _build_task(self, task_def: Dict[str, Any]) -> Task:
+    def _build_task(self, task_def: Dict[str, Any], available_steps: List[str]) -> Task:
         """Build Task object with control flow support.
 
         Args:
             task_def: Task definition
+            available_steps: List of all step IDs in the pipeline
 
         Returns:
             Task object
@@ -266,13 +267,22 @@ class ControlFlowCompiler(YAMLCompiler):
         if "continue_on_error" in task_def and "continue_on_error" not in task_def["metadata"]:
             task_def["metadata"]["continue_on_error"] = task_def["continue_on_error"]
             
+        # First, let the parent build the base task with template analysis
+        base_task = super()._build_task(task_def, available_steps)
+        
         # Check for condition in task definition
         if "if" in task_def or "condition" in task_def:
-            return self.conditional_handler.create_conditional_task(task_def)
+            conditional_task = self.conditional_handler.create_conditional_task(task_def)
+            # Copy template metadata from base task
+            conditional_task.template_metadata = base_task.template_metadata
+            return conditional_task
 
         # Check for goto at top level
         if "goto" in task_def:
-            return self.dynamic_flow_handler.create_dynamic_task(task_def)
+            dynamic_task = self.dynamic_flow_handler.create_dynamic_task(task_def)
+            # Copy template metadata from base task
+            dynamic_task.template_metadata = base_task.template_metadata
+            return dynamic_task
 
         # Check for control flow metadata
         if "metadata" in task_def:
@@ -280,11 +290,17 @@ class ControlFlowCompiler(YAMLCompiler):
 
             # Create conditional task if needed
             if "condition" in metadata:
-                return self.conditional_handler.create_conditional_task(task_def)
+                conditional_task = self.conditional_handler.create_conditional_task(task_def)
+                # Copy template metadata from base task
+                conditional_task.template_metadata = base_task.template_metadata
+                return conditional_task
 
             # Create dynamic flow task if needed
             if "goto" in metadata or "dynamic_dependencies" in metadata:
-                return self.dynamic_flow_handler.create_dynamic_task(task_def)
+                dynamic_task = self.dynamic_flow_handler.create_dynamic_task(task_def)
+                # Copy template metadata from base task
+                dynamic_task.template_metadata = base_task.template_metadata
+                return dynamic_task
 
-        # Default to parent implementation
-        return super()._build_task(task_def)
+        # Return the base task if no control flow
+        return base_task

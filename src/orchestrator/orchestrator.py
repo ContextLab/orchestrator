@@ -290,6 +290,25 @@ class Orchestrator:
                 )
 
         return results
+    
+    async def _prepare_task_for_execution(self, task: Task, context: Dict[str, Any], 
+                                          completed_steps: Set[str]) -> Dict[str, Any]:
+        """
+        Prepare task for execution.
+        
+        For now, we'll let the control system handle template rendering
+        to avoid premature dependency checks.
+        
+        Args:
+            task: Task to prepare
+            context: Execution context
+            completed_steps: Set of completed step IDs
+            
+        Returns:
+            Task parameters (unrendered)
+        """
+        # Return original parameters - control system will render templates as needed
+        return task.parameters
 
     async def _execute_level(
         self,
@@ -331,6 +350,9 @@ class Orchestrator:
             scheduled_task_ids = []
             results = {}
 
+            # Track completed steps from previous results
+            completed_steps = set(previous_results.keys())
+            
             for task_id in level_tasks:
                 task = pipeline.get_task(task_id)
 
@@ -340,6 +362,21 @@ class Orchestrator:
                     # Register skipped task with None value in template manager
                     # This allows Jinja conditionals like {% if enhance_text.result %} to work
                     self.template_manager.register_context(task_id, None)
+                    continue
+                
+                # For conditional tasks, we'll check the condition after dependencies are satisfied
+                # This happens inside _execute_task_with_resources
+                
+                # Prepare task by rendering templates JIT
+                try:
+                    rendered_params = await self._prepare_task_for_execution(
+                        task, context, completed_steps
+                    )
+                except Exception as e:
+                    # Handle template rendering errors
+                    self.logger.error(f"Failed to prepare task {task_id}: {e}")
+                    task.fail(e)
+                    results[task_id] = {"error": str(e)}
                     continue
 
                 task_context = {
@@ -398,6 +435,28 @@ class Orchestrator:
         context: Dict[str, Any],
     ) -> Any:
         """Execute a single task with resource management."""
+        # Check if this is a conditional task that needs condition evaluation
+        from .control_flow.conditional import ConditionalTask
+        if isinstance(task, ConditionalTask) and hasattr(task, 'should_execute'):
+            # Import here to avoid circular dependency
+            from .control_flow.auto_resolver import ControlFlowAutoResolver
+            resolver = ControlFlowAutoResolver(self.model_registry)
+            
+            # Get previous results from context
+            previous_results = context.get("previous_results", {})
+            
+            # Check if task should execute
+            should_execute = await task.should_execute(
+                context, 
+                previous_results,
+                resolver
+            )
+            
+            if not should_execute:
+                # Skip this task
+                task.skip("Condition evaluated to false")
+                return {"status": "skipped", "reason": "condition_false"}
+        
         # Mark task as running
         task.start()
 

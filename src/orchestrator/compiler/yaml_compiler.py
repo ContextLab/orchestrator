@@ -11,6 +11,7 @@ from jinja2 import Environment, StrictUndefined
 
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..core.template_metadata import TemplateMetadata
 from ..core.exceptions import YAMLCompilerError
 from .ambiguity_resolver import AmbiguityResolver
 from .auto_tag_yaml_parser import AutoTagYAMLParser
@@ -243,8 +244,6 @@ class YAMLCompiler:
             for step in pipeline_def["steps"]:
                 if isinstance(step, dict) and "id" in step:
                     step_ids.append(step["id"])
-        
-        # Remove debug print
 
         def process_value(value: Any, path: List[str] = None) -> Any:
             if path is None:
@@ -283,9 +282,6 @@ class YAMLCompiler:
                     if any(f"{step_id}." in value for step_id in step_ids) or \
                        any(ctrl in value for ctrl in ["{% for", "{% if", "{% set", "{% endfor", "{% endif"]) or \
                        any(attr in value for attr in [".results", ".result", ".content", ".output", ".data"]):
-                        # Debug print for verification
-                        if current_key == "url" and "search_topic" in value:
-                            print(f"YAML Compiler: Skipping URL template rendering for runtime: {value[:50]}...")
                         return value  # Keep as-is for runtime rendering
                 
                 # If the string contains templates, process them individually
@@ -419,21 +415,114 @@ class YAMLCompiler:
 
         # Build tasks
         steps = pipeline_def.get("steps", [])
+        
+        # First pass: collect all step IDs
+        available_steps = []
         for step_def in steps:
-            task = self._build_task(step_def)
+            if "id" in step_def:
+                available_steps.append(step_def["id"])
+        
+        # Second pass: build tasks with template analysis
+        for step_def in steps:
+            task = self._build_task(step_def, available_steps)
             pipeline.add_task(task)
 
         return pipeline
-
-    def _build_task(self, task_def: Dict[str, Any]) -> Task:
+    
+    def _analyze_template(self, template_str: str, available_steps: List[str], 
+                          parameter_path: Optional[str] = None) -> TemplateMetadata:
         """
-        Build Task object from definition.
+        Analyze a template string to extract dependencies and requirements.
+        
+        Args:
+            template_str: The template string to analyze
+            available_steps: List of step IDs in the pipeline
+            parameter_path: Path to this parameter (e.g., "parameters.url")
+            
+        Returns:
+            TemplateMetadata object with analysis results
+        """
+        dependencies = set()
+        context_requirements = set()
+        
+        # Extract step references (e.g., step_id.result, step_id.outputs.data)
+        if available_steps:
+            # Build pattern to match step references
+            # Match: step_id.property, step_id.nested.property, etc.
+            step_pattern = r'\b(' + '|'.join(re.escape(step) for step in available_steps) + r')\.'
+            for match in re.finditer(step_pattern, template_str):
+                dependencies.add(match.group(1))
+        
+        # Extract loop variables
+        loop_vars = ['$item', '$index', '$is_first', '$is_last', '$iteration', '$loop']
+        for var in loop_vars:
+            if var in template_str:
+                context_requirements.add(var)
+        
+        # Check for Jinja2 control structures that indicate runtime rendering
+        has_control_structures = any(
+            ctrl in template_str 
+            for ctrl in ['{% for', '{% if', '{% set', '{% endfor', '{% endif', '{% else']
+        )
+        
+        # Determine if runtime-only
+        is_runtime_only = bool(dependencies) or bool(context_requirements) or has_control_structures
+        is_compile_time = not is_runtime_only
+        
+        return TemplateMetadata(
+            original_template=template_str,
+            dependencies=dependencies,
+            context_requirements=context_requirements,
+            is_runtime_only=is_runtime_only,
+            is_compile_time=is_compile_time,
+            parameter_path=parameter_path
+        )
+    
+    def _analyze_parameter_templates(self, params: Dict[str, Any], available_steps: List[str], 
+                                   path_prefix: str = "") -> Dict[str, TemplateMetadata]:
+        """
+        Recursively analyze all templates in parameters.
+        
+        Args:
+            params: Parameters dictionary
+            available_steps: List of available step IDs
+            path_prefix: Path prefix for nested parameters
+            
+        Returns:
+            Dict mapping parameter paths to their template metadata
+        """
+        template_metadata = {}
+        
+        def analyze_value(value: Any, path: str) -> None:
+            if isinstance(value, str) and ('{{' in value or '{%' in value):
+                # This is a template string
+                metadata = self._analyze_template(value, available_steps, path)
+                if metadata.is_runtime_only:
+                    template_metadata[path] = metadata
+            elif isinstance(value, dict):
+                # Recursively analyze dict
+                for key, subvalue in value.items():
+                    subpath = f"{path}.{key}" if path else key
+                    analyze_value(subvalue, subpath)
+            elif isinstance(value, list):
+                # Analyze list items
+                for i, item in enumerate(value):
+                    analyze_value(item, f"{path}[{i}]")
+        
+        # Start analysis
+        analyze_value(params, path_prefix)
+        return template_metadata
+
+    def _build_task(self, task_def: Dict[str, Any], available_steps: List[str]) -> Task:
+        """
+        Build Task object from definition with template analysis.
 
         Args:
             task_def: Task definition
+            available_steps: List of all step IDs in the pipeline
 
         Returns:
-            Task object
+            Task object with template metadata
         """
         # Extract task properties
         task_id = task_def["id"]
@@ -491,7 +580,25 @@ class YAMLCompiler:
             if cf_key in task_def:
                 metadata[cf_key] = task_def[cf_key]
 
-        return Task(
+        # Analyze templates in parameters
+        template_metadata = self._analyze_parameter_templates(parameters, available_steps)
+        
+        # Also analyze templates in action if it's a string
+        if isinstance(action, str) and ('{{' in action or '{%' in action):
+            action_metadata = self._analyze_template(action, available_steps, "action")
+            if action_metadata.is_runtime_only:
+                template_metadata["action"] = action_metadata
+        
+        # Analyze condition if present
+        if "condition" in task_def:
+            condition = task_def["condition"]
+            if isinstance(condition, str) and ('{{' in condition or '{%' in condition):
+                condition_metadata = self._analyze_template(condition, available_steps, "condition")
+                if condition_metadata.is_runtime_only:
+                    template_metadata["condition"] = condition_metadata
+        
+        # Create task with template metadata
+        task = Task(
             id=task_id,
             name=task_name,
             action=action,
@@ -501,6 +608,11 @@ class YAMLCompiler:
             max_retries=max_retries,
             metadata=metadata,
         )
+        
+        # Set template metadata on task
+        task.template_metadata = template_metadata
+        
+        return task
 
     def detect_auto_tags(self, content: str) -> List[str]:
         """

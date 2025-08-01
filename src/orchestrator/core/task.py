@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
+from .template_metadata import TemplateMetadata
+
 
 class TaskStatus(Enum):
     """Task execution status."""
@@ -42,6 +44,15 @@ class Task:
     created_at: float = field(default_factory=time.time)
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
+    
+    # Template tracking
+    template_metadata: Dict[str, TemplateMetadata] = field(default_factory=dict)
+    rendered_parameters: Dict[str, Any] = field(default_factory=dict)
+    dependencies_satisfied: bool = False
+    
+    # Loop context tracking
+    in_loop_context: bool = False
+    loop_context: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate task after initialization."""
@@ -107,6 +118,47 @@ class Task:
         self.error = None
         self.started_at = None
         self.completed_at = None
+    
+    def check_dependencies_satisfied(self, completed_steps: Set[str], 
+                                     available_contexts: Optional[Set[str]] = None) -> bool:
+        """
+        Check if all dependencies for templates are satisfied.
+        
+        Args:
+            completed_steps: Set of step IDs that have completed
+            available_contexts: Set of available special contexts (e.g., "$item")
+            
+        Returns:
+            True if all template dependencies are satisfied
+        """
+        if available_contexts is None:
+            available_contexts = set()
+        
+        # Add current loop context if in a loop
+        if self.in_loop_context:
+            available_contexts.update(self.loop_context.keys())
+        
+        # Check each template's dependencies
+        for param_name, metadata in self.template_metadata.items():
+            if not metadata.can_render_with_context(completed_steps, available_contexts):
+                return False
+        
+        self.dependencies_satisfied = True
+        return True
+    
+    def get_missing_dependencies(self, completed_steps: Set[str]) -> Dict[str, Set[str]]:
+        """
+        Get missing dependencies for each template parameter.
+        
+        Returns:
+            Dict mapping parameter names to their missing dependencies
+        """
+        missing = {}
+        for param_name, metadata in self.template_metadata.items():
+            missing_deps = metadata.get_missing_dependencies(completed_steps)
+            if missing_deps:
+                missing[param_name] = missing_deps
+        return missing
 
     @property
     def execution_time(self) -> Optional[float]:
