@@ -53,7 +53,7 @@ steps:
           prompt: |
             We're trying to guess the number {{ target_number }}.
             Current guess: {{ read_guess.content }}
-            Iteration: {{ $iteration }}
+            Iteration: {{ guessing_loop.iteration }}
             
             What number should we guess next? Reply with just a number between 1 and 100.
           model: <AUTO task="generate">Select a model for number generation</AUTO>
@@ -86,9 +86,9 @@ steps:
         tool: filesystem
         action: write
         parameters:
-          path: "examples/outputs/control_flow_while_loop/logs/attempt_{{ $iteration }}.txt"
+          path: "examples/outputs/control_flow_while_loop/logs/attempt_{{ guessing_loop.iteration }}.txt"
           content: |
-            Iteration: {{ $iteration }}
+            Iteration: {{ guessing_loop.iteration }}
             Previous guess: {{ read_guess.content }}
             New guess: {{ generate_guess.result | regex_search('[0-9]+') | default('25') }}
             Target: {{ target_number }}
@@ -99,7 +99,7 @@ steps:
       - id: update_loop_state
         action: generate_text
         parameters:
-          prompt: "Attempt {{ $iteration }} complete"
+          prompt: "Attempt {{ guessing_loop.iteration }} complete"
           model: <AUTO task="summarize">Select a model for status update</AUTO>
           max_tokens: 20
         dependencies:
@@ -117,12 +117,12 @@ steps:
         # Number Guessing Results
         
         Target number: {{ target_number }}
-        Total attempts: {{ guessing_loop.$iterations | default(0) }}
-        Success: {{ guessing_loop.$completed | default(false) }}
+        Total attempts: {{ guessing_loop.iterations | default(0) }}
+        Success: {{ guessing_loop.completed | default(false) }}
     dependencies:
       - guessing_loop
       
 outputs:
   target: "{{ target_number }}"
-  attempts: "{{ guessing_loop.$iterations | default(0) }}"
+  attempts: "{{ guessing_loop.iterations | default(0) }}"
   result_file: "{{ final_result.filepath }}"

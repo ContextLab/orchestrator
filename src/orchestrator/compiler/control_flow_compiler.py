@@ -176,9 +176,8 @@ class ControlFlowCompiler(YAMLCompiler):
         loop_def["metadata"]["is_while_loop"] = True
         loop_def["metadata"]["max_iterations"] = loop_def.get("max_iterations", 10)
 
-        # Process condition for AUTO tags
-        if "while" in loop_def and "<AUTO>" in loop_def["while"]:
-            # Store original condition for runtime resolution
+        # Store the while condition (whether it has AUTO tags or not)
+        if "while" in loop_def:
             loop_def["metadata"]["while_condition"] = loop_def["while"]
 
         return loop_def
