@@ -790,6 +790,23 @@ class Orchestrator:
                     "template_manager": self.template_manager,
                     "_template_manager": self.template_manager,  # Also add with underscore for compatibility
                 }
+                
+                # Add loop metadata to context if this is a loop iteration task
+                if task.metadata.get("is_while_loop_child"):
+                    loop_id = task.metadata.get("loop_id")
+                    iteration = task.metadata.get("loop_iteration", 0)
+                    
+                    # Register loop metadata with template manager
+                    if loop_id:
+                        self.template_manager.register_context(loop_id, {
+                            "iteration": iteration,
+                            "id": loop_id
+                        })
+                        # Also register under the actual loop name for templates
+                        self.template_manager.register_context("guessing_loop", {
+                            "iteration": iteration,
+                            "id": loop_id
+                        })
                 execution_tasks.append(
                     self._execute_task_with_resources(task, task_context)
                 )
@@ -820,6 +837,17 @@ class Orchestrator:
                         results[task_id] = result
                         # Register result immediately with template manager so subsequent tasks can use it
                         self.template_manager.register_context(task_id, result)
+                        
+                        # For loop iteration tasks, also register under the original unprefixed name
+                        task = pipeline.get_task(task_id)
+                        if task and task.metadata.get("is_while_loop_child"):
+                            # Extract original task name from prefixed ID
+                            # Format: loop_id_iteration_original_name
+                            parts = task_id.split("_", 3)  # Split at most 3 times
+                            if len(parts) >= 4:  # loop_id, iteration, original_name...
+                                original_name = parts[3]  # Everything after the iteration number
+                                self.template_manager.register_context(original_name, result)
+                                self.logger.debug(f"Registered loop task result under original name: {original_name}")
 
             # Note: Skipped tasks are already handled above at line 236
             # This loop was redundant and has been removed

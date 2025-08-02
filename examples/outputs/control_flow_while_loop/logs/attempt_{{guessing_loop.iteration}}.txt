@@ -1,4 +1,4 @@
-Iteration: {{ guessing_loop.iteration }}
-Previous guess: {{ read_guess.content }}
-New guess: {{ generate_guess.result | regex_search('[0-9]+') | default('25') }}
-Target: {{ target_number }}
+Iteration: {{guessing_loop.iteration}}
+Previous guess: {{read_guess.content}}
+New guess: None
+Target: 42

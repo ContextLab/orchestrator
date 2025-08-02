@@ -125,6 +125,13 @@ class TemplateManager:
                 return text
             return ' '.join(words[:count]) + '...'
         
+        def regex_search(text: str, pattern: str) -> Optional[str]:
+            """Search for regex pattern in text and return first match."""
+            if not isinstance(text, str):
+                text = str(text)
+            match = re.search(pattern, text)
+            return match.group(0) if match else None
+        
         def to_json(obj: Any) -> str:
             """Convert object to JSON string."""
             try:
@@ -207,6 +214,7 @@ class TemplateManager:
         self.env.filters.update({
             'slugify': slugify,
             'truncate_words': truncate_words,
+            'regex_search': regex_search,
             'to_json': to_json,
             'from_json': from_json,
             'date': date_format,

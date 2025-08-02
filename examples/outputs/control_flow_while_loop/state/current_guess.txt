@@ -1,1 +1,1 @@
-{{ generate_guess.result | regex_search('[0-9]+') | default('25') }}
+None
