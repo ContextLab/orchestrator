@@ -60,3 +60,24 @@ Issues discovered:
 1. Investigate why write actions are being interpreted instead of executed
 2. Debug the iteration count issue in the full pipeline
 
+
+### Progress Update - Commit 26f77bb
+
+Further improvements and testing:
+
+1. **File path template resolution working** - Template variables in file paths (e.g., `{{guessing_loop.iteration}}`) are now resolved correctly
+2. **Simple while loops work correctly** - Tests confirm that with max_attempts=1, only 1 iteration is executed
+3. **Added comprehensive test cases** - Created multiple test files to isolate the issue
+
+Test results:
+- `test_while_simple.py`: ✅ Executes 1 iteration with max_iterations=1
+- `test_while_debug.py`: ✅ Creates file with correct template resolution
+- `test_while_full.py`: ✅ Executes 1 iteration with max_attempts=1
+- `test_while_minimal.yaml`: ✅ Executes 1 iteration with max_attempts=1
+
+The issue appears to be specific to the complex control_flow_while_loop.yaml pipeline. All simpler test cases work correctly.
+
+### Next Steps
+1. Investigate what makes the full pipeline different (possibly AUTO tags or complex dependencies)
+2. Add more detailed logging to track where extra iterations are being created
+

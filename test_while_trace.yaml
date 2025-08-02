@@ -1,0 +1,36 @@
+name: test_while_trace
+description: Trace while loop execution with checkpoints
+
+inputs:
+  max_attempts:
+    type: integer
+    default: 1
+    
+checkpoints:
+  enabled: true
+  directory: ".checkpoints/test_while_trace"
+  
+steps:
+  - id: init
+    action: echo Starting trace test
+    
+  - id: test_loop
+    while: 'true'
+    max_iterations: "{{ max_attempts }}"
+    steps:
+      - id: step1
+        action: echo Iteration {{ test_loop.iteration }}
+        
+      - id: step2
+        tool: filesystem
+        action: write
+        parameters:
+          path: ".checkpoints/test_while_trace/iter_{{ test_loop.iteration }}.txt"
+          content: "Iteration {{ test_loop.iteration }} completed"
+    dependencies:
+      - init
+      
+  - id: done
+    action: echo Completed
+    dependencies:
+      - test_loop

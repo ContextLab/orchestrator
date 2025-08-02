@@ -1,0 +1,132 @@
+name: test_while_no_auto
+description: Number guessing game with while loop - NO AUTO TAGS
+
+inputs:
+  target_number:
+    type: integer
+    default: 42
+  max_attempts:
+    type: integer
+    default: 1
+    
+steps:
+  # Initialize the game
+  - id: initialize
+    action: generate_text
+    parameters:
+      prompt: "Starting number guessing game. Target is {{ target_number }}"
+      model: gemini-2.0-flash-lite
+      max_tokens: 50
+      
+  # Create initial state file
+  - id: init_state
+    tool: filesystem
+    action: write
+    parameters:
+      path: "examples/outputs/test_while_no_auto/state/current_guess.txt"
+      content: "0"
+    dependencies:
+      - initialize
+      
+  # Iterative guessing loop
+  - id: guessing_loop
+    while: 'true'  # Simple always-true condition, will use max_iterations
+    max_iterations: "{{ max_attempts }}"
+    steps:
+      # Read current guess
+      - id: read_guess
+        tool: filesystem
+        action: read
+        parameters:
+          path: "examples/outputs/test_while_no_auto/state/current_guess.txt"
+          
+      # Generate next guess
+      - id: generate_guess  
+        action: generate_text
+        parameters:
+          prompt: |
+            We're trying to guess the number {{ target_number }}.
+            Current guess: {{ read_guess.content }}
+            Iteration: {{ guessing_loop.iteration }}
+            
+            What number should we guess next? Reply with just a number between 1 and 100.
+          model: gemini-2.0-flash-lite
+          max_tokens: 10
+        dependencies:
+          - read_guess
+          
+      # Extract number from response
+      - id: extract_number
+        action: generate_text
+        parameters:
+          prompt: |
+            Extract just the number from this text: {{ generate_guess.result }}
+            Reply with only the number, nothing else.
+          model: gemini-2.0-flash-lite
+          max_tokens: 5
+        dependencies:
+          - generate_guess
+          
+      # Update state
+      - id: update_state
+        tool: filesystem
+        action: write
+        parameters:
+          path: "examples/outputs/test_while_no_auto/state/current_guess.txt"
+          content: "{{ generate_guess.result | regex_search('[0-9]+') | default('25') }}"
+        dependencies:
+          - extract_number
+          
+      # Log the attempt
+      - id: log_attempt
+        tool: filesystem
+        action: write
+        parameters:
+          path: "examples/outputs/test_while_no_auto/logs/attempt_{{ guessing_loop.iteration }}.txt"
+          content: |
+            Iteration: {{ guessing_loop.iteration }}
+            Previous guess: {{ read_guess.content }}
+            New guess: {{ generate_guess.result | regex_search('[0-9]+') | default('25') }}
+            Target: {{ target_number }}
+        dependencies:
+          - update_state
+          
+      # Check if we found the target
+      - id: check_result
+        action: evaluate_condition
+        parameters:
+          condition: "{{ extract_number.result == target_number }}"
+        dependencies:
+          - extract_number
+          
+      # Update loop state
+      - id: update_loop_state
+        action: generate_text
+        parameters:
+          prompt: "Attempt {{ guessing_loop.iteration }} complete. Found target: {{ check_result.matches_target | default(false) }}"
+          model: gemini-2.0-flash-lite
+          max_tokens: 20
+        dependencies:
+          - check_result
+    dependencies:
+      - init_state
+      
+  # Final summary
+  - id: final_result
+    tool: filesystem
+    action: write
+    parameters:
+      path: "examples/outputs/test_while_no_auto/result.txt"
+      content: |
+        # Number Guessing Results
+        
+        Target number: {{ target_number }}
+        Total attempts: {{ guessing_loop.iterations | default(0) }}
+        Success: {{ guessing_loop.completed | default(false) }}
+    dependencies:
+      - guessing_loop
+      
+outputs:
+  target: "{{ target_number }}"
+  attempts: "{{ guessing_loop.iterations | default(0) }}"
+  result_file: "{{ final_result.filepath }}"
