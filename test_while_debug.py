@@ -31,6 +31,7 @@ steps:
     steps:
       - id: write_test
         action: write
+        tool: filesystem
         parameters:
           path: "/tmp/test_loop_{{ test_loop.iteration }}.txt"
           content: "This is iteration {{ test_loop.iteration }}"

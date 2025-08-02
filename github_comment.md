@@ -42,3 +42,21 @@ However, some template variables are still not resolving correctly:
 1. Fix template variable resolution timing for loop metadata
 2. Investigate why `max_attempts: 1` creates 4 iterations in the full pipeline (though simple test works correctly)
 
+
+### Progress Update - Commit 379f6de
+
+Added debugging and file path template resolution:
+
+1. **Added logging to track iteration counts** - Now logs when should_continue is called and why loops stop
+2. **Fixed file path template resolution** - The FileSystemTool now renders path templates before using them
+3. **Fixed action field processing** - The _process_loop_params now processes both action fields and parameters
+
+Issues discovered:
+- The write action is being interpreted by the model as a request to explain file writing, not actually executed
+- The full pipeline still creates too many iterations (0, 1, 2, 3, 4...) even with max_attempts=1
+- Simple test cases work correctly (only 1 iteration), suggesting issue is specific to the complex pipeline
+
+### Next Steps
+1. Investigate why write actions are being interpreted instead of executed
+2. Debug the iteration count issue in the full pipeline
+

@@ -600,8 +600,10 @@ class Orchestrator:
             ):
                 loop_id = task.id
                 max_iterations = task.metadata.get("max_iterations", 10)
+                self.logger.info(f"While loop {loop_id}: max_iterations from metadata = {max_iterations} (type: {type(max_iterations)})")
                 if isinstance(max_iterations, str):
                     max_iterations = int(max_iterations)
+                    self.logger.info(f"While loop {loop_id}: converted max_iterations to int: {max_iterations}")
                 condition = task.metadata.get("while_condition", "false")
                 
                 # Determine current iteration
