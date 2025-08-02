@@ -1,0 +1,21 @@
+name: test_simple_while
+description: Simple while loop test
+
+steps:
+  - id: init
+    action: echo Starting counter at 0
+    
+  - id: counter_loop
+    while: 'true'
+    max_iterations: 3
+    steps:
+      - id: show_count
+        action: echo Iteration {{ iteration }}
+        
+      - id: check_value
+        action: echo Checking iteration {{ iteration }}
+        dependencies: [show_count]
+        
+  - id: done
+    action: echo Loop completed
+    dependencies: [counter_loop]

@@ -96,6 +96,13 @@ class Orchestrator:
         self.resource_allocator = resource_allocator or ResourceAllocator()
         self.parallel_executor = parallel_executor or ParallelExecutor()
         self.max_concurrent_tasks = max_concurrent_tasks
+        
+        # Initialize control flow handlers for runtime expansion
+        from .control_flow import WhileLoopHandler, DynamicFlowHandler
+        from .control_flow.auto_resolver import ControlFlowAutoResolver
+        self.control_flow_resolver = ControlFlowAutoResolver(self.model_registry)
+        self.while_loop_handler = WhileLoopHandler(self.control_flow_resolver)
+        self.dynamic_flow_handler = DynamicFlowHandler(self.control_flow_resolver)
 
         # Execution state
         self.running_pipelines: Dict[str, Pipeline] = (
@@ -253,45 +260,439 @@ class Orchestrator:
         # Get execution levels (groups of tasks that can run in parallel)
         execution_levels = pipeline.get_execution_levels()
 
+        # Track completed tasks for while loop checking
+        completed_tasks = set()
+        
+        # Debug: Print all tasks and their metadata
+        self.logger.info("=== Pipeline tasks at start ===")
+        for task_id, task in pipeline.tasks.items():
+            self.logger.info(f"Task {task_id}: action={task.action}, is_while_loop={task.metadata.get('is_while_loop', False)}, has_steps={'steps' in task.metadata}")
+        
         # Execute tasks level by level
-        for level_index, level in enumerate(execution_levels):
+        while True:
+            # Get execution levels (groups of tasks that can run in parallel)
+            execution_levels = pipeline.get_execution_levels()
+            self.logger.debug(f"Raw execution levels: {execution_levels}")
+            
+            # Filter out completed tasks and tasks that depend on pending while loops
+            remaining_levels = []
+            pending_while_loops = set()
+            
+            # First, identify all pending while loops
+            for task_id, task in pipeline.tasks.items():
+                if (task.status == TaskStatus.PENDING 
+                    and task.metadata.get("is_while_loop", False)):
+                    pending_while_loops.add(task_id)
+            
+            for level in execution_levels:
+                remaining_tasks = []
+                for task_id in level:
+                    task = pipeline.get_task(task_id)
+                    if not task or task_id in completed_tasks or task.status != TaskStatus.PENDING:
+                        continue
+                        
+                    # Check if this task depends on any pending while loops
+                    depends_on_while_loop = any(
+                        dep in pending_while_loops for dep in task.dependencies
+                    )
+                    
+                    if not depends_on_while_loop:
+                        remaining_tasks.append(task_id)
+                    else:
+                        self.logger.debug(f"Task {task_id} depends on pending while loop, skipping")
+                        
+                if remaining_tasks:
+                    remaining_levels.append(remaining_tasks)
+                    
+            self.logger.debug(f"Remaining levels after filtering: {remaining_levels}")
+            self.logger.debug(f"Completed tasks: {completed_tasks}")
+            
+            if not remaining_levels:
+                # Check for while loops that need expansion
+                self.logger.info("No remaining levels, checking for while loops to expand...")
+                self.logger.info(f"Current results: {list(results.keys())}")
+                self.logger.info(f"Current completed tasks: {list(completed_tasks)}")
+                if await self._expand_while_loops(pipeline, context, results):
+                    self.logger.info("While loops were expanded, recalculating levels")
+                    continue  # New tasks added, recalculate levels
+                else:
+                    self.logger.info("No while loops to expand, finishing execution")
+                    break  # No more tasks to execute
+            
+            # Find the first level with executable tasks
+            executable_tasks = []
+            level_index = 0
+            
+            for idx, level in enumerate(remaining_levels):
+                level_index = idx
+                self.logger.info(f"Level {level_index} contains tasks: {level}")
+                
+                # Skip while loop placeholder tasks
+                executable_tasks = []
+                for task_id in level:
+                    task = pipeline.get_task(task_id)
+                    if task and not (hasattr(task, "metadata") and task.metadata.get("is_while_loop")):
+                        executable_tasks.append(task_id)
+                    elif task and hasattr(task, "metadata") and task.metadata.get("is_while_loop"):
+                        self.logger.info(f"Skipping while loop placeholder: {task_id}")
+                
+                # If we found executable tasks, use this level
+                if executable_tasks:
+                    break
+                    
             context["current_level"] = level_index
-
-            # Execute tasks in parallel within the level
-            self.logger.warning(f"ORCHESTRATOR: Executing level {level_index} with tasks: {level}")
-            self.logger.warning(f"ORCHESTRATOR: Accumulated results so far: {list(results.keys())}")
-            level_results = await self._execute_level(pipeline, level, context, results)
-
-            # Check for failures
-            failed_tasks = [
-                task_id
-                for task_id in level
-                if pipeline.get_task(task_id)
-                and pipeline.get_task(task_id).status == TaskStatus.FAILED
-            ]
-
-            if failed_tasks:
-                # Handle failures based on policy
-                await self._handle_task_failures(pipeline, failed_tasks, context)
-
-            # Update results with level results
-            results.update(level_results)
             
-            # IMPORTANT: Update context with step results for template rendering
-            # This ensures that subsequent steps can access previous step results
-            # via template variables like {{ step_id.result }}
-            context["previous_results"] = results.copy()
-            
-            # Register all results with template manager for deferred rendering
-            self.template_manager.register_all_results(results)
+            if executable_tasks:
+                # Execute tasks in parallel within the level
+                self.logger.warning(f"ORCHESTRATOR: Executing level {level_index} with tasks: {executable_tasks}")
+                self.logger.warning(f"ORCHESTRATOR: Accumulated results so far: {list(results.keys())}")
+                level_results = await self._execute_level(pipeline, executable_tasks, context, results)
 
-            # Save checkpoint after each level
-            if context.get("checkpoint_enabled", False):
-                await self.state_manager.save_checkpoint(
-                    context["execution_id"], self._get_pipeline_state(pipeline), context
+                # Check for failures
+                failed_tasks = [
+                    task_id
+                    for task_id in executable_tasks
+                    if pipeline.get_task(task_id)
+                    and pipeline.get_task(task_id).status == TaskStatus.FAILED
+                ]
+
+                if failed_tasks:
+                    # Handle failures based on policy
+                    await self._handle_task_failures(pipeline, failed_tasks, context)
+
+                # Update results with level results
+                results.update(level_results)
+                
+                # Mark tasks as completed
+                completed_tasks.update(executable_tasks)
+                
+                # Process goto jumps from completed tasks
+                goto_target = await self._process_goto_jumps(
+                    pipeline, context, results, set(executable_tasks)
                 )
+                
+                if goto_target:
+                    # A goto was triggered, recalculate execution levels
+                    self.logger.info(f"Goto triggered, jumping to {goto_target}")
+                    # Mark the goto source task as having jumped
+                    # This prevents infinite loops if the same task is reached again
+                    for task_id in executable_tasks:
+                        task = pipeline.get_task(task_id)
+                        if task and task.metadata.get("goto"):
+                            task.metadata["goto_executed"] = True
+                
+                # IMPORTANT: Update context with step results for template rendering
+                # This ensures that subsequent steps can access previous step results
+                # via template variables like {{ step_id.result }}
+                context["previous_results"] = results.copy()
+                
+                # Register all results with template manager for deferred rendering
+                self.template_manager.register_all_results(results)
+                
+                # Resolve dynamic dependencies for pending tasks
+                await self._resolve_dynamic_dependencies(pipeline, context, results)
+
+                # Save checkpoint after each level
+                if context.get("checkpoint_enabled", False):
+                    await self.state_manager.save_checkpoint(
+                        context["execution_id"], self._get_pipeline_state(pipeline), context
+                    )
+            else:
+                # No executable tasks found in any level
+                # Check if we need to expand while loops
+                self.logger.info("No executable tasks found in any level")
+                
+                # Try to expand while loops
+                if await self._expand_while_loops(pipeline, context, results):
+                    # Tasks were added, continue to recalculate levels
+                    continue
+                    
+                # If no while loops expanded and we have no executable tasks,
+                # we might be done or stuck
+                self.logger.info("No tasks to execute and no while loops to expand")
+                
+                # Check if there are any pending tasks at all
+                pending_tasks = [
+                    task_id for task_id, task in pipeline.tasks.items()
+                    if task.status == TaskStatus.PENDING
+                ]
+                
+                if pending_tasks:
+                    # We have pending tasks but can't execute them
+                    # This might be due to while loops that need to complete
+                    self.logger.warning(f"Have {len(pending_tasks)} pending tasks but none are executable: {pending_tasks}")
+                    
+                    # Check if we have any while loops that might need to be marked complete
+                    pending_while_loop_tasks = [
+                        t for t in pending_tasks 
+                        if pipeline.get_task(t).metadata.get("is_while_loop", False)
+                    ]
+                    
+                    if pending_while_loop_tasks:
+                        # Try to check while loops for completion
+                        made_progress = False
+                        for task_id in pending_while_loop_tasks:
+                            task = pipeline.get_task(task_id)
+                            if task:
+                                loop_id = task.id
+                                # Check if this while loop should be marked as complete
+                                current_iteration = 0
+                                for t_id in results:
+                                    if t_id.startswith(f"{loop_id}_") and "_" in t_id[len(loop_id)+1:]:
+                                        parts = t_id[len(loop_id)+1:].split("_", 1)
+                                        if parts[0].isdigit():
+                                            current_iteration = max(current_iteration, int(parts[0]) + 1)
+                                
+                                max_iterations = task.metadata.get("max_iterations", 10)
+                                if isinstance(max_iterations, str):
+                                    max_iterations = int(max_iterations)
+                                    
+                                # Check condition one more time
+                                condition = task.metadata.get("while_condition", "false")
+                                should_continue = await self.while_loop_handler.should_continue(
+                                    loop_id, condition, context, results, current_iteration, max_iterations
+                                )
+                                
+                                self.logger.info(f"While loop {loop_id}: should_continue={should_continue}, current_iteration={current_iteration}, max_iterations={max_iterations}")
+                                
+                                if not should_continue and task.status == TaskStatus.PENDING:
+                                    task.complete({"iterations": current_iteration, "status": "completed"})
+                                    self.logger.info(f"Marking while loop {loop_id} as completed")
+                                    made_progress = True
+                                    # Continue to recalculate levels
+                                    break
+                        
+                        if made_progress:
+                            # We marked a while loop as complete, continue execution
+                            continue
+                    else:
+                        # Have non-while-loop pending tasks that can't execute
+                        # This is likely a dependency issue
+                        self.logger.error("Deadlock detected - pending tasks with unmet dependencies")
+                        break
+                else:
+                    # No pending tasks, we're done
+                    self.logger.info("No pending tasks remaining")
+                    break
 
         return results
+    
+    async def _process_goto_jumps(
+        self, 
+        pipeline: Pipeline, 
+        context: Dict[str, Any], 
+        results: Dict[str, Any],
+        completed_tasks: Set[str]
+    ) -> Optional[str]:
+        """Process goto directives from completed tasks.
+        
+        Args:
+            pipeline: Pipeline being executed
+            context: Execution context
+            results: Results from completed steps
+            completed_tasks: Set of completed task IDs
+            
+        Returns:
+            Task ID to jump to, or None
+        """
+        # Check recently completed tasks for goto directives
+        for task_id in completed_tasks:
+            task = pipeline.get_task(task_id)
+            if not task or task.status != TaskStatus.COMPLETED:
+                continue
+                
+            # Check for goto in task metadata
+            goto_target = task.metadata.get("goto")
+            if goto_target:
+                # Process goto with dynamic flow handler
+                resolved_target = await self.dynamic_flow_handler.process_goto(
+                    task, context, results, pipeline.tasks
+                )
+                
+                if resolved_target and resolved_target in pipeline.tasks:
+                    self.logger.info(f"Task {task_id} jumping to {resolved_target}")
+                    # Mark intermediate tasks as skipped
+                    self._skip_tasks_between(pipeline, task_id, resolved_target)
+                    return resolved_target
+                    
+        return None
+    
+    def _skip_tasks_between(self, pipeline: Pipeline, from_task: str, to_task: str) -> None:
+        """Skip tasks between a goto source and target.
+        
+        Args:
+            pipeline: Pipeline containing tasks
+            from_task: Source task ID
+            to_task: Target task ID
+        """
+        # Get execution order
+        levels = pipeline.get_execution_levels()
+        task_order = []
+        for level in levels:
+            task_order.extend(level)
+            
+        # Find positions
+        try:
+            from_idx = task_order.index(from_task)
+            to_idx = task_order.index(to_task)
+        except ValueError:
+            # Tasks not found in order
+            return
+            
+        # Skip tasks between source and target
+        if to_idx > from_idx:
+            for i in range(from_idx + 1, to_idx):
+                task_id = task_order[i]
+                task = pipeline.get_task(task_id)
+                if task and task.status == TaskStatus.PENDING:
+                    task.skip(f"Skipped due to goto from {from_task} to {to_task}")
+                    self.logger.info(f"Skipped task {task_id} due to goto")
+    
+    async def _resolve_dynamic_dependencies(
+        self, 
+        pipeline: Pipeline, 
+        context: Dict[str, Any], 
+        results: Dict[str, Any]
+    ) -> None:
+        """Resolve dynamic dependencies for pending tasks.
+        
+        Args:
+            pipeline: Pipeline being executed
+            context: Execution context
+            results: Results from completed steps
+        """
+        for task in pipeline.tasks.values():
+            if task.status != TaskStatus.PENDING:
+                continue
+                
+            # Check for dynamic dependencies
+            if task.metadata.get("dynamic_dependencies"):
+                resolved_deps = await self.dynamic_flow_handler.resolve_dynamic_dependencies(
+                    task, context, results, pipeline.tasks
+                )
+                
+                # Update task dependencies
+                task.dependencies = resolved_deps
+                self.logger.info(f"Resolved dynamic dependencies for {task.id}: {resolved_deps}")
+    
+    async def _expand_while_loops(
+        self, pipeline: Pipeline, context: Dict[str, Any], step_results: Dict[str, Any]
+    ) -> bool:
+        """Expand while loops that need another iteration.
+        
+        Args:
+            pipeline: Pipeline being executed
+            context: Execution context
+            step_results: Results from completed steps
+            
+        Returns:
+            True if any loops were expanded
+        """
+        expanded = False
+        self.logger.info(f"_expand_while_loops called. Total tasks: {len(pipeline.tasks)}")
+        
+        for task in list(pipeline.tasks.values()):
+            # Check if task is a while loop placeholder
+            if (
+                hasattr(task, "metadata")
+                and task.metadata.get("is_while_loop")
+                and task.status == TaskStatus.PENDING
+            ):
+                loop_id = task.id
+                max_iterations = task.metadata.get("max_iterations", 10)
+                if isinstance(max_iterations, str):
+                    max_iterations = int(max_iterations)
+                condition = task.metadata.get("while_condition", "false")
+                
+                # Determine current iteration
+                current_iteration = 0
+                for t_id in step_results:
+                    if t_id.startswith(f"{loop_id}_") and "_" in t_id[len(loop_id)+1:]:
+                        # Extract iteration number
+                        parts = t_id[len(loop_id)+1:].split("_", 1)
+                        if parts[0].isdigit():
+                            current_iteration = max(current_iteration, int(parts[0]) + 1)
+                
+                self.logger.info(f"While loop {loop_id}: current iteration = {current_iteration}, max = {max_iterations}")
+                
+                # Check if we've already created tasks for this iteration
+                next_iter_task_id = f"{loop_id}_{current_iteration}_result"
+                if next_iter_task_id in pipeline.tasks:
+                    self.logger.info(f"Tasks for iteration {current_iteration} already exist, skipping")
+                    continue
+                
+                # Create a clean context for while loop handler
+                loop_context = context.copy()
+                # Ensure template manager is available for condition rendering
+                if "template_manager" not in loop_context and "_template_manager" not in loop_context:
+                    loop_context["_template_manager"] = self.template_manager
+                
+                # Check if should continue
+                should_continue = await self.while_loop_handler.should_continue(
+                    loop_id,
+                    condition,
+                    loop_context,
+                    step_results,
+                    current_iteration,
+                    max_iterations,
+                )
+                
+                # Clean context for task creation (remove non-serializable objects)
+                clean_context = {k: v for k, v in context.items() 
+                               if k not in ["_template_manager", "template_manager"]}
+                
+                if should_continue:
+                    # Create tasks for next iteration
+                    # Get the full task definition including while loop body
+                    loop_def = task.to_dict()
+                    # Add the while loop body steps from metadata
+                    if "steps" in task.metadata:
+                        loop_def["steps"] = task.metadata["steps"]
+                    
+                    self.logger.info(f"Creating iteration {current_iteration} for loop {loop_id}")
+                    self.logger.info(f"Loop def keys: {list(loop_def.keys())}")
+                    if "steps" in loop_def:
+                        self.logger.info(f"Loop has {len(loop_def['steps'])} steps")
+                    else:
+                        self.logger.warning(f"Loop {loop_id} has no steps!")
+                    
+                    iteration_tasks = await self.while_loop_handler.create_iteration_tasks(
+                        loop_def,
+                        current_iteration,
+                        clean_context,
+                        step_results,
+                    )
+                    
+                    self.logger.info(f"Created {len(iteration_tasks)} tasks for iteration {current_iteration}")
+                    
+                    # Add tasks to pipeline
+                    added_count = 0
+                    for iter_task in iteration_tasks:
+                        # Check if task already exists to avoid duplicates
+                        if iter_task.id not in pipeline.tasks:
+                            pipeline.add_task(iter_task)
+                            added_count += 1
+                            self.logger.info(f"Added task: {iter_task.id} (action={iter_task.action})")
+                        else:
+                            self.logger.debug(f"Task {iter_task.id} already exists, skipping")
+                    
+                    self.logger.info(f"Added {added_count} new tasks to pipeline")
+                    
+                    expanded = True
+                    self.logger.info(
+                        f"Expanded while loop {loop_id} iteration {current_iteration}"
+                    )
+                else:
+                    # Mark loop as completed
+                    if task.status == TaskStatus.PENDING:
+                        task.complete({"iterations": current_iteration, "status": "completed"})
+                        self.logger.info(
+                            f"While loop {loop_id} completed after {current_iteration} iterations"
+                        )
+                        expanded = True  # Mark as expanded so we recalculate levels
+        
+        self.logger.info(f"_expand_while_loops returning: {expanded}")
+        return expanded
     
     async def _prepare_task_for_execution(self, task: Task, context: Dict[str, Any], 
                                           completed_steps: Set[str]) -> Dict[str, Any]:

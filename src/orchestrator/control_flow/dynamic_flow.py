@@ -205,13 +205,15 @@ class DynamicFlowHandler:
         if "goto" in step_def:
             goto_expr = step_def["goto"]
 
-            # Resolve AUTO tags
+            # Store goto expression in metadata for runtime processing
+            if "metadata" not in step_def:
+                step_def["metadata"] = {}
+            step_def["metadata"]["goto"] = goto_expr
+            
+            # For non-AUTO goto, keep it at top level for backward compatibility
+            # For AUTO tags, remove from top level to prevent early resolution
             if isinstance(goto_expr, str) and "<AUTO>" in goto_expr:
-                valid_targets = list(context.get("all_step_ids", []))
-                resolved_goto = await self.auto_resolver.resolve_target(
-                    goto_expr, context, step_results, valid_targets
-                )
-                step_def["goto"] = resolved_goto
+                del step_def["goto"]
 
         # Process dynamic dependencies
         if "depends_on" in step_def:

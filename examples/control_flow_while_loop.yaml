@@ -36,7 +36,7 @@ steps:
       
   # Iterative guessing loop
   - id: guessing_loop
-    while: "{{ current_guess != target_number }}"
+    while: 'true'  # Simple always-true condition, will use max_iterations
     max_iterations: "{{ max_attempts }}"
     steps:
       # Read current guess
@@ -95,15 +95,26 @@ steps:
         dependencies:
           - update_state
           
+      # Check if we found the target
+      - id: check_result
+        action: analyze_text  
+        parameters:
+          text: "{{ generate_guess.result | regex_search('[0-9]+') | default('25') }}"
+          model: <AUTO task="analyze">Select a model for comparison</AUTO>
+          analysis_type: "compare_to_target"
+          target: "{{ target_number }}"
+        dependencies:
+          - log_attempt
+          
       # Update loop state
       - id: update_loop_state
         action: generate_text
         parameters:
-          prompt: "Attempt {{ guessing_loop.iteration }} complete"
+          prompt: "Attempt {{ guessing_loop.iteration }} complete. Found target: {{ check_result.matches_target | default(false) }}"
           model: <AUTO task="summarize">Select a model for status update</AUTO>
           max_tokens: 20
         dependencies:
-          - log_attempt
+          - check_result
     dependencies:
       - init_state
       

@@ -106,6 +106,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if this is a loop completion marker
         if action_str == "loop_complete":
             return await self._handle_loop_complete(task, context)
+            
+        # Check if this is a capture result marker
+        if action_str == "capture_result":
+            return await self._handle_capture_result(task, context)
 
         # Otherwise use model-based execution
         return await super()._execute_task_impl(task, context)
@@ -607,6 +611,29 @@ class HybridControlSystem(ModelBasedControlSystem):
             "metadata": task.metadata
         }
 
+    async def _handle_capture_result(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle capture result markers for while loops."""
+        loop_id = task.parameters.get("loop_id", "unknown")
+        iteration = task.parameters.get("iteration", 0)
+        
+        # Get the results from the previous tasks in this iteration
+        iteration_results = {}
+        for task_id, result in context.get("previous_results", {}).items():
+            # Check if this task is from the current iteration
+            if task_id.startswith(f"{loop_id}_{iteration}_") and not task_id.endswith("_result"):
+                # Extract the step name from the task_id
+                step_name = task_id.replace(f"{loop_id}_{iteration}_", "")
+                iteration_results[step_name] = result
+        
+        # Return the aggregated results for this iteration
+        return {
+            "result": f"Iteration {iteration} completed",
+            "status": "success",
+            "loop_id": loop_id,
+            "iteration": iteration,
+            "iteration_results": iteration_results,
+        }
+    
     async def _handle_loop_complete(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle loop completion markers."""
         loop_id = task.parameters.get("loop_id", "unknown")

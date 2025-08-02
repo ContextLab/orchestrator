@@ -592,6 +592,11 @@ class YAMLCompiler:
                 # They should only be evaluated at runtime
                 if cf_key in ["if", "condition"]:
                     task_def.pop(cf_key, None)
+        
+        # Special handling for while loops
+        if "while" in task_def:
+            metadata["is_while_loop"] = True
+            metadata["while_condition"] = task_def["while"]
 
         # Analyze templates in parameters
         template_metadata = self._analyze_parameter_templates(parameters, available_steps)

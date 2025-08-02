@@ -68,6 +68,8 @@ async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = No
         
     except Exception as e:
         print(f"\n❌ Pipeline failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return 1
 
 

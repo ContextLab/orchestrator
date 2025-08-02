@@ -401,11 +401,18 @@ class WhileLoopHandler:
             task_def = copy.deepcopy(step_def)
             task_def["id"] = task_id
             task_def["metadata"] = task_def.get("metadata", {})
+            
+            # Remove any while loop specific metadata that shouldn't be inherited
+            task_def["metadata"].pop("is_while_loop", None)
+            task_def["metadata"].pop("while_condition", None)
+            task_def["metadata"].pop("while", None)
+            task_def["metadata"].pop("max_iterations", None)
 
             # Add loop metadata
             task_def["metadata"]["loop_id"] = loop_id
             task_def["metadata"]["loop_iteration"] = iteration
-            task_def["metadata"]["is_while_loop"] = True
+            # Don't mark child tasks as while loops - only the parent is a while loop
+            task_def["metadata"]["is_while_loop_child"] = True
 
             # Process parameters with loop variables
             if "parameters" in task_def:
@@ -475,7 +482,11 @@ class WhileLoopHandler:
         if isinstance(obj, str):
             # Replace loop variables
             result = obj
+            # Replace loop variables - handle both $iteration and iteration syntax
             result = result.replace("{{$iteration}}", str(context.get("$iteration", 0)))
+            result = result.replace("{{ $iteration }}", str(context.get("$iteration", 0)))
+            result = result.replace("{{iteration}}", str(context.get("$iteration", 0)))
+            result = result.replace("{{ iteration }}", str(context.get("$iteration", 0)))
 
             # Handle loop state references
             if "{{$loop_state" in result:

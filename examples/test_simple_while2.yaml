@@ -1,0 +1,17 @@
+name: test_simple_while2
+description: Very simple while loop test without templates
+
+steps:
+  - id: init
+    action: echo Starting
+    
+  - id: loop
+    while: 'true'
+    max_iterations: 2
+    steps:
+      - id: task1
+        action: echo Hello from iteration
+        
+  - id: done
+    action: echo Done
+    dependencies: [loop]
