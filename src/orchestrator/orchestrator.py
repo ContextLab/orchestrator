@@ -614,6 +614,7 @@ class Orchestrator:
                             current_iteration = max(current_iteration, int(parts[0]) + 1)
                 
                 self.logger.info(f"While loop {loop_id}: current iteration = {current_iteration}, max = {max_iterations}")
+                self.logger.info(f"Condition to check: {condition}")
                 
                 # Check if we've already created tasks for this iteration
                 next_iter_task_id = f"{loop_id}_{current_iteration}_result"

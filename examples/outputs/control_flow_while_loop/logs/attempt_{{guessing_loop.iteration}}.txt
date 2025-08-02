@@ -1,4 +1,0 @@
-Iteration: {{guessing_loop.iteration}}
-Previous guess: {{read_guess.content}}
-New guess: None
-Target: 42

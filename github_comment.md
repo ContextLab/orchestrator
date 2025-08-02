@@ -26,3 +26,19 @@ Starting debug session for while loop control flow issues.
 2. Fix variable scoping in while loop iterations
 3. Fix iteration count logic
 
+
+### Progress Update - Commit b318645
+
+Fixed two major issues:
+
+1. **Added regex_search filter** - The template engine now supports the `regex_search` filter used throughout the pipeline
+2. **Improved variable scoping** - Loop iteration results are now registered under both prefixed and unprefixed names
+
+However, some template variables are still not resolving correctly:
+- `{{ counter_loop.iteration }}` shows as literal text instead of the iteration number
+- The loop metadata registration needs to happen earlier in the execution flow
+
+### Next Steps
+1. Fix template variable resolution timing for loop metadata
+2. Investigate why `max_attempts: 1` creates 4 iterations in the full pipeline (though simple test works correctly)
+

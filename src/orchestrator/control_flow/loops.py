@@ -316,7 +316,11 @@ class WhileLoopHandler:
             True if loop should continue
         """
         # Check max iterations
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"WhileLoopHandler.should_continue: loop_id={loop_id}, iteration={iteration}, max_iterations={max_iterations}")
         if iteration >= max_iterations:
+            logger.info(f"Stopping loop {loop_id}: iteration {iteration} >= max_iterations {max_iterations}")
             return False
 
         # Get loop state
@@ -360,7 +364,8 @@ class WhileLoopHandler:
         result = await self.auto_resolver.resolve_condition(
             rendered_condition, enhanced_context, step_results, cache_key
         )
-
+        
+        logger.info(f"WhileLoopHandler.should_continue: condition '{rendered_condition}' evaluated to {result}")
         return result
 
     async def create_iteration_tasks(
@@ -415,12 +420,19 @@ class WhileLoopHandler:
             task_def["metadata"]["is_while_loop_child"] = True
 
             # Process parameters with loop variables
-            if "parameters" in task_def:
-                enhanced_context = context.copy()
-                enhanced_context.update(
-                    {"$iteration": iteration, "$loop_state": loop_state}
+            enhanced_context = context.copy()
+            enhanced_context.update(
+                {"$iteration": iteration, "$loop_state": loop_state, "loop_id": loop_id}
+            )
+            
+            # Process action field if it contains templates
+            if "action" in task_def:
+                task_def["action"] = await self._process_loop_params(
+                    task_def["action"], enhanced_context, step_results
                 )
-
+            
+            # Process parameters
+            if "parameters" in task_def:
                 task_def["parameters"] = await self._process_loop_params(
                     task_def["parameters"], enhanced_context, step_results
                 )
@@ -487,6 +499,12 @@ class WhileLoopHandler:
             result = result.replace("{{ $iteration }}", str(context.get("$iteration", 0)))
             result = result.replace("{{iteration}}", str(context.get("$iteration", 0)))
             result = result.replace("{{ iteration }}", str(context.get("$iteration", 0)))
+            
+            # Handle loop_id.iteration pattern (e.g., {{ guessing_loop.iteration }})
+            loop_id = context.get("loop_id")
+            if loop_id:
+                result = result.replace(f"{{{{{loop_id}.iteration}}}}", str(context.get("$iteration", 0)))
+                result = result.replace(f"{{{{ {loop_id}.iteration }}}}", str(context.get("$iteration", 0)))
 
             # Handle loop state references
             if "{{$loop_state" in result:

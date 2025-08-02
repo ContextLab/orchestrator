@@ -127,6 +127,17 @@ class FileSystemTool(Tool):
         path = kwargs.get("path", "")
         # Extract template manager if available
         _template_manager = kwargs.get("_template_manager")
+        
+        # Render path if it contains templates
+        if _template_manager and isinstance(path, str) and ('{{' in path or '{%' in path):
+            try:
+                from ..core.template_manager import TemplateManager
+                if isinstance(_template_manager, TemplateManager):
+                    path = _template_manager.render(path)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to render path template: {e}")
 
         try:
             if action == "read":

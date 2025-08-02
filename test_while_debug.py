@@ -6,64 +6,55 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from orchestrator import Orchestrator, init_models
 
-# Set up file logging
+# Set up logging to see details
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('while_debug.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-logger = logging.getLogger(__name__)
+# Only show relevant logs
+logging.getLogger("orchestrator.utils.model_config_loader").setLevel(logging.WARNING)
+logging.getLogger("orchestrator.compiler.yaml_compiler").setLevel(logging.WARNING)
 
 async def test():
-    logger.info("Starting test...")
-    
-    # Initialize models first
-    logger.info("Initializing models...")
     model_registry = init_models()
-    
-    logger.info("Creating orchestrator...")
     orchestrator = Orchestrator(model_registry=model_registry)
     
     yaml_content = '''
-name: test_simple_while
-description: Simple test
+name: test_while_debug
+description: Debug while loop with file writes
 
 steps:
-  - id: init
-    action: echo Starting
-    
-  - id: loop
-    while: "true"
-    max_iterations: 3
+  - id: test_loop
+    while: 'true'
+    max_iterations: 1  # Should only run once (iteration 0)
     steps:
-      - id: task1
-        action: echo Hello
-        
+      - id: write_test
+        action: write
+        parameters:
+          path: "/tmp/test_loop_{{ test_loop.iteration }}.txt"
+          content: "This is iteration {{ test_loop.iteration }}"
+          
   - id: done
-    action: echo Done
-    dependencies: [loop]
+    action: echo All done
+    dependencies: [test_loop]
 '''
     
-    logger.info("Executing pipeline...")
-    try:
-        # Add timeout
-        result = await asyncio.wait_for(
-            orchestrator.execute_yaml(yaml_content, {}),
-            timeout=5.0
-        )
-        logger.info(f'SUCCESS - Result: {result}')
-        if isinstance(result, dict):
-            for key, value in result.items():
-                logger.info(f"  {key}: {value}")
-    except asyncio.TimeoutError:
-        logger.error("ERROR: Execution timed out after 5 seconds")
-    except Exception as e:
-        logger.error(f'ERROR: {str(e)}')
-        import traceback
-        traceback.print_exc()
+    result = await orchestrator.execute_yaml(yaml_content, {})
+    
+    print("\n=== RESULTS ===")
+    for task_id, task_result in result.items():
+        if 'write' in task_id:
+            if isinstance(task_result, dict):
+                print(f"{task_id}: {task_result.get('result', 'ERROR')}")
+            else:
+                print(f"{task_id}: {task_result}")
+    
+    # Check created files
+    print("\n=== FILES CREATED ===")
+    import glob
+    files = glob.glob("/tmp/test_loop_*.txt")
+    for f in sorted(files):
+        print(f)
 
 asyncio.run(test())
