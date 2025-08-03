@@ -110,6 +110,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if this is a capture result marker
         if action_str == "capture_result":
             return await self._handle_capture_result(task, context)
+            
+        # Check if this is a condition evaluation
+        if action_str == "evaluate_condition":
+            return await self._handle_evaluate_condition(task, context)
 
         # Otherwise use model-based execution
         return await super()._execute_task_impl(task, context)
@@ -633,6 +637,52 @@ class HybridControlSystem(ModelBasedControlSystem):
             "iteration": iteration,
             "iteration_results": iteration_results,
         }
+    
+    async def _handle_evaluate_condition(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle condition evaluation using the condition evaluator."""
+        from ..actions.condition_evaluator import get_condition_evaluator
+        
+        # Get condition from parameters
+        condition = task.parameters.get("condition", "")
+        if not condition:
+            return {
+                "result": False,
+                "status": "error",
+                "error": "No condition provided"
+            }
+        
+        # Prepare evaluation context
+        eval_context = {}
+        
+        # Add template manager if available
+        if "_template_manager" in context:
+            eval_context["_template_manager"] = context["_template_manager"]
+        
+        # Add task parameters
+        eval_context.update(task.parameters)
+        
+        # Add previous results from context
+        if "previous_results" in context:
+            eval_context.update(context["previous_results"])
+        
+        # Add any other context items that might be useful
+        for key in ["inputs", "step_results", "pipeline_inputs"]:
+            if key in context:
+                eval_context[key] = context[key]
+        
+        # Get appropriate evaluator
+        evaluator = get_condition_evaluator(condition, eval_context)
+        
+        # Execute evaluation
+        result = await evaluator.execute(
+            condition=condition,
+            context=eval_context
+        )
+        
+        # Add some useful metadata
+        result["evaluator_type"] = type(evaluator).__name__
+        
+        return result
     
     async def _handle_loop_complete(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
         """Handle loop completion markers."""

@@ -1,0 +1,318 @@
+# Implement evaluate_condition Action Handler
+
+## Overview
+
+The orchestrator framework needs a comprehensive `evaluate_condition` action handler to support conditional logic throughout pipelines. Currently, pipelines that use condition evaluation get stuck or timeout because this action is not implemented. This issue proposes implementing a robust condition evaluation system that covers all use cases in the framework.
+
+## Problem Statement
+
+Several example pipelines use conditional logic in various forms:
+1. **If statements** - Tasks with `condition:` fields that determine whether they execute
+2. **While loops** - Loop constructs with conditions that determine continuation
+3. **Conditional routing** - Dynamic flow control based on runtime conditions
+4. **Placeholder evaluation** - Evaluating expressions with template variables
+
+Currently, there's no unified action handler for evaluating these conditions, causing pipelines to fail when they attempt condition evaluation.
+
+## Proposed Solution
+
+### Architecture
+
+Create a hierarchical condition evaluation system:
+
+```
+ConditionEvaluator (Base Class)
+├── BooleanEvaluator     - Simple true/false conditions
+├── ComparisonEvaluator  - Numeric/string comparisons (==, !=, <, >, etc.)
+├── LogicalEvaluator     - AND/OR/NOT operations
+├── TemplateEvaluator    - Evaluate conditions with template variables
+├── ExpressionEvaluator  - Complex expressions (math, string operations)
+└── AutoTagEvaluator     - Conditions with <AUTO> tags for AI resolution
+```
+
+### Implementation Plan
+
+#### 1. Base Infrastructure
+
+**File: `src/orchestrator/actions/condition_evaluator.py`**
+
+```python
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional, Union
+from ..tools.base import Tool
+from ..core.exceptions import ConditionEvaluationError
+
+class ConditionEvaluator(Tool):
+    """Base class for condition evaluation."""
+    
+    def __init__(self):
+        super().__init__(
+            name="evaluate_condition",
+            description="Evaluate conditions for control flow"
+        )
+        self.add_parameter("condition", "string", "Condition to evaluate", required=True)
+        self.add_parameter("context", "object", "Evaluation context", required=False)
+        self.add_parameter("operator", "string", "Comparison operator", required=False)
+        self.add_parameter("left", "any", "Left operand", required=False)
+        self.add_parameter("right", "any", "Right operand", required=False)
+    
+    @abstractmethod
+    async def evaluate(self, condition: str, context: Dict[str, Any]) -> bool:
+        """Evaluate the condition."""
+        pass
+    
+    async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
+        """Execute condition evaluation."""
+        condition = kwargs.get("condition", "")
+        context = kwargs.get("context", {})
+        
+        try:
+            result = await self.evaluate(condition, context)
+            return {
+                "result": result,
+                "condition": condition,
+                "status": "success"
+            }
+        except Exception as e:
+            return {
+                "result": False,
+                "condition": condition,
+                "status": "error",
+                "error": str(e)
+            }
+```
+
+#### 2. Specific Evaluators
+
+**BooleanEvaluator**
+```python
+class BooleanEvaluator(ConditionEvaluator):
+    """Evaluate simple boolean conditions."""
+    
+    async def evaluate(self, condition: str, context: Dict[str, Any]) -> bool:
+        condition_lower = condition.strip().lower()
+        if condition_lower in ["true", "1", "yes", "on"]:
+            return True
+        elif condition_lower in ["false", "0", "no", "off", "none", ""]:
+            return False
+        else:
+            # Try to evaluate as Python expression
+            return bool(eval(condition, {"__builtins__": {}}, context))
+```
+
+**ComparisonEvaluator**
+```python
+class ComparisonEvaluator(ConditionEvaluator):
+    """Evaluate comparison operations."""
+    
+    OPERATORS = {
+        "==": lambda a, b: a == b,
+        "!=": lambda a, b: a != b,
+        "<": lambda a, b: a < b,
+        ">": lambda a, b: a > b,
+        "<=": lambda a, b: a <= b,
+        ">=": lambda a, b: a >= b,
+        "in": lambda a, b: a in b,
+        "not in": lambda a, b: a not in b,
+    }
+    
+    async def evaluate(self, condition: str, context: Dict[str, Any]) -> bool:
+        # Parse condition to extract operator and operands
+        # Support both inline conditions and parameter-based
+        pass
+```
+
+**TemplateEvaluator**
+```python
+class TemplateEvaluator(ConditionEvaluator):
+    """Evaluate conditions with template variables."""
+    
+    def __init__(self, template_manager):
+        super().__init__()
+        self.template_manager = template_manager
+    
+    async def evaluate(self, condition: str, context: Dict[str, Any]) -> bool:
+        # First render templates
+        rendered = self.template_manager.render(condition, context)
+        # Then evaluate the rendered condition
+        return await self._evaluate_rendered(rendered, context)
+```
+
+#### 3. Integration with Existing Systems
+
+**Update ControlSystem to handle evaluate_condition action:**
+
+```python
+# In src/orchestrator/core/control_system.py
+async def _execute_task(self, task: Task, context: Dict[str, Any]) -> Dict[str, Any]:
+    if task.action == "evaluate_condition":
+        evaluator = self._get_condition_evaluator(task)
+        return await evaluator.execute(**task.parameters, context=context)
+```
+
+**Register with Tool Registry:**
+
+```python
+# In src/orchestrator/tools/discovery.py
+def register_condition_evaluators(registry: ToolRegistry):
+    """Register all condition evaluators."""
+    registry.register_tool(BooleanEvaluator())
+    registry.register_tool(ComparisonEvaluator())
+    registry.register_tool(TemplateEvaluator())
+    # ... etc
+```
+
+### Use Cases Coverage
+
+#### 1. Task Conditions
+```yaml
+- id: process_large_file
+  action: compress
+  condition: "{{ file.size > 1000000 }}"  # Use ComparisonEvaluator
+```
+
+#### 2. While Loops
+```yaml
+- id: retry_loop
+  while: "{{ attempts < max_attempts and not success }}"  # Use LogicalEvaluator
+  steps:
+    - id: attempt_operation
+```
+
+#### 3. Conditional Routing
+```yaml
+- id: check_status
+  action: evaluate_condition
+  parameters:
+    condition: "{{ response.status_code == 200 }}"
+    
+- id: handle_success
+  dependencies: [check_status]
+  condition: "{{ check_status.result }}"
+```
+
+#### 4. Complex Expressions
+```yaml
+- id: calculate_threshold
+  action: evaluate_condition
+  parameters:
+    condition: "{{ (total_score / num_items) > threshold * 0.8 }}"
+```
+
+### Test Plan
+
+#### Unit Tests
+
+1. **Test Boolean Evaluation**
+   - Simple true/false strings
+   - Numeric boolean (0/1)
+   - Empty/non-empty strings
+
+2. **Test Comparisons**
+   - Numeric comparisons
+   - String comparisons
+   - List/set membership
+   - Null/undefined handling
+
+3. **Test Template Resolution**
+   - Simple variable substitution
+   - Nested object access
+   - Array indexing
+   - Missing variable handling
+
+4. **Test Complex Expressions**
+   - Mathematical operations
+   - String concatenation
+   - Logical combinations
+   - Type coercion
+
+#### Integration Tests
+
+1. **Pipeline Tests**
+   - Run all example pipelines with conditions
+   - Verify correct branching behavior
+   - Test loop termination
+   - Test error handling
+
+2. **Edge Cases**
+   - Circular dependencies
+   - Invalid expressions
+   - Type mismatches
+   - Performance with large contexts
+
+### Example Usage
+
+```yaml
+# Simple boolean
+- id: check_enabled
+  action: evaluate_condition
+  parameters:
+    condition: "{{ feature_enabled }}"
+
+# Comparison
+- id: check_threshold
+  action: evaluate_condition
+  parameters:
+    condition: "{{ value > threshold }}"
+    
+# Complex expression
+- id: validate_data
+  action: evaluate_condition
+  parameters:
+    condition: |
+      {{ data.status == 'ready' and 
+         data.records|length > 0 and
+         data.quality_score >= min_quality }}
+
+# With AUTO tags
+- id: smart_routing
+  action: evaluate_condition
+  parameters:
+    condition: "<AUTO>Based on {{context}}, should we proceed with advanced analysis?</AUTO>"
+```
+
+### Implementation Priority
+
+1. **Phase 1 (Critical)**
+   - BooleanEvaluator
+   - ComparisonEvaluator
+   - Basic TemplateEvaluator
+   - Integration with ControlSystem
+
+2. **Phase 2 (Important)**
+   - LogicalEvaluator
+   - ExpressionEvaluator
+   - Enhanced error handling
+   - Performance optimization
+
+3. **Phase 3 (Enhancement)**
+   - AutoTagEvaluator
+   - Custom function support
+   - Debugging tools
+   - Comprehensive documentation
+
+### Success Criteria
+
+1. All example pipelines that use conditions execute successfully
+2. Unit test coverage > 90% for all evaluators
+3. Performance: Condition evaluation < 10ms for simple conditions
+4. Clear error messages for invalid conditions
+5. Backward compatibility with existing condition syntax
+
+### Risks and Mitigation
+
+1. **Security Risk**: Eval usage could allow code injection
+   - Mitigation: Use ast.literal_eval or restricted evaluation context
+
+2. **Performance Risk**: Complex conditions could slow pipeline execution
+   - Mitigation: Implement caching and optimization strategies
+
+3. **Compatibility Risk**: Different condition syntaxes in examples
+   - Mitigation: Support multiple syntax styles with clear documentation
+
+### References
+
+- Existing condition handling: `src/orchestrator/control_flow/conditional.py`
+- AUTO tag resolution: `src/orchestrator/control_flow/auto_resolver.py`
+- Template rendering: `src/orchestrator/core/template_manager.py`
+- Example pipelines with conditions: `examples/` directory

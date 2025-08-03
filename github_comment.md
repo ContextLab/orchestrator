@@ -81,3 +81,26 @@ The issue appears to be specific to the complex control_flow_while_loop.yaml pip
 1. Investigate what makes the full pipeline different (possibly AUTO tags or complex dependencies)
 2. Add more detailed logging to track where extra iterations are being created
 
+
+### Progress Update - Commit 1bd6cca
+
+Isolated the iteration count issue through comprehensive testing:
+
+**Test Results Summary:**
+- ✅ `test_iteration_count.yaml` - Simple echo loop works correctly (1 iteration)
+- ✅ `test_while_simple_flow.yaml` - Loop with file writes works correctly (1 iteration)
+- ✅ `test_while_trace.yaml` - Loop with checkpoints works correctly (1 iteration)
+- ✅ `test_while_minimal.yaml` - Loop with generate_text works correctly (1 iteration)
+- ❌ `control_flow_while_loop.yaml` - Times out during execution
+- ❌ `test_while_no_auto.yaml` - Times out at evaluate_condition action
+
+**Key Findings:**
+1. **While loop iteration count is correct** - All simple tests execute exactly 1 iteration with max_attempts=1
+2. **The timeout issue is not related to iteration count** - The pipeline gets stuck during execution
+3. **The `evaluate_condition` action appears to be the problem** - Pipelines hang when reaching this action
+
+The logs show the pipeline gets stuck after executing `guessing_loop_0_check_result` which uses the `evaluate_condition` action. This action doesn't appear to be a built-in action and may need to be implemented or replaced.
+
+### Recommendation
+Replace `evaluate_condition` with a proper condition check mechanism or implement the missing action handler.
+
