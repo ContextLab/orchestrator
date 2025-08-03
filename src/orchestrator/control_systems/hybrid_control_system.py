@@ -651,24 +651,19 @@ class HybridControlSystem(ModelBasedControlSystem):
                 "error": "No condition provided"
             }
         
-        # Prepare evaluation context
-        eval_context = {}
+        # Prepare evaluation context - start with the full context
+        eval_context = context.copy()
         
-        # Add template manager if available
-        if "_template_manager" in context:
-            eval_context["_template_manager"] = context["_template_manager"]
+        # Add task parameters (but don't overwrite existing context)
+        for key, value in task.parameters.items():
+            if key not in eval_context:
+                eval_context[key] = value
         
-        # Add task parameters
-        eval_context.update(task.parameters)
-        
-        # Add previous results from context
+        # Flatten previous results if present
         if "previous_results" in context:
-            eval_context.update(context["previous_results"])
-        
-        # Add any other context items that might be useful
-        for key in ["inputs", "step_results", "pipeline_inputs"]:
-            if key in context:
-                eval_context[key] = context[key]
+            for step_id, result in context["previous_results"].items():
+                if step_id not in eval_context:
+                    eval_context[step_id] = result
         
         # Get appropriate evaluator
         evaluator = get_condition_evaluator(condition, eval_context)
