@@ -59,15 +59,10 @@ class YAMLCompiler:
         """
         self.schema_validator = schema_validator or SchemaValidator()
 
-        # Create ambiguity resolver - require real model
+        # Create ambiguity resolver - optional for compilation without resolution
         if ambiguity_resolver:
             self.ambiguity_resolver = ambiguity_resolver
-        else:
-            if not model_registry:
-                raise ValueError(
-                    "No model registry provided for ambiguity resolution. "
-                    "AUTO tags require an AI model to resolve ambiguities."
-                )
+        elif model_registry:
             try:
                 # Try structured resolver first
                 from .structured_ambiguity_resolver import StructuredAmbiguityResolver
@@ -80,6 +75,10 @@ class YAMLCompiler:
                 self.ambiguity_resolver = AmbiguityResolver(
                     model_registry=model_registry
                 )
+        else:
+            # No resolver - AUTO tags will be preserved
+            self.ambiguity_resolver = None
+            logger.info("No model registry provided - AUTO tags will be preserved")
 
         self.template_engine = Environment(undefined=StrictUndefined)
 
@@ -321,6 +320,11 @@ class YAMLCompiler:
 
         async def process_auto_tags(obj: Any, path: str = "") -> Any:
             if isinstance(obj, str):
+                # Skip AUTO tag resolution for goto fields - they should be resolved at runtime
+                if path.endswith(".goto") or path.endswith("['goto']") or path.endswith('["goto"]'):
+                    logger.info(f"Skipping AUTO tag resolution for runtime field: {path}")
+                    return obj
+                    
                 # Check if string contains AUTO tags
                 if self.auto_tag_pattern.search(obj):
                     return await self._resolve_auto_string(obj, path)
@@ -351,6 +355,11 @@ class YAMLCompiler:
         Returns:
             Resolved content
         """
+        # If no resolver, preserve AUTO tags
+        if not self.ambiguity_resolver:
+            logger.debug(f"No resolver available - preserving AUTO tag at {path}")
+            return content
+            
         # Find all AUTO tags
         matches = self.auto_tag_pattern.findall(content)
 
@@ -585,6 +594,7 @@ class YAMLCompiler:
             "max_parallel",
             "foreach",
             "parallel",
+            "goto",  # Add goto to the list of control flow keys
         ]:
             if cf_key in task_def:
                 metadata[cf_key] = task_def[cf_key]
