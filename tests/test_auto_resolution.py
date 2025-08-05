@@ -197,7 +197,7 @@ class TestLazyAutoTagResolver:
         with pytest.raises(AutoTagResolutionError) as exc_info:
             await resolver.resolve("Generate something", sample_context)
         
-        assert "Failed after 2 models" in str(exc_info.value)
+        assert "Failed to resolve AUTO tag after trying models" in str(exc_info.value)
     
     def test_extract_auto_tag_content(self, resolver):
         """Test AUTO tag content extraction."""
