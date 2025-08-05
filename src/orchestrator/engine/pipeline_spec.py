@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
+from ..core.output_metadata import OutputMetadata, create_output_metadata, validate_output_specification
+
 
 @dataclass
 class ErrorHandling:
@@ -44,6 +46,14 @@ class TaskSpec:
     timeout: Optional[float] = None
     cache_results: bool = True
     tags: List[str] = field(default_factory=list)
+    
+    # Output tracking fields
+    produces: Optional[str] = None              # Output type descriptor
+    location: Optional[str] = None              # Output location (supports templates)
+    format: Optional[str] = None                # Output format/MIME type
+    output_schema: Optional[Dict[str, Any]] = None  # JSON schema for output validation
+    size_limit: Optional[int] = None            # Maximum output size in bytes
+    output_description: Optional[str] = None    # Description of the output
 
     def __post_init__(self) -> None:
         """Validate and process task specification."""
@@ -68,6 +78,16 @@ class TaskSpec:
         # Ensure tags is a list
         if isinstance(self.tags, str):
             self.tags = [self.tags]
+
+        # Validate output specification consistency
+        if self.produces or self.location or self.format:
+            validation_issues = validate_output_specification(
+                produces=self.produces,
+                location=self.location,
+                format=self.format
+            )
+            if validation_issues:
+                raise ValueError(f"Output specification validation failed: {'; '.join(validation_issues)}")
 
     def has_auto_tags(self) -> bool:
         """Check if action contains AUTO tags."""
@@ -140,7 +160,64 @@ class TaskSpec:
             "tags": self.tags,
             "condition_variables": self.get_condition_variables(),
             "template_variables": self.get_template_variables(),
+            "has_output_metadata": self.has_output_metadata(),
+            "output_metadata": self.get_output_metadata(),
         }
+
+    def has_output_metadata(self) -> bool:
+        """Check if task has output metadata defined."""
+        return bool(self.produces or self.location or self.format)
+
+    def get_output_metadata(self) -> Optional[OutputMetadata]:
+        """Get output metadata for this task spec."""
+        if not self.has_output_metadata():
+            return None
+        
+        return create_output_metadata(
+            produces=self.produces,
+            location=self.location,
+            format=self.format,
+            schema=self.output_schema,
+            size_limit=self.size_limit,
+            description=self.output_description
+        )
+
+    def validate_output_consistency(self) -> List[str]:
+        """Validate consistency of output metadata fields."""
+        if not self.has_output_metadata():
+            return []
+        
+        issues = validate_output_specification(
+            produces=self.produces,
+            location=self.location,
+            format=self.format
+        )
+        
+        # Additional validations
+        if self.size_limit is not None and self.size_limit <= 0:
+            issues.append("size_limit must be positive")
+        
+        return issues
+
+    def get_output_reference(self, field: Optional[str] = None) -> str:
+        """Get template reference string for this task's output."""
+        if field:
+            return f"{{{{{self.id}.{field}}}}}"
+        else:
+            return f"{{{{{self.id}.result}}}}"
+
+    def is_file_output(self) -> bool:
+        """Check if this task produces file output."""
+        if not self.location:
+            return False
+        
+        # Check if location looks like a file path
+        return bool(
+            self.location.startswith('./') or 
+            self.location.startswith('/') or
+            '/' in self.location or
+            '\\' in self.location
+        )
 
 
 @dataclass
@@ -275,3 +352,74 @@ class PipelineSpec:
             if required and input_name not in provided_inputs:
                 raise ValueError(f"Required input '{input_name}' not provided")
         return True
+
+    def get_steps_with_output_metadata(self) -> List[TaskSpec]:
+        """Get all steps that have output metadata defined."""
+        return [step for step in self.steps if step.has_output_metadata()]
+
+    def get_output_producing_steps(self) -> Dict[str, TaskSpec]:
+        """Get mapping of output types to steps that produce them."""
+        output_map = {}
+        for step in self.steps:
+            if step.produces:
+                output_map[step.produces] = step
+        return output_map
+
+    def validate_output_references(self) -> List[str]:
+        """Validate that all output references in the pipeline are valid."""
+        issues = []
+        step_ids = {step.id for step in self.steps}
+        
+        for step in self.steps:
+            # Check if step references other steps' outputs
+            step_content = str(step.inputs) + str(step.action)
+            
+            # Look for references like {{ step_id.field }}
+            import re
+            references = re.findall(r'{{\s*([^}]+)\s*}}', step_content)
+            
+            for ref in references:
+                if '.' in ref:
+                    parts = ref.split('.')
+                    referenced_step = parts[0].strip()
+                    if referenced_step in step_ids and referenced_step != step.id:
+                        # Check if the referenced step comes before this step in dependencies
+                        if referenced_step not in step.depends_on:
+                            issues.append(
+                                f"Step '{step.id}' references output from '{referenced_step}' "
+                                f"but doesn't declare it as a dependency"
+                            )
+        
+        return issues
+
+    def get_pipeline_output_summary(self) -> Dict[str, Any]:
+        """Get summary of all pipeline outputs."""
+        summary = {
+            "total_steps": len(self.steps),
+            "steps_with_outputs": len(self.get_steps_with_output_metadata()),
+            "output_types": {},
+            "file_outputs": [],
+            "structured_outputs": []
+        }
+        
+        for step in self.steps:
+            if step.has_output_metadata():
+                if step.produces:
+                    if step.produces not in summary["output_types"]:
+                        summary["output_types"][step.produces] = []
+                    summary["output_types"][step.produces].append(step.id)
+                
+                if step.is_file_output():
+                    summary["file_outputs"].append({
+                        "step_id": step.id,
+                        "location": step.location,
+                        "format": step.format
+                    })
+                
+                if step.output_schema:
+                    summary["structured_outputs"].append({
+                        "step_id": step.id,
+                        "schema": step.output_schema
+                    })
+        
+        return summary

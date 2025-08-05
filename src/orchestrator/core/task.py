@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
 from .template_metadata import TemplateMetadata
+from .output_metadata import OutputMetadata, OutputInfo
 
 
 class TaskStatus(Enum):
@@ -53,6 +54,10 @@ class Task:
     # Loop context tracking
     in_loop_context: bool = False
     loop_context: Dict[str, Any] = field(default_factory=dict)
+    
+    # Output tracking
+    output_metadata: Optional[OutputMetadata] = None
+    output_info: Optional[OutputInfo] = None
 
     def __post_init__(self) -> None:
         """Validate task after initialization."""
@@ -177,9 +182,95 @@ class Task:
             TaskStatus.SKIPPED,
         }
 
+    # Output-related properties and methods
+    @property
+    def produces(self) -> Optional[str]:
+        """Get the output type this task produces."""
+        return self.output_metadata.produces if self.output_metadata else None
+    
+    @property
+    def location(self) -> Optional[str]:
+        """Get the output location (resolved if output_info exists, template if not)."""
+        if self.output_info and self.output_info.location:
+            return self.output_info.location
+        return self.output_metadata.location if self.output_metadata else None
+    
+    @property
+    def output_format(self) -> Optional[str]:
+        """Get the output format/MIME type."""
+        if self.output_info and self.output_info.format:
+            return self.output_info.format
+        return self.output_metadata.format if self.output_metadata else None
+    
+    def has_output_metadata(self) -> bool:
+        """Check if task has output metadata defined."""
+        return self.output_metadata is not None
+    
+    def has_output_info(self) -> bool:
+        """Check if task has actual output information."""
+        return self.output_info is not None
+    
+    def set_output_metadata(self, produces: Optional[str] = None, 
+                           location: Optional[str] = None,
+                           format: Optional[str] = None,
+                           **kwargs) -> None:
+        """Set output metadata for this task."""
+        from .output_metadata import create_output_metadata
+        self.output_metadata = create_output_metadata(
+            produces=produces,
+            location=location,
+            format=format,
+            **kwargs
+        )
+    
+    def register_output(self, result: Any, location: Optional[str] = None,
+                       format: Optional[str] = None) -> OutputInfo:
+        """Register the actual output after task execution."""
+        from .output_metadata import OutputFormatDetector
+        
+        # Detect format if not provided
+        if not format:
+            format = OutputFormatDetector.detect_from_content(result, location)
+        
+        # Create output info
+        self.output_info = OutputInfo(
+            task_id=self.id,
+            output_type=self.produces,
+            location=location,
+            format=format,
+            result=result
+        )
+        
+        # Validate against metadata if available
+        if self.output_metadata:
+            self.output_info.validate_against_metadata(self.output_metadata)
+        
+        return self.output_info
+    
+    def get_output_reference(self, field: Optional[str] = None) -> str:
+        """Get template reference string for this task's output."""
+        if field:
+            return f"{{{{{self.id}.{field}}}}}"
+        else:
+            return f"{{{{{self.id}.result}}}}"
+    
+    def validate_output_consistency(self) -> List[str]:
+        """Validate consistency of output metadata."""
+        if not self.output_metadata:
+            return []
+        
+        issues = self.output_metadata.validate_consistency()
+        
+        # Additional task-specific validations
+        if self.output_info:
+            if not self.output_info.validate_against_metadata(self.output_metadata):
+                issues.extend(self.output_info.validation_errors)
+        
+        return issues
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert task to dictionary representation."""
-        return {
+        result_dict = {
             "id": self.id,
             "name": self.name,
             "action": self.action,
@@ -197,10 +288,33 @@ class Task:
             "completed_at": self.completed_at,
             "execution_time": self.execution_time,
         }
+        
+        # Add output metadata if present
+        if self.output_metadata:
+            result_dict["output_metadata"] = {
+                "produces": self.output_metadata.produces,
+                "location": self.output_metadata.location,
+                "format": self.output_metadata.format,
+                "schema": self.output_metadata.schema,
+                "size_limit": self.output_metadata.size_limit,
+                "validation_rules": self.output_metadata.validation_rules,
+                "description": self.output_metadata.description,
+                "tags": self.output_metadata.tags
+            }
+        
+        # Add output info if present
+        if self.output_info:
+            result_dict["output_info"] = self.output_info.to_dict()
+        
+        return result_dict
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Task:
         """Create task from dictionary representation."""
+        # Extract output metadata and info before creating task
+        output_metadata_data = data.pop("output_metadata", None)
+        output_info_data = data.pop("output_info", None)
+        
         # Convert status back to enum
         if "status" in data:
             data["status"] = TaskStatus(data["status"])
@@ -212,7 +326,24 @@ class Task:
         # Remove computed properties
         data.pop("execution_time", None)
 
-        return cls(**data)
+        # Create task
+        task = cls(**data)
+        
+        # Reconstruct output metadata if present
+        if output_metadata_data:
+            task.output_metadata = OutputMetadata(**output_metadata_data)
+        
+        # Reconstruct output info if present
+        if output_info_data:
+            # Convert datetime strings back to datetime objects
+            from datetime import datetime
+            for date_field in ['created_at', 'modified_at', 'accessed_at']:
+                if output_info_data.get(date_field):
+                    output_info_data[date_field] = datetime.fromisoformat(output_info_data[date_field])
+            
+            task.output_info = OutputInfo(**output_info_data)
+
+        return task
 
     def __repr__(self) -> str:
         """String representation of task."""

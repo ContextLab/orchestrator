@@ -2,9 +2,11 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..core.model import Model
+from ..core.output_tracker import OutputTracker
+from ..core.template_resolver import TemplateResolver
 from ..tools.base import Tool, default_registry
 from .auto_resolver import EnhancedAutoResolver
 from .pipeline_spec import TaskSpec
@@ -15,11 +17,15 @@ logger = logging.getLogger(__name__)
 class UniversalTaskExecutor:
     """Executes any task defined declaratively with automatic tool and model selection."""
 
-    def __init__(self, model_registry=None, tool_registry=None):
+    def __init__(self, model_registry=None, tool_registry=None, output_tracker=None):
         self.model_registry = model_registry
         self.tool_registry = tool_registry or default_registry
         self.auto_resolver = EnhancedAutoResolver()
         self.execution_context = {}
+        
+        # Output tracking integration
+        self.output_tracker = output_tracker or OutputTracker()
+        self.template_resolver = TemplateResolver(self.output_tracker)
 
     async def execute_task(
         self, task_spec: TaskSpec, context: Dict[str, Any]
@@ -28,6 +34,12 @@ class UniversalTaskExecutor:
         logger.info(f"Executing task: {task_spec.id}")
 
         try:
+            # 0. Register output metadata if task has output specification
+            if task_spec.has_output_metadata():
+                output_metadata = task_spec.get_output_metadata()
+                self.output_tracker.register_task_metadata(task_spec.id, output_metadata)
+                logger.debug(f"Registered output metadata for task {task_spec.id}")
+
             # 1. Resolve AUTO tags if present
             if task_spec.has_auto_tags():
                 resolved_spec = await self._resolve_auto_tags(task_spec, context)
@@ -38,8 +50,8 @@ class UniversalTaskExecutor:
                     "output_format": "structured",
                 }
 
-            # 2. Resolve template variables in prompt
-            prompt = self._resolve_template_variables(resolved_spec["prompt"], context)
+            # 2. Resolve template variables in prompt (including output references)
+            prompt = self._resolve_template_variables_with_outputs(resolved_spec["prompt"], context)
 
             # 3. Determine required tools
             required_tools = self._get_required_tools(task_spec, resolved_spec)
@@ -55,6 +67,15 @@ class UniversalTaskExecutor:
 
             # 5. Structure and validate result
             structured_result = self._structure_result(result, task_spec, resolved_spec)
+
+            # 6. Register actual output
+            output_info = await self._register_task_output(task_spec, structured_result, context)
+            if output_info:
+                structured_result["output_info"] = {
+                    "location": output_info.location,
+                    "format": output_info.format,
+                    "output_type": output_info.output_type
+                }
 
             logger.info(f"Task {task_spec.id} completed successfully")
             return structured_result
@@ -112,6 +133,59 @@ class UniversalTaskExecutor:
                         f"Template variable '{var_path}' not found in context"
                     )
                     return match.group(0)  # Return original if not found
+
+        return re.sub(r"\{\{([^}]+)\}\}", replace_var, prompt)
+
+    def _resolve_template_variables_with_outputs(self, prompt: str, context: Dict[str, Any]) -> str:
+        """Resolve template variables including output references from other tasks."""
+        import re
+
+        def replace_var(match):
+            var_path = match.group(1).strip()
+
+            # Handle nested access like {{task_id.result}} or {{task_id.location}}
+            if "." in var_path:
+                parts = var_path.split(".", 1)
+                task_id = parts[0]
+                field = parts[1]
+                
+                # Try to get from output tracker first
+                if self.output_tracker.has_output(task_id):
+                    try:
+                        value = self.output_tracker.get_output(task_id, field)
+                        return str(value)
+                    except (KeyError, AttributeError):
+                        pass
+                
+                # Fall back to regular context resolution
+                value = context
+                for part in var_path.split("."):
+                    if isinstance(value, dict) and part in value:
+                        value = value[part]
+                    else:
+                        logger.warning(
+                            f"Template variable path '{var_path}' not found in context or outputs"
+                        )
+                        return match.group(0)  # Return original if not found
+                
+                return str(value)
+            else:
+                # Simple variable access - check context first
+                if var_path in context:
+                    return str(context[var_path])
+                
+                # Check if it's a task result reference
+                if self.output_tracker.has_output(var_path):
+                    try:
+                        value = self.output_tracker.get_output(var_path)
+                        return str(value)
+                    except (KeyError, AttributeError):
+                        pass
+                
+                logger.warning(
+                    f"Template variable '{var_path}' not found in context or outputs"
+                )
+                return match.group(0)  # Return original if not found
 
         return re.sub(r"\{\{([^}]+)\}\}", replace_var, prompt)
 
@@ -349,3 +423,108 @@ class UniversalTaskExecutor:
                 "error_handler": task_spec.on_error,
                 "timestamp": datetime.now().isoformat(),
             }
+
+    async def _register_task_output(self, task_spec: TaskSpec, result: Dict[str, Any], 
+                                   context: Dict[str, Any]) -> Optional[Any]:
+        """Register task output with the output tracker."""
+        if not task_spec.has_output_metadata():
+            return None
+        
+        # Determine output location
+        location = None
+        if task_spec.location:
+            try:
+                # Resolve location template with current context and outputs
+                location = self.template_resolver.resolve_template(
+                    task_spec.location, 
+                    default_values=context
+                )
+                
+                # Ensure directory exists if it's a file path
+                if location and ('/' in location or '\\' in location):
+                    location = self.template_resolver.resolve_file_path(location, ensure_dir=True)
+            except Exception as e:
+                logger.warning(f"Failed to resolve output location template: {e}")
+                location = task_spec.location  # Use unresolved template
+        
+        # Determine format
+        format_type = task_spec.format
+        if not format_type and location:
+            # Try to detect format from location
+            from ..core.output_metadata import OutputFormatDetector
+            format_type = OutputFormatDetector.detect_from_location(location)
+        
+        # Extract actual result content
+        actual_result = result.get("result", result)
+        
+        # Handle file output - save result to file if needed
+        if location and task_spec.is_file_output():
+            try:
+                await self._save_result_to_file(actual_result, location, format_type)
+            except Exception as e:
+                logger.error(f"Failed to save result to file {location}: {e}")
+        
+        # Register with output tracker
+        try:
+            output_info = self.output_tracker.register_output(
+                task_id=task_spec.id,
+                result=actual_result,
+                location=location,
+                format=format_type
+            )
+            logger.debug(f"Registered output for task {task_spec.id} at {location}")
+            return output_info
+        except Exception as e:
+            logger.error(f"Failed to register output for task {task_spec.id}: {e}")
+            return None
+
+    async def _save_result_to_file(self, result: Any, location: str, format_type: Optional[str]) -> None:
+        """Save task result to file."""
+        import os
+        import json
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(location), exist_ok=True)
+        
+        try:
+            if format_type == 'application/json' or location.endswith('.json'):
+                # JSON output
+                with open(location, 'w', encoding='utf-8') as f:
+                    if isinstance(result, (dict, list)):
+                        json.dump(result, f, indent=2, ensure_ascii=False)
+                    else:
+                        json.dump({"result": result}, f, indent=2, ensure_ascii=False)
+            
+            elif format_type in ['text/markdown', 'text/plain'] or location.endswith(('.md', '.txt')):
+                # Text/Markdown output
+                with open(location, 'w', encoding='utf-8') as f:
+                    if isinstance(result, dict):
+                        # Extract content from structured result
+                        content = result.get('content', result.get('result', str(result)))
+                    else:
+                        content = str(result)
+                    f.write(content)
+            
+            elif format_type == 'text/html' or location.endswith('.html'):
+                # HTML output
+                with open(location, 'w', encoding='utf-8') as f:
+                    if isinstance(result, dict):
+                        content = result.get('content', result.get('result', str(result)))
+                    else:
+                        content = str(result)
+                    
+                    # Basic HTML wrapper if content doesn't look like HTML
+                    if not content.strip().startswith('<'):
+                        content = f"<html><body><pre>{content}</pre></body></html>"
+                    f.write(content)
+            
+            else:
+                # Default: save as text
+                with open(location, 'w', encoding='utf-8') as f:
+                    f.write(str(result))
+            
+            logger.debug(f"Saved result to {location}")
+            
+        except Exception as e:
+            logger.error(f"Failed to save result to {location}: {e}")
+            raise

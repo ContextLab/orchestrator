@@ -583,6 +583,27 @@ class YAMLCompiler:
         if "tool" in task_def:
             metadata["tool"] = task_def["tool"]
 
+        # Handle output metadata fields
+        produces = task_def.get("produces")
+        location = task_def.get("location")
+        format_type = task_def.get("format")
+        output_schema = task_def.get("output_schema", task_def.get("schema"))
+        size_limit = task_def.get("size_limit")
+        output_description = task_def.get("output_description")
+        
+        # Validate output metadata consistency
+        if produces or location or format_type:
+            from ..core.output_metadata import validate_output_specification
+            validation_issues = validate_output_specification(
+                produces=produces,
+                location=location,
+                format=format_type
+            )
+            if validation_issues:
+                raise YAMLCompilerError(
+                    f"Task '{task_id}' has invalid output specification: {'; '.join(validation_issues)}"
+                )
+
         # Add control flow metadata
         for cf_key in [
             "for_each",
@@ -616,6 +637,12 @@ class YAMLCompiler:
             action_metadata = self._analyze_template(action, available_steps, "action")
             if action_metadata.is_runtime_only:
                 template_metadata["action"] = action_metadata
+
+        # Analyze templates in output location if present
+        if location and ('{{' in location or '{%' in location):
+            location_metadata = self._analyze_template(location, available_steps, "location")
+            if location_metadata.is_runtime_only:
+                template_metadata["location"] = location_metadata
         
         # Analyze condition if present
         if "condition" in task_def:
@@ -639,6 +666,18 @@ class YAMLCompiler:
         
         # Set template metadata on task
         task.template_metadata = template_metadata
+        
+        # Set output metadata if provided
+        if produces or location or format_type:
+            from ..core.output_metadata import create_output_metadata
+            task.set_output_metadata(
+                produces=produces,
+                location=location,
+                format=format_type,
+                schema=output_schema,
+                size_limit=size_limit,
+                description=output_description
+            )
         
         return task
 
