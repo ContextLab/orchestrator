@@ -102,7 +102,8 @@ class AmbiguityResolver:
                 result = await self._resolve_with_ai(content, context_path)
             else:
                 raise AmbiguityResolutionError(
-                    "No AI model available for ambiguity resolution"
+                    ambiguity_type="model availability",
+                    context="No AI model available for ambiguity resolution"
                 )
 
             # Cache result
@@ -111,7 +112,8 @@ class AmbiguityResolver:
 
         except Exception as e:
             raise AmbiguityResolutionError(
-                f"Failed to resolve ambiguity '{content}' at {context_path}: {e}"
+                ambiguity_type="AUTO tag resolution",
+                context=f"Content: '{content}' at {context_path}: {e}"
             ) from e
 
     async def _resolve_with_ai(self, content: str, context_path: str) -> Any:
@@ -130,7 +132,8 @@ class AmbiguityResolver:
 
         if not self.model:
             raise AmbiguityResolutionError(
-                "No AI model available for ambiguity resolution"
+                ambiguity_type="model availability",
+                context="No AI model available for ambiguity resolution in _resolve_with_ai"
             )
 
         # Determine the expected type from context

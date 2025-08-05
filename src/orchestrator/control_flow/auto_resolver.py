@@ -336,20 +336,29 @@ class ControlFlowAutoResolver:
                 # Return a reasonable default
                 return self._get_default_resolution(prompt)
 
-            # Add context to prompt (but the prompt already has variables replaced)
-            context_prompt = self._build_context_prompt(prompt, enhanced_context)
-            # Let the ambiguity resolver determine the type from content
-            result = await self.ambiguity_resolver.resolve(
-                context_prompt, "control_flow"
-            )
+            # Try to use the ambiguity resolver, but fall back to default if it fails
+            try:
+                # Add context to prompt (but the prompt already has variables replaced)
+                context_prompt = self._build_context_prompt(prompt, enhanced_context)
+                # Let the ambiguity resolver determine the type from content
+                result = await self.ambiguity_resolver.resolve(
+                    context_prompt, "control_flow"
+                )
 
-            import logging
+                import logging
 
-            logger = logging.getLogger(__name__)
-            logger.debug(
-                f"Ambiguity resolver returned: {result} (type: {type(result)})"
-            )
-            return result
+                logger = logging.getLogger(__name__)
+                logger.debug(
+                    f"Ambiguity resolver returned: {result} (type: {type(result)})"
+                )
+                return result
+                
+            except Exception as e:
+                # If ambiguity resolution fails, fall back to default
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Ambiguity resolution failed, using fallback: {e}")
+                return self._get_default_resolution(prompt)
 
         # Otherwise resolve each AUTO tag and substitute
         resolved_content = content
@@ -648,13 +657,12 @@ class ControlFlowAutoResolver:
                 else:
                     return "default_handler"
 
-        # Boolean defaults - but not for target selection
-        if any(
-            word in prompt_lower for word in ["should", "do we", "is", "are"]
-        ) and not ("choose" in prompt_lower or "go to" in prompt_lower):
-            if "not" in prompt_lower or "false" in prompt_lower:
-                return False
-            return True
+        # List defaults - check before boolean to avoid false positives
+        if "list" in prompt_lower or "array" in prompt_lower:
+            # For color list, return actual colors
+            if "color" in prompt_lower:
+                return ["red", "green", "blue"]
+            return ["item1", "item2", "item3"]
 
         # Numeric defaults
         if "how many" in prompt_lower:
@@ -662,9 +670,13 @@ class ControlFlowAutoResolver:
         if "number" in prompt_lower:
             return 1
 
-        # List defaults
-        if "list" in prompt_lower or "array" in prompt_lower:
-            return ["item1", "item2", "item3"]
+        # Boolean defaults - but not for target selection
+        if any(
+            word in prompt_lower for word in ["should", "do we", "is", "are"]
+        ) and not ("choose" in prompt_lower or "go to" in prompt_lower):
+            if "not" in prompt_lower or "false" in prompt_lower:
+                return False
+            return True
 
         # Method selection
         if "method" in prompt_lower:

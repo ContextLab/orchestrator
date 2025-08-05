@@ -70,6 +70,7 @@ class ForLoopHandler:
         loop_id = loop_def.get("id", "loop")
         for_each_expr = loop_def.get("for_each", [])
         explicit_loop_name = loop_def.get("loop_name")  # Optional explicit name
+        loop_var = loop_def.get("loop_var", "$item")  # Custom loop variable name
         max_parallel = loop_def.get("max_parallel", 1)
 
         # Resolve iterator
@@ -114,6 +115,12 @@ class ForLoopHandler:
                     enhanced_context = context.copy()
                     enhanced_context.update(step_results)
                     enhanced_context.update(self.loop_context_manager.get_accessible_loop_variables())
+                    
+                    # Add custom loop variable
+                    if loop_var != "$item":
+                        # Remove the $ prefix if present for template usage
+                        var_name = loop_var.lstrip('$') if loop_var.startswith('$') else loop_var
+                        enhanced_context[var_name] = item
                     
                     # Deep copy step definition
                     task_def = copy.deepcopy(step_def)
@@ -184,7 +191,10 @@ class ForLoopHandler:
                     self.loop_context_manager.pop_loop(loop_context.loop_name)
 
         # Add a completion task to represent the whole for_each loop
-        if expanded_tasks:
+        # Only add completion task if explicitly requested or if there are multiple steps per iteration
+        add_completion_task = loop_def.get("add_completion_task", len(body_steps) > 1)
+        
+        if expanded_tasks and add_completion_task:
             # Get all the last tasks from each iteration
             last_task_ids = []
             for idx in range(len(items)):
@@ -240,6 +250,13 @@ class ForLoopHandler:
                     if not '.' in var_name:  # Only process default $ variables
                         result = result.replace(f"{{{{{var_name}}}}}", str(var_value))
                         result = result.replace(f"{{{{ {var_name} }}}}", str(var_value))
+            
+            # Process variables directly in context (like custom loop variables)
+            for var_name, var_value in context.items():
+                if isinstance(var_value, (str, int, float, bool)) and not var_name.startswith('_'):
+                    # Replace both {{ var }} and {{var}} patterns
+                    result = result.replace(f"{{{{ {var_name} }}}}", str(var_value))
+                    result = result.replace(f"{{{{{var_name}}}}}", str(var_value))
             
             # Handle AUTO tags with enhanced context
             if "<AUTO>" in result:

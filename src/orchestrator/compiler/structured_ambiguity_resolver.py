@@ -143,7 +143,10 @@ class StructuredAmbiguityResolver(AmbiguityResolver):
                     logger.debug(f"Model capabilities: {self.model.capabilities}")
 
             if not self.model:
-                raise AmbiguityResolutionError("No AI model available for resolution")
+                raise AmbiguityResolutionError(
+                    ambiguity_type="model availability",
+                    context="No AI model available for resolution"
+                )
 
             logger.info(f"Ambiguity resolver initialized with model: {self.model.name}")
 
@@ -185,7 +188,8 @@ class StructuredAmbiguityResolver(AmbiguityResolver):
         except Exception as e:
             logger.error(f"Failed to resolve ambiguity: {e}")
             raise AmbiguityResolutionError(
-                f"Failed to resolve ambiguity '{content}' at {context_path}: {e}"
+                ambiguity_type="resolution failure",
+                context=f"Failed to resolve ambiguity '{content}' at {context_path}: {e}"
             ) from e
 
     async def _resolve_with_structured_output(
@@ -249,7 +253,8 @@ class StructuredAmbiguityResolver(AmbiguityResolver):
         except Exception as e:
             logger.error(f"Fallback parsing failed for '{content[:30]}...': {e}")
             raise AmbiguityResolutionError(
-                f"Both structured output and fallback parsing failed for '{content[:50]}...': {e}"
+                ambiguity_type="parsing failure",
+                context=f"Both structured output and fallback parsing failed for '{content[:50]}...': {e}"
             ) from e
 
     def _infer_type_from_context(self, content: str, context_path: str) -> str:
