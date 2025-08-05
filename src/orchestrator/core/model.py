@@ -150,6 +150,127 @@ class ModelCost:
         output_cost = (output_tokens / 1000) * self.output_cost_per_1k_tokens
         return self.base_cost_per_request + input_cost + output_cost
 
+    def estimate_cost_for_budget_period(self, budget_period: str) -> float:
+        """
+        Estimate cost for different budget periods based on typical usage.
+        
+        Args:
+            budget_period: Budget period ("per-task", "per-pipeline", "per-hour")
+            
+        Returns:
+            Estimated cost in USD
+        """
+        if self.is_free:
+            return 0.0
+        
+        # Typical usage estimates based on budget period
+        usage_estimates = {
+            "per-task": (500, 500),      # 500 input + 500 output tokens
+            "per-pipeline": (2500, 2500), # 2500 input + 2500 output tokens
+            "per-hour": (25000, 25000)    # 25000 input + 25000 output tokens
+        }
+        
+        input_tokens, output_tokens = usage_estimates.get(budget_period, (500, 500))
+        return self.calculate_cost(input_tokens, output_tokens)
+
+    def get_cost_efficiency_score(self, performance_score: float = 1.0) -> float:
+        """
+        Calculate cost efficiency score (performance per dollar).
+        
+        Args:
+            performance_score: Performance score (0-1) based on accuracy, speed, etc.
+            
+        Returns:
+            Cost efficiency score (higher is better)
+        """
+        if self.is_free:
+            return 100.0  # Free models have maximum efficiency
+        
+        # Calculate average cost per 1k tokens
+        avg_cost_per_1k = (self.input_cost_per_1k_tokens + self.output_cost_per_1k_tokens) / 2
+        
+        if avg_cost_per_1k <= 0:
+            return 100.0  # Treat as free if no token cost
+        
+        # Efficiency = performance / cost (with scaling)
+        # Scale by 1000 to get reasonable numbers
+        return (performance_score * 1000) / avg_cost_per_1k
+
+    def compare_cost_with(self, other: 'ModelCost', usage_tokens: tuple = (1000, 1000)) -> Dict[str, float]:
+        """
+        Compare cost with another model for given usage.
+        
+        Args:
+            other: Other ModelCost to compare with
+            usage_tokens: (input_tokens, output_tokens) for comparison
+            
+        Returns:
+            Dictionary with comparison metrics
+        """
+        input_tokens, output_tokens = usage_tokens
+        
+        self_cost = self.calculate_cost(input_tokens, output_tokens)
+        other_cost = other.calculate_cost(input_tokens, output_tokens)
+        
+        if other_cost == 0:
+            cost_ratio = float('inf') if self_cost > 0 else 1.0
+        else:
+            cost_ratio = self_cost / other_cost
+        
+        return {
+            "self_cost": self_cost,
+            "other_cost": other_cost,
+            "cost_ratio": cost_ratio,  # self_cost / other_cost
+            "savings": other_cost - self_cost,  # Positive means self is cheaper
+            "percent_savings": ((other_cost - self_cost) / other_cost * 100) if other_cost > 0 else 0.0
+        }
+
+    def is_within_budget(self, budget_limit: float, budget_period: str = "per-task") -> bool:
+        """
+        Check if model cost is within budget for given period.
+        
+        Args:
+            budget_limit: Maximum budget in USD
+            budget_period: Budget period ("per-task", "per-pipeline", "per-hour")
+            
+        Returns:
+            True if within budget
+        """
+        estimated_cost = self.estimate_cost_for_budget_period(budget_period)
+        return estimated_cost <= budget_limit
+
+    def get_cost_breakdown(self, input_tokens: int, output_tokens: int) -> Dict[str, float]:
+        """
+        Get detailed cost breakdown for a request.
+        
+        Args:
+            input_tokens: Number of input tokens
+            output_tokens: Number of output tokens
+            
+        Returns:
+            Dictionary with cost breakdown
+        """
+        if self.is_free:
+            return {
+                "input_cost": 0.0,
+                "output_cost": 0.0,
+                "base_cost": 0.0,
+                "total_cost": 0.0,
+                "is_free": True
+            }
+        
+        input_cost = (input_tokens / 1000) * self.input_cost_per_1k_tokens
+        output_cost = (output_tokens / 1000) * self.output_cost_per_1k_tokens
+        total_cost = self.base_cost_per_request + input_cost + output_cost
+        
+        return {
+            "input_cost": input_cost,
+            "output_cost": output_cost,
+            "base_cost": self.base_cost_per_request,
+            "total_cost": total_cost,
+            "is_free": False
+        }
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         return {

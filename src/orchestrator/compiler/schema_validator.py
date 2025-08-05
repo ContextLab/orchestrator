@@ -133,7 +133,11 @@ class SchemaValidator:
                                     "requires_model": {
                                         "type": "object",
                                         "properties": {
+                                            # Size constraints
                                             "min_size": {"type": "string"},
+                                            "max_size": {"type": "string"},
+                                            
+                                            # Expertise level
                                             "expertise": {
                                                 "oneOf": [
                                                     {
@@ -151,9 +155,48 @@ class SchemaValidator:
                                                     },
                                                 ],
                                             },
+                                            
+                                            # Capability requirements
                                             "capabilities": {
                                                 "type": "array",
                                                 "items": {"type": "string"},
+                                            },
+                                            
+                                            # Modality requirements  
+                                            "modalities": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "enum": ["text", "vision", "code", "audio"]
+                                                },
+                                            },
+                                            
+                                            # Performance constraints
+                                            "max_latency_ms": {"type": "integer", "minimum": 0},
+                                            "min_tokens_per_second": {"type": "integer", "minimum": 0},
+                                            "min_accuracy_score": {"type": "number", "minimum": 0, "maximum": 1},
+                                            
+                                            # Cost constraints
+                                            "cost_limit": {"type": "number", "minimum": 0},
+                                            "budget_period": {
+                                                "type": "string",
+                                                "enum": ["per-task", "per-pipeline", "per-hour"]
+                                            },
+                                            
+                                            # Model preferences
+                                            "preferred": {
+                                                "type": "array",
+                                                "items": {"type": "string"},
+                                            },
+                                            "excluded": {
+                                                "type": "array", 
+                                                "items": {"type": "string"},
+                                            },
+                                            
+                                            # Fallback strategy
+                                            "fallback_strategy": {
+                                                "type": "string",
+                                                "enum": ["best_available", "fail", "cheapest"]
                                             },
                                         },
                                     },

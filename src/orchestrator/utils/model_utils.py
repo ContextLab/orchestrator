@@ -10,35 +10,46 @@ from .model_config_loader import get_model_config_loader
 def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
     """
     Parse model size from string representation to float (in billions of parameters).
+    
+    Enhanced to handle more formats including decimal sizes and edge cases.
 
     Args:
         model_name: The model name which may contain size information
-        size_str: Explicit size string (e.g., "7b", "175b", "1.5t")
+        size_str: Explicit size string (e.g., "7B", "1.5B", "70B", "405B")
 
     Returns:
         Size in billions of parameters as float
     """
     if size_str:
-        # Parse explicit size string
-        size_match = re.search(r"(\d+\.?\d*)([kmbt])?", size_str.lower())
+        # Parse explicit size string - enhanced pattern for better matching
+        size_match = re.search(r"(\d+(?:\.\d+)?)([kmbt])?", size_str.lower().strip())
         if size_match:
             number = float(size_match.group(1))
             unit = size_match.group(2) or "b"
 
             multipliers = {
                 "k": 0.001,  # thousands -> billions
-                "m": 0.001,  # millions -> billions
+                "m": 0.001,  # millions -> billions  
                 "b": 1.0,  # billions
                 "t": 1000.0,  # trillions -> billions
             }
             return number * multipliers.get(unit, 1.0)
+        
+        # Handle pure numbers (assume billions)
+        try:
+            return float(size_str.strip())
+        except ValueError:
+            pass
 
-    # Try to extract size from model name
+    # Try to extract size from model name - enhanced patterns
     size_patterns = [
-        r"(\d+\.?\d*)b",  # e.g., "7b", "13b", "2.7b"
-        r"(\d+)B",  # e.g., "7B", "13B"
-        r"-(\d+\.?\d*)b-",  # e.g., "llama-7b-chat"
-        r":(\d+)b",  # e.g., "gemma2:27b"
+        r"(\d+(?:\.\d+)?)b",  # e.g., "7b", "13b", "2.7b", "1.5b"
+        r"(\d+(?:\.\d+)?)B",  # e.g., "7B", "13B", "1.5B", "405B"
+        r"-(\d+(?:\.\d+)?)b-",  # e.g., "llama-7b-chat", "model-1.5b-instruct"
+        r":(\d+(?:\.\d+)?)b",  # e.g., "gemma3:27b", "deepseek-r1:1.5b"
+        r":(\d+(?:\.\d+)?)B",  # e.g., "model:70B"
+        r"_(\d+(?:\.\d+)?)b",  # e.g., "model_7b"
+        r"_(\d+(?:\.\d+)?)B",  # e.g., "model_7B"
     ]
 
     for pattern in size_patterns:
@@ -71,6 +82,45 @@ def parse_model_size(model_name: str, size_str: Optional[str] = None) -> float:
 
     # Default to small size if unknown
     return 1.0
+
+
+def compare_model_sizes(size1: str, size2: str) -> int:
+    """
+    Compare two model size strings.
+    
+    Args:
+        size1: First size string (e.g., "7B")
+        size2: Second size string (e.g., "70B")
+        
+    Returns:
+        -1 if size1 < size2, 0 if equal, 1 if size1 > size2
+    """
+    parsed1 = parse_model_size("", size1)
+    parsed2 = parse_model_size("", size2)
+    
+    if parsed1 < parsed2:
+        return -1
+    elif parsed1 > parsed2:
+        return 1
+    else:
+        return 0
+
+
+def validate_size_string(size_str: str) -> bool:
+    """
+    Validate if a size string can be parsed.
+    
+    Args:
+        size_str: Size string to validate
+        
+    Returns:
+        True if valid, False otherwise
+    """
+    try:
+        parsed = parse_model_size("", size_str)
+        return parsed > 0
+    except (ValueError, TypeError):
+        return False
 
 
 def check_ollama_installed() -> bool:
