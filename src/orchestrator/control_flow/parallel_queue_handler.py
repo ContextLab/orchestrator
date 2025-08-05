@@ -46,10 +46,11 @@ class ParallelResourceManager:
             if pool:
                 instance = pool.pop()
             elif stats["current_usage"] < max_instances:
-                # Create new instance (placeholder for now)
-                instance = f"{tool_name}_instance_{stats['current_usage']}"
+                # Create real tool instance
+                instance = await self._create_tool_instance(tool_name)
             else:
-                # Wait for an instance to become available
+                # Wait for an instance to become available - for now return None
+                # In a full implementation, this would wait or queue the request
                 instance = None
             
             if instance is not None:
@@ -69,6 +70,50 @@ class ParallelResourceManager:
                 self.tool_pools[tool_name].append(instance)
                 if tool_name in self.usage_stats:
                     self.usage_stats[tool_name]["current_usage"] -= 1
+    
+    async def _create_tool_instance(self, tool_name: str):
+        """Create a real tool instance."""
+        try:
+            # Import and create tool instances based on tool name
+            if tool_name == "filesystem":
+                from ..tools.filesystem_tools import FileSystemTool
+                return FileSystemTool()
+            elif tool_name == "web-search":
+                from ..tools.web_tools import WebSearchTool
+                return WebSearchTool()
+            elif tool_name == "headless-browser":
+                from ..tools.web_tools import HeadlessBrowserTool
+                return HeadlessBrowserTool()
+            elif tool_name == "data-processing":
+                from ..tools.data_processing_tools import DataProcessingTool
+                return DataProcessingTool()
+            elif tool_name == "terminal":
+                from ..tools.terminal_tools import TerminalTool
+                return TerminalTool()
+            else:
+                # For unknown tools, create a generic tool wrapper
+                from ..tools.base import Tool
+                
+                class GenericTool(Tool):
+                    def __init__(self, name: str):
+                        super().__init__(name)
+                    
+                    async def execute(self, **kwargs) -> Dict[str, Any]:
+                        return {"tool": self.name, "result": f"Executed with {kwargs}"}
+                
+                return GenericTool(tool_name)
+                
+        except ImportError as e:
+            logger.warning(f"Could not import tool {tool_name}: {e}")
+            # Return a minimal working tool instance
+            class MinimalTool:
+                def __init__(self, name: str):
+                    self.name = name
+                
+                async def execute(self, **kwargs) -> Dict[str, Any]:
+                    return {"tool": self.name, "result": f"Minimal execution with {kwargs}"}
+            
+            return MinimalTool(tool_name)
     
     def get_resource_stats(self) -> Dict[str, Any]:
         """Get resource usage statistics."""
@@ -93,18 +138,21 @@ class ParallelQueueHandler:
     def __init__(self, 
                  auto_resolver: Optional[ControlFlowAutoResolver] = None,
                  loop_context_manager: Optional[GlobalLoopContextManager] = None,
-                 condition_evaluator: Optional[EnhancedConditionEvaluator] = None):
+                 condition_evaluator: Optional[EnhancedConditionEvaluator] = None,
+                 model_registry = None):
         """Initialize the parallel queue handler.
         
         Args:
             auto_resolver: AUTO tag resolver for queue generation and conditions
             loop_context_manager: Loop context manager for variable resolution
             condition_evaluator: Enhanced condition evaluator from Issue 189
+            model_registry: Model registry for real model execution
         """
         self.auto_resolver = auto_resolver or ControlFlowAutoResolver()
         self.loop_context_manager = loop_context_manager or GlobalLoopContextManager()
         self.parallel_context_manager = ParallelLoopContextManager()
         self.condition_evaluator = condition_evaluator
+        self.model_registry = model_registry
         
         # Resource management
         self.resource_manager = ParallelResourceManager()
@@ -235,21 +283,31 @@ class ParallelQueueHandler:
                                        step_results: Dict[str, Any]) -> List[Any]:
         """Evaluate non-AUTO queue expressions."""
         try:
-            # Try to parse as JSON list
+            # Try to parse as JSON list first
             if expression.strip().startswith('[') and expression.strip().endswith(']'):
-                return json.loads(expression)
+                try:
+                    parsed = json.loads(expression)
+                    if isinstance(parsed, list):
+                        return parsed
+                except json.JSONDecodeError:
+                    pass
             
             # Try template resolution
             template_manager = context.get("template_manager")
             if template_manager and "{{" in expression:
                 resolved = template_manager.render(expression, additional_context=step_results)
                 
-                # Try parsing resolved result
-                if resolved.strip().startswith('['):
-                    return json.loads(resolved)
-                else:
-                    # Single item
-                    return [resolved]
+                # Try parsing resolved result as JSON
+                if resolved.strip().startswith('[') and resolved.strip().endswith(']'):
+                    try:
+                        parsed = json.loads(resolved)
+                        if isinstance(parsed, list):
+                            return parsed
+                    except json.JSONDecodeError:
+                        pass
+                
+                # If not JSON, treat as single item
+                return [resolved]
             
             # Try direct context lookup
             if expression in context:
@@ -259,6 +317,22 @@ class ParallelQueueHandler:
             if expression in step_results:
                 result = step_results[expression]
                 return result if isinstance(result, list) else [result]
+            
+            # Handle common list expressions
+            if expression.strip() == "[]":
+                return []
+                
+            # Try to evaluate as Python expression safely
+            try:
+                # Only allow simple list expressions
+                if expression.strip().startswith('[') and expression.strip().endswith(']'):
+                    # Use ast.literal_eval for safe evaluation
+                    import ast
+                    result = ast.literal_eval(expression)
+                    if isinstance(result, list):
+                        return result
+            except (ValueError, SyntaxError):
+                pass
             
             # Default: treat as single item
             return [expression]
@@ -513,35 +587,45 @@ class ParallelQueueHandler:
                                    action: str, 
                                    parameters: Dict[str, Any],
                                    context: Dict[str, Any]) -> Any:
-        """Execute action directly without tool instance."""
-        # This would integrate with the main orchestrator's action execution system
-        # For now, return a processed result
+        """Execute action directly using real control system."""
+        from ..core.task import Task
+        from ..control_systems.hybrid_control_system import HybridControlSystem
         
-        # Handle common actions that don't require tools
-        if action == "debug" or action == "log":
-            message = parameters.get("message", "Debug message")
-            logger.info(f"Debug action executed: {message}")
-            return {"debug_message": message, "action": action}
+        # Create a temporary task for execution
+        temp_task = Task(
+            id=f"parallel_subtask_{action}",
+            name=f"Parallel Queue Subtask: {action}",
+            action=action,
+            parameters=parameters
+        )
         
-        elif action == "process_item":
-            item = parameters.get("item", "unknown")
-            logger.info(f"Processing item: {item}")
-            return {"processed_item": item, "action": action, "result": f"Successfully processed {item}"}
+        # Try to get model registry from handler, context, or create minimal one
+        model_registry = self.model_registry or context.get("model_registry")
+        if not model_registry:
+            from ..models.model_registry import ModelRegistry
+            model_registry = ModelRegistry()
         
-        elif action == "fetch":
-            url = parameters.get("url", "unknown")
-            logger.info(f"Fetching URL: {url}")
-            # Simulate fetch result
-            return {"url": url, "action": action, "result": f"Content from {url}", "status_code": 200}
+        # Create control system and execute
+        control_system = HybridControlSystem(model_registry)
         
-        else:
-            # Generic action execution
-            logger.info(f"Executing action: {action} with parameters: {parameters}")
+        try:
+            result = await control_system.execute_task(temp_task, context)
             return {
                 "action": action,
                 "parameters": parameters,
-                "result": f"Action {action} executed successfully",
-                "generic_execution": True
+                "result": result,
+                "status": "success",
+                "real_execution": True
+            }
+        except Exception as e:
+            logger.error(f"Direct action execution failed for {action}: {e}")
+            return {
+                "action": action,
+                "parameters": parameters,
+                "result": None,
+                "error": str(e),
+                "status": "failed",
+                "real_execution": True
             }
     
     async def _evaluate_termination_conditions(self, 

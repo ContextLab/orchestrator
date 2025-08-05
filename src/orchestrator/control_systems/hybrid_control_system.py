@@ -114,6 +114,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if this is a condition evaluation
         if action_str == "evaluate_condition":
             return await self._handle_evaluate_condition(task, context)
+            
+        # Check if this is a parallel queue execution
+        if action_str == "create_parallel_queue":
+            return await self._handle_create_parallel_queue(task, context)
 
         # Otherwise use model-based execution
         return await super()._execute_task_impl(task, context)
@@ -726,3 +730,35 @@ class HybridControlSystem(ModelBasedControlSystem):
         params = task.parameters.copy()
         params["action"] = task.action
         return await self.checkpoint_tool.execute(**params)
+    
+    async def _handle_create_parallel_queue(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle parallel queue execution with real functionality."""
+        from ..core.parallel_queue_task import ParallelQueueTask
+        from ..control_flow.parallel_queue_handler import ParallelQueueHandler
+        from ..control_flow.auto_resolver import ControlFlowAutoResolver
+        from ..core.loop_context import GlobalLoopContextManager
+        
+        # Ensure we have a ParallelQueueTask
+        if not isinstance(task, ParallelQueueTask):
+            # Convert regular task to ParallelQueueTask if needed
+            task_def = task.to_dict()
+            task = ParallelQueueTask.from_task_definition(task_def)
+        
+        # Initialize handler with real components
+        auto_resolver = ControlFlowAutoResolver(model_registry=self.model_registry)
+        loop_context_manager = GlobalLoopContextManager()
+        
+        # Initialize handler
+        handler = ParallelQueueHandler(
+            auto_resolver=auto_resolver,
+            loop_context_manager=loop_context_manager,
+            model_registry=self.model_registry
+        )
+        
+        # Get step results from context
+        step_results = context.get("previous_results", {})
+        
+        # Execute the parallel queue
+        result = await handler.execute_parallel_queue(task, context, step_results)
+        
+        return result

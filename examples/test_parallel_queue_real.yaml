@@ -1,0 +1,35 @@
+name: "Real Parallel Queue Test"
+description: "Test create_parallel_queue with real AUTO tag resolution and execution"
+
+inputs:
+  items:
+    description: "List of items to process in parallel"
+    default: ["item1", "item2", "item3"]
+
+steps:
+  - id: generate_queue
+    action: create_parallel_queue
+    create_parallel_queue:
+      "on": "<AUTO>create a list of 4 test items for processing</AUTO>"
+      max_parallel: 2
+      action_loop:
+        - action: process_item
+          parameters:
+            item: "{{ $item }}"
+            index: "{{ $index }}"
+            message: "Processing {{ $item }} at position {{ $index }}"
+
+  - id: process_specific_list
+    action: create_parallel_queue 
+    create_parallel_queue:
+      "on": "{{ inputs.items }}"
+      max_parallel: 3
+      action_loop:
+        - action: debug
+          parameters:
+            message: "Debug: {{ $item }} ({{ $index + 1 }}/{{ $queue_size }})"
+
+outputs:
+  generated_results: "{{ generate_queue.results }}"
+  input_results: "{{ process_specific_list.results }}"
+  total_items: "{{ generate_queue.total_items + process_specific_list.total_items }}"
