@@ -35,6 +35,7 @@ class AmbiguityResolver:
         self,
         model: Optional[Model] = None,
         model_registry: Optional[ModelRegistry] = None,
+        pipeline_id: Optional[str] = None,
     ) -> None:
         """
         Initialize ambiguity resolver.
@@ -42,12 +43,15 @@ class AmbiguityResolver:
         Args:
             model: Specific model to use for resolution
             model_registry: Model registry to select models from
+            pipeline_id: Unique pipeline ID for cache isolation
 
         Raises:
             ValueError: If no model is provided and registry has no models
         """
         self.model = model
         self.model_registry = model_registry
+        self.pipeline_id = pipeline_id or self._generate_pipeline_id()
+        # Use pipeline-specific cache to prevent contamination
         self.resolution_cache: Dict[str, Any] = {}
         self._model_initialized = False
 
@@ -79,8 +83,8 @@ class AmbiguityResolver:
         Raises:
             AmbiguityResolutionError: If resolution fails
         """
-        # Check cache first
-        cache_key = f"{content}:{context_path}"
+        # Check cache first - include pipeline ID for isolation
+        cache_key = f"{self.pipeline_id}:{content}:{context_path}"
         if cache_key in self.resolution_cache:
             return self.resolution_cache[cache_key]
 
@@ -459,3 +463,8 @@ Your answer:"""
     def set_resolution_strategy(self, ambiguity_type: str, strategy_func) -> None:
         """Set custom resolution strategy for ambiguity type."""
         self.resolution_strategies[ambiguity_type] = strategy_func
+
+    def _generate_pipeline_id(self) -> str:
+        """Generate a unique pipeline ID for cache isolation."""
+        import uuid
+        return f"pipeline_{uuid.uuid4().hex[:8]}"

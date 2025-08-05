@@ -11,23 +11,29 @@ from ..models.model_registry import ModelRegistry
 class ControlFlowAutoResolver:
     """Handles AUTO tag resolution for control flow constructs with runtime context."""
 
-    def __init__(self, model_registry: Optional[ModelRegistry] = None):
+    def __init__(self, model_registry: Optional[ModelRegistry] = None, pipeline_id: Optional[str] = None):
         """Initialize the control flow AUTO resolver.
 
         Args:
             model_registry: Model registry for LLM access
+            pipeline_id: Unique pipeline ID for cache isolation
         """
         self.model_registry = model_registry
+        self.pipeline_id = pipeline_id or self._generate_pipeline_id()
 
         # Try to create ambiguity resolver, but make it optional
         try:
-            # Pass the model_registry to AmbiguityResolver correctly
-            self.ambiguity_resolver = AmbiguityResolver(model_registry=model_registry)
+            # Pass the model_registry and pipeline_id to AmbiguityResolver for cache isolation
+            self.ambiguity_resolver = AmbiguityResolver(
+                model_registry=model_registry, 
+                pipeline_id=self.pipeline_id
+            )
         except ValueError:
             # No model available, create a placeholder
             self.ambiguity_resolver = None
 
         self.auto_tag_pattern = re.compile(r"<AUTO>(.*?)</AUTO>", re.DOTALL)
+        # Use pipeline-specific cache to prevent contamination
         self._resolution_cache = {}
 
     async def resolve_condition(
@@ -387,6 +393,17 @@ class ControlFlowAutoResolver:
             )
 
         return resolved_content
+
+    def _generate_pipeline_id(self) -> str:
+        """Generate a unique pipeline ID for cache isolation."""
+        import uuid
+        return f"pipeline_{uuid.uuid4().hex[:8]}"
+
+    def clear_cache(self) -> None:
+        """Clear the resolution cache for this pipeline."""
+        self._resolution_cache.clear()
+        if self.ambiguity_resolver and hasattr(self.ambiguity_resolver, 'clear_cache'):
+            self.ambiguity_resolver.clear_cache()
 
     def _build_eval_context(
         self, context: Dict[str, Any], step_results: Dict[str, Any]
