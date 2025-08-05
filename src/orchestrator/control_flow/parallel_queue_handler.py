@@ -92,11 +92,9 @@ class ParallelResourceManager:
                 return TerminalTool()
             else:
                 # For unknown tools, create a generic tool wrapper
-                from ..tools.base import Tool
-                
-                class GenericTool(Tool):
+                class GenericTool:
                     def __init__(self, name: str):
-                        super().__init__(name)
+                        self.name = name
                     
                     async def execute(self, **kwargs) -> Dict[str, Any]:
                         return {"tool": self.name, "result": f"Executed with {kwargs}"}
