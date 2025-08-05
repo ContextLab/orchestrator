@@ -1,0 +1,215 @@
+id: named_loop_variables_demo
+name: "Named Loop Variables Demonstration"
+description: |
+  Comprehensive demonstration of named loop variables with real model tasks.
+  Shows cross-step access, nested loops, and list item access patterns.
+
+inputs:
+  product_data:
+    type: object
+    default:
+      categories:
+        - name: "Electronics"
+          products: 
+            - name: "Laptop"
+              price: 999
+              features: ["SSD", "16GB RAM", "WiFi6"]
+            - name: "Phone" 
+              price: 599
+              features: ["5G", "Camera", "Wireless"]
+        - name: "Books"
+          products:
+            - name: "Python Guide"
+              price: 29
+              features: ["Code Examples", "Best Practices", "Advanced Topics"]
+            - name: "AI Handbook" 
+              price: 45
+              features: ["Machine Learning", "Neural Networks", "Applications"]
+
+steps:
+  # Level 1: Process each category with explicit loop name
+  - id: analyze_categories
+    name: "Category Analysis"
+    for_each: "{{ product_data.categories }}"
+    loop_name: "category_loop"  # Explicit name for cross-step access
+    steps:
+      - id: category_overview
+        action: llm_call
+        parameters:
+          model: anthropic/claude-sonnet-4-20250514
+          prompt: |
+            CATEGORY ANALYSIS TASK:
+            
+            Category: {{ $category_loop.item.name }}
+            Position: {{ $category_loop.position }} of {{ $category_loop.length }}
+            Products: {{ $category_loop.item.products | length }}
+            
+            {% if $category_loop.is_first %}This is the first category to analyze.{% endif %}
+            {% if $category_loop.is_last %}This is the final category.{% endif %}
+            {% if not $category_loop.is_last %}Next category: {{ $category_loop.items[$category_loop.index + 1].name }}{% endif %}
+            
+            TASK: Analyze this product category's market position and pricing strategy.
+            Consider the product mix, price points, and competitive landscape.
+            Provide 3 specific insights about {{ $category_loop.item.name }} category performance.
+
+      # Level 2: Process products within each category
+      - id: analyze_products
+        for_each: "{{ $item.products }}"
+        loop_name: "product_loop"  # Explicit name for cross-loop access
+        depends_on: category_overview
+        steps:
+          - id: product_evaluation
+            action: llm_call
+            parameters:
+              model: anthropic/claude-sonnet-4-20250514
+              prompt: |
+                PRODUCT EVALUATION TASK:
+                
+                Category Context: {{ $category_loop.item.name }} ({{ $category_loop.position }}/{{ $category_loop.length }})
+                Product: {{ $product_loop.item.name }} (${{ $product_loop.item.price }})
+                Product Position: {{ $product_loop.position }}/{{ $product_loop.length }} in category
+                
+                Cross-Category Context:
+                {% if $category_loop.has_next %}Next category products: {{ $category_loop.items[$category_loop.index + 1].products | length }}{% endif %}
+                {% if $product_loop.has_next %}Next product: {{ $product_loop.items[$product_loop.index + 1].name }}{% endif %}
+                
+                TASK: Evaluate this specific product's competitiveness.
+                Compare pricing to category average: ${{ ($product_loop.items | map(attribute='price') | sum) / $product_loop.length | round(0) }}
+                Analyze feature set: {{ $product_loop.item.features | join(', ') }}
+                Recommend pricing optimization and feature improvements.
+
+          # Level 3: Deep analysis of product features (auto-generated loop name)
+          - id: feature_analysis
+            for_each: "{{ $item.features }}"
+            # No loop_name specified - will auto-generate like "feature_analysis_loop_2"
+            depends_on: product_evaluation
+            action: llm_call
+            parameters:
+              model: anthropic/claude-sonnet-4-20250514
+              prompt: |
+                FEATURE ANALYSIS TASK:
+                
+                Hierarchy Context:
+                - Category: {{ $category_loop.item.name }}
+                - Product: {{ $product_loop.item.name }} (${{ $product_loop.item.price }})
+                - Feature: {{ $item }} ({{ $position }}/{{ $length }})
+                
+                Feature Set: {{ $items | join(', ') }}
+                {% if $index > 0 %}Previous feature: {{ $items[$index - 1] }}{% endif %}
+                {% if $index < $length - 1 %}Next feature: {{ $items[$index + 1] }}{% endif %}
+                
+                Competitive Context:
+                Product price tier: {% if $product_loop.item.price > 500 %}Premium{% else %}Budget{% endif %}
+                Category: {{ $category_loop.item.name }}
+                
+                TASK: Analyze this specific feature's market value and differentiation.
+                Compare to competitor offerings in the {{ $category_loop.item.name }} category.
+                Rate feature importance (1-10) and suggest improvements or alternatives.
+
+  # Cross-step analysis using loop variables from previous steps
+  - id: portfolio_insights
+    name: "Portfolio-Wide Insights"
+    action: llm_call
+    depends_on: analyze_categories
+    parameters:
+      model: anthropic/claude-sonnet-4-20250514
+      prompt: |
+        PORTFOLIO ANALYSIS TASK:
+        
+        SCOPE SUMMARY:
+        Categories Analyzed: {{ $category_loop.length }}
+        Category Names: {{ $category_loop.items | map(attribute='name') | join(', ') }}
+        
+        PRODUCT PORTFOLIO:
+        Total Products: {{ $product_loop.length if $product_loop else 'N/A' }}
+        {% if $product_loop %}
+        Price Range: ${{ $product_loop.items | map(attribute='price') | min }} - ${{ $product_loop.items | map(attribute='price') | max }}
+        Average Price: ${{ ($product_loop.items | map(attribute='price') | sum / $product_loop.length) | round(0) }}
+        
+        Product Distribution:
+        {% for category in $category_loop.items %}
+        - {{ category.name }}: {{ category.products | length }} products
+        {% endfor %}
+        {% endif %}
+        
+        CROSS-CATEGORY INSIGHTS:
+        Last analyzed category: {{ $category_loop.items[-1].name }}
+        {% if $product_loop %}
+        Most expensive product: {{ ($product_loop.items | sort(attribute='price') | reverse | first).name }}
+        Most affordable product: {{ ($product_loop.items | sort(attribute='price') | first).name }}
+        {% endif %}
+        
+        TASK: Synthesize insights from all category and product analyses.
+        Identify the top 3 portfolio optimization opportunities.
+        Recommend category rebalancing strategy based on price points and market positioning.
+        Suggest 5 new products that would maximize portfolio value across categories.
+
+  # Final summary with while loop demonstration
+  - id: iterative_optimization
+    name: "Iterative Optimization Loop"
+    while: "{{ $index < 2 }}"  # Simple condition for demo
+    loop_name: "optimization_loop"
+    max_iterations: 3
+    steps:
+      - id: optimization_iteration
+        action: llm_call
+        parameters:
+          model: anthropic/claude-sonnet-4-20250514
+          prompt: |
+            ITERATIVE OPTIMIZATION TASK:
+            
+            Optimization Round: {{ $optimization_loop.index + 1 }}
+            {% if $optimization_loop.is_first %}Starting optimization process...{% endif %}
+            
+            Portfolio Context (from previous analysis):
+            - Categories: {{ $category_loop.items | map(attribute='name') | join(', ') }}
+            - Total Products: {{ $product_loop.length if $product_loop else 'N/A' }}
+            
+            Iteration Context:
+            - Current iteration: {{ $optimization_loop.position }}
+            - Previous iterations: {{ $optimization_loop.index }}
+            - Remaining iterations: {{ 3 - $optimization_loop.position }}
+            
+            TASK: Based on the portfolio analysis, identify specific optimization actions.
+            {% if $optimization_loop.index == 0 %}Focus on pricing strategy optimization.{% endif %}
+            {% if $optimization_loop.index == 1 %}Focus on product feature enhancement.{% endif %}
+            
+            Provide concrete, actionable recommendations for this optimization round.
+
+  # Executive summary with comprehensive cross-loop access
+  - id: executive_summary
+    name: "Executive Summary Report"  
+    action: llm_call
+    depends_on: [portfolio_insights, iterative_optimization]
+    parameters:
+      model: anthropic/claude-sonnet-4-20250514
+      prompt: |
+        EXECUTIVE SUMMARY GENERATION:
+        
+        ANALYSIS SCOPE:
+        Categories: {{ $category_loop.length }} ({{ $category_loop.items | map(attribute='name') | join(', ') }})
+        {% if $product_loop %}Products: {{ $product_loop.length }} across all categories{% endif %}
+        Optimization Rounds: {{ $optimization_loop.length if $optimization_loop else 'N/A' }}
+        
+        KEY METRICS:
+        {% if $product_loop %}
+        - Revenue Range: ${{ $product_loop.items | map(attribute='price') | min }}-${{ $product_loop.items | map(attribute='price') | max }}
+        - Portfolio Average: ${{ ($product_loop.items | map(attribute='price') | sum / $product_loop.length) | round(0) }}
+        - Premium Products (>$500): {{ $product_loop.items | selectattr('price', '>', 500) | list | length }}
+        - Budget Products (≤$500): {{ $product_loop.items | selectattr('price', '<=', 500) | list | length }}
+        {% endif %}
+        
+        CATEGORY BREAKDOWN:
+        {% for category in $category_loop.items %}
+        {{ loop.index }}. {{ category.name }}: {{ category.products | length }} products
+           Price range: ${{ category.products | map(attribute='price') | min }}-${{ category.products | map(attribute='price') | max }}
+        {% endfor %}
+        
+        TASK: Create comprehensive executive summary covering:
+        1. Current portfolio state assessment (based on category and product analyses)
+        2. Top 3 strategic opportunities identified through analysis
+        3. Resource allocation recommendations for next quarter  
+        4. Success metrics to track optimization progress
+        5. Risk mitigation strategies for identified portfolio gaps
+        
+        Base analysis on all detailed findings from category, product, and feature evaluations.

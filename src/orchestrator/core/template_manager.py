@@ -1,5 +1,6 @@
 """Template management system for deferred template rendering."""
 
+import asyncio
 import logging
 from typing import Any, Dict, List, Union, Optional
 from jinja2 import Environment, StrictUndefined, Template, TemplateSyntaxError, UndefinedError
@@ -7,6 +8,9 @@ from jinja2.filters import FILTERS
 from datetime import datetime
 import json
 import re
+
+from .file_inclusion import FileInclusionProcessor, FileInclusionError, FileIncludeDirective
+from .loop_context import GlobalLoopContextManager, LoopContextVariables, ItemListAccessor
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +93,11 @@ class DeferredTemplate:
 class TemplateManager:
     """Manages template rendering with deferred evaluation and context management."""
     
-    def __init__(self, debug_mode: bool = False):
+    def __init__(self, debug_mode: bool = False, file_inclusion_processor: Optional[FileInclusionProcessor] = None, loop_context_manager: Optional[GlobalLoopContextManager] = None):
         self.debug_mode = debug_mode
         self.context: Dict[str, Any] = {}
+        self.file_inclusion_processor = file_inclusion_processor or FileInclusionProcessor()
+        self.loop_context_manager = loop_context_manager or GlobalLoopContextManager()
         
         # Set up Jinja2 environment with custom filters and undefined handling
         self.env = Environment(
@@ -210,6 +216,57 @@ class TemplateManager:
             
             return text.strip()
         
+        def include_file_sync(path: str, base_dir: Optional[str] = None, **kwargs) -> str:
+            """Synchronous file inclusion function for Jinja2 templates."""
+            try:
+                # Create a new event loop if none exists (for sync context)
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # We're in an async context but need sync result
+                        # This is a limitation - we'll return a warning
+                        return f"<!-- File inclusion '{path}' requires async context -->"
+                except RuntimeError:
+                    # No event loop, create one
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                
+                # Create directive
+                directive = FileIncludeDirective(
+                    syntax="template",
+                    path=path,
+                    base_dir=base_dir,
+                    **kwargs
+                )
+                
+                # Run async include_file
+                result = loop.run_until_complete(self.file_inclusion_processor.include_file(directive))
+                return result.content
+                
+            except FileInclusionError as e:
+                logger.warning(f"File inclusion failed for '{path}': {e}")
+                return f"<!-- File inclusion failed: {path} - {e} -->"
+            except Exception as e:
+                logger.error(f"Unexpected error including file '{path}': {e}")
+                return f"<!-- File inclusion error: {path} - {e} -->"
+        
+        def file_exists(path: str, base_dir: Optional[str] = None) -> bool:
+            """Check if a file exists for conditional includes."""
+            import os
+            try:
+                if base_dir:
+                    full_path = os.path.join(base_dir, path)
+                else:
+                    # Try to resolve with file inclusion processor's base directories
+                    for base in self.file_inclusion_processor.base_dirs:
+                        candidate = os.path.join(base, path)
+                        if os.path.exists(candidate):
+                            return True
+                    return os.path.exists(path)
+                return os.path.exists(full_path)
+            except Exception:
+                return False
+        
         # Register custom filters
         self.env.filters.update({
             'slugify': slugify,
@@ -219,6 +276,88 @@ class TemplateManager:
             'from_json': from_json,
             'date': date_format,
             'markdown_format': markdown_format,
+            'include_file': include_file_sync,
+            'file_exists': file_exists,
+        })
+        
+        # Register global functions
+        self.env.globals.update({
+            'include_file': include_file_sync,
+            'file_exists': file_exists,
+        })
+        
+        # Set up loop-specific template functions
+        self._setup_loop_template_functions()
+    
+    def _setup_loop_template_functions(self):
+        """Set up loop-specific template functions and filters."""
+        
+        def loop_var(loop_name: str, var_name: str):
+            """Template function: loop_var('category_loop', 'item')"""
+            loop_context = self.loop_context_manager.get_loop_by_name(loop_name)
+            if loop_context:
+                return getattr(loop_context, var_name, None)
+            return None
+        
+        def loop_item_at(loop_name: str, index: int):
+            """Template function: loop_item_at('category_loop', 2)"""
+            loop_context = self.loop_context_manager.get_loop_by_name(loop_name)
+            if loop_context and loop_context.items:
+                accessor = ItemListAccessor(loop_context.items, loop_context.loop_name)
+                return accessor[index]
+            return None
+        
+        def current_loop_name():
+            """Template function: current_loop_name()"""
+            current = self.loop_context_manager.get_current_loop()
+            return current.loop_name if current else None
+        
+        def active_loops():
+            """Template function: active_loops() - returns list of active loop names"""
+            return self.loop_context_manager.get_active_loop_names()
+        
+        def historical_loops():
+            """Template function: historical_loops() - returns list of accessible historical loops"""
+            return self.loop_context_manager.get_historical_loop_names()
+        
+        # Register loop functions
+        self.env.globals.update({
+            'loop_var': loop_var,
+            'loop_item_at': loop_item_at,
+            'current_loop_name': current_loop_name,
+            'active_loops': active_loops,
+            'historical_loops': historical_loops,
+        })
+        
+        # Add filters for loop operations
+        def loop_get_filter(items, idx):
+            """Filter: $items | loop_get(2)"""
+            if isinstance(items, ItemListAccessor):
+                return items[idx]
+            elif isinstance(items, list) and 0 <= idx < len(items):
+                return items[idx]
+            return None
+        
+        def next_in_loop_filter(items, idx):
+            """Filter: $items | next_in_loop($index)"""
+            if isinstance(items, ItemListAccessor):
+                return items.next_item(idx)
+            elif isinstance(items, list) and idx + 1 < len(items):
+                return items[idx + 1]
+            return None
+        
+        def prev_in_loop_filter(items, idx):
+            """Filter: $items | prev_in_loop($index)"""
+            if isinstance(items, ItemListAccessor):
+                return items.prev_item(idx)
+            elif isinstance(items, list) and idx > 0:
+                return items[idx - 1]
+            return None
+        
+        self.env.filters.update({
+            'loop_get': loop_get_filter,
+            'next_in_loop': next_in_loop_filter,
+            'prev_in_loop': prev_in_loop_filter,
         })
     
     def _setup_base_context(self):
@@ -286,6 +425,28 @@ class TemplateManager:
         # Also register as 'previous_results' for backward compatibility
         self.context['previous_results'] = results
     
+    def register_loop_context(self, loop_context: LoopContextVariables):
+        """Register a loop context for template access.
+        
+        Args:
+            loop_context: The loop context to register
+        """
+        if self.debug_mode:
+            logger.info(f"Registering loop context: {loop_context.loop_name}")
+        
+        self.loop_context_manager.push_loop(loop_context)
+    
+    def unregister_loop_context(self, loop_name: str):
+        """Unregister a loop context.
+        
+        Args:
+            loop_name: Name of the loop context to remove
+        """
+        if self.debug_mode:
+            logger.info(f"Unregistering loop context: {loop_name}")
+        
+        self.loop_context_manager.pop_loop(loop_name)
+    
     def has_templates(self, text: str) -> bool:
         """Check if text contains Jinja2 template syntax."""
         if not isinstance(text, str):
@@ -302,6 +463,10 @@ class TemplateManager:
         
         # Build context before try block so it's available in except blocks
         context = {**self.context, **(additional_context or {})}
+        
+        # Add loop variables to context
+        loop_variables = self.loop_context_manager.get_accessible_loop_variables()
+        context.update(loop_variables)
         
         # Debug: Log when rendering conditions
         if "read_file.size" in template_string and "{{ read_file.size" in template_string:
@@ -431,6 +596,60 @@ class TemplateManager:
         """Clear all context except base context."""
         self.context.clear()
         self._setup_base_context()
+    
+    async def deep_render_async(self, data: Any, additional_context: Optional[Dict[str, Any]] = None) -> Any:
+        """
+        Asynchronously render all template strings in any data structure with file inclusion support.
+        
+        This async version can handle file inclusions that require async I/O operations.
+        
+        Args:
+            data: Any data structure that may contain template strings
+            additional_context: Additional context for rendering
+            
+        Returns:
+            The same data structure with all templates rendered
+        """
+        if isinstance(data, str):
+            # Check for file inclusion directives first
+            if ('{{ file:' in data or '<< ' in data) and '>>' in data:
+                try:
+                    # Process file inclusions first
+                    data = await self.file_inclusion_processor.process_content(data)
+                except FileInclusionError as e:
+                    logger.warning(f"File inclusion failed during template rendering: {e}")
+                    # Continue with original data
+            
+            # Then handle regular templates
+            if self.has_templates(data):
+                try:
+                    result = self.render(data, additional_context)
+                    return result
+                except Exception as e:
+                    logger.error(f"Error rendering template: {e}")
+                    return data
+            return data
+        elif isinstance(data, dict):
+            # Recursively render all dictionary values
+            result = {}
+            for key, value in data.items():
+                result[key] = await self.deep_render_async(value, additional_context)
+            return result
+        elif isinstance(data, list):
+            # Recursively render all list items
+            result = []
+            for item in data:
+                result.append(await self.deep_render_async(item, additional_context))
+            return result
+        elif isinstance(data, tuple):
+            # Handle tuples by converting to list, rendering, then back to tuple
+            result_list = []
+            for item in data:
+                result_list.append(await self.deep_render_async(item, additional_context))
+            return tuple(result_list)
+        else:
+            # Return all other types as-is
+            return data
     
     def deep_render(self, data: Any, additional_context: Optional[Dict[str, Any]] = None) -> Any:
         """

@@ -221,6 +221,23 @@ class SchemaValidator:
                                     },
                                     "foreach": {"type": "string"},
                                     "parallel": {"type": "boolean"},
+                                    # Support create_parallel_queue in parameters for alternate syntax
+                                    "create_parallel_queue": {
+                                        "type": "object",
+                                        "properties": {
+                                            "on": {"type": "string"},
+                                            True: {"type": "string"},
+                                            "max_parallel": {"type": "integer", "minimum": 1},
+                                            "action_loop": {
+                                                "type": "array",
+                                                "minItems": 1,
+                                                "items": {"type": "object"}
+                                            },
+                                            "until": {"type": "string"},
+                                            "while": {"type": "string"},
+                                            "tool": {"type": "string"},
+                                        }
+                                    },
                                 },
                             },
                             # Control flow step (for_each, while loops)
@@ -242,6 +259,62 @@ class SchemaValidator:
                                     "steps": {"type": "array"},
                                     "max_parallel": {"type": "integer", "minimum": 1},
                                     "parameters": {"type": "object"},
+                                    "dependencies": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                        },
+                                    },
+                                    "timeout": {"type": "integer", "minimum": 1},
+                                    "max_retries": {"type": "integer", "minimum": 0},
+                                    "metadata": {"type": "object"},
+                                    "depends_on": {
+                                        "oneOf": [
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                                },
+                                            },
+                                            {
+                                                "type": "string",  # Allow string for AUTO tags
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                            # Parallel queue step
+                            {
+                                "type": "object",
+                                "required": ["id", "create_parallel_queue"],
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                    },
+                                    "name": {"type": "string"},
+                                    "create_parallel_queue": {
+                                        "type": "object",
+                                        "anyOf": [
+                                            {"required": ["on", "action_loop"]},
+                                            {"required": [True, "action_loop"]}
+                                        ],
+                                        "properties": {
+                                            "on": {"type": "string"},
+                                            True: {"type": "string"},
+                                            "max_parallel": {"type": "integer", "minimum": 1},
+                                            "action_loop": {
+                                                "type": "array",
+                                                "minItems": 1,
+                                                "items": {"type": "object"}
+                                            },
+                                            "until": {"type": "string"},
+                                            "while": {"type": "string"},
+                                            "tool": {"type": "string"},
+                                        }
+                                    },
                                     "dependencies": {
                                         "type": "array",
                                         "items": {

@@ -13,9 +13,12 @@ from ..core.pipeline import Pipeline
 from ..core.task import Task
 from ..core.template_metadata import TemplateMetadata
 from ..core.exceptions import YAMLCompilerError
+from ..core.error_handling import ErrorHandler
+from ..core.file_inclusion import FileInclusionProcessor, FileInclusionError
 from .ambiguity_resolver import AmbiguityResolver
 from .auto_tag_yaml_parser import AutoTagYAMLParser
 from .schema_validator import SchemaValidator
+from .error_handler_schema import ErrorHandlerSchemaValidator
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +51,8 @@ class YAMLCompiler:
         schema_validator: Optional[SchemaValidator] = None,
         ambiguity_resolver: Optional[AmbiguityResolver] = None,
         model_registry: Optional[Any] = None,
+        error_handler_validator: Optional[ErrorHandlerSchemaValidator] = None,
+        file_inclusion_processor: Optional[FileInclusionProcessor] = None,
     ) -> None:
         """
         Initialize YAML compiler.
@@ -56,8 +61,12 @@ class YAMLCompiler:
             schema_validator: Schema validator instance
             ambiguity_resolver: Ambiguity resolver instance
             model_registry: Model registry for ambiguity resolution
+            error_handler_validator: Error handler validator instance
+            file_inclusion_processor: File inclusion processor instance
         """
         self.schema_validator = schema_validator or SchemaValidator()
+        self.error_handler_validator = error_handler_validator or ErrorHandlerSchemaValidator()
+        self.file_inclusion_processor = file_inclusion_processor or FileInclusionProcessor()
 
         # Create ambiguity resolver - optional for compilation without resolution
         if ambiguity_resolver:
@@ -109,27 +118,35 @@ class YAMLCompiler:
             YAMLCompilerError: If compilation fails
         """
         try:
-            # Step 1: Parse YAML safely
-            raw_pipeline = self._parse_yaml(yaml_content)
+            # Step 1: Process file inclusions in YAML content
+            processed_yaml_content = await self._process_file_inclusions(yaml_content)
 
-            # Step 2: Validate against schema
+            # Step 2: Parse YAML safely
+            raw_pipeline = self._parse_yaml(processed_yaml_content)
+
+            # Step 3: Validate against schema
             self.schema_validator.validate(raw_pipeline)
+            
+            # Step 4: Validate error handling configurations
+            error_issues = self.error_handler_validator.validate_pipeline_error_handling(raw_pipeline)
+            if error_issues:
+                raise YAMLCompilerError(f"Error handler validation failed: {'; '.join(error_issues)}")
 
-            # Step 3: Merge default values with context
+            # Step 5: Merge default values with context
             merged_context = self._merge_defaults_with_context(
                 raw_pipeline, context or {}
             )
 
-            # Step 4: Process templates
+            # Step 6: Process templates
             processed = self._process_templates(raw_pipeline, merged_context)
 
-            # Step 5: Detect and resolve ambiguities
+            # Step 7: Detect and resolve ambiguities
             if resolve_ambiguities:
                 resolved = await self._resolve_ambiguities(processed)
             else:
                 resolved = processed
 
-            # Step 6: Build pipeline object with context
+            # Step 8: Build pipeline object with context
             return self._build_pipeline(resolved, merged_context)
 
         except Exception as e:
@@ -199,6 +216,34 @@ class YAMLCompiler:
                     merged[param_name] = param_spec
 
         return merged
+
+    async def _process_file_inclusions(self, yaml_content: str) -> str:
+        """
+        Process file inclusion directives in YAML content.
+        
+        Args:
+            yaml_content: Raw YAML content that may contain file inclusions
+            
+        Returns:
+            YAML content with file inclusions processed
+            
+        Raises:
+            YAMLCompilerError: If file inclusion processing fails
+        """
+        try:
+            logger.debug("Processing file inclusions in YAML content")
+            processed_content = await self.file_inclusion_processor.process_content(yaml_content)
+            
+            # Log if any inclusions were processed
+            if processed_content != yaml_content:
+                logger.info(f"File inclusions processed: {len(yaml_content)} -> {len(processed_content)} characters")
+            
+            return processed_content
+            
+        except FileInclusionError as e:
+            raise YAMLCompilerError(f"File inclusion processing failed: {e}") from e
+        except Exception as e:
+            raise YAMLCompilerError(f"Unexpected error during file inclusion processing: {e}") from e
 
     def _parse_yaml(self, yaml_content: str) -> Dict[str, Any]:
         """
@@ -275,14 +320,15 @@ class YAMLCompiler:
                 # 4. Any field that contains Jinja2 control structures
                 # 5. URL parameters that might reference step results
                 # 6. Conditions - ALWAYS skip processing conditions
-                # This includes: if, condition, while (loop conditions), for_each conditions
-                if current_key in ["condition", "if", "while"]:
-                    # Conditions should NEVER be processed at compile time
+                # 7. Parallel queue fields that contain AUTO tags or references
+                # This includes: if, condition, while (loop conditions), for_each conditions, until, on (parallel queue)
+                if current_key in ["condition", "if", "while", "until", "on"]:
+                    # Conditions and queue generation should NEVER be processed at compile time
                     # They must be evaluated at runtime when step results are available
                     # Debug logging
                     import logging
                     logger = logging.getLogger(__name__)
-                    logger.warning(f"Skipping condition template processing for key '{current_key}' at path {path}: {value}")
+                    logger.warning(f"Skipping condition/queue template processing for key '{current_key}' at path {path}: {value}")
                     return value
                     
                 if (current_key in ["prompt", "content", "url", "text"] and parent_key == "parameters"):
@@ -552,8 +598,11 @@ class YAMLCompiler:
             # Map tool to action for compatibility
             action = task_def["tool"]
         if not action:
+            # Check for parallel queue syntax
+            if "create_parallel_queue" in task_def:
+                action = "create_parallel_queue"
             # Check for control flow steps
-            if any(key in task_def for key in ["for_each", "while", "if", "condition"]):
+            elif any(key in task_def for key in ["for_each", "while", "if", "condition"]):
                 # This is a control flow step, will be handled separately
                 action = "control_flow"
             else:
@@ -582,6 +631,11 @@ class YAMLCompiler:
             metadata["requires_model"] = task_def["requires_model"]
         if "tool" in task_def:
             metadata["tool"] = task_def["tool"]
+        
+        # Process error handling configurations
+        error_handlers = self._process_error_handlers(task_def, task_id)
+        if error_handlers:
+            metadata["error_handlers"] = error_handlers
 
         # Handle output metadata fields
         produces = task_def.get("produces")
@@ -653,16 +707,21 @@ class YAMLCompiler:
                     template_metadata["condition"] = condition_metadata
         
         # Create task with template metadata
-        task = Task(
-            id=task_id,
-            name=task_name,
-            action=action,
-            parameters=parameters,
-            dependencies=dependencies,
-            timeout=timeout,
-            max_retries=max_retries,
-            metadata=metadata,
-        )
+        if action == "create_parallel_queue":
+            # Import here to avoid circular dependencies
+            from ..core.parallel_queue_task import ParallelQueueTask
+            task = ParallelQueueTask.from_task_definition(task_def)
+        else:
+            task = Task(
+                id=task_id,
+                name=task_name,
+                action=action,
+                parameters=parameters,
+                dependencies=dependencies,
+                timeout=timeout,
+                max_retries=max_retries,
+                metadata=metadata,
+            )
         
         # Set template metadata on task
         task.template_metadata = template_metadata
@@ -678,6 +737,14 @@ class YAMLCompiler:
                 size_limit=size_limit,
                 description=output_description
             )
+        
+        # Set error handlers on task if available
+        if error_handlers:
+            # Add error handlers to task metadata for runtime access
+            if not hasattr(task, 'error_handlers'):
+                task.error_handlers = error_handlers
+            else:
+                task.error_handlers.extend(error_handlers)
         
         return task
 
@@ -938,3 +1005,82 @@ class YAMLCompiler:
                 ) from e
 
         return result
+    
+    def _process_error_handlers(self, task_def: Dict[str, Any], task_id: str) -> List[ErrorHandler]:
+        """Process error handler configurations from task definition."""
+        error_handlers = []
+        
+        # Process on_error field (supports both legacy and new formats)
+        on_error = task_def.get("on_error")
+        if on_error:
+            if isinstance(on_error, list):
+                # New list format - each item is a handler configuration
+                for i, handler_config in enumerate(on_error):
+                    try:
+                        handler = self._create_error_handler(handler_config, f"{task_id}_handler_{i}")
+                        error_handlers.append(handler)
+                    except Exception as e:
+                        logger.warning(f"Failed to create error handler {i} for task {task_id}: {e}")
+            else:
+                # Legacy format or single handler dict
+                try:
+                    handler = self._create_error_handler(on_error, f"{task_id}_legacy_handler")
+                    error_handlers.append(handler)
+                except Exception as e:
+                    logger.warning(f"Failed to create legacy error handler for task {task_id}: {e}")
+        
+        # Process separate error_handlers field if present
+        explicit_handlers = task_def.get("error_handlers")
+        if explicit_handlers and isinstance(explicit_handlers, list):
+            for i, handler_config in enumerate(explicit_handlers):
+                try:
+                    handler = self._create_error_handler(handler_config, f"{task_id}_explicit_{i}")
+                    error_handlers.append(handler)
+                except Exception as e:
+                    logger.warning(f"Failed to create explicit error handler {i} for task {task_id}: {e}")
+        
+        return error_handlers
+    
+    def _create_error_handler(self, handler_config: Any, handler_id: str) -> ErrorHandler:
+        """Create an ErrorHandler from configuration."""
+        if isinstance(handler_config, str):
+            # Simple string action
+            return ErrorHandler(
+                handler_action=handler_config,
+                error_types=["*"],  # Catch all errors by default
+                retry_with_handler=False,  # Legacy behavior
+                continue_on_handler_failure=True  # Legacy behavior
+            )
+        
+        elif isinstance(handler_config, dict):
+            # Check if this is a legacy ErrorHandling format
+            if "action" in handler_config and "retry_count" in handler_config:
+                # Convert legacy ErrorHandling to ErrorHandler
+                return ErrorHandler(
+                    handler_action=handler_config.get("action"),
+                    error_types=["*"],
+                    retry_with_handler=handler_config.get("retry_count", 0) > 0,
+                    max_handler_retries=handler_config.get("retry_count", 0),
+                    continue_on_handler_failure=handler_config.get("continue_on_error", False),
+                    fallback_value=handler_config.get("fallback_value"),
+                    priority=1000  # Lower priority for legacy handlers
+                )
+            else:
+                # New ErrorHandler format - validate and create
+                # Apply defaults for missing fields
+                config = handler_config.copy()
+                
+                # Set default values
+                if "error_types" not in config:
+                    config["error_types"] = ["*"]
+                if "retry_with_handler" not in config:
+                    config["retry_with_handler"] = True
+                if "priority" not in config:
+                    config["priority"] = 100
+                if "enabled" not in config:
+                    config["enabled"] = True
+                
+                return ErrorHandler(**config)
+        
+        else:
+            raise ValueError(f"Invalid error handler configuration: {type(handler_config)}")

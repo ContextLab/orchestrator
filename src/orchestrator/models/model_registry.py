@@ -8,6 +8,9 @@ from typing import Any, Dict, List, Optional
 
 from ..core.model import Model, ModelMetrics
 from ..core.exceptions import ModelNotFoundError, NoEligibleModelsError
+from .performance_optimizations import ModelRegistryOptimizer, BatchModelProcessor
+from .memory_optimization import MemoryOptimizedRegistry, MemoryMonitor, optimize_model_registry_memory
+from .advanced_caching import CacheManager, background_cache_maintenance
 
 
 class ModelRegistry:
@@ -18,7 +21,10 @@ class ModelRegistry:
     using multi-armed bandit algorithms.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, 
+                 enable_memory_optimization: bool = True, 
+                 memory_warning_threshold: float = 80.0,
+                 enable_advanced_caching: bool = True) -> None:
         """Initialize model registry."""
         self.models: Dict[str, Model] = {}
         self.model_selector = UCBModelSelector()
@@ -26,6 +32,33 @@ class ModelRegistry:
         self._cache_ttl = 300  # 5 minutes
         self._last_health_check = 0  # Will be set to current time on first use
         self._auto_registrar = None  # Will be set up after initialization
+        
+        # Performance optimizations
+        self.optimizer = ModelRegistryOptimizer()
+        self.batch_processor = BatchModelProcessor()
+        self._index_rebuild_threshold = 10  # Rebuild index after N model changes
+        
+        # Memory optimization
+        self.enable_memory_optimization = enable_memory_optimization
+        if enable_memory_optimization:
+            self.memory_monitor = MemoryMonitor(memory_warning_threshold)
+            self._memory_optimization_enabled = True
+            # Set up memory callbacks for automatic optimization
+            self.memory_monitor.add_callback('warning', self._on_memory_warning)
+            self.memory_monitor.add_callback('critical', self._on_memory_critical)
+        else:
+            self.memory_monitor = None
+            self._memory_optimization_enabled = False
+        
+        # Advanced caching
+        self.enable_advanced_caching = enable_advanced_caching
+        if enable_advanced_caching:
+            self.cache_manager = CacheManager(registry=self)
+            self._advanced_caching_enabled = True
+            self._background_maintenance_task = None
+        else:
+            self.cache_manager = None
+            self._advanced_caching_enabled = False
 
     def register_model(self, model: Model) -> None:
         """
@@ -46,6 +79,17 @@ class ModelRegistry:
 
         # Initialize model in selector
         self.model_selector.initialize_model(model_key, model.metrics)
+        
+        # Update performance index
+        self.optimizer.update_model_index(model_key, model)
+        
+        # Check memory usage after registration
+        if self._memory_optimization_enabled and self.memory_monitor:
+            self.memory_monitor.check_memory()
+        
+        # Invalidate advanced caches for this model
+        if self._advanced_caching_enabled and self.cache_manager:
+            self.cache_manager.invalidate_model(model_key)
 
     def unregister_model(self, model_name: str, provider: str = "") -> None:
         """
@@ -68,6 +112,9 @@ class ModelRegistry:
         if model_key and model_key in self.models:
             del self.models[model_key]
             self.model_selector.remove_model(model_key)
+            
+            # Mark index as dirty (will be rebuilt on next use)
+            self.optimizer.index_dirty = True
         else:
             raise ModelNotFoundError(f"Model '{model_name}' not found")
 
@@ -202,6 +249,18 @@ class ModelRegistry:
         """
         print(f">> DEBUG ModelRegistry.select_model called with: {requirements}")
 
+        # Check advanced cache first
+        if self._advanced_caching_enabled and self.cache_manager:
+            requirements_hash = self._hash_requirements(requirements)
+            cached_model_key = self.cache_manager.get_cached_selection(requirements_hash)
+            
+            if cached_model_key and cached_model_key in self.models:
+                # Verify cached model is still healthy and eligible
+                cached_model = self.models[cached_model_key]
+                if await self._is_model_healthy(cached_model):
+                    print(f">> DEBUG: Using cached selection: {cached_model_key}")
+                    return cached_model
+
         # Step 1: Filter by capabilities
         eligible_models = await self._filter_by_capabilities(requirements)
 
@@ -222,12 +281,42 @@ class ModelRegistry:
             [self._get_model_key(model) for model in healthy_models], requirements
         )
 
+        # Cache the selection result
+        if self._advanced_caching_enabled and self.cache_manager:
+            requirements_hash = self._hash_requirements(requirements)
+            self.cache_manager.cache_selection(requirements_hash, selected_key)
+
         return self.models[selected_key]
 
     async def _filter_by_capabilities(
         self, requirements: Dict[str, Any]
     ) -> List[Model]:
-        """Filter models by capabilities and expertise."""
+        """Filter models by capabilities and expertise (with performance optimizations)."""
+        # Rebuild index if necessary
+        if self.optimizer.index_dirty or len(self.optimizer.index.size_index) != len(self.models):
+            self.optimizer.build_index(self.models)
+        
+        # Try to use fast filtering if we have enough models to justify it
+        if len(self.models) > 50:
+            try:
+                # Convert requirements to ModelSelectionCriteria for fast filtering
+                criteria = self._requirements_to_criteria(requirements)
+                
+                # Get candidate model keys using optimized indexes
+                candidate_keys = self.optimizer.fast_filter_by_criteria(criteria)
+                
+                # Convert back to model objects
+                candidates = [self.models[key] for key in candidate_keys if key in self.models]
+                
+                # Apply any remaining filters not handled by fast filtering
+                eligible = self._apply_detailed_filters(candidates, requirements)
+                
+                return eligible
+            except Exception:
+                # Fall back to original method if fast filtering fails
+                pass
+        
+        # Original filtering logic for smaller registries or fallback
         eligible = []
 
         # Extract all requirement types
@@ -308,6 +397,58 @@ class ModelRegistry:
         eligible.sort(key=model_priority)
 
         return eligible
+
+    def _requirements_to_criteria(self, requirements: Dict[str, Any]) -> 'ModelSelectionCriteria':
+        """Convert requirements dict to ModelSelectionCriteria for fast filtering."""
+        from .model_selector import ModelSelectionCriteria
+        
+        criteria = ModelSelectionCriteria()
+        
+        # Map requirements to criteria fields
+        expertise = requirements.get("expertise")
+        if isinstance(expertise, str):
+            criteria.expertise = expertise
+        elif isinstance(expertise, list) and expertise:
+            # For legacy list format, try to infer level
+            if any(e in ["low", "medium", "high", "very-high"] for e in expertise):
+                criteria.expertise = expertise[0]
+        
+        # Size constraints
+        min_size_str = requirements.get("min_size")
+        if min_size_str:
+            from ..utils.model_utils import parse_model_size
+            criteria.min_model_size = parse_model_size("", min_size_str)
+        
+        max_size_str = requirements.get("max_size")
+        if max_size_str:
+            from ..utils.model_utils import parse_model_size
+            criteria.max_model_size = parse_model_size("", max_size_str)
+        
+        # Cost constraints
+        criteria.cost_limit = requirements.get("cost_limit")
+        criteria.budget_period = requirements.get("budget_period", "per-task")
+        
+        # Capabilities
+        if requirements.get("vision_capable"):
+            criteria.modalities.append("vision")
+        if requirements.get("code_specialized"):
+            criteria.modalities.append("code")
+        
+        return criteria
+
+    def _apply_detailed_filters(self, candidates: List[Model], requirements: Dict[str, Any]) -> List[Model]:
+        """Apply detailed filters not handled by fast filtering."""
+        filtered = []
+        
+        for model in candidates:
+            # Apply any complex logic that couldn't be optimized
+            if not model.meets_requirements(requirements):
+                continue
+            
+            # Additional detailed checks can go here
+            filtered.append(model)
+        
+        return filtered
 
     def _meets_expertise_level(self, model: Model, required_level: str) -> bool:
         """
@@ -757,7 +898,24 @@ class ModelRegistry:
         return healthy
 
     async def _refresh_health_cache(self, models: List[Model]) -> None:
-        """Refresh health cache for models."""
+        """Refresh health cache for models (with batch processing optimization)."""
+        # Use batch processing for large numbers of models
+        if len(models) > 5:
+            try:
+                health_results = await self.batch_processor.batch_health_check(
+                    models, batch_size=10, timeout=15.0
+                )
+                
+                # Update cache with batch results
+                for model_key, is_healthy in health_results.items():
+                    self._model_health_cache[model_key] = is_healthy
+                
+                return
+            except Exception:
+                # Fall back to individual checks if batch processing fails
+                pass
+        
+        # Original individual check method for small numbers or fallback
         tasks = []
         for model in models:
             model_key = self._get_model_key(model)
@@ -864,6 +1022,462 @@ class ModelRegistry:
         self.model_selector.reset_statistics()
         self._model_health_cache.clear()
         self._last_health_check = 0
+
+    # Memory optimization methods
+    def _on_memory_warning(self, profile) -> None:
+        """Handle memory warning by reducing cache sizes and cleaning up."""
+        if not self._memory_optimization_enabled:
+            return
+        
+        # Reduce optimizer cache sizes
+        self.optimizer.set_cache_ttl(150)  # Reduce from 300 to 150 seconds
+        
+        # Clear some caches
+        self.optimizer._cleanup_selection_cache()
+        self.optimizer._cleanup_capability_cache()
+        
+        # Clear health cache (will be rebuilt as needed)
+        self._model_health_cache.clear()
+        
+        print(f"Memory warning: {profile.memory_percent:.1f}% - optimized caches")
+
+    def _on_memory_critical(self, profile) -> None:
+        """Handle critical memory by aggressive cleanup."""
+        if not self._memory_optimization_enabled:
+            return
+        
+        # Aggressive cache cleanup
+        self.optimizer.clear_caches()
+        self._model_health_cache.clear()
+        
+        # Force garbage collection
+        self.memory_monitor.force_garbage_collection()
+        
+        # Reduce cache TTL further
+        self.optimizer.set_cache_ttl(60)  # Very short TTL
+        
+        print(f"Critical memory: {profile.memory_percent:.1f}% - aggressive cleanup")
+
+    def optimize_memory_usage(self, target_memory_mb: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Optimize memory usage of the registry.
+        
+        Args:
+            target_memory_mb: Target memory usage in MB (optional)
+            
+        Returns:
+            Optimization results
+        """
+        if not self._memory_optimization_enabled:
+            return {'error': 'Memory optimization not enabled'}
+        
+        # Check current memory status
+        profile = self.memory_monitor.check_memory()
+        
+        # Get memory optimization suggestions
+        suggestions = self.memory_monitor.suggest_optimizations()
+        
+        # Perform registry-specific optimization
+        registry_optimization = optimize_model_registry_memory(self, target_memory_mb or 100.0)
+        
+        # Clear caches
+        cache_stats = {
+            'selection_cache_cleared': len(self.optimizer.selection_cache),
+            'capability_cache_cleared': len(self.optimizer.capability_cache),
+            'health_cache_cleared': len(self._model_health_cache)
+        }
+        
+        self.optimizer.clear_caches()
+        self._model_health_cache.clear()
+        
+        # Force garbage collection
+        gc_stats = self.memory_monitor.force_garbage_collection()
+        
+        # Get updated profile
+        updated_profile = self.memory_monitor.check_memory()
+        
+        return {
+            'before_optimization': profile,
+            'after_optimization': updated_profile,
+            'memory_freed_mb': profile.process_memory_mb - updated_profile.process_memory_mb,
+            'cache_cleanup': cache_stats,
+            'gc_collected': gc_stats,
+            'registry_analysis': registry_optimization,
+            'suggestions': suggestions
+        }
+
+    def get_memory_report(self) -> Dict[str, Any]:
+        """
+        Get comprehensive memory usage report.
+        
+        Returns:
+            Memory usage report
+        """
+        if not self._memory_optimization_enabled:
+            return {'error': 'Memory optimization not enabled'}
+        
+        # Get current memory profile
+        profile = self.memory_monitor.check_memory()
+        
+        # Get memory trend
+        trend = self.memory_monitor.get_memory_trend()
+        
+        # Get optimization suggestions
+        suggestions = self.memory_monitor.suggest_optimizations()
+        
+        # Get optimizer statistics
+        optimizer_stats = self.optimizer.get_statistics()
+        
+        # Calculate registry-specific metrics
+        model_count = len(self.models)
+        avg_model_size = sum(
+            self._estimate_model_memory_usage(model) 
+            for model in self.models.values()
+        ) / max(model_count, 1)
+        
+        return {
+            'memory_profile': profile,
+            'memory_trend': trend,
+            'optimization_suggestions': suggestions,
+            'optimizer_statistics': optimizer_stats,
+            'registry_metrics': {
+                'total_models': model_count,
+                'average_model_size_mb': avg_model_size,
+                'health_cache_size': len(self._model_health_cache),
+                'memory_optimization_enabled': self._memory_optimization_enabled
+            }
+        }
+
+    def _estimate_model_memory_usage(self, model: Model) -> float:
+        """Estimate memory usage of a model in MB."""
+        from .memory_optimization import estimate_model_memory_usage
+        return estimate_model_memory_usage(model)
+
+    def set_memory_thresholds(self, warning: float = 80.0, critical: float = 90.0) -> None:
+        """
+        Set memory warning and critical thresholds.
+        
+        Args:
+            warning: Warning threshold percentage
+            critical: Critical threshold percentage
+        """
+        if self._memory_optimization_enabled and self.memory_monitor:
+            self.memory_monitor.warning_threshold = warning
+            self.memory_monitor.critical_threshold = critical
+
+    def enable_memory_monitoring(self, warning_threshold: float = 80.0) -> None:
+        """
+        Enable memory monitoring if it was disabled.
+        
+        Args:
+            warning_threshold: Memory warning threshold
+        """
+        if not self._memory_optimization_enabled:
+            self.memory_monitor = MemoryMonitor(warning_threshold)
+            self._memory_optimization_enabled = True
+            self.memory_monitor.add_callback('warning', self._on_memory_warning)
+            self.memory_monitor.add_callback('critical', self._on_memory_critical)
+
+    def disable_memory_monitoring(self) -> None:
+        """Disable memory monitoring."""
+        self._memory_optimization_enabled = False
+        self.memory_monitor = None
+
+    # Advanced caching methods
+    def _hash_requirements(self, requirements: Dict[str, Any]) -> str:
+        """Generate hash for requirements dictionary for caching."""
+        import json
+        import hashlib
+        
+        # Create consistent string representation
+        req_str = json.dumps(requirements, sort_keys=True)
+        return hashlib.md5(req_str.encode()).hexdigest()
+    
+    async def _is_model_healthy(self, model: Model) -> bool:
+        """Check if a specific model is healthy."""
+        try:
+            return await model.health_check()
+        except Exception:
+            return False
+    
+    def detect_model_capabilities(self, model: Model) -> Dict[str, Any]:
+        """
+        Detect and analyze model capabilities with advanced caching.
+        
+        Args:
+            model: Model to analyze
+            
+        Returns:
+            Capability analysis dictionary
+        """
+        model_key = self._get_model_key(model)
+        
+        # Check advanced cache first
+        if self._advanced_caching_enabled and self.cache_manager:
+            cached_analysis = self.cache_manager.get_cached_capability_analysis(model_key)
+            if cached_analysis:
+                return cached_analysis
+        
+        # Perform capability analysis
+        analysis = self._perform_capability_analysis(model)
+        
+        # Cache the result
+        if self._advanced_caching_enabled and self.cache_manager:
+            self.cache_manager.cache_capability_analysis(model_key, analysis)
+        
+        return analysis
+    
+    def _perform_capability_analysis(self, model: Model) -> Dict[str, Any]:
+        """Perform the actual capability analysis."""
+        # Enhanced capability analysis based on Issue 194 features
+        analysis = {
+            "basic_capabilities": {},
+            "advanced_capabilities": {},
+            "performance_metrics": {},
+            "expertise_analysis": {},
+            "cost_analysis": {},
+            "suitability_scores": {}
+        }
+        
+        # Basic capabilities
+        capabilities = model.capabilities
+        analysis["basic_capabilities"] = {
+            "supports_function_calling": capabilities.supports_function_calling,
+            "supports_structured_output": capabilities.supports_structured_output,
+            "vision_capable": capabilities.vision_capable,
+            "code_specialized": capabilities.code_specialized,
+            "context_window": capabilities.context_window,
+            "max_tokens": capabilities.max_tokens,
+            "supported_tasks": capabilities.supported_tasks,
+            "languages": capabilities.languages
+        }
+        
+        # Advanced capabilities based on Issue 194 enhancements
+        expertise = getattr(model, '_expertise', ['general'])
+        size_billions = getattr(model, '_size_billions', 1.0)
+        
+        analysis["advanced_capabilities"] = {
+            "expertise_areas": expertise,
+            "model_size_billions": size_billions,
+            "parameter_efficiency": self._calculate_parameter_efficiency(model),
+            "specialized_domains": self._identify_specialized_domains(expertise)
+        }
+        
+        # Performance metrics
+        metrics = model.metrics
+        analysis["performance_metrics"] = {
+            "latency_p50": metrics.latency_p50,
+            "latency_p95": metrics.latency_p95,
+            "throughput": metrics.throughput,
+            "accuracy": metrics.accuracy,
+            "success_rate": metrics.success_rate,
+            "cost_per_token": metrics.cost_per_token
+        }
+        
+        # Expertise analysis based on Issue 194 hierarchy
+        analysis["expertise_analysis"] = {
+            "level": self._determine_expertise_level(expertise, size_billions),
+            "confidence": self._calculate_expertise_confidence(model),
+            "specialized_score": self._calculate_specialization_score(expertise)
+        }
+        
+        # Cost analysis
+        cost = model.cost
+        analysis["cost_analysis"] = {
+            "type": "free" if cost.is_free else "paid",
+            "cost_per_1k_avg": (cost.input_cost_per_1k_tokens + cost.output_cost_per_1k_tokens) / 2 if not cost.is_free else 0.0,
+            "budget_friendly": cost.is_free or analysis["cost_analysis"].get("cost_per_1k_avg", 0) < 0.01,
+            "efficiency_score": cost.get_cost_efficiency_score(metrics.accuracy)
+        }
+        
+        # Suitability scores for different use cases
+        analysis["suitability_scores"] = {
+            "general": self._calculate_general_suitability(model),
+            "code": self._calculate_code_suitability(model),
+            "analysis": self._calculate_analysis_suitability(model),
+            "creative": self._calculate_creative_suitability(model),
+            "speed_critical": self._calculate_speed_suitability(model),
+            "budget_constrained": 1.0 if cost.is_free else max(0.0, 1.0 - analysis["cost_analysis"]["cost_per_1k_avg"] * 100),
+            "accuracy_critical": metrics.accuracy,
+            "high_volume": min(1.0, metrics.throughput / 50.0)  # Normalize around 50 tokens/sec
+        }
+        
+        return analysis
+    
+    def _determine_expertise_level(self, expertise: List[str], size_billions: float) -> str:
+        """Determine expertise level based on Issue 194 hierarchy."""
+        if any(e in ["analysis", "research"] for e in expertise) or size_billions > 100:
+            return "very-high"
+        elif any(e in ["code", "reasoning"] for e in expertise) or size_billions > 10:
+            return "high"
+        elif any(e in ["fast", "compact"] for e in expertise) or size_billions < 3:
+            return "low"
+        else:
+            return "medium"
+    
+    def _calculate_parameter_efficiency(self, model: Model) -> float:
+        """Calculate parameter efficiency score."""
+        size_billions = getattr(model, '_size_billions', 1.0)
+        accuracy = model.metrics.accuracy
+        
+        # Higher accuracy per parameter = better efficiency
+        return accuracy / (size_billions ** 0.5)  # Square root scaling
+    
+    def _identify_specialized_domains(self, expertise: List[str]) -> List[str]:
+        """Identify specialized domains from expertise."""
+        domain_mapping = {
+            "code": ["programming", "software_development", "debugging"],
+            "analysis": ["data_analysis", "research", "reasoning"],
+            "creative": ["writing", "storytelling", "brainstorming"],
+            "reasoning": ["logic", "problem_solving", "mathematics"],
+            "fast": ["real_time", "interactive", "quick_response"]
+        }
+        
+        domains = []
+        for exp in expertise:
+            if exp in domain_mapping:
+                domains.extend(domain_mapping[exp])
+        
+        return list(set(domains))
+    
+    def _calculate_expertise_confidence(self, model: Model) -> float:
+        """Calculate confidence in expertise assessment."""
+        # Based on metrics quality and experience
+        metrics = model.metrics
+        
+        # More attempts = higher confidence in metrics
+        attempts_factor = min(1.0, getattr(metrics, 'attempts', 10) / 50.0)
+        
+        # Higher success rate = higher confidence
+        success_factor = metrics.success_rate
+        
+        return (attempts_factor + success_factor) / 2
+    
+    def _calculate_specialization_score(self, expertise: List[str]) -> float:
+        """Calculate how specialized vs generalist the model is."""
+        if not expertise:
+            return 0.0
+        
+        # More specific expertise areas = higher specialization
+        specialized_terms = ["code", "analysis", "research", "reasoning", "creative"]
+        general_terms = ["general", "chat", "assistant"]
+        
+        specialized_count = sum(1 for exp in expertise if exp in specialized_terms)
+        general_count = sum(1 for exp in expertise if exp in general_terms)
+        
+        if specialized_count + general_count == 0:
+            return 0.5  # Unknown
+        
+        return specialized_count / (specialized_count + general_count)
+    
+    def _calculate_general_suitability(self, model: Model) -> float:
+        """Calculate suitability for general tasks."""
+        expertise = getattr(model, '_expertise', ['general'])
+        general_score = 1.0 if "general" in expertise else 0.7
+        
+        # Balance of size and performance
+        size_billions = getattr(model, '_size_billions', 1.0)
+        size_score = 1.0 - abs(size_billions - 7.0) / 20.0  # Optimal around 7B
+        size_score = max(0.3, min(1.0, size_score))
+        
+        return (general_score + size_score + model.metrics.accuracy) / 3
+    
+    def _calculate_code_suitability(self, model: Model) -> float:
+        """Calculate suitability for code tasks."""
+        expertise = getattr(model, '_expertise', [])
+        code_score = 1.0 if "code" in expertise else 0.3
+        
+        # Code models benefit from larger size and high accuracy
+        size_billions = getattr(model, '_size_billions', 1.0)
+        size_score = min(1.0, size_billions / 10.0)  # Better with more parameters
+        
+        return (code_score + size_score + model.metrics.accuracy) / 3
+    
+    def _calculate_analysis_suitability(self, model: Model) -> float:
+        """Calculate suitability for analysis tasks."""
+        expertise = getattr(model, '_expertise', [])
+        analysis_score = 1.0 if any(e in ["analysis", "research", "reasoning"] for e in expertise) else 0.4
+        
+        # Analysis benefits from larger models and high accuracy
+        size_billions = getattr(model, '_size_billions', 1.0)
+        size_score = min(1.0, size_billions / 20.0)  # Very large models preferred
+        
+        return (analysis_score + size_score + model.metrics.accuracy) / 3
+    
+    def _calculate_creative_suitability(self, model: Model) -> float:
+        """Calculate suitability for creative tasks."""
+        expertise = getattr(model, '_expertise', [])
+        creative_score = 1.0 if "creative" in expertise else 0.6  # Most models can be creative
+        
+        # Creative tasks benefit from medium-large models
+        size_billions = getattr(model, '_size_billions', 1.0)
+        size_score = 1.0 - abs(size_billions - 15.0) / 30.0  # Optimal around 15B
+        size_score = max(0.3, min(1.0, size_score))
+        
+        return (creative_score + size_score + model.metrics.accuracy) / 3
+    
+    def _calculate_speed_suitability(self, model: Model) -> float:
+        """Calculate suitability for speed-critical tasks."""
+        expertise = getattr(model, '_expertise', [])
+        speed_score = 1.0 if "fast" in expertise else 0.5
+        
+        # Speed is inversely related to size but directly to throughput
+        size_billions = getattr(model, '_size_billions', 1.0)
+        size_penalty = max(0.2, 1.0 - size_billions / 20.0)  # Smaller is faster
+        
+        throughput_score = min(1.0, model.metrics.throughput / 100.0)  # Normalize to 100 tok/sec
+        
+        return (speed_score + size_penalty + throughput_score) / 3
+    
+    def start_background_maintenance(self) -> None:
+        """Start background cache maintenance task."""
+        if not self._advanced_caching_enabled or not self.cache_manager:
+            return
+        
+        if self._background_maintenance_task is None:
+            import asyncio
+            self._background_maintenance_task = asyncio.create_task(
+                background_cache_maintenance(self.cache_manager, interval=300)
+            )
+    
+    def stop_background_maintenance(self) -> None:
+        """Stop background cache maintenance task."""
+        if self._background_maintenance_task:
+            self._background_maintenance_task.cancel()
+            self._background_maintenance_task = None
+    
+    def get_caching_statistics(self) -> Dict[str, Any]:
+        """Get comprehensive caching statistics."""
+        if not self._advanced_caching_enabled or not self.cache_manager:
+            return {'error': 'Advanced caching not enabled'}
+        
+        return self.cache_manager.get_comprehensive_statistics()
+    
+    def warm_caches(self) -> Dict[str, int]:
+        """Manually trigger cache warming."""
+        if not self._advanced_caching_enabled or not self.cache_manager:
+            return {'error': 'Advanced caching not enabled'}
+        
+        return self.cache_manager.warm_caches()
+    
+    def clear_all_caches(self) -> None:
+        """Clear all caches."""
+        if self._advanced_caching_enabled and self.cache_manager:
+            self.cache_manager.clear_all_caches()
+        
+        # Also clear legacy caches
+        self.optimizer.clear_caches()
+        self._model_health_cache.clear()
+    
+    def enable_cache_warming(self) -> None:
+        """Enable predictive cache warming."""
+        if self._advanced_caching_enabled and self.cache_manager:
+            self.cache_manager.enable_warming()
+    
+    def disable_cache_warming(self) -> None:
+        """Disable predictive cache warming."""
+        if self._advanced_caching_enabled and self.cache_manager:
+            self.cache_manager.disable_warming()
 
 
 class UCBModelSelector:

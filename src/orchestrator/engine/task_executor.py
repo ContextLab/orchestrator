@@ -8,6 +8,7 @@ from ..core.model import Model
 from ..core.output_tracker import OutputTracker
 from ..core.template_resolver import TemplateResolver
 from ..tools.base import Tool, default_registry
+from ..execution.error_handler_executor import ErrorHandlerExecutor
 from .auto_resolver import EnhancedAutoResolver
 from .pipeline_spec import TaskSpec
 
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 class UniversalTaskExecutor:
     """Executes any task defined declaratively with automatic tool and model selection."""
 
-    def __init__(self, model_registry=None, tool_registry=None, output_tracker=None):
+    def __init__(self, model_registry=None, tool_registry=None, output_tracker=None, error_handler_executor=None):
         self.model_registry = model_registry
         self.tool_registry = tool_registry or default_registry
         self.auto_resolver = EnhancedAutoResolver()
@@ -26,6 +27,9 @@ class UniversalTaskExecutor:
         # Output tracking integration
         self.output_tracker = output_tracker or OutputTracker()
         self.template_resolver = TemplateResolver(self.output_tracker)
+        
+        # Advanced error handling integration
+        self.error_handler_executor = error_handler_executor or ErrorHandlerExecutor(self)
 
     async def execute_task(
         self, task_spec: TaskSpec, context: Dict[str, Any]
@@ -83,8 +87,16 @@ class UniversalTaskExecutor:
         except Exception as e:
             logger.error(f"Task {task_spec.id} failed: {str(e)}")
 
-            # Handle error based on task configuration
-            if task_spec.on_error:
+            # Use advanced error handling if available
+            if task_spec.has_advanced_error_handling():
+                return await self.error_handler_executor.handle_task_error(
+                    failed_task=task_spec,
+                    error=e,
+                    context=context,
+                    pipeline=None  # Pipeline reference not available at this level
+                )
+            # Fall back to legacy error handling
+            elif task_spec.on_error:
                 return await self._handle_task_error(task_spec, e, context)
             else:
                 raise
@@ -396,31 +408,79 @@ class UniversalTaskExecutor:
     async def _handle_task_error(
         self, task_spec: TaskSpec, error: Exception, context: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Handle task error based on on_error specification."""
+        """Handle task error based on legacy on_error specification."""
         logger.info(
-            f"Handling error for task {task_spec.id} with strategy: {task_spec.on_error}"
+            f"Handling error for task {task_spec.id} with legacy strategy: {task_spec.on_error}"
         )
 
-        if task_spec.on_error.startswith("<AUTO>"):
-            # Execute error handling as another AUTO task
-            task_spec.on_error[6:-7]  # Remove <AUTO> tags
+        # Handle string-based error configuration
+        if isinstance(task_spec.on_error, str):
+            if task_spec.on_error.startswith("<AUTO>"):
+                # Execute error handling as another AUTO task
+                error_action = task_spec.on_error[6:-7]  # Remove <AUTO> tags
+                error_context = context.copy()
+                error_context["error"] = str(error)
+                error_context["failed_task"] = task_spec.id
+
+                error_spec = TaskSpec(
+                    id=f"{task_spec.id}_error_handler", action=error_action
+                )
+
+                return await self.execute_task(error_spec, error_context)
+            else:
+                # Simple error response
+                return {
+                    "task_id": task_spec.id,
+                    "success": False,
+                    "error": str(error),
+                    "error_handler": task_spec.on_error,
+                    "timestamp": datetime.now().isoformat(),
+                }
+        
+        # Handle ErrorHandling object (from pipeline_spec.py)
+        elif hasattr(task_spec.on_error, 'action'):
             error_context = context.copy()
             error_context["error"] = str(error)
+            error_context["error_type"] = type(error).__name__
             error_context["failed_task"] = task_spec.id
 
             error_spec = TaskSpec(
-                id=f"{task_spec.id}_error_handler", action=task_spec.on_error
+                id=f"{task_spec.id}_error_handler", 
+                action=task_spec.on_error.action
             )
 
-            return await self.execute_task(error_spec, error_context)
-
+            try:
+                error_result = await self.execute_task(error_spec, error_context)
+                return {
+                    "task_id": task_spec.id,
+                    "success": False,
+                    "error": str(error),
+                    "error_handled": True,
+                    "error_handler_result": error_result,
+                    "fallback_value": task_spec.on_error.fallback_value,
+                    "continue_pipeline": task_spec.on_error.continue_on_error,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            except Exception as handler_error:
+                logger.error(f"Error handler for task {task_spec.id} also failed: {handler_error}")
+                return {
+                    "task_id": task_spec.id,
+                    "success": False,
+                    "error": str(error),
+                    "error_handled": False,
+                    "handler_error": str(handler_error),
+                    "fallback_value": task_spec.on_error.fallback_value,
+                    "continue_pipeline": task_spec.on_error.continue_on_error,
+                    "timestamp": datetime.now().isoformat(),
+                }
+        
         else:
-            # Simple error response
+            # Unknown error configuration format
             return {
                 "task_id": task_spec.id,
                 "success": False,
                 "error": str(error),
-                "error_handler": task_spec.on_error,
+                "error_handler": "unknown_format",
                 "timestamp": datetime.now().isoformat(),
             }
 
@@ -528,3 +588,11 @@ class UniversalTaskExecutor:
         except Exception as e:
             logger.error(f"Failed to save result to {location}: {e}")
             raise
+    
+    def get_error_handler_executor(self) -> ErrorHandlerExecutor:
+        """Get the error handler executor instance."""
+        return self.error_handler_executor
+    
+    def set_error_handler_executor(self, executor: ErrorHandlerExecutor) -> None:
+        """Set a custom error handler executor."""
+        self.error_handler_executor = executor

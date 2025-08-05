@@ -214,6 +214,14 @@ class OllamaModel(Model):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
+        # Set Issue 194 enhanced attributes
+        self._expertise = self._get_model_expertise(model_name)
+        self._size_billions = self._estimate_model_size(model_name)
+        
+        # Set cost information (Ollama models are free)
+        from ..core.model import ModelCost
+        self.cost = ModelCost(is_free=True)
+
         # Check if Ollama is available
         self._check_ollama_availability()
 
@@ -403,6 +411,38 @@ Return only the JSON object, no additional text.
 
         except Exception as e:
             raise RuntimeError(f"Ollama structured generation error: {str(e)}") from e
+
+    def _get_model_expertise(self, model_name: str) -> list[str]:
+        """Get model expertise areas based on model name."""
+        name_lower = model_name.lower()
+        
+        # Code-specialized models
+        if any(x in name_lower for x in ["codellama", "deepseek", "coder", "starcoder"]):
+            return ["code", "reasoning", "programming"]
+        
+        # Fast/compact models
+        elif any(x in name_lower for x in ["1b", "3b"]) or "mini" in name_lower:
+            return ["fast", "compact", "general"]
+        
+        # Reasoning models
+        elif any(x in name_lower for x in ["wizard", "orca", "vicuna", "reasoning"]):
+            return ["reasoning", "analysis", "general"]
+        
+        # Large capable models
+        elif any(x in name_lower for x in ["70b", "405b"]) or "instruct" in name_lower:
+            return ["reasoning", "analysis", "creative", "general"]
+        
+        # Medium models
+        elif any(x in name_lower for x in ["7b", "8b", "13b", "27b"]):
+            return ["general", "chat", "reasoning"]
+        
+        # Default
+        return ["general"]
+
+    def _estimate_model_size(self, model_name: str) -> float:
+        """Estimate model size in billions of parameters from name."""
+        from ..utils.model_utils import parse_model_size
+        return parse_model_size(model_name, None)
 
     async def health_check(self) -> bool:
         """

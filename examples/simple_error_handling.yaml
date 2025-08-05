@@ -1,0 +1,79 @@
+# Simple Error Handling Examples
+# Common use cases for the new error handling system
+
+name: simple_error_handling
+version: 1.0.0
+description: "Simple examples of error handling for common scenarios"
+
+inputs:
+  api_url:
+    type: string
+    default: "https://jsonplaceholder.typicode.com"
+    description: "API endpoint for testing"
+
+steps:
+  # Basic error handling with fallback
+  - id: api_call_with_fallback
+    action: "Fetch data from API"
+    parameters:
+      url: "{{api_url}}/posts/1"
+    
+    # Simple fallback on any error
+    on_error: "Use cached data when API fails"
+
+  # Error handling with retry
+  - id: api_call_with_retry
+    action: "Fetch user data"
+    parameters:
+      url: "{{api_url}}/users/1"
+    
+    # Retry on connection errors
+    on_error:
+      handler_action: "Retry API call with exponential backoff"
+      error_types: ["ConnectionError", "TimeoutError"]
+      retry_with_handler: true
+      max_handler_retries: 3
+
+  # File handling with recovery
+  - id: file_processing
+    action: "Read and process data file"
+    parameters:
+      file_path: "./data/input.json"
+    
+    # Create missing file
+    on_error:
+      handler_action: "Create default data file"
+      error_types: ["FileNotFoundError"]
+      retry_with_handler: true
+
+  # Multiple error types
+  - id: robust_operation
+    action: "Perform robust data operation"
+    parameters:
+      source: "{{api_url}}/posts"
+    
+    # Handle different error types differently
+    on_error:
+      # Network issues - retry
+      - handler_action: "Retry on network error"
+        error_types: ["ConnectionError", "TimeoutError"]
+        retry_with_handler: true
+        max_handler_retries: 2
+        priority: 1
+      
+      # Data issues - use fallback
+      - handler_action: "Use default data on data error"
+        error_types: ["ValueError", "KeyError"]
+        fallback_value: {"posts": []}
+        priority: 2
+      
+      # Everything else - alert and continue
+      - handler_action: "Log unexpected error"
+        error_types: ["*"]
+        continue_on_handler_failure: true
+        priority: 10
+
+outputs:
+  api_data: "{{api_call_with_fallback.result}}"
+  user_data: "{{api_call_with_retry.result}}"
+  processed_data: "{{robust_operation.result}}"

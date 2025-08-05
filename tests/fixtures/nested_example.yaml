@@ -1,0 +1,50 @@
+id: nested_inclusion_example
+name: Example with Nested File Inclusions
+version: 1.0.0
+
+description: |
+  This pipeline demonstrates nested file inclusion capabilities.
+  
+  {{ file:research_instructions.md }}
+
+inputs:
+  research_topic:
+    type: string
+    description: The topic to research
+
+steps:
+  - id: initialize_research
+    name: Initialize Research
+    action: llm_call
+    parameters:
+      model: anthropic/claude-sonnet-4-20250514
+      prompt: |
+        << test_prompt.txt >>
+        
+        Your task is to research the following topic: {{ research_topic }}
+        
+        Please begin by outlining your research approach.
+
+  - id: conduct_research
+    name: Conduct Research
+    action: web_search
+    depends_on: initialize_research
+    parameters:
+      query: "{{ initialize_research.result }}"
+      max_results: 10
+
+  - id: synthesize_findings
+    name: Synthesize Findings
+    action: llm_call
+    depends_on: conduct_research
+    parameters:
+      model: anthropic/claude-sonnet-4-20250514
+      prompt: |
+        Based on the research results below, please synthesize the findings according to these instructions:
+        
+        {{ file:research_instructions.md }}
+        
+        Research Results:
+        {{ conduct_research.result }}
+        
+        Topic: {{ research_topic }}

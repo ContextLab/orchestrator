@@ -1,0 +1,34 @@
+---
+name: "Test Parallel Queue Basic"
+description: "Basic test of create_parallel_queue functionality"
+
+pipeline:
+  inputs:
+    - name: test_items
+      default: ["item1", "item2", "item3"]
+
+  steps:
+    - id: test_parallel_processing
+      action: create_parallel_queue
+      create_parallel_queue:
+        on: "{{ test_items }}"
+        max_parallel: 2
+        tool: debug
+        action_loop:
+          - action: "process_item"
+            parameters:
+              item: "{{ $item }}"
+              index: "{{ $index }}"
+              message: "Processing {{ $item }} at index {{ $index }}"
+        until: "{{ $index }} >= 2"
+
+    - id: summary
+      action: debug
+      parameters:
+        message: "Parallel processing complete"
+      dependencies:
+        - test_parallel_processing
+
+outputs:
+  - name: results
+    value: "{{ test_parallel_processing.results }}"

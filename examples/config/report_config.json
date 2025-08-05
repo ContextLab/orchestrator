@@ -1,0 +1,26 @@
+{
+  "report_settings": {
+    "max_length": 5000,
+    "include_sources": true,
+    "confidence_threshold": 0.7,
+    "format_style": "academic"
+  },
+  "quality_controls": {
+    "fact_check_enabled": true,
+    "bias_detection": true,
+    "source_diversity_required": true,
+    "minimum_sources": 3
+  },
+  "output_preferences": {
+    "include_metadata": true,
+    "generate_summary": true,
+    "create_toc": true,
+    "timestamp_format": "%Y-%m-%d %H:%M:%S"
+  },
+  "research_parameters": {
+    "search_depth": "comprehensive",
+    "recency_weight": 0.8,
+    "authority_weight": 0.9,
+    "diversity_weight": 0.6
+  }
+}

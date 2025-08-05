@@ -1,0 +1,34 @@
+Document Formatting Guidelines:
+
+MARKDOWN FORMAT:
+- Use appropriate heading levels (# ## ###)
+- Create clear section breaks with horizontal rules (---)
+- Use bullet points for lists and numbered lists for sequences
+- Apply **bold** for key terms and *italics* for emphasis
+- Include code blocks with ``` for technical content
+- Use blockquotes (>) for important callouts or quotes
+
+STRUCTURE:
+- Start with a clear title and summary
+- Organize content with logical section progression
+- Include table of contents for longer documents
+- End with conclusions and next steps
+
+READABILITY:
+- Keep paragraphs concise (3-4 sentences max)
+- Use active voice where possible
+- Define technical terms on first use
+- Include relevant examples and analogies
+- Break up long sections with subheadings
+
+VISUAL ELEMENTS:
+- Use tables for comparative data
+- Include charts or diagrams when helpful (describe in text)
+- Add whitespace for better readability
+- Use consistent formatting throughout
+
+CITATIONS:
+- Include inline references where appropriate
+- Link to sources when possible
+- Provide publication dates for currency
+- Note confidence levels for uncertain claims

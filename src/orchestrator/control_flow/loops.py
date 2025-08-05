@@ -5,7 +5,9 @@ from dataclasses import dataclass, field
 import copy
 
 from ..core.task import Task
+from ..core.loop_context import LoopContextVariables, GlobalLoopContextManager
 from .auto_resolver import ControlFlowAutoResolver
+from .enhanced_condition_evaluator import EnhancedConditionEvaluator
 
 
 @dataclass
@@ -38,13 +40,15 @@ class LoopContext:
 class ForLoopHandler:
     """Handles for-each loop execution in pipelines."""
 
-    def __init__(self, auto_resolver: Optional[ControlFlowAutoResolver] = None):
+    def __init__(self, auto_resolver: Optional[ControlFlowAutoResolver] = None, loop_context_manager: Optional[GlobalLoopContextManager] = None):
         """Initialize for loop handler.
 
         Args:
             auto_resolver: AUTO tag resolver
+            loop_context_manager: Global loop context manager for named loops
         """
         self.auto_resolver = auto_resolver or ControlFlowAutoResolver()
+        self.loop_context_manager = loop_context_manager or GlobalLoopContextManager()
 
     async def expand_for_loop(
         self,
@@ -52,7 +56,7 @@ class ForLoopHandler:
         context: Dict[str, Any],
         step_results: Dict[str, Any],
     ) -> List[Task]:
-        """Expand a for-each loop into individual tasks.
+        """Expand a for-each loop into individual tasks with named loop support.
 
         Args:
             loop_def: Loop definition from YAML
@@ -65,7 +69,7 @@ class ForLoopHandler:
         # Extract loop configuration
         loop_id = loop_def.get("id", "loop")
         for_each_expr = loop_def.get("for_each", [])
-        loop_var = loop_def.get("loop_var", "$item")
+        explicit_loop_name = loop_def.get("loop_name")  # Optional explicit name
         max_parallel = loop_def.get("max_parallel", 1)
 
         # Resolve iterator
@@ -89,74 +93,95 @@ class ForLoopHandler:
         expanded_tasks = []
 
         for idx, item in enumerate(items):
-            # Create loop context
-            loop_context = LoopContext(
-                iteration=idx,
+            # Create named loop context with auto-generation if needed
+            loop_context = self.loop_context_manager.create_loop_context(
+                step_id=loop_id,
+                item=item,
+                index=idx,
                 items=items,
-                current_item=item,
-                current_index=idx,
-                loop_id=loop_id,
-                parent_context=context,
+                explicit_loop_name=explicit_loop_name
             )
-
-            # Process each step in loop body
-            for step_def in body_steps:
-                # Create unique task ID
-                task_id = f"{loop_id}_{idx}_{step_def['id']}"
-
-                # Deep copy step definition
-                task_def = copy.deepcopy(step_def)
-                task_def["id"] = task_id
-                task_def["metadata"] = task_def.get("metadata", {})
-
-                # Add loop context to metadata
-                task_def["metadata"]["loop_context"] = loop_context.to_dict()
-                task_def["metadata"]["loop_id"] = loop_id
-                task_def["metadata"]["loop_index"] = idx
-                
-                # Preserve pipeline inputs in metadata
-                if "inputs" in context:
-                    task_def["metadata"]["pipeline_inputs"] = context["inputs"]
-                elif isinstance(context, dict):
-                    # Extract input parameters from context
-                    pipeline_inputs = {}
-                    for key, value in context.items():
-                        if key not in ["all_step_ids", "_", "step_results"]:
-                            pipeline_inputs[key] = value
-                    if pipeline_inputs:
-                        task_def["metadata"]["pipeline_inputs"] = pipeline_inputs
-
-                # Process parameters with loop variables
-                if "parameters" in task_def:
-                    processed_params = await self._process_loop_variables(
-                        task_def["parameters"],
-                        loop_context,
-                        context,
-                        step_results,
-                        loop_var,
-                    )
-                    task_def["parameters"] = processed_params
-
-                # Adjust dependencies
-                original_deps = task_def.get("dependencies", [])
-                task_def["dependencies"] = []
-
-                # Add dependencies from previous iteration if sequential
-                if max_parallel == 1 and idx > 0:
-                    prev_task_id = f"{loop_id}_{idx-1}_{step_def['id']}"
-                    task_def["dependencies"].append(prev_task_id)
-
-                # Add dependencies within same iteration
-                for dep in original_deps:
-                    if dep in [s["id"] for s in body_steps]:
-                        # Internal dependency
-                        task_def["dependencies"].append(f"{loop_id}_{idx}_{dep}")
+            
+            # Push loop context (available to all nested operations)
+            self.loop_context_manager.push_loop(loop_context)
+            
+            try:
+                # Process loop body with named loop context
+                for step_def in body_steps:
+                    task_id = f"{loop_id}_{idx}_{step_def['id']}"
+                    
+                    # Create enhanced context with all loop variables
+                    enhanced_context = context.copy()
+                    enhanced_context.update(step_results)
+                    enhanced_context.update(self.loop_context_manager.get_accessible_loop_variables())
+                    
+                    # Deep copy step definition
+                    task_def = copy.deepcopy(step_def)
+                    task_def["id"] = task_id
+                    task_def["metadata"] = task_def.get("metadata", {})
+                    
+                    # Add loop metadata
+                    task_def["metadata"]["loop_context"] = loop_context.get_debug_info()
+                    task_def["metadata"]["loop_id"] = loop_id
+                    task_def["metadata"]["loop_name"] = loop_context.loop_name
+                    task_def["metadata"]["loop_index"] = idx
+                    
+                    # Preserve pipeline inputs in metadata
+                    if "inputs" in context:
+                        task_def["metadata"]["pipeline_inputs"] = context["inputs"]
+                    elif isinstance(context, dict):
+                        # Extract input parameters from context
+                        pipeline_inputs = {}
+                        for key, value in context.items():
+                            if key not in ["all_step_ids", "_", "step_results"]:
+                                pipeline_inputs[key] = value
+                        if pipeline_inputs:
+                            task_def["metadata"]["pipeline_inputs"] = pipeline_inputs
+                    
+                    # Process parameters with all accessible loop variables
+                    if "parameters" in task_def:
+                        task_def["parameters"] = await self._process_templates_with_named_loops(
+                            task_def["parameters"], enhanced_context
+                        )
+                    
+                    # Process action field if it contains templates
+                    if "action" in task_def:
+                        task_def["action"] = await self._process_templates_with_named_loops(
+                            task_def["action"], enhanced_context
+                        )
+                    
+                    # Adjust dependencies
+                    original_deps = task_def.get("dependencies", [])
+                    task_def["dependencies"] = []
+                    
+                    # Add dependencies from previous iteration if sequential
+                    if max_parallel == 1 and idx > 0:
+                        prev_task_id = f"{loop_id}_{idx-1}_{step_def['id']}"
+                        task_def["dependencies"].append(prev_task_id)
+                    
+                    # Add dependencies within same iteration
+                    for dep in original_deps:
+                        if dep in [s["id"] for s in body_steps]:
+                            # Internal dependency
+                            task_def["dependencies"].append(f"{loop_id}_{idx}_{dep}")
+                        else:
+                            # External dependency
+                            task_def["dependencies"].append(dep)
+                    
+                    # Handle nested loops
+                    if "for_each" in task_def or "while" in task_def:
+                        # Recursive loop expansion with current context
+                        nested_tasks = await self.expand_for_loop(task_def, enhanced_context, step_results)
+                        expanded_tasks.extend(nested_tasks)
                     else:
-                        # External dependency
-                        task_def["dependencies"].append(dep)
-
-                # Create task
-                expanded_tasks.append(self._create_task_from_def(task_def))
+                        # Regular task
+                        expanded_tasks.append(self._create_task_from_def(task_def))
+                        
+            finally:
+                # Keep loop in history but remove from active
+                # (unless we need it for cross-step access)
+                if loop_context.is_auto_generated or not self._has_active_nested_loops(loop_context.loop_name):
+                    self.loop_context_manager.pop_loop(loop_context.loop_name)
 
         # Add a completion task to represent the whole for_each loop
         if expanded_tasks:
@@ -183,6 +208,57 @@ class ForLoopHandler:
             expanded_tasks.append(completion_task)
 
         return expanded_tasks
+    
+    async def _process_templates_with_named_loops(self, obj: Any, context: Dict[str, Any]) -> Any:
+        """Process templates with named loop variable support.
+        
+        Args:
+            obj: Object to process (dict, list, or string)
+            context: Enhanced context with all loop variables
+            
+        Returns:
+            Processed object with all templates rendered
+        """
+        if isinstance(obj, str):
+            # Handle named loop variable references and AUTO tags
+            result = obj
+            
+            # Process named loop variables ($loop_name.variable)
+            for loop_name, loop_context in self.loop_context_manager.active_loops.items():
+                loop_vars = loop_context.to_template_dict()
+                for var_name, var_value in loop_vars.items():
+                    if var_name.startswith(f'${loop_name}.'):
+                        # Replace ${loop_name}.variable with actual value
+                        result = result.replace(f"{{{{{var_name}}}}}", str(var_value))
+                        result = result.replace(f"{{{{ {var_name} }}}}", str(var_value))
+            
+            # Process default loop variables ($item, $index, etc.)
+            current_loop = self.loop_context_manager.get_current_loop()
+            if current_loop:
+                default_vars = current_loop.to_template_dict(is_current_loop=True)
+                for var_name, var_value in default_vars.items():
+                    if not '.' in var_name:  # Only process default $ variables
+                        result = result.replace(f"{{{{{var_name}}}}}", str(var_value))
+                        result = result.replace(f"{{{{ {var_name} }}}}", str(var_value))
+            
+            # Handle AUTO tags with enhanced context
+            if "<AUTO>" in result:
+                result = await self.auto_resolver._resolve_auto_tags(result, context, {})
+            
+            return result
+            
+        elif isinstance(obj, dict):
+            return {k: await self._process_templates_with_named_loops(v, context) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [await self._process_templates_with_named_loops(item, context) for item in obj]
+        
+        return obj
+    
+    def _has_active_nested_loops(self, loop_name: str) -> bool:
+        """Check if any nested loops are still active that depend on this loop."""
+        # For now, simple implementation - can be enhanced later
+        # Auto-generated loops don't need to persist for cross-step access
+        return False
 
     async def _process_loop_variables(
         self,
@@ -284,14 +360,19 @@ class ForLoopHandler:
 class WhileLoopHandler:
     """Handles while loop execution in pipelines."""
 
-    def __init__(self, auto_resolver: Optional[ControlFlowAutoResolver] = None):
+    def __init__(self, auto_resolver: Optional[ControlFlowAutoResolver] = None, loop_context_manager: Optional[GlobalLoopContextManager] = None):
         """Initialize while loop handler.
 
         Args:
             auto_resolver: AUTO tag resolver
+            loop_context_manager: Global loop context manager for named loops
         """
         self.auto_resolver = auto_resolver or ControlFlowAutoResolver()
+        self.loop_context_manager = loop_context_manager or GlobalLoopContextManager()
         self.loop_states = {}  # Track loop state across iterations
+        
+        # Enhanced condition evaluator with structured evaluation
+        self.enhanced_evaluator = EnhancedConditionEvaluator(self.auto_resolver)
 
     async def should_continue(
         self,
@@ -301,6 +382,7 @@ class WhileLoopHandler:
         step_results: Dict[str, Any],
         iteration: int,
         max_iterations: int,
+        until_condition: Optional[str] = None,
     ) -> bool:
         """Check if while loop should continue.
 
@@ -358,15 +440,60 @@ class WhileLoopHandler:
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.warning(f"Failed to render while loop condition template: {e}")
+            else:
+                # Simple template replacement when no template manager
+                rendered_condition = self._simple_template_replace(condition, enhanced_context)
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"While loop {loop_id}: Simple template rendering: '{condition}' -> '{rendered_condition}'")
         
-        # Evaluate condition
+        # Evaluate while condition (continue when true)
         cache_key = f"{loop_id}_iter_{iteration}"
-        result = await self.auto_resolver.resolve_condition(
+        while_result = await self.auto_resolver.resolve_condition(
             rendered_condition, enhanced_context, step_results, cache_key
         )
         
-        logger.info(f"WhileLoopHandler.should_continue: condition '{rendered_condition}' evaluated to {result}")
-        return result
+        logger.info(f"WhileLoopHandler.should_continue: while condition '{rendered_condition}' evaluated to {while_result}")
+        
+        # If while condition is false, stop loop
+        if not while_result:
+            logger.info(f"Stopping loop {loop_id}: while condition is false")
+            return False
+        
+        # If we have an until condition, evaluate it (stop when true)
+        if until_condition:
+            # Render until condition template
+            rendered_until = until_condition
+            if "{{" in until_condition and "}}" in until_condition:
+                template_manager = context.get("template_manager") or context.get("_template_manager")
+                if template_manager:
+                    try:
+                        all_context = {**step_results, **enhanced_context}
+                        rendered_until = template_manager.render(until_condition, additional_context=all_context)
+                        logger.info(f"Until loop {loop_id}: Rendered until condition from '{until_condition}' to '{rendered_until}'")
+                    except Exception as e:
+                        logger.warning(f"Failed to render until condition template: {e}")
+                else:
+                    # Simple template replacement when no template manager
+                    rendered_until = self._simple_template_replace(until_condition, enhanced_context)
+                    logger.info(f"Until loop {loop_id}: Simple template rendering: '{until_condition}' -> '{rendered_until}'")
+            
+            # Evaluate until condition
+            until_cache_key = f"{loop_id}_until_iter_{iteration}"
+            until_result = await self.auto_resolver.resolve_condition(
+                rendered_until, enhanced_context, step_results, until_cache_key
+            )
+            
+            logger.info(f"WhileLoopHandler.should_continue: until condition '{rendered_until}' evaluated to {until_result}")
+            
+            # If until condition is true, stop loop
+            if until_result:
+                logger.info(f"Stopping loop {loop_id}: until condition is satisfied")
+                return False
+        
+        # Continue loop (while=true, until=false or not present)
+        return True
+
 
     async def create_iteration_tasks(
         self,
@@ -387,6 +514,7 @@ class WhileLoopHandler:
             List of tasks for this iteration
         """
         loop_id = loop_def.get("id", "while_loop")
+        explicit_loop_name = loop_def.get("loop_name")  # Optional explicit name
         body_steps = loop_def.get("steps", [])
 
         # Get or create loop state
@@ -394,87 +522,110 @@ class WhileLoopHandler:
             self.loop_states[loop_id] = {}
 
         loop_state = self.loop_states[loop_id]
+        
+        # Create while loop context (no items, just iteration tracking)
+        while_context = self.loop_context_manager.create_loop_context(
+            step_id=loop_id,
+            item=None,  # While loops don't have items
+            index=iteration,
+            items=[],  # Empty items list for while loops
+            explicit_loop_name=explicit_loop_name
+        )
+        
+        # Push while loop context
+        self.loop_context_manager.push_loop(while_context)
 
         # Create tasks for this iteration
         iteration_tasks = []
 
-        for step_def in body_steps:
-            # Create unique task ID
-            task_id = f"{loop_id}_{iteration}_{step_def['id']}"
+        try:
+            for step_def in body_steps:
+                # Create unique task ID
+                task_id = f"{loop_id}_{iteration}_{step_def['id']}"
 
-            # Deep copy step definition
-            task_def = copy.deepcopy(step_def)
-            task_def["id"] = task_id
-            task_def["metadata"] = task_def.get("metadata", {})
-            
-            # Remove any while loop specific metadata that shouldn't be inherited
-            task_def["metadata"].pop("is_while_loop", None)
-            task_def["metadata"].pop("while_condition", None)
-            task_def["metadata"].pop("while", None)
-            task_def["metadata"].pop("max_iterations", None)
+                # Create enhanced context with all loop variables
+                enhanced_context = context.copy()
+                enhanced_context.update(step_results)
+                enhanced_context.update(self.loop_context_manager.get_accessible_loop_variables())
+                enhanced_context.update({
+                    "$loop_state": loop_state, 
+                    "loop_id": loop_id
+                })
 
-            # Add loop metadata
-            task_def["metadata"]["loop_id"] = loop_id
-            task_def["metadata"]["loop_iteration"] = iteration
-            # Don't mark child tasks as while loops - only the parent is a while loop
-            task_def["metadata"]["is_while_loop_child"] = True
+                # Deep copy step definition
+                task_def = copy.deepcopy(step_def)
+                task_def["id"] = task_id
+                task_def["metadata"] = task_def.get("metadata", {})
+                
+                # Remove any while loop specific metadata that shouldn't be inherited
+                task_def["metadata"].pop("is_while_loop", None)
+                task_def["metadata"].pop("while_condition", None)
+                task_def["metadata"].pop("while", None)
+                task_def["metadata"].pop("max_iterations", None)
 
-            # Process parameters with loop variables
-            enhanced_context = context.copy()
-            enhanced_context.update(
-                {"$iteration": iteration, "$loop_state": loop_state, "loop_id": loop_id}
-            )
-            
-            # Process action field if it contains templates
-            if "action" in task_def:
-                task_def["action"] = await self._process_loop_params(
-                    task_def["action"], enhanced_context, step_results
-                )
-            
-            # Process parameters
-            if "parameters" in task_def:
-                task_def["parameters"] = await self._process_loop_params(
-                    task_def["parameters"], enhanced_context, step_results
-                )
+                # Add loop metadata
+                task_def["metadata"]["loop_id"] = loop_id
+                task_def["metadata"]["loop_name"] = while_context.loop_name
+                task_def["metadata"]["loop_iteration"] = iteration
+                task_def["metadata"]["is_while_loop_child"] = True
+                task_def["metadata"]["loop_context"] = while_context.get_debug_info()
+                
+                # Process action field if it contains templates
+                if "action" in task_def:
+                    task_def["action"] = await self._process_templates_with_named_loops(
+                        task_def["action"], enhanced_context
+                    )
+                
+                # Process parameters with all accessible loop variables
+                if "parameters" in task_def:
+                    task_def["parameters"] = await self._process_templates_with_named_loops(
+                        task_def["parameters"], enhanced_context
+                    )
 
-            # Adjust dependencies
-            original_deps = task_def.get("dependencies", [])
-            task_def["dependencies"] = []
+                # Adjust dependencies
+                original_deps = task_def.get("dependencies", [])
+                task_def["dependencies"] = []
 
-            # Add dependencies from previous iteration
-            if iteration > 0:
+                # Add dependencies from previous iteration
+                if iteration > 0:
+                    for dep in original_deps:
+                        if dep in [s["id"] for s in body_steps]:
+                            # Add dependency from previous iteration
+                            prev_task_id = f"{loop_id}_{iteration-1}_{dep}"
+                            task_def["dependencies"].append(prev_task_id)
+
+                # Add dependencies within same iteration
                 for dep in original_deps:
                     if dep in [s["id"] for s in body_steps]:
-                        # Add dependency from previous iteration
-                        prev_task_id = f"{loop_id}_{iteration-1}_{dep}"
-                        task_def["dependencies"].append(prev_task_id)
+                        task_def["dependencies"].append(f"{loop_id}_{iteration}_{dep}")
+                    else:
+                        # External dependency (only for first iteration)
+                        if iteration == 0:
+                            task_def["dependencies"].append(dep)
 
-            # Add dependencies within same iteration
-            for dep in original_deps:
-                if dep in [s["id"] for s in body_steps]:
-                    task_def["dependencies"].append(f"{loop_id}_{iteration}_{dep}")
-                else:
-                    # External dependency (only for first iteration)
-                    if iteration == 0:
-                        task_def["dependencies"].append(dep)
+                # Create task
+                iteration_tasks.append(self._create_task_from_def(task_def))
 
-            # Create task
-            iteration_tasks.append(self._create_task_from_def(task_def))
-
-        # Add a sentinel task to capture iteration result
-        result_task = Task(
-            id=f"{loop_id}_{iteration}_result",
-            name=f"Capture {loop_id} iteration {iteration} result",
-            action="capture_result",
-            parameters={"loop_id": loop_id, "iteration": iteration},
-            dependencies=[t.id for t in iteration_tasks],
-            metadata={
-                "is_loop_result": True,
-                "loop_id": loop_id,
-                "iteration": iteration,
-            },
-        )
-        iteration_tasks.append(result_task)
+            # Add a sentinel task to capture iteration result
+            result_task = Task(
+                id=f"{loop_id}_{iteration}_result",
+                name=f"Capture {loop_id} iteration {iteration} result",
+                action="capture_result",
+                parameters={"loop_id": loop_id, "iteration": iteration},
+                dependencies=[t.id for t in iteration_tasks],
+                metadata={
+                    "is_loop_result": True,
+                    "loop_id": loop_id,
+                    "loop_name": while_context.loop_name,
+                    "iteration": iteration,
+                },
+            )
+            iteration_tasks.append(result_task)
+            
+        finally:
+            # Remove from active loops after processing
+            if while_context.is_auto_generated or not self._has_active_nested_loops(while_context.loop_name):
+                self.loop_context_manager.pop_loop(while_context.loop_name)
 
         return iteration_tasks
 
@@ -563,6 +714,186 @@ class WhileLoopHandler:
             Loop state dictionary
         """
         return self.loop_states.get(loop_id, {})
+    
+    async def _process_templates_with_named_loops(self, obj: Any, context: Dict[str, Any]) -> Any:
+        """Process templates with named loop variable support for while loops.
+        
+        Args:
+            obj: Object to process (dict, list, or string)
+            context: Enhanced context with all loop variables
+            
+        Returns:
+            Processed object with all templates rendered
+        """
+        if isinstance(obj, str):
+            # Handle named loop variable references and AUTO tags
+            result = obj
+            
+            # Process named loop variables ($loop_name.variable)
+            for loop_name, loop_context in self.loop_context_manager.active_loops.items():
+                loop_vars = loop_context.to_template_dict()
+                for var_name, var_value in loop_vars.items():
+                    if var_name.startswith(f'${loop_name}.'):
+                        # Replace ${loop_name}.variable with actual value
+                        result = result.replace(f"{{{{{var_name}}}}}", str(var_value))
+                        result = result.replace(f"{{{{ {var_name} }}}}", str(var_value))
+            
+            # Process default loop variables ($index, etc.)
+            current_loop = self.loop_context_manager.get_current_loop()
+            if current_loop:
+                default_vars = current_loop.to_template_dict(is_current_loop=True)
+                for var_name, var_value in default_vars.items():
+                    if not '.' in var_name:  # Only process default $ variables
+                        result = result.replace(f"{{{{{var_name}}}}}", str(var_value))
+                        result = result.replace(f"{{{{ {var_name} }}}}", str(var_value))
+            
+            # Handle AUTO tags with enhanced context
+            if "<AUTO>" in result:
+                result = await self.auto_resolver._resolve_auto_tags(result, context, {})
+            
+            return result
+            
+        elif isinstance(obj, dict):
+            return {k: await self._process_templates_with_named_loops(v, context) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [await self._process_templates_with_named_loops(item, context) for item in obj]
+        
+        return obj
+    
+    def _has_active_nested_loops(self, loop_name: str) -> bool:
+        """Check if any nested loops are still active that depend on this loop."""
+        # For now, simple implementation - can be enhanced later
+        return False
+
+    def _simple_template_replace(self, template: str, context: Dict[str, Any]) -> str:
+        """Simple template variable replacement for conditions."""
+        import re
+        
+        def replace_var(match):
+            var_name = match.group(1).strip()
+            
+            # Handle dot notation
+            if '.' in var_name:
+                parts = var_name.split('.')
+                value = context
+                for part in parts:
+                    if isinstance(value, dict) and part in value:
+                        value = value[part]
+                    else:
+                        return match.group(0)  # Return original if not found
+                return str(value)
+            
+            # Simple variable
+            if var_name in context:
+                return str(context[var_name])
+            
+            return match.group(0)  # Return original if not found
+        
+        # Replace {{ variable }} patterns
+        template_pattern = r'\{\{\s*([^}]+)\s*\}\}'
+        return re.sub(template_pattern, replace_var, template)
+
+    async def should_continue_enhanced(
+        self,
+        loop_id: str,
+        condition: Optional[str] = None,
+        until_condition: Optional[str] = None,
+        context: Dict[str, Any] = None,
+        step_results: Dict[str, Any] = None,
+        iteration: int = 0,
+        max_iterations: int = 100,
+    ) -> Dict[str, Any]:
+        """Enhanced version using structured condition evaluation.
+        
+        Returns detailed evaluation results including performance metrics.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Check max iterations
+        if iteration >= max_iterations:
+            return {
+                "should_continue": False,
+                "termination_reason": "max_iterations_reached",
+                "evaluation_results": [],
+                "performance": self.enhanced_evaluator.get_performance_stats()
+            }
+        
+        context = context or {}
+        step_results = step_results or {}
+        evaluation_results = []
+        
+        # Build enhanced context with loop info
+        enhanced_context = context.copy()
+        enhanced_context.update({
+            "$iteration": iteration,
+            "$loop_state": self.loop_states.get(loop_id, {}),
+            "current_result": (
+                step_results.get(f"{loop_id}_{iteration-1}_result")
+                if iteration > 0
+                else None
+            ),
+        })
+        
+        # Evaluate while condition first (if present)
+        if condition:
+            while_result = await self.enhanced_evaluator.evaluate_condition(
+                condition=condition,
+                context=enhanced_context,
+                step_results=step_results,
+                iteration=iteration,
+                condition_type="while"
+            )
+            evaluation_results.append(while_result)
+            
+            logger.info(f"While condition evaluation: {while_result.to_dict()}")
+            
+            # If while condition says stop, return immediately
+            if while_result.should_terminate:
+                return {
+                    "should_continue": False,
+                    "termination_reason": "while_condition_false",
+                    "evaluation_results": evaluation_results,
+                    "performance": self.enhanced_evaluator.get_performance_stats()
+                }
+        
+        # Evaluate until condition (if present)
+        if until_condition:
+            until_result = await self.enhanced_evaluator.evaluate_condition(
+                condition=until_condition,
+                context=enhanced_context,
+                step_results=step_results,
+                iteration=iteration,
+                condition_type="until"
+            )
+            evaluation_results.append(until_result)
+            
+            logger.info(f"Until condition evaluation: {until_result.to_dict()}")
+            
+            # If until condition says stop, return immediately
+            if until_result.should_terminate:
+                return {
+                    "should_continue": False,
+                    "termination_reason": "until_condition_met",
+                    "evaluation_results": evaluation_results,
+                    "performance": self.enhanced_evaluator.get_performance_stats()
+                }
+        
+        # Continue loop
+        return {
+            "should_continue": True,
+            "termination_reason": None,
+            "evaluation_results": evaluation_results,
+            "performance": self.enhanced_evaluator.get_performance_stats()
+        }
+
+    def get_condition_debug_info(self, loop_id: str) -> Dict[str, Any]:
+        """Get debugging information for loop conditions."""
+        return {
+            "loop_id": loop_id,
+            "loop_state": self.loop_states.get(loop_id, {}),
+            "evaluator_performance": self.enhanced_evaluator.get_performance_stats(),
+        }
 
     def _create_task_from_def(self, task_def: Dict[str, Any]) -> Task:
         """Create a Task instance from definition.

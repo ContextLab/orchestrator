@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
 from ..core.output_metadata import OutputMetadata, create_output_metadata, validate_output_specification
+from ..core.error_handling import ErrorHandler
 
 
 @dataclass
@@ -39,7 +40,8 @@ class TaskSpec:
     tools: Optional[List[str]] = None
     depends_on: List[str] = field(default_factory=list)
     condition: Optional[str] = None
-    on_error: Optional[Union[str, ErrorHandling]] = None
+    on_error: Optional[Union[str, ErrorHandling, List[Union[str, ErrorHandler, Dict[str, Any]]]]] = None
+    error_handlers: Optional[List[ErrorHandler]] = field(default_factory=list)
     loop: Optional[LoopSpec] = None
     foreach: Optional[str] = None  # Simple foreach - converted to LoopSpec
     model_requirements: Dict[str, Any] = field(default_factory=dict)
@@ -71,7 +73,10 @@ class TaskSpec:
             self.loop = LoopSpec(foreach=self.foreach)
             self.foreach = None
 
-        # Convert simple error handling to ErrorHandling object
+        # Process error handling - convert simple formats to ErrorHandling/ErrorHandler objects
+        self._process_error_handlers()
+        
+        # Convert simple error handling to ErrorHandling object for backward compatibility
         if isinstance(self.on_error, str):
             self.on_error = ErrorHandling(action=self.on_error)
 
@@ -115,7 +120,7 @@ class TaskSpec:
 
     def has_error_handling(self) -> bool:
         """Check if task has error handling configuration."""
-        return bool(self.on_error)
+        return bool(self.on_error) or bool(self.error_handlers)
 
     def is_iterative(self) -> bool:
         """Check if task is iterative (has loop or foreach)."""
@@ -162,6 +167,8 @@ class TaskSpec:
             "template_variables": self.get_template_variables(),
             "has_output_metadata": self.has_output_metadata(),
             "output_metadata": self.get_output_metadata(),
+            "error_handlers_count": len(self.error_handlers) if self.error_handlers else 0,
+            "has_advanced_error_handling": bool(self.error_handlers),
         }
 
     def has_output_metadata(self) -> bool:
@@ -218,6 +225,111 @@ class TaskSpec:
             '/' in self.location or
             '\\' in self.location
         )
+    
+    def _process_error_handlers(self) -> None:
+        """Process and validate error handler configurations."""
+        if not self.on_error:
+            return
+        
+        # Handle list of error handlers (new format)
+        if isinstance(self.on_error, list):
+            processed_handlers = []
+            
+            for i, handler_config in enumerate(self.on_error):
+                if isinstance(handler_config, str):
+                    # Simple action string - convert to ErrorHandler
+                    handler = ErrorHandler(
+                        handler_action=handler_config,
+                        error_types=["*"],  # Catch all errors by default
+                        priority=100 + i  # Maintain order
+                    )
+                    processed_handlers.append(handler)
+                    
+                elif isinstance(handler_config, dict):
+                    # Dictionary configuration - convert to ErrorHandler
+                    handler = ErrorHandler(**handler_config)
+                    processed_handlers.append(handler)
+                    
+                elif isinstance(handler_config, ErrorHandler):
+                    # Already an ErrorHandler object
+                    processed_handlers.append(handler_config)
+                    
+                else:
+                    raise ValueError(f"Invalid error handler configuration at index {i}: {type(handler_config)}")
+            
+            self.error_handlers = processed_handlers
+            # Keep on_error as None for new format to avoid conflicts
+            self.on_error = None
+    
+    def get_error_handlers(self) -> List[ErrorHandler]:
+        """Get all error handlers for this task."""
+        handlers = []
+        
+        # Add new format error handlers
+        if self.error_handlers:
+            handlers.extend(self.error_handlers)
+        
+        # Convert legacy on_error to ErrorHandler for compatibility
+        if self.on_error and isinstance(self.on_error, ErrorHandling):
+            # Convert ErrorHandling to ErrorHandler
+            legacy_handler = ErrorHandler(
+                handler_action=self.on_error.action,
+                error_types=["*"],  # Legacy handlers catch all errors
+                retry_with_handler=self.on_error.retry_count > 0,
+                max_handler_retries=self.on_error.retry_count,
+                continue_on_handler_failure=self.on_error.continue_on_error,
+                fallback_value=self.on_error.fallback_value,
+                priority=1000  # Lower priority than new handlers
+            )
+            handlers.append(legacy_handler)
+        
+        return handlers
+    
+    def add_error_handler(self, handler: ErrorHandler) -> None:
+        """Add an error handler to this task."""
+        if not self.error_handlers:
+            self.error_handlers = []
+        self.error_handlers.append(handler)
+    
+    def remove_error_handler(self, handler_id: str) -> bool:
+        """Remove an error handler by ID (if handler has an ID field)."""
+        if not self.error_handlers:
+            return False
+        
+        # Remove handlers that match the ID (assuming handler has some identifier)
+        original_count = len(self.error_handlers)
+        self.error_handlers = [
+            h for h in self.error_handlers 
+            if getattr(h, 'id', None) != handler_id
+        ]
+        
+        return len(self.error_handlers) < original_count
+    
+    def has_advanced_error_handling(self) -> bool:
+        """Check if task uses the new advanced error handling system."""
+        return bool(self.error_handlers)
+    
+    def get_error_handling_summary(self) -> Dict[str, Any]:
+        """Get summary of error handling configuration."""
+        summary = {
+            "has_legacy_error_handling": bool(self.on_error),
+            "has_advanced_error_handling": bool(self.error_handlers),
+            "total_handlers": len(self.get_error_handlers()),
+            "handler_types": []
+        }
+        
+        for handler in self.get_error_handlers():
+            handler_info = {
+                "has_task_id": bool(handler.handler_task_id),
+                "has_action": bool(handler.handler_action),
+                "has_fallback": bool(handler.fallback_value),
+                "error_types": handler.error_types,
+                "priority": handler.priority,
+                "enabled": handler.enabled
+            }
+            summary["handler_types"].append(handler_info)
+        
+        return summary
 
 
 @dataclass

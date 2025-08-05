@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from .task import Task
 from .template_manager import TemplateManager
+from .loop_context import LoopContextVariables, GlobalLoopContextManager
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +126,26 @@ class ContextManager:
             self.template_manager.register_context(key, value)
             
         logger.debug(f"Registered variable '{key}' at level '{level}'")
+    
+    def register_loop_context(self, loop_context: LoopContextVariables):
+        """Register a loop context for template access.
+        
+        Args:
+            loop_context: The loop context to register
+        """
+        if self.template_manager:
+            self.template_manager.register_loop_context(loop_context)
+        logger.debug(f"Registered loop context: {loop_context.loop_name}")
+    
+    def unregister_loop_context(self, loop_name: str):
+        """Unregister a loop context.
+        
+        Args:
+            loop_name: Name of the loop context to remove
+        """
+        if self.template_manager:
+            self.template_manager.unregister_loop_context(loop_name)
+        logger.debug(f"Unregistered loop context: {loop_name}")
         
     def render_template(self, template: Union[str, Dict, List]) -> Union[str, Dict, List]:
         """Render a template string using the current context.

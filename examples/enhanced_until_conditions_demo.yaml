@@ -1,0 +1,52 @@
+---
+name: "Enhanced Until Conditions Demo"
+description: "Demonstrates structured until condition evaluation with performance tracking"
+
+pipeline:
+  inputs:
+    - name: target_quality
+      default: 0.8
+    - name: max_attempts  
+      default: 5
+
+  steps:
+    - id: initialize_metrics
+      action: debug
+      parameters:
+        message: "Starting enhanced until condition demo with target quality: {{ target_quality }}"
+
+    - id: quality_improvement_loop
+      while: "true"  # Always continue from while perspective  
+      until: "<AUTO>Quality score is {{ quality_score }}. Is this >= {{ target_quality }}? Answer 'true' or 'false'.</AUTO>"
+      max_iterations: "{{ max_attempts }}"
+      loop_name: "quality_loop"
+      steps:
+        - id: simulate_quality_work
+          action: debug
+          parameters:
+            message: "Iteration {{ $iteration }}: Current quality score: {{ quality_score | default('0.2') }}"
+            
+        - id: update_quality_score
+          action: debug
+          parameters:
+            # Simulate quality improvement over iterations
+            message: "Improving quality from {{ quality_score | default('0.2') }} to {{ ($iteration + 1) * 0.25 }}"
+            quality_score: "{{ ($iteration + 1) * 0.25 }}"
+            
+        - id: check_progress
+          action: debug  
+          parameters:
+            message: "Loop {{ quality_loop.loop_name }} iteration {{ $iteration }} complete. Quality: {{ quality_score }}"
+
+    - id: final_report
+      action: debug
+      parameters:
+        message: "Quality improvement loop completed. Final quality score achieved."
+      dependencies:
+        - quality_improvement_loop
+
+outputs:
+  - name: completion_status
+    value: "Enhanced until conditions demo completed successfully"
+  - name: final_iteration_count
+    value: "{{ quality_loop.iteration }}"
