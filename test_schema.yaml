@@ -1,0 +1,15 @@
+name: "Schema Test"
+description: "Test schema validation"
+
+steps:
+  - id: test_standalone
+    create_parallel_queue:
+      "on": '["item1", "item2"]'
+      max_parallel: 2
+      action_loop:
+        - action: debug
+          parameters:
+            message: "Processing {{ item }}"
+
+outputs:
+  result: "{{ test_standalone.results }}"

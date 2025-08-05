@@ -221,7 +221,7 @@ class SchemaValidator:
                                     },
                                     "foreach": {"type": "string"},
                                     "parallel": {"type": "boolean"},
-                                    # Support create_parallel_queue in parameters for alternate syntax
+                                    # Support create_parallel_queue parameters only when action="create_parallel_queue"
                                     "create_parallel_queue": {
                                         "type": "object",
                                         "properties": {
@@ -285,10 +285,11 @@ class SchemaValidator:
                                     },
                                 },
                             },
-                            # Parallel queue step
+                            # Parallel queue step (standalone syntax without action field)
                             {
                                 "type": "object",
                                 "required": ["id", "create_parallel_queue"],
+                                "not": {"required": ["action"]},  # Ensure no action field for standalone syntax
                                 "properties": {
                                     "id": {
                                         "type": "string",

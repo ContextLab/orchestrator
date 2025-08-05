@@ -284,7 +284,9 @@ class ParallelQueueTask(Task):
         if queue_index >= len(self.queue_items):
             return {}
         
-        return {
+        # Provide both $ prefixed and non-prefixed versions for template compatibility
+        variables = {
+            # $ prefixed versions (original)
             "$item": self.queue_items[queue_index],
             "$index": queue_index,
             "$queue": self.queue_items,
@@ -293,7 +295,19 @@ class ParallelQueueTask(Task):
             "$is_last": queue_index == len(self.queue_items) - 1,
             "$parallel_queue_id": self.id,
             "$parent_task": self.id,
+            
+            # Non-prefixed versions for template engine compatibility
+            "item": self.queue_items[queue_index],
+            "index": queue_index,
+            "queue": self.queue_items,
+            "queue_size": len(self.queue_items),
+            "is_first": queue_index == 0,
+            "is_last": queue_index == len(self.queue_items) - 1,
+            "parallel_queue_id": self.id,
+            "parent_task": self.id,
         }
+        
+        return variables
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary with parallel queue specific fields."""
