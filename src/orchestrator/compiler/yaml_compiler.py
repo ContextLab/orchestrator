@@ -601,6 +601,9 @@ class YAMLCompiler:
             # Check for parallel queue syntax
             if "create_parallel_queue" in task_def:
                 action = "create_parallel_queue"
+            # Check for action loop syntax (Issue #188)
+            elif "action_loop" in task_def:
+                action = "action_loop"
             # Check for control flow steps
             elif any(key in task_def for key in ["for_each", "while", "if", "condition"]):
                 # This is a control flow step, will be handled separately
@@ -711,6 +714,10 @@ class YAMLCompiler:
             # Import here to avoid circular dependencies
             from ..core.parallel_queue_task import ParallelQueueTask
             task = ParallelQueueTask.from_task_definition(task_def)
+        elif action == "action_loop":
+            # Import here to avoid circular dependencies
+            from ..core.action_loop_task import ActionLoopTask
+            task = ActionLoopTask.from_task_definition(task_def)
         else:
             task = Task(
                 id=task_id,

@@ -155,6 +155,7 @@ class SchemaValidator:
                                                         "enum": [
                                                             "low",
                                                             "medium",
+                                                            "medium-high", 
                                                             "high",
                                                             "very-high",
                                                         ],
@@ -389,6 +390,7 @@ class SchemaValidator:
                                                         "enum": [
                                                             "low",
                                                             "medium", 
+                                                            "medium-high",
                                                             "high",
                                                             "very-high",
                                                         ],
@@ -423,7 +425,7 @@ class SchemaValidator:
                                                     "max_size": {"type": "string"},
                                                     "expertise": {
                                                         "oneOf": [
-                                                            {"type": "string", "enum": ["low", "medium", "high", "very-high"]},
+                                                            {"type": "string", "enum": ["low", "medium", "medium-high", "high", "very-high"]},
                                                             {"type": "array", "items": {"type": "string"}},
                                                         ],
                                                     },
@@ -431,6 +433,70 @@ class SchemaValidator:
                                             },
                                         ],
                                     },
+                                },
+                            },
+                            # Parallel queue step with output metadata (combination support)
+                            {
+                                "type": "object",
+                                "required": ["id", "create_parallel_queue"],
+                                "not": {"required": ["action"]},
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                    },
+                                    "name": {"type": "string"},
+                                    "create_parallel_queue": {
+                                        "type": "object",
+                                        "properties": {
+                                            "on": {"type": "string"},
+                                            "max_parallel": {"type": "integer", "minimum": 1},
+                                            "task": {"type": "object"},
+                                            "action_loop": {
+                                                "type": "array",
+                                                "minItems": 1,
+                                                "items": {"type": "object"}
+                                            },
+                                            "until": {"type": "string"},
+                                            "while": {"type": "string"},
+                                            "tool": {"type": "string"},
+                                        }
+                                    },
+                                    # Output metadata
+                                    "produces": {"type": "string"},
+                                    "location": {"type": "string"},
+                                    # Model requirements
+                                    "requires_model": {
+                                        "oneOf": [
+                                            {"type": "string", "enum": ["none"]},
+                                            {
+                                                "type": "object",
+                                                "properties": {
+                                                    "min_size": {"type": "string"},
+                                                    "max_size": {"type": "string"},
+                                                    "expertise": {
+                                                        "oneOf": [
+                                                            {"type": "string", "enum": ["low", "medium", "medium-high", "high", "very-high"]},
+                                                            {"type": "array", "items": {"type": "string"}},
+                                                        ],
+                                                    },
+                                                },
+                                            },
+                                        ],
+                                    },
+                                    "depends_on": {
+                                        "oneOf": [
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                                },
+                                            },
+                                            {"type": "string"},
+                                        ],
+                                    },
+                                    "metadata": {"type": "object"},
                                 },
                             },
                         ],

@@ -185,6 +185,9 @@ class ActionLoopTask(Task):
     @classmethod
     def from_task_definition(cls, task_def: Dict[str, Any]) -> ActionLoopTask:
         """Create ActionLoopTask from task definition dictionary."""
+        # Make a copy to avoid modifying the original
+        task_def = task_def.copy()
+        
         # Extract action loop specific fields
         action_loop = task_def.pop("action_loop", [])
         until = task_def.pop("until", None)
@@ -202,6 +205,20 @@ class ActionLoopTask(Task):
         
         # Remove computed fields that shouldn't be in constructor
         task_def.pop("loop_statistics", None)
+        
+        # Move non-Task fields to metadata before creating Task
+        metadata = task_def.get("metadata", {})
+        special_fields = ["requires_model", "produces", "location", "tool", "on_error"]
+        for field in special_fields:
+            if field in task_def:
+                metadata[field] = task_def.pop(field)
+        task_def["metadata"] = metadata
+        
+        # Ensure required fields are present
+        if "action" not in task_def:
+            task_def["action"] = "action_loop"
+        if "name" not in task_def:
+            task_def["name"] = task_def.get("id", "action_loop_task")
         
         # Create base task from remaining fields
         base_task = Task.from_dict(task_def)

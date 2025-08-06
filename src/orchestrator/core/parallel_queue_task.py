@@ -343,9 +343,10 @@ class ParallelQueueTask(Task):
     def from_task_definition(cls, task_def: Dict[str, Any]) -> ParallelQueueTask:
         """Create ParallelQueueTask from YAML task definition."""
         # Extract parallel queue specific fields
-        # Handle both syntaxes:
+        # Handle multiple syntaxes:
         # 1. Direct: create_parallel_queue: { on: ..., action_loop: ... }
         # 2. Action: action: create_parallel_queue, parameters: { on: ..., action_loop: ... }
+        # 3. Nested task: create_parallel_queue: { on: ..., task: { action_loop: ... } }
         parallel_config = task_def.get("create_parallel_queue", {})
         
         # If not found at top level, check parameters for action syntax
@@ -354,6 +355,14 @@ class ParallelQueueTask(Task):
         
         if not parallel_config:
             raise ValueError("Task definition must contain 'create_parallel_queue' section or use 'action: create_parallel_queue' with parameters")
+        
+        # Extract action_loop - check both direct and nested under 'task'
+        action_loop = parallel_config.get("action_loop", [])
+        if not action_loop and "task" in parallel_config:
+            # Handle nested task structure: task: { action_loop: [...] }
+            task_config = parallel_config["task"]
+            if isinstance(task_config, dict):
+                action_loop = task_config.get("action_loop", [])
         
         # Create the task
         task = cls(
@@ -370,7 +379,7 @@ class ParallelQueueTask(Task):
             # Handle YAML parsing issue where "on" becomes boolean True
             on=parallel_config.get("on") or parallel_config.get(True, ""),
             max_parallel=parallel_config.get("max_parallel", 10),
-            action_loop=parallel_config.get("action_loop", []),
+            action_loop=action_loop,
             tool=parallel_config.get("tool"),
             until_condition=parallel_config.get("until"),
             while_condition=parallel_config.get("while"),
