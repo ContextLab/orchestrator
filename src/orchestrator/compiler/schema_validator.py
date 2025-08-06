@@ -117,6 +117,13 @@ class SchemaValidator:
                                     "name": {"type": "string"},
                                     "action": {"type": "string", "minLength": 1},
                                     "parameters": {"type": "object"},
+                                    
+                                    # Output metadata (Issue #193)
+                                    "produces": {"type": "string"},
+                                    "location": {"type": "string"},
+                                    
+                                    # Error handling (Issue #192)
+                                    "on_error": {"type": "string"},
                                     "dependencies": {
                                         "type": "array",
                                         "items": {
@@ -131,8 +138,11 @@ class SchemaValidator:
                                         "enum": ["continue", "fail", "retry", "skip"],
                                     },
                                     "requires_model": {
-                                        "type": "object",
-                                        "properties": {
+                                        "oneOf": [
+                                            {"type": "string", "enum": ["none"]},  # Allow "none" value
+                                            {
+                                                "type": "object",
+                                                "properties": {
                                             # Size constraints
                                             "min_size": {"type": "string"},
                                             "max_size": {"type": "string"},
@@ -199,6 +209,8 @@ class SchemaValidator:
                                                 "enum": ["best_available", "fail", "cheapest"]
                                             },
                                         },
+                                            },  # End of object type in oneOf
+                                        ],  # End of oneOf for requires_model
                                     },
                                     "metadata": {"type": "object"},
                                     # Allow conditional fields on action steps
@@ -228,6 +240,7 @@ class SchemaValidator:
                                             "on": {"type": "string"},
                                             True: {"type": "string"},
                                             "max_parallel": {"type": "integer", "minimum": 1},
+                                            "task": {"type": "object"},  # Support nested task definition
                                             "action_loop": {
                                                 "type": "array",
                                                 "minItems": 1,
@@ -306,6 +319,7 @@ class SchemaValidator:
                                             "on": {"type": "string"},
                                             True: {"type": "string"},
                                             "max_parallel": {"type": "integer", "minimum": 1},
+                                            "task": {"type": "object"},  # Support nested task definition
                                             "action_loop": {
                                                 "type": "array",
                                                 "minItems": 1,
@@ -337,6 +351,83 @@ class SchemaValidator:
                                             },
                                             {
                                                 "type": "string",  # Allow string for AUTO tags
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                            # Action loop step (Issue #188)
+                            {
+                                "type": "object",
+                                "required": ["id", "action_loop"],
+                                "not": {"required": ["action"]},  # Ensure no action field for action loop
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                    },
+                                    "name": {"type": "string"},
+                                    "action_loop": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "items": {"type": "object"}
+                                    },
+                                    "until": {"type": "string"},
+                                    "while": {"type": "string"},
+                                    "max_iterations": {"type": "integer", "minimum": 1},
+                                    "break_on_error": {"type": "boolean"},
+                                    "iteration_timeout": {"type": "integer", "minimum": 1},
+                                    "requires_model": {
+                                        "type": "object",
+                                        "properties": {
+                                            "min_size": {"type": "string"},
+                                            "max_size": {"type": "string"},
+                                            "expertise": {
+                                                "oneOf": [
+                                                    {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "low",
+                                                            "medium", 
+                                                            "high",
+                                                            "very-high",
+                                                        ],
+                                                    },
+                                                    {"type": "array", "items": {"type": "string"}},
+                                                ],
+                                            },
+                                        },
+                                    },
+                                    "depends_on": {
+                                        "oneOf": [
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string",
+                                                    "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                                },
+                                            },
+                                            {"type": "string"},
+                                        ],
+                                    },
+                                    "produces": {"type": "string"},
+                                    "location": {"type": "string"},
+                                    "metadata": {"type": "object"},
+                                    "requires_model": {
+                                        "oneOf": [
+                                            {"type": "string", "enum": ["none"]},
+                                            {
+                                                "type": "object",
+                                                "properties": {
+                                                    "min_size": {"type": "string"},
+                                                    "max_size": {"type": "string"},
+                                                    "expertise": {
+                                                        "oneOf": [
+                                                            {"type": "string", "enum": ["low", "medium", "high", "very-high"]},
+                                                            {"type": "array", "items": {"type": "string"}},
+                                                        ],
+                                                    },
+                                                },
                                             },
                                         ],
                                     },
