@@ -70,7 +70,7 @@ class TestParallelQueuePhase2:
         context = {}
         step_results = {}
         
-        # Execute queue generation
+        # Execute queue generation only (not full execution)
         await handler._generate_queue_items(task, context, step_results)
         
         # Verify queue was generated correctly
