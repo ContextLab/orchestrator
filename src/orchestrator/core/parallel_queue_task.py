@@ -364,6 +364,14 @@ class ParallelQueueTask(Task):
             if isinstance(task_config, dict):
                 action_loop = task_config.get("action_loop", [])
         
+        # Calculate the 'on' value - handle YAML parsing issue where "on" becomes boolean True
+        on_value = parallel_config.get("on")
+        true_value = parallel_config.get(True)
+        final_on = on_value or true_value
+        
+        if not final_on:
+            raise ValueError(f"ParallelQueueTask {task_def.get('id', 'unknown')} must have 'on' expression for queue generation. Available keys in parallel_config: {list(parallel_config.keys())}")
+        
         # Create the task
         task = cls(
             id=task_def["id"],
@@ -375,9 +383,8 @@ class ParallelQueueTask(Task):
             timeout=task_def.get("timeout"),
             max_retries=task_def.get("max_retries", 3),
             
-            # Parallel queue specific
-            # Handle YAML parsing issue where "on" becomes boolean True
-            on=parallel_config.get("on") or parallel_config.get(True, ""),
+            # Parallel queue specific  
+            on=final_on,
             max_parallel=parallel_config.get("max_parallel", 10),
             action_loop=action_loop,
             tool=parallel_config.get("tool"),
