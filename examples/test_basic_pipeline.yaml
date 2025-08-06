@@ -1,0 +1,23 @@
+id: test-basic-pipeline
+name: Basic Test Pipeline  
+description: Very basic test without AUTO tags
+
+inputs:
+ topic:
+  type: string
+  description: "Simple topic for testing"
+  required: true
+
+outputs:
+ result_file: 
+  type: string
+  value: "basic_output.txt"
+
+steps:
+ - id: simple-write
+   action: "filesystem"
+   parameters:
+     action: "write"
+     path: "./{{ outputs.result_file }}"
+     content: "Test result for topic: {{ topic }}"
+   produces: "text"

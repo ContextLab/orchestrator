@@ -1,0 +1,23 @@
+id: test-simple-pipeline
+name: Simple Test Pipeline
+description: Basic test to verify pipeline execution works
+
+inputs:
+ topic:
+  type: string
+  description: "Simple topic for testing"
+  required: true
+
+outputs:
+ result_file: 
+  type: string
+  value: "test_output.txt"
+
+steps:
+ - id: simple-test
+   action: "<AUTO>Write a simple one paragraph summary about {{ topic }}. Just write basic factual information.</AUTO>"
+   produces: "text"
+   location: "./{{ outputs.result_file }}"
+   requires_model:
+    min_size: "1B"
+    expertise: "low"

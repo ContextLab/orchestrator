@@ -259,3 +259,6 @@ Desktop.ini
 *.log
 *.sqlite
 *.db
+
+# ClaudPoint checkpoint system
+.checkpoints/
