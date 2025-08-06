@@ -7,6 +7,7 @@ from datetime import datetime
 
 from .model_based_control_system import ModelBasedControlSystem
 from ..core.task import Task
+from ..core.action_loop_task import ActionLoopTask
 from ..models.model_registry import ModelRegistry
 from ..tools.system_tools import FileSystemTool, TerminalTool
 from ..tools.data_tools import DataProcessingTool
@@ -118,6 +119,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if this is a parallel queue execution
         if action_str == "create_parallel_queue":
             return await self._handle_create_parallel_queue(task, context)
+        
+        # Check if this is an action loop
+        if action_str == "action_loop":
+            return await self._handle_action_loop(task, context)
 
         # Otherwise use model-based execution
         return await super()._execute_task_impl(task, context)
@@ -760,5 +765,58 @@ class HybridControlSystem(ModelBasedControlSystem):
         
         # Execute the parallel queue
         result = await handler.execute_parallel_queue(task, context, step_results)
+        
+        return result
+
+    async def _handle_action_loop(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle action loop execution with real functionality."""
+        from ..control_flow.action_loop_handler import ActionLoopHandler
+        from ..core.template_manager import TemplateManager
+        from ..control_flow.auto_resolver import ControlFlowAutoResolver
+        
+        # Ensure we have an ActionLoopTask
+        if not isinstance(task, ActionLoopTask):
+            # Convert regular task to ActionLoopTask if needed
+            task_dict = task.to_dict()
+            
+            # Extract action loop configuration from task metadata
+            metadata = task.metadata or {}
+            if "action_loop" in metadata:
+                task_dict["action_loop"] = metadata["action_loop"]
+            if "until" in metadata:
+                task_dict["until"] = metadata["until"]
+            if "while_condition" in metadata:
+                task_dict["while_condition"] = metadata["while_condition"]
+            if "max_iterations" in metadata:
+                task_dict["max_iterations"] = metadata["max_iterations"]
+            if "break_on_error" in metadata:
+                task_dict["break_on_error"] = metadata["break_on_error"]
+            if "iteration_timeout" in metadata:
+                task_dict["iteration_timeout"] = metadata["iteration_timeout"]
+            
+            action_loop_task = ActionLoopTask.from_task_definition(task_dict)
+        else:
+            action_loop_task = task
+        
+        # Initialize action loop handler with real components
+        auto_resolver = ControlFlowAutoResolver(model_registry=self.model_registry)
+        template_manager = TemplateManager()
+        
+        # Update template manager with context
+        for key, value in context.items():
+            template_manager.register_context(key, value)
+        
+        # Pass template manager in context for tool integration
+        enhanced_context = context.copy()
+        enhanced_context["_template_manager"] = template_manager
+        
+        # Initialize handler
+        handler = ActionLoopHandler(
+            auto_resolver=auto_resolver,
+            template_manager=template_manager
+        )
+        
+        # Execute the action loop
+        result = await handler.execute_action_loop(action_loop_task, enhanced_context)
         
         return result

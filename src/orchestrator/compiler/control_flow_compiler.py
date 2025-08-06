@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from .yaml_compiler import YAMLCompiler, YAMLCompilerError
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..core.action_loop_task import ActionLoopTask
 from ..control_flow import (
     ConditionalHandler,
     ForLoopHandler,
@@ -12,6 +13,7 @@ from ..control_flow import (
     DynamicFlowHandler,
     ControlFlowAutoResolver,
 )
+from ..control_flow.action_loop_handler import ActionLoopHandler
 
 
 class ControlFlowCompiler(YAMLCompiler):
@@ -30,6 +32,7 @@ class ControlFlowCompiler(YAMLCompiler):
         self.for_loop_handler = ForLoopHandler(self.control_flow_resolver)
         self.while_loop_handler = WhileLoopHandler(self.control_flow_resolver)
         self.dynamic_flow_handler = DynamicFlowHandler(self.control_flow_resolver)
+        self.action_loop_handler = ActionLoopHandler(auto_resolver=self.control_flow_resolver)
 
     async def compile(
         self,
@@ -116,6 +119,13 @@ class ControlFlowCompiler(YAMLCompiler):
                     step_def, context, step_results
                 )
                 processed_steps.append(processed_step)
+            
+            elif "action_loop" in step_def:
+                # Handle action_loop (compile-time setup only)
+                processed_step = await self._process_action_loop(
+                    step_def, context, step_results
+                )
+                processed_steps.append(processed_step)
 
             else:
                 # Process regular step with potential control flow
@@ -179,6 +189,70 @@ class ControlFlowCompiler(YAMLCompiler):
         # Store the while condition (whether it has AUTO tags or not)
         if "while" in loop_def:
             loop_def["metadata"]["while_condition"] = loop_def["while"]
+
+        return loop_def
+
+    async def _process_action_loop(
+        self,
+        loop_def: Dict[str, Any],
+        context: Dict[str, Any],
+        step_results: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Process action_loop definition.
+
+        Args:
+            loop_def: Action loop definition
+            context: Execution context
+            step_results: Simulated step results
+
+        Returns:
+            Processed action loop definition
+        """
+        # Mark as action loop for runtime execution
+        loop_def["metadata"] = loop_def.get("metadata", {})
+        loop_def["metadata"]["is_action_loop"] = True
+        loop_def["metadata"]["max_iterations"] = loop_def.get("max_iterations", 100)
+        
+        # Store loop configuration
+        if "action_loop" in loop_def:
+            loop_def["metadata"]["action_loop"] = loop_def["action_loop"]
+        
+        # Store termination conditions
+        if "until" in loop_def:
+            loop_def["metadata"]["until"] = loop_def["until"]
+        if "while_condition" in loop_def:
+            loop_def["metadata"]["while_condition"] = loop_def["while_condition"]
+        
+        # Store additional loop configuration
+        if "break_on_error" in loop_def:
+            loop_def["metadata"]["break_on_error"] = loop_def["break_on_error"]
+        if "iteration_timeout" in loop_def:
+            loop_def["metadata"]["iteration_timeout"] = loop_def["iteration_timeout"]
+        
+        # Set action to action_loop for proper routing
+        loop_def["action"] = "action_loop"
+        
+        # Validate action_loop structure
+        action_loop = loop_def.get("action_loop", [])
+        if not isinstance(action_loop, list):
+            raise YAMLCompilerError("action_loop must be a list of actions")
+        
+        if not action_loop:
+            raise YAMLCompilerError("action_loop cannot be empty")
+        
+        # Validate that each action has required fields
+        for i, action_def in enumerate(action_loop):
+            if not isinstance(action_def, dict):
+                raise YAMLCompilerError(f"Action {i} in action_loop must be a dictionary")
+            if "action" not in action_def:
+                raise YAMLCompilerError(f"Action {i} in action_loop must have 'action' field")
+        
+        # Validate termination conditions
+        if not loop_def.get("until") and not loop_def.get("while_condition"):
+            raise YAMLCompilerError("action_loop must have either 'until' or 'while_condition'")
+        
+        if loop_def.get("until") and loop_def.get("while_condition"):
+            raise YAMLCompilerError("action_loop cannot have both 'until' and 'while_condition'")
 
         return loop_def
 
@@ -294,6 +368,11 @@ class ControlFlowCompiler(YAMLCompiler):
         if "metadata" in task_def:
             metadata = task_def["metadata"]
 
+            # Create action loop task if needed
+            if "is_action_loop" in metadata:
+                action_loop_task = self._create_action_loop_task(task_def, base_task)
+                return action_loop_task
+
             # Create conditional task if needed
             if "condition" in metadata:
                 conditional_task = self.conditional_handler.create_conditional_task(task_def)
@@ -310,3 +389,59 @@ class ControlFlowCompiler(YAMLCompiler):
 
         # Return the base task if no control flow
         return base_task
+
+    def _create_action_loop_task(self, task_def: Dict[str, Any], base_task: Task) -> ActionLoopTask:
+        """Create ActionLoopTask from task definition.
+        
+        Args:
+            task_def: Task definition with action loop metadata
+            base_task: Base task object
+            
+        Returns:
+            ActionLoopTask instance
+        """
+        metadata = task_def.get("metadata", {})
+        
+        # Extract action loop configuration from metadata
+        action_loop = metadata.get("action_loop", [])
+        until = metadata.get("until")
+        while_condition = metadata.get("while_condition") 
+        max_iterations = metadata.get("max_iterations", 100)
+        break_on_error = metadata.get("break_on_error", False)
+        iteration_timeout = metadata.get("iteration_timeout")
+        
+        # Create ActionLoopTask with all base task properties
+        action_loop_task = ActionLoopTask(
+            # Base task properties
+            id=base_task.id,
+            name=base_task.name,
+            action=base_task.action,
+            parameters=base_task.parameters,
+            dependencies=base_task.dependencies,
+            status=base_task.status,
+            result=base_task.result,
+            error=base_task.error,
+            metadata=base_task.metadata,
+            timeout=base_task.timeout,
+            max_retries=base_task.max_retries,
+            retry_count=base_task.retry_count,
+            created_at=base_task.created_at,
+            started_at=base_task.started_at,
+            completed_at=base_task.completed_at,
+            template_metadata=base_task.template_metadata,
+            rendered_parameters=base_task.rendered_parameters,
+            dependencies_satisfied=base_task.dependencies_satisfied,
+            in_loop_context=base_task.in_loop_context,
+            loop_context=base_task.loop_context,
+            output_metadata=base_task.output_metadata,
+            output_info=base_task.output_info,
+            # ActionLoopTask specific properties
+            action_loop=action_loop,
+            until=until,
+            while_condition=while_condition,
+            max_iterations=max_iterations,
+            break_on_error=break_on_error,
+            iteration_timeout=iteration_timeout
+        )
+        
+        return action_loop_task
