@@ -176,7 +176,7 @@ class TestDeclarativeSyntaxParser:
         ]
         
         for text, expected in test_cases:
-            variables = parser.extract_template_variables(text)
+            variables = parser.extract_template_variables(text, include_builtins=True)
             assert variables == expected, f"Failed for: {text}"
             
     @pytest.mark.asyncio  
@@ -363,7 +363,7 @@ class TestAutomaticGraphGenerator:
             # implemented that component yet, but parsing should succeed
             await generator._parse_declarative_syntax(simple_pipeline)
             # Just test that the syntax parser works
-            vars = generator.syntax_parser.extract_template_variables("{{ inputs.message }}")
+            vars = generator.syntax_parser.extract_template_variables("{{ inputs.message }}", include_builtins=True)
             assert vars == ["inputs.message"]
             
             # Basic parsing succeeded

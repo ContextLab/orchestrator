@@ -493,38 +493,162 @@ class DeclarativeSyntaxParser:
             
         logger.debug(f"Pipeline validation passed for '{parsed.id}'")
         
-    def extract_template_variables(self, text: str) -> List[str]:
+    def extract_template_variables(self, text: str, include_builtins: bool = False) -> List[str]:
         """
-        Extract template variables from text.
+        Extract template variables from text with enhanced Jinja2 support.
+        
+        Args:
+            text: Text containing template variables
+            include_builtins: Whether to include built-in variables like inputs, parameters, etc.
         
         Examples:
         - "{{ web_search.results }}" → ["web_search.results"]
-        - "{{ inputs.topic }}" → ["inputs.topic"]  
-        - "{{ item.claim_text }}" → ["item.claim_text"]
+        - "{{ inputs.topic }}" → ["inputs.topic"] (if include_builtins=True, else [])
+        - "{{ item.claim_text }}" → ["item.claim_text"] (if include_builtins=True, else [])
+        - Complex: "{{ search_topic.results[0].url if search_topic.results else '' }}" → ["search_topic.results"]
         """
         if not isinstance(text, str):
             return []
             
+        # First, identify Jinja2 for loop variables to exclude them
+        loop_vars = self._extract_jinja2_loop_variables(text)
+        
         matches = self.template_var_pattern.findall(text)
         variables = []
         
+        # Built-in variables that should always be available
+        builtin_vars = {
+            'execution', 'outputs', 'loop', 'index', 'iteration_count', '$item', '$index'
+        }
+        
+        # Variables that are built-in but may be useful for dependency analysis
+        context_builtins = {'inputs', 'parameters', 'item'}
+        
+        if not include_builtins:
+            builtin_vars.update(context_builtins)
+        
+        # Add loop variables to builtins (they're context-specific)
+        builtin_vars.update(loop_vars)
+        
         for match in matches:
-            # Clean up the variable (remove filters, etc.)
-            var = match.strip()
+            # Extract all potential variable references from complex expressions
+            expr_vars = self._extract_variables_from_expression(match.strip())
             
-            # Handle Jinja2 filters (e.g., "variable | filter")
-            if '|' in var:
-                var = var.split('|')[0].strip()
+            for var in expr_vars:
+                var = var.strip()
                 
-            # Handle array indexing (e.g., "variable[0]")
-            if '[' in var:
-                var = var.split('[')[0].strip()
-            
-            # Only add non-empty variables
-            if var and len(var) > 0:
-                variables.append(var)
+                # Skip empty variables
+                if not var or len(var) == 0:
+                    continue
+                    
+                # Skip built-in variables and loop variables based on settings
+                var_root = var.split('.')[0]
+                if var_root in builtin_vars:
+                    continue
+                    
+                # Skip literals, operators, and keywords
+                if self._is_literal_or_keyword(var):
+                    continue
+                
+                # Add valid variables
+                if var not in variables:
+                    variables.append(var)
             
         return variables
+        
+    def _extract_jinja2_loop_variables(self, text: str) -> Set[str]:
+        """Extract loop variables from Jinja2 for loops."""
+        import re
+        loop_vars = set()
+        
+        # Find all for loop declarations: {% for var in collection %}
+        for_loop_pattern = r'\{\%\s*for\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+[^%]*\%\}'
+        matches = re.findall(for_loop_pattern, text)
+        
+        for match in matches:
+            loop_vars.add(match.strip())
+            
+        return loop_vars
+        
+    def _extract_variables_from_expression(self, expression: str) -> List[str]:
+        """Extract variable names from a complex Jinja2 expression."""
+        variables = []
+        import re
+        
+        # First, remove quoted strings to avoid extracting variables from string literals
+        # This handles both single and double quotes
+        expression_without_strings = re.sub(r'["\'][^"\']*["\']', '', expression)
+        
+        # Check if expression contains filters or array indexing
+        has_filters = '|' in expression_without_strings
+        has_array_access = '[' in expression_without_strings
+        
+        if has_filters:
+            # For expressions with filters like "data | filter | truncate(100)", 
+            # extract the variable before the first filter
+            filter_parts = expression_without_strings.split('|')
+            var_part = filter_parts[0].strip()
+            
+            # Extract variable from the part before filters
+            var_match = re.search(r'\b([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\b', var_part)
+            if var_match:
+                candidate = var_match.group(1)
+                if not self._is_jinja2_builtin(candidate):
+                    variables.append(candidate)
+                    
+        elif has_array_access:
+            # For expressions with array access like "results[0].url",
+            # extract the root variable before the array access
+            array_match = re.match(r'^([a-zA-Z_][a-zA-Z0-9_]*)', expression_without_strings.strip())
+            if array_match:
+                root_var = array_match.group(1)
+                if not self._is_jinja2_builtin(root_var):
+                    variables.append(root_var)
+                    
+        else:
+            # For simple variable references like "web_search.results" or complex conditionals
+            var_candidates = re.findall(r'\b([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\b', expression_without_strings)
+            
+            for candidate in var_candidates:
+                # Skip if it's a Jinja2 keyword/function
+                if not self._is_jinja2_builtin(candidate):
+                    variables.append(candidate)
+                
+        return variables
+        
+    def _is_literal_or_keyword(self, var: str) -> bool:
+        """Check if a string is a literal value or keyword, not a variable."""
+        # Numeric literals
+        try:
+            float(var)
+            return True
+        except ValueError:
+            pass
+            
+        # String literals
+        if var.startswith(("'", '"')) and var.endswith(("'", '"')):
+            return True
+            
+        # Boolean literals
+        if var.lower() in ('true', 'false', 'null', 'none'):
+            return True
+            
+        # Common operators that might be extracted
+        if var in ('and', 'or', 'not', 'in', 'is', 'if', 'else', 'length', 'int'):
+            return True
+            
+        return False
+        
+    def _is_jinja2_builtin(self, name: str) -> bool:
+        """Check if name is a Jinja2 built-in function or filter."""
+        jinja2_builtins = {
+            'length', 'count', 'join', 'split', 'replace', 'upper', 'lower', 
+            'capitalize', 'title', 'strip', 'default', 'first', 'last',
+            'int', 'float', 'string', 'list', 'dict', 'abs', 'round',
+            'truncate', 'slugify', 'if', 'else', 'endif', 'for', 'endfor',
+            'defined', 'undefined', 'loop', 'range', 'max', 'min', 'filter'
+        }
+        return name in jinja2_builtins
         
     def _is_variable_available(self, 
                               variable: str, 
@@ -600,24 +724,45 @@ class DeclarativeSyntaxParser:
                                       step_dependencies: List[str],
                                       all_possible_outputs: Set[str],
                                       context_text: str = "") -> bool:
-        """Enhanced variable availability check that handles conditional references."""
+        """Enhanced variable availability check that handles conditional references and tool outputs."""
         # First try the standard check
         if self._is_variable_available(variable, available_vars, step_dependencies):
             return True
             
-        # Check if this is a conditional reference (has default filter)
-        if '| default(' in context_text:
-            # This is a conditional reference, check if the variable could potentially exist
+        # Handle tool-specific outputs
+        var_parts = variable.split('.')
+        if len(var_parts) >= 2:
+            step_id = var_parts[0]
+            field_name = var_parts[1]
+            
+            # Common tool output fields that are typically available
+            common_tool_outputs = {
+                'results', 'result', 'content', 'text', 'url', 'title', 'snippet',
+                'total_results', 'success', 'error', 'filepath', 'output_path',
+                'word_count', 'status', 'response', 'data'
+            }
+            
+            if field_name in common_tool_outputs:
+                # Check if the step exists in available vars or possible outputs
+                if any(var.startswith(f"{step_id}.") for var in available_vars.union(all_possible_outputs)):
+                    return True
+                    
+        # Check if this is a conditional reference (has conditionals or default values)
+        conditional_indicators = ['if', 'else', '| default', 'is defined', 'length > 0']
+        if any(indicator in context_text for indicator in conditional_indicators):
             var_root = variable.split('.')[0]
-            var_full = variable
             
             # Check if this variable exists in all possible outputs (from conditional steps)
-            if var_full in all_possible_outputs:
+            if variable in all_possible_outputs:
                 return True
                 
             # Check if the root step exists (even if it's conditional)
             step_ids = {output.split('.')[0] for output in all_possible_outputs}
             if var_root in step_ids:
+                return True
+                
+            # For conditional expressions, be more lenient - the template engine will handle it
+            if 'if' in context_text and 'else' in context_text:
                 return True
                 
         return False

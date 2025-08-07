@@ -30,6 +30,7 @@ from .parallel_detector import ParallelExecutionDetector, ParallelGroup
 from .control_flow_analyzer import ControlFlowAnalyzer, ControlFlowMap
 from .data_flow_validator import DataFlowValidator, DataFlowSchema
 from .state_graph_constructor import StateGraphConstructor
+from .auto_debugger import AutoDebugger, AutoDebugResult
 
 if TYPE_CHECKING:
     from langgraph.graph import StateGraph
@@ -61,7 +62,10 @@ class AutomaticGraphGenerator:
         """
         self.model_registry = model_registry
         self.tool_registry = tool_registry
-        self.auto_debugger = auto_debugger
+        self.auto_debugger = auto_debugger or AutoDebugger(
+            model_registry=model_registry,
+            tool_registry=tool_registry
+        )
         
         # Initialize core analysis components
         self.syntax_parser = DeclarativeSyntaxParser()
@@ -267,12 +271,73 @@ class AutomaticGraphGenerator:
                                          error: Exception,
                                          context: Optional[Dict[str, Any]]) -> StateGraph:
         """Use AutoDebugger to automatically fix generation failures."""
+        
+        # Build pipeline context for AutoDebugger
+        pipeline_context = {
+            'pipeline_def': pipeline_def,
+            'error': str(error),
+            'error_type': type(error).__name__,
+            'context': context or {}
+        }
+        
+        # Create instructions for AutoDebugger
+        instructions = f"""
+        Fix the pipeline graph generation failure for this pipeline definition:
+        
+        Pipeline ID: {pipeline_def.get('id', 'unknown')}
+        Error: {str(error)}
+        
+        The pipeline definition that failed to generate:
+        {pipeline_def}
+        
+        Please analyze the error and provide a corrected pipeline definition
+        that will successfully generate a valid graph.
+        """
+        
         try:
-            # This will be implemented when AutoDebugger (Issue #201) is available
-            logger.info("AutoDebugger auto-fix placeholder - will be implemented with Issue #201")
-            raise error  # Re-raise original error for now
-        except Exception as e:
-            raise GraphGenerationError(f"Auto-fix failed: {e}") from error
+            # Use AutoDebugger to fix the issue
+            debug_result: AutoDebugResult = await self.auto_debugger.auto_debug(
+                initial_instructions=instructions,
+                pipeline_context=pipeline_context,
+                error_context=str(error),
+                available_tools=self._get_available_tool_names()
+            )
+            
+            if debug_result.success and debug_result.final_result:
+                logger.info(f"AutoDebugger successfully fixed generation failure: {debug_result.debug_summary}")
+                
+                # Try to parse the fixed pipeline definition
+                fixed_pipeline = debug_result.final_result
+                if isinstance(fixed_pipeline, dict):
+                    # Recursively try to generate graph with fixed definition
+                    return await self.generate_graph(fixed_pipeline, context)
+                else:
+                    # AutoDebugger provided a different type of fix
+                    logger.warning(f"AutoDebugger provided non-dict result: {type(fixed_pipeline)}")
+                    raise error
+            else:
+                logger.warning(f"AutoDebugger failed to fix generation failure: {debug_result.error_message}")
+                raise error
+                
+        except Exception as debug_error:
+            logger.error(f"AutoDebugger encountered error during fix attempt: {debug_error}")
+            raise GraphGenerationError(f"Auto-fix failed: {debug_error}") from error
+    
+    def _get_available_tool_names(self) -> List[str]:
+        """Get list of available tool names for AutoDebugger."""
+        if self.tool_registry and hasattr(self.tool_registry, 'get_available_tools'):
+            try:
+                return list(self.tool_registry.get_available_tools())
+            except Exception as e:
+                logger.warning(f"Failed to get available tools: {e}")
+                return []
+        else:
+            # Return common tool names as fallback
+            return [
+                'web-search', 'filesystem', 'headless-browser', 
+                'pdf-compiler', 'terminal', 'analyze_text', 
+                'generate_text', 'fact_checker'
+            ]
             
     def _generate_cache_key(self, pipeline_def: Dict[str, Any]) -> str:
         """Generate cache key for pipeline definition."""
