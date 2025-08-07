@@ -443,10 +443,11 @@ class AnthropicModel(Model):
         """Generate using LangChain backend."""
         try:
             # Handle system prompt for LangChain
-            if "system_prompt" in kwargs:
+            system_prompt = kwargs.get("system_prompt")
+            if system_prompt and system_prompt.strip():
                 from langchain_core.messages import SystemMessage, HumanMessage
                 messages = [
-                    SystemMessage(content=kwargs["system_prompt"]),
+                    SystemMessage(content=system_prompt),
                     HumanMessage(content=prompt)
                 ]
                 
@@ -483,17 +484,22 @@ class AnthropicModel(Model):
             messages = [{"role": "user", "content": prompt}]
 
             # Add system message if provided
-            system_prompt = kwargs.get("system_prompt", "")
+            system_prompt = kwargs.get("system_prompt")
 
             # Make API call
-            response = await self.client.messages.create(
-                model=self._model_id,
-                messages=messages,
-                system=system_prompt if system_prompt else None,
-                temperature=temperature,
-                max_tokens=max_tokens or self.capabilities.max_tokens,
-                stream=False,
-            )
+            api_kwargs = {
+                "model": self._model_id,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens or self.capabilities.max_tokens,
+                "stream": False,
+            }
+            
+            # Only add system prompt if it's provided and non-empty
+            if system_prompt and system_prompt.strip():
+                api_kwargs["system"] = system_prompt
+                
+            response = await self.client.messages.create(**api_kwargs)
 
             # Extract response
             if response.content:

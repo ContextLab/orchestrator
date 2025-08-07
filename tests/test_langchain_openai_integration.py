@@ -6,6 +6,7 @@ from unittest.mock import patch
 import os
 
 from src.orchestrator.models.openai_model import OpenAIModel
+from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
 class TestLangChainOpenAIIntegration:
@@ -133,8 +134,13 @@ class TestLangChainOpenAIIntegration:
         assert PACKAGE_MAPPINGS["langchain_community"] == "langchain-community"
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not available")
     async def test_real_openai_generation_compatibility(self):
+        """Test real OpenAI API calls work the same with enhanced model."""
+        
+        # Check if OpenAI API key is available using our key management system
+        available_keys = load_api_keys_optional()
+        if not available_keys.get("openai"):
+            pytest.skip("OpenAI API key not available")
         """Test real OpenAI API calls work the same with enhanced model."""
         
         # Test with LangChain disabled (original behavior)
@@ -161,8 +167,13 @@ class TestLangChainOpenAIIntegration:
             pytest.skip(f"OpenAI API test failed (possibly rate limited): {e}")
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not available") 
     async def test_structured_output_compatibility(self):
+        """Test structured output generation works correctly."""
+        
+        # Check if OpenAI API key is available using our key management system
+        available_keys = load_api_keys_optional()
+        if not available_keys.get("openai"):
+            pytest.skip("OpenAI API key not available")
         """Test structured output generation works correctly."""
         
         model = OpenAIModel("gpt-3.5-turbo", use_langchain=False)

@@ -5,6 +5,7 @@ import asyncio
 import os
 
 from src.orchestrator.models.anthropic_model import AnthropicModel
+from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
 class TestLangChainAnthropicIntegration:
@@ -153,8 +154,13 @@ class TestLangChainAnthropicIntegration:
         assert "chat" in expertise
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(not os.getenv("ANTHROPIC_API_KEY"), reason="Anthropic API key not available")
     async def test_real_anthropic_generation_compatibility(self):
+        """Test real Anthropic API calls work the same with enhanced model."""
+        
+        # Check if Anthropic API key is available using our key management system
+        available_keys = load_api_keys_optional()
+        if not available_keys.get("anthropic"):
+            pytest.skip("Anthropic API key not available")
         """Test real Anthropic API calls work the same with enhanced model."""
         
         # Test with LangChain disabled (original behavior)
@@ -181,8 +187,13 @@ class TestLangChainAnthropicIntegration:
             pytest.skip(f"Anthropic API test failed (possibly rate limited): {e}")
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(not os.getenv("ANTHROPIC_API_KEY"), reason="Anthropic API key not available") 
     async def test_structured_output_compatibility(self):
+        """Test structured output generation works correctly."""
+        
+        # Check if Anthropic API key is available using our key management system
+        available_keys = load_api_keys_optional()
+        if not available_keys.get("anthropic"):
+            pytest.skip("Anthropic API key not available")
         """Test structured output generation works correctly."""
         
         model = AnthropicModel("claude-3-haiku", use_langchain=False)

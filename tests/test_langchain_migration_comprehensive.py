@@ -9,6 +9,7 @@ from src.orchestrator.models.openai_model import OpenAIModel
 from src.orchestrator.models.anthropic_model import AnthropicModel
 from src.orchestrator.models.langchain_adapter import LangChainModelAdapter
 from src.orchestrator.utils.auto_install import PACKAGE_MAPPINGS
+from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
 class TestLangChainMigrationComprehensive:
@@ -284,11 +285,13 @@ class TestLangChainMigrationComprehensive:
             assert len(str(e)) > 0
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not (os.getenv("OPENAI_API_KEY") and os.getenv("ANTHROPIC_API_KEY")), 
-        reason="Both API keys needed for cross-provider test"
-    )
     async def test_cross_provider_consistency(self):
+        """Test consistency between different providers for same tasks."""
+        
+        # Check if API keys are available using our key management system
+        available_keys = load_api_keys_optional()
+        if not (available_keys.get("openai") and available_keys.get("anthropic")):
+            pytest.skip("Both OpenAI and Anthropic API keys needed for cross-provider test")
         """Test consistency between different providers for same tasks."""
         
         openai_model = OpenAIModel("gpt-3.5-turbo")
