@@ -602,6 +602,48 @@ class ModelHealthMonitor:
             logger.error(f"Error recovering Docker service for {model_key}: {e}")
             return False
     
+    async def _check_docker_service(self, model_key: str, start_time: float) -> HealthCheck:
+        """Check health of Docker-based service."""
+        docker_manager = SERVICE_MANAGERS.get("docker")
+        
+        if not docker_manager:
+            return HealthCheck(
+                model_key=model_key,
+                status=HealthStatus.UNHEALTHY,
+                timestamp=start_time,
+                response_time_ms=0.0,
+                error_message="Docker service manager not available"
+            )
+        
+        try:
+            # Check if Docker service is running
+            if not docker_manager.is_running():
+                return HealthCheck(
+                    model_key=model_key,
+                    status=HealthStatus.UNHEALTHY,
+                    timestamp=start_time,
+                    response_time_ms=(time.time() - start_time) * 1000,
+                    error_message="Docker service not running"
+                )
+            
+            response_time = (time.time() - start_time) * 1000
+            
+            return HealthCheck(
+                model_key=model_key,
+                status=HealthStatus.HEALTHY,
+                timestamp=start_time,
+                response_time_ms=response_time
+            )
+            
+        except Exception as e:
+            return HealthCheck(
+                model_key=model_key,
+                status=HealthStatus.UNHEALTHY,
+                timestamp=start_time,
+                response_time_ms=(time.time() - start_time) * 1000,
+                error_message=str(e)
+            )
+    
     async def _recover_api_service(self, model_key: str) -> bool:
         """Recover API-based service (mostly just wait and retry)."""
         # For API services, recovery is mostly about waiting for service to come back

@@ -499,7 +499,7 @@ delete global;
             'name': name,
             'command': command,
             'detach': True,
-            'remove': True,  # Auto-remove when stopped
+            'auto_remove': False,  # Don't auto-remove so we can get logs
             'mem_limit': f"{config.memory_limit_mb}m",
             'cpu_period': 100000,
             'cpu_quota': int(config.cpu_limit * 100000),
@@ -620,10 +620,12 @@ delete global;
         """Clean up container resources."""
         try:
             # Stop container if still running
+            container.reload()  # Refresh container status
             if container.status == 'running':
                 container.kill()
             
-            # Container will be auto-removed due to remove=True in create config
+            # Remove container manually since auto_remove is False
+            container.remove()
             
         except Exception as e:
             logger.warning(f"Error during container cleanup: {e}")

@@ -253,9 +253,15 @@ class IntelligentModelSelector:
         """
         # Use existing capability-based filtering
         if requirements.capabilities:
-            candidates = self.model_registry.find_models_by_capability(
-                requirements.capabilities
-            )
+            # Find models that match any of the required capabilities
+            candidates = set()
+            for capability in requirements.capabilities:
+                models_for_capability = self.model_registry.find_models_by_capability(capability)
+                # Convert model objects to model keys
+                for model in models_for_capability:
+                    model_key = f"{model.provider}:{model.name}"
+                    candidates.add(model_key)
+            candidates = list(candidates)
         else:
             candidates = list(self.model_registry.models.keys())
         
@@ -618,11 +624,14 @@ def select_optimal_model_for_task(
     
     # Add capability inference based on task keywords
     if any(keyword in task_description.lower() for keyword in ["code", "programming", "python"]):
-        requirements.capabilities.append("code_generation")
+        if "code_generation" not in requirements.capabilities:
+            requirements.capabilities.append("code_generation")
     if any(keyword in task_description.lower() for keyword in ["analysis", "reasoning"]):
-        requirements.capabilities.append("analysis")
+        if "analysis" not in requirements.capabilities:
+            requirements.capabilities.append("analysis")
     if any(keyword in task_description.lower() for keyword in ["creative", "story", "write"]):
-        requirements.capabilities.append("creative_writing")
+        if "creative_writing" not in requirements.capabilities:
+            requirements.capabilities.append("creative_writing")
     
     selector = IntelligentModelSelector(model_registry)
     return selector.select_optimal_model(requirements)
