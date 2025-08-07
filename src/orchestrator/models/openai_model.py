@@ -1,13 +1,19 @@
-"""OpenAI model adapter implementation."""
+"""OpenAI model adapter implementation with LangChain backend support."""
 
 from __future__ import annotations
 
 import os
+import asyncio
+import logging
 from typing import Any, Dict, Optional
 
 from openai import AsyncOpenAI
 
 from ..core.model import Model, ModelCapabilities, ModelRequirements, ModelCost
+from ..utils.auto_install import safe_import
+from ..utils.api_keys_flexible import ensure_api_key
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIModel(Model):
@@ -21,9 +27,11 @@ class OpenAIModel(Model):
         base_url: Optional[str] = None,
         capabilities: Optional[ModelCapabilities] = None,
         requirements: Optional[ModelRequirements] = None,
+        use_langchain: bool = True,
+        **kwargs: Any,
     ) -> None:
         """
-        Initialize OpenAI model.
+        Initialize OpenAI model with LangChain backend support.
 
         Args:
             name: Model name (e.g., "gpt-4", "gpt-3.5-turbo")
@@ -32,6 +40,8 @@ class OpenAIModel(Model):
             base_url: Custom API base URL (optional)
             capabilities: Model capabilities
             requirements: Resource requirements
+            use_langchain: Whether to try using LangChain backend (defaults to True)
+            **kwargs: Additional arguments
         """
         # Set default capabilities based on model
         if capabilities is None:
@@ -57,18 +67,50 @@ class OpenAIModel(Model):
             cost=cost,
         )
 
-        # Initialize OpenAI client
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        # Get API key using existing infrastructure
+        self.api_key = api_key
         if not self.api_key:
-            raise ValueError("OpenAI API key not provided")
+            try:
+                self.api_key = ensure_api_key("openai")
+            except Exception:
+                self.api_key = os.getenv("OPENAI_API_KEY")
+                if not self.api_key:
+                    raise ValueError("OpenAI API key not provided")
 
-        self.client = AsyncOpenAI(
-            api_key=self.api_key,
-            organization=organization,
-            base_url=base_url,
-        )
+        # Try to initialize LangChain model first
+        self.langchain_model = None
+        self._use_langchain = False
+        
+        if use_langchain:
+            try:
+                langchain_openai = safe_import("langchain_openai", auto_install=True)
+                if langchain_openai:
+                    self.langchain_model = langchain_openai.ChatOpenAI(
+                        model=name,
+                        api_key=self.api_key,
+                        organization=organization,
+                        base_url=base_url,
+                        temperature=kwargs.get("temperature", 0.7),
+                        max_tokens=kwargs.get("max_tokens"),
+                        **{k: v for k, v in kwargs.items() if k not in ['temperature', 'max_tokens']}
+                    )
+                    self._use_langchain = True
+                    logger.info(f"Using LangChain backend for OpenAI model: {name}")
+                else:
+                    logger.warning(f"LangChain not available, falling back to direct OpenAI for: {name}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize LangChain OpenAI model: {e}, falling back to direct OpenAI")
 
-        # Set model-specific attributes
+        # Fallback: Initialize direct OpenAI client
+        if not self._use_langchain:
+            self.client = AsyncOpenAI(
+                api_key=self.api_key,
+                organization=organization,
+                base_url=base_url,
+            )
+            logger.info(f"Using direct OpenAI client for model: {name}")
+
+        # Set model-specific attributes (preserve existing functionality)
         self._model_id = self._normalize_model_name(name)
         self._expertise = self._get_model_expertise(name)
         self._size_billions = self._estimate_model_size(name)
@@ -243,7 +285,7 @@ class OpenAIModel(Model):
         **kwargs: Any,
     ) -> str:
         """
-        Generate text from prompt.
+        Generate text from prompt using LangChain or direct OpenAI.
 
         Args:
             prompt: Input prompt
@@ -254,6 +296,62 @@ class OpenAIModel(Model):
         Returns:
             Generated text
         """
+        # Use LangChain if available
+        if self._use_langchain and self.langchain_model:
+            try:
+                return await self._langchain_generate(prompt, temperature, max_tokens, **kwargs)
+            except Exception as e:
+                logger.warning(f"LangChain generation failed, falling back to direct OpenAI: {e}")
+                # Fall through to direct OpenAI implementation
+        
+        # Fallback to direct OpenAI implementation (preserve original functionality)
+        return await self._direct_openai_generate(prompt, temperature, max_tokens, **kwargs)
+
+    async def _langchain_generate(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Generate using LangChain backend."""
+        try:
+            # Handle system prompt for LangChain
+            if "system_prompt" in kwargs:
+                from langchain_core.messages import SystemMessage, HumanMessage
+                messages = [
+                    SystemMessage(content=kwargs["system_prompt"]),
+                    HumanMessage(content=prompt)
+                ]
+                
+                if hasattr(self.langchain_model, 'ainvoke'):
+                    response = await self.langchain_model.ainvoke(messages)
+                else:
+                    response = await asyncio.to_thread(self.langchain_model.invoke, messages)
+            else:
+                # Simple prompt
+                if hasattr(self.langchain_model, 'ainvoke'):
+                    response = await self.langchain_model.ainvoke(prompt)
+                else:
+                    response = await asyncio.to_thread(self.langchain_model.invoke, prompt)
+
+            # Extract content from LangChain response
+            if hasattr(response, 'content'):
+                return response.content
+            else:
+                return str(response)
+
+        except Exception as e:
+            raise RuntimeError(f"LangChain OpenAI generation failed: {str(e)}")
+
+    async def _direct_openai_generate(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Generate using direct OpenAI client (original implementation)."""
         try:
             # Prepare messages
             messages = [{"role": "user", "content": prompt}]
@@ -305,9 +403,10 @@ class OpenAIModel(Model):
         """
         try:
             # Add schema instruction to prompt
-            schema_prompt = f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
+            import json
+            schema_prompt = f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{json.dumps(schema, indent=2)}"
 
-            # Generate response
+            # Generate response using existing generate method (handles LangChain/direct OpenAI automatically)
             response = await self.generate(
                 prompt=schema_prompt,
                 temperature=temperature,
@@ -315,18 +414,15 @@ class OpenAIModel(Model):
             )
 
             # Parse JSON response
-            import json
-
             try:
                 return json.loads(response)
             except json.JSONDecodeError:
                 # Try to extract JSON from response
                 import re
-
                 json_match = re.search(r"\{.*\}", response, re.DOTALL)
                 if json_match:
                     return json.loads(json_match.group())
-                raise
+                raise ValueError("Could not parse JSON from response")
 
         except Exception as e:
             raise RuntimeError(f"OpenAI structured generation failed: {str(e)}")
@@ -339,14 +435,9 @@ class OpenAIModel(Model):
             True if healthy
         """
         try:
-            # Try a simple completion
-            response = await self.client.chat.completions.create(
-                model=self._model_id,
-                messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=5,
-                temperature=0.0,
-            )
-            return bool(response.choices)
+            # Use the generate method which handles LangChain/direct OpenAI automatically
+            response = await self.generate("Hi", temperature=0.0, max_tokens=5)
+            return len(response) > 0
         except Exception:
             return False
 

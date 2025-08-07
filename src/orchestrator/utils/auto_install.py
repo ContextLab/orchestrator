@@ -100,6 +100,13 @@ PACKAGE_MAPPINGS = {
     "openai": "openai",
     "google.generativeai": "google-generativeai",
     
+    # LangChain providers
+    "langchain_openai": "langchain-openai",
+    "langchain_anthropic": "langchain-anthropic",
+    "langchain_google_genai": "langchain-google-genai",
+    "langchain_community": "langchain-community",
+    "langchain_huggingface": "langchain-huggingface",
+    
     # Data processing
     "pandas": "pandas",
     "numpy": "numpy",

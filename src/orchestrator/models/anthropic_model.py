@@ -1,13 +1,19 @@
-"""Anthropic model adapter implementation."""
+"""Anthropic model adapter implementation with LangChain backend support."""
 
 from __future__ import annotations
 
 import os
+import asyncio
+import logging
 from typing import Any, Dict, Optional
 
 from anthropic import AsyncAnthropic
 
-from ..core.model import Model, ModelCapabilities, ModelRequirements
+from ..core.model import Model, ModelCapabilities, ModelRequirements, ModelCost
+from ..utils.auto_install import safe_import
+from ..utils.api_keys_flexible import ensure_api_key
+
+logger = logging.getLogger(__name__)
 
 
 class AnthropicModel(Model):
@@ -20,9 +26,11 @@ class AnthropicModel(Model):
         base_url: Optional[str] = None,
         capabilities: Optional[ModelCapabilities] = None,
         requirements: Optional[ModelRequirements] = None,
+        use_langchain: bool = True,
+        **kwargs: Any,
     ) -> None:
         """
-        Initialize Anthropic model.
+        Initialize Anthropic model with LangChain backend support.
 
         Args:
             name: Model name (e.g., "claude-3-opus", "claude-3-sonnet")
@@ -30,6 +38,8 @@ class AnthropicModel(Model):
             base_url: Custom API base URL (optional)
             capabilities: Model capabilities
             requirements: Resource requirements
+            use_langchain: Whether to try using LangChain backend (defaults to True)
+            **kwargs: Additional arguments
         """
         # Set default capabilities based on model
         if capabilities is None:
@@ -44,24 +54,59 @@ class AnthropicModel(Model):
                 disk_space_gb=0.1,
             )
 
+        # Set cost information
+        cost = self._get_model_cost(name)
+
         super().__init__(
             name=name,
             provider="anthropic",
             capabilities=capabilities,
             requirements=requirements,
+            cost=cost,
         )
 
-        # Initialize Anthropic client
-        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        # Get API key using existing infrastructure
+        self.api_key = api_key
         if not self.api_key:
-            raise ValueError("Anthropic API key not provided")
+            try:
+                self.api_key = ensure_api_key("anthropic")
+            except Exception:
+                self.api_key = os.getenv("ANTHROPIC_API_KEY")
+                if not self.api_key:
+                    raise ValueError("Anthropic API key not provided")
 
-        self.client = AsyncAnthropic(
-            api_key=self.api_key,
-            base_url=base_url,
-        )
+        # Try to initialize LangChain model first
+        self.langchain_model = None
+        self._use_langchain = False
+        
+        if use_langchain:
+            try:
+                langchain_anthropic = safe_import("langchain_anthropic", auto_install=True)
+                if langchain_anthropic:
+                    self.langchain_model = langchain_anthropic.ChatAnthropic(
+                        model=self._normalize_model_name(name),
+                        api_key=self.api_key,
+                        base_url=base_url,
+                        temperature=kwargs.get("temperature", 0.7),
+                        max_tokens=kwargs.get("max_tokens"),
+                        **{k: v for k, v in kwargs.items() if k not in ['temperature', 'max_tokens']}
+                    )
+                    self._use_langchain = True
+                    logger.info(f"Using LangChain backend for Anthropic model: {name}")
+                else:
+                    logger.warning(f"LangChain not available, falling back to direct Anthropic for: {name}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize LangChain Anthropic model: {e}, falling back to direct Anthropic")
 
-        # Set model-specific attributes
+        # Fallback: Initialize direct Anthropic client
+        if not self._use_langchain:
+            self.client = AsyncAnthropic(
+                api_key=self.api_key,
+                base_url=base_url,
+            )
+            logger.info(f"Using direct Anthropic client for model: {name}")
+
+        # Set model-specific attributes (preserve existing functionality)
         self._model_id = self._normalize_model_name(name)
         self._expertise = self._get_model_expertise(name)
         self._size_billions = self._estimate_model_size(name)
@@ -160,6 +205,11 @@ class AnthropicModel(Model):
                 languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
                 max_tokens=4096,
                 temperature_range=(0.0, 1.0),
+                vision_capable=True,
+                code_specialized=True,
+                supports_tools=True,
+                accuracy_score=0.95,
+                speed_rating="medium",
             )
 
         # Claude 3 Sonnet
@@ -183,6 +233,11 @@ class AnthropicModel(Model):
                 languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
                 max_tokens=4096,
                 temperature_range=(0.0, 1.0),
+                vision_capable=True,
+                code_specialized=True,
+                supports_tools=True,
+                accuracy_score=0.90,
+                speed_rating="medium",
             )
 
         # Claude 3 Haiku
@@ -204,6 +259,11 @@ class AnthropicModel(Model):
                 languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
                 max_tokens=4096,
                 temperature_range=(0.0, 1.0),
+                vision_capable=True,
+                code_specialized=True,
+                supports_tools=True,
+                accuracy_score=0.85,
+                speed_rating="fast",
             )
 
         # Claude 2.x
@@ -299,6 +359,50 @@ class AnthropicModel(Model):
 
         return 1.0
 
+    def _get_model_cost(self, name: str) -> ModelCost:
+        """Get cost information for Anthropic model."""
+        name_lower = name.lower()
+
+        # Anthropic pricing (as of 2024)
+        if "opus" in name_lower:
+            return ModelCost(
+                input_cost_per_1k_tokens=15.0 / 1000,  # $15 per 1M input tokens = $0.015 per 1K
+                output_cost_per_1k_tokens=75.0 / 1000,  # $75 per 1M output tokens = $0.075 per 1K
+                is_free=False,
+            )
+        elif "sonnet" in name_lower:
+            if "3-5" in name_lower or "3.5" in name_lower:
+                return ModelCost(
+                    input_cost_per_1k_tokens=3.0 / 1000,  # $3 per 1M tokens
+                    output_cost_per_1k_tokens=15.0 / 1000,  # $15 per 1M tokens
+                    is_free=False,
+                )
+            else:
+                return ModelCost(
+                    input_cost_per_1k_tokens=3.0 / 1000,  # $3 per 1M tokens
+                    output_cost_per_1k_tokens=15.0 / 1000,  # $15 per 1M tokens
+                    is_free=False,
+                )
+        elif "haiku" in name_lower:
+            return ModelCost(
+                input_cost_per_1k_tokens=0.25 / 1000,  # $0.25 per 1M tokens
+                output_cost_per_1k_tokens=1.25 / 1000,  # $1.25 per 1M tokens
+                is_free=False,
+            )
+        elif "instant" in name_lower:
+            return ModelCost(
+                input_cost_per_1k_tokens=0.8 / 1000,  # $0.80 per 1M tokens
+                output_cost_per_1k_tokens=2.4 / 1000,  # $2.40 per 1M tokens
+                is_free=False,
+            )
+        else:
+            # Default pricing for unknown Anthropic models
+            return ModelCost(
+                input_cost_per_1k_tokens=8.0 / 1000,
+                output_cost_per_1k_tokens=24.0 / 1000,
+                is_free=False,
+            )
+
     async def generate(
         self,
         prompt: str,
@@ -307,7 +411,7 @@ class AnthropicModel(Model):
         **kwargs: Any,
     ) -> str:
         """
-        Generate text from prompt.
+        Generate text from prompt using LangChain or direct Anthropic.
 
         Args:
             prompt: Input prompt
@@ -318,6 +422,62 @@ class AnthropicModel(Model):
         Returns:
             Generated text
         """
+        # Use LangChain if available
+        if self._use_langchain and self.langchain_model:
+            try:
+                return await self._langchain_generate(prompt, temperature, max_tokens, **kwargs)
+            except Exception as e:
+                logger.warning(f"LangChain generation failed, falling back to direct Anthropic: {e}")
+                # Fall through to direct Anthropic implementation
+        
+        # Fallback to direct Anthropic implementation (preserve original functionality)
+        return await self._direct_anthropic_generate(prompt, temperature, max_tokens, **kwargs)
+
+    async def _langchain_generate(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Generate using LangChain backend."""
+        try:
+            # Handle system prompt for LangChain
+            if "system_prompt" in kwargs:
+                from langchain_core.messages import SystemMessage, HumanMessage
+                messages = [
+                    SystemMessage(content=kwargs["system_prompt"]),
+                    HumanMessage(content=prompt)
+                ]
+                
+                if hasattr(self.langchain_model, 'ainvoke'):
+                    response = await self.langchain_model.ainvoke(messages)
+                else:
+                    response = await asyncio.to_thread(self.langchain_model.invoke, messages)
+            else:
+                # Simple prompt
+                if hasattr(self.langchain_model, 'ainvoke'):
+                    response = await self.langchain_model.ainvoke(prompt)
+                else:
+                    response = await asyncio.to_thread(self.langchain_model.invoke, prompt)
+
+            # Extract content from LangChain response
+            if hasattr(response, 'content'):
+                return response.content
+            else:
+                return str(response)
+
+        except Exception as e:
+            raise RuntimeError(f"LangChain Anthropic generation failed: {str(e)}")
+
+    async def _direct_anthropic_generate(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Generate using direct Anthropic client (original implementation)."""
         try:
             # Prepare messages
             messages = [{"role": "user", "content": prompt}]
@@ -375,9 +535,10 @@ class AnthropicModel(Model):
         """
         try:
             # Add schema instruction to prompt
-            schema_prompt = f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{schema}"
+            import json
+            schema_prompt = f"{prompt}\n\nPlease respond with valid JSON matching this schema:\n{json.dumps(schema, indent=2)}"
 
-            # Generate response
+            # Generate response using existing generate method (handles LangChain/direct Anthropic automatically)
             response = await self.generate(
                 prompt=schema_prompt,
                 temperature=temperature,
@@ -385,18 +546,15 @@ class AnthropicModel(Model):
             )
 
             # Parse JSON response
-            import json
-
             try:
                 return json.loads(response)
             except json.JSONDecodeError:
                 # Try to extract JSON from response
                 import re
-
                 json_match = re.search(r"\{.*\}", response, re.DOTALL)
                 if json_match:
                     return json.loads(json_match.group())
-                raise
+                raise ValueError("Could not parse JSON from response")
 
         except Exception as e:
             raise RuntimeError(f"Anthropic structured generation failed: {str(e)}")
@@ -409,14 +567,9 @@ class AnthropicModel(Model):
             True if healthy
         """
         try:
-            # Try a simple completion
-            response = await self.client.messages.create(
-                model=self._model_id,
-                messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=5,
-                temperature=0.0,
-            )
-            return bool(response.content)
+            # Use the generate method which handles LangChain/direct Anthropic automatically
+            response = await self.generate("Hi", temperature=0.0, max_tokens=5)
+            return len(response) > 0
         except Exception:
             return False
 
