@@ -369,8 +369,18 @@ class ParallelQueueTask(Task):
         true_value = parallel_config.get(True)
         final_on = on_value or true_value
         
+        # Debug logging for the YAML parsing issue
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"ParallelQueueTask {task_def.get('id', 'unknown')} - on_value: {repr(on_value)}, true_value: {repr(true_value)}, final_on: {repr(final_on)}")
+        logger.debug(f"  Type of final_on: {type(final_on)}, bool(final_on): {bool(final_on)}")
+        
+        # Check if final_on is a string (including empty strings and whitespace-only strings)
+        if isinstance(final_on, str) and not final_on.strip():
+            final_on = None
+        
         if not final_on:
-            raise ValueError(f"ParallelQueueTask {task_def.get('id', 'unknown')} must have 'on' expression for queue generation. Available keys in parallel_config: {list(parallel_config.keys())}")
+            raise ValueError(f"ParallelQueueTask {task_def.get('id', 'unknown')} must have 'on' expression for queue generation. Available keys in parallel_config: {list(parallel_config.keys())}, on_value={repr(on_value)}, true_value={repr(true_value)}, final_on={repr(final_on)}")
         
         # Create the task
         task = cls(

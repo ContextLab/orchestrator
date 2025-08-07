@@ -375,36 +375,37 @@ class ModelSelector:
         criteria = base_criteria
         description_lower = description.lower()
 
-        # Parse task requirements
-        task_keywords = {
-            "analyz": ["analyze"],
-            "generat": ["generate"],
-            "code": ["code"],
-            "reason": ["reasoning"],
-            "creative": ["creative"],
-            "chat": ["chat"],
-            "instruct": ["instruct"],
-            "transform": ["transform"],
-            "vision": ["vision"],
-            "image": ["vision"],
-            "audio": ["audio"],
-            "voice": ["audio"],
+        # Parse task requirements - use word boundaries for precise matching
+        task_patterns = {
+            r"\b(analyz|analysis|analyze)\b": ["analyze"],
+            r"\b(generat|generate|generation)\b": ["generate"],
+            r"\b(code|coding|programming)\b": ["code"],
+            r"\b(reason|reasoning)\b": ["reasoning"],
+            r"\b(creative|creativity)\b": ["creative"],
+            r"\b(chat|conversation)\b": ["chat"],
+            r"\b(instruct|instruction)\b": ["instruct"],
+            r"\b(transform|transformation)\b": ["transform"],
+            r"\b(vision|visual)\b": ["vision"],
+            r"\b(image|picture|photo)\b": ["vision"],
+            r"\b(audio|sound)\b": ["audio"],
+            r"\b(voice|speech)\b": ["audio"],
         }
 
-        for keyword, tasks in task_keywords.items():
-            if keyword in description_lower:
+        for pattern, tasks in task_patterns.items():
+            if re.search(pattern, description_lower):
                 criteria.required_tasks.extend(tasks)
 
-        # Parse capability requirements
-        if "vision" in description_lower or "image" in description_lower:
+        # Parse capability requirements - use word boundaries for precise matching
+        if re.search(r"\b(vision|image)\b", description_lower):
             if "vision" not in criteria.required_capabilities:
                 criteria.required_capabilities.append("vision")
 
-        if "code" in description_lower or "programming" in description_lower:
+        if re.search(r"\b(code|programming|coding|script|program)\b", description_lower):
             if "code" not in criteria.required_capabilities:
                 criteria.required_capabilities.append("code")
 
-        if "function" in description_lower or "tool" in description_lower:
+        # Only match "function" and "tool" as standalone words, not as parts of other words
+        if re.search(r"\b(function calling|function\s+call|use\s+tools?|call\s+functions?)\b", description_lower):
             if "tools" not in criteria.required_capabilities:
                 criteria.required_capabilities.append("tools")
 
