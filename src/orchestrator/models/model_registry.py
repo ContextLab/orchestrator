@@ -11,6 +11,7 @@ from ..core.exceptions import ModelNotFoundError, NoEligibleModelsError
 from .performance_optimizations import ModelRegistryOptimizer, BatchModelProcessor
 from .memory_optimization import MemoryOptimizedRegistry, MemoryMonitor, optimize_model_registry_memory
 from .advanced_caching import CacheManager, background_cache_maintenance
+from .langchain_adapter import LangChainModelAdapter
 
 
 class ModelRegistry:
@@ -59,6 +60,10 @@ class ModelRegistry:
         else:
             self.cache_manager = None
             self._advanced_caching_enabled = False
+            
+        # LangChain integration
+        self._langchain_adapters: Dict[str, LangChainModelAdapter] = {}
+        self._langchain_enabled = True
 
     def register_model(self, model: Model) -> None:
         """
@@ -117,6 +122,186 @@ class ModelRegistry:
             self.optimizer.index_dirty = True
         else:
             raise ModelNotFoundError(f"Model '{model_name}' not found")
+
+    def register_langchain_model(self, provider: str, model_name: str, **config: Any) -> str:
+        """
+        Register a LangChain model adapter.
+        
+        Args:
+            provider: Provider name (e.g., "openai", "anthropic", "ollama")  
+            model_name: Model name
+            **config: Additional configuration for the model
+            
+        Returns:
+            Model key for the registered adapter
+            
+        Raises:
+            ValueError: If LangChain integration is disabled or adapter creation fails
+        """
+        if not self._langchain_enabled:
+            raise ValueError("LangChain integration is disabled")
+            
+        try:
+            # Create LangChain adapter
+            adapter = LangChainModelAdapter(provider, model_name, **config)
+            adapter_key = self._get_model_key(adapter)
+            
+            # Register the adapter as a regular model (preserving all UCB/caching logic)
+            self.register_model(adapter)
+            
+            # Store reference to the adapter
+            self._langchain_adapters[adapter_key] = adapter
+            
+            return adapter_key
+            
+        except Exception as e:
+            raise ValueError(f"Failed to create LangChain adapter for {provider}:{model_name}: {str(e)}")
+    
+    def unregister_langchain_model(self, provider: str, model_name: str) -> None:
+        """
+        Unregister a LangChain model adapter.
+        
+        Args:
+            provider: Provider name
+            model_name: Model name
+        """
+        adapter_key = f"{provider}:{model_name}"
+        
+        # Remove from LangChain adapters
+        if adapter_key in self._langchain_adapters:
+            del self._langchain_adapters[adapter_key]
+            
+        # Remove from general registry
+        if adapter_key in self.models:
+            self.unregister_model(model_name, provider)
+    
+    def get_langchain_adapters(self) -> Dict[str, LangChainModelAdapter]:
+        """
+        Get all registered LangChain adapters.
+        
+        Returns:
+            Dictionary of adapter_key -> LangChainModelAdapter
+        """
+        return self._langchain_adapters.copy()
+    
+    def is_langchain_model(self, model_key: str) -> bool:
+        """
+        Check if a model is a LangChain adapter.
+        
+        Args:
+            model_key: Model key to check
+            
+        Returns:
+            True if model is a LangChain adapter
+        """
+        return model_key in self._langchain_adapters
+    
+    def enable_langchain_integration(self) -> None:
+        """Enable LangChain integration."""
+        self._langchain_enabled = True
+        
+    def disable_langchain_integration(self) -> None:
+        """Disable LangChain integration (existing adapters remain)."""
+        self._langchain_enabled = False
+    
+    def auto_register_langchain_models(self, config: Dict[str, Any]) -> List[str]:
+        """
+        Auto-register LangChain models from configuration.
+        
+        Args:
+            config: Configuration dictionary with model definitions
+            
+        Returns:
+            List of registered model keys
+            
+        Example config:
+        {
+            "models": [
+                {"provider": "openai", "model": "gpt-4-turbo", "auto_install": true},
+                {"provider": "anthropic", "model": "claude-3-sonnet", "auto_install": true},
+                {"provider": "ollama", "model": "llama3.2:3b", "ensure_running": true}
+            ]
+        }
+        """
+        registered_keys = []
+        
+        if not self._langchain_enabled:
+            raise ValueError("LangChain integration is disabled")
+            
+        models_config = config.get("models", [])
+        
+        for model_config in models_config:
+            try:
+                provider = model_config["provider"]
+                model_name = model_config["model"]
+                
+                # Handle service requirements
+                if model_config.get("ensure_running", False):
+                    self._ensure_service_running(provider)
+                    
+                # Handle auto-installation
+                if model_config.get("auto_install", False):
+                    self._auto_install_dependencies(provider)
+                    
+                # Register the model
+                model_key = self.register_langchain_model(
+                    provider, 
+                    model_name, 
+                    **{k: v for k, v in model_config.items() 
+                       if k not in ["provider", "model", "auto_install", "ensure_running"]}
+                )
+                
+                registered_keys.append(model_key)
+                
+            except Exception as e:
+                # Log error but continue with other models
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to auto-register {model_config}: {e}")
+                continue
+                
+        return registered_keys
+    
+    def _ensure_service_running(self, provider: str) -> None:
+        """Ensure required service is running for provider."""
+        try:
+            from ..utils.service_manager import ensure_service_running
+            
+            service_map = {
+                "ollama": "ollama",
+                "docker": "docker",
+            }
+            
+            service_name = service_map.get(provider)
+            if service_name:
+                ensure_service_running(service_name)
+                
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to ensure service running for {provider}: {e}")
+    
+    def _auto_install_dependencies(self, provider: str) -> None:
+        """Auto-install dependencies for provider."""
+        try:
+            from ..utils.auto_install import ensure_packages
+            
+            package_map = {
+                "openai": ["langchain-openai"],
+                "anthropic": ["langchain-anthropic"], 
+                "google": ["langchain-google-genai"],
+                "ollama": ["langchain-community"],
+                "huggingface": ["langchain-huggingface"],
+            }
+            
+            packages = package_map.get(provider, [])
+            if packages:
+                ensure_packages(packages)
+                
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to auto-install dependencies for {provider}: {e}")
 
     def enable_auto_registration(self) -> None:
         """Enable automatic model registration for new models."""

@@ -263,9 +263,14 @@ class OllamaModel(Model):
     def _start_ollama_if_installed(self) -> bool:
         """Try to start Ollama service if it's installed but not running."""
         try:
-            # Use the service manager for better service control
-            from orchestrator.utils.service_manager import ensure_service_running
-            return ensure_service_running("ollama")
+            # Use the enhanced service manager for better service control
+            from orchestrator.utils.service_manager import SERVICE_MANAGERS
+            ollama_manager = SERVICE_MANAGERS.get("ollama")
+            if ollama_manager:
+                return ollama_manager.ensure_running()
+            else:
+                logger.error("Ollama service manager not found")
+                return False
         except ImportError:
             # Fallback to old method
             try:
@@ -278,7 +283,15 @@ class OllamaModel(Model):
     def _pull_model(self) -> None:
         """Pull model if not available locally."""
         try:
-            # Use Ollama CLI to pull model
+            # Try using the enhanced service manager first
+            from orchestrator.utils.service_manager import SERVICE_MANAGERS
+            ollama_manager = SERVICE_MANAGERS.get("ollama")
+            if ollama_manager and hasattr(ollama_manager, 'ensure_model_available'):
+                if ollama_manager.ensure_model_available(self.model_name):
+                    self._is_available = True
+                    return
+                    
+            # Fallback to direct CLI call
             result = subprocess.run(
                 ["ollama", "pull", self.model_name],
                 capture_output=True,
