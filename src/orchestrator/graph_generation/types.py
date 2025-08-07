@@ -338,6 +338,7 @@ class LoopLogic:
     items_expression: Optional[str] = None  # For FOR loops
     max_iterations: int = 100
     substeps: List[ParsedStep] = field(default_factory=list)
+    early_exit_condition: Optional[str] = None
 
 
 @dataclass
@@ -358,6 +359,7 @@ class ControlFlowMap:
         self.parallel_maps: Dict[str, ParallelMapLogic] = {}
         self.goto_statements: Dict[str, str] = {}
         self.dynamic_routing: Dict[str, Any] = {}
+        self.parallel_opportunities: Dict[str, Any] = {}
         
     def add_conditional(self, step_id: str, logic: ConditionalLogic) -> None:
         """Add conditional logic for a step."""
@@ -378,6 +380,17 @@ class ControlFlowMap:
     def add_dynamic_routing(self, step_id: str, routing_logic: Any) -> None:
         """Add dynamic routing logic for a step."""
         self.dynamic_routing[step_id] = routing_logic
+        
+    def copy(self) -> 'ControlFlowMap':
+        """Create a deep copy of the control flow map."""
+        new_map = ControlFlowMap()
+        new_map.conditionals = self.conditionals.copy()
+        new_map.loops = self.loops.copy()
+        new_map.parallel_maps = self.parallel_maps.copy()
+        new_map.goto_statements = self.goto_statements.copy()
+        new_map.dynamic_routing = self.dynamic_routing.copy()
+        new_map.parallel_opportunities = self.parallel_opportunities.copy()
+        return new_map
 
 
 @dataclass

@@ -519,8 +519,10 @@ class DeclarativeSyntaxParser:
             # Handle array indexing (e.g., "variable[0]")
             if '[' in var:
                 var = var.split('[')[0].strip()
-                
-            variables.append(var)
+            
+            # Only add non-empty variables
+            if var and len(var) > 0:
+                variables.append(var)
             
         return variables
         
