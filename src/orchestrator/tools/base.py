@@ -169,6 +169,7 @@ def register_default_tools():
     )
     from .mcp_tools import MCPServerTool, MCPMemoryTool, MCPResourceTool
     from .code_execution import PythonExecutorTool
+    from .auto_debugger_wrapper import AutoDebuggerTool
 
     tools = [
         HeadlessBrowserTool(),
@@ -195,6 +196,7 @@ def register_default_tools():
         MCPMemoryTool(),
         MCPResourceTool(),
         PythonExecutorTool(),
+        AutoDebuggerTool(),
     ]
 
     for tool in tools:

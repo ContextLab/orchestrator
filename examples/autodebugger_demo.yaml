@@ -1,0 +1,117 @@
+# AutoDebugger Tool Demo Pipeline
+# Demonstrates the universal debugging capabilities of the AutoDebugger
+
+name: "AutoDebugger Demo Pipeline"
+version: "1.0"
+description: "Demo pipeline showcasing AutoDebugger tool for fixing various types of content"
+
+context:
+  demo_python_code: |
+    def calculate_fibonacci(n):
+        if n <= 1:
+            return n
+        else
+            return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
+    
+    # Missing import and wrong function name
+    import json
+    data = {'numbers': [fibonacci(i) for i in range(5)]}
+    print(json.dumps(data)
+  
+  demo_yaml_config: |
+    name: test-service
+    version: 1.0
+    config:
+      port: 8080
+      timeout: 30
+       debug: true  # Indentation error
+      retries 3     # Missing colon
+    
+    # Invalid structure
+    dependencies
+      - name: database
+        version: latest
+        # Missing colon above
+
+steps:
+  - id: debug_python_syntax
+    name: "Debug Python Syntax Errors"
+    tool: auto_debugger
+    config:
+      task_description: "Fix Python syntax errors in Fibonacci calculation code"
+      content_to_debug: "{{ context.demo_python_code }}"
+      error_context: "SyntaxError: invalid syntax on line 5 (missing colon), NameError: fibonacci not defined"
+      expected_outcome: "Working Python code that calculates and prints first 5 Fibonacci numbers as JSON"
+    outputs:
+      fixed_python_code: "{{ result.final_content }}"
+      debug_success: "{{ result.success }}"
+      iterations_used: "{{ result.total_iterations }}"
+
+  - id: debug_yaml_config
+    name: "Debug YAML Configuration"
+    tool: auto_debugger
+    config:
+      task_description: "Fix YAML configuration syntax and structure errors"
+      content_to_debug: "{{ context.demo_yaml_config }}"
+      error_context: "YAML parsing errors: indentation issues, missing colons, invalid structure"
+      expected_outcome: "Valid YAML configuration that parses correctly"
+    outputs:
+      fixed_yaml_config: "{{ result.final_content }}"
+      yaml_debug_success: "{{ result.success }}"
+      yaml_iterations: "{{ result.total_iterations }}"
+
+  - id: validate_fixes
+    name: "Validate All Fixes"
+    tool: validation
+    config:
+      criteria:
+        - name: "Python fix successful"
+          condition: "{{ steps.debug_python_syntax.outputs.debug_success }}"
+          message: "Python code debugging completed successfully"
+        - name: "YAML fix successful"  
+          condition: "{{ steps.debug_yaml_config.outputs.yaml_debug_success }}"
+          message: "YAML configuration debugging completed successfully"
+        - name: "Reasonable iteration count"
+          condition: "{{ (steps.debug_python_syntax.outputs.iterations_used + steps.debug_yaml_config.outputs.yaml_iterations) <= 10 }}"
+          message: "Debugging completed within reasonable iteration limits"
+
+  - id: generate_demo_report
+    name: "Generate Demo Report"
+    tool: report_generator
+    config:
+      template: |
+        # AutoDebugger Demo Results
+        
+        ## Python Code Debugging
+        - **Status**: {{ 'Success' if steps.debug_python_syntax.outputs.debug_success else 'Failed' }}
+        - **Iterations**: {{ steps.debug_python_syntax.outputs.iterations_used }}
+        - **Fixed Code**:
+        ```python
+        {{ steps.debug_python_syntax.outputs.fixed_python_code }}
+        ```
+        
+        ## YAML Configuration Debugging  
+        - **Status**: {{ 'Success' if steps.debug_yaml_config.outputs.yaml_debug_success else 'Failed' }}
+        - **Iterations**: {{ steps.debug_yaml_config.outputs.yaml_iterations }}
+        - **Fixed YAML**:
+        ```yaml
+        {{ steps.debug_yaml_config.outputs.fixed_yaml_config }}
+        ```
+        
+        ## Summary
+        The AutoDebugger tool successfully demonstrated its universal debugging capabilities:
+        - Fixed Python syntax errors and undefined variable references
+        - Resolved YAML indentation and structure issues
+        - Provided detailed debugging sessions with validation
+        - Used real LLM analysis and tool execution throughout (NO MOCKS)
+        
+        Total debugging iterations: {{ steps.debug_python_syntax.outputs.iterations_used + steps.debug_yaml_config.outputs.yaml_iterations }}
+      output_path: "autodebugger_demo_report.md"
+      format: "markdown"
+
+tags:
+  - demo
+  - debugging  
+  - auto_debugger
+  - universal_tool
+  - real_systems

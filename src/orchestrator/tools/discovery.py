@@ -112,6 +112,32 @@ class ToolDiscoveryEngine:
                 "confidence": 0.85,
                 "parameters": {"action": "install"},
             },
+            # Debugging operations
+            r"debug.*code|fix.*error|resolve.*issue|repair.*code": {
+                "tools": ["auto_debugger"],
+                "confidence": 0.95,
+                "parameters": {"action": "debug"},
+            },
+            r"debug.*syntax|fix.*syntax|syntax.*error": {
+                "tools": ["auto_debugger"],
+                "confidence": 0.98,
+                "parameters": {"action": "debug", "error_type": "syntax"},
+            },
+            r"fix.*bug|resolve.*bug|debug.*bug": {
+                "tools": ["auto_debugger"],
+                "confidence": 0.95,
+                "parameters": {"action": "debug", "error_type": "bug"},
+            },
+            r"debug.*api|fix.*api|api.*error": {
+                "tools": ["auto_debugger"],
+                "confidence": 0.90,
+                "parameters": {"action": "debug", "error_type": "api"},
+            },
+            r"fix.*compilation|debug.*compilation|compilation.*error": {
+                "tools": ["auto_debugger"],
+                "confidence": 0.92,
+                "parameters": {"action": "debug", "error_type": "compilation"},
+            },
         }
 
     def _build_semantic_mappings(self) -> Dict[str, List[str]]:
@@ -168,6 +194,13 @@ class ToolDiscoveryEngine:
             "command": ["terminal"],
             "install": ["terminal"],
             "setup": ["terminal"],
+            # Debugging operations
+            "debug": ["auto_debugger"],
+            "fix": ["auto_debugger"],
+            "repair": ["auto_debugger"],
+            "resolve": ["auto_debugger"],
+            "correct": ["auto_debugger"],
+            "troubleshoot": ["auto_debugger"],
         }
 
     def _analyze_tool_capabilities(self) -> Dict[str, Dict[str, Any]]:
