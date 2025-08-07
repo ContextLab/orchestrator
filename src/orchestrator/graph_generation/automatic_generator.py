@@ -25,6 +25,10 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from ..core.exceptions import GraphGenerationError, CircularDependencyError
 from ..models.model_registry import ModelRegistry
 from .syntax_parser import DeclarativeSyntaxParser, ParsedPipeline
+from .enhanced_yaml_processor import (
+    EnhancedYAMLProcessor, EnhancedPipeline, EnhancedStep,
+    TypeSafeInput, TypeSafeOutput, StepType, DataType
+)
 from .dependency_resolver import EnhancedDependencyResolver, DependencyGraph
 from .parallel_detector import ParallelExecutionDetector, ParallelGroup
 from .control_flow_analyzer import ControlFlowAnalyzer, ControlFlowMap
@@ -69,6 +73,7 @@ class AutomaticGraphGenerator:
         
         # Initialize core analysis components
         self.syntax_parser = DeclarativeSyntaxParser()
+        self.enhanced_yaml_processor = EnhancedYAMLProcessor()  # Issue #199 support
         self.dependency_resolver = EnhancedDependencyResolver()
         self.parallel_detector = ParallelExecutionDetector()
         self.control_flow_analyzer = ControlFlowAnalyzer()
@@ -133,9 +138,15 @@ class AutomaticGraphGenerator:
             
             logger.info(f"Starting graph generation for pipeline: {pipeline_def.get('id', 'unknown')}")
             
-            # PHASE 1: Parse and validate declarative syntax
+            # PHASE 1: Parse and validate declarative syntax (with Issue #199 support)
             logger.debug("Phase 1: Parsing declarative syntax")
-            parsed_pipeline = await self._parse_declarative_syntax(pipeline_def)
+            if self._is_enhanced_yaml_format(pipeline_def):
+                logger.debug("Detected Issue #199 enhanced YAML format")
+                enhanced_pipeline = await self.enhanced_yaml_processor.process_enhanced_yaml(pipeline_def)
+                parsed_pipeline = await self._convert_enhanced_to_parsed(enhanced_pipeline)
+            else:
+                logger.debug("Using legacy format processing")
+                parsed_pipeline = await self._parse_declarative_syntax(pipeline_def)
             
             # PHASE 2: Advanced dependency analysis
             logger.debug("Phase 2: Analyzing dependencies")
@@ -388,6 +399,109 @@ class AutomaticGraphGenerator:
         self._pipeline_cache.clear()
         logger.info("Pipeline cache cleared")
         
+    def _is_enhanced_yaml_format(self, pipeline_def: Dict[str, Any]) -> bool:
+        """Detect if pipeline uses Issue #199 enhanced YAML format."""
+        return self.enhanced_yaml_processor._is_enhanced_format(pipeline_def)
+        
+    async def _convert_enhanced_to_parsed(self, enhanced_pipeline: EnhancedPipeline) -> ParsedPipeline:
+        """Convert enhanced pipeline format to parsed pipeline format for processing."""
+        from .types import ParsedStep, InputSchema, OutputSchema
+        
+        # Convert enhanced steps to parsed steps
+        parsed_steps = []
+        
+        # Process main steps
+        for enhanced_step in enhanced_pipeline.steps:
+            parsed_step = await self._convert_enhanced_step_to_parsed(enhanced_step)
+            parsed_steps.append(parsed_step)
+            
+        # Process advanced steps
+        for enhanced_step in enhanced_pipeline.advanced_steps:
+            parsed_step = await self._convert_enhanced_step_to_parsed(enhanced_step)
+            parsed_steps.append(parsed_step)
+            
+        # Convert inputs to dictionary of InputSchema instances
+        inputs_dict = {}
+        for input_name, type_safe_input in enhanced_pipeline.inputs.items():
+            inputs_dict[input_name] = InputSchema(
+                name=input_name,
+                type=type_safe_input.type.value,
+                required=type_safe_input.required,
+                default=type_safe_input.default,
+                description=type_safe_input.description,
+                enum=type_safe_input.enum,
+                range=type_safe_input.range,
+                example=type_safe_input.example
+            )
+            
+        # Convert outputs to dictionary of OutputSchema instances
+        outputs_dict = {}
+        for output_name, type_safe_output in enhanced_pipeline.outputs.items():
+            outputs_dict[output_name] = OutputSchema(
+                name=output_name,
+                type=type_safe_output.type.value,
+                description=type_safe_output.description,
+                schema=type_safe_output.schema,
+                computed_as=type_safe_output.source,
+                format=type_safe_output.format
+            )
+            
+        return ParsedPipeline(
+            id=enhanced_pipeline.id,
+            name=enhanced_pipeline.name or enhanced_pipeline.id,
+            description=enhanced_pipeline.description,
+            version=enhanced_pipeline.version,
+            steps=parsed_steps,
+            inputs=inputs_dict,
+            outputs=outputs_dict,
+            config=enhanced_pipeline.config,
+            metadata=enhanced_pipeline.metadata
+        )
+        
+    async def _convert_enhanced_step_to_parsed(self, enhanced_step: EnhancedStep) -> ParsedStep:
+        """Convert enhanced step to parsed step format."""
+        from .types import ParsedStep, StepType as ParsedStepType
+        
+        # Convert step type
+        if enhanced_step.type == StepType.PARALLEL_MAP:
+            step_type = ParsedStepType.PARALLEL_MAP
+        elif enhanced_step.type in [StepType.LOOP, StepType.WHILE, StepType.FOR]:
+            step_type = ParsedStepType.LOOP
+        elif enhanced_step.type == StepType.CONDITIONAL:
+            step_type = ParsedStepType.CONDITIONAL
+        else:
+            step_type = ParsedStepType.STANDARD
+            
+        # Convert outputs to simple dictionary
+        outputs = {}
+        for output_name, type_safe_output in enhanced_step.outputs.items():
+            outputs[output_name] = type_safe_output.description or f"Output from {enhanced_step.id}"
+            
+        # Convert nested steps if present
+        substeps = None
+        if enhanced_step.steps:
+            substeps = []
+            for nested_step in enhanced_step.steps:
+                parsed_nested_step = await self._convert_enhanced_step_to_parsed(nested_step)
+                substeps.append(parsed_nested_step)
+
+        return ParsedStep(
+            id=enhanced_step.id,
+            type=step_type,
+            tool=enhanced_step.tool,
+            action=enhanced_step.action,
+            model_requirements=enhanced_step.model,
+            inputs=enhanced_step.inputs,
+            outputs=outputs,
+            depends_on=enhanced_step.depends_on,
+            condition=enhanced_step.condition,
+            items=enhanced_step.items,
+            substeps=substeps,
+            max_iterations=enhanced_step.max_iterations,
+            goto=enhanced_step.goto,
+            else_step=enhanced_step.else_step
+        )
+
     def __repr__(self) -> str:
         """String representation for debugging."""
         return (
@@ -395,6 +509,7 @@ class AutomaticGraphGenerator:
             f"model_registry={self.model_registry is not None}, "
             f"tool_registry={self.tool_registry is not None}, "
             f"auto_debugger={self.auto_debugger is not None}, "
+            f"enhanced_yaml_support=True, "
             f"total_generations={self._generation_stats['total_generations']}"
             f")"
         )
