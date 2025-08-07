@@ -53,6 +53,47 @@ def load_api_keys() -> None:
         )
 
 
+def load_api_keys_optional() -> Dict[str, str]:
+    """Load API keys from ~/.orchestrator/.env or environment without requiring all.
+    
+    Unlike load_api_keys(), this function doesn't raise an error for missing keys.
+    Used for testing where not all API keys may be available.
+    
+    Returns:
+        Dict mapping env var names to their values (only for keys that are present)
+    """
+    # Check if running in GitHub Actions
+    if os.getenv("GITHUB_ACTIONS"):
+        # Use environment variables directly - they're injected as secrets
+        pass
+    else:
+        # Load from ~/.orchestrator/.env for local development
+        env_path = Path.home() / ".orchestrator" / ".env"
+        if env_path.exists():
+            load_dotenv(env_path)
+        else:
+            # Try legacy location
+            legacy_path = Path(".env")
+            if legacy_path.exists():
+                load_dotenv(legacy_path)
+
+    # Return only the keys that are actually present
+    api_keys = {}
+    possible_keys = [
+        "ANTHROPIC_API_KEY",
+        "GOOGLE_AI_API_KEY", 
+        "HF_TOKEN",
+        "OPENAI_API_KEY",
+    ]
+
+    for key in possible_keys:
+        value = os.getenv(key)
+        if value:
+            api_keys[key] = value
+
+    return api_keys
+
+
 def get_configured_providers() -> List[str]:
     """Get list of providers that have API keys configured.
 
