@@ -85,6 +85,24 @@ class InvalidDependencyError(PipelineError):
         )
 
 
+class GraphGenerationError(PipelineError):
+    """Raised when automatic graph generation fails."""
+    
+    def __init__(self, message: str, pipeline_id: Optional[str] = None, **kwargs):
+        if pipeline_id:
+            full_message = f"Graph generation failed for pipeline '{pipeline_id}': {message}"
+            details = {"pipeline_id": pipeline_id}
+        else:
+            full_message = f"Graph generation failed: {message}"
+            details = {}
+            
+        super().__init__(
+            full_message,
+            details=details,
+            **kwargs
+        )
+
+
 # Task-related errors
 class TaskError(OrchestratorError):
     """Base class for task-related errors."""
