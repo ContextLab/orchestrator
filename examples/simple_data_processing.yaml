@@ -5,6 +5,12 @@ name: Simple Data Processing Pipeline
 description: Read a CSV file, process it, and save results
 version: "1.0.0"
 
+parameters:
+  output_path:
+    type: string
+    default: "examples/outputs/simple_data_processing"
+    description: Directory where output files will be saved
+
 steps:
   - id: read_data
     tool: filesystem
@@ -28,7 +34,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/simple_data_processing/output_{{ execution.timestamp | slugify }}.csv"
+      path: "{{ output_path }}/output_{{ execution.timestamp | slugify }}.csv"
       content: "{{ process_data.processed_data }}"
     dependencies:
       - process_data
@@ -37,7 +43,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/simple_data_processing/report_{{ execution.timestamp | slugify }}.md"
+      path: "{{ output_path }}/report_{{ execution.timestamp | slugify }}.md"
       content: |
         # Simple Data Processing Report
         
@@ -48,7 +54,7 @@ steps:
         
         - **Input File:** data/input.csv
         - **Filter Applied:** status = "active"
-        - **Output File:** examples/outputs/simple_data_processing/output_{{ execution.timestamp | slugify }}.csv
+        - **Output File:** {{ output_path }}/output_{{ execution.timestamp | slugify }}.csv
         
         ## Results
         

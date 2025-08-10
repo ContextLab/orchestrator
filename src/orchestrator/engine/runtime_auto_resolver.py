@@ -75,11 +75,20 @@ class RuntimeAutoResolver:
             prompt = self._build_resolution_prompt(auto_content, context)
 
             # Call real model for resolution
-            resolved = await model.generate(
-                prompt=prompt,
-                temperature=0.3,  # Lower temperature for consistency
-                max_tokens=500,
-            )
+            # Handle model-specific parameter requirements
+            params = {"prompt": prompt}
+            
+            # Handle max_tokens vs max_completion_tokens
+            if hasattr(model, '_model_id') and 'gpt-5' in model._model_id.lower():
+                params["max_completion_tokens"] = 500
+            else:
+                params["max_tokens"] = 500
+            
+            # Only add temperature if the model supports it
+            if hasattr(model, '_model_id') and 'gpt-5' not in model._model_id.lower():
+                params["temperature"] = 0.3  # Lower temperature for consistency
+            
+            resolved = await model.generate(**params)
 
             # Clean and validate resolution
             resolved = self._clean_resolution(resolved)

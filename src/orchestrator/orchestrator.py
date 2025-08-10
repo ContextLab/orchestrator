@@ -20,7 +20,16 @@ from .executor.parallel_executor import ParallelExecutor
 from .models.model_registry import ModelRegistry
 from .models.registry_singleton import get_model_registry
 from .state.state_manager import StateManager
+from .state.langgraph_state_manager import LangGraphGlobalContextManager
+from .state.legacy_compatibility import LegacyStateManagerAdapter
 from .core.exceptions import PipelineExecutionError
+
+# Import checkpointing components for Issue #205
+try:
+    from .checkpointing.durable_executor import DurableExecutionManager, ExecutionRecoveryStrategy
+    CHECKPOINTING_AVAILABLE = True
+except ImportError:
+    CHECKPOINTING_AVAILABLE = False
 
 # Use PipelineExecutionError instead of custom ExecutionError
 ExecutionError = PipelineExecutionError
@@ -46,6 +55,15 @@ class Orchestrator:
         template_manager: Optional[TemplateManager] = None,
         max_concurrent_tasks: int = 10,
         debug_templates: bool = False,
+        use_langgraph_state: bool = False,
+        langgraph_storage_type: str = "memory",
+        langgraph_database_url: Optional[str] = None,
+        # Issue #205: Automatic Checkpointing Parameters
+        use_automatic_checkpointing: bool = False,
+        checkpoint_frequency: str = "every_step",
+        max_checkpoint_overhead_ms: float = 100.0,
+        recovery_strategy: Optional[ExecutionRecoveryStrategy] = None,
+        max_recovery_attempts: int = 3,
     ) -> None:
         """
         Initialize orchestrator.
@@ -53,7 +71,7 @@ class Orchestrator:
         Args:
             model_registry: Model registry for model selection
             control_system: Control system for task execution
-            state_manager: State manager for checkpointing
+            state_manager: State manager for checkpointing (legacy)
             yaml_compiler: YAML compiler for pipeline parsing
             error_handler: Error handler for fault tolerance
             resource_allocator: Resource allocator for task scheduling
@@ -61,6 +79,14 @@ class Orchestrator:
             template_manager: Template manager for deferred rendering
             max_concurrent_tasks: Maximum concurrent tasks
             debug_templates: Enable debug mode for template rendering
+            use_langgraph_state: Use new LangGraph-based state management
+            langgraph_storage_type: Storage backend for LangGraph ("memory", "sqlite", "postgres")
+            langgraph_database_url: Database URL for persistent storage backends
+            use_automatic_checkpointing: Enable automatic step-level checkpointing (Issue #205)
+            checkpoint_frequency: Frequency of checkpointing ("every_step", "every_n_steps")
+            max_checkpoint_overhead_ms: Maximum allowed checkpoint creation time
+            recovery_strategy: Strategy for execution recovery on failures
+            max_recovery_attempts: Maximum number of recovery attempts
         """
         self.model_registry = model_registry or get_model_registry()
 
@@ -78,7 +104,26 @@ class Orchestrator:
             control_system = HybridControlSystem(self.model_registry)
 
         self.control_system = control_system
-        self.state_manager = state_manager or StateManager()
+        
+        # Initialize state management - either LangGraph or legacy
+        self.use_langgraph_state = use_langgraph_state
+        if use_langgraph_state:
+            if state_manager is not None:
+                raise ValueError("Cannot specify both use_langgraph_state=True and state_manager")
+            
+            # Create LangGraph state manager
+            self.langgraph_state_manager = LangGraphGlobalContextManager(
+                storage_type=langgraph_storage_type,
+                database_url=langgraph_database_url
+            )
+            
+            # Create legacy compatibility adapter
+            self.state_manager = LegacyStateManagerAdapter(self.langgraph_state_manager)
+            
+            logging.getLogger(__name__).info(f"Initialized LangGraph state management with {langgraph_storage_type} backend")
+        else:
+            self.state_manager = state_manager or StateManager()
+            self.langgraph_state_manager = None
 
         # Initialize template manager
         self.template_manager = template_manager or TemplateManager(debug_mode=debug_templates)
@@ -115,7 +160,41 @@ class Orchestrator:
 
         # New status tracker and resume manager
         self.status_tracker = PipelineStatusTracker()
-        self.resume_manager = PipelineResumeManager(self.state_manager)
+        # Pass LangGraph manager to resume manager if available
+        langgraph_manager = getattr(self.state_manager, 'langgraph_manager', None)
+        if hasattr(self.state_manager, 'backend_manager'):
+            langgraph_manager = self.state_manager.backend_manager
+        
+        self.resume_manager = PipelineResumeManager(
+            self.state_manager, 
+            langgraph_manager=langgraph_manager
+        )
+
+        # Issue #205: Initialize automatic checkpointing
+        self.use_automatic_checkpointing = use_automatic_checkpointing and CHECKPOINTING_AVAILABLE
+        self.checkpoint_frequency = checkpoint_frequency
+        self.max_checkpoint_overhead_ms = max_checkpoint_overhead_ms
+        self.recovery_strategy = recovery_strategy
+        self.max_recovery_attempts = max_recovery_attempts
+        
+        # Initialize durable executor if checkpointing is enabled
+        if self.use_automatic_checkpointing:
+            if not self.use_langgraph_state:
+                self.logger.warning("Automatic checkpointing requires LangGraph state management. Disabling automatic checkpointing.")
+                self.use_automatic_checkpointing = False
+            elif not CHECKPOINTING_AVAILABLE:
+                self.logger.warning("Checkpointing components not available. Disabling automatic checkpointing.")
+                self.use_automatic_checkpointing = False
+            else:
+                self.durable_executor = DurableExecutionManager(
+                    langgraph_manager=self.langgraph_state_manager,
+                    default_recovery_strategy=recovery_strategy or ExecutionRecoveryStrategy.RESUME_FROM_LAST_CHECKPOINT,
+                    max_recovery_attempts=max_recovery_attempts,
+                    recovery_delay_seconds=1.0
+                )
+                self.logger.info(f"Automatic checkpointing enabled with {checkpoint_frequency} frequency")
+        else:
+            self.durable_executor = None
 
         # Logger
         self.logger = logging.getLogger(__name__)
@@ -141,6 +220,12 @@ class Orchestrator:
             ExecutionError: If execution fails
         """
         execution_id = f"{pipeline.id}_{int(time.time())}"
+
+        # Issue #205: Check if automatic checkpointing should be used
+        if self.use_automatic_checkpointing and checkpoint_enabled:
+            return await self._execute_pipeline_with_checkpointing(
+                pipeline, execution_id, max_retries
+            )
 
         # Create execution context early to avoid UnboundLocalError
         context = {
@@ -232,6 +317,154 @@ class Orchestrator:
             if execution_id in self.running_pipelines:
                 del self.running_pipelines[execution_id]
 
+    async def _execute_pipeline_with_checkpointing(
+        self, 
+        pipeline: Pipeline, 
+        execution_id: str, 
+        max_retries: int = 3
+    ) -> Dict[str, Any]:
+        """
+        Execute pipeline with automatic checkpointing (Issue #205).
+        
+        This method uses the DurableExecutionManager to provide automatic
+        step-level checkpointing, recovery, and durable execution.
+        
+        Args:
+            pipeline: Pipeline to execute
+            execution_id: Execution identifier
+            max_retries: Maximum number of retries for failed tasks
+            
+        Returns:
+            Execution results with checkpoint information
+            
+        Raises:
+            ExecutionError: If execution fails
+        """
+        if not self.durable_executor:
+            raise ExecutionError("Automatic checkpointing not available")
+            
+        start_time = time.time()
+        
+        try:
+            self.logger.info(f"Starting checkpointed execution: {execution_id} for pipeline: {pipeline.id}")
+            
+            # Track running pipeline
+            self.running_pipelines[execution_id] = pipeline
+            
+            # Prepare execution configuration
+            config = {
+                "execution_id": execution_id,
+                "configurable": {
+                    "thread_id": f"thread_{execution_id}",
+                },
+                "inputs": pipeline.context.copy(),
+                "checkpoint_frequency": self.checkpoint_frequency,
+                "max_checkpoint_overhead_ms": self.max_checkpoint_overhead_ms,
+                "user_id": pipeline.context.get("user_id"),
+                "session_id": pipeline.context.get("session_id")
+            }
+            
+            # Execute with automatic checkpointing
+            execution_result = await self.durable_executor.execute_pipeline_durably(
+                pipeline=pipeline,
+                config=config,
+                recovery_strategy=self.recovery_strategy
+            )
+            
+            # Convert execution result to legacy format
+            execution_time = time.time() - start_time
+            
+            if execution_result.status.value == "completed":
+                success_results = {
+                    "status": "success",
+                    "execution_id": execution_id,
+                    "pipeline_id": pipeline.id,
+                    "execution_time": execution_time,
+                    "checkpoint_count": execution_result.checkpoint_count,
+                    "recovery_count": execution_result.recovery_count,
+                    "results": {},
+                    "metadata": {
+                        "durable_execution": True,
+                        "automatic_checkpointing": True,
+                        "checkpoint_frequency": self.checkpoint_frequency
+                    }
+                }
+                
+                # Extract results from final state if available
+                if execution_result.final_state:
+                    intermediate_results = execution_result.final_state.get("intermediate_results", {})
+                    success_results["results"] = intermediate_results
+                    
+                    # Add execution metadata
+                    execution_metadata = execution_result.final_state.get("execution_metadata", {})
+                    success_results["metadata"]["completed_steps"] = execution_metadata.get("completed_steps", [])
+                    success_results["metadata"]["checkpoints"] = execution_metadata.get("checkpoints", [])
+                
+                # Record successful execution
+                execution_record = {
+                    "execution_id": execution_id,
+                    "pipeline_id": pipeline.id,
+                    "status": "success",
+                    "start_time": start_time,
+                    "end_time": time.time(),
+                    "execution_time": execution_time,
+                    "checkpoint_count": execution_result.checkpoint_count,
+                    "recovery_count": execution_result.recovery_count
+                }
+                self.execution_history.append(execution_record)
+                
+                self.logger.info(
+                    f"Checkpointed execution completed: {execution_id} in {execution_time:.2f}s "
+                    f"with {execution_result.checkpoint_count} checkpoints and {execution_result.recovery_count} recoveries"
+                )
+                
+                return success_results
+                
+            else:
+                # Execution failed
+                error_msg = f"Checkpointed execution failed: {execution_id}"
+                if execution_result.error_info:
+                    error_msg += f" - {execution_result.error_info.get('error', 'Unknown error')}"
+                
+                execution_record = {
+                    "execution_id": execution_id,
+                    "pipeline_id": pipeline.id,
+                    "status": "failed",
+                    "start_time": start_time,
+                    "end_time": time.time(),
+                    "execution_time": time.time() - start_time,
+                    "error": error_msg,
+                    "checkpoint_count": execution_result.checkpoint_count,
+                    "recovery_count": execution_result.recovery_count
+                }
+                self.execution_history.append(execution_record)
+                
+                raise ExecutionError(error_msg)
+                
+        except Exception as e:
+            self.logger.error(f"Checkpointed execution failed: {execution_id} - {e}")
+            
+            # Record failed execution
+            execution_record = {
+                "execution_id": execution_id,
+                "pipeline_id": pipeline.id,
+                "status": "failed",
+                "start_time": start_time,
+                "end_time": time.time(),
+                "execution_time": time.time() - start_time,
+                "error": str(e),
+                "checkpoint_count": 0,
+                "recovery_count": 0
+            }
+            self.execution_history.append(execution_record)
+            
+            raise ExecutionError(f"Checkpointed pipeline execution failed: {e}") from e
+            
+        finally:
+            # Clean up
+            if execution_id in self.running_pipelines:
+                del self.running_pipelines[execution_id]
+
     async def _execute_step(self, task, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute a single step/task.
@@ -245,9 +478,56 @@ class Orchestrator:
         Returns:
             Step execution result
         """
+        import time
+        start_time = time.time()
+        
         # Execute task using control system
-        result = await self.control_system.execute_task(task, context)
-        return result
+        try:
+            result = await self.control_system.execute_task(task, context)
+            execution_time = time.time() - start_time
+            
+            # Enhanced result tracking for LangGraph
+            if self.use_langgraph_state:
+                enhanced_result = {
+                    "result": result,
+                    "task_metadata": {
+                        "task_id": task.id,
+                        "task_type": task.action,
+                        "execution_time": execution_time,
+                        "status": "completed",
+                        "model_used": task.parameters.get('model', None),
+                        "dependencies": task.dependencies,
+                        "timestamp": time.time()
+                    }
+                }
+                
+                # Try to capture more detailed execution information
+                if hasattr(self.control_system, 'last_model_response'):
+                    enhanced_result["model_response"] = self.control_system.last_model_response
+                
+                return enhanced_result
+            else:
+                return result
+                
+        except Exception as e:
+            execution_time = time.time() - start_time
+            
+            # Enhanced error tracking for LangGraph
+            if self.use_langgraph_state:
+                error_result = {
+                    "error": str(e),
+                    "task_metadata": {
+                        "task_id": task.id,
+                        "task_type": task.action,
+                        "execution_time": execution_time,
+                        "status": "failed",
+                        "error_type": type(e).__name__,
+                        "timestamp": time.time()
+                    }
+                }
+                raise ExecutionError(f"Task {task.id} failed", error_result)
+            else:
+                raise
 
     async def _execute_pipeline_internal(
         self,
@@ -1026,7 +1306,7 @@ class Orchestrator:
 
     def _get_pipeline_state(self, pipeline: Pipeline) -> Dict[str, Any]:
         """Get current pipeline state for checkpointing."""
-        return {
+        basic_state = {
             "id": pipeline.id,
             "name": pipeline.name,
             "tasks": {
@@ -1038,6 +1318,85 @@ class Orchestrator:
             "version": pipeline.version,
             "description": pipeline.description,
         }
+        
+        # Enhanced state when using LangGraph
+        if self.use_langgraph_state:
+            # Add enhanced execution metadata
+            basic_state["execution_metadata"] = {
+                "orchestrator_version": "1.0.0",
+                "model_registry_size": len(self.model_registry.models) if self.model_registry else 0,
+                "control_system_type": type(self.control_system).__name__ if self.control_system else None,
+                "template_manager_enabled": self.template_manager is not None,
+                "max_concurrent_tasks": self.max_concurrent_tasks,
+                "langgraph_storage_type": self.langgraph_state_manager.storage_type if self.langgraph_state_manager else None
+            }
+            
+            # Add performance metrics
+            basic_state["performance_metrics"] = {
+                "running_pipelines_count": len(self.running_pipelines),
+                "total_execution_history": len(self.execution_history) if hasattr(self, 'execution_history') else 0
+            }
+        
+        return basic_state
+
+    async def _update_global_execution_state(self, execution_id: str, task_id: str, task_result: Dict[str, Any]) -> None:
+        """Update global state with task execution results (LangGraph only)."""
+        if not self.use_langgraph_state:
+            return
+            
+        # Get thread_id from execution_id mapping
+        if hasattr(self.state_manager, "_execution_to_thread_mapping"):
+            thread_id = self.state_manager._execution_to_thread_mapping.get(execution_id)
+            if thread_id:
+                try:
+                    # Extract enhanced task metadata
+                    task_metadata = task_result.get("task_metadata", {})
+                    actual_result = task_result.get("result", task_result)
+                    
+                    # Prepare state updates
+                    updates = {
+                        "tool_results": {
+                            "tool_calls": {task_id: {"result": actual_result}},
+                            "tool_outputs": {task_id: actual_result},
+                            "execution_times": {task_id: task_metadata.get("execution_time", 0)},
+                            "tool_metadata": {task_id: task_metadata}
+                        },
+                        "intermediate_results": {task_id: actual_result}
+                    }
+                    
+                    # Update model interactions if available
+                    if "model_response" in task_result:
+                        updates["model_interactions"] = {
+                            "model_calls": [{
+                                "task_id": task_id,
+                                "model": task_metadata.get("model_used"),
+                                "response": task_result["model_response"],
+                                "timestamp": task_metadata.get("timestamp")
+                            }]
+                        }
+                    
+                    # Update global state
+                    await self.langgraph_state_manager.update_global_state(
+                        thread_id, updates, step_name=task_id
+                    )
+                    
+                except Exception as e:
+                    logging.getLogger(__name__).warning(f"Failed to update global state for task {task_id}: {e}")
+
+    def _process_enhanced_results(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Process enhanced results from LangGraph execution, extracting actual results."""
+        if not self.use_langgraph_state:
+            return results
+            
+        processed_results = {}
+        for task_id, task_result in results.items():
+            if isinstance(task_result, dict) and "result" in task_result:
+                # Extract the actual result from enhanced structure
+                processed_results[task_id] = task_result["result"]
+            else:
+                processed_results[task_id] = task_result
+                
+        return processed_results
 
     def _extract_outputs(
         self, pipeline: Pipeline, results: Dict[str, Any]
@@ -1571,6 +1930,151 @@ class Orchestrator:
         # Clear state
         self.running_pipelines.clear()
         self.execution_history.clear()
+
+    # Enhanced LangGraph state management methods
+    
+    async def get_pipeline_global_state(self, execution_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get comprehensive pipeline global state (only available with LangGraph).
+        
+        Args:
+            execution_id: Pipeline execution ID
+            
+        Returns:
+            Global state dictionary or None if not found
+        """
+        if not self.use_langgraph_state:
+            raise ValueError("Global state only available when use_langgraph_state=True")
+            
+        # Get thread_id from execution_id mapping in legacy adapter
+        if hasattr(self.state_manager, "_execution_to_thread_mapping"):
+            thread_id = self.state_manager._execution_to_thread_mapping.get(execution_id)
+            if thread_id:
+                return await self.langgraph_state_manager.get_global_state(thread_id)
+        return None
+    
+    async def create_named_checkpoint(self, execution_id: str, name: str, description: str = "") -> Optional[str]:
+        """
+        Create a named checkpoint with description (only available with LangGraph).
+        
+        Args:
+            execution_id: Pipeline execution ID
+            name: Checkpoint name
+            description: Optional description
+            
+        Returns:
+            Checkpoint ID or None if failed
+        """
+        if not self.use_langgraph_state:
+            raise ValueError("Named checkpoints only available when use_langgraph_state=True")
+            
+        if hasattr(self.state_manager, "_execution_to_thread_mapping"):
+            thread_id = self.state_manager._execution_to_thread_mapping.get(execution_id)
+            if thread_id:
+                return await self.langgraph_state_manager.create_checkpoint(
+                    thread_id, description, {"name": name}
+                )
+        return None
+    
+    async def get_pipeline_metrics(self, execution_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get comprehensive pipeline execution metrics (only available with LangGraph).
+        
+        Args:
+            execution_id: Pipeline execution ID
+            
+        Returns:
+            Metrics dictionary or None if not found
+        """
+        if not self.use_langgraph_state:
+            raise ValueError("Pipeline metrics only available when use_langgraph_state=True")
+            
+        state = await self.get_pipeline_global_state(execution_id)
+        if state:
+            return {
+                "execution_metadata": state.get("execution_metadata", {}),
+                "performance_metrics": state.get("performance_metrics", {}),
+                "model_interactions": state.get("model_interactions", {}),
+                "tool_results": state.get("tool_results", {}),
+                "error_context": state.get("error_context", {})
+            }
+        return None
+    
+    def get_state_manager_type(self) -> str:
+        """Get the type of state manager being used."""
+        return "langgraph" if self.use_langgraph_state else "legacy"
+    
+    def get_langgraph_manager(self) -> Optional[LangGraphGlobalContextManager]:
+        """Get direct access to LangGraph manager (if enabled)."""
+        return self.langgraph_state_manager
+
+    # Issue #205: Automatic Checkpointing Utility Methods
+    
+    def is_automatic_checkpointing_enabled(self) -> bool:
+        """Check if automatic checkpointing is enabled."""
+        return self.use_automatic_checkpointing
+    
+    async def get_execution_status_with_checkpoints(self, execution_id: str) -> Optional[Dict[str, Any]]:
+        """Get execution status including checkpoint information."""
+        if self.durable_executor:
+            return await self.durable_executor.get_execution_status(execution_id)
+        return None
+    
+    def get_checkpoint_performance_metrics(self) -> Dict[str, Any]:
+        """Get checkpoint performance metrics."""
+        if self.durable_executor:
+            return self.durable_executor.get_performance_metrics()
+        return {
+            "automatic_checkpointing_enabled": False,
+            "message": "Automatic checkpointing not enabled"
+        }
+    
+    async def pause_checkpointed_execution(self, execution_id: str) -> bool:
+        """Pause a checkpointed execution."""
+        if self.durable_executor:
+            return await self.durable_executor.pause_execution(execution_id)
+        return False
+    
+    async def resume_checkpointed_execution(self, execution_id: str) -> bool:
+        """Resume a paused checkpointed execution."""
+        if self.durable_executor:
+            return await self.durable_executor.resume_paused_execution(execution_id)
+        return False
+    
+    async def get_pipeline_global_state(self, thread_id: str) -> Optional[Dict[str, Any]]:
+        """Get pipeline global state for LangGraph execution."""
+        if self.langgraph_state_manager:
+            return await self.langgraph_state_manager.get_global_state(thread_id)
+        return None
+    
+    async def create_named_checkpoint(self, thread_id: str, name: str, description: str) -> Optional[str]:
+        """Create a named checkpoint for LangGraph execution."""
+        if self.langgraph_state_manager:
+            return await self.langgraph_state_manager.create_checkpoint(
+                thread_id=thread_id,
+                description=f"{name}: {description}",
+                metadata={"checkpoint_name": name, "user_created": True}
+            )
+        return None
+    
+    async def list_execution_checkpoints(self, thread_id: str) -> List[Dict[str, Any]]:
+        """List all checkpoints for an execution."""
+        if self.langgraph_state_manager:
+            return await self.langgraph_state_manager.list_checkpoints(thread_id)
+        return []
+
+    def get_pipeline_metrics(self, pipeline_id: str) -> Dict[str, Any]:
+        """Get comprehensive metrics for a pipeline execution."""
+        metrics = {
+            "pipeline_id": pipeline_id,
+            "automatic_checkpointing_enabled": self.use_automatic_checkpointing,
+            "state_management_type": self.get_state_manager_type()
+        }
+        
+        if self.use_automatic_checkpointing and self.durable_executor:
+            metrics.update(self.durable_executor.get_performance_metrics())
+            
+        return metrics
 
     def __repr__(self) -> str:
         """String representation of orchestrator."""

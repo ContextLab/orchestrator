@@ -8,6 +8,10 @@ parameters:
     type: string
     required: true
     description: The research topic
+  output_path:
+    type: string
+    default: "examples/outputs/research_minimal"
+    description: Directory where output files will be saved
 
 steps:
   - id: search_web
@@ -52,7 +56,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/research_minimal/{{topic | slugify}}_summary.md"
+      path: "{{ output_path }}/{{topic | slugify}}_summary.md"
       content: |
         # Research Summary: {{topic}}
         **Date:** {{ execution.timestamp | date('%Y-%m-%d %H:%M:%S') }}

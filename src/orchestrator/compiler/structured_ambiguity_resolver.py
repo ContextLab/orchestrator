@@ -210,11 +210,18 @@ class StructuredAmbiguityResolver(AmbiguityResolver):
             @async_retry(exceptions=(Exception,), max_attempts=3, delay=1.0)
             async def _call_structured() -> Dict[str, Any]:
                 assert self.model is not None  # Type guard for mypy
-                return await self.model.generate_structured(
-                    prompt=prompt,
-                    schema=schema,
-                    temperature=0.1,  # Low temperature for consistency
-                )
+                
+                # Handle model-specific parameter requirements
+                params = {
+                    "prompt": prompt,
+                    "schema": schema,
+                }
+                
+                # Only add temperature if the model supports it
+                if hasattr(self.model, '_model_id') and 'gpt-5' not in self.model._model_id.lower():
+                    params["temperature"] = 0.1  # Low temperature for consistency
+                
+                return await self.model.generate_structured(**params)
 
             response = await _call_structured()
             logger.debug(f"Structured output response: {response}")
@@ -244,9 +251,21 @@ class StructuredAmbiguityResolver(AmbiguityResolver):
             @async_retry(exceptions=(Exception,), max_attempts=2, delay=0.5)
             async def _call_generate() -> str:
                 assert self.model is not None  # Type guard for mypy
-                return await self.model.generate(
-                    prompt, temperature=0.1, max_tokens=100
-                )
+                
+                # Handle model-specific parameter requirements
+                params = {"prompt": prompt}
+                
+                # Handle max_tokens vs max_completion_tokens
+                if hasattr(self.model, '_model_id') and 'gpt-5' in self.model._model_id.lower():
+                    params["max_completion_tokens"] = 100
+                else:
+                    params["max_tokens"] = 100
+                
+                # Only add temperature if the model supports it
+                if hasattr(self.model, '_model_id') and 'gpt-5' not in self.model._model_id.lower():
+                    params["temperature"] = 0.1
+                
+                return await self.model.generate(**params)
 
             response = await _call_generate()
             return self._parse_response(response, expected_type, content)

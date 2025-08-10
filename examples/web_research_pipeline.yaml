@@ -11,6 +11,7 @@ inputs:
   max_sources: 10
   output_format: "pdf"
   research_depth: "comprehensive"  # quick, standard, comprehensive
+  output_path: "examples/outputs/web_research_pipeline"  # Directory for output files
 
 steps:
   # Step 1: Initial web search
@@ -241,7 +242,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/web_research_pipeline/research_{{ research_topic | slugify }}.md"
+      path: "{{ output_path }}/research_{{ research_topic | slugify }}.md"
       content: "{{ generate_report.content }}"
     dependencies:
       - generate_report

@@ -589,24 +589,28 @@ delete global;
             resource_usage = {}
             
             if 'memory' in stats:
-                memory_stats = stats['memory']
+                memory_stats = stats.get('memory', {})
                 resource_usage['memory_usage_bytes'] = memory_stats.get('usage', 0)
                 resource_usage['memory_limit_bytes'] = memory_stats.get('limit', 0)
+                limit = memory_stats.get('limit', 1)
                 resource_usage['memory_usage_percent'] = (
-                    memory_stats.get('usage', 0) / memory_stats.get('limit', 1) * 100
+                    memory_stats.get('usage', 0) / limit * 100 if limit > 0 else 0
                 )
             
             if 'cpu_stats' in stats and 'precpu_stats' in stats:
-                cpu_stats = stats['cpu_stats']
-                precpu_stats = stats['precpu_stats']
+                cpu_stats = stats.get('cpu_stats', {})
+                precpu_stats = stats.get('precpu_stats', {})
                 
                 # Calculate CPU usage percentage
-                cpu_delta = cpu_stats['cpu_usage']['total_usage'] - precpu_stats['cpu_usage']['total_usage']
-                system_cpu_delta = cpu_stats['system_cpu_usage'] - precpu_stats['system_cpu_usage']
-                number_cpus = len(cpu_stats['cpu_usage'].get('percpu_usage', [1]))
-                
-                if system_cpu_delta > 0 and cpu_delta > 0:
-                    resource_usage['cpu_usage_percent'] = (cpu_delta / system_cpu_delta) * number_cpus * 100
+                if cpu_stats and precpu_stats:
+                    cpu_delta = cpu_stats.get('cpu_usage', {}).get('total_usage', 0) - precpu_stats.get('cpu_usage', {}).get('total_usage', 0)
+                    system_cpu_delta = cpu_stats.get('system_cpu_usage', 0) - precpu_stats.get('system_cpu_usage', 0)
+                    number_cpus = len(cpu_stats.get('cpu_usage', {}).get('percpu_usage', [1]))
+                    
+                    if system_cpu_delta > 0 and cpu_delta > 0:
+                        resource_usage['cpu_usage_percent'] = (cpu_delta / system_cpu_delta) * number_cpus * 100
+                    else:
+                        resource_usage['cpu_usage_percent'] = 0.0
                 else:
                     resource_usage['cpu_usage_percent'] = 0.0
             

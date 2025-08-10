@@ -12,6 +12,10 @@ parameters:
     type: string
     default: comprehensive
     description: Research depth (basic, comprehensive, or expert)
+  output_path:
+    type: string
+    default: "examples/outputs/research_basic"
+    description: Directory where output files will be saved
 
 steps:
   - id: initial_search
@@ -150,7 +154,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/research_basic/research_{{topic | slugify}}.md"
+      path: "{{ output_path }}/research_{{topic | slugify}}.md"
       content: |
         # Research Report: {{topic}}
         

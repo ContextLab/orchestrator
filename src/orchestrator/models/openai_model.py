@@ -362,15 +362,26 @@ class OpenAIModel(Model):
                     0, {"role": "system", "content": kwargs["system_prompt"]}
                 )
 
+            # Prepare API call parameters
+            api_params = {
+                "model": self._model_id,
+                "messages": messages,
+                "temperature": temperature,
+                "n": 1,
+                "stream": False,
+            }
+            
+            # Handle max_tokens vs max_completion_tokens based on model
+            max_tokens_value = max_tokens or self.capabilities.max_tokens
+            if "gpt-5" in self._model_id.lower():
+                # GPT-5 models use max_completion_tokens
+                api_params["max_completion_tokens"] = max_tokens_value
+            else:
+                # Older models use max_tokens
+                api_params["max_tokens"] = max_tokens_value
+
             # Make API call
-            response = await self.client.chat.completions.create(
-                model=self._model_id,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens or self.capabilities.max_tokens,
-                n=1,
-                stream=False,
-            )
+            response = await self.client.chat.completions.create(**api_params)
 
             # Extract response
             if response.choices and response.choices[0].message:

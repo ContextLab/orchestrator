@@ -149,7 +149,20 @@ class AmbiguityResolver:
         # Get AI response with retry
         @async_retry(exceptions=(Exception,), max_attempts=3, delay=1.0)
         async def _call_generate():
-            return await self.model.generate(prompt, temperature=0.1, max_tokens=100)
+            # Handle model-specific parameter requirements
+            params = {"prompt": prompt}
+            
+            # Handle max_tokens vs max_completion_tokens
+            if hasattr(self.model, '_model_id') and 'gpt-5' in self.model._model_id.lower():
+                params["max_completion_tokens"] = 100
+            else:
+                params["max_tokens"] = 100
+            
+            # Only add temperature if the model supports it
+            if hasattr(self.model, '_model_id') and 'gpt-5' not in self.model._model_id.lower():
+                params["temperature"] = 0.1
+                
+            return await self.model.generate(**params)
 
         response = await _call_generate()
 

@@ -16,22 +16,64 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from orchestrator import Orchestrator, init_models
 
 
+def check_output_path_usage(yaml_content: str, output_dir: str) -> bool:
+    """
+    Check if pipeline uses output_path parameter and will respect -o flag.
+    
+    Args:
+        yaml_content: YAML pipeline content
+        output_dir: Output directory specified with -o flag
+        
+    Returns:
+        True if pipeline will respect -o flag, False if it uses hardcoded paths
+    """
+    if not output_dir:
+        return True  # No -o flag used, so no issue
+    
+    # Check if YAML contains {{ output_path }} usage
+    if '{{ output_path }}' in yaml_content or '{{output_path}}' in yaml_content:
+        return True
+    
+    # Check for hardcoded output patterns that suggest -o flag will be ignored
+    hardcoded_patterns = [
+        'examples/outputs/',
+        'outputs/',
+        'data/outputs/',
+        'results/'
+    ]
+    
+    for pattern in hardcoded_patterns:
+        if pattern in yaml_content:
+            return False
+    
+    return True
+
+
 async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = None):
     """Run a single pipeline."""
-    # Initialize models first
-    print("Initializing models...")
-    model_registry = init_models()
-    
-    # Initialize orchestrator with models
-    orchestrator = Orchestrator(model_registry=model_registry)
-    
-    # Read pipeline YAML
+    # Read pipeline YAML first
     yaml_path = Path(yaml_file)
     if not yaml_path.exists():
         print(f"Error: Pipeline file not found: {yaml_file}")
         return 1
     
     yaml_content = yaml_path.read_text()
+    
+    # Check if pipeline will respect -o flag and warn if not
+    if output_dir:
+        will_respect = check_output_path_usage(yaml_content, output_dir)
+        if not will_respect:
+            print(f"⚠️  Warning: This pipeline may not respect the -o flag.", flush=True)
+            print(f"   Pipeline uses hardcoded output paths instead of {{ output_path }} parameter.", flush=True)
+            print(f"   Files may be saved to default locations instead of: {output_dir}", flush=True)
+            print(flush=True)
+    
+    # Initialize models
+    print("Initializing models...")
+    model_registry = init_models()
+    
+    # Initialize orchestrator with models
+    orchestrator = Orchestrator(model_registry=model_registry)
     
     # Set output directory if specified
     if output_dir:

@@ -33,7 +33,6 @@ steps:
         1. Performance bottlenecks
         2. Code quality issues
         3. Best practice violations
-      model: <AUTO>Select model best suited for code analysis</AUTO>
       model: <AUTO task="analyze">Select model best suited for code analysis</AUTO>
       analysis_type: "code_quality"
     dependencies:
@@ -46,22 +45,46 @@ steps:
         Based on this analysis:
         {{analyze_code.result}}
         
-        Provide optimized version of the code that addresses the identified issues.
-        Return only the optimized code, no explanations.
-      model: <AUTO>Select model for code generation</AUTO>
+        Provide an optimized version of the {{language}} code that addresses the identified issues.
+        
+        IMPORTANT: 
+        - Return ONLY valid {{language}} code syntax
+        - Use {{language}}-specific best practices and conventions
+        - Do not include any markdown formatting or explanations
+        - Do not include ```{{language}}``` or any markdown blocks
+        - The output must be pure, executable {{language}} code
+        
+        Language: {{language}}
       model: <AUTO task="generate">Select model for code generation</AUTO>
       max_tokens: 2000
     dependencies:
       - analyze_code
+  
+  - id: clean_optimized_code
+    action: generate_text
+    parameters:
+      prompt: |
+        Extract ONLY the {{language}} code from the following text, removing any markdown formatting or explanations:
+        
+        {{optimize_code.result}}
+        
+        Return ONLY the pure {{language}} code without any ```{{language}}``` blocks, explanations, or formatting.
+        The output must be valid, executable {{language}} code with proper {{language}} syntax.
+        
+        Target Language: {{language}}
+      model: <AUTO task="extract">Select model for code extraction</AUTO>
+      max_tokens: 2000
+    dependencies:
+      - optimize_code
   
   - id: save_optimized_code
     tool: filesystem
     action: write
     parameters:
       path: "examples/outputs/code_optimization/optimized_{{code_file | basename}}"
-      content: "{{optimize_code.result}}"
+      content: "{{clean_optimized_code.result}}"
     dependencies:
-      - optimize_code
+      - clean_optimized_code
   
   - id: save_analysis_report
     tool: filesystem
@@ -73,7 +96,7 @@ steps:
         
         **File:** {{code_file}}
         **Language:** {{language}}
-        **Date:** {{ now() }}
+        **Date:** {{ execution.timestamp | date('%Y-%m-%d %H:%M:%S') }}
         
         ## Analysis Results
         
@@ -82,12 +105,23 @@ steps:
         ## Optimization Summary
         
         The optimized code has been saved to: examples/outputs/code_optimization/optimized_{{code_file | basename}}
+        
+        ## Original vs Optimized
+        
+        ### Original Code Issues Identified:
+        See analysis above for detailed breakdown.
+        
+        ### Optimized Code Benefits:
+        - Improved performance through algorithmic optimizations
+        - Enhanced code quality and maintainability
+        - Better error handling and validation
+        - Adherence to best practices and conventions
     dependencies:
       - analyze_code
       - optimize_code
 
 outputs:
   analysis: "{{analyze_code.result}}"
-  optimized_code: "{{optimize_code.result}}"
+  optimized_code: "{{clean_optimized_code.result}}"
   optimized_file: "optimized_{{code_file | basename}}"
   report_file: "{{save_analysis_report.filepath}}"

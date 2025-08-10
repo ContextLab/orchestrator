@@ -267,6 +267,15 @@ class TemplateManager:
             except Exception:
                 return False
         
+        def basename(path: str) -> str:
+            """Get the basename of a path."""
+            import os
+            return os.path.basename(str(path))
+        
+        def now() -> datetime:
+            """Return current datetime."""
+            return datetime.now()
+        
         # Register custom filters
         self.env.filters.update({
             'slugify': slugify,
@@ -278,12 +287,14 @@ class TemplateManager:
             'markdown_format': markdown_format,
             'include_file': include_file_sync,
             'file_exists': file_exists,
+            'basename': basename,
         })
         
         # Register global functions
         self.env.globals.update({
             'include_file': include_file_sync,
             'file_exists': file_exists,
+            'now': now,
         })
         
         # Set up loop-specific template functions

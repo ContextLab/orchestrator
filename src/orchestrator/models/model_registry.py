@@ -1101,39 +1101,47 @@ class ModelRegistry:
 
     async def _filter_by_health(self, models: List[Model]) -> List[Model]:
         """Filter models by health status."""
+        # TEMPORARY FIX for Issue #156: Skip expensive health checking during model selection
+        # This prevents the timeout issues caused by making parallel API calls to all models
+        # TODO: Implement proper async health checking with caching for production use
+        
+        print(f">> DEBUG: Skipping health checks for {len(models)} models (Issue #156 fix)")
+        return models
+        
+        # Original health checking code (commented out to fix timeout issues):
         # Check if cache is stale or if any models don't have cached health status
-        import time
+        # import time
 
-        current_time = time.time()
+        # current_time = time.time()
 
         # Only consider cache stale if we've checked before and enough time has passed
-        cache_is_stale = (
-            self._last_health_check > 0
-            and current_time - self._last_health_check > self._cache_ttl
-        )
+        # cache_is_stale = (
+        #     self._last_health_check > 0
+        #     and current_time - self._last_health_check > self._cache_ttl
+        # )
 
         # Check if any models are missing from cache
-        missing_models = []
-        for model in models:
-            model_key = self._get_model_key(model)
-            if model_key not in self._model_health_cache:
-                missing_models.append(model)
+        # missing_models = []
+        # for model in models:
+        #     model_key = self._get_model_key(model)
+        #     if model_key not in self._model_health_cache:
+        #         missing_models.append(model)
 
         # Only refresh if cache is stale OR if we have missing models
-        if cache_is_stale or missing_models:
-            # If cache is stale, refresh all models; otherwise just refresh missing ones
-            models_to_refresh = models if cache_is_stale else missing_models
-            await self._refresh_health_cache(models_to_refresh)
-            self._last_health_check = current_time
+        # if cache_is_stale or missing_models:
+        #     # If cache is stale, refresh all models; otherwise just refresh missing ones
+        #     models_to_refresh = models if cache_is_stale else missing_models
+        #     await self._refresh_health_cache(models_to_refresh)
+        #     self._last_health_check = current_time
 
         # Return healthy models
-        healthy = []
-        for model in models:
-            model_key = self._get_model_key(model)
-            if self._model_health_cache.get(model_key, False):
-                healthy.append(model)
+        # healthy = []
+        # for model in models:
+        #     model_key = self._get_model_key(model)
+        #     if self._model_health_cache.get(model_key, False):
+        #         healthy.append(model)
 
-        return healthy
+        # return healthy
 
     async def _refresh_health_cache(self, models: List[Model]) -> None:
         """Refresh health cache for models (with batch processing optimization)."""

@@ -1,4 +1,14 @@
-"""Backend implementations for state management."""
+"""Backend implementations for state management.
+
+NOTE: These legacy backends are maintained for backward compatibility.
+For new projects, consider using the LangGraph-based state management system which provides:
+
+- Built-in support for MemorySaver, SqliteSaver, and PostgresSaver backends
+- Enhanced performance and scalability 
+- Better integration with LangGraph's ecosystem
+
+Use orchestrator.Orchestrator(use_langgraph_state=True) to access the new system.
+"""
 
 import json
 import os

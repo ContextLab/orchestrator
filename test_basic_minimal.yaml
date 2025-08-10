@@ -1,0 +1,19 @@
+id: test-basic-minimal
+name: Basic No-AUTO Test
+description: Test without ANY AUTO tags
+
+parameters:
+  test_input:
+    type: string
+    default: "test"
+
+steps:
+  - id: simple_generate
+    action: generate_text
+    parameters:
+      prompt: "Say hello to {{ test_input }}"
+      model: "gpt-3.5-turbo"
+      max_tokens: 10
+
+outputs:
+  result: "{{ simple_generate.result }}"

@@ -1,0 +1,241 @@
+# Intelligent Fact-Checker Pipeline
+# Demonstrates AUTO tags resolving to lists and parallel processing with for_each
+
+id: intelligent-fact-checker
+name: Intelligent Fact-Checker
+description: Verifies claims and sources using AUTO tag list generation and parallel processing
+version: "3.0.0"
+
+inputs:
+  document_source:
+    type: string
+    description: Path to document file or URL to analyze
+    required: true
+  strictness:
+    type: string
+    description: How strict should fact-checking be (lenient/moderate/strict)
+    default: "moderate"
+  output_path:
+    type: string
+    description: Path where fact-check report should be saved
+    required: false
+
+outputs:
+  fact_check_report:
+    type: string
+    value: "{{ output_path | default('examples/outputs/fact_checker/fact_check_report.md') }}"
+
+steps:
+  # Step 1: Load document using filesystem tool
+  - id: load_document
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ document_source }}"
+    produces: text
+    
+  # Step 2: Extract sources as a list using AUTO tag
+  - id: extract_sources_list
+    dependencies:
+      - load_document
+    action: generate-structured
+    parameters:
+      prompt: "<AUTO>analyze this document and extract all sources, citations, and references as a structured list: {{ load_document.result }}</AUTO>"
+      schema:
+        type: object
+        properties:
+          sources:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                url:
+                  type: string
+                type:
+                  type: string
+                  enum: ["journal", "report", "website", "other"]
+        required: [sources]
+      max_completion_tokens: 1000
+      model: "claude-sonnet-4-20250514"
+    produces: json
+    
+  # Step 3: Extract claims as a list using AUTO tag
+  - id: extract_claims_list
+    dependencies:
+      - load_document
+    action: generate-structured
+    parameters:
+      prompt: "<AUTO>extract all verifiable factual claims from this document as a list: {{ load_document.result }}</AUTO>"
+      schema:
+        type: object
+        properties:
+          claims:
+            type: array
+            items:
+              type: string
+        required: [claims]
+      max_completion_tokens: 1000
+      model: "claude-sonnet-4-20250514"
+    produces: json
+    
+  # Step 4: Process sources in parallel using for_each
+  - id: verify_sources_parallel
+    for_each: "{{ extract_sources_list.result.sources }}"
+    max_parallel: 2
+    add_completion_task: true
+    steps:
+      - id: verify_source
+        action: generate-text
+        parameters:
+          prompt: |
+            Verify this source for authenticity and accuracy:
+            Name: {{ $item.name }}
+            URL: {{ $item.url }}
+            Type: {{ $item.type }}
+            
+            Check:
+            1. Is the source real and accessible?
+            2. Is it correctly cited?
+            3. Is it a reputable source for its type?
+            
+            Provide:
+            - SOURCE: {{ $item.name }} ({{ $item.url }})
+            - STATUS: [Valid/Invalid/Questionable]
+            - CREDIBILITY: [High/Medium/Low]
+            - NOTES: [any issues or observations]
+          max_completion_tokens: 300
+          model: "claude-sonnet-4-20250514"
+    dependencies:
+      - extract_sources_list
+    
+  # Step 5: Process claims in parallel using for_each
+  - id: verify_claims_parallel
+    for_each: "{{ extract_claims_list.result.claims }}"
+    max_parallel: 3
+    add_completion_task: true
+    steps:
+      - id: verify_claim
+        action: generate-text
+        parameters:
+          prompt: |
+            Verify this specific claim: {{ $item }}
+            Index: {{ $index }}
+            
+            Using these sources for verification:
+            {% for source in extract_sources_list.result.sources %}
+            - {{ source.name }} ({{ source.type }}): {{ source.url }}
+            {% endfor %}
+            
+            Provide professional fact-checking analysis:
+            - CLAIM {{ $index }}: {{ $item }}
+            - SUPPORT: [Yes/Partial/No based on sources]
+            - RELIABILITY: [High/Medium/Low]
+            - EVIDENCE: [brief summary of supporting/contradicting evidence]
+            - STATUS: [Verified/Unverified/Disputed]
+          max_completion_tokens: 400
+          model: "claude-sonnet-4-20250514"
+    dependencies:
+      - extract_claims_list
+      - extract_sources_list
+    
+  # Step 6: Generate final report
+  - id: generate_report
+    dependencies:
+      - verify_sources_parallel
+      - verify_claims_parallel
+      - load_document
+    action: generate-text
+    parameters:
+      prompt: |
+        # FACT-CHECKING REPORT: {{ document_source }}
+        
+        ## Executive Summary
+        
+        Document analyzed: {{ document_source }}
+        Strictness level: {{ strictness }}
+        
+        Total sources identified via AUTO tag: {{ extract_sources_list.result.sources | length }}
+        Total claims identified via AUTO tag: {{ extract_claims_list.result.claims | length }}
+        
+        ## Source Verification Results (Parallel Processing)
+        
+        {% for verification in verify_sources_parallel.results %}
+        ### Source {{ loop.index }}
+        {{ verification.verify_source.result }}
+        
+        {% endfor %}
+        
+        ## Claims Verification Results (Parallel Processing)
+        
+        {% for verification in verify_claims_parallel.results %}
+        ### Claim {{ loop.index }}
+        {{ verification.verify_claim.result }}
+        
+        {% endfor %}
+        
+        ## Final Assessment
+        
+        Based on the parallel verification of all sources and claims:
+        - Overall credibility rating: [Analyze results and provide High/Medium/Low]
+        - Key findings: [2-3 bullet points based on verification results]
+        - Recommendations: [Specific actionable recommendations]
+        
+        ---
+        *This report demonstrates AUTO tag list generation and parallel for_each processing capabilities.*
+      max_completion_tokens: 2000
+      model: "claude-sonnet-4-20250514"
+    produces: text
+    
+  # Step 7: Save the report
+  - id: save_report
+    dependencies:
+      - generate_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output_path | default('examples/outputs/fact_checker/fact_check_report.md') }}"
+      content: |
+        # Intelligent Fact-Checking Report
+        
+        **Document Analyzed:** {{ document_source }}
+        **Strictness Level:** {{ strictness }}
+        **Generated:** {{ execution.timestamp }}
+        
+        ---
+        
+        {{ generate_report.result }}
+        
+        ---
+        
+        ## Technical Details
+        
+        ### AUTO Tag List Generation
+        
+        This pipeline demonstrates AUTO tags resolving to lists:
+        - **Sources extracted via AUTO tag:** {{ extract_sources_list.result.sources | length }} sources
+        - **Claims extracted via AUTO tag:** {{ extract_claims_list.result.claims | length }} claims
+        
+        ### Parallel Processing with for_each
+        
+        The pipeline uses `for_each` with `max_parallel` to process items concurrently:
+        - **Sources verified in parallel:** max_parallel=2
+        - **Claims verified in parallel:** max_parallel=3
+        
+        ### Raw Data Extracted by AUTO Tags
+        
+        #### Sources List (from AUTO tag)
+        {% for source in extract_sources_list.result.sources %}
+        {{ loop.index }}. {{ source.name }} ({{ source.type }}): {{ source.url }}
+        {% endfor %}
+        
+        #### Claims List (from AUTO tag)
+        {% for claim in extract_claims_list.result.claims %}
+        {{ loop.index }}. {{ claim }}
+        {% endfor %}
+        
+        ---
+        
+        *Report generated using orchestrator framework v{{ version | default('3.0.0') }}*
+        *Features demonstrated: AUTO tag list generation, parallel for_each processing*

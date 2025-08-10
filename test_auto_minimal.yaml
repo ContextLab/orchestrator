@@ -1,0 +1,19 @@
+id: test-auto-minimal
+name: Minimal AUTO Tag Test
+description: Test single AUTO tag resolution
+
+parameters:
+  test_input:
+    type: string
+    default: "test"
+
+steps:
+  - id: simple_auto
+    action: generate_text
+    parameters:
+      prompt: "Say hello to {{ test_input }}"
+      model: <AUTO task="generate">Select a model for simple generation</AUTO>
+      max_tokens: 10
+
+outputs:
+  result: "{{ simple_auto.result }}"

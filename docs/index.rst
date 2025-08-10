@@ -135,6 +135,7 @@ This documentation is organized into several sections:
    getting_started/quickstart
    getting_started/basic_concepts
    getting_started/your_first_pipeline
+   getting_started/cli_reference
 
 .. toctree::
    :maxdepth: 2

@@ -241,156 +241,35 @@ models:
     size: 34b
 
   # OpenAI models (require OPENAI_API_KEY)
-  # GPT-4.1 Series
+  # GPT-5 Series (Latest - Released Jan 2025)
   - source: openai
-    name: gpt-4.1
+    name: gpt-5
     expertise:
       - general
       - reasoning
       - code
       - analysis
       - instruction-following
-    size: 1760b  # Estimated
+      - vision
+      - multimodal
+    size: 2000b  # Estimated
     
   - source: openai
-    name: gpt-4.1-mini
+    name: gpt-5-mini
     expertise:
       - general
       - fast
       - efficient
-    size: 8b  # Estimated
+      - reasoning
+    size: 100b  # Estimated
     
   - source: openai
-    name: gpt-4.1-nano
+    name: gpt-5-nano
     expertise:
       - fast
       - compact
       - efficient
-    size: 1b  # Estimated
-    
-  # GPT-4o Series  
-  - source: openai
-    name: gpt-4o
-    expertise:
-      - general
-      - reasoning
-      - code
-      - analysis
-      - vision
-    size: 1760b  # Estimated
-    
-  - source: openai
-    name: gpt-4o-mini
-    expertise:
-      - general
-      - fast
-      - efficient
-    size: 8b  # Estimated
-    
-  # O-series reasoning models
-  - source: openai
-    name: o3
-    expertise:
-      - reasoning
-      - code
-      - math
-      - science
-      - vision
-    size: 2000b  # Estimated
-    
-  - source: openai
-    name: o3-mini
-    expertise:
-      - reasoning
-      - code
-      - math
-      - fast
-    size: 70b  # Estimated
-    
-  - source: openai
-    name: o4-mini
-    expertise:
-      - reasoning
-      - code
-      - math
-      - fast
-      - efficient
-    size: 70b  # Estimated
-    
-  - source: openai
-    name: o1
-    expertise:
-      - reasoning
-      - code
-      - math
-    size: 175b  # Estimated
-    
-  - source: openai
-    name: o1-mini
-    expertise:
-      - reasoning
-      - code
-      - fast
-    size: 65b  # Estimated
-    
-  - source: openai
-    name: o1-preview
-    expertise:
-      - reasoning
-      - code
-      - math
-      - preview
-    size: 175b  # Estimated
-    
-  # GPT-4 Series
-  - source: openai
-    name: gpt-4
-    expertise:
-      - general
-      - reasoning
-      - code
-    size: 1760b  # Estimated
-    
-  - source: openai
-    name: gpt-4-turbo
-    expertise:
-      - general
-      - reasoning
-      - code
-      - vision
-    size: 1760b  # Estimated
-    
-  # GPT-3.5 Series
-  - source: openai
-    name: gpt-3.5-turbo
-    expertise:
-      - general
-      - fast
-    size: 175b
-    
-  - source: openai
-    name: gpt-3.5-turbo-instruct
-    expertise:
-      - general
-      - instruct
-    size: 175b
-    
-  # Specialized models
-  - source: openai
-    name: gpt-4o-audio-preview
-    expertise:
-      - audio
-      - transcription
-      - multimodal
-    size: 1760b  # Estimated
-    
-  - source: openai
-    name: gpt-4o-realtime-preview
-    expertise:
-      - realtime
-      - voice
-      - multimodal
-    size: 1760b  # Estimated
+    size: 10b  # Estimated
 
   # Anthropic models (require ANTHROPIC_API_KEY)
   # Claude 4 Series

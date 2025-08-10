@@ -1,10 +1,30 @@
-"""Simple file-based state manager for basic use cases."""
+"""Simple file-based state manager for basic use cases.
+
+DEPRECATED: This module is deprecated as of orchestrator v2.0 and will be removed in v3.0.
+Use the new LangGraph-based state management system instead:
+
+- For new projects: Use orchestrator.Orchestrator(use_langgraph_state=True)  
+- For migration: Use orchestrator.state.legacy_compatibility.LegacyStateManagerAdapter
+- For advanced features: Use orchestrator.state.langgraph_state_manager.LangGraphGlobalContextManager
+
+See the migration guide at docs/migration/langgraph-state-management.md for details.
+"""
 
 import json
 import os
 import time
+import warnings
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+
+# Issue deprecation warning on import
+warnings.warn(
+    "orchestrator.state.simple_state_manager is deprecated and will be removed in v3.0. "
+    "Use the new LangGraph-based state management system instead. "
+    "See docs/migration/langgraph-state-management.md for migration guide.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 
 class StateManager:

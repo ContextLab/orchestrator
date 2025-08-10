@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from .pipeline import Pipeline
 from .task import TaskStatus
 from ..state.state_manager import StateManager
+from ..state.langgraph_state_manager import LangGraphGlobalContextManager
 
 
 @dataclass
@@ -73,18 +74,22 @@ class PipelineResumeManager:
     def __init__(
         self,
         state_manager: StateManager,
+        langgraph_manager: Optional[LangGraphGlobalContextManager] = None,
         default_strategy: Optional[ResumeStrategy] = None,
     ):
         """Initialize resume manager.
 
         Args:
             state_manager: State manager for checkpointing
+            langgraph_manager: Optional LangGraph state manager for enhanced features
             default_strategy: Default resume strategy
         """
         self.state_manager = state_manager
+        self.langgraph_manager = langgraph_manager
         self.default_strategy = default_strategy or ResumeStrategy()
         self.logger = logging.getLogger(__name__)
         self._checkpoint_tasks: Dict[str, asyncio.Task] = {}
+        self._use_langgraph = langgraph_manager is not None
 
     async def create_resume_checkpoint(
         self,
@@ -118,23 +123,62 @@ class PipelineResumeManager:
             context=context,
         )
 
-        # Save checkpoint
-        checkpoint_id = await self.state_manager.save_checkpoint(
-            execution_id,
-            {
-                "pipeline": pipeline.to_dict(),
-                "resume_state": resume_state.to_dict(),
-            },
-            metadata={
-                "type": "resume_checkpoint",
-                "completed_count": len(completed_tasks),
-                "total_count": len(pipeline.tasks),
-            },
-        )
+        # Prepare checkpoint data
+        checkpoint_data = {
+            "pipeline": pipeline.to_dict(),
+            "resume_state": resume_state.to_dict(),
+        }
+
+        checkpoint_context = {
+            "type": "resume_checkpoint",
+            "completed_count": len(completed_tasks),
+            "total_count": len(pipeline.tasks),
+            "execution_id": execution_id,
+            "pipeline_id": pipeline.id,
+            "timestamp": time.time()
+        }
+
+        # Save checkpoint using appropriate manager
+        if self._use_langgraph and self.langgraph_manager:
+            # Use LangGraph state manager for enhanced checkpointing
+            try:
+                checkpoint_id = await self.langgraph_manager.save_checkpoint(
+                    execution_id, checkpoint_data, checkpoint_context
+                )
+                
+                # Also update global state if available
+                global_state_updates = {
+                    "intermediate_results": {
+                        "resume_checkpoint_id": checkpoint_id,
+                        "completed_tasks": list(completed_tasks),
+                        "failed_tasks": failed_tasks or {},
+                    },
+                    "execution_metadata": {
+                        "current_step": "resume_checkpoint",
+                        "completed_steps": list(completed_tasks),
+                        "failed_steps": list(failed_tasks.keys()) if failed_tasks else [],
+                    }
+                }
+                
+                await self.langgraph_manager.update_global_state(
+                    execution_id, global_state_updates
+                )
+                
+            except Exception as e:
+                self.logger.warning(f"LangGraph checkpoint failed, falling back to legacy: {e}")
+                checkpoint_id = await self.state_manager.save_checkpoint(
+                    execution_id, checkpoint_data, checkpoint_context
+                )
+        else:
+            # Use legacy state manager
+            checkpoint_id = await self.state_manager.save_checkpoint(
+                execution_id, checkpoint_data, checkpoint_context
+            )
 
         resume_state.checkpoint_id = checkpoint_id
         self.logger.info(
-            f"Created resume checkpoint {checkpoint_id} for execution {execution_id}"
+            f"Created resume checkpoint {checkpoint_id} for execution {execution_id} "
+            f"({'LangGraph' if self._use_langgraph else 'legacy'} mode)"
         )
 
         return checkpoint_id
@@ -169,8 +213,48 @@ class PipelineResumeManager:
         Returns:
             Tuple of (Pipeline, ResumeState) or None if not found
         """
-        # Get latest resume checkpoint
-        checkpoints = await self.state_manager.list_checkpoints(execution_id)
+        if self._use_langgraph and self.langgraph_manager:
+            # Try LangGraph first for enhanced resume state
+            try:
+                checkpoints = await self.langgraph_manager.list_checkpoints(execution_id)
+                
+                # Look for resume checkpoint
+                resume_checkpoint = None
+                for checkpoint in checkpoints:
+                    if isinstance(checkpoint, dict) and checkpoint.get("metadata", {}).get("type") == "resume_checkpoint":
+                        resume_checkpoint = checkpoint
+                        break
+                
+                if resume_checkpoint:
+                    restored = await self.langgraph_manager.restore_checkpoint(
+                        execution_id, resume_checkpoint["checkpoint_id"]
+                    )
+                    
+                    if restored and "state" in restored:
+                        state = restored["state"]
+                        pipeline = Pipeline.from_dict(state["pipeline"])
+                        resume_state = ResumeState.from_dict(state["resume_state"])
+                        
+                        # Enhance resume state with LangGraph global state
+                        global_state = await self.langgraph_manager.get_global_state(execution_id)
+                        if global_state:
+                            # Add enhanced information from global state
+                            if "intermediate_results" in global_state:
+                                resume_state.context["langgraph_state"] = global_state["intermediate_results"]
+                            if "execution_metadata" in global_state:
+                                resume_state.context["execution_metadata"] = global_state["execution_metadata"]
+                        
+                        return pipeline, resume_state
+                        
+            except Exception as e:
+                self.logger.warning(f"LangGraph resume state retrieval failed, falling back to legacy: {e}")
+
+        # Fallback to legacy state manager
+        try:
+            checkpoints = await self.state_manager.list_checkpoints(execution_id)
+        except Exception:
+            # If list_checkpoints doesn't exist in legacy manager, try alternative approach
+            return None
 
         resume_checkpoint = None
         for checkpoint in checkpoints:
@@ -183,14 +267,24 @@ class PipelineResumeManager:
             return None
 
         # Restore checkpoint
-        restored = await self.state_manager.restore_checkpoint(
-            execution_id, resume_checkpoint["checkpoint_id"]
-        )
+        try:
+            restored = await self.state_manager.restore_checkpoint(
+                execution_id, resume_checkpoint["checkpoint_id"]
+            )
+        except Exception:
+            # Handle legacy checkpoint format differences
+            try:
+                restored = await self.state_manager.restore_checkpoint(
+                    resume_checkpoint["checkpoint_id"]
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to restore checkpoint: {e}")
+                return None
 
         if not restored:
             return None
 
-        state = restored["state"]
+        state = restored.get("state", restored)  # Handle different response formats
 
         # Reconstruct pipeline and resume state
         pipeline = Pipeline.from_dict(state["pipeline"])
@@ -403,11 +497,144 @@ class PipelineResumeManager:
         Returns:
             Statistics dictionary
         """
-        return {
+        stats = {
             "active_checkpointing_tasks": len(self._checkpoint_tasks),
             "default_strategy": {
                 "retry_failed_tasks": self.default_strategy.retry_failed_tasks,
                 "max_retry_attempts": self.default_strategy.max_retry_attempts,
                 "checkpoint_interval": self.default_strategy.checkpoint_interval_seconds,
             },
+            "manager_type": "langgraph" if self._use_langgraph else "legacy",
         }
+        
+        # Add LangGraph-specific statistics
+        if self._use_langgraph and self.langgraph_manager:
+            try:
+                langgraph_stats = self.langgraph_manager.get_statistics()
+                stats["langgraph_stats"] = langgraph_stats
+            except Exception:
+                pass
+                
+        return stats
+
+    async def create_named_resume_checkpoint(
+        self,
+        execution_id: str,
+        checkpoint_name: str,
+        description: str,
+        pipeline: Pipeline,
+        completed_tasks: Set[str],
+        task_results: Dict[str, Any],
+        context: Dict[str, Any],
+        failed_tasks: Optional[Dict[str, int]] = None,
+    ) -> Optional[str]:
+        """Create a named checkpoint for resume (LangGraph only).
+
+        Args:
+            execution_id: Execution ID
+            checkpoint_name: Human-readable name for the checkpoint
+            description: Description of the checkpoint
+            pipeline: Pipeline being executed
+            completed_tasks: Set of completed task IDs
+            task_results: Results from completed tasks
+            context: Execution context
+            failed_tasks: Failed tasks with retry counts
+
+        Returns:
+            Checkpoint ID if successful, None if not using LangGraph
+        """
+        if not self._use_langgraph or not self.langgraph_manager:
+            self.logger.warning("Named checkpoints only available with LangGraph state manager")
+            return None
+
+        # Create standard resume checkpoint first
+        checkpoint_id = await self.create_resume_checkpoint(
+            execution_id, pipeline, completed_tasks, task_results, context, failed_tasks
+        )
+
+        # Create named checkpoint reference
+        try:
+            named_checkpoint_id = await self.langgraph_manager.create_checkpoint(
+                execution_id,
+                checkpoint_name,
+                {
+                    "resume_checkpoint_id": checkpoint_id,
+                    "description": description,
+                    "checkpoint_type": "named_resume_checkpoint",
+                    "completed_tasks": list(completed_tasks),
+                    "failed_tasks": failed_tasks or {},
+                    "timestamp": time.time()
+                }
+            )
+            
+            self.logger.info(
+                f"Created named resume checkpoint '{checkpoint_name}' ({named_checkpoint_id}) "
+                f"for execution {execution_id}"
+            )
+            
+            return named_checkpoint_id
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create named resume checkpoint: {e}")
+            return checkpoint_id  # Return standard checkpoint ID as fallback
+
+    async def get_enhanced_resume_metrics(self, execution_id: str) -> Optional[Dict[str, Any]]:
+        """Get enhanced resume metrics (LangGraph only).
+
+        Args:
+            execution_id: Execution ID
+
+        Returns:
+            Enhanced metrics if using LangGraph, None otherwise
+        """
+        if not self._use_langgraph or not self.langgraph_manager:
+            return None
+
+        try:
+            global_state = await self.langgraph_manager.get_global_state(execution_id)
+            if not global_state:
+                return None
+
+            # Extract resume-related metrics
+            metrics = {
+                "execution_id": execution_id,
+                "current_status": global_state.get("execution_metadata", {}).get("status"),
+                "completed_tasks": global_state.get("execution_metadata", {}).get("completed_steps", []),
+                "failed_tasks": global_state.get("execution_metadata", {}).get("failed_steps", []),
+                "pending_tasks": global_state.get("execution_metadata", {}).get("pending_steps", []),
+                "retry_count": global_state.get("execution_metadata", {}).get("retry_count", 0),
+                "performance_metrics": global_state.get("performance_metrics", {}),
+                "error_context": global_state.get("error_context", {}),
+                "checkpoint_history": global_state.get("checkpoint_history", []),
+                "total_execution_time": None
+            }
+
+            # Calculate execution time if available
+            start_time = global_state.get("execution_metadata", {}).get("start_time")
+            if start_time:
+                metrics["total_execution_time"] = time.time() - start_time
+
+            return metrics
+
+        except Exception as e:
+            self.logger.error(f"Failed to get enhanced resume metrics: {e}")
+            return None
+
+    async def optimize_checkpoint_storage(self, execution_id: str, keep_last_n: int = 5) -> bool:
+        """Optimize checkpoint storage by keeping only recent checkpoints (LangGraph only).
+
+        Args:
+            execution_id: Execution ID
+            keep_last_n: Number of recent checkpoints to keep
+
+        Returns:
+            True if optimization was performed, False otherwise
+        """
+        if not self._use_langgraph or not self.langgraph_manager:
+            return False
+
+        try:
+            return await self.langgraph_manager.cleanup_checkpoints(execution_id, keep_last_n)
+        except Exception as e:
+            self.logger.error(f"Failed to optimize checkpoint storage: {e}")
+            return False

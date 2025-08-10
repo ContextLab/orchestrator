@@ -1,4 +1,14 @@
-"""State management and checkpointing system."""
+"""State management and checkpointing system.
+
+NOTE: This legacy state manager is maintained for backward compatibility.
+For new projects, consider using the LangGraph-based state management system:
+
+- orchestrator.Orchestrator(use_langgraph_state=True) for enhanced features
+- orchestrator.state.langgraph_state_manager.LangGraphGlobalContextManager for direct access
+- orchestrator.state.legacy_compatibility.LegacyStateManagerAdapter for migration support
+
+The legacy system will continue to be supported but new features will focus on LangGraph integration.
+"""
 
 from __future__ import annotations
 

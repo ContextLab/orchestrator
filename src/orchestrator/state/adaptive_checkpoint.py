@@ -1,7 +1,19 @@
-"""Adaptive checkpointing strategies for the Orchestrator framework."""
+"""Adaptive checkpointing strategies for the Orchestrator framework.
+
+DEPRECATED: This module is part of the legacy state management system and will be deprecated in v3.0.
+The new LangGraph-based state management provides built-in adaptive checkpoint strategies.
+
+For new projects, use orchestrator.Orchestrator(use_langgraph_state=True) which provides:
+- Automatic checkpoint optimization
+- Built-in adaptive strategies based on pipeline complexity  
+- Memory-efficient checkpointing with LangGraph's infrastructure
+
+See the migration guide at docs/migration/langgraph-state-management.md for details.
+"""
 
 import asyncio
 import time
+import warnings
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass

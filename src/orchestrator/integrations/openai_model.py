@@ -317,12 +317,20 @@ class OpenAIModel(Model):
         """
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": structured_prompt}],
-                temperature=temperature,
-                **kwargs,
-            )
+            # Prepare API parameters with GPT-5 compatibility
+            api_params = {
+                "model": self.model_name,
+                "messages": [{"role": "user", "content": structured_prompt}],
+            }
+            
+            # Only add temperature if the model supports it (GPT-5 doesn't support non-default temperature)
+            if "gpt-5" not in self.model_name.lower():
+                api_params["temperature"] = temperature
+            
+            # Add any additional kwargs
+            api_params.update(kwargs)
+            
+            response = self.client.chat.completions.create(**api_params)
 
             content = response.choices[0].message.content or "{}"
 
