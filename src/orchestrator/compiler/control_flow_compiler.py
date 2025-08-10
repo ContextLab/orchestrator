@@ -353,6 +353,8 @@ class ControlFlowCompiler(YAMLCompiler):
         Returns:
             Step definition dictionary
         """
+        from ..core.for_each_task import ForEachTask
+        
         step_def = {
             "id": task.id,
             "name": task.name,
@@ -368,6 +370,11 @@ class ControlFlowCompiler(YAMLCompiler):
             # Extract tool field from metadata if present
             if "tool" in task.metadata:
                 step_def["tool"] = task.metadata["tool"]
+                
+        # Special handling for ForEachTask - preserve loop steps
+        if isinstance(task, ForEachTask):
+            # Store the loop steps in metadata for later reconstruction
+            step_def["metadata"]["loop_steps"] = task.loop_steps
 
         if task.timeout:
             step_def["timeout"] = task.timeout
@@ -434,6 +441,30 @@ class ControlFlowCompiler(YAMLCompiler):
         # Check for control flow metadata
         if "metadata" in task_def:
             metadata = task_def["metadata"]
+
+            # Check for ForEachTask (runtime expansion)
+            if metadata.get("is_for_each_task"):
+                # This is a ForEachTask that needs runtime expansion
+                # Recreate it from the saved metadata
+                from ..core.for_each_task import ForEachTask
+                
+                loop_config = metadata.get("loop_config", {})
+                for_each_task = ForEachTask(
+                    id=task_def["id"],
+                    name=task_def.get("name", task_def["id"]),
+                    action="for_each_runtime",
+                    parameters=task_def.get("parameters", {}),
+                    dependencies=task_def.get("depends_on", []),
+                    for_each_expr=loop_config.get("for_each_expr", ""),
+                    loop_steps=metadata.get("loop_steps", []),
+                    max_parallel=loop_config.get("max_parallel", 1),
+                    loop_var=loop_config.get("loop_var", "$item"),
+                    add_completion_task=loop_config.get("add_completion", False),
+                    metadata=metadata
+                )
+                # Copy template metadata from base task
+                for_each_task.template_metadata = base_task.template_metadata
+                return for_each_task
 
             # Create action loop task if needed
             if "is_action_loop" in metadata:

@@ -94,7 +94,7 @@ steps:
     
   # Step 4: Process sources in parallel using for_each with runtime expansion
   - id: verify_sources
-    for_each: "{{ extract_sources_list.result.sources }}"
+    for_each: "<AUTO>list of sources to verify</AUTO>"
     max_parallel: 2
     add_completion_task: true
     steps:
@@ -103,9 +103,9 @@ steps:
         parameters:
           prompt: |
             Verify this source for authenticity and accuracy:
-            Name: {{ $item.name }}
-            URL: {{ $item.url }}
-            Type: {{ $item.type }}
+            Name: {{ item.name }}
+            URL: {{ item.url }}
+            Type: {{ item.type }}
             
             Check:
             1. Is the source real and accessible?
@@ -113,7 +113,7 @@ steps:
             3. Is it a reputable source for its type?
             
             Provide structured analysis:
-            - SOURCE: {{ $item.name }} ({{ $item.url }})
+            - SOURCE: {{ item.name }} ({{ item.url }})
             - STATUS: Valid/Invalid/Questionable
             - CREDIBILITY: High/Medium/Low
             - NOTES: Brief observations
@@ -124,7 +124,7 @@ steps:
     
   # Step 5: Process claims in parallel using for_each with runtime expansion
   - id: verify_claims
-    for_each: "{{ extract_claims_list.result.claims }}"
+    for_each: "<AUTO>claims that need fact-checking</AUTO>"
     max_parallel: 3
     add_completion_task: true
     steps:
@@ -132,13 +132,13 @@ steps:
         action: generate-text
         parameters:
           prompt: |
-            Verify this specific claim: {{ $item }}
-            Claim number: {{ $index }}
+            Verify this specific claim: {{ item }}
+            Claim number: {{ index }}
             
             Using sources from document for verification.
             
             Provide professional fact-checking analysis:
-            - CLAIM {{ $index }}: {{ $item }}
+            - CLAIM {{ index }}: {{ item }}
             - SUPPORT: Yes/Partial/No
             - RELIABILITY: High/Medium/Low
             - EVIDENCE: Brief summary of supporting/contradicting evidence

@@ -21,6 +21,8 @@ from .prompt_constructor import PromptConstructor
 from .resolution_executor import ResolutionExecutor
 from .action_determiner import ActionDeterminer
 from .resolution_logger import ResolutionLogger
+from .context_discovery import ContextDiscoveryEngine, DiscoveredContext
+from .template_injector import TemplateInjector
 
 
 class LazyAutoTagResolver:
@@ -34,7 +36,9 @@ class LazyAutoTagResolver:
         prompt_constructor: Optional[PromptConstructor] = None,
         resolution_executor: Optional[ResolutionExecutor] = None,
         action_determiner: Optional[ActionDeterminer] = None,
-        logger: Optional[ResolutionLogger] = None
+        logger: Optional[ResolutionLogger] = None,
+        context_discovery: Optional[ContextDiscoveryEngine] = None,
+        template_injector: Optional[TemplateInjector] = None
     ):
         self.config = config or AutoTagConfig()
         self.model_registry = model_registry
@@ -45,6 +49,10 @@ class LazyAutoTagResolver:
         self.resolution_executor = resolution_executor or ResolutionExecutor(model_registry)
         self.action_determiner = action_determiner or ActionDeterminer()
         self.logger = logger or ResolutionLogger(self.config.checkpoint_resolutions)
+        
+        # Initialize new intelligent resolution components
+        self.context_discovery = context_discovery or ContextDiscoveryEngine()
+        self.template_injector = template_injector or TemplateInjector()
     
     async def resolve(
         self,
@@ -147,13 +155,52 @@ class LazyAutoTagResolver:
             f"Errors: {all_errors}"
         )
     
+    async def _discover_and_inject_context(
+        self,
+        auto_tag: str,
+        context: AutoTagContext
+    ) -> DiscoveredContext:
+        """
+        Discover relevant context for AUTO tag using natural language understanding.
+        
+        This is the key innovation: AUTO tags no longer need explicit variable references.
+        We automatically discover what data the user is referring to based on their intent.
+        
+        Args:
+            auto_tag: Natural language AUTO tag content
+            context: Full pipeline context
+            
+        Returns:
+            DiscoveredContext with relevant data and metadata
+        """
+        # Use context discovery to find relevant data based on intent
+        discovered = self.context_discovery.discover_relevant_data(
+            intent=auto_tag,
+            step_results=context.step_results,
+            variables=context.variables
+        )
+        
+        # Log discovery results
+        if discovered.relevant_data:
+            self.logger.log_pass_result(
+                "context_discovery",
+                {
+                    "discovered_paths": discovered.discovered_paths,
+                    "confidence_scores": discovered.confidence_scores,
+                    "keywords_matched": discovered.keywords_matched
+                },
+                0  # No duration tracking for this
+            )
+        
+        return discovered
+    
     async def _resolve_with_model(
         self,
         auto_tag: str,
         context: AutoTagContext,
         model: str
     ) -> AutoTagResolution:
-        """Execute the three-pass resolution process with specific model."""
+        """Execute the enhanced multi-pass resolution process with intelligent context discovery."""
         
         # Initialize resolution object with placeholder prompt construction
         resolution = AutoTagResolution(
@@ -164,6 +211,10 @@ class LazyAutoTagResolver:
             resolved_value=None,
             action_plan=ActionPlan(action_type="return_value")
         )
+        
+        # NEW: Context Discovery Phase (before requirements analysis)
+        # This is the key innovation - discover relevant data based on natural language intent
+        discovered_context = await self._discover_and_inject_context(auto_tag, context)
         
         # Pass 1: Requirements Analysis
         requirements_start = time.time()
@@ -193,18 +244,41 @@ class LazyAutoTagResolver:
         except asyncio.TimeoutError:
             raise ResolutionError(f"Requirements analysis timed out after {self.config.pass_timeouts.requirements_analysis}s")
         
-        # Pass 2: Prompt Construction
+        # Pass 2: Prompt Construction (Enhanced with discovered context)
         prompt_start = time.time()
         self.logger.log_pass_start("prompt_construction", model, {
             "tag": auto_tag,
-            "requirements": requirements
+            "requirements": requirements,
+            "discovered_context": len(discovered_context.relevant_data) if discovered_context else 0
         })
         
         try:
-            prompt_data = await asyncio.wait_for(
-                self.prompt_constructor.construct(auto_tag, context, requirements, model),
-                timeout=self.config.pass_timeouts.prompt_construction
-            )
+            # Use template injector if we have discovered context
+            if discovered_context and discovered_context.relevant_data:
+                # Create enriched prompt using discovered context
+                injection_result = self.template_injector.inject_context(
+                    auto_tag,
+                    discovered_context,
+                    context.variables
+                )
+                
+                # Create a modified context with the enriched prompt
+                enriched_auto_tag = injection_result.enriched_prompt
+                
+                # Pass the enriched tag to prompt constructor
+                prompt_data = await asyncio.wait_for(
+                    self.prompt_constructor.construct(enriched_auto_tag, context, requirements, model),
+                    timeout=self.config.pass_timeouts.prompt_construction
+                )
+                
+                # Store injection metadata in prompt construction
+                prompt_data.resolved_context = injection_result.injected_variables
+            else:
+                # Fallback to original behavior if no context discovered
+                prompt_data = await asyncio.wait_for(
+                    self.prompt_constructor.construct(auto_tag, context, requirements, model),
+                    timeout=self.config.pass_timeouts.prompt_construction
+                )
             resolution.prompt_construction = prompt_data
             prompt_duration = int((time.time() - prompt_start) * 1000)
             
