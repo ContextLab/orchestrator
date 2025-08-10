@@ -1042,6 +1042,23 @@ class Orchestrator:
             for task_id in level_tasks:
                 task = pipeline.get_task(task_id)
 
+                # Handle runtime for_each expansion
+                from .core.for_each_task import ForEachTask
+                if isinstance(task, ForEachTask):
+                    # Expand ForEachTask at runtime
+                    expanded_task_ids = await self._expand_for_each_task(
+                        task, pipeline, context, previous_results
+                    )
+                    
+                    # Add expanded tasks to the current level for execution
+                    for expanded_id in expanded_task_ids:
+                        if expanded_id not in level_tasks:
+                            level_tasks.append(expanded_id)
+                    
+                    # Mark the ForEachTask as completed
+                    results[task_id] = task.result
+                    continue
+
                 # Skip tasks that are already marked as skipped
                 if task.status == TaskStatus.SKIPPED:
                     results[task_id] = {"status": "skipped"}
@@ -1261,6 +1278,148 @@ class Orchestrator:
         """Execute a single task (legacy method)."""
         async with self.execution_semaphore:
             return await self._execute_task_with_resources(task, context)
+
+    async def _expand_for_each_task(
+        self,
+        for_each_task,  # ForEachTask type
+        pipeline: Pipeline,
+        context: Dict[str, Any],
+        step_results: Dict[str, Any]
+    ) -> List[str]:
+        """Expand ForEachTask at runtime with actual step results.
+        
+        Args:
+            for_each_task: The ForEachTask to expand
+            pipeline: The pipeline to modify
+            context: Execution context
+            step_results: Results from previous steps
+            
+        Returns:
+            List of expanded task IDs
+        """
+        from .core.for_each_task import ForEachTask
+        from .core.task import Task
+        
+        self.logger.info(f"Expanding ForEachTask '{for_each_task.id}' at runtime")
+        
+        # Resolve the for_each expression using actual step results
+        resolved_items = await self.control_flow_resolver.resolve_iterator(
+            for_each_task.for_each_expr, context, step_results
+        )
+        
+        self.logger.info(f"Resolved {len(resolved_items)} items for ForEachTask '{for_each_task.id}'")
+        
+        # Create expanded tasks
+        expanded_tasks = []
+        expanded_task_ids = []
+        
+        # Import the ForLoopHandler to reuse its loop context management
+        from .control_flow.loops import ForLoopHandler
+        loop_handler = ForLoopHandler(self.control_flow_resolver)
+        
+        for idx, item in enumerate(resolved_items):
+            # Create context for this iteration
+            loop_context = {
+                "$item": item,
+                "$index": idx,
+                "$is_first": idx == 0,
+                "$is_last": idx == len(resolved_items) - 1,
+                f"${for_each_task.loop_var}": item if for_each_task.loop_var != "$item" else item
+            }
+            
+            # Process each step in the loop body
+            for step_def in for_each_task.loop_steps:
+                # Create unique task ID
+                task_id = f"{for_each_task.id}_{idx}_{step_def['id']}"
+                
+                # Process parameters with loop context
+                params = step_def.get("parameters", {})
+                rendered_params = self.template_manager.render_recursive(
+                    params,
+                    additional_context={**step_results, **loop_context}
+                )
+                
+                # Handle dependencies
+                task_deps = []
+                
+                # Add dependencies from the ForEachTask itself
+                if idx == 0:
+                    # First iteration depends on ForEachTask dependencies
+                    task_deps.extend(for_each_task.dependencies)
+                elif for_each_task.max_parallel == 1:
+                    # Sequential execution - depend on previous iteration
+                    prev_task_id = f"{for_each_task.id}_{idx-1}_{step_def['id']}"
+                    task_deps.append(prev_task_id)
+                else:
+                    # Parallel execution - depend on ForEachTask dependencies
+                    task_deps.extend(for_each_task.dependencies)
+                
+                # Add internal dependencies within the loop body
+                for dep in step_def.get("dependencies", []):
+                    if dep in [s["id"] for s in for_each_task.loop_steps]:
+                        # Internal dependency
+                        task_deps.append(f"{for_each_task.id}_{idx}_{dep}")
+                    else:
+                        # External dependency
+                        task_deps.append(dep)
+                
+                # Create the task
+                task = Task(
+                    id=task_id,
+                    name=step_def.get("name", f"{step_def['id']} (item {idx})"),
+                    action=step_def.get("action"),
+                    parameters=rendered_params,
+                    dependencies=task_deps,
+                    metadata={
+                        **step_def.get("metadata", {}),
+                        "is_for_each_child": True,
+                        "parent_for_each": for_each_task.id,
+                        "iteration_index": idx,
+                        "loop_context": loop_context
+                    }
+                )
+                
+                # Handle tool field
+                if "tool" in step_def:
+                    task.metadata["tool"] = step_def["tool"]
+                
+                expanded_tasks.append(task)
+                expanded_task_ids.append(task_id)
+        
+        # Add completion task if requested
+        if for_each_task.add_completion_task and expanded_tasks:
+            # Get all last tasks from each iteration
+            last_task_ids = []
+            for idx in range(len(resolved_items)):
+                if for_each_task.loop_steps:
+                    last_step_id = for_each_task.loop_steps[-1]["id"]
+                    last_task_ids.append(f"{for_each_task.id}_{idx}_{last_step_id}")
+            
+            completion_task = Task(
+                id=for_each_task.id + "_complete",
+                name=f"Complete {for_each_task.id} loop",
+                action="loop_complete",
+                parameters={"loop_id": for_each_task.id, "iterations": len(resolved_items)},
+                dependencies=last_task_ids,
+                metadata={
+                    "is_loop_completion": True,
+                    "loop_id": for_each_task.id,
+                    "control_flow_type": "for_each",
+                }
+            )
+            expanded_tasks.append(completion_task)
+            expanded_task_ids.append(completion_task.id)
+        
+        # Add expanded tasks to pipeline
+        for task in expanded_tasks:
+            pipeline.add_task(task)
+        
+        # Mark the ForEachTask as expanded
+        for_each_task.mark_expanded(expanded_task_ids, resolved_items)
+        
+        self.logger.info(f"Expanded ForEachTask '{for_each_task.id}' into {len(expanded_tasks)} tasks")
+        
+        return expanded_task_ids
 
     async def _handle_task_failures(
         self,

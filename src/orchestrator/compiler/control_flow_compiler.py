@@ -6,6 +6,7 @@ from .yaml_compiler import YAMLCompiler, YAMLCompilerError
 from ..core.pipeline import Pipeline
 from ..core.task import Task
 from ..core.action_loop_task import ActionLoopTask
+from ..core.for_each_task import ForEachTask
 from ..control_flow import (
     ConditionalHandler,
     ForLoopHandler,
@@ -105,13 +106,27 @@ class ControlFlowCompiler(YAMLCompiler):
         for step_def in steps:
             # Process different control flow types
             if "for_each" in step_def:
-                # Handle for-each loop
-                expanded_tasks = await self.for_loop_handler.expand_for_loop(
-                    step_def, context, step_results
+                # Check if for_each expression contains AUTO tags or runtime dependencies
+                for_each_expr = str(step_def.get("for_each", ""))
+                
+                # Check for runtime dependencies: AUTO tags or step result references
+                has_runtime_deps = (
+                    "<AUTO>" in for_each_expr or
+                    any(f"{step_id}." in for_each_expr for step_id in all_step_ids)
                 )
-                # Convert tasks back to step definitions
-                for task in expanded_tasks:
-                    processed_steps.append(self._task_to_step_def(task))
+                
+                if has_runtime_deps:
+                    # Create ForEachTask for runtime expansion
+                    for_each_task = self._create_for_each_task(step_def)
+                    processed_steps.append(self._task_to_step_def(for_each_task))
+                else:
+                    # Static loop - expand at compile time
+                    expanded_tasks = await self.for_loop_handler.expand_for_loop(
+                        step_def, context, step_results
+                    )
+                    # Convert tasks back to step definitions
+                    for task in expanded_tasks:
+                        processed_steps.append(self._task_to_step_def(task))
 
             elif "while" in step_def:
                 # Handle while loop (compile-time setup only)
@@ -276,6 +291,58 @@ class ControlFlowCompiler(YAMLCompiler):
                 step_ids.extend(nested_ids)
 
         return step_ids
+
+    def _create_for_each_task(self, loop_def: Dict[str, Any]) -> ForEachTask:
+        """Create a ForEachTask for runtime expansion.
+        
+        Args:
+            loop_def: Loop definition from YAML
+            
+        Returns:
+            ForEachTask instance configured for runtime expansion
+        """
+        # Extract loop configuration
+        task_id = loop_def.get("id", "for_each_loop")
+        for_each_expr = loop_def.get("for_each", "")
+        loop_steps = loop_def.get("steps", [])
+        max_parallel = loop_def.get("max_parallel", 1)
+        loop_var = loop_def.get("loop_var", "$item")
+        loop_name = loop_def.get("loop_name")
+        add_completion_task = loop_def.get("add_completion_task", len(loop_steps) > 1)
+        
+        # Handle single action shorthand
+        if not loop_steps and "action" in loop_def:
+            loop_steps = [
+                {
+                    "id": f"{task_id}_item",
+                    "action": loop_def["action"],
+                    "parameters": loop_def.get("parameters", {}),
+                }
+            ]
+        
+        # Create ForEachTask
+        for_each_task = ForEachTask(
+            id=task_id,
+            name=loop_def.get("name", f"For each: {task_id}"),
+            action="for_each_runtime",  # Special action type for runtime expansion
+            parameters={},  # No parameters needed at this stage
+            dependencies=loop_def.get("dependencies", []),
+            for_each_expr=for_each_expr,
+            loop_steps=loop_steps,
+            max_parallel=max_parallel,
+            loop_var=loop_var,
+            loop_name=loop_name,
+            add_completion_task=add_completion_task,
+            metadata=loop_def.get("metadata", {})
+        )
+        
+        # Add any additional metadata
+        if "timeout" in loop_def:
+            for_each_task.timeout = loop_def["timeout"]
+        if "max_retries" in loop_def:
+            for_each_task.max_retries = loop_def["max_retries"]
+            
+        return for_each_task
 
     def _task_to_step_def(self, task: Task) -> Dict[str, Any]:
         """Convert Task object back to step definition.

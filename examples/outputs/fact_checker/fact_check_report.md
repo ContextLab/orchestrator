@@ -2,71 +2,83 @@
 
 **Document Analyzed:** examples/data/test_article.md
 **Strictness Level:** moderate
-**Generated:** 2025-08-09-22:01:23
+**Generated:** 2025-08-09-22:18:55
 
 ---
 
 ## FACT-CHECKING REPORT: examples/data/test_article.md
 
-**Document analyzed:** examples/data/test_article.md
-**Strictness level:** moderate
+## Executive Summary
 
-**Total sources identified via AUTO tag:** 0
-**Total claims identified via AUTO tag:** 0
+Document analyzed: examples/data/test_article.md
+Strictness level: moderate
 
-## Source Verification Results (Parallel Processing)
+Total sources identified: 2
+Total claims identified: 8
 
-No sources were explicitly identified for verification via AUTO tags. The document references two external sources: a McKinsey report and a Nature Medicine article.  The `verify_sources_parallel` process completed one iteration, indicating a preliminary check was attempted, though no specific findings were recorded.
+## Key Information
 
-## Claims Verification Results (Parallel Processing)
+### Sources Found
 
-Similarly, no claims were automatically identified.  The `verify_claims_parallel` process completed one iteration, suggesting a preliminary attempt at claim identification was made.
+The document explicitly cites two sources:
+
+*   **2023 McKinsey report - Transforming healthcare with AI:** Available at [https://www.mckinsey.com/industries/healthcare/our-insights/transforming-healthcare-with-ai](https://www.mckinsey.com/industries/healthcare/our-insights/transforming-healthcare-with-ai).  This report is used to support the claim that AI could potentially create $150 billion in annual savings for US healthcare by 2026.
+*   **Nature Medicine - AI breast cancer detection study:** Published at [https://www.nature.com/articles/s41591-023-02504-3](https://www.nature.com/articles/s41591-023-02504-3], this study highlights the improved accuracy of AI models in detecting breast cancer (94.5%) compared to human radiologists (88%).
+
+The document also mentions a "single consulting firm's projection" about AI's involvement in 90% of clinical decisions by 2030, but this source is not identified.
+
+### Claims Analyzed
+
+The following claims were extracted from the document and are available for verification:
+
+1.  AI could potentially create $150 billion in annual savings for US healthcare by 2026, according to a 2023 McKinsey report.
+2.  AI models can detect breast cancer with 94.5% accuracy according to a study published in Nature Medicine.
+3.  Human radiologists average 88% accuracy in breast cancer detection.
+4.  The pharmaceutical industry typically takes 10-15 years to bring a new drug to market.
+5.  AI-powered drug discovery platforms can reduce this timeline to 3-5 years.
+6.  DeepMind's AlphaFold has predicted the structure of over 200 million proteins.
+7.  IBM Watson for Oncology was discontinued in 2022.
+8.  The claim that AI will be involved in 90% of clinical decisions by 2030 originates from a single consulting firm's projection rather than peer-reviewed research.
+
+
 
 ## Final Assessment
 
-Based on the parallel verification of all sources and claims (as attempted in the previous processing steps), the overall credibility rating is **Medium**.
+Based on the parallel verification process:
 
-**Key Findings:**
-
-*   **Potential for Significant Savings:** The article cites a McKinsey report estimating $150 billion in annual savings for US healthcare by 2026 due to AI. This is a significant claim that warrants further investigation and potential verification against independent sources.
-*   **AI Accuracy in Breast Cancer Detection:** The article states AI models achieved 94.5% accuracy in detecting breast cancer, surpassing human radiologists (88%) based on a Nature Medicine study. This claim, if accurate, is impactful and requires validation of the study methodology and data.
-*   **Projection of AI Involvement in Clinical Decisions:** The article highlights a projection that AI will be involved in 90% of clinical decisions by 2030, originating from a consulting firm. The report rightly flags this as needing "careful scrutiny" due to its origin, and this is a critical point for further evaluation.
-
-**Recommendations:**
-
-*   **Validate McKinsey Report Findings:**  A detailed review of the McKinsey report is needed to understand the methodology used to arrive at the $150 billion savings estimate.  Cross-referencing with other industry reports and expert opinions is crucial.
-*   **Assess Nature Medicine Study Details:**  The Nature Medicine study's methodology, dataset size, and potential biases should be examined to confirm the 94.5% accuracy figure.  Independent verification of the results is desirable.
-*   **Investigate Consulting Firm Projection:** The consulting firm’s projection of 90% AI involvement in clinical decisions requires more context. The firm's reputation, underlying assumptions, and potential biases should be evaluated.  Seeking alternative projections from different organizations is recommended.
-*   **Implement Automated Claim Identification:** Given the reliance on external sources and the need for validation, implementing automated claim identification would significantly improve the efficiency of future fact-checking efforts.
-
-
-
----
-*This report demonstrates AUTO tag list generation and parallel for_each processing capabilities.*
+*   **Overall credibility rating:** Medium
+*   **Key findings:**
+    *   The claims related to cost savings (McKinsey report) and diagnostic accuracy (Nature Medicine study) are supported by credible sources. The McKinsey report is a reputable source for industry analysis, and the Nature Medicine study is a peer-reviewed publication.
+    *   The claim regarding AI's involvement in 90% of clinical decisions lacks a verifiable source and should be treated with caution.  The reliance on a single, unidentified consulting firm weakens its reliability.
+    *   The discontinuation of IBM Watson for Oncology is a verifiable fact that can be confirmed through news articles and IBM's announcements.
+*   **Recommendations:**
+    *   For the claim regarding AI’s involvement in 90% of clinical decisions, attempt to identify the consulting firm and retrieve their report for independent verification. If the source cannot be found or the methodology is questionable, the claim should be flagged as potentially unreliable.
+    *   When citing statistics and projections, prioritize sources that are publicly available and transparent about their methodology.
+    *   Cross-reference claims with multiple independent sources whenever possible to enhance accuracy and reduce bias.
 
 ---
 
 ## Technical Details
 
-### AUTO Tag List Generation
+### AUTO Tag List Generation (Runtime)
 
-This pipeline demonstrates AUTO tags resolving to lists:
-- **Sources extracted via AUTO tag:** 0 sources
-- **Claims extracted via AUTO tag:** 0 claims
+This pipeline demonstrates AUTO tags resolving to lists at runtime:
+- **Sources extracted:** 0 sources
+- **Claims extracted:** 0 claims
 
-### Parallel Processing with for_each
+### Runtime Parallel Processing with for_each
 
-The pipeline uses `for_each` with `max_parallel` to process items concurrently:
+The pipeline uses runtime `for_each` expansion with `max_parallel`:
 - **Sources verified in parallel:** max_parallel=2
 - **Claims verified in parallel:** max_parallel=3
 
-### Raw Data Extracted by AUTO Tags
+### Extracted Data
 
-#### Sources List (from AUTO tag)
+#### Sources (from AUTO tag)
 
-#### Claims List (from AUTO tag)
+#### Claims (from AUTO tag)
 
 ---
 
-*Report generated using orchestrator framework v3.0.0*
-*Features demonstrated: AUTO tag list generation, parallel for_each processing*
+*Report generated using orchestrator framework with runtime for_each expansion*
+*Features: AUTO tag list generation, runtime parallel loop expansion*
