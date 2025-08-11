@@ -1163,6 +1163,34 @@ class Orchestrator:
                             "id": loop_id
                         })
                 
+                # Add loop context mapping for for_each loops
+                if task.metadata.get("is_for_each_child"):
+                    parent_id = task.metadata.get("parent_for_each")
+                    iteration_idx = task.metadata.get("iteration_index", 0)
+                    loop_step_id = task.metadata.get("loop_step_id")
+                    
+                    # Create a mapping from short names to full task IDs for this iteration
+                    loop_context_mapping = {}
+                    
+                    # Get all tasks from the same loop iteration
+                    for other_task_id, other_task in pipeline.tasks.items():
+                        if (other_task.metadata.get("parent_for_each") == parent_id and
+                            other_task.metadata.get("iteration_index") == iteration_idx):
+                            # Map the short step ID to the full task ID
+                            short_name = other_task.metadata.get("loop_step_id")
+                            if short_name:
+                                loop_context_mapping[short_name] = other_task_id
+                    
+                    # Add the mapping to the task context
+                    task_context["_loop_context_mapping"] = loop_context_mapping
+                    
+                    # Also add loop-specific variables to context
+                    if "loop_context" in task.metadata:
+                        loop_ctx = task.metadata["loop_context"]
+                        for key, value in loop_ctx.items():
+                            if key not in task_context:
+                                task_context[key] = value
+                
                 # Pre-render templates in task parameters before execution
                 if task.parameters and self.template_manager:
                     rendered_params = {}
@@ -1468,7 +1496,9 @@ class Orchestrator:
                         "is_for_each_child": True,
                         "parent_for_each": for_each_task.id,
                         "iteration_index": idx,
-                        "loop_context": loop_context
+                        "loop_context": loop_context,
+                        "loop_step_id": step_def['id'],  # Store the original step ID for mapping
+                        "loop_task_id": task_id  # Store the full task ID
                     }
                 )
                 
