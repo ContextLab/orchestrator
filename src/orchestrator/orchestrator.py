@@ -481,6 +481,39 @@ class Orchestrator:
         import time
         start_time = time.time()
         
+        # Pre-render templates in task parameters before execution
+        if task.parameters and self.template_manager:
+            rendered_params = {}
+            # Build comprehensive context for template rendering
+            render_context = {
+                **context.get("pipeline_params", {}),  # Pipeline parameters
+                **context.get("previous_results", {}),  # Previous step results
+                "$item": context.get("$item"),         # Loop item if in loop
+                "$index": context.get("$index"),       # Loop index if in loop
+            }
+            
+            for key, value in task.parameters.items():
+                if isinstance(value, str) and ("{{" in value or "{%" in value):
+                    try:
+                        # Render the template
+                        rendered_value = self.template_manager.render(
+                            value,
+                            additional_context=render_context
+                        )
+                        rendered_params[key] = rendered_value
+                        
+                        # Log prompt rendering for debugging
+                        if key == "prompt":
+                            self.logger.debug(f"Pre-rendered prompt: '{value[:100]}...' -> '{rendered_value[:100]}...'")
+                    except Exception as e:
+                        self.logger.warning(f"Failed to pre-render template for {key}: {e}")
+                        rendered_params[key] = value
+                else:
+                    rendered_params[key] = value
+            
+            # Update task parameters with rendered values
+            task.parameters = rendered_params
+        
         # Execute task using control system
         try:
             result = await self.control_system.execute_task(task, context)
@@ -1082,14 +1115,36 @@ class Orchestrator:
                     results[task_id] = {"error": str(e)}
                     continue
 
+                # Build comprehensive task context with all available data
                 task_context = {
                     **context,
                     "task_id": task_id,
                     "previous_results": previous_results,
-                    "resource_allocation": resource_allocations[task_id],
+                    "pipeline_params": pipeline.context,  # Add pipeline context (contains parameters) for template rendering
+                    "resource_allocation": resource_allocations.get(task_id, {"cpu": 1, "memory": 512}),  # Default for dynamic tasks
                     "template_manager": self.template_manager,
                     "_template_manager": self.template_manager,  # Also add with underscore for compatibility
                 }
+                
+                # Flatten previous_results for direct template access
+                # This allows templates to use {{ step_id }} instead of {{ previous_results.step_id }}
+                for step_id, result in previous_results.items():
+                    if step_id not in task_context:
+                        task_context[step_id] = result
+                
+                # Add execution metadata for templates
+                from datetime import datetime
+                task_context["execution"] = {
+                    "timestamp": datetime.now().isoformat(),
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "time": datetime.now().strftime("%H:%M:%S"),
+                }
+                
+                # Ensure pipeline parameters are directly accessible
+                if isinstance(pipeline.context, dict):
+                    for key, value in pipeline.context.items():
+                        if key not in task_context and key not in ["execution", "task_id", "previous_results"]:
+                            task_context[key] = value
                 
                 # Add loop metadata to context if this is a loop iteration task
                 if task.metadata.get("is_while_loop_child"):
@@ -1107,6 +1162,27 @@ class Orchestrator:
                             "iteration": iteration,
                             "id": loop_id
                         })
+                
+                # Pre-render templates in task parameters before execution
+                if task.parameters and self.template_manager:
+                    rendered_params = {}
+                    for key, value in task.parameters.items():
+                        if isinstance(value, str) and ("{{" in value or "{%" in value):
+                            # This is a template string - render it with full context
+                            try:
+                                rendered_value = self.template_manager.render(
+                                    value,
+                                    additional_context=task_context
+                                )
+                                rendered_params[key] = rendered_value
+                                self.logger.debug(f"Pre-rendered {key} for task {task_id}: '{value[:50]}...' -> '{rendered_value[:50]}...'")
+                            except Exception as e:
+                                self.logger.warning(f"Failed to pre-render template for {key} in task {task_id}: {e}")
+                                rendered_params[key] = value
+                        else:
+                            rendered_params[key] = value
+                    task.parameters = rendered_params
+                
                 execution_tasks.append(
                     self._execute_task_with_resources(task, task_context)
                 )
@@ -1318,13 +1394,30 @@ class Orchestrator:
         loop_handler = ForLoopHandler(self.control_flow_resolver)
         
         for idx, item in enumerate(resolved_items):
-            # Create context for this iteration
+            # Create comprehensive context for this iteration
+            # Include ALL available data for template rendering
             loop_context = {
+                **pipeline.context,  # Include all pipeline context (contains parameters)
+                **context.get("pipeline_params", {}),  # Alternative pipeline params location
+                **step_results,  # Include all previous step results directly
                 "$item": item,
                 "$index": idx,
                 "$is_first": idx == 0,
                 "$is_last": idx == len(resolved_items) - 1,
                 f"${for_each_task.loop_var}": item if for_each_task.loop_var != "$item" else item
+            }
+            
+            # Also flatten step results for direct access in templates
+            for step_id, result in step_results.items():
+                if step_id not in loop_context:
+                    loop_context[step_id] = result
+            
+            # Add execution metadata
+            from datetime import datetime
+            loop_context["execution"] = {
+                "timestamp": datetime.now().isoformat(),
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "time": datetime.now().strftime("%H:%M:%S"),
             }
             
             # Process each step in the loop body
@@ -1334,9 +1427,9 @@ class Orchestrator:
                 
                 # Process parameters with loop context
                 params = step_def.get("parameters", {})
-                rendered_params = self.template_manager.render_recursive(
+                rendered_params = self.template_manager.render_dict(
                     params,
-                    additional_context={**step_results, **loop_context}
+                    additional_context=loop_context  # Use the comprehensive loop context
                 )
                 
                 # Handle dependencies

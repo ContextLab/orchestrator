@@ -5,6 +5,9 @@ from typing import Any, Dict, List, Optional, Union
 import json
 
 from ..compiler.ambiguity_resolver import AmbiguityResolver
+from ..auto_resolution.resolver import LazyAutoTagResolver
+from ..auto_resolution.models import AutoTagContext, AutoTagConfig
+from ..core.pipeline import Pipeline
 from ..models.model_registry import ModelRegistry
 
 
@@ -21,16 +24,27 @@ class ControlFlowAutoResolver:
         self.model_registry = model_registry
         self.pipeline_id = pipeline_id or self._generate_pipeline_id()
 
-        # Try to create ambiguity resolver, but make it optional
+        # Try to create the new intelligent resolver first, fall back to old resolver
+        self.lazy_resolver = None
+        self.ambiguity_resolver = None
+        
         try:
-            # Pass the model_registry and pipeline_id to AmbiguityResolver for cache isolation
-            self.ambiguity_resolver = AmbiguityResolver(
-                model_registry=model_registry, 
-                pipeline_id=self.pipeline_id
+            # Try to use the new intelligent LazyAutoTagResolver with context discovery
+            self.lazy_resolver = LazyAutoTagResolver(
+                config=AutoTagConfig(),
+                model_registry=model_registry
             )
-        except ValueError:
-            # No model available, create a placeholder
-            self.ambiguity_resolver = None
+        except Exception:
+            # Fall back to old resolver
+            try:
+                # Pass the model_registry and pipeline_id to AmbiguityResolver for cache isolation
+                self.ambiguity_resolver = AmbiguityResolver(
+                    model_registry=model_registry, 
+                    pipeline_id=self.pipeline_id
+                )
+            except ValueError:
+                # No model available, create a placeholder
+                pass
 
         self.auto_tag_pattern = re.compile(r"<AUTO>(.*?)</AUTO>", re.DOTALL)
         # Use pipeline-specific cache to prevent contamination
@@ -338,33 +352,48 @@ class ControlFlowAutoResolver:
             prompt = self._replace_template_variables(prompt, enhanced_context)
 
             # Check if we have a resolver
-            if not self.ambiguity_resolver:
+            if not self.lazy_resolver and not self.ambiguity_resolver:
                 # Return a reasonable default
                 return self._get_default_resolution(prompt)
 
-            # Try to use the ambiguity resolver, but fall back to default if it fails
-            try:
-                # Add context to prompt (but the prompt already has variables replaced)
-                context_prompt = self._build_context_prompt(prompt, enhanced_context)
-                # Let the ambiguity resolver determine the type from content
-                result = await self.ambiguity_resolver.resolve(
-                    context_prompt, "control_flow"
-                )
+            # Special handling for natural language for_each expressions
+            # Check if this is a natural language expression that needs intelligent resolution
+            if self._is_natural_language_intent(prompt):
+                # Use intelligent context discovery for natural language
+                result = self._resolve_natural_language_for_each(prompt, step_results)
+                if result is not None:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.debug(
+                        f"Natural language resolution returned: {result} (type: {type(result)})"
+                    )
+                    return result
+                    
+            # Fall back to old resolver if available
+            if self.ambiguity_resolver:
+                try:
+                    # Add context to prompt (but the prompt already has variables replaced)
+                    context_prompt = self._build_context_prompt(prompt, enhanced_context)
+                    # Let the ambiguity resolver determine the type from content
+                    result = await self.ambiguity_resolver.resolve(
+                        context_prompt, "control_flow"
+                    )
 
-                import logging
+                    import logging
 
-                logger = logging.getLogger(__name__)
-                logger.debug(
-                    f"Ambiguity resolver returned: {result} (type: {type(result)})"
-                )
-                return result
-                
-            except Exception as e:
-                # If ambiguity resolution fails, fall back to default
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Ambiguity resolution failed, using fallback: {e}")
-                return self._get_default_resolution(prompt)
+                    logger = logging.getLogger(__name__)
+                    logger.debug(
+                        f"Ambiguity resolver returned: {result} (type: {type(result)})"
+                    )
+                    return result
+                    
+                except Exception as e:
+                    # If ambiguity resolution fails, fall back to default
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Ambiguity resolution failed, using fallback: {e}")
+                    
+            return self._get_default_resolution(prompt)
 
         # Otherwise resolve each AUTO tag and substitute
         resolved_content = content
@@ -398,6 +427,92 @@ class ControlFlowAutoResolver:
         """Generate a unique pipeline ID for cache isolation."""
         import uuid
         return f"pipeline_{uuid.uuid4().hex[:8]}"
+    
+    def _is_natural_language_intent(self, prompt: str) -> bool:
+        """Check if the prompt is a natural language intent rather than code/template.
+        
+        Args:
+            prompt: The AUTO tag content
+            
+        Returns:
+            True if this appears to be natural language intent
+        """
+        # If it contains template variables like {{ }}, it's not natural language
+        if "{{" in prompt or "}}" in prompt:
+            return False
+            
+        # If it looks like code (return statement, function calls, etc.)
+        code_indicators = ["return ", "print(", "len(", "[", "]", "{", "}", "()"]
+        if any(indicator in prompt for indicator in code_indicators):
+            return False
+            
+        # Check for natural language patterns
+        natural_patterns = [
+            "list of", "all", "claims", "sources", "files", "items",
+            "that need", "to verify", "to process", "for checking",
+            "extract", "get", "find"
+        ]
+        
+        prompt_lower = prompt.lower()
+        return any(pattern in prompt_lower for pattern in natural_patterns)
+    
+    def _resolve_natural_language_for_each(
+        self, prompt: str, step_results: Dict[str, Any]
+    ) -> Optional[List[Any]]:
+        """Resolve natural language for_each expressions using intelligent context discovery.
+        
+        Args:
+            prompt: Natural language intent (e.g., "list of sources to verify")
+            step_results: Results from previous steps
+            
+        Returns:
+            List of items to iterate over, or None if resolution fails
+        """
+        # Import the context discovery engine
+        try:
+            from ..auto_resolution.context_discovery import ContextDiscoveryEngine
+            
+            # Create discovery engine
+            discovery = ContextDiscoveryEngine()
+            
+            # Discover relevant data based on intent
+            discovered = discovery.discover_relevant_data(
+                intent=prompt,
+                step_results=step_results,
+                variables={}
+            )
+            
+            # If we found relevant data, return the best match
+            if discovered.relevant_data:
+                best_path, best_data = discovered.get_highest_confidence_data()
+                
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Context discovery found: {best_path} with confidence {discovered.confidence_scores.get(best_path, 0)}")
+                
+                # If it's already a list, return it
+                if isinstance(best_data, list):
+                    return best_data
+                    
+                # If it's a dict with a list value, extract it
+                if isinstance(best_data, dict):
+                    # Look for list values in the dict
+                    for key, value in best_data.items():
+                        if isinstance(value, list):
+                            return value
+                            
+                # Try to convert to list
+                try:
+                    return list(best_data)
+                except (TypeError, ValueError):
+                    pass
+                    
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Natural language resolution failed: {e}")
+            
+        return None
 
     def clear_cache(self) -> None:
         """Clear the resolution cache for this pipeline."""

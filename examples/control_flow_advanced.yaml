@@ -62,13 +62,20 @@ steps:
     dependencies:
       - check_quality
       
-  # Use enhanced or original text
-  - id: prepare_text
+  # Determine which text to use (creates a concrete value we can reference)
+  - id: select_text
     action: generate_text
     parameters:
-      prompt: "Preparing text for translation. Using {% if enhance_text.result %}enhanced{% else %}original{% endif %} text."
-      model: <AUTO task="summarize">Select a model for status update</AUTO>
-      max_tokens: 50
+      prompt: |
+        {% if check_quality.result and 'improve' in check_quality.result and enhance_text %}
+        Return the enhanced text exactly as is:
+        {{ enhance_text }}
+        {% else %}
+        Return the original text exactly as is:
+        {{ input_text }}
+        {% endif %}
+      model: <AUTO task="generate">Select a model to pass through text</AUTO>
+      max_tokens: 600
     dependencies:
       - enhance_text
       - check_quality
@@ -85,7 +92,7 @@ steps:
           prompt: |
             Translate the following text to {{ $item }}:
             
-            {% if enhance_text.result %}{{ enhance_text.result }}{% else %}{{ input_text }}{% endif %}
+            {% if select_text %}{{ select_text }}{% else %}{{ input_text }}{% endif %}
           model: <AUTO task="translate">Select a model for translation to {{ $item }}</AUTO>
           max_tokens: 600
           
@@ -93,7 +100,7 @@ steps:
       - id: validate_translation
         action: analyze_text
         parameters:
-          text: "{{ translate.result }}"
+          text: "{{ translate }}"
           model: <AUTO task="analyze">Select a model for quality assessment</AUTO>
           analysis_type: "quality"
         dependencies:
@@ -108,19 +115,63 @@ steps:
           content: |
             # Translation to {{ $item }}
             
-            ## Original Text
-            {% if enhance_text.result %}{{ enhance_text.result }}{% else %}{{ input_text }}{% endif %}
+            ## Source Text Used
+            {% if select_text %}{{ select_text }}{% else %}{{ input_text }}{% endif %}
             
             ## Translated Text
-            {{ translate.result }}
+            {{ translate }}
             
             ## Quality Assessment
-            {{ validate_translation.result }}
+            {{ validate_translation }}
         dependencies:
           - validate_translation
     dependencies:
-      - prepare_text
+      - select_text
       
+  # Example of multiple conditionals: Create different summary types
+  - id: create_brief_summary
+    action: generate_text
+    if: "{{ languages | length <= 2 }}"
+    parameters:
+      prompt: |
+        Create a brief summary of the translation process.
+        Original text: {{ input_text }}
+        Languages: {{ languages }}
+      model: <AUTO task="summarize">Select a model for brief summary</AUTO>
+      max_tokens: 100
+    dependencies:
+      - translate_text
+      
+  - id: create_detailed_summary  
+    action: generate_text
+    if: "{{ languages | length > 2 }}"
+    parameters:
+      prompt: |
+        Create a detailed summary of the multi-language translation process.
+        Original text: {{ input_text }}
+        Languages: {{ languages }}
+        Analysis: {{ analyze_text }}
+      model: <AUTO task="summarize">Select a model for detailed summary</AUTO>
+      max_tokens: 200
+    dependencies:
+      - translate_text
+      
+  # Example of aggregation: Count successful operations
+  - id: check_translation_count
+    action: generate_text
+    parameters:
+      prompt: |
+        Count how many languages were successfully translated.
+        Languages attempted: {{ languages }}
+        Brief summary: {{ create_brief_summary | default('N/A') }}
+        Detailed summary: {{ create_detailed_summary | default('N/A') }}
+        Return just a number.
+      model: <AUTO task="analyze">Select a model for counting</AUTO>
+      max_tokens: 10
+    dependencies:
+      - create_brief_summary
+      - create_detailed_summary
+  
   # Create final report
   - id: create_report
     tool: filesystem
@@ -134,10 +185,16 @@ steps:
         {{ input_text }}
         
         ## Analysis
-        {{ analyze_text.result }}
+        {{ analyze_text }}
         
-        ## Enhancement
-        {% if enhance_text.result %}Text was enhanced{% else %}Original text was used{% endif %}
+        ## Quality Check Result
+        {{ check_quality }}
+        
+        ## Enhancement Status
+        {% if enhance_text %}Enhanced version was created{% else %}Original text was sufficient{% endif %}
+        
+        ## Final Text Used for Translation
+        {% if select_text %}{{ select_text }}{% else %}{{ input_text }}{% endif %}
         
         ## Translations
         Attempted translations to: {{ languages | join(', ') }}
@@ -147,6 +204,9 @@ steps:
       - translate_text
       
 outputs:
-  analysis: "{{ analyze_text.result }}"
-  enhanced: "{{ enhance_text.result | default('N/A') }}"
-  report_file: "{{ create_report.filepath }}"
+  analysis: "{{ analyze_text }}"
+  quality_check: "{{ check_quality }}"
+  enhanced: "{{ enhance_text | default('N/A') }}"
+  final_text: "{{ select_text }}"
+  translation_count: "{{ check_translation_count }}"
+  report_file: "{{ output }}/{{ input_text[:50] | slugify }}_report.md"

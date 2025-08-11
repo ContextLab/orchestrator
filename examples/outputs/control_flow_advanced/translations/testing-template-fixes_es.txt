@@ -1,7 +1,7 @@
-# Translation to de
+# Translation to es
 
 ## Original Text
-{% if enhance_text.result %}{{ enhance_text.result }}{% else %}{{ input_text }}{% endif %}
+{% if enhance_text.result %}{{ enhance_text.result }}{% else %}Testing template fixes{% endif %}
 
 ## Translated Text
 {{ translate.result }}

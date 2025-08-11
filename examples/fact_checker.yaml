@@ -158,37 +158,45 @@ steps:
     action: generate-text
     parameters:
       prompt: |
-        # FACT-CHECKING REPORT: {{ document_source }}
+        Generate a professional fact-checking report for the article "{{ document_source }}".
+        
+        You have:
+        1. Extracted sources: {{ extract_sources_list.result.sources | length }} sources identified
+        2. Extracted claims: {{ extract_claims_list.result.claims | length }} claims identified  
+        3. Source verifications completed
+        4. Claim verifications completed
+        
+        Create a comprehensive fact-checking report with these sections:
         
         ## Executive Summary
+        - Brief overview of the article's topic and main assertions
+        - Overall credibility assessment (High/Medium/Low)
+        - Number of verified vs unverified claims
         
-        Document analyzed: {{ document_source }}
-        Strictness level: {{ strictness }}
+        ## Source Analysis
+        - Credibility of cited sources
+        - Any missing or questionable citations
+        - Balance between peer-reviewed and industry sources
         
-        Total sources identified: {{ extract_sources_list.result.sources | length }}
-        Total claims identified: {{ extract_claims_list.result.claims | length }}
+        ## Claim Verification
+        For each major claim:
+        - Statement of the claim
+        - Verification status (Verified/Partially Verified/Unverified/False)
+        - Supporting or contradicting evidence
+        - Confidence level
         
-        ## Key Information
+        ## Red Flags and Concerns
+        - Any misleading statements
+        - Unsupported assertions
+        - Potential biases
         
-        ### Sources Found
-        {% for source in extract_sources_list.result.sources %}
-        - {{ source.name }} ({{ source.type }}): {{ source.url }}
-        {% endfor %}
+        ## Conclusion
+        - Overall assessment of article accuracy
+        - Recommendations for readers
+        - Areas requiring further investigation
         
-        ### Claims Analyzed
-        {% for claim in extract_claims_list.result.claims %}
-        {{ loop.index }}. {{ claim }}
-        {% endfor %}
-        
-        ## Final Assessment
-        
-        Based on the parallel verification process:
-        - Overall credibility rating: [Provide High/Medium/Low based on analysis]
-        - Key findings: [2-3 bullet points summarizing verification results]
-        - Recommendations: [Specific actionable recommendations]
-        
-        ---
-        *This report demonstrates AUTO tag list generation and runtime parallel for_each processing.*
+        Focus on providing actionable fact-checking insights about the healthcare AI article's claims and sources.
+        Be specific about which claims are well-supported and which require scrutiny.
       max_completion_tokens: 2000
       model: "claude-sonnet-4-20250514"
     produces: text
@@ -202,45 +210,12 @@ steps:
     parameters:
       path: "{{ output_path | default('examples/outputs/fact_checker/fact_check_report.md') }}"
       content: |
-        # Intelligent Fact-Checking Report
+        # Fact-Checking Report
         
-        **Document Analyzed:** {{ document_source }}
-        **Strictness Level:** {{ strictness }}
-        **Generated:** {{ execution.timestamp }}
+        **Document:** {{ document_source }}
+        **Analysis Date:** {{ execution.timestamp }}
+        **Verification Standard:** {{ strictness }}
         
         ---
         
         {{ generate_report.result }}
-        
-        ---
-        
-        ## Technical Details
-        
-        ### AUTO Tag List Generation (Runtime)
-        
-        This pipeline demonstrates AUTO tags resolving to lists at runtime:
-        - **Sources extracted:** {{ extract_sources_list.result.sources | length }} sources
-        - **Claims extracted:** {{ extract_claims_list.result.claims | length }} claims
-        
-        ### Runtime Parallel Processing with for_each
-        
-        The pipeline uses runtime `for_each` expansion with `max_parallel`:
-        - **Sources verified in parallel:** max_parallel=2
-        - **Claims verified in parallel:** max_parallel=3
-        
-        ### Extracted Data
-        
-        #### Sources (from AUTO tag)
-        {% for source in extract_sources_list.result.sources %}
-        {{ loop.index }}. {{ source.name }} ({{ source.type }}): {{ source.url }}
-        {% endfor %}
-        
-        #### Claims (from AUTO tag)
-        {% for claim in extract_claims_list.result.claims %}
-        {{ loop.index }}. {{ claim }}
-        {% endfor %}
-        
-        ---
-        
-        *Report generated using orchestrator framework with runtime for_each expansion*
-        *Features: AUTO tag list generation, runtime parallel loop expansion*

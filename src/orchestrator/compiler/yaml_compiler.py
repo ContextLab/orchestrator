@@ -366,8 +366,9 @@ class YAMLCompiler:
 
         async def process_auto_tags(obj: Any, path: str = "") -> Any:
             if isinstance(obj, str):
-                # Skip AUTO tag resolution for goto fields - they should be resolved at runtime
-                if path.endswith(".goto") or path.endswith("['goto']") or path.endswith('["goto"]'):
+                # Skip AUTO tag resolution for runtime fields
+                runtime_fields = [".goto", "['goto']", '["goto"]', ".for_each", "['for_each']", '["for_each"]']
+                if any(path.endswith(field) for field in runtime_fields):
                     logger.info(f"Skipping AUTO tag resolution for runtime field: {path}")
                     return obj
                     

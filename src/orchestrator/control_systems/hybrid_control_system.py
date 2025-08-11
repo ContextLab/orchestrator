@@ -229,8 +229,48 @@ class HybridControlSystem(ModelBasedControlSystem):
             
             # Pass template_manager from context if available
             if "_template_manager" in context:
-                resolved_params["_template_manager"] = context["_template_manager"]
-                print(f"   📋 Passing _template_manager to filesystem tool")
+                template_manager = context["_template_manager"]
+                
+                # Register all previous results with the template manager
+                if "previous_results" in context:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"Registering {len(context['previous_results'])} results with template manager for filesystem operation")
+                    
+                    for step_id, result in context["previous_results"].items():
+                        # Log what we're registering
+                        logger.info(f"Registering {step_id}: type={type(result).__name__}, value={str(result)[:100] if isinstance(result, str) else 'complex'}")
+                        
+                        # Register each result with the template manager
+                        # For string results, make them directly accessible
+                        if isinstance(result, str):
+                            # Register both the string directly and wrapped in result
+                            template_manager.register_context(step_id, result)
+                            template_manager.register_context(f"{step_id}_result", {"result": result})
+                        elif isinstance(result, dict) and "result" in result:
+                            # If result is a dict with 'result' key, register both
+                            template_manager.register_context(step_id, result)
+                            if isinstance(result["result"], str):
+                                # Also register the result directly for easier access
+                                template_manager.register_context(f"{step_id}_direct", result["result"])
+                        else:
+                            template_manager.register_context(step_id, result)
+                
+                # Also register pipeline parameters if available
+                if "pipeline_params" in context:
+                    for key, value in context["pipeline_params"].items():
+                        if key not in ["previous_results", "_template_manager"]:
+                            template_manager.register_context(key, value)
+                            logger.info(f"Registering pipeline param {key}: {str(value)[:100]}")
+                
+                # Register loop variables if present
+                for loop_var in ["$item", "$index", "$is_first", "$is_last"]:
+                    if loop_var in context:
+                        template_manager.register_context(loop_var, context[loop_var])
+                        logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
+                
+                resolved_params["_template_manager"] = template_manager
+                print(f"   📋 Passing _template_manager to filesystem tool with {len(context.get('previous_results', {}))} results")
             else:
                 print(f"   ⚠️  No _template_manager in context! Available keys: {list(context.keys())}")
             
@@ -246,8 +286,48 @@ class HybridControlSystem(ModelBasedControlSystem):
             
             # Pass template_manager from context if available
             if "_template_manager" in context:
-                resolved_params["_template_manager"] = context["_template_manager"]
-                print(f"   📋 Passing _template_manager to filesystem tool")
+                template_manager = context["_template_manager"]
+                
+                # Register all previous results with the template manager
+                if "previous_results" in context:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"Registering {len(context['previous_results'])} results with template manager for filesystem operation")
+                    
+                    for step_id, result in context["previous_results"].items():
+                        # Log what we're registering
+                        logger.info(f"Registering {step_id}: type={type(result).__name__}, value={str(result)[:100] if isinstance(result, str) else 'complex'}")
+                        
+                        # Register each result with the template manager
+                        # For string results, make them directly accessible
+                        if isinstance(result, str):
+                            # Register both the string directly and wrapped in result
+                            template_manager.register_context(step_id, result)
+                            template_manager.register_context(f"{step_id}_result", {"result": result})
+                        elif isinstance(result, dict) and "result" in result:
+                            # If result is a dict with 'result' key, register both
+                            template_manager.register_context(step_id, result)
+                            if isinstance(result["result"], str):
+                                # Also register the result directly for easier access
+                                template_manager.register_context(f"{step_id}_direct", result["result"])
+                        else:
+                            template_manager.register_context(step_id, result)
+                
+                # Also register pipeline parameters if available
+                if "pipeline_params" in context:
+                    for key, value in context["pipeline_params"].items():
+                        if key not in ["previous_results", "_template_manager"]:
+                            template_manager.register_context(key, value)
+                            logger.info(f"Registering pipeline param {key}: {str(value)[:100]}")
+                
+                # Register loop variables if present
+                for loop_var in ["$item", "$index", "$is_first", "$is_last"]:
+                    if loop_var in context:
+                        template_manager.register_context(loop_var, context[loop_var])
+                        logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
+                
+                resolved_params["_template_manager"] = template_manager
+                print(f"   📋 Passing _template_manager to filesystem tool with {len(context.get('previous_results', {}))} results")
             else:
                 print(f"   ⚠️  No _template_manager in context! Available keys: {list(context.keys())}")
             
@@ -385,6 +465,22 @@ class HybridControlSystem(ModelBasedControlSystem):
             for input_name, input_value in inputs.items():
                 if input_name not in template_context:
                     template_context[input_name] = input_value
+        
+        # Add pipeline_params directly if available
+        if "pipeline_params" in context and isinstance(context["pipeline_params"], dict):
+            for key, value in context["pipeline_params"].items():
+                if key not in template_context:
+                    template_context[key] = value
+        
+        # Add loop variables if present
+        if "$item" in context:
+            template_context["$item"] = context["$item"]
+        if "$index" in context:
+            template_context["$index"] = context["$index"]
+        if "$is_first" in context:
+            template_context["$is_first"] = context["$is_first"]
+        if "$is_last" in context:
+            template_context["$is_last"] = context["$is_last"]
         
         # Add pipeline context values (which should contain inputs)
         if "pipeline_context" in context and isinstance(context["pipeline_context"], dict):

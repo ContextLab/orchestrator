@@ -71,6 +71,59 @@ class ModelBasedControlSystem(ControlSystem):
         Returns:
             Task execution result
         """
+        # Render templates in task parameters if template_manager is available
+        if "_template_manager" in context and task.parameters:
+            template_manager = context["_template_manager"]
+            rendered_params = {}
+            
+            for key, value in task.parameters.items():
+                if isinstance(value, str) and ("{{" in value or "{%" in value):
+                    # This is a template string that needs rendering
+                    try:
+                        # Build comprehensive context for rendering
+                        render_context = {
+                            **context.get("pipeline_params", {}),  # Pipeline parameters
+                            **context.get("previous_results", {}),  # Previous step results
+                            **context.get("results", {}),          # Alternative results key
+                            "$item": context.get("$item"),         # Loop item if in loop
+                            "$index": context.get("$index"),       # Loop index if in loop
+                        }
+                        
+                        # Render the template
+                        rendered_value = template_manager.render(
+                            value,
+                            additional_context=render_context
+                        )
+                        rendered_params[key] = rendered_value
+                        
+                        # Log the rendering for debugging
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        if key == "prompt":
+                            logger.info(f"Task {task.id}: Rendered prompt template successfully")
+                            logger.debug(f"  From: '{value[:100]}...'")
+                            logger.debug(f"  To: '{rendered_value[:100]}...'")
+                        else:
+                            logger.debug(f"Task {task.id}: Rendered {key} template")
+                        
+                        # Validate that no unrendered templates remain
+                        if "{{" in rendered_value or "{%" in rendered_value:
+                            logger.warning(f"Task {task.id}: Rendered {key} still contains template markers!")
+                            logger.debug(f"  Rendered value: {rendered_value[:200]}")
+                    except Exception as e:
+                        # If rendering fails, use original value
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Task {task.id}: Failed to render template for {key}: {e}")
+                        logger.debug(f"  Original value: {value[:200]}")
+                        logger.debug(f"  Available context keys: {list(render_context.keys())}")
+                        rendered_params[key] = value
+                else:
+                    rendered_params[key] = value
+            
+            # Update task parameters with rendered values
+            task.parameters = rendered_params
+        
         # Validate required parameters for text generation actions
         if task.action in ["generate_text", "generate"] and (
             not task.parameters or "prompt" not in task.parameters
@@ -102,8 +155,20 @@ class ModelBasedControlSystem(ControlSystem):
             "prompt"
         ):
             # For generate actions, use the prompt parameter
-            # Templates have already been rendered by ControlSystem._render_task_templates
+            # Templates have already been rendered above
             prompt = task.parameters["prompt"]
+        elif task.action == "analyze_text" and task.parameters:
+            # For analyze_text action, build analysis prompt
+            text = task.parameters.get("text", "")
+            analysis_type = task.parameters.get("analysis_type", "comprehensive")
+            
+            # Build analysis prompt
+            prompt = f"Perform a {analysis_type} analysis of the following text:\n\n{text}"
+            
+            if analysis_type == "comprehensive":
+                prompt += "\n\nProvide a detailed analysis covering structure, content, style, and key themes."
+            elif analysis_type == "quality":
+                prompt += "\n\nAssess the quality of this text on a scale of 0-1, considering clarity, coherence, and completeness."
         else:
             # For other actions, use the action as the prompt
             action_text = str(task.action)  # Convert to string in case it's not

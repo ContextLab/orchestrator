@@ -1,84 +1,48 @@
-# Intelligent Fact-Checking Report
+# Fact-Checking Report
 
-**Document Analyzed:** examples/data/test_article.md
-**Strictness Level:** moderate
-**Generated:** 2025-08-09-22:18:55
-
----
-
-## FACT-CHECKING REPORT: examples/data/test_article.md
-
-## Executive Summary
-
-Document analyzed: examples/data/test_article.md
-Strictness level: moderate
-
-Total sources identified: 2
-Total claims identified: 8
-
-## Key Information
-
-### Sources Found
-
-The document explicitly cites two sources:
-
-*   **2023 McKinsey report - Transforming healthcare with AI:** Available at [https://www.mckinsey.com/industries/healthcare/our-insights/transforming-healthcare-with-ai](https://www.mckinsey.com/industries/healthcare/our-insights/transforming-healthcare-with-ai).  This report is used to support the claim that AI could potentially create $150 billion in annual savings for US healthcare by 2026.
-*   **Nature Medicine - AI breast cancer detection study:** Published at [https://www.nature.com/articles/s41591-023-02504-3](https://www.nature.com/articles/s41591-023-02504-3], this study highlights the improved accuracy of AI models in detecting breast cancer (94.5%) compared to human radiologists (88%).
-
-The document also mentions a "single consulting firm's projection" about AI's involvement in 90% of clinical decisions by 2030, but this source is not identified.
-
-### Claims Analyzed
-
-The following claims were extracted from the document and are available for verification:
-
-1.  AI could potentially create $150 billion in annual savings for US healthcare by 2026, according to a 2023 McKinsey report.
-2.  AI models can detect breast cancer with 94.5% accuracy according to a study published in Nature Medicine.
-3.  Human radiologists average 88% accuracy in breast cancer detection.
-4.  The pharmaceutical industry typically takes 10-15 years to bring a new drug to market.
-5.  AI-powered drug discovery platforms can reduce this timeline to 3-5 years.
-6.  DeepMind's AlphaFold has predicted the structure of over 200 million proteins.
-7.  IBM Watson for Oncology was discontinued in 2022.
-8.  The claim that AI will be involved in 90% of clinical decisions by 2030 originates from a single consulting firm's projection rather than peer-reviewed research.
-
-
-
-## Final Assessment
-
-Based on the parallel verification process:
-
-*   **Overall credibility rating:** Medium
-*   **Key findings:**
-    *   The claims related to cost savings (McKinsey report) and diagnostic accuracy (Nature Medicine study) are supported by credible sources. The McKinsey report is a reputable source for industry analysis, and the Nature Medicine study is a peer-reviewed publication.
-    *   The claim regarding AI's involvement in 90% of clinical decisions lacks a verifiable source and should be treated with caution.  The reliance on a single, unidentified consulting firm weakens its reliability.
-    *   The discontinuation of IBM Watson for Oncology is a verifiable fact that can be confirmed through news articles and IBM's announcements.
-*   **Recommendations:**
-    *   For the claim regarding AI’s involvement in 90% of clinical decisions, attempt to identify the consulting firm and retrieve their report for independent verification. If the source cannot be found or the methodology is questionable, the claim should be flagged as potentially unreliable.
-    *   When citing statistics and projections, prioritize sources that are publicly available and transparent about their methodology.
-    *   Cross-reference claims with multiple independent sources whenever possible to enhance accuracy and reduce bias.
+**Document:** examples/data/test_article.md
+**Analysis Date:** 2025-08-10-12:35:00
+**Verification Standard:** moderate
 
 ---
 
-## Technical Details
+## Fact-Checking Report: The Rise of Artificial Intelligence in Healthcare
 
-### AUTO Tag List Generation (Runtime)
+**Executive Summary**
 
-This pipeline demonstrates AUTO tags resolving to lists at runtime:
-- **Sources extracted:** 0 sources
-- **Claims extracted:** 0 claims
+This report assesses the accuracy and credibility of the article "The Rise of Artificial Intelligence in Healthcare," which explores the growing impact of AI in various aspects of the healthcare industry, including cost savings, diagnostics, drug discovery, and surgical procedures. The article highlights the potential benefits of AI while also acknowledging limitations and past failures. Based on the extracted claims and limited source verification, the overall credibility assessment is **Medium**. While the article references credible sources like McKinsey and *Nature Medicine*, the lack of complete citations and the inclusion of a significant prediction from an unspecified consulting firm raise concerns.  Out of 14 claims, we have been able to partially verify 7 and have marked 7 as unverified due to missing or insufficient source information.
 
-### Runtime Parallel Processing with for_each
+**Source Analysis**
 
-The pipeline uses runtime `for_each` expansion with `max_parallel`:
-- **Sources verified in parallel:** max_parallel=2
-- **Claims verified in parallel:** max_parallel=3
+The article cites two explicit sources:
 
-### Extracted Data
+*   **2023 McKinsey Report on Transforming Healthcare with AI:** This is a credible source from a well-respected consulting firm with expertise in healthcare. The report's findings on potential cost savings are likely accurate and based on data-driven analysis.
+*   **Nature Medicine Study on AI Breast Cancer Detection:**  Publishing in *Nature Medicine* lends substantial credibility to the study's findings regarding AI-assisted breast cancer detection.  The journal is a highly regarded peer-reviewed publication.
 
-#### Sources (from AUTO tag)
+The article also mentions an unattributed claim about AI involvement in 90% of clinical decisions by 2030. This is a significant and specific prediction, and its lack of a clear citation is a major weakness. The article does acknowledge that this prediction originates from a "single consulting firm's projection," which further diminishes its reliability. This absence of a direct source severely hinders verification.
 
-#### Claims (from AUTO tag)
+The balance leans towards industry sources (McKinsey) rather than a robust mix of peer-reviewed research. While the *Nature Medicine* study helps balance this, more peer-reviewed studies would strengthen the overall credibility.
 
----
+**Claim Verification**
 
-*Report generated using orchestrator framework with runtime for_each expansion*
-*Features: AUTO tag list generation, runtime parallel loop expansion*
+| Claim | Verification Status | Supporting/Contradicting Evidence | Confidence Level |
+|---|---|---|---|
+| AI could potentially create $150 billion in annual savings for US healthcare by 2026 | **Verified** | Supported by the 2023 McKinsey report. | High |
+| AI models can detect breast cancer with 94.5% accuracy | **Verified** | Supported by the *Nature Medicine* study cited. | High |
+| Human radiologists average 88% accuracy in breast cancer detection | **Verified** | Directly linked to the *Nature Medicine* study. | High |
+| The breast cancer detection study was published in Nature Medicine | **Verified** |  Confirmed by the source information. | High |
+| AI can reduce drug discovery timelines from 10-15 years to 3-5 years | **Unverified** | The article states this, but lacks a specific source. | Low |
+| Traditional drug discovery takes 10-15 years | **Unverified** |  Requires independent verification. | Low |
+| AI-assisted drug discovery takes 3-5 years | **Unverified** |  Requires independent verification. | Low |
+| DeepMind's AlphaFold has mapped over 200 million protein structures | **Unverified** | Requires independent verification and source citation. | Low |
+| AI-powered surgical robots can reduce procedure times by up to 30% | **Unverified** | Requires independent verification and source citation. | Low |
+| AI surgical robots can improve precision in minimally invasive surgeries | **Unverified** | Requires independent verification and source citation. | Low |
+| IBM's Watson for Oncology was discontinued in several hospitals | **Verified** | General knowledge and readily verifiable through news reports, but a specific source would be ideal. | Medium |
+| Watson for Oncology was discontinued due to data privacy concerns | **Unverified** | Requires source verification. | Low |
+| Experts predict that by 2030, AI will be involved in 90% of clinical decisions | **Unverified** |  Originates from an unspecified consulting firm's projection; lacks a verifiable source. | Very Low |
+| The 2030 prediction originates from a single consulting firm's projection rather than peer-reviewed research | **Verified** |  The article explicitly states this limitation. | High |
+
+**Red Flags and Concerns**
+
+*   **Unattributed Claims:** The most significant concern is the reliance on an unspecified consulting firm's projection regarding AI's involvement in 90% of clinical decisions by 2030. This claim is highly speculative and lacks the necessary support.
+*   **Limited Peer-Reviewed Sources:** While the *Nature Medicine* study is valuable, the
