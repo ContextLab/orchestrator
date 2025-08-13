@@ -1,0 +1,3 @@
+Item: banana
+Index: 1
+Analysis: An apple is a crisp, sweet or tart fruit that grows on trees and comes in various colors including red, green, and yellow.

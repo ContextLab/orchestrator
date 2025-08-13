@@ -1,0 +1,3 @@
+Number: 3
+Is Even: no
+Result (doubled): It looks like you're trying to use template syntax to calculate 2 doubled. The expression `

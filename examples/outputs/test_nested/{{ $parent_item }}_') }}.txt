@@ -1,0 +1,3 @@
+Category: {{ $parent_item }}
+Item: ') }}
+Description: {{ describe }}
