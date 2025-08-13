@@ -1163,26 +1163,75 @@ class Orchestrator:
                             "id": loop_id
                         })
                 
+                # Debug: Log task metadata to see what's available
+                self.logger.debug(f"Task {task_id} metadata: {task.metadata}")
+                
                 # Add loop context mapping for for_each loops
-                if task.metadata.get("is_for_each_child"):
-                    parent_id = task.metadata.get("parent_for_each")
-                    iteration_idx = task.metadata.get("iteration_index", 0)
-                    loop_step_id = task.metadata.get("loop_step_id")
+                # Check for both old and new metadata formats
+                is_loop_task = (task.metadata.get("is_for_each_child") or 
+                               task.metadata.get("loop_context") or
+                               task.metadata.get("loop_id"))
+                
+                if is_loop_task:
+                    # Try to get loop info from different metadata formats
+                    if task.metadata.get("is_for_each_child"):
+                        # Old format
+                        parent_id = task.metadata.get("parent_for_each")
+                        iteration_idx = task.metadata.get("iteration_index", 0)
+                        loop_step_id = task.metadata.get("loop_step_id")
+                    elif task.metadata.get("loop_context"):
+                        # New format with loop_context
+                        loop_ctx = task.metadata["loop_context"]
+                        parent_id = loop_ctx.get("loop_id") or task.metadata.get("loop_id")
+                        iteration_idx = loop_ctx.get("index", 0)
+                        # Extract step name from task ID (e.g., process_items_0_save -> save)
+                        loop_step_id = task_id.split('_')[-1] if '_' in task_id else task_id
+                    else:
+                        # Fallback to direct metadata
+                        parent_id = task.metadata.get("loop_id")
+                        iteration_idx = task.metadata.get("loop_index", 0)
+                        loop_step_id = task_id.split('_')[-1] if '_' in task_id else task_id
+                    
+                    self.logger.info(f"Creating loop context mapping for task {task_id}: parent={parent_id}, iteration={iteration_idx}, step={loop_step_id}")
                     
                     # Create a mapping from short names to full task IDs for this iteration
                     loop_context_mapping = {}
                     
                     # Get all tasks from the same loop iteration
                     for other_task_id, other_task in pipeline.tasks.items():
-                        if (other_task.metadata.get("parent_for_each") == parent_id and
-                            other_task.metadata.get("iteration_index") == iteration_idx):
+                        # Check if task is from same loop and iteration
+                        is_same_loop = False
+                        other_iteration = -1
+                        other_step_name = None
+                        
+                        if other_task.metadata.get("parent_for_each") == parent_id:
+                            # Old format
+                            is_same_loop = True
+                            other_iteration = other_task.metadata.get("iteration_index", -1)
+                            other_step_name = other_task.metadata.get("loop_step_id")
+                        elif other_task.metadata.get("loop_context"):
+                            # New format with loop_context
+                            other_loop_ctx = other_task.metadata["loop_context"]
+                            other_loop_id = other_loop_ctx.get("loop_id") or other_task.metadata.get("loop_id")
+                            if other_loop_id == parent_id:
+                                is_same_loop = True
+                                other_iteration = other_loop_ctx.get("index", -1)
+                                # Extract step name from task ID
+                                other_step_name = other_task_id.split('_')[-1] if '_' in other_task_id else other_task_id
+                        elif other_task.metadata.get("loop_id") == parent_id:
+                            # Direct metadata format
+                            is_same_loop = True
+                            other_iteration = other_task.metadata.get("loop_index", -1)
+                            other_step_name = other_task_id.split('_')[-1] if '_' in other_task_id else other_task_id
+                        
+                        if is_same_loop and other_iteration == iteration_idx and other_step_name:
                             # Map the short step ID to the full task ID
-                            short_name = other_task.metadata.get("loop_step_id")
-                            if short_name:
-                                loop_context_mapping[short_name] = other_task_id
+                            loop_context_mapping[other_step_name] = other_task_id
+                            self.logger.info(f"  Mapped '{other_step_name}' -> '{other_task_id}'")
                     
                     # Add the mapping to the task context
                     task_context["_loop_context_mapping"] = loop_context_mapping
+                    self.logger.info(f"Added loop context mapping with {len(loop_context_mapping)} entries to task context")
                     
                     # Also add loop-specific variables to context
                     if "loop_context" in task.metadata:
@@ -1193,6 +1242,18 @@ class Orchestrator:
                 
                 # Pre-render templates in task parameters before execution
                 if task.parameters and self.template_manager:
+                    # If we have loop context mapping, register the loop-specific results first
+                    if "_loop_context_mapping" in task_context and "previous_results" in task_context:
+                        loop_context_mapping = task_context["_loop_context_mapping"]
+                        self.logger.debug(f"Registering {len(loop_context_mapping)} loop results before pre-rendering for task {task_id}")
+                        
+                        # Register results from this iteration with their short names
+                        for short_name, full_task_id in loop_context_mapping.items():
+                            if full_task_id in task_context["previous_results"]:
+                                result = task_context["previous_results"][full_task_id]
+                                self.template_manager.register_context(short_name, result)
+                                self.logger.debug(f"  Registered '{short_name}' = {str(result)[:50] if isinstance(result, str) else 'complex'}")
+                    
                     rendered_params = {}
                     for key, value in task.parameters.items():
                         if isinstance(value, str) and ("{{" in value or "{%" in value):
