@@ -1,0 +1,4 @@
+Category: Budget
+Item: A
+Processing: Okay, let's outline a budget processing workflow for Item A. This will cover the key steps
+Status: Standard-priority

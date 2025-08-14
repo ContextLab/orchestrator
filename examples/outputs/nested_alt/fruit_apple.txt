@@ -1,0 +1,3 @@
+Category: fruit
+Item: apple
+Description: Sweet, crisp, juicy, round fruit.

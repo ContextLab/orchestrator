@@ -1,0 +1,7 @@
+Expected Index: 0
+Expected Item: zero
+Generated Result: Item zero at index 0
+
+Verification:
+- File name: item_0_zero.txt
+- Should be: item zero at position 0

@@ -1,0 +1,7 @@
+Expected Index: 2
+Expected Item: two
+Generated Result: Item two at index 2
+
+Verification:
+- File name: item_2_two.txt
+- Should be: item two at position 2

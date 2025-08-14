@@ -1,0 +1,12 @@
+=== Iteration 2 ===
+Item: {{item}}
+
+Step 1 (generate_unique): UNIQUE_{{ITEM}}_2
+Step 2 (process_data): I notice that you've provided a template for processing data, but the `{{item}}` placeholder hasn't been filled in with an actual value.
+
+To process this data, I would need you to specify what the `{{item}}` value
+
+Validation Checks:
+- Should contain "{{item}}" in both results
+- generate_unique should be: UNIQUE_{{ITEM}}_2
+- process_data should reference {{item}} and its unique ID

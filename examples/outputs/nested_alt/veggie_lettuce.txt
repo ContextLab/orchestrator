@@ -1,0 +1,3 @@
+Category: veggie
+Item: lettuce
+Description: Orange, crunchy, sweet, root vegetable.

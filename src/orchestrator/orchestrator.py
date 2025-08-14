@@ -1184,15 +1184,43 @@ class Orchestrator:
                         loop_ctx = task.metadata["loop_context"]
                         parent_id = loop_ctx.get("loop_id") or task.metadata.get("loop_id")
                         iteration_idx = loop_ctx.get("index", 0)
-                        # Extract step name from task ID (e.g., process_items_0_save -> save)
-                        loop_step_id = task_id.split('_')[-1] if '_' in task_id else task_id
+                        # Extract step name from task ID
+                        # Format: parent_id_index_stepname (e.g., process_items_0_save -> save)
+                        # But stepname might have underscores (e.g., process_items_0_generate_unique -> generate_unique)
+                        if parent_id and '_' in task_id:
+                            # Remove parent_id and index to get step name
+                            prefix = f"{parent_id}_{iteration_idx}_"
+                            if task_id.startswith(prefix):
+                                loop_step_id = task_id[len(prefix):]
+                            else:
+                                # Fallback: take everything after second underscore
+                                parts = task_id.split('_')
+                                if len(parts) > 2:
+                                    loop_step_id = '_'.join(parts[2:])
+                                else:
+                                    loop_step_id = parts[-1] if parts else task_id
+                        else:
+                            loop_step_id = task_id
                     else:
                         # Fallback to direct metadata
                         parent_id = task.metadata.get("loop_id")
                         iteration_idx = task.metadata.get("loop_index", 0)
-                        loop_step_id = task_id.split('_')[-1] if '_' in task_id else task_id
+                        # Same logic for extracting step name
+                        if parent_id and '_' in task_id:
+                            prefix = f"{parent_id}_{iteration_idx}_"
+                            if task_id.startswith(prefix):
+                                loop_step_id = task_id[len(prefix):]
+                            else:
+                                parts = task_id.split('_')
+                                if len(parts) > 2:
+                                    loop_step_id = '_'.join(parts[2:])
+                                else:
+                                    loop_step_id = parts[-1] if parts else task_id
+                        else:
+                            loop_step_id = task_id
                     
                     self.logger.info(f"Creating loop context mapping for task {task_id}: parent={parent_id}, iteration={iteration_idx}, step={loop_step_id}")
+                    self.logger.info(f"  Task metadata: is_for_each_child={task.metadata.get('is_for_each_child')}, parent_for_each={task.metadata.get('parent_for_each')}")
                     
                     # Create a mapping from short names to full task IDs for this iteration
                     loop_context_mapping = {}
@@ -1209,6 +1237,7 @@ class Orchestrator:
                             is_same_loop = True
                             other_iteration = other_task.metadata.get("iteration_index", -1)
                             other_step_name = other_task.metadata.get("loop_step_id")
+                            self.logger.debug(f"    Found same-loop task (old format): {other_task_id}, iteration={other_iteration}, step={other_step_name}")
                         elif other_task.metadata.get("loop_context"):
                             # New format with loop_context
                             other_loop_ctx = other_task.metadata["loop_context"]
@@ -1216,13 +1245,40 @@ class Orchestrator:
                             if other_loop_id == parent_id:
                                 is_same_loop = True
                                 other_iteration = other_loop_ctx.get("index", -1)
-                                # Extract step name from task ID
-                                other_step_name = other_task_id.split('_')[-1] if '_' in other_task_id else other_task_id
+                                # Extract step name from task ID (handle underscores in step names)
+                                if '_' in other_task_id:
+                                    prefix = f"{other_loop_id}_{other_iteration}_"
+                                    if other_task_id.startswith(prefix):
+                                        other_step_name = other_task_id[len(prefix):]
+                                        self.logger.debug(f"    Extracted step name '{other_step_name}' from task ID '{other_task_id}' using prefix '{prefix}'")
+                                    else:
+                                        parts = other_task_id.split('_')
+                                        if len(parts) > 2:
+                                            other_step_name = '_'.join(parts[2:])
+                                        else:
+                                            other_step_name = parts[-1] if parts else other_task_id
+                                        self.logger.debug(f"    Extracted step name '{other_step_name}' from task ID '{other_task_id}' using fallback")
+                                else:
+                                    other_step_name = other_task_id
                         elif other_task.metadata.get("loop_id") == parent_id:
                             # Direct metadata format
                             is_same_loop = True
                             other_iteration = other_task.metadata.get("loop_index", -1)
-                            other_step_name = other_task_id.split('_')[-1] if '_' in other_task_id else other_task_id
+                            # Extract step name from task ID (handle underscores in step names)
+                            if '_' in other_task_id:
+                                prefix = f"{parent_id}_{other_iteration}_"
+                                if other_task_id.startswith(prefix):
+                                    other_step_name = other_task_id[len(prefix):]
+                                    self.logger.debug(f"    [Direct] Extracted step name '{other_step_name}' from task ID '{other_task_id}' using prefix '{prefix}'")
+                                else:
+                                    parts = other_task_id.split('_')
+                                    if len(parts) > 2:
+                                        other_step_name = '_'.join(parts[2:])
+                                    else:
+                                        other_step_name = parts[-1] if parts else other_task_id
+                                    self.logger.debug(f"    [Direct] Extracted step name '{other_step_name}' from task ID '{other_task_id}' using fallback")
+                            else:
+                                other_step_name = other_task_id
                         
                         if is_same_loop and other_iteration == iteration_idx and other_step_name:
                             # Map the short step ID to the full task ID
@@ -1493,6 +1549,11 @@ class Orchestrator:
                 "$index": idx,
                 "$is_first": idx == 0,
                 "$is_last": idx == len(resolved_items) - 1,
+                # Also register without $ prefix for template compatibility
+                "item": item,
+                "index": idx,
+                "is_first": idx == 0,
+                "is_last": idx == len(resolved_items) - 1,
                 f"${for_each_task.loop_var}": item if for_each_task.loop_var != "$item" else item
             }
             
@@ -1557,7 +1618,7 @@ class Orchestrator:
                         "is_for_each_child": True,
                         "parent_for_each": for_each_task.id,
                         "iteration_index": idx,
-                        "loop_context": loop_context,
+                        "loop_context": {**loop_context, "loop_id": for_each_task.id, "index": idx},  # Ensure loop_id and index are in loop_context
                         "loop_step_id": step_def['id'],  # Store the original step ID for mapping
                         "loop_task_id": task_id  # Store the full task ID
                     }
