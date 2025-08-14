@@ -276,9 +276,30 @@ class ControlSystem(ABC):
             
             # Special handling for loop task results
             # If this is a task within a loop, register previous results from the same iteration
-            if "loop_id" in rendered_task.metadata and "loop_index" in rendered_task.metadata:
+            # Support both control flow loops and ForEachTask expanded loops
+            loop_id = None
+            loop_index = None
+            
+            # Check for ForEachTask format
+            if "parent_for_each" in rendered_task.metadata and "iteration_index" in rendered_task.metadata:
+                loop_id = rendered_task.metadata["parent_for_each"]
+                loop_index = rendered_task.metadata["iteration_index"]
+            # Check for control flow loop format  
+            elif "loop_id" in rendered_task.metadata and "loop_index" in rendered_task.metadata:
                 loop_id = rendered_task.metadata["loop_id"]
                 loop_index = rendered_task.metadata["loop_index"]
+            
+            if loop_id and loop_index is not None:
+                # Also register loop variables from loop_context if present
+                if "loop_context" in rendered_task.metadata:
+                    loop_ctx = rendered_task.metadata["loop_context"]
+                    # Register key loop variables that templates might need
+                    for key in ["item", "index", "is_first", "is_last", "$item", "$index"]:
+                        if key in loop_ctx:
+                            template_manager.register_context(key, loop_ctx[key])
+                            # Log for debugging
+                            import logging
+                            logging.info(f"Registered loop variable '{key}' = {loop_ctx[key]} from loop_context")
                 
                 # Look for results from the same loop iteration
                 if "previous_results" in context:

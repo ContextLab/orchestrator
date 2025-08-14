@@ -1166,6 +1166,15 @@ class Orchestrator:
                 # Debug: Log task metadata to see what's available
                 self.logger.debug(f"Task {task_id} metadata: {task.metadata}")
                 
+                # If this is a ForEachTask child with loop_context, add loop variables to task_context
+                if task.metadata.get("is_for_each_child") and "loop_context" in task.metadata:
+                    loop_ctx = task.metadata["loop_context"]
+                    # Add essential loop variables to the execution context
+                    for key in ["item", "index", "is_first", "is_last", "$item", "$index"]:
+                        if key in loop_ctx and key not in task_context:
+                            task_context[key] = loop_ctx[key]
+                            self.logger.info(f"Added ForEachTask loop variable '{key}' = {loop_ctx[key]} to execution context")
+                
                 # Add loop context mapping for for_each loops
                 # Check for both old and new metadata formats
                 is_loop_task = (task.metadata.get("is_for_each_child") or 
@@ -1292,9 +1301,11 @@ class Orchestrator:
                     # Also add loop-specific variables to context
                     if "loop_context" in task.metadata:
                         loop_ctx = task.metadata["loop_context"]
+                        self.logger.info(f"Adding {len(loop_ctx)} loop context variables to task context for {task_id}")
                         for key, value in loop_ctx.items():
                             if key not in task_context:
                                 task_context[key] = value
+                                self.logger.debug(f"  Added loop variable '{key}' = {value}")
                 
                 # Pre-render templates in task parameters before execution
                 if task.parameters and self.template_manager:

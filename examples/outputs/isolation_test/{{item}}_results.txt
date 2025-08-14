@@ -2,9 +2,9 @@
 Item: {{item}}
 
 Step 1 (generate_unique): UNIQUE_{{ITEM}}_2
-Step 2 (process_data): I notice that you've provided a template for processing data, but the `{{item}}` placeholder hasn't been filled in with an actual value.
+Step 2 (process_data): I notice that you've provided a template for processing data, but the actual `{{item}}` value hasn't been specified. 
 
-To process this data, I would need you to specify what the `{{item}}` value
+To process this data according to your template, I would need you to provide the specific item value. Once you
 
 Validation Checks:
 - Should contain "{{item}}" in both results

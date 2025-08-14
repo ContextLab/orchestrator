@@ -1,0 +1,4 @@
+Item: {{item}}
+Index: 1
+Step1 result: I need more context to provide a meaningful response.
+Step2 result: Okay, I understand. You're telling me

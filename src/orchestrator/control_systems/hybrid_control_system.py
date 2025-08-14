@@ -276,9 +276,19 @@ class HybridControlSystem(ModelBasedControlSystem):
                     template_manager.register_context(key, value)
                     logger.info(f"Registering pipeline param {key}: {str(value)[:100]}")
         
-        # Register loop variables if present
+        # Register loop variables if present (both with and without $ prefix)
         for loop_var in ["$item", "$index", "$is_first", "$is_last"]:
             if loop_var in context:
+                template_manager.register_context(loop_var, context[loop_var])
+                logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
+                # Also register without $ prefix for template compatibility
+                var_name = loop_var[1:]  # Remove $ prefix
+                template_manager.register_context(var_name, context[loop_var])
+                logger.info(f"Registering loop variable {var_name}: {context[loop_var]}")
+        
+        # Also check for loop variables without $ prefix (from loop_context)
+        for loop_var in ["item", "index", "is_first", "is_last"]:
+            if loop_var in context and loop_var not in template_manager.context:
                 template_manager.register_context(loop_var, context[loop_var])
                 logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
     
@@ -295,6 +305,21 @@ class HybridControlSystem(ModelBasedControlSystem):
             # Just add the action and pass through
             resolved_params = task.parameters.copy()
             resolved_params["action"] = action_text
+            
+            # Debug: Check what loop variables are in context
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"FileSystem tool context has 'item': {'item' in context}, value: {context.get('item', 'NOT FOUND')}")
+            logger.warning(f"FileSystem tool context has 'index': {'index' in context}, value: {context.get('index', 'NOT FOUND')}")
+            logger.warning(f"FileSystem tool context has 'items': {'items' in context}, value: {context.get('items', 'NOT FOUND')}")
+            if 'loop_context' in task.metadata:
+                lc = task.metadata['loop_context']
+                logger.warning(f"FileSystem tool loop_context type: {type(lc)}, keys: {list(lc.keys()) if isinstance(lc, dict) else 'NOT A DICT'}")
+                if isinstance(lc, dict) and 'item' in lc:
+                    logger.warning(f"  loop_context.item = {lc['item']}")
+            else:
+                logger.warning(f"FileSystem tool task.metadata.loop_context: NOT IN METADATA")
+            logger.warning(f"FileSystem tool task.metadata keys: {list(task.metadata.keys())}")
             
             # Pass template_manager from context if available
             if "_template_manager" in context:
