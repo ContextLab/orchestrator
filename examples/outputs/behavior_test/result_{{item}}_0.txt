@@ -1,0 +1,3 @@
+Item: {{item}}
+Index: 0
+Generated: Processing {{item}} at index 0

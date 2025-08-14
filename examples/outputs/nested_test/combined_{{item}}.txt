@@ -1,0 +1,5 @@
+Category: {{item}}
+Index: 1
+Prefix: PREFIX_{{item}}
+
+Suffix: SUFFIX_1

@@ -239,6 +239,10 @@ class LoopContextVariables:
             "item_type": type(self.item).__name__,
             "is_current_first": self.is_first,
             "is_current_last": self.is_last,
+            # NEW: Include actual item value and both formats for templates
+            "item": self.item,
+            "$item": self.item,
+            "$index": self.index,
         }
 
 
