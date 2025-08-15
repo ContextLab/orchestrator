@@ -1,3 +1,0 @@
-Message: Hello from template test
-Result: SUCCESS
-Done!

@@ -1,3 +1,0 @@
-Matrix Row: budget
-Items: A, B, C
-Result: premium: [A: active, B: active, C: active]

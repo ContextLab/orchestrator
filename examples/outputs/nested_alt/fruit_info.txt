@@ -1,2 +1,0 @@
-Category: fruit
-Items to process: I need to know the value of `$item` to execute this conditional statement. Since no value

@@ -1,3 +1,0 @@
-Number: 4
-Is Even: yes
-Result (doubled): I notice you're using template syntax that looks like it could be from a templating engine (possibly

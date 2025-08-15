@@ -1,5 +1,0 @@
-Fruit: apple
-Index: 0
-Position: 1
-Is First: True
-Is Last: False

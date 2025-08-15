@@ -1,3 +1,0 @@
-Category: veggie
-Item: carrot
-Description: Orange, crunchy, sweet, root vegetable.

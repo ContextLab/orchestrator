@@ -1,3 +1,0 @@
-Region: US
-Product: laptop
-Price: $500

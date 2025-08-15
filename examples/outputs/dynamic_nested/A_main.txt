@@ -1,2 +1,0 @@
-Main Item: A
-Sub-items to process: A1,A2

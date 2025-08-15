@@ -1,6 +1,0 @@
-Language: es
-Original: Hello world
-Translation: Hola mundo
-Validation: I'd rate this translation a **10/10**.
-
-"Hola mundo" is the

@@ -1,5 +1,0 @@
-Fruit: banana
-Index: 1
-Position: 2
-Is First: False
-Is Last: False

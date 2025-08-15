@@ -1,3 +1,0 @@
-Item: Y
-Index: 1
-Generated: PROCESSED_Y

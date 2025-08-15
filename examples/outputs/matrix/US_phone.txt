@@ -1,3 +1,0 @@
-Region: US
-Product: phone
-Price: $500

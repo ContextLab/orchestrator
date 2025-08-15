@@ -1,7 +1,0 @@
-Expected Index: 4
-Expected Item: four
-Generated Result: Item four at index 4
-
-Verification:
-- File name: item_4_four.txt
-- Should be: item four at position 4

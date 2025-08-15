@@ -1,4 +1,0 @@
-Item: A
-Index: 0
-Step1 result: I'll help you with STEP1_A
-Step2 result: I notice you're asking me to return a specific

@@ -1,4 +1,0 @@
-Category: Premium
-Item: A
-Processing: Okay, to help you with premium processing for "item A", I need to know what "item
-Status: High-priority
