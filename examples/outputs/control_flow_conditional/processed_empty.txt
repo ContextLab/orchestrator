@@ -1,0 +1,13 @@
+# Processed File
+
+Original size: 0 bytes
+Processing type: Empty file
+
+## Result
+
+```python
+def check_empty_file():
+  """Checks if the input file is empty and returns a specific message."""
+  return "The input file was empty. No content to process."
+
+# Example usage (you'd typically

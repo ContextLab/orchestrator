@@ -44,14 +44,25 @@ steps:
     dependencies:
       - check_size
     
-  # Process small files (expand)
+  # Process small files (expand) - but skip if empty
   - id: expand_small
     action: generate_text
-    condition: "{{ read_file.size <= size_threshold }}"
+    condition: "{{ read_file.size <= size_threshold and read_file.size > 0 }}"
     parameters:
       prompt: "Expand the following text with additional details and context. Return only the expanded text without any conversational language, greetings, or offers for further assistance:\n\n{{ read_file.content }}"
       model: <AUTO task="generate">Select a model for text generation</AUTO>
       max_tokens: 500
+    dependencies:
+      - check_size
+  
+  # Handle empty files
+  - id: handle_empty
+    action: generate_text
+    condition: "{{ read_file.size == 0 }}"
+    parameters:
+      prompt: "Generate a brief message indicating that the input file was empty. Return exactly: 'The input file was empty. No content to process.'"
+      model: <AUTO task="generate">Select a minimal model</AUTO>
+      max_tokens: 50
     dependencies:
       - check_size
     
@@ -65,17 +76,18 @@ steps:
         # Processed File
         
         Original size: {{ read_file.size }} bytes
-        Processing type: {% if read_file.size > size_threshold %}Compressed{% else %}Expanded{% endif %}
+        Processing type: {% if read_file.size == 0 %}Empty file{% elif read_file.size > size_threshold %}Compressed{% else %}Expanded{% endif %}
         
 
         ## Result
 
-        {{ compress_large.result | default(expand_small.result) }}
+        {% if handle_empty.status is not defined or handle_empty.status != 'skipped' %}{{ handle_empty }}{% elif compress_large.status is not defined or compress_large.status != 'skipped' %}{{ compress_large }}{% elif expand_small.status is not defined or expand_small.status != 'skipped' %}{{ expand_small }}{% else %}No content processed.{% endif %}
     dependencies:
       - compress_large
       - expand_small
+      - handle_empty
       
 outputs:
   original_size: "{{ read_file.size }}"
-  processed_content: "{{ compress_large.result | default(expand_small.result) }}"
-  output_file: "{{ save_result.filepath }}"
+  processed_content: "{% if handle_empty.status is not defined or handle_empty.status != 'skipped' %}{{ handle_empty }}{% elif compress_large.status is not defined or compress_large.status != 'skipped' %}{{ compress_large }}{% elif expand_small.status is not defined or expand_small.status != 'skipped' %}{{ expand_small }}{% else %}No content processed.{% endif %}"
+  output_file: "{{ save_result.path }}"
