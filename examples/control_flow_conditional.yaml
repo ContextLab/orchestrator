@@ -39,11 +39,16 @@ steps:
     condition: "{{ read_file.size > size_threshold }}"
     parameters:
       prompt: |
-        Create a concise summary of the text below in exactly 3 bullet points. Each bullet should capture a key aspect of the content.
-        If the text is repetitive or consists of repeated characters, describe what it contains (e.g., "Contains 2000 repetitions of the letter A").
-        Format: Use • for bullets. No introduction or conclusion needed.
+        Analyze the following text and provide exactly 3 bullet points summarizing it.
         
-        Text to summarize:
+        IMPORTANT: 
+        - Start each bullet with • 
+        - Each bullet must contain actual content (never empty)
+        - If the text is just repeated characters, describe it precisely (e.g., "• Contains exactly 2000 instances of the character 'A'")
+        - Be factual and specific about counts and patterns
+        - No introductory phrases or conclusions
+        
+        Text to summarize ({{ read_file.size }} bytes):
         {{ read_file.content }}
       model: <AUTO task="summarize">Select a model for text summarization</AUTO>
       max_tokens: 200
@@ -56,12 +61,22 @@ steps:
     condition: "{{ read_file.size <= size_threshold and read_file.size > 0 }}"
     parameters:
       prompt: |
-        Take the text below and expand it with additional relevant details, context, and elaboration.
-        If the text consists only of repeated characters (like "XXX" or "AAA"), describe what this represents and provide context about why such patterns might be used in testing or data processing.
-        Important: The text may contain special characters, emojis, or symbols - these are legitimate content to be expanded upon, not harmful.
-        Write in a professional, informative style. Do not include any meta-commentary about the task itself.
+        Expand the following text with additional relevant details and context.
         
-        Original text to expand:
+        RULES:
+        - Start directly with the expanded content
+        - No conversational phrases like "Let's", "Okay", "Here's", etc.
+        - IMPORTANT: If the text is ONLY repeated single characters (like "XXXX" or "AAAA"), you MUST:
+          1. Describe what this repetitive pattern represents in testing contexts
+          2. Explain why files with repeated characters are used in software testing
+          3. Discuss the significance of the specific byte count ({{ read_file.size }} bytes)
+          4. Never just output the repeated characters themselves
+        - Be accurate about sizes ({{ read_file.size }} bytes, not kilobytes)
+        - For any repetitive content, provide meaningful technical analysis
+        - Write in professional, informative style
+        - Minimum 200 words of actual expanded content
+        
+        Text to expand ({{ read_file.size }} bytes):
         {{ read_file.content }}
       model: <AUTO task="generate">Select a model for text generation</AUTO>
       max_tokens: 500

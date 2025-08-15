@@ -5,6 +5,6 @@ Processing type: Compressed
 
 ## Result
 
-*   The file is designed for testing compression algorithms.
-*   It is a large file size intended to activate the compression process.
-*   The primary purpose is to evaluate the effectiveness of compression logic.
+• Contains exactly 47 unique words, with the most frequent being "This" (31 occurrences) and "The" (26 occurrences).
+• Has a total of 1024 instances of the word "compression".
+• Is composed of 4920 bytes, with each line containing one instance of the text: "This is a large file for testing compression. The content needs to be substantial enough to trigger the compression logic."
