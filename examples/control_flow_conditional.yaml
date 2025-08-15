@@ -38,7 +38,13 @@ steps:
     action: generate_text
     condition: "{{ read_file.size > size_threshold }}"
     parameters:
-      prompt: "Summarize the following text in exactly 3 bullet points. Return only the bullet points without any introductory text or conversational language:\n\n{{ read_file.content }}"
+      prompt: |
+        Create a concise summary of the text below in exactly 3 bullet points. Each bullet should capture a key aspect of the content.
+        If the text is repetitive or consists of repeated characters, describe what it contains (e.g., "Contains 2000 repetitions of the letter A").
+        Format: Use • for bullets. No introduction or conclusion needed.
+        
+        Text to summarize:
+        {{ read_file.content }}
       model: <AUTO task="summarize">Select a model for text summarization</AUTO>
       max_tokens: 200
     dependencies:
@@ -49,7 +55,14 @@ steps:
     action: generate_text
     condition: "{{ read_file.size <= size_threshold and read_file.size > 0 }}"
     parameters:
-      prompt: "Expand the following text with additional details and context. Return only the expanded text without any conversational language, greetings, or offers for further assistance:\n\n{{ read_file.content }}"
+      prompt: |
+        Take the text below and expand it with additional relevant details, context, and elaboration.
+        If the text consists only of repeated characters (like "XXX" or "AAA"), describe what this represents and provide context about why such patterns might be used in testing or data processing.
+        Important: The text may contain special characters, emojis, or symbols - these are legitimate content to be expanded upon, not harmful.
+        Write in a professional, informative style. Do not include any meta-commentary about the task itself.
+        
+        Original text to expand:
+        {{ read_file.content }}
       model: <AUTO task="generate">Select a model for text generation</AUTO>
       max_tokens: 500
     dependencies:
@@ -60,7 +73,9 @@ steps:
     action: generate_text
     condition: "{{ read_file.size == 0 }}"
     parameters:
-      prompt: "Generate a brief message indicating that the input file was empty. Return exactly: 'The input file was empty. No content to process.'"
+      prompt: |
+        Output exactly the following text with no modifications, additions, or code:
+        The input file was empty. No content to process.
       model: <AUTO task="generate">Select a minimal model</AUTO>
       max_tokens: 50
     dependencies:
