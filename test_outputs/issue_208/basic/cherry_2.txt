@@ -1,0 +1,5 @@
+Fruit: cherry
+Index: 2
+Position: 3
+Is First: False
+Is Last: True

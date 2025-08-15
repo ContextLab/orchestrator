@@ -239,10 +239,23 @@ class LoopContextVariables:
             "item_type": type(self.item).__name__,
             "is_current_first": self.is_first,
             "is_current_last": self.is_last,
-            # NEW: Include actual item value and both formats for templates
+            # Include ALL loop variables for template rendering
             "item": self.item,
             "$item": self.item,
             "$index": self.index,
+            "is_first": self.is_first,
+            "$is_first": self.is_first,
+            "is_last": self.is_last,
+            "$is_last": self.is_last,
+            "position": self.position,
+            "$position": self.position,
+            "remaining": self.remaining,
+            "$remaining": self.remaining,
+            "has_next": self.has_next,
+            "$has_next": self.has_next,
+            "has_prev": self.has_prev,
+            "$has_prev": self.has_prev,
+            "$length": self.length,
         }
 
 

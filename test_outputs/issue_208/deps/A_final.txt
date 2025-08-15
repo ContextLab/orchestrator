@@ -1,0 +1,3 @@
+Original: A
+Index: 0
+Transformed: TRANSFORMED_A
