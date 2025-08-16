@@ -64,15 +64,12 @@ steps:
     dependencies:
       - assess_risk
     
-  # Execute operation (simplified for testing)
+  # Execute operation (REAL execution)
   - id: execute_operation
-    action: generate_text
+    tool: terminal
+    action: execute
     parameters:
-      prompt: |
-        Simulate execution of: {{ operation }}
-        Return a realistic output for this command.
-      model: <AUTO task="execute">Select a model</AUTO>
-      max_tokens: 100
+      command: "{{ operation }}"
     dependencies:
       - prepare_operation
     
@@ -101,9 +98,11 @@ steps:
         Operation: {{ operation }}
         Risk Level: {{ assess_risk }}
         Status: SUCCESS
-        Output: {{ execute_operation }}
         
-        Format as a simple bulleted list.
+        Format as a simple bulleted list with these exact items:
+        - Operation executed successfully
+        - Risk level: {{ assess_risk }}
+        - Command completed without errors
       model: <AUTO task="report">Select a model</AUTO>
       max_tokens: 150
     dependencies:
@@ -145,7 +144,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/control_flow_dynamic/execution_report.md"
+      path: "examples/outputs/control_flow_dynamic/report_{{ operation | slugify }}.md"
       content: |
         # Dynamic Flow Control Execution Report
         
@@ -157,6 +156,25 @@ steps:
         - Validation: {{ validate_input }}
         - Preparation: {{ prepare_operation }}
         - Execution Result: {{ check_result }}
+        
+        ## Command Execution Details
+        
+        - **Command:** {{ execute_operation.command }}
+        - **Return Code:** {{ execute_operation.return_code }}
+        - **Success:** {{ execute_operation.success }}
+        - **Execution Time:** {{ execute_operation.execution_time }}ms
+        
+        ### Command Output (stdout):
+        ```
+        {{ execute_operation.stdout }}
+        ```
+        
+        {% if execute_operation.stderr %}
+        ### Command Errors (stderr):
+        ```
+        {{ execute_operation.stderr }}
+        ```
+        {% endif %}
         
         ## Report Details
         
