@@ -1,0 +1,6 @@
+id,name,category,price,quantity,active,value
+1,Product A,Electronics,299.99,50,true,14999.50
+2,Product B,Clothing,49.99,200,true,9998.00
+3,Product C,Electronics,899.99,15,false,13499.85
+4,Product D,Books,19.99,500,true,9995.00
+5,Product E,Clothing,79.99,100,false,7999.00

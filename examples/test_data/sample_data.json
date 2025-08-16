@@ -1,0 +1,54 @@
+{
+  "records": [
+    {
+      "id": 1,
+      "name": "Product A",
+      "category": "Electronics",
+      "price": 299.99,
+      "quantity": 50,
+      "active": true,
+      "value": 14999.50
+    },
+    {
+      "id": 2,
+      "name": "Product B",
+      "category": "Clothing",
+      "price": 49.99,
+      "quantity": 200,
+      "active": true,
+      "value": 9998.00
+    },
+    {
+      "id": 3,
+      "name": "Product C",
+      "category": "Electronics",
+      "price": 899.99,
+      "quantity": 15,
+      "active": false,
+      "value": 13499.85
+    },
+    {
+      "id": 4,
+      "name": "Product D",
+      "category": "Books",
+      "price": 19.99,
+      "quantity": 500,
+      "active": true,
+      "value": 9995.00
+    },
+    {
+      "id": 5,
+      "name": "Product E",
+      "category": "Clothing",
+      "price": 79.99,
+      "quantity": 100,
+      "active": false,
+      "value": 7999.00
+    }
+  ],
+  "metadata": {
+    "total_products": 5,
+    "last_updated": "2024-01-15",
+    "currency": "USD"
+  }
+}

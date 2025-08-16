@@ -440,6 +440,14 @@ class ValidationTool(Tool):
 
         if not schema:
             return {"success": False, "error": "No schema provided for validation"}
+        
+        # Parse JSON string if needed
+        if isinstance(data, str):
+            import json
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError as e:
+                return {"success": False, "error": f"Invalid JSON data: {str(e)}", "valid": False}
 
         # Parse validation mode
         try:

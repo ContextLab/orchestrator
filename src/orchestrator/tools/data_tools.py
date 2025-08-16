@@ -163,13 +163,52 @@ class DataProcessingTool(Tool):
 
     async def _transform_data(self, data: Any, operation: Dict) -> Dict[str, Any]:
         """Transform data structure."""
+        import json
+        
+        # Parse JSON string if needed
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                pass
+        
         transformations = operation.get("transformations", [])
 
         result = data
         for transform in transformations:
             transform_type = transform.get("type", "")
 
-            if transform_type == "rename_fields":
+            if transform_type == "filter":
+                field = transform.get("field", "")
+                value = transform.get("value")
+                
+                # Handle filtering on nested data
+                if isinstance(result, dict) and "records" in result:
+                    records = result["records"]
+                    if isinstance(records, list):
+                        filtered = [r for r in records if r.get(field) == value]
+                        result = {"records": filtered}
+                elif isinstance(result, list):
+                    result = [r for r in result if r.get(field) == value]
+                    
+            elif transform_type == "aggregate":
+                agg_op = transform.get("operation", "")
+                field = transform.get("field", "")
+                
+                # Handle aggregation on nested data
+                records = result
+                if isinstance(result, dict) and "records" in result:
+                    records = result["records"]
+                    
+                if isinstance(records, list) and agg_op == "sum":
+                    total = sum(r.get(field, 0) for r in records if isinstance(r.get(field, 0), (int, float)))
+                    # Include both the filtered records and the aggregation
+                    result = {
+                        "filtered_records": records,
+                        "aggregation": {"operation": agg_op, "field": field, "result": total}
+                    }
+                    
+            elif transform_type == "rename_fields":
                 mapping = transform.get("mapping", {})
                 if isinstance(result, dict):
                     result = {mapping.get(k, k): v for k, v in result.items()}
