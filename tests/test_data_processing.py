@@ -18,7 +18,7 @@ from orchestrator.orchestrator import Orchestrator
 @pytest.fixture
 def orchestrator():
     """Create orchestrator instance."""
-    from orchestrator.models.registry import ModelRegistry
+    from orchestrator.models.model_registry import ModelRegistry
     registry = ModelRegistry()
     registry.discover_models()
     return Orchestrator()

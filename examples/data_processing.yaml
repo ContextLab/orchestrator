@@ -77,14 +77,29 @@ steps:
     dependencies:
       - validate_data
   
+  - id: format_results
+    action: generate_text
+    parameters:
+      prompt: |
+        Convert this data to clean JSON format:
+        {{ transform_data }}
+        
+        Return ONLY valid JSON without any markdown formatting, code fences, or explanations.
+        Do NOT include ```json or ``` markers.
+        Start directly with { and end with }
+      model: <AUTO task="format">Select a model for formatting</AUTO>
+      max_tokens: 500
+    dependencies:
+      - transform_data
+  
   - id: save_results
     tool: filesystem
     action: write
     parameters:
       path: "{{ output_path }}/processed_data.{{ output_format }}"
-      content: "{{ transform_data.result | to_json }}"
+      content: "{{ format_results }}"
     dependencies:
-      - transform_data
+      - format_results
       
   - id: generate_summary
     action: generate_text
