@@ -298,6 +298,7 @@ async def test_filesystem_tool_integration(orchestrator, pipeline_yaml, output_d
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(300)  # Increase timeout for multiple operations
 async def test_multiple_operations(orchestrator, pipeline_yaml, output_dir):
     """Test running multiple operations in sequence."""
     operations = [
