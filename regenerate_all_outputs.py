@@ -160,9 +160,10 @@ async def regenerate_all_outputs():
             result = await orchestrator.execute_yaml(yaml_content, context=context)
             
             # Check if output was created
-            output_file = output_dir / f"processed_{test_case['name']}"
+            output_name = test_case['name'].replace('.txt', '.md')
+            output_file = output_dir / f"processed_{output_name}"
             if output_file.exists():
-                print(f"  ✅ Output created: processed_{test_case['name']}")
+                print(f"  ✅ Output created: processed_{output_name}")
             else:
                 print(f"  ❌ Output NOT created")
                 
@@ -177,7 +178,7 @@ async def regenerate_all_outputs():
     print("=" * 80)
     
     # List all generated files
-    generated_files = sorted(output_dir.glob("processed_*.txt"))
+    generated_files = sorted(output_dir.glob("processed_*.md"))
     print(f"\nGenerated {len(generated_files)} output files:")
     for f in generated_files:
         size = f.stat().st_size

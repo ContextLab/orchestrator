@@ -101,7 +101,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/control_flow_conditional/processed_{{ input_file | basename }}"
+      path: "examples/outputs/control_flow_conditional/processed_{{ input_file | basename | replace('.txt', '') }}.md"
       content: |
         # Processed File
         
