@@ -81,9 +81,10 @@ steps:
     action: generate_text
     parameters:
       prompt: |
-        Check if this execution result indicates success or failure:
-        {{ execute_operation }}
-        Return only "success" or "failure"
+        Analyze this execution output: {{ execute_operation }}
+        
+        Return EXACTLY one word - either "success" or "failure".
+        Do not add any explanation or other text.
       model: <AUTO task="check">Select a model</AUTO>
       max_tokens: 10
     dependencies:
@@ -95,12 +96,16 @@ steps:
     condition: "{{ check_result == 'success' }}"
     parameters:
       prompt: |
-        Generate a success report:
-        - Operation: {{ operation }}
-        - Risk Level: {{ assess_risk }}
-        - Result: {{ execute_operation }}
+        Write a brief success summary. NO placeholders, NO conversational language.
+        
+        Operation: {{ operation }}
+        Risk Level: {{ assess_risk }}
+        Status: SUCCESS
+        Output: {{ execute_operation }}
+        
+        Format as a simple bulleted list.
       model: <AUTO task="report">Select a model</AUTO>
-      max_tokens: 200
+      max_tokens: 150
     dependencies:
       - check_result
     
@@ -110,12 +115,16 @@ steps:
     condition: "{{ check_result == 'failure' }}"
     parameters:
       prompt: |
-        Generate a failure report:
-        - Operation: {{ operation }}
-        - Risk Level: {{ assess_risk }}
-        - Error: Failed to execute properly
+        Write a brief failure summary. NO placeholders, NO conversational language.
+        
+        Operation: {{ operation }}
+        Risk Level: {{ assess_risk }}
+        Status: FAILED
+        Error: Execution did not complete successfully
+        
+        Format as a simple bulleted list.
       model: <AUTO task="report">Select a model</AUTO>
-      max_tokens: 200
+      max_tokens: 150
     dependencies:
       - check_result
     
@@ -124,11 +133,9 @@ steps:
     action: generate_text
     parameters:
       prompt: |
-        Cleanup after operation: {{ operation }}
-        Status: {{ check_result }}
-        Return "cleaned"
+        Return EXACTLY the word "cleaned" - nothing else.
       model: <AUTO task="cleanup">Select a model</AUTO>
-      max_tokens: 20
+      max_tokens: 10
     dependencies:
       - success_handler
       - failure_handler
