@@ -1381,7 +1381,34 @@ class Orchestrator:
                             if len(parts) >= 4:  # loop_id, iteration, original_name...
                                 original_name = parts[3]  # Everything after the iteration number
                                 self.template_manager.register_context(original_name, result)
-                                self.logger.debug(f"Registered loop task result under original name: {original_name}")
+                                self.logger.debug(f"Registered while loop task result under original name: {original_name}")
+                        
+                        # Also handle for_each loop tasks
+                        if task and task.metadata.get("is_for_each_child"):
+                            # Extract the step name from the task ID
+                            # Format: parent_loop_id_iteration_index_step_name
+                            parent_id = task.metadata.get("parent_for_each")
+                            iteration_idx = task.metadata.get("iteration_index")
+                            
+                            if parent_id is not None and iteration_idx is not None:
+                                # Remove the prefix to get the step name
+                                prefix = f"{parent_id}_{iteration_idx}_"
+                                if task_id.startswith(prefix):
+                                    step_name = task_id[len(prefix):]
+                                    # Register under the short step name for template access within the loop
+                                    self.template_manager.register_context(step_name, result)
+                                    self.logger.info(f"Registered for_each loop task result: {step_name} = {str(result)[:100]}")
+                                    
+                                    # Also register with common aliases for better template compatibility
+                                    if isinstance(result, dict) and 'result' in result:
+                                        self.template_manager.register_context(f"{step_name}_result", result['result'])
+                        
+                        # Additional registration for loop_step_id if present
+                        if task and task.metadata.get("loop_step_id"):
+                            loop_step_id = task.metadata["loop_step_id"]
+                            if loop_step_id and loop_step_id != task_id:
+                                self.template_manager.register_context(loop_step_id, result)
+                                self.logger.debug(f"Registered loop task under loop_step_id: {loop_step_id}")
 
             # Note: Skipped tasks are already handled above at line 236
             # This loop was redundant and has been removed
