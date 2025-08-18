@@ -1,0 +1,10 @@
+# Translation to es
+
+## Source Text Used
+{% if select_text %}{{ select_text }}{% else %}Artificial intelligence is transforming healthcare{% endif %}
+
+## Translated Text
+{{ translate }}
+
+## Quality Assessment
+{{ validate_translation }}

@@ -85,15 +85,29 @@ class OpenAIModel(Model):
             try:
                 langchain_openai = safe_import("langchain_openai", auto_install=True)
                 if langchain_openai:
-                    self.langchain_model = langchain_openai.ChatOpenAI(
-                        model=name,
-                        api_key=self.api_key,
-                        organization=organization,
-                        base_url=base_url,
-                        temperature=kwargs.get("temperature", 0.7),
-                        max_tokens=kwargs.get("max_tokens"),
-                        **{k: v for k, v in kwargs.items() if k not in ['temperature', 'max_tokens']}
-                    )
+                    # Prepare model kwargs based on model type
+                    model_kwargs = {
+                        "model": name,
+                        "api_key": self.api_key,
+                        "organization": organization,
+                        "base_url": base_url,
+                        "temperature": kwargs.get("temperature", 0.7),
+                    }
+                    
+                    # Handle max_tokens vs max_completion_tokens for GPT-5
+                    max_tokens_value = kwargs.get("max_tokens")
+                    if max_tokens_value:
+                        if "gpt-5" in name.lower():
+                            model_kwargs["max_completion_tokens"] = max_tokens_value
+                        else:
+                            model_kwargs["max_tokens"] = max_tokens_value
+                    
+                    # Add remaining kwargs
+                    for k, v in kwargs.items():
+                        if k not in ['temperature', 'max_tokens', 'max_completion_tokens']:
+                            model_kwargs[k] = v
+                    
+                    self.langchain_model = langchain_openai.ChatOpenAI(**model_kwargs)
                     self._use_langchain = True
                     logger.info(f"Using LangChain backend for OpenAI model: {name}")
                 else:
@@ -101,13 +115,15 @@ class OpenAIModel(Model):
             except Exception as e:
                 logger.warning(f"Failed to initialize LangChain OpenAI model: {e}, falling back to direct OpenAI")
 
-        # Fallback: Initialize direct OpenAI client
+        # Always initialize direct OpenAI client for image generation
+        # (even if using LangChain for text)
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            organization=organization,
+            base_url=base_url,
+        )
+        
         if not self._use_langchain:
-            self.client = AsyncOpenAI(
-                api_key=self.api_key,
-                organization=organization,
-                base_url=base_url,
-            )
             logger.info(f"Using direct OpenAI client for model: {name}")
 
         # Set model-specific attributes (preserve existing functionality)
@@ -147,24 +163,53 @@ class OpenAIModel(Model):
     def _get_default_capabilities(self, name: str) -> ModelCapabilities:
         """Get default capabilities based on model name."""
         name_lower = name.lower()
+        
+        # DALL-E models for image generation
+        if "dall-e" in name_lower:
+            return ModelCapabilities(
+                supported_tasks=[
+                    "image-generation",
+                    "generate-image",
+                    "create-image"
+                ],
+                context_window=4000,  # Prompt length limit
+                supports_function_calling=False,
+                supports_structured_output=False,
+                supports_streaming=False,
+                languages=["en"],  # DALL-E works best with English
+                max_tokens=4000,  # Prompt token limit
+                temperature_range=(0.0, 1.0),
+                domains=["visual", "creative", "artistic"],
+                vision_capable=False,  # Generates images, doesn't analyze them
+                code_specialized=False,
+                supports_tools=False
+            )
 
         # GPT-4 models
         if "gpt-4" in name_lower:
             context_window = 128000 if "turbo" in name_lower else 8192
             if "32k" in name_lower:
                 context_window = 32768
+            
+            # Check if it's a vision model
+            is_vision = "vision" in name_lower or "gpt-4-turbo" in name_lower or "gpt-4o" in name_lower
+            
+            tasks = [
+                "generate",
+                "analyze",
+                "transform",
+                "code",
+                "reasoning",
+                "creative",
+                "chat",
+                "instruct",
+            ]
+            
+            if is_vision:
+                tasks.extend(["vision", "image-analysis", "visual-reasoning"])
 
             return ModelCapabilities(
-                supported_tasks=[
-                    "generate",
-                    "analyze",
-                    "transform",
-                    "code",
-                    "reasoning",
-                    "creative",
-                    "chat",
-                    "instruct",
-                ],
+                supported_tasks=tasks,
                 context_window=context_window,
                 supports_function_calling=True,
                 supports_structured_output=True,
@@ -172,8 +217,8 @@ class OpenAIModel(Model):
                 languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
                 max_tokens=4096,
                 temperature_range=(0.0, 2.0),
-                domains=["general", "technical", "creative", "business"],
-                vision_capable="vision" in name_lower or "gpt-4-turbo" in name_lower,
+                domains=["general", "technical", "creative", "business", "visual"] if is_vision else ["general", "technical", "creative", "business"],
+                vision_capable=is_vision,
                 code_specialized=True,
                 supports_tools=True,
                 supports_json_mode=True,
@@ -392,6 +437,60 @@ class OpenAIModel(Model):
         except Exception as e:
             # Log error and raise
             raise RuntimeError(f"OpenAI generation failed: {str(e)}")
+    
+    async def generate_image(
+        self,
+        prompt: str,
+        size: str = "1024x1024",
+        quality: str = "standard",
+        style: str = "vivid",
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """
+        Generate image using DALL-E 3.
+        
+        Args:
+            prompt: Text description of the image to generate
+            size: Image size (1024x1024, 1792x1024, or 1024x1792)
+            quality: Image quality (standard or hd)
+            style: Style (vivid or natural)
+            **kwargs: Additional parameters
+            
+        Returns:
+            Dictionary with image URL and metadata
+        """
+        # Check if this model supports image generation
+        if "dall-e" not in self._model_id.lower():
+            raise ValueError(f"Model {self._model_id} doesn't support image generation. Use dall-e-3 or dall-e-2.")
+        
+        try:
+            # Make API call to DALL-E
+            response = await self.client.images.generate(
+                model=self._model_id,
+                prompt=prompt,
+                size=size,
+                quality=quality,
+                style=style,
+                n=1  # DALL-E 3 only supports n=1
+            )
+            
+            # Extract image data
+            if response.data and len(response.data) > 0:
+                image_data = response.data[0]
+                return {
+                    "url": image_data.url,
+                    "revised_prompt": getattr(image_data, 'revised_prompt', prompt),
+                    "size": size,
+                    "quality": quality,
+                    "style": style,
+                    "data": [{"url": image_data.url}]  # For compatibility
+                }
+            
+            raise RuntimeError("No image data in response")
+            
+        except Exception as e:
+            logger.error(f"Image generation failed: {str(e)}")
+            raise RuntimeError(f"DALL-E generation failed: {str(e)}")
 
     async def generate_structured(
         self,

@@ -39,7 +39,7 @@ steps:
       prompt: |
         Based on this text analysis, determine if the text quality is below {{ quality_threshold }} (out of 1.0) and needs improvement:
         
-        Analysis: {{ analyze_text.result }}
+        Analysis: {{ analyze_text }}
         
         Respond with either "improve" or "acceptable" based on the quality assessment.
       model: <AUTO task="analyze">Select a model for quality assessment</AUTO>
@@ -50,11 +50,11 @@ steps:
   # Conditional enhancement
   - id: enhance_text
     action: generate_text
-    if: "{{ 'improve' in check_quality.result }}"
+    if: "{{ 'improve' in check_quality }}"
     parameters:
       prompt: |
         Improve the following text based on this analysis:
-        Analysis: {{ analyze_text.result }}
+        Analysis: {{ analyze_text }}
         
         Text: {{ input_text }}
       model: <AUTO task="generate">Select a model for text improvement</AUTO>
@@ -67,7 +67,7 @@ steps:
     action: generate_text
     parameters:
       prompt: |
-        {% if check_quality.result and 'improve' in check_quality.result and enhance_text %}
+        {% if check_quality and 'improve' in check_quality and enhance_text %}
         Return the enhanced text exactly as is:
         {{ enhance_text }}
         {% else %}

@@ -72,18 +72,21 @@ class ImageAnalysisTool(Tool):
             "detail_level",
             "string",
             "Level of detail: low, medium, high",
+            required=False,
             default="medium",
         )
         self.add_parameter(
             "output_format",
             "string",
             "Output format: json, text, structured",
+            required=False,
             default="json",
         )
         self.add_parameter(
             "confidence_threshold",
             "number",
             "Minimum confidence for detections",
+            required=False,
             default=0.5,
         )
 
@@ -341,6 +344,7 @@ class ImageGenerationTool(Tool):
             "size",
             "string",
             "Image size: 256x256, 512x512, 1024x1024",
+            required=False,
             default="512x512",
         )
         self.add_parameter("style", "string", "Art style or aesthetic", required=False)
@@ -348,19 +352,28 @@ class ImageGenerationTool(Tool):
             "negative_prompt", "string", "What to avoid in the image", required=False
         )
         self.add_parameter(
-            "num_images", "integer", "Number of images to generate", default=1
+            "num_images", "integer", "Number of images to generate", required=False, default=1
         )
         self.add_parameter(
             "output_format",
             "string",
             "Output format: url, base64, file",
+            required=False,
             default="file",
         )
         self.add_parameter(
             "output_path",
             "string",
             "Directory to save images",
+            required=False,
             default="generated_images",
+        )
+        self.add_parameter(
+            "filename",
+            "string",
+            "Custom filename for the image (optional)",
+            required=False,
+            default=None,
         )
 
         self.logger = logging.getLogger(__name__)
@@ -457,14 +470,17 @@ class ImageGenerationTool(Tool):
 
         return images
 
-    def _save_image(self, image_data: str, output_path: str, index: int) -> str:
+    def _save_image(self, image_data: str, output_path: str, index: int, custom_filename: Optional[str] = None) -> str:
         """Save image data to file."""
         # Create output directory
         os.makedirs(output_path, exist_ok=True)
 
-        # Generate filename
-        timestamp = int(time.time())
-        filename = f"generated_{timestamp}_{index}.png"
+        # Use custom filename if provided, otherwise generate one
+        if custom_filename:
+            filename = custom_filename
+        else:
+            timestamp = int(time.time())
+            filename = f"generated_{timestamp}_{index}.png"
         filepath = os.path.join(output_path, filename)
 
         # Decode and save
@@ -495,6 +511,7 @@ class ImageGenerationTool(Tool):
         num_images = kwargs.get("num_images", 1)
         output_format = kwargs.get("output_format", "file")
         output_path = kwargs.get("output_path", "generated_images")
+        custom_filename = kwargs.get("filename")
 
         # Validate size
         valid_sizes = ["256x256", "512x512", "1024x1024", "1024x1792", "1792x1024"]
@@ -522,7 +539,16 @@ class ImageGenerationTool(Tool):
 
             for i, img_data in enumerate(generated_images):
                 if output_format == "file":
-                    filepath = self._save_image(img_data, output_path, i)
+                    # Use custom filename for single image, or append index for multiple
+                    if custom_filename and num_images == 1:
+                        filepath = self._save_image(img_data, output_path, i, custom_filename)
+                    elif custom_filename:
+                        # For multiple images, insert index before extension
+                        base, ext = os.path.splitext(custom_filename)
+                        indexed_filename = f"{base}_{i}{ext}"
+                        filepath = self._save_image(img_data, output_path, i, indexed_filename)
+                    else:
+                        filepath = self._save_image(img_data, output_path, i)
                     output_images.append({"path": filepath, "format": "file"})
                 elif output_format == "base64":
                     if not img_data.startswith("data:"):

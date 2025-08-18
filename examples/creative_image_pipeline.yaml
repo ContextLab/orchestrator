@@ -15,48 +15,90 @@ parameters:
   art_styles:
     type: array
     default: ["photorealistic", "impressionist", "cyberpunk"]
+  output_path:
+    type: string
+    default: "examples/outputs/creative_image_pipeline"
 
 steps:
-  - id: generate_base_image
-    tool: image-generation
-    action: execute
+  - id: generate_folder_name
+    action: generate
     parameters:
-      prompt: "{{ parameters.base_prompt }}"
+      prompt: |
+        Convert this image prompt into a short, descriptive folder name (no spaces, use underscores):
+        "{{ base_prompt }}"
+        
+        Return ONLY the folder name, max 30 characters, lowercase.
+        Example: "sunset_over_mountains"
+      topic: AUTO
+    
+  - id: generate_base_image
+    action: execute
+    tool: image-generation
+    parameters:
+      prompt: "{{ base_prompt }}"
       size: "1024x1024"
       style: "high quality, detailed"
       output_format: "file"
-      output_path: "examples/outputs/creative_image_pipeline/base"
+      output_path: "{{ output_path }}/{{ generate_folder_name }}"
+      filename: "base.png"
+    dependencies:
+      - generate_folder_name
     
   - id: analyze_base
-    tool: image-analysis
     action: execute
+    tool: image-analysis
     parameters:
       image: "{{ generate_base_image.images[0].path }}"
       analysis_type: "describe"
       detail_level: "high"
+      output_format: "json"
     dependencies:
       - generate_base_image
     
-  - id: generate_style_variations
-    tool: image-generation
+  - id: generate_style_variation_1
     action: execute
+    tool: image-generation
     parameters:
-      prompt: "{{ parameters.base_prompt }}, {{ item }} style"
-      size: "512x512"
-      style: "{{ item }}"
+      prompt: "{{ base_prompt }}, {{ art_styles[0] }} style"
+      size: "1024x1024"
+      style: "{{ art_styles[0] }}"
       output_format: "file"
-      output_path: "examples/outputs/creative_image_pipeline/{{ item | replace(' ', '_') }}"
-    for_each:
-      items: "{{ parameters.art_styles }}"
-      as: item
+      output_path: "{{ output_path }}/{{ generate_folder_name }}"
+      filename: "{{ art_styles[0] }}.png"
+    dependencies:
+      - analyze_base
+      
+  - id: generate_style_variation_2
+    action: execute
+    tool: image-generation
+    parameters:
+      prompt: "{{ base_prompt }}, {{ art_styles[1] }} style"
+      size: "1024x1024"
+      style: "{{ art_styles[1] }}"
+      output_format: "file"
+      output_path: "{{ output_path }}/{{ generate_folder_name }}"
+      filename: "{{ art_styles[1] }}.png"
+    dependencies:
+      - analyze_base
+      
+  - id: generate_style_variation_3
+    action: execute
+    tool: image-generation
+    parameters:
+      prompt: "{{ base_prompt }}, {{ art_styles[2] }} style"
+      size: "1024x1024"
+      style: "{{ art_styles[2] }}"
+      output_format: "file"
+      output_path: "{{ output_path }}/{{ generate_folder_name }}"
+      filename: "{{ art_styles[2] }}.png"
     dependencies:
       - analyze_base
     
   - id: enhance_prompt
-    tool: prompt-optimization
     action: execute
+    tool: prompt-optimization
     parameters:
-      prompt: "{{ parameters.base_prompt }}"
+      prompt: "{{ base_prompt }}"
       task: "image-generation"
       optimization_goal: "artistic_quality"
       include_style_suggestions: true
@@ -64,83 +106,95 @@ steps:
       - analyze_base
     
   - id: generate_enhanced
-    tool: image-generation
     action: execute
+    tool: image-generation
     parameters:
       prompt: "{{ enhance_prompt.optimized_prompt }}"
       size: "1024x1024"
-      num_images: "{{ parameters.num_variations }}"
+      num_images: 1
       output_format: "file"
-      output_path: "examples/outputs/creative_image_pipeline/enhanced"
+      output_path: "{{ output_path }}/{{ generate_folder_name }}"
+      filename: "enhanced.png"
     dependencies:
       - enhance_prompt
     
-  - id: analyze_all_variations
-    tool: image-analysis
+  - id: analyze_enhanced_1
     action: execute
+    tool: image-analysis
     parameters:
-      image: "{{ item.path }}"
+      image: "{{ generate_enhanced.images[0].path }}"
       analysis_type: "classify"
       output_format: "structured"
-    for_each:
-      items: "{{ generate_enhanced.images }}"
-      as: item
+      detail_level: "medium"
     dependencies:
       - generate_enhanced
+    condition: "{{ generate_enhanced.images | length > 0 }}"
     
+  - id: count_images
+    action: execute
+    tool: filesystem
+    parameters:
+      action: list
+      path: "{{ output_path }}/{{ generate_folder_name }}"
+      pattern: "*.png"
+    dependencies:
+      - generate_enhanced
+      - analyze_enhanced_1
+      
   - id: create_gallery_report
-    tool: report-generator
     action: generate
     parameters:
-      title: "AI Art Generation Gallery"
-      content: |
+      prompt: |
+        Generate ONLY the following markdown content without any code blocks, explanations, or additional text:
+        
         # Creative Image Generation Results
         
         ## Original Prompt
-        "{{ parameters.base_prompt }}"
+        "{{ base_prompt }}"
+        
+        ## Output Folder
+        `{{ output_path }}/{{ generate_folder_name }}/`
         
         ## Base Image Analysis
         {{ analyze_base.analysis.result }}
         
         ## Style Variations Generated
-        {% for style in parameters.art_styles %}
+        {% for style in art_styles %}
         - {{ style }} style
         {% endfor %}
         
         ## Enhanced Prompt
-        Original: "{{ parameters.base_prompt }}"
-        Enhanced: "{{ enhance_prompt.optimized_prompt }}"
+        - Original: "{{ base_prompt }}"
+        - Enhanced: "{{ enhance_prompt.optimized_prompt }}"
         
-        Optimization suggestions:
-        {{ enhance_prompt.suggestions | json }}
+        ## Generated Images
         
-        ## Generated Variations Analysis
-        {% for analysis in analyze_all_variations %}
-        ### Variation {{ loop.index }}
-        {{ analysis.analysis | json }}
+        | Image | Description |
+        |-------|-------------|
+        | ![Base](base.png) | Original prompt rendering |
+        {% for style in art_styles %}
+        | ![{{ style|capitalize }}]({{ style }}.png) | {{ style|capitalize }} style variation |
         {% endfor %}
+        | ![Enhanced](enhanced.png) | AI-enhanced prompt rendering |
         
-        ## File Locations
-        - Base image: {{ generate_base_image.images[0].path }}
-        - Style variations: examples/outputs/creative_image_pipeline/[style_name]/
-        - Enhanced variations: examples/outputs/creative_image_pipeline/enhanced/
-        
-        Total images generated: {{ 1 + parameters.art_styles | length + parameters.num_variations }}
+        **Total images generated:** {{ count_images.count }}
+      topic: AUTO
     dependencies:
-      - analyze_all_variations
-      - generate_style_variations
+      - count_images
       
   - id: save_gallery_report
+    action: execute
     tool: filesystem
-    action: write
     parameters:
-      path: "examples/outputs/creative_image_pipeline/gallery_report.md"
-      content: "{{ create_gallery_report.content }}"
+      action: write
+      path: "{{ output_path }}/{{ generate_folder_name }}/README.md"
+      content: "{{ create_gallery_report }}"
     dependencies:
       - create_gallery_report
 
 outputs:
+  output_folder: "{{ output_path }}/{{ generate_folder_name }}"
   base_image: "{{ generate_base_image.images[0] }}"
   enhanced_prompt: "{{ enhance_prompt.optimized_prompt }}"
-  total_generated: "{{ 1 + parameters.art_styles | length + parameters.num_variations }}"
-  gallery_report: "{{ create_gallery_report.report }}"
+  total_generated: "{{ count_images.count }}"
+  gallery_report: "{{ output_path }}/{{ generate_folder_name }}/README.md"

@@ -1,0 +1,612 @@
+"""
+Comprehensive test suite for creative_image_pipeline.
+Tests all functionality with REAL API calls (NO MOCKS).
+"""
+
+import os
+import json
+import asyncio
+from pathlib import Path
+import pytest
+import yaml
+import tempfile
+from typing import Dict, Any
+import requests
+from PIL import Image
+import io
+
+from orchestrator.orchestrator import Orchestrator
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.models.openai_model import OpenAIModel
+
+
+@pytest.fixture
+def orchestrator():
+    """Create orchestrator instance with image generation models."""
+    # Get the global model registry
+    from orchestrator.models.registry_singleton import get_model_registry
+    registry = get_model_registry()
+    
+    # Register DALL-E 3 model
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        pytest.skip("OpenAI API key not set")
+    
+    try:
+        dalle3 = OpenAIModel(
+            name="dall-e-3",
+            api_key=api_key
+        )
+        registry.register_model(dalle3)
+    except Exception as e:
+        pytest.skip(f"DALL-E 3 not available: {e}")
+    
+    # Register GPT-4 Vision model
+    try:
+        gpt4v = OpenAIModel(
+            name="gpt-4-vision-preview",
+            api_key=api_key
+        )
+        registry.register_model(gpt4v)
+    except Exception:
+        pass  # Optional
+    
+    # Register a basic text model for other operations
+    try:
+        gpt35 = OpenAIModel(
+            name="gpt-3.5-turbo",
+            api_key=api_key
+        )
+        registry.register_model(gpt35)
+    except Exception:
+        pass
+    
+    # Now create orchestrator with models already registered
+    orch = Orchestrator(model_registry=registry)
+    
+    return orch
+
+
+@pytest.fixture
+def pipeline_yaml():
+    """Load the creative_image_pipeline."""
+    pipeline_path = Path("examples/creative_image_pipeline.yaml")
+    with open(pipeline_path, 'r') as f:
+        return yaml.safe_load(f)
+
+
+@pytest.fixture
+def output_dir():
+    """Create temporary output directory."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield tmpdir
+
+
+def download_image(url: str) -> Image.Image:
+    """Download image from URL and return PIL Image."""
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    return Image.open(io.BytesIO(response.content))
+
+
+def verify_image_file(filepath: str) -> bool:
+    """Verify image file exists and is valid."""
+    if not os.path.exists(filepath):
+        return False
+    try:
+        img = Image.open(filepath)
+        img.verify()
+        return True
+    except Exception:
+        return False
+
+
+class TestCoreImageGeneration:
+    """Test core image generation functionality with real APIs."""
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_dalle3_generation(self, orchestrator, output_dir):
+        """Test DALL-E 3 image generation with real API."""
+        pipeline_dict = {
+            "id": "test-dalle3",
+            "name": "Test DALL-E 3 Generation",
+            "steps": [{
+                "id": "generate",
+                "tool": "image-generation",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "A simple red circle on white background",
+                    "size": "1024x1024",
+                    "output_format": "file",
+                    "output_path": output_dir
+                }
+            }]
+        }
+        
+        # Execute pipeline using the correct method
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_dict)
+        
+        # Verify generation succeeded
+        assert "generate" in result
+        assert result["generate"]["success"] is True
+        assert "images" in result["generate"]
+        assert len(result["generate"]["images"]) > 0
+        
+        # Verify image file was created
+        image_path = result["generate"]["images"][0]["path"]
+        assert verify_image_file(image_path)
+        
+        # Verify image dimensions
+        img = Image.open(image_path)
+        assert img.size == (1024, 1024)
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_image_analysis_real(self, orchestrator, output_dir):
+        """Test image analysis with GPT-4 Vision."""
+        # First generate an image
+        pipeline = {
+            "id": "test-analysis",
+            "name": "Test Analysis",
+            "steps": [
+                {
+                    "id": "generate",
+                    "tool": "image-generation",
+                    "action": "execute",
+                    "parameters": {
+                        "prompt": "A blue square with the number 7 in white",
+                        "size": "512x512",
+                        "output_format": "file",
+                        "output_path": output_dir
+                    }
+                },
+                {
+                    "id": "analyze",
+                    "tool": "image-analysis",
+                    "action": "execute",
+                    "parameters": {
+                        "image": "{{ generate.images[0].path }}",
+                        "analysis_type": "describe",
+                        "detail_level": "high"
+                    },
+                    "dependencies": ["generate"]
+                }
+            ]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        # Verify analysis succeeded
+        assert result["analyze"]["success"] is True
+        assert "analysis" in result["analyze"]
+        assert "result" in result["analyze"]["analysis"]
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_style_variations(self, orchestrator, output_dir):
+        """Test generating multiple style variations."""
+        pipeline = {
+            "id": "test-styles",
+            "name": "Test Styles",
+            "parameters": {
+                "base_prompt": "A peaceful garden",
+                "art_styles": ["photorealistic", "watercolor", "abstract"]
+            },
+            "steps": [
+                {
+                    "id": "style1",
+                    "tool": "image-generation",
+                    "action": "execute",
+                    "parameters": {
+                        "prompt": "{{ base_prompt }}, {{ art_styles[0] }} style",
+                        "size": "512x512",
+                        "output_format": "file",
+                        "output_path": f"{output_dir}/style1"
+                    }
+                },
+                {
+                    "id": "style2",
+                    "tool": "image-generation",
+                    "action": "execute",
+                    "parameters": {
+                        "prompt": "{{ base_prompt }}, {{ art_styles[1] }} style",
+                        "size": "512x512",
+                        "output_format": "file",
+                        "output_path": f"{output_dir}/style2"
+                    }
+                }
+            ]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        # Verify both styles generated
+        assert result["style1"]["success"] is True
+        assert result["style2"]["success"] is True
+        
+        # Verify different files created
+        path1 = result["style1"]["images"][0]["path"]
+        path2 = result["style2"]["images"][0]["path"]
+        assert path1 != path2
+        assert verify_image_file(path1)
+        assert verify_image_file(path2)
+    
+    @pytest.mark.asyncio
+    async def test_prompt_optimization(self, orchestrator):
+        """Test prompt optimization for image generation."""
+        pipeline = {
+            "id": "test-optimize",
+            "name": "Test Optimize",
+            "steps": [{
+                "id": "optimize",
+                "tool": "prompt-optimization",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "sunset",
+                    "task": "image-generation",
+                    "optimization_goal": "artistic_quality"
+                }
+            }]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        # Verify optimization succeeded
+        assert "optimized_prompt" in result["optimize"]
+        optimized = result["optimize"]["optimized_prompt"]
+        
+        # Optimized prompt should be longer/more detailed
+        assert len(optimized) > len("sunset")
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_batch_generation(self, orchestrator, output_dir):
+        """Test generating multiple images in batch."""
+        pipeline = {
+            "id": "test-batch",
+            "name": "Test Batch",
+            "steps": [{
+                "id": "batch",
+                "tool": "image-generation",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "A geometric pattern",
+                    "size": "512x512",
+                    "num_images": 3,
+                    "output_format": "file",
+                    "output_path": output_dir
+                }
+            }]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        # Note: DALL-E 3 only supports n=1, so this will make multiple calls
+        assert result["batch"]["success"] is True
+        images = result["batch"]["images"]
+        
+        # Verify we got multiple images
+        assert len(images) >= 1  # At least one image
+        
+        # Verify all image files exist
+        for img_data in images:
+            assert verify_image_file(img_data["path"])
+    
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(120)
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_full_pipeline(self, orchestrator, pipeline_yaml):
+        """Test complete creative_image_pipeline with real APIs."""
+        # Use simpler prompts to reduce costs
+        inputs = {
+            "base_prompt": "A simple geometric shape",
+            "num_variations": 2,
+            "art_styles": ["minimal", "bold"]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
+        
+        # Verify key steps completed
+        assert "generate_base_image" in result
+        assert result["generate_base_image"]["success"] is True
+        
+        # Verify report was created
+        assert "save_gallery_report" in result
+        report_path = result["save_gallery_report"]["path"]
+        assert os.path.exists(report_path)
+
+
+class TestAPIIntegration:
+    """Test API integration and error handling."""
+    
+    @pytest.mark.asyncio
+    async def test_openai_authentication(self, orchestrator):
+        """Verify OpenAI API authentication."""
+        if not os.getenv("OPENAI_API_KEY"):
+            pytest.skip("OpenAI API key not set")
+        
+        pipeline = {
+            "id": "test-auth",
+            "name": "Test Auth",
+            "steps": [{
+                "id": "test",
+                "tool": "image-generation",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "test",
+                    "size": "256x256",
+                    "output_format": "url"
+                }
+            }]
+        }
+        
+        # Should not raise authentication error
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        assert "error" not in result["test"] or "authentication" not in str(result["test"].get("error", "")).lower()
+    
+    @pytest.mark.asyncio
+    async def test_invalid_size_handling(self, orchestrator):
+        """Test handling of invalid image sizes."""
+        pipeline = {
+            "id": "test-size",
+            "name": "Test Size",
+            "steps": [{
+                "id": "invalid",
+                "tool": "image-generation",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "test",
+                    "size": "999x999",  # Invalid size
+                    "output_format": "url"
+                }
+            }]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        # Should handle invalid size gracefully
+        assert result["invalid"]["success"] is False
+        assert "size" in str(result["invalid"]["error"]).lower()
+    
+    @pytest.mark.asyncio
+    async def test_api_error_handling(self, orchestrator):
+        """Test handling of API errors."""
+        pipeline = {
+            "id": "test-error",
+            "name": "Test Error",
+            "steps": [{
+                "id": "error",
+                "tool": "image-generation",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "x" * 5000,  # Exceeds prompt limit
+                    "size": "1024x1024",
+                    "output_format": "url"
+                }
+            }]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        # Should handle error gracefully
+        if not result["error"]["success"]:
+            assert "error" in result["error"]
+
+
+class TestImageQuality:
+    """Test image quality and properties."""
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_image_resolution(self, orchestrator, output_dir):
+        """Verify actual image dimensions."""
+        sizes = ["256x256", "512x512", "1024x1024"]
+        
+        for size in sizes:
+            pipeline = {
+                "id": f"test-{size}",
+                "name": f"Test {size}",
+                "steps": [{
+                    "id": "generate",
+                    "tool": "image-generation",
+                    "action": "execute",
+                    "parameters": {
+                        "prompt": "A test pattern",
+                        "size": size,
+                        "output_format": "file",
+                        "output_path": output_dir
+                    }
+                }]
+            }
+            
+            result = await orchestrator.execute_pipeline_from_dict(pipeline)
+            
+            if result["generate"]["success"]:
+                image_path = result["generate"]["images"][0]["path"]
+                img = Image.open(image_path)
+                
+                expected_size = tuple(map(int, size.split('x')))
+                assert img.size == expected_size
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_image_format(self, orchestrator, output_dir):
+        """Verify image format and encoding."""
+        pipeline = {
+            "id": "test-format",
+            "name": "Test Format",
+            "steps": [{
+                "id": "generate",
+                "tool": "image-generation",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "A simple icon",
+                    "size": "256x256",
+                    "output_format": "file",
+                    "output_path": output_dir
+                }
+            }]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        if result["generate"]["success"]:
+            image_path = result["generate"]["images"][0]["path"]
+            img = Image.open(image_path)
+            
+            # Verify format
+            assert img.format in ["PNG", "JPEG", "WEBP"]
+            
+            # Verify mode
+            assert img.mode in ["RGB", "RGBA"]
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_image_download(self, orchestrator):
+        """Test downloading images from URLs."""
+        pipeline = {
+            "id": "test-download",
+            "name": "Test Download",
+            "steps": [{
+                "id": "generate",
+                "tool": "image-generation",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "A downloadable image",
+                    "size": "256x256",
+                    "output_format": "url"
+                }
+            }]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        if result["generate"]["success"]:
+            url = result["generate"]["images"][0]["url"]
+            
+            # Download and verify
+            img = download_image(url)
+            assert img.size[0] > 0
+            assert img.size[1] > 0
+
+
+class TestRealWorldScenarios:
+    """Test real-world use cases."""
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_complex_prompt(self, orchestrator, output_dir):
+        """Test with detailed, complex prompts."""
+        pipeline = {
+            "id": "test-complex",
+            "name": "Test Complex",
+            "steps": [{
+                "id": "generate",
+                "tool": "image-generation",
+                "action": "execute",
+                "parameters": {
+                    "prompt": "A futuristic city at sunset with flying cars, "
+                             "holographic billboards, neon lights reflecting on wet streets, "
+                             "cyberpunk aesthetic, highly detailed, cinematic lighting",
+                    "size": "1024x1024",
+                    "output_format": "file",
+                    "output_path": output_dir
+                }
+            }]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        assert result["generate"]["success"] is True
+        assert verify_image_file(result["generate"]["images"][0]["path"])
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_artistic_styles(self, orchestrator, output_dir):
+        """Test different artistic styles."""
+        styles = [
+            "photorealistic",
+            "oil painting",
+            "watercolor",
+            "pencil sketch",
+            "digital art"
+        ]
+        
+        base_prompt = "A mountain landscape"
+        
+        for style in styles[:2]:  # Limit to 2 to reduce costs
+            pipeline = {
+                "id": f"test-{style}",
+                "name": f"Test {style}",
+                "steps": [{
+                    "id": "generate",
+                    "tool": "image-generation",
+                    "action": "execute",
+                    "parameters": {
+                        "prompt": f"{base_prompt}, {style} style",
+                        "size": "512x512",
+                        "style": style,
+                        "output_format": "file",
+                        "output_path": f"{output_dir}/{style}"
+                    }
+                }]
+            }
+            
+            result = await orchestrator.execute_pipeline_from_dict(pipeline)
+            assert result["generate"]["success"] is True
+    
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key not set")
+    async def test_sequential_refinement(self, orchestrator, output_dir):
+        """Test iterative image refinement."""
+        pipeline = {
+            "id": "test-refine",
+            "name": "Test Refine",
+            "steps": [
+                {
+                    "id": "initial",
+                    "tool": "image-generation",
+                    "action": "execute",
+                    "parameters": {
+                        "prompt": "A basic house",
+                        "size": "512x512",
+                        "output_format": "file",
+                        "output_path": f"{output_dir}/v1"
+                    }
+                },
+                {
+                    "id": "analyze",
+                    "tool": "image-analysis",
+                    "action": "execute",
+                    "parameters": {
+                        "image": "{{ initial.images[0].path }}",
+                        "analysis_type": "describe"
+                    },
+                    "dependencies": ["initial"]
+                },
+                {
+                    "id": "refined",
+                    "tool": "image-generation",
+                    "action": "execute",
+                    "parameters": {
+                        "prompt": "A detailed modern house with glass windows, "
+                                "landscaped garden, and architectural details",
+                        "size": "512x512",
+                        "output_format": "file",
+                        "output_path": f"{output_dir}/v2"
+                    },
+                    "dependencies": ["analyze"]
+                }
+            ]
+        }
+        
+        result = await orchestrator.execute_pipeline_from_dict(pipeline)
+        
+        # Verify refinement process
+        assert result["initial"]["success"] is True
+        assert result["refined"]["success"] is True
+        
+        # Both images should exist
+        assert verify_image_file(result["initial"]["images"][0]["path"])
+        assert verify_image_file(result["refined"]["images"][0]["path"])

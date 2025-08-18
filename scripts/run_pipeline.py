@@ -72,6 +72,15 @@ async def run_pipeline(yaml_file: str, inputs: dict = None, output_dir: str = No
     print("Initializing models...")
     model_registry = init_models()
     
+    # Register DALL-E 3 model for image generation
+    try:
+        from orchestrator.models.openai_model import OpenAIModel
+        dalle3 = OpenAIModel(name='dall-e-3')
+        model_registry.register_model(dalle3)
+        print("  ✅ Registered OpenAI model: dall-e-3 (image generation)")
+    except Exception as e:
+        print(f"  ⚠️  Could not register DALL-E 3: {e}")
+    
     # Initialize orchestrator with models
     orchestrator = Orchestrator(model_registry=model_registry)
     

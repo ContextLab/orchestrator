@@ -1169,11 +1169,13 @@ class Orchestrator:
                 # If this is a ForEachTask child with loop_context, add loop variables to task_context
                 if task.metadata.get("is_for_each_child") and "loop_context" in task.metadata:
                     loop_ctx = task.metadata["loop_context"]
-                    # Add essential loop variables to the execution context
-                    for key in ["item", "index", "is_first", "is_last", "$item", "$index"]:
-                        if key in loop_ctx and key not in task_context:
-                            task_context[key] = loop_ctx[key]
-                            self.logger.info(f"Added ForEachTask loop variable '{key}' = {loop_ctx[key]} to execution context")
+                    # Add ALL loop context variables to the execution context
+                    # This ensures step results from outside the loop are available
+                    for key, value in loop_ctx.items():
+                        if key not in task_context and not key.startswith("_"):
+                            task_context[key] = value
+                            if key in ["item", "index", "$item", "$index"]:
+                                self.logger.info(f"Added ForEachTask loop variable '{key}' = {value} to execution context")
                 
                 # Add loop context mapping for for_each loops
                 # Check for both old and new metadata formats

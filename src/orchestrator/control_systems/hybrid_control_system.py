@@ -15,6 +15,7 @@ from ..tools.validation import ValidationTool
 from ..tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from ..tools.report_tools import ReportGeneratorTool, PDFCompilerTool
 from ..tools.checkpoint_tool import CheckpointTool
+from ..tools.multimodal_tools import ImageGenerationTool, ImageAnalysisTool
 from ..compiler.template_renderer import TemplateRenderer
 
 
@@ -73,6 +74,8 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.report_generator_tool = ReportGeneratorTool()
         self.pdf_compiler_tool = PDFCompilerTool()
         self.checkpoint_tool = CheckpointTool()
+        self.image_generation_tool = ImageGenerationTool()
+        self.image_analysis_tool = ImageAnalysisTool()
 
     async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task with support for both models and tools."""
@@ -141,6 +144,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             "pdf-compiler": self._handle_pdf_compiler,
             "pipeline-executor": self._handle_pipeline_executor,
             "checkpoint": self._handle_checkpoint,
+            "image-generation": self._handle_image_generation,
+            "image-analysis": self._handle_image_analysis,
+            "prompt-optimization": self._handle_prompt_optimization,
         }
         
         if tool_name in tool_handlers:
@@ -302,9 +308,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         # If task has parameters and tool is filesystem, use FileSystemTool for all operations
         if task.metadata.get("tool") == "filesystem" and task.parameters:
             # Templates have already been rendered by ControlSystem._render_task_templates
-            # Just add the action and pass through
+            # Don't override the action if it's already in parameters
             resolved_params = task.parameters.copy()
-            resolved_params["action"] = action_text
+            if "action" not in resolved_params:
+                resolved_params["action"] = action_text
             
             # Debug: Check what loop variables are in context
             import logging
@@ -327,6 +334,15 @@ class HybridControlSystem(ModelBasedControlSystem):
                 
                 # Register all results using the helper method
                 self._register_results_with_template_manager(template_manager, context)
+                
+                # Also register individual step results for direct access
+                if "previous_results" in context:
+                    for step_id, result in context["previous_results"].items():
+                        # Register the result directly for template access
+                        template_manager.register_context(step_id, result)
+                        # If it's a dict with 'result' key, also register that
+                        if isinstance(result, dict) and 'result' in result:
+                            template_manager.register_context(f"{step_id}_result", result['result'])
                 
                 # Pass the loop context mapping to the filesystem tool
                 if "_loop_context_mapping" in context:
@@ -353,6 +369,15 @@ class HybridControlSystem(ModelBasedControlSystem):
                 
                 # Register all results using the helper method
                 self._register_results_with_template_manager(template_manager, context)
+                
+                # Also register individual step results for direct access
+                if "previous_results" in context:
+                    for step_id, result in context["previous_results"].items():
+                        # Register the result directly for template access
+                        template_manager.register_context(step_id, result)
+                        # If it's a dict with 'result' key, also register that
+                        if isinstance(result, dict) and 'result' in result:
+                            template_manager.register_context(f"{step_id}_result", result['result'])
                 
                 # Pass the loop context mapping to the filesystem tool
                 if "_loop_context_mapping" in context:
@@ -863,6 +888,55 @@ class HybridControlSystem(ModelBasedControlSystem):
         params = task.parameters.copy()
         params["action"] = task.action
         return await self.checkpoint_tool.execute(**params)
+    
+    async def _handle_image_generation(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle image generation operations."""
+        # Execute using image generation tool
+        params = task.parameters.copy()
+        return await self.image_generation_tool.execute(**params)
+    
+    async def _handle_image_analysis(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle image analysis operations."""
+        # Execute using image analysis tool
+        params = task.parameters.copy()
+        return await self.image_analysis_tool.execute(**params)
+    
+    async def _handle_prompt_optimization(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle prompt optimization operations."""
+        # For now, use the model to optimize the prompt
+        prompt = task.parameters.get("prompt", "")
+        task_type = task.parameters.get("task", "image-generation")
+        goal = task.parameters.get("optimization_goal", "quality")
+        
+        # Use the model to enhance the prompt
+        model = await self.model_registry.select_model({"tasks": ["generate"]})
+        if not model:
+            return {
+                "success": False,
+                "error": "No model available for prompt optimization"
+            }
+        
+        optimization_prompt = f"""Optimize this prompt for {task_type}:
+Original prompt: "{prompt}"
+Goal: {goal}
+
+Provide an enhanced, more detailed version that will produce better results.
+Just return the optimized prompt, nothing else."""
+        
+        try:
+            optimized = await model.generate(optimization_prompt, temperature=0.7)
+            return {
+                "success": True,
+                "optimized_prompt": optimized.strip(),
+                "original_prompt": prompt,
+                "optimization_goal": goal
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "optimized_prompt": prompt  # Fallback to original
+            }
     
     async def _handle_create_parallel_queue(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle parallel queue execution with real functionality."""
