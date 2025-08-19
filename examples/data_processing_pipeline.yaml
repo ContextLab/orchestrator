@@ -210,7 +210,8 @@ steps:
     action: convert
     parameters:
       data: "{{ clean_data.result }}"
-      format: "csv"
+      format: "json"
+      output_format: "csv"
     dependencies:
       - clean_data
       

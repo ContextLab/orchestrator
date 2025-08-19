@@ -112,7 +112,9 @@ class DataProcessingTool(Tool):
 
         try:
             if action == "convert":
-                return await self._convert_data(data, output_format, operation)
+                # For convert action, use output_format if specified, otherwise use format
+                target_format = output_format if output_format != format else format
+                return await self._convert_data(data, target_format, operation)
             elif action == "filter":
                 return await self._filter_data(data, operation, format)
             elif action == "aggregate":
