@@ -1,0 +1,6 @@
+order_id,customer_id,product_name,quantity,unit_price,order_date,status
+ORD-000001,CUST-001,Widget A,5,19.99,2024-01-15,delivered
+ORD-000002,CUST-002,Widget B,3,29.99,2024-01-16,shipped
+ORD-000003,CUST-001,Widget C,1,49.99,2024-01-17,processing
+ORD-000004,CUST-003,Widget A,10,19.99,2024-01-18,delivered
+ORD-000005,CUST-002,Widget D,2,39.99,2024-01-19,pending

@@ -154,10 +154,16 @@ class DataProcessingTool(Tool):
                     data = list(reader)
                 else:
                     data = f.read()
+        # Try to parse JSON string
+        elif isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                pass
 
         # Convert to target format
         if target_format == "json":
-            result = json.dumps(data, indent=2)
+            result = json.dumps(data, indent=2) if not isinstance(data, str) else data
         elif target_format == "csv":
             if isinstance(data, list) and data:
                 output = io.StringIO()

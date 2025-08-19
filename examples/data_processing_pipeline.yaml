@@ -8,7 +8,7 @@ version: "1.0.0"
 
 inputs:
   input_file: "sales_data.csv"
-  output_format: "parquet"
+  output_path: "examples/outputs/data_processing_pipeline"
   quality_threshold: 0.95
   enable_profiling: true
 
@@ -18,7 +18,7 @@ steps:
     tool: filesystem
     action: read
     parameters:
-      path: "{{ input_file }}"
+      path: "{{ output_path }}/{{ input_file }}"
       
   # Step 2: Profile data quality
   - id: profile_data
@@ -26,14 +26,16 @@ steps:
     action: profile
     condition: "{{ enable_profiling }}"
     parameters:
-      input_data: "{{ read_data.content }}"
-      input_format: "csv"
+      data: "{{ read_data.content }}"
+      format: "csv"
       profiling_options:
         - missing_values
         - data_types
         - statistical_summary
         - outlier_detection
         - duplicate_detection
+    dependencies:
+      - read_data
         
   # Step 3: Validate data schema
   - id: validate_schema
@@ -65,14 +67,16 @@ steps:
             enum: ["pending", "processing", "shipped", "delivered", "cancelled"]
         required: ["order_id", "customer_id", "product_name", "quantity", "unit_price"]
       mode: "LENIENT"  # Try to fix minor issues
+    dependencies:
+      - read_data
       
   # Step 4: Clean and transform data
   - id: clean_data
     tool: data-processing
     action: transform
     parameters:
-      input_data: "{{ validate_schema.result.data if validate_schema.result.is_valid else read_data.content }}"
-      input_format: "csv"
+      data: "{{ validate_schema.data if validate_schema.valid else read_data.content }}"
+      format: "csv"
       output_format: "json"
       operations:
         # Remove duplicates
@@ -102,14 +106,16 @@ steps:
         # Filter out cancelled orders for analysis
         - type: filter
           condition: "status != 'cancelled'"
+    dependencies:
+      - validate_schema
           
   # Step 5: Aggregate data for analysis
   - id: aggregate_monthly
     tool: data-processing
     action: aggregate
     parameters:
-      input_data: "{{ clean_data.result }}"
-      input_format: "json"
+      data: "{{ clean_data.result }}"
+      format: "json"
       output_format: "json"
       group_by: ["order_month", "product_name"]
       aggregations:
@@ -128,6 +134,8 @@ steps:
         unique_customers:
           column: "customer_id"
           function: "count_distinct"
+    dependencies:
+      - clean_data
           
   # Step 6: Statistical analysis
   - id: analyze_trends
@@ -147,21 +155,25 @@ steps:
         - top_products: array of {product: string, revenue: number}
         - seasonal_patterns: array of strings describing patterns
         - anomalies: array of {month: string, metric: string, description: string}
-      model: <AUTO>Choose a model for data analysis</AUTO>
+      model: "<AUTO>"
+    dependencies:
+      - aggregate_monthly
                   
   # Step 7: Create pivot table
   - id: pivot_analysis
     tool: data-processing
     action: pivot
     parameters:
-      input_data: "{{ clean_data.result }}"
-      input_format: "json"
+      data: "{{ clean_data.result }}"
+      format: "json"
       output_format: "json"
       index: ["product_name"]
       columns: ["status"]
       values: ["quantity"]
       aggfunc: "sum"
       fill_value: 0
+    dependencies:
+      - clean_data
       
   # Step 8: Quality check
   - id: quality_check
@@ -169,7 +181,7 @@ steps:
     parameters:
       text: |
         Original data profile: {{ profile_data.result }}
-        Validation results: {{ validate_schema.result }}
+        Validation results: {{ validate_schema }}
         Rows processed: {{ clean_data.row_count }}
       analysis_type: "quality_assessment"
       prompt: |
@@ -186,34 +198,38 @@ steps:
         - quality_score: number between 0 and 1
         - issues_found: array of strings
         - recommendations: array of strings
-      model: <AUTO>Choose a model for quality assessment</AUTO>
+      model: "<AUTO>"
+    dependencies:
+      - profile_data
+      - validate_schema
+      - clean_data
               
   # Step 9: Export processed data
   - id: export_data
     tool: data-processing
-    action: transform
+    action: convert
     parameters:
-      input_data: "{{ clean_data.result }}"
-      input_format: "json"
-      output_format: "{{ output_format }}"
-      compression: "snappy"  # For parquet
+      data: "{{ clean_data.result }}"
+      format: "csv"
+    dependencies:
+      - clean_data
       
   - id: save_processed
     tool: filesystem
     action: write
     parameters:
-      path: "processed_data.{{ output_format }}"
+      path: "processed_data.csv"
       content: "{{ export_data.result }}"
-      mode: "wb"  # Binary write for parquet
+    dependencies:
+      - export_data
       
   # Step 10: Generate data report
   - id: generate_report
-    tool: report-generator
-    action: generate
+    tool: filesystem
+    action: write
     parameters:
-      title: "Data Processing Report"
-      format: "html"
-      template: |
+      path: "data_processing_report.html"
+      content: |
         <!DOCTYPE html>
         <html>
         <head>
@@ -235,7 +251,7 @@ steps:
             <div class="metric">
                 <h2>Processing Summary</h2>
                 <p><strong>Input File:</strong> {{ input_file }}</p>
-                <p><strong>Output Format:</strong> {{ output_format }}</p>
+                <p><strong>Output Path:</strong> {{ output_path }}</p>
                 <p><strong>Rows Processed:</strong> {{ clean_data.row_count }}</p>
                 <p><strong>Quality Score:</strong> 
                     <span class="{% if quality_check.result.quality_score >= quality_threshold %}success{% else %}warning{% endif %}">
@@ -305,14 +321,20 @@ steps:
             <p><em>Report generated on {{ current_date }}</em></p>
         </body>
         </html>
+    dependencies:
+      - clean_data
+      - quality_check
+      - aggregate_monthly
+      - analyze_trends
+      - pivot_analysis
         
   # Step 11: Save report to outputs folder
   - id: save_report
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/data_processing_pipeline/data_processing_report.html"
-      content: "{{ generate_report.content }}"
+      path: "{{ output_path }}/data_processing_report.html"
+      content: "{{ generate_report }}"
     dependencies:
       - generate_report
       
@@ -321,15 +343,14 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/data_processing_pipeline/processed_data.{{ output_format }}"
+      path: "{{ output_path }}/processed_data.csv"
       content: "{{ export_data.result }}"
-      mode: "wb"  # Binary write for parquet
     dependencies:
       - export_data
 
 outputs:
-  processed_file: "processed_data.{{ output_format }}"
+  processed_file: "{{ output_path }}/processed_data.csv"
   quality_score: "{{ quality_check.result.quality_score }}"
   rows_processed: "{{ clean_data.row_count }}"
-  report_path: "{{ generate_report.filepath }}"
+  report_path: "{{ output_path }}/data_processing_report.html"
   growth_rate: "{{ analyze_trends.result.growth_rate }}"
