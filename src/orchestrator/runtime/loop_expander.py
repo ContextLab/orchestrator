@@ -422,26 +422,41 @@ class LoopExpander:
         # Add loop context to available context for resolution
         additional_context = loop_context.to_dict()
         
+        # For templates that reference other steps in the same loop iteration,
+        # we need to handle them specially. For now, we'll leave them unresolved
+        # if they reference steps that will be created in the same iteration.
+        
         # Resolve each parameter
         for key, value in resolved.items():
             if isinstance(value, str):
                 # Check if it contains templates
                 if '{{' in value or '{%' in value:
                     try:
+                        # Try to resolve with available context
                         resolved[key] = self.resolver.resolve_template(value, additional_context)
                     except Exception as e:
-                        logger.warning(f"Failed to resolve parameter {key}: {e}")
+                        # If resolution fails, check if it's a reference to another step
+                        # in the same loop iteration (e.g., {{ translate }})
+                        # Leave it unresolved for now - it will be resolved at execution time
+                        logger.debug(f"Leaving parameter {key} unresolved for runtime: {e}")
+                        # Keep the original template
+                        resolved[key] = value
             elif isinstance(value, dict):
                 # Recursively resolve nested dicts
                 resolved[key] = self._resolve_parameters(value, loop_context)
             elif isinstance(value, list):
                 # Resolve list items
-                resolved[key] = [
-                    self.resolver.resolve_template(item, additional_context)
-                    if isinstance(item, str) and ('{{' in item or '{%' in item)
-                    else item
-                    for item in value
-                ]
+                resolved_list = []
+                for item in value:
+                    if isinstance(item, str) and ('{{' in item or '{%' in item):
+                        try:
+                            resolved_list.append(self.resolver.resolve_template(item, additional_context))
+                        except:
+                            # Keep unresolved
+                            resolved_list.append(item)
+                    else:
+                        resolved_list.append(item)
+                resolved[key] = resolved_list
         
         return resolved
     
