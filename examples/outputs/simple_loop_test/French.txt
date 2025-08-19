@@ -1,2 +1,0 @@
-Language: French
-Translation: Bonjour ! J'espère que vous passez une merveilleuse journée !

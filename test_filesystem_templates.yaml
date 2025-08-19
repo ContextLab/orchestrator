@@ -1,0 +1,45 @@
+id: test-filesystem-templates
+name: Test Filesystem Templates
+description: Test template rendering in filesystem write operations
+version: "1.0.0"
+
+parameters:
+  text:
+    type: string
+    default: "Hello World"
+  languages:
+    type: array
+    default: ["Spanish"]
+  output:
+    type: string
+    default: "examples/outputs/test_filesystem"
+    
+steps:
+  # Generate translation  
+  - id: translate
+    action: generate_text
+    parameters:
+      prompt: "Translate '{{ text }}' to Spanish. Reply with just the translation."
+      model: "llama3.2:1b"
+      max_tokens: 50
+      
+  # Save translation to file
+  - id: save_file
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output }}/translation.md"
+      content: |
+        # Translation Output
+        
+        ## Original Text
+        {{ text }}
+        
+        ## Translated Text
+        {{ translate }}
+    dependencies:
+      - translate
+      
+outputs:
+  translation: "{{ translate }}"
+  file_path: "{{ output }}/translation.md"

@@ -1,2 +1,0 @@
-Language: Spanish
-Translation: "¡Hola! ¡Espero que tengas un día maravilloso!"

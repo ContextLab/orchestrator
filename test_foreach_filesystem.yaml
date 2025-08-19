@@ -1,0 +1,46 @@
+id: test-foreach-filesystem
+name: Test ForEach Filesystem Templates
+description: Test template rendering in for_each loop filesystem writes
+version: "1.0.0"
+
+parameters:
+  text:
+    type: string
+    default: "Hello World"
+  languages:
+    type: array
+    default: ["es", "fr"]
+  output:
+    type: string
+    default: "examples/outputs/test_foreach"
+    
+steps:
+  # Translate to multiple languages
+  - id: translate_loop
+    for_each: "{{ languages }}"
+    steps:
+      - id: translate
+        action: generate_text
+        parameters:
+          prompt: "Translate '{{ text }}' to {{ $item }}. Reply with just the translation."
+          model: "llama3.2:1b"
+          max_tokens: 50
+          
+      - id: save_translation
+        tool: filesystem
+        action: write
+        parameters:
+          path: "{{ output }}/translation_{{ $item }}.md"
+          content: |
+            # Translation to {{ item | upper }}
+            
+            ## Original Text
+            {{ text }}
+            
+            ## Translated Text
+            {{ translate }}
+        dependencies:
+          - translate
+      
+outputs:
+  output_dir: "{{ output }}"

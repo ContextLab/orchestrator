@@ -1,3 +1,0 @@
-Language: German
-Original: Hello World
-Translation: Hallo Welt

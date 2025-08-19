@@ -1,3 +1,0 @@
-Language: Spanish
-Original: Hello World
-Translation: Hola Mundo

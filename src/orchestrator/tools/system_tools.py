@@ -212,16 +212,15 @@ class FileSystemTool(Tool):
                     # Debug: Check what's actually in the template manager context
                     logger.info(f"Template manager has {len(_template_manager.context)} context items")
                     
-                    # Check for key step results
-                    for key in ['search_topic', 'deep_search', 'analyze_findings', 'generate_recommendations']:
+                    # Log key context items for debugging
+                    important_keys = ['$item', 'item', 'input_text', 'translate', 'validate_translation']
+                    for key in important_keys:
                         if key in _template_manager.context:
-                            ctx_item = _template_manager.context[key]
-                            if isinstance(ctx_item, dict) and 'result' in ctx_item:
-                                logger.info(f"  ✓ {key} has result")
-                            elif hasattr(ctx_item, 'result'):
-                                logger.info(f"  ✓ {key} has result attribute")
+                            value = _template_manager.context[key]
+                            if isinstance(value, str):
+                                logger.info(f"  ✓ {key} = '{value[:50]}...' (str)")
                             else:
-                                logger.info(f"  ✓ {key} exists (type: {type(ctx_item).__name__})")
+                                logger.info(f"  ✓ {key} = {type(value).__name__}")
                         else:
                             logger.warning(f"  ✗ {key} NOT in context!")
                     
