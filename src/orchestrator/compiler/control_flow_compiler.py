@@ -109,11 +109,24 @@ class ControlFlowCompiler(YAMLCompiler):
                 # Check if for_each expression contains AUTO tags or runtime dependencies
                 for_each_expr = str(step_def.get("for_each", ""))
                 
-                # Check for runtime dependencies: AUTO tags or step result references
-                has_runtime_deps = (
+                # Check for runtime dependencies in the for_each expression itself
+                for_each_has_deps = (
                     "<AUTO>" in for_each_expr or
-                    any(f"{step_id}." in for_each_expr for step_id in all_step_ids)
+                    any(f"{step_id}." in for_each_expr or f"{{ {step_id}" in for_each_expr for step_id in all_step_ids)
                 )
+                
+                # ALSO check if any steps inside the loop have runtime dependencies
+                loop_steps = step_def.get("steps", [])
+                steps_have_deps = False
+                for loop_step in loop_steps:
+                    # Check all string values in the step for template references
+                    step_str = str(loop_step)
+                    if any(f"{{ {step_id}" in step_str or f"{{{step_id}" in step_str for step_id in all_step_ids):
+                        steps_have_deps = True
+                        break
+                
+                # If either the for_each expression OR the loop steps have dependencies, use runtime expansion
+                has_runtime_deps = for_each_has_deps or steps_have_deps
                 
                 if has_runtime_deps:
                     # Create ForEachTask for runtime expansion

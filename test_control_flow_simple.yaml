@@ -1,0 +1,107 @@
+id: test-control-flow-simple
+name: Test Control Flow Simple
+description: Simple test of control flow with explicit model selection
+version: "1.0.0"
+
+parameters:
+  input_text:
+    type: string
+    default: "Test the for_each loop template rendering"
+  languages:
+    type: array
+    default: ["es", "fr"]
+  output:
+    type: string
+    default: "examples/outputs/control_flow_test"
+    
+steps:
+  # Initial analysis using Claude
+  - id: analyze_text
+    action: analyze_text
+    parameters:
+      text: "{{ input_text }}"
+      model: "anthropic:claude-sonnet-4-20250514"
+      analysis_type: "comprehensive"
+      
+  # Check quality using Claude
+  - id: check_quality
+    action: generate_text
+    parameters:
+      prompt: |
+        Determine if this text needs improvement:
+        Text: {{ input_text }}
+        Analysis: {{ analyze_text }}
+        
+        Respond with either "improve" or "acceptable".
+      model: "anthropic:claude-sonnet-4-20250514"
+      max_tokens: 50
+    dependencies:
+      - analyze_text
+      
+  # Conditional enhancement using Claude
+  - id: enhance_text
+    action: generate_text
+    if: "{{ 'improve' in check_quality }}"
+    parameters:
+      prompt: |
+        Improve the following text:
+        {{ input_text }}
+      model: "anthropic:claude-sonnet-4-20250514"
+      max_tokens: 500
+    dependencies:
+      - check_quality
+      
+  # Select text to use
+  - id: select_text
+    action: generate_text
+    parameters:
+      prompt: |
+        {% if check_quality and 'improve' in check_quality and enhance_text %}
+        Return the enhanced text: {{ enhance_text }}
+        {% else %}
+        Return the original text: {{ input_text }}
+        {% endif %}
+      model: "anthropic:claude-sonnet-4-20250514"
+      max_tokens: 600
+    dependencies:
+      - enhance_text
+      - check_quality
+      
+  # Translate to multiple languages using Claude
+  - id: translate_text
+    for_each: "{{ languages }}"
+    max_parallel: 2
+    steps:
+      - id: translate
+        action: generate_text
+        parameters:
+          prompt: |
+            Translate the following text to {{ $item }}:
+            
+            {% if select_text %}{{ select_text }}{% else %}{{ input_text }}{% endif %}
+          model: "anthropic:claude-sonnet-4-20250514"
+          max_tokens: 600
+          
+      - id: save_translation
+        tool: filesystem
+        action: write
+        parameters:
+          path: "{{ output }}/translations/translation_{{ $item }}.txt"
+          content: |
+            # Translation to {{ $item }}
+            
+            ## Source Text
+            {% if select_text %}{{ select_text }}{% else %}{{ input_text }}{% endif %}
+            
+            ## Translated Text
+            {{ translate }}
+        dependencies:
+          - translate
+    dependencies:
+      - select_text
+      
+outputs:
+  analysis: "{{ analyze_text }}"
+  quality_check: "{{ check_quality }}"
+  enhanced: "{{ enhance_text | default('N/A') }}"
+  final_text: "{{ select_text }}"

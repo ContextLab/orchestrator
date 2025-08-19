@@ -94,8 +94,8 @@ class YAMLCompiler:
         # Add custom filters to Jinja2 environment
         self._register_custom_filters()
 
-        # Regex pattern for AUTO tags
-        self.auto_tag_pattern = re.compile(r"<AUTO>(.*?)</AUTO>", re.DOTALL)
+        # Regex pattern for AUTO tags (with optional attributes)
+        self.auto_tag_pattern = re.compile(r"<AUTO[^>]*>(.*?)</AUTO>", re.DOTALL)
 
     async def compile(
         self,
@@ -407,29 +407,60 @@ class YAMLCompiler:
             logger.debug(f"No resolver available - preserving AUTO tag at {path}")
             return content
             
-        # Find all AUTO tags
-        matches = self.auto_tag_pattern.findall(content)
-
-        if not matches:
+        # Find all AUTO tags (full matches including tags)
+        full_matches = self.auto_tag_pattern.finditer(content)
+        
+        if not full_matches:
+            return content
+            
+        # Convert to list to check length
+        full_matches_list = list(full_matches)
+        if not full_matches_list:
             return content
 
         # If the entire string is a single AUTO tag, resolve it directly
-        if len(matches) == 1 and content.strip() == f"<AUTO>{matches[0]}</AUTO>":
-            return await self.ambiguity_resolver.resolve(matches[0].strip(), path)
+        if len(full_matches_list) == 1:
+            match = full_matches_list[0]
+            if content.strip() == match.group(0):
+                # Extract the full AUTO tag to preserve attributes
+                full_tag = match.group(0)
+                # For model parameters, pass the full tag for context-aware resolution
+                if "model" in path.lower():
+                    # Extract task type from attributes if present
+                    import re
+                    task_match = re.search(r'task="([^"]*)"', full_tag)
+                    if task_match:
+                        # Use task type to select appropriate model
+                        task_type = task_match.group(1)
+                        # Select model based on task type through ambiguity resolver
+                        if self.ambiguity_resolver and hasattr(self.ambiguity_resolver, 'model_registry'):
+                            try:
+                                model = await self.ambiguity_resolver.model_registry.select_model(
+                                    {"tasks": [task_type]}
+                                )
+                                return model.name if model else "openai/gpt-3.5-turbo"
+                            except:
+                                return "openai/gpt-3.5-turbo"
+                    return "openai/gpt-3.5-turbo"
+                else:
+                    # For non-model parameters, resolve the inner content
+                    inner_content = match.group(1).strip()
+                    return await self.ambiguity_resolver.resolve(inner_content, path)
 
         # Otherwise, resolve each AUTO tag and substitute
         resolved_content = content
-        for match in matches:
-            resolved_value = await self.ambiguity_resolver.resolve(match.strip(), path)
+        for match in full_matches_list:
+            full_tag = match.group(0)  # The entire <AUTO ...>...</AUTO>
+            inner_content = match.group(1).strip()  # Content between tags
+            
+            resolved_value = await self.ambiguity_resolver.resolve(inner_content, path)
             # Convert resolved value to string for substitution
             resolved_str = (
                 str(resolved_value)
                 if not isinstance(resolved_value, str)
                 else resolved_value
             )
-            resolved_content = resolved_content.replace(
-                f"<AUTO>{match}</AUTO>", resolved_str
-            )
+            resolved_content = resolved_content.replace(full_tag, resolved_str)
 
         return resolved_content
 

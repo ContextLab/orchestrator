@@ -269,13 +269,29 @@ class OpenAIModel(Model):
                 else:
                     kwargs["response_format"] = rf
 
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
+            # Build API parameters
+            api_params = {
+                "model": self.model_name,
+                "messages": messages,
                 **kwargs,
-            )
+            }
+            
+            # Handle model-specific parameter names
+            # GPT-5 models have specific requirements
+            if "gpt-5" in self.model_name.lower():
+                # GPT-5 models require max_completion_tokens instead of max_tokens
+                api_params["max_completion_tokens"] = max_tokens
+                # GPT-5 models only support default temperature (1.0)
+                if temperature != 1.0:
+                    # Don't set temperature at all for non-default values
+                    pass
+                else:
+                    api_params["temperature"] = temperature
+            else:
+                api_params["max_tokens"] = max_tokens
+                api_params["temperature"] = temperature
+            
+            response = self.client.chat.completions.create(**api_params)
 
             return response.choices[0].message.content or ""
 
@@ -323,8 +339,15 @@ class OpenAIModel(Model):
                 "messages": [{"role": "user", "content": structured_prompt}],
             }
             
-            # Only add temperature if the model supports it (GPT-5 doesn't support non-default temperature)
-            if "gpt-5" not in self.model_name.lower():
+            # Handle model-specific parameters
+            if "gpt-5" in self.model_name.lower():
+                # GPT-5 models only support default temperature
+                if temperature == 1.0:
+                    api_params["temperature"] = temperature
+                # For max_tokens in kwargs
+                if "max_tokens" in kwargs:
+                    api_params["max_completion_tokens"] = kwargs.pop("max_tokens")
+            else:
                 api_params["temperature"] = temperature
             
             # Add any additional kwargs
@@ -364,13 +387,21 @@ class OpenAIModel(Model):
             loop = asyncio.get_event_loop()
 
             def _sync_health_check():
-                self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=[{"role": "user", "content": "Test"}],
-                    max_tokens=1,
-                    temperature=0.0,
-                    timeout=5.0,  # Add explicit timeout
-                )
+                api_params = {
+                    "model": self.model_name,
+                    "messages": [{"role": "user", "content": "Test"}],
+                    "timeout": 5.0,  # Add explicit timeout
+                }
+                
+                # Handle model-specific parameter names
+                if "gpt-5" in self.model_name.lower():
+                    api_params["max_completion_tokens"] = 1
+                    # GPT-5 models only support default temperature
+                else:
+                    api_params["max_tokens"] = 1
+                    api_params["temperature"] = 0.0
+                
+                self.client.chat.completions.create(**api_params)
                 return True
 
             # Run in executor with timeout
@@ -448,14 +479,25 @@ class OpenAIModel(Model):
         await self._rate_limit()
 
         try:
-            stream = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True,
+            # Build API parameters
+            api_params = {
+                "model": self.model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": True,
                 **kwargs,
-            )
+            }
+            
+            # Handle model-specific parameter names
+            if "gpt-5" in self.model_name.lower():
+                api_params["max_completion_tokens"] = max_tokens
+                # GPT-5 models only support default temperature
+                if temperature == 1.0:
+                    api_params["temperature"] = temperature
+            else:
+                api_params["max_tokens"] = max_tokens
+                api_params["temperature"] = temperature
+            
+            stream = self.client.chat.completions.create(**api_params)
 
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:

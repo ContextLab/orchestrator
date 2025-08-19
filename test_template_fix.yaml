@@ -1,0 +1,55 @@
+id: test-template-fix
+name: Test Template Fix
+description: Simple test of for_each template resolution without API calls
+version: "1.0.0"
+
+parameters:
+  base_text:
+    type: string
+    default: "Hello World"
+  languages:
+    type: array
+    default: ["Spanish", "French", "German"]
+  output:
+    type: string
+    default: "examples/outputs/template_test"
+    
+steps:
+  # Generate some data in first step
+  - id: generate_text
+    action: generate_text
+    parameters:
+      prompt: "Echo this exactly: {{ base_text }}"
+      model: "llama3.2:1b"
+      max_tokens: 50
+      
+  # Loop over languages and use the generated text
+  - id: translate_loop
+    for_each: "{{ languages }}"
+    steps:
+      - id: translate
+        action: generate_text
+        parameters:
+          prompt: |
+            Translate to {{ $item }}:
+            Text: {{ generate_text }}
+            Just provide the translation, nothing else.
+          model: "llama3.2:1b"
+          max_tokens: 100
+          
+      - id: save_translation
+        tool: filesystem
+        action: write
+        parameters:
+          path: "{{ output }}/{{ $item }}.txt"
+          content: |
+            Language: {{ $item }}
+            Original: {{ generate_text }}
+            Translation: {{ translate }}
+        dependencies:
+          - translate
+    dependencies:
+      - generate_text
+      
+outputs:
+  generated: "{{ generate_text }}"

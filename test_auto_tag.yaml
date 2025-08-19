@@ -1,0 +1,10 @@
+name: Test AUTO Tag
+description: Test AUTO tag resolution
+
+steps:
+  - id: test
+    action: generate_text
+    parameters:
+      prompt: "Say hello"
+      model: <AUTO task="generate">Select a model</AUTO>
+      max_tokens: 10

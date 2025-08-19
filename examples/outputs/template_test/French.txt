@@ -1,0 +1,3 @@
+Language: French
+Original: Hello World
+Translation: Bonjour le monde

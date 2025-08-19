@@ -144,8 +144,19 @@ class ModelBasedControlSystem(ControlSystem):
 
         # Get the model from context if available
         model = context.get("model")
+        
+        # Check if model is specified in task parameters
+        if not model and task.parameters and "model" in task.parameters:
+            model_spec = task.parameters["model"]
+            # Check if it's an AUTO tag (should have been resolved by now)
+            if isinstance(model_spec, str) and not model_spec.startswith("<AUTO"):
+                # It's a model name/path, get it from registry
+                model = self.model_registry.get_model(model_spec)
+                if not model:
+                    # Model not found, raise error
+                    raise ValueError(f"Model '{model_spec}' not found in registry")
 
-        # If no model in context, select one based on task
+        # If still no model, select one based on task requirements
         if not model:
             requirements = self._get_task_requirements(task)
             model = await self.model_registry.select_model(requirements)
@@ -193,11 +204,22 @@ class ModelBasedControlSystem(ControlSystem):
             )
             
             # Build generation kwargs
+            # Handle model-specific parameter names
             gen_kwargs = {
                 "prompt": prompt,
                 "temperature": temperature,
-                "max_tokens": max_tokens,
             }
+            
+            # Check if model requires max_completion_tokens instead of max_tokens
+            # GPT-5 models from OpenAI require max_completion_tokens
+            if model and hasattr(model, 'provider') and model.provider == 'openai':
+                # Check if it's a GPT-5 model
+                if hasattr(model, 'name') and 'gpt-5' in model.name.lower():
+                    gen_kwargs["max_completion_tokens"] = max_tokens
+                else:
+                    gen_kwargs["max_tokens"] = max_tokens
+            else:
+                gen_kwargs["max_tokens"] = max_tokens
             
             # Add response_format if specified
             if task.parameters and "response_format" in task.parameters:

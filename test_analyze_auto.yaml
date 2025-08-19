@@ -1,0 +1,10 @@
+name: Test Analyze with AUTO
+description: Test analyze_text with AUTO tag
+
+steps:
+  - id: analyze
+    action: analyze_text
+    parameters:
+      text: "Test text"
+      model: <AUTO task="analyze">Select a model</AUTO>
+      analysis_type: "brief"

@@ -1,0 +1,43 @@
+name: Simple Loop Test
+description: Test template resolution in for_each loops
+
+parameters:
+  languages:
+    type: array
+    default: ["Spanish", "French"]
+  output_path:
+    type: string
+    default: "examples/outputs/simple_loop_test"
+
+steps:
+  # Generate some text first
+  - id: generate_text
+    action: generate_text
+    parameters:
+      prompt: "Write a one sentence greeting."
+      model: openai/gpt-3.5-turbo
+      max_tokens: 50
+
+  # Translate to multiple languages
+  - id: translate_loop
+    for_each: "{{ languages }}"
+    steps:
+      - id: translate
+        action: generate_text
+        parameters:
+          prompt: "Translate to {{ item }}: {{ generate_text }}"
+          model: openai/gpt-3.5-turbo
+          max_tokens: 100
+      
+      - id: save_translation
+        action: write
+        tool: filesystem
+        parameters:
+          path: "{{ output_path }}/{{ item }}.txt"
+          content: |
+            Language: {{ item }}
+            Translation: {{ translate }}
+        dependencies:
+          - translate
+    dependencies:
+      - generate_text

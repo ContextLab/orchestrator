@@ -1081,6 +1081,9 @@ class Orchestrator:
             # Track completed steps from previous results
             completed_steps = set(previous_results.keys())
             
+            # Track if any ForEachTasks were expanded (requires level recalculation)
+            for_each_expanded = False
+            
             for task_id in level_tasks:
                 task = pipeline.get_task(task_id)
 
@@ -1092,15 +1095,20 @@ class Orchestrator:
                         task, pipeline, context, previous_results
                     )
                     
-                    # Add expanded tasks to the current level for execution
-                    for expanded_id in expanded_task_ids:
-                        if expanded_id not in level_tasks:
-                            level_tasks.append(expanded_id)
+                    # DON'T add expanded tasks to the current level!
+                    # They have dependencies that may not be satisfied yet.
+                    # They'll be picked up in the next level calculation.
+                    # for expanded_id in expanded_task_ids:
+                    #     if expanded_id not in level_tasks:
+                    #         level_tasks.append(expanded_id)
                     
                     # Mark the ForEachTask as completed
                     results[task_id] = task.result
+                    
+                    # Signal that we need to recalculate levels
+                    for_each_expanded = True
                     continue
-
+                
                 # Skip tasks that are already marked as skipped
                 if task.status == TaskStatus.SKIPPED:
                     results[task_id] = {"status": "skipped"}
@@ -1323,9 +1331,11 @@ class Orchestrator:
                     # First, register ALL previous results with the template manager
                     # This ensures all step results are available for template rendering
                     if "previous_results" in task_context:
+                        self.logger.info(f"DEBUG: Registering {len(task_context['previous_results'])} results for task {task_id}")
                         for step_id, result in task_context["previous_results"].items():
                             # Register the result for template access
                             self.template_manager.register_context(step_id, result)
+                            self.logger.info(f"DEBUG: Registered {step_id} = {str(result)[:100] if isinstance(result, str) else type(result).__name__}")
                             # If it's a string, make it directly accessible
                             if isinstance(result, str):
                                 self.template_manager.register_context(f"{step_id}_str", result)
@@ -1378,6 +1388,11 @@ class Orchestrator:
                     self._execute_task_with_resources(task, task_context)
                 )
                 scheduled_task_ids.append(task_id)
+            
+            # If we expanded any ForEachTasks, return early to trigger level recalculation
+            if for_each_expanded:
+                self.logger.info("ForEachTasks were expanded, returning early to recalculate levels")
+                return results
 
             # Execute tasks with proper error handling
             if execution_tasks:
@@ -1653,12 +1668,28 @@ class Orchestrator:
                 # Create unique task ID
                 task_id = f"{for_each_task.id}_{idx}_{step_def['id']}"
                 
-                # Process parameters with loop context
+                # Process parameters - but DON'T render templates yet!
+                # Templates will be rendered at execution time when all dependencies are available
                 params = step_def.get("parameters", {})
-                rendered_params = self.template_manager.render_dict(
-                    params,
-                    additional_context=loop_context  # Use the comprehensive loop context
-                )
+                
+                # For now, just do simple string replacement for loop variables
+                # This is a temporary fix until proper partial rendering is implemented
+                rendered_params = {}
+                for key, value in params.items():
+                    if isinstance(value, str):
+                        # Replace only loop-specific variables, leave other templates intact
+                        rendered_value = value
+                        rendered_value = rendered_value.replace("{{ item }}", str(item))
+                        rendered_value = rendered_value.replace("{{ $item }}", str(item))
+                        rendered_value = rendered_value.replace("{{item}}", str(item))
+                        rendered_value = rendered_value.replace("{{$item}}", str(item))
+                        rendered_value = rendered_value.replace("{{ index }}", str(idx))
+                        rendered_value = rendered_value.replace("{{ $index }}", str(idx))
+                        rendered_value = rendered_value.replace("{{index}}", str(idx))
+                        rendered_value = rendered_value.replace("{{$index}}", str(idx))
+                        rendered_params[key] = rendered_value
+                    else:
+                        rendered_params[key] = value
                 
                 # Handle dependencies
                 task_deps = []
@@ -1667,6 +1698,7 @@ class Orchestrator:
                 if idx == 0:
                     # First iteration depends on ForEachTask dependencies
                     task_deps.extend(for_each_task.dependencies)
+                    self.logger.info(f"DEBUG: First iteration of {for_each_task.id}, adding deps: {for_each_task.dependencies}")
                 elif for_each_task.max_parallel == 1:
                     # Sequential execution - depend on previous iteration
                     prev_task_id = f"{for_each_task.id}_{idx-1}_{step_def['id']}"
@@ -1701,6 +1733,7 @@ class Orchestrator:
                         "loop_task_id": task_id  # Store the full task ID
                     }
                 )
+                self.logger.info(f"DEBUG: Created task {task_id} with deps: {task_deps}, params: {list(rendered_params.keys())}")
                 
                 # Handle tool field
                 if "tool" in step_def:
