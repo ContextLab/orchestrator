@@ -23,6 +23,7 @@ from .state.state_manager import StateManager
 from .state.langgraph_state_manager import LangGraphGlobalContextManager
 from .state.legacy_compatibility import LegacyStateManagerAdapter
 from .core.exceptions import PipelineExecutionError
+from .runtime import RuntimeResolutionIntegration
 
 # Import checkpointing components for Issue #205
 try:
@@ -157,6 +158,9 @@ class Orchestrator:
         self.execution_history: List[Dict[str, Any]] = (
             []
         )  # Keep for backward compatibility
+        
+        # Runtime resolution system (Issue #211)
+        self.runtime_resolution = None  # Will be initialized per pipeline
 
         # New status tracker and resume manager
         self.status_tracker = PipelineStatusTracker()
@@ -240,6 +244,11 @@ class Orchestrator:
         
         # Also merge pipeline context directly into execution context for backward compatibility
         context.update(pipeline.context)
+        
+        # Initialize runtime resolution system (Issue #211)
+        self.runtime_resolution = RuntimeResolutionIntegration(pipeline.id)
+        self.runtime_resolution.register_pipeline_context(pipeline.context)
+        self.logger.info(f"Initialized runtime resolution for pipeline {pipeline.id}")
         
         # Initialize template manager context with pipeline parameters and execution metadata
         self.template_manager.clear_context()
@@ -1393,6 +1402,11 @@ class Orchestrator:
                     else:
                         # Task succeeded
                         results[task_id] = result
+                        
+                        # Register with runtime resolution system (Issue #211)
+                        if self.runtime_resolution:
+                            self.runtime_resolution.register_task_result(task_id, result)
+                        
                         # Register result immediately with template manager so subsequent tasks can use it
                         self.template_manager.register_context(task_id, result)
                         

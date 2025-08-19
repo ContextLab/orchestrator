@@ -17,6 +17,7 @@ from ..tools.report_tools import ReportGeneratorTool, PDFCompilerTool
 from ..tools.checkpoint_tool import CheckpointTool
 from ..tools.multimodal_tools import ImageGenerationTool, ImageAnalysisTool
 from ..compiler.template_renderer import TemplateRenderer
+from ..runtime import RuntimeResolutionIntegration
 
 
 class HybridControlSystem(ModelBasedControlSystem):
@@ -76,6 +77,9 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.checkpoint_tool = CheckpointTool()
         self.image_generation_tool = ImageGenerationTool()
         self.image_analysis_tool = ImageAnalysisTool()
+        
+        # Initialize runtime resolution system (Issue #211)
+        self.runtime_resolution = None  # Will be initialized per pipeline
 
     async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task with support for both models and tools."""
@@ -222,11 +226,20 @@ class HybridControlSystem(ModelBasedControlSystem):
     def _register_results_with_template_manager(
         self, template_manager, context: Dict[str, Any]
     ) -> None:
-        """Register results with template manager, including loop context mapping."""
+        """Register results with template manager, including loop context mapping.
+        
+        Enhanced with runtime resolution system (Issue #211) for better dependency tracking.
+        """
         import logging
         logger = logging.getLogger(__name__)
         
-        # Register all previous results with the template manager
+        # Initialize runtime resolution if not already done
+        if self.runtime_resolution is None:
+            pipeline_id = context.get("pipeline_id", "default")
+            self.runtime_resolution = RuntimeResolutionIntegration(pipeline_id)
+            logger.info(f"Initialized runtime resolution for pipeline {pipeline_id}")
+        
+        # Register all previous results with both systems
         if "previous_results" in context:
             logger.info(f"Registering {len(context['previous_results'])} results with template manager for filesystem operation")
             
@@ -235,6 +248,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             for step_id, result in context["previous_results"].items():
                 # Log what we're registering
                 logger.debug(f"Registering result {step_id}: type={type(result).__name__}, value={str(result)[:100] if isinstance(result, str) else 'complex'}")
+                
+                # Register with runtime resolution system
+                self.runtime_resolution.register_task_result(step_id, result)
                 
                 # Register each result with the template manager
                 # For string results, make them directly accessible
@@ -275,6 +291,8 @@ class HybridControlSystem(ModelBasedControlSystem):
         if "pipeline_params" in context:
             for key, value in context["pipeline_params"].items():
                 if key not in ["previous_results", "_template_manager"]:
+                    # Register with both systems
+                    self.runtime_resolution.state.register_variable(key, value)
                     template_manager.register_context(key, value)
                     logger.info(f"Registering pipeline param {key}: {str(value)[:100]}")
         
@@ -293,6 +311,31 @@ class HybridControlSystem(ModelBasedControlSystem):
             if loop_var in context and loop_var not in template_manager.context:
                 template_manager.register_context(loop_var, context[loop_var])
                 logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
+    
+    def _resolve_template_with_runtime(self, template_str: str, context: Dict[str, Any]) -> str:
+        """Use runtime resolution system to resolve templates.
+        
+        This provides better handling of complex dependencies and loop contexts.
+        """
+        if self.runtime_resolution is None:
+            return template_str
+        
+        try:
+            # Add any additional context
+            additional_context = {}
+            if "_loop_context_mapping" in context:
+                additional_context.update(context["_loop_context_mapping"])
+            
+            # Use runtime resolution
+            resolved = self.runtime_resolution.resolve_template_with_context(
+                template_str, additional_context
+            )
+            return resolved
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug(f"Runtime resolution failed, returning original: {e}")
+            return template_str
     
     async def _handle_file_operation(
         self, task: Task, context: Dict[str, Any]
