@@ -24,6 +24,8 @@ from .loop_expander import (
     ExpandedTask
 )
 
+from .orchestrator_integration import RuntimeResolutionIntegration
+
 __all__ = [
     'PipelineExecutionState',
     'UnresolvedItem',
@@ -34,4 +36,5 @@ __all__ = [
     'LoopExpander',
     'LoopTask',
     'ExpandedTask',
+    'RuntimeResolutionIntegration',
 ]
