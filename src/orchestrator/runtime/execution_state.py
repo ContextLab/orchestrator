@@ -418,8 +418,10 @@ class PipelineExecutionState:
         visited = set()
         rec_stack = set()
         path = []
+        cycle_found = []
         
         def has_cycle(node: str) -> bool:
+            nonlocal cycle_found
             visited.add(node)
             rec_stack.add(node)
             path.append(node)
@@ -429,8 +431,9 @@ class PipelineExecutionState:
                     if has_cycle(neighbor):
                         return True
                 elif neighbor in rec_stack:
-                    # Found cycle
+                    # Found cycle - extract it
                     cycle_start = path.index(neighbor)
+                    cycle_found = path[cycle_start:]
                     return True
             
             path.pop()
@@ -441,10 +444,7 @@ class PipelineExecutionState:
             if node not in visited:
                 path = []
                 if has_cycle(node):
-                    # Extract the cycle
-                    cycle_start = path.index(path[-1])
-                    cycle = path[cycle_start:]
-                    return True, cycle
+                    return True, cycle_found
         
         return False, None
     
