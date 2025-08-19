@@ -1,14 +1,14 @@
 # Interactive Pipeline with User Input and Approval
-# Demonstrates human-in-the-loop workflows
+# Demonstrates human-in-the-loop workflows with real data processing
 id: interactive_pipeline
-name: Interactive Data Processing Pipeline
-description: Process data with user input, approval gates, and feedback collection
-version: "1.0.0"
+name: Interactive Sales Data Processing Pipeline
+description: Process sales data with user-selected transformations, approval gates, and feedback
+version: "2.0.0"
 
 parameters:
   input_file:
     type: string
-    default: "data/input.csv"
+    default: "data/sales_data.csv"
   output_dir:
     type: string
     default: "examples/outputs/interactive_pipeline"
@@ -20,9 +20,40 @@ steps:
     parameters:
       prompt: "Select data processing method"
       input_type: "choice"
-      choices: ["standard", "advanced", "custom"]
-      default: "standard"
+      choices: ["aggregate", "filter", "transform", "analyze"]
+      default: "aggregate"
       context: "cli"
+    
+  - id: get_specific_operation
+    tool: user-prompt
+    action: execute
+    parameters:
+      prompt: |
+        {% if get_processing_options.value == 'aggregate' %}
+        Select aggregation type
+        {% elif get_processing_options.value == 'filter' %}
+        Select filter criteria
+        {% elif get_processing_options.value == 'transform' %}
+        Select transformation type
+        {% else %}
+        Select analysis type
+        {% endif %}
+      input_type: "choice"
+      choices: |
+        {% if get_processing_options.value == 'aggregate' %}
+        ["by_category", "by_region", "by_date", "top_products"]
+        {% elif get_processing_options.value == 'filter' %}
+        ["high_value", "electronics_only", "recent_orders", "top_customers"]
+        {% elif get_processing_options.value == 'transform' %}
+        ["add_totals", "calculate_margins", "normalize_prices", "pivot_data"]
+        {% else %}
+        ["summary_stats", "sales_trends", "customer_analysis", "product_performance"]
+        {% endif %}
+      default: |
+        {% if get_processing_options.value == 'aggregate' %}by_category{% elif get_processing_options.value == 'filter' %}high_value{% elif get_processing_options.value == 'transform' %}add_totals{% else %}summary_stats{% endif %}
+      context: "cli"
+    dependencies:
+      - get_processing_options
     
   - id: get_output_format
     tool: user-prompt
@@ -30,11 +61,11 @@ steps:
     parameters:
       prompt: "Select output format"
       input_type: "choice"
-      choices: ["csv", "json", "yaml"]
+      choices: ["csv", "json", "markdown"]
       default: "csv"
       context: "cli"
     dependencies:
-      - get_processing_options
+      - get_specific_operation
     
   - id: read_data
     tool: filesystem
@@ -45,34 +76,170 @@ steps:
       - get_output_format
     
   - id: process_data
-    tool: data-processing
-    action: transform
+    action: generate_text
     parameters:
-      data: "{{ read_data.content }}"
-      format: "csv"
-      operation: "{{ get_processing_options.value }}"
+      prompt: |
+        Process this CSV sales data according to the following instructions:
+        
+        Data:
+        {{ read_data.content }}
+        
+        Processing Method: {{ get_processing_options.value }}
+        Specific Operation: {{ get_specific_operation.value }}
+        
+        Instructions:
+        {% if get_processing_options.value == 'aggregate' %}
+          {% if get_specific_operation.value == 'by_category' %}
+          Group by category and calculate:
+          - Total quantity sold
+          - Total revenue (quantity * unit_price)
+          - Average unit price
+          - Number of transactions
+          {% elif get_specific_operation.value == 'by_region' %}
+          Group by region and calculate:
+          - Total sales revenue
+          - Number of orders
+          - Average order value
+          - Most popular product
+          {% elif get_specific_operation.value == 'by_date' %}
+          Group by date and show:
+          - Daily revenue
+          - Number of transactions
+          - Best selling product of the day
+          {% else %}
+          Find the top 5 products by total revenue with columns:
+          - Product name
+          - Total quantity sold
+          - Total revenue
+          - Average price
+          {% endif %}
+        {% elif get_processing_options.value == 'filter' %}
+          {% if get_specific_operation.value == 'high_value' %}
+          Filter to show only orders where (quantity * unit_price) > 500.
+          Include all original columns plus a 'total_value' column.
+          {% elif get_specific_operation.value == 'electronics_only' %}
+          Filter to show only Electronics category items.
+          Sort by total value (quantity * unit_price) descending.
+          {% elif get_specific_operation.value == 'recent_orders' %}
+          Filter to show only orders from January 20, 2024 onwards.
+          Sort by date descending.
+          {% else %}
+          Show top 3 customers by total purchase amount with:
+          - Customer ID
+          - Number of orders
+          - Total amount spent
+          - Favorite category
+          {% endif %}
+        {% elif get_processing_options.value == 'transform' %}
+          {% if get_specific_operation.value == 'add_totals' %}
+          Add these new columns to each row:
+          - total_value = quantity * unit_price
+          - tax_amount = total_value * 0.08
+          - final_amount = total_value + tax_amount
+          {% elif get_specific_operation.value == 'calculate_margins' %}
+          Add profit margin columns:
+          - cost_basis = unit_price * 0.7 for Electronics, unit_price * 0.6 for Furniture
+          - profit = (unit_price - cost_basis) * quantity
+          - margin_percent = (profit / (unit_price * quantity)) * 100
+          {% elif get_specific_operation.value == 'normalize_prices' %}
+          Normalize all unit prices to an index where the highest price = 100.
+          Add columns: original_price, normalized_price, price_index
+          {% else %}
+          Create a pivot table with:
+          - Dates as rows
+          - Categories as columns  
+          - Sum of quantities as values
+          {% endif %}
+        {% else %}
+          {% if get_specific_operation.value == 'summary_stats' %}
+          Provide summary statistics:
+          - Total revenue
+          - Total orders
+          - Average order value
+          - Best selling product
+          - Best sales day
+          - Top customer
+          {% elif get_specific_operation.value == 'sales_trends' %}
+          Analyze sales trends:
+          - Daily average sales
+          - Growth rate from first to last day
+          - Best and worst days
+          - Weekend vs weekday performance
+          {% elif get_specific_operation.value == 'customer_analysis' %}
+          Analyze customers:
+          - Total unique customers
+          - Repeat customer rate
+          - Average purchase per customer
+          - Top 3 spenders
+          - Most popular category per customer segment
+          {% else %}
+          Product performance analysis:
+          - Best seller by quantity
+          - Top revenue generator
+          - Category breakdown (% of total sales)
+          - Price point analysis
+          {% endif %}
+        {% endif %}
+        
+        Output format: {{ get_output_format.value }}
+        {% if get_output_format.value == 'csv' %}
+        Format as CSV with headers. Use comma separators.
+        {% elif get_output_format.value == 'json' %}
+        Format as valid JSON array of objects.
+        {% else %}
+        Format as a markdown table with a title and summary.
+        {% endif %}
+        
+        IMPORTANT: Output ONLY the processed data in the requested format, no explanations or markdown code blocks.
+      model: <AUTO>
+      max_tokens: 2000
     dependencies:
       - read_data
+    
+  - id: create_summary
+    action: generate_text
+    parameters:
+      prompt: |
+        Summarize the data processing that was performed:
+        
+        Original data: {{ read_data.content.split('\n') | length - 1 }} rows of sales data
+        Processing type: {{ get_processing_options.value }} - {{ get_specific_operation.value }}
+        
+        Based on the processing, provide a 2-3 sentence business insight.
+        Be specific about numbers and findings.
+      model: <AUTO>
+      max_tokens: 200
+    dependencies:
+      - process_data
     
   - id: approve_results
     tool: approval-gate
     action: execute
     parameters:
       title: "Review Processed Data"
-      content: "{{ process_data.result | truncate(1000) }}"
+      content: |
+        ## Processing Summary
+        {{ create_summary }}
+        
+        ## Processed Data (first 1000 chars)
+        ```
+        {{ process_data | truncate(1000) }}
+        ```
+        
+        Approve to save the results?
       format: "text"
       allow_modifications: true
       require_reason: true
       context: "cli"
     dependencies:
-      - process_data
+      - create_summary
     
   - id: save_if_approved
     tool: filesystem
     action: write
     parameters:
-      path: "{{ output_dir }}/data/output.{{ get_output_format.value }}"
-      content: "{{ approve_results.modified_content | default(read_data.content) }}"
+      path: "{{ output_dir }}/data/processed_{{ get_specific_operation.value }}.{{ get_output_format.value }}"
+      content: "{{ approve_results.modified_content | default(process_data) }}"
     dependencies:
       - approve_results
     condition: "{{ approve_results.approved }}"
@@ -83,21 +250,24 @@ steps:
     parameters:
       title: "Pipeline Experience Feedback"
       questions:
+        - id: "data_quality"
+          text: "Rate the quality of data processing"
+          type: "rating"
+          scale: 5
         - id: "ease_of_use"
           text: "How easy was the pipeline to use?"
           type: "rating"
           scale: 5
-        - id: "processing_quality"
-          text: "Rate the quality of data processing"
-          type: "rating"
-          scale: 5
+        - id: "processing_useful"
+          text: "Was the processing useful for your needs?"
+          type: "boolean"
         - id: "would_use_again"
           text: "Would you use this pipeline again?"
           type: "boolean"
         - id: "suggestions"
           text: "Any suggestions for improvement?"
           type: "text"
-      required_questions: ["ease_of_use", "would_use_again"]
+      required_questions: ["data_quality", "ease_of_use", "would_use_again"]
       anonymous: false
       save_to_file: "{{ output_dir }}/feedback/pipeline_feedback.json"
       context: "cli"
@@ -112,23 +282,30 @@ steps:
       content: |
         # Pipeline Execution Summary
         
-        ## User Selections
-        - Processing Method: {{ get_processing_options.value }}
-        - Output Format: {{ get_output_format.value }}
+        ## Processing Configuration
+        - **Method**: {{ get_processing_options.value }}
+        - **Operation**: {{ get_specific_operation.value }}
+        - **Output Format**: {{ get_output_format.value }}
         
-        ## Processing Results
-        - Input File: {{ input_file }}
-        - Processing Status: {{ 'Approved' if approve_results.approved else 'Rejected' }}
+        ## Data Summary
+        - **Input File**: {{ input_file }}
+        - **Rows Processed**: {{ read_data.content.split('\n') | length - 1 }}
+        
+        ## Business Insights
+        {{ create_summary }}
+        
+        ## Approval Status
+        - **Status**: {{ 'Approved' if approve_results.approved else 'Rejected' }}
         {% if approve_results.approved %}
-        - Output File: data/output.{{ get_output_format.value }}
+        - **Output File**: data/processed_{{ get_specific_operation.value }}.{{ get_output_format.value }}
         {% else %}
-        - Rejection Reason: {{ approve_results.rejection_reason }}
+        - **Rejection Reason**: {{ approve_results.rejection_reason }}
         {% endif %}
         
-        ## Feedback Summary
-        - Ease of Use: {{ collect_feedback.summary.rating_average | round(1) }}/5
-        - Would Use Again: {{ 'Yes' if collect_feedback.summary.boolean_summary.would_use_again else 'No' }}
-        - Completion Rate: {{ collect_feedback.completion_rate }}%
+        ## User Feedback
+        - **Data Quality**: {{ collect_feedback.summary.rating_average | round(1) }}/5
+        - **Would Use Again**: {{ 'Yes' if collect_feedback.summary.boolean_summary.would_use_again else 'No' }}
+        - **Processing Useful**: {{ 'Yes' if collect_feedback.summary.boolean_summary.processing_useful else 'No' }}
         
         ## Timestamp
         Generated at: {{ now() }}

@@ -1,0 +1,112 @@
+[
+  {
+    "date": "2024-01-15",
+    "product": "Laptop Pro",
+    "category": "Electronics",
+    "quantity": 2,
+    "unit_price": 1299.99,
+    "customer_id": "C001",
+    "region": "North",
+    "total_value": 2599.98
+  },
+  {
+    "date": "2024-01-16",
+    "product": "Office Chair",
+    "category": "Furniture",
+    "quantity": 5,
+    "unit_price": 249.99,
+    "customer_id": "C002",
+    "region": "South",
+    "total_value": 1249.95
+  },
+  {
+    "date": "2024-01-17",
+    "product": "Standing Desk",
+    "category": "Furniture",
+    "quantity": 1,
+    "unit_price": 599.99,
+    "customer_id": "C004",
+    "region": "West",
+    "total_value": 599.99
+  },
+  {
+    "date": "2024-01-18",
+    "product": "Monitor 4K",
+    "category": "Electronics",
+    "quantity": 3,
+    "unit_price": 399.99,
+    "customer_id": "C001",
+    "region": "North",
+    "total_value": 1199.97
+  },
+  {
+    "date": "2024-01-19",
+    "product": "Keyboard Mechanical",
+    "category": "Electronics",
+    "quantity": 4,
+    "unit_price": 149.99,
+    "customer_id": "C006",
+    "region": "East",
+    "total_value": 599.96
+  },
+  {
+    "date": "2024-01-22",
+    "product": "Ergonomic Chair",
+    "category": "Furniture",
+    "quantity": 3,
+    "unit_price": 449.99,
+    "customer_id": "C002",
+    "region": "South",
+    "total_value": 1349.97
+  },
+  {
+    "date": "2024-01-23",
+    "product": "USB Hub",
+    "category": "Electronics",
+    "quantity": 15,
+    "unit_price": 39.99,
+    "customer_id": "C009",
+    "region": "East",
+    "total_value": 599.85
+  },
+  {
+    "date": "2024-01-24",
+    "product": "File Cabinet",
+    "category": "Furniture",
+    "quantity": 4,
+    "unit_price": 299.99,
+    "customer_id": "C010",
+    "region": "West",
+    "total_value": 1199.96
+  },
+  {
+    "date": "2024-01-25",
+    "product": "Headphones Wireless",
+    "category": "Electronics",
+    "quantity": 7,
+    "unit_price": 199.99,
+    "customer_id": "C011",
+    "region": "North",
+    "total_value": 1399.93
+  },
+  {
+    "date": "2024-01-26",
+    "product": "Conference Table",
+    "category": "Furniture",
+    "quantity": 1,
+    "unit_price": 1299.99,
+    "customer_id": "C012",
+    "region": "South",
+    "total_value": 1299.99
+  },
+  {
+    "date": "2024-01-27",
+    "product": "Tablet Pro",
+    "category": "Electronics",
+    "quantity": 2,
+    "unit_price": 899.99,
+    "customer_id": "C013",
+    "region": "East",
+    "total_value": 1799.98
+  }
+]
