@@ -230,16 +230,39 @@ class HybridControlSystem(ModelBasedControlSystem):
         if "previous_results" in context:
             logger.info(f"Registering {len(context['previous_results'])} results with template manager for filesystem operation")
             
-            # Check if we have a loop context mapping
+            # First, register ALL results to ensure they're available
+            # This is important for templates that reference results from outside the loop
+            for step_id, result in context["previous_results"].items():
+                # Log what we're registering
+                logger.debug(f"Registering result {step_id}: type={type(result).__name__}, value={str(result)[:100] if isinstance(result, str) else 'complex'}")
+                
+                # Register each result with the template manager
+                # For string results, make them directly accessible
+                if isinstance(result, str):
+                    # Register the string directly
+                    template_manager.register_context(step_id, result)
+                    # Also register wrapped for compatibility
+                    template_manager.register_context(f"{step_id}_result", {"result": result})
+                    template_manager.register_context(f"{step_id}_str", result)
+                elif isinstance(result, dict) and "result" in result:
+                    # If result is a dict with 'result' key, register both
+                    template_manager.register_context(step_id, result)
+                    if isinstance(result["result"], str):
+                        # Also register the result directly for easier access
+                        template_manager.register_context(f"{step_id}_direct", result["result"])
+                        template_manager.register_context(f"{step_id}_str", result["result"])
+                else:
+                    template_manager.register_context(step_id, result)
+            
+            # Check if we have a loop context mapping for short names
             loop_context_mapping = context.get("_loop_context_mapping", {})
             if loop_context_mapping:
                 logger.info(f"Found loop context mapping with {len(loop_context_mapping)} entries: {loop_context_mapping}")
-                # Only register results that are in the loop context mapping
-                # This ensures we only get results from the CURRENT iteration
+                # Also register results with short names for loop iteration
                 for short_name, full_task_id in loop_context_mapping.items():
                     if full_task_id in context["previous_results"]:
                         result = context["previous_results"][full_task_id]
-                        logger.info(f"Registering loop iteration result '{short_name}' (from {full_task_id}): {str(result)[:100] if isinstance(result, str) else 'complex'}")
+                        logger.info(f"Registering loop iteration result with short name '{short_name}' (from {full_task_id}): {str(result)[:100] if isinstance(result, str) else 'complex'}")
                         
                         # Register with short name for template access
                         template_manager.register_context(short_name, result)
@@ -247,33 +270,6 @@ class HybridControlSystem(ModelBasedControlSystem):
                         # Also handle the common pattern of accessing .result
                         if isinstance(result, dict) and "result" in result:
                             template_manager.register_context(f"{short_name}_result", result["result"])
-                        
-                        # Also register with full task ID
-                        template_manager.register_context(full_task_id, result)
-            
-            # Register all non-loop results (or all results if not in a loop)
-            for step_id, result in context["previous_results"].items():
-                # Skip if this was already registered as a loop result
-                if loop_context_mapping and step_id in loop_context_mapping.values():
-                    continue
-                    
-                # Log what we're registering
-                logger.info(f"Registering non-loop result {step_id}: type={type(result).__name__}, value={str(result)[:100] if isinstance(result, str) else 'complex'}")
-                
-                # Register each result with the template manager
-                # For string results, make them directly accessible
-                if isinstance(result, str):
-                    # Register both the string directly and wrapped in result
-                    template_manager.register_context(step_id, result)
-                    template_manager.register_context(f"{step_id}_result", {"result": result})
-                elif isinstance(result, dict) and "result" in result:
-                    # If result is a dict with 'result' key, register both
-                    template_manager.register_context(step_id, result)
-                    if isinstance(result["result"], str):
-                        # Also register the result directly for easier access
-                        template_manager.register_context(f"{step_id}_direct", result["result"])
-                else:
-                    template_manager.register_context(step_id, result)
         
         # Also register pipeline parameters if available
         if "pipeline_params" in context:

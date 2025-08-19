@@ -1311,10 +1311,23 @@ class Orchestrator:
                 
                 # Pre-render templates in task parameters before execution
                 if task.parameters and self.template_manager:
-                    # If we have loop context mapping, register the loop-specific results first
+                    # First, register ALL previous results with the template manager
+                    # This ensures all step results are available for template rendering
+                    if "previous_results" in task_context:
+                        for step_id, result in task_context["previous_results"].items():
+                            # Register the result for template access
+                            self.template_manager.register_context(step_id, result)
+                            # If it's a string, make it directly accessible
+                            if isinstance(result, str):
+                                self.template_manager.register_context(f"{step_id}_str", result)
+                            # If it's a dict with 'result' key, also register that
+                            elif isinstance(result, dict) and 'result' in result:
+                                self.template_manager.register_context(f"{step_id}_result", result['result'])
+                    
+                    # If we have loop context mapping, also register the loop-specific results with short names
                     if "_loop_context_mapping" in task_context and "previous_results" in task_context:
                         loop_context_mapping = task_context["_loop_context_mapping"]
-                        self.logger.debug(f"Registering {len(loop_context_mapping)} loop results before pre-rendering for task {task_id}")
+                        self.logger.debug(f"Registering {len(loop_context_mapping)} loop results with short names for task {task_id}")
                         
                         # Register results from this iteration with their short names
                         for short_name, full_task_id in loop_context_mapping.items():
@@ -1322,6 +1335,17 @@ class Orchestrator:
                                 result = task_context["previous_results"][full_task_id]
                                 self.template_manager.register_context(short_name, result)
                                 self.logger.debug(f"  Registered '{short_name}' = {str(result)[:50] if isinstance(result, str) else 'complex'}")
+                    
+                    # Also register pipeline parameters
+                    if isinstance(pipeline.context, dict):
+                        for key, value in pipeline.context.items():
+                            if key not in ["previous_results", "_template_manager"]:
+                                self.template_manager.register_context(key, value)
+                    
+                    # Register loop variables if present
+                    for loop_var in ["$item", "$index", "item", "index"]:
+                        if loop_var in task_context:
+                            self.template_manager.register_context(loop_var, task_context[loop_var])
                     
                     rendered_params = {}
                     for key, value in task.parameters.items():
