@@ -1,0 +1,16 @@
+date,product,category,quantity,unit_price,customer_id,region
+2024-01-15,Laptop Pro,Electronics,2,1299.99,C001,North
+2024-01-16,Office Chair,Furniture,5,249.99,C002,South
+2024-01-16,Wireless Mouse,Electronics,10,29.99,C003,East
+2024-01-17,Standing Desk,Furniture,1,599.99,C004,West
+2024-01-18,Monitor 4K,Electronics,3,399.99,C001,North
+2024-01-18,Desk Lamp,Furniture,8,49.99,C005,South
+2024-01-19,Keyboard Mechanical,Electronics,4,149.99,C006,East
+2024-01-20,Bookshelf,Furniture,2,199.99,C007,West
+2024-01-21,Webcam HD,Electronics,6,79.99,C008,North
+2024-01-22,Ergonomic Chair,Furniture,3,449.99,C002,South
+2024-01-23,USB Hub,Electronics,15,39.99,C009,East
+2024-01-24,File Cabinet,Furniture,4,299.99,C010,West
+2024-01-25,Headphones Wireless,Electronics,7,199.99,C011,North
+2024-01-26,Conference Table,Furniture,1,1299.99,C012,South
+2024-01-27,Tablet Pro,Electronics,2,899.99,C013,East
