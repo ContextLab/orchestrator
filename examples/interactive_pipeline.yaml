@@ -200,13 +200,20 @@ steps:
     action: generate_text
     parameters:
       prompt: |
-        Summarize the data processing that was performed:
+        Create a concise business summary based on this data processing:
         
         Original data: {{ read_data.content.split('\n') | length - 1 }} rows of sales data
         Processing type: {{ get_processing_options.value }} - {{ get_specific_operation.value }}
         
-        Based on the processing, provide a 2-3 sentence business insight.
-        Be specific about numbers and findings.
+        Processed results:
+        {{ process_data | truncate(500) }}
+        
+        Write exactly 2-3 sentences summarizing:
+        1. What processing was done
+        2. Key findings with specific numbers from the results above
+        
+        Do NOT ask for more data or say you need more information. Use only the data shown above.
+        Write in past tense. Be direct and specific.
       model: <AUTO>
       max_tokens: 200
     dependencies:
