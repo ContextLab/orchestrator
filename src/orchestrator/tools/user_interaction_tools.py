@@ -56,6 +56,7 @@ class UserPromptTool(Tool):
             "input_type",
             "string",
             "Type of input: text, number, boolean, choice",
+            required=False,
             default="text",
         )
         self.add_parameter(
@@ -68,10 +69,10 @@ class UserPromptTool(Tool):
             required=False,
         )
         self.add_parameter(
-            "timeout", "number", "Timeout in seconds (0 for no timeout)", default=0
+            "timeout", "number", "Timeout in seconds (0 for no timeout)", required=False, default=0
         )
         self.add_parameter(
-            "context", "string", "Execution context: cli, gui, api", default="cli"
+            "context", "string", "Execution context: cli, gui, api", required=False, default="cli"
         )
         self.add_parameter(
             "validation_pattern",
@@ -80,10 +81,10 @@ class UserPromptTool(Tool):
             required=False,
         )
         self.add_parameter(
-            "retry_on_invalid", "boolean", "Retry if validation fails", default=True
+            "retry_on_invalid", "boolean", "Retry if validation fails", required=False, default=True
         )
         self.add_parameter(
-            "max_retries", "integer", "Maximum validation retries", default=3
+            "max_retries", "integer", "Maximum validation retries", required=False, default=3
         )
 
         self.logger = logging.getLogger(__name__)
@@ -359,7 +360,7 @@ class ApprovalGateTool(Tool):
             "require_reason", "boolean", "Require reason for rejection", default=True
         )
         self.add_parameter(
-            "context", "string", "Execution context: cli, gui, api", default="cli"
+            "context", "string", "Execution context: cli, gui, api", required=False, default="cli"
         )
         self.add_parameter(
             "auto_approve_hash",
@@ -572,7 +573,7 @@ class FeedbackCollectionTool(Tool):
             "required_questions", "array", "IDs of required questions", default=[]
         )
         self.add_parameter(
-            "context", "string", "Execution context: cli, gui, api", default="cli"
+            "context", "string", "Execution context: cli, gui, api", required=False, default="cli"
         )
         self.add_parameter(
             "save_to_file", "string", "File path to save feedback", required=False

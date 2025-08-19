@@ -9,6 +9,9 @@ parameters:
   input_file:
     type: string
     default: "data/input.csv"
+  output_dir:
+    type: string
+    default: "examples/outputs/interactive_pipeline"
 
 steps:
   - id: get_processing_options
@@ -37,7 +40,7 @@ steps:
     tool: filesystem
     action: read
     parameters:
-      path: "examples/outputs/interactive_pipeline/{{ parameters.input_file }}"
+      path: "{{ output_dir }}/{{ input_file }}"
     dependencies:
       - get_output_format
     
@@ -47,8 +50,7 @@ steps:
     parameters:
       data: "{{ read_data.content }}"
       format: "csv"
-      operation:
-        type: <AUTO>Based on {{ get_processing_options.value }}, determine the appropriate processing operation</AUTO>
+      operation: "{{ get_processing_options.value }}"
     dependencies:
       - read_data
     
@@ -69,7 +71,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/interactive_pipeline/data/output.{{ get_output_format.value }}"
+      path: "{{ output_dir }}/data/output.{{ get_output_format.value }}"
       content: "{{ approve_results.modified_content | default(process_data.result) }}"
     dependencies:
       - approve_results
@@ -97,16 +99,16 @@ steps:
           type: "text"
       required_questions: ["ease_of_use", "would_use_again"]
       anonymous: false
-      save_to_file: "feedback/pipeline_feedback.json"
+      save_to_file: "{{ output_dir }}/feedback/pipeline_feedback.json"
       context: "cli"
     dependencies:
       - save_if_approved
     
   - id: generate_summary
-    tool: report-generator
-    action: generate
+    tool: filesystem
+    action: write
     parameters:
-      title: "Interactive Pipeline Summary"
+      path: "{{ output_dir }}/summary.md"
       content: |
         # Pipeline Execution Summary
         
@@ -115,7 +117,7 @@ steps:
         - Output Format: {{ get_output_format.value }}
         
         ## Processing Results
-        - Input File: {{ parameters.input_file }}
+        - Input File: {{ input_file }}
         - Processing Status: {{ 'Approved' if approve_results.approved else 'Rejected' }}
         {% if approve_results.approved %}
         - Output File: data/output.{{ get_output_format.value }}

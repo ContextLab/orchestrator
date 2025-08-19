@@ -16,6 +16,11 @@ from ..tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from ..tools.report_tools import ReportGeneratorTool, PDFCompilerTool
 from ..tools.checkpoint_tool import CheckpointTool
 from ..tools.multimodal_tools import ImageGenerationTool, ImageAnalysisTool
+from ..tools.user_interaction_tools import (
+    UserPromptTool, 
+    ApprovalGateTool, 
+    FeedbackCollectionTool
+)
 from ..compiler.template_renderer import TemplateRenderer
 from ..runtime import RuntimeResolutionIntegration
 
@@ -77,6 +82,11 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.checkpoint_tool = CheckpointTool()
         self.image_generation_tool = ImageGenerationTool()
         self.image_analysis_tool = ImageAnalysisTool()
+        
+        # Initialize user interaction tools (Issue #165)
+        self.user_prompt_tool = UserPromptTool()
+        self.approval_gate_tool = ApprovalGateTool()
+        self.feedback_collection_tool = FeedbackCollectionTool()
         
         # Initialize runtime resolution system (Issue #211)
         self.runtime_resolution = None  # Will be initialized per pipeline
@@ -151,6 +161,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             "image-generation": self._handle_image_generation,
             "image-analysis": self._handle_image_analysis,
             "prompt-optimization": self._handle_prompt_optimization,
+            "user-prompt": self._handle_user_prompt,
+            "approval-gate": self._handle_approval_gate,
+            "feedback-collection": self._handle_feedback_collection,
         }
         
         if tool_name in tool_handlers:
@@ -1061,3 +1074,33 @@ Just return the optimized prompt, nothing else."""
         result = await handler.execute_action_loop(action_loop_task, enhanced_context)
         
         return result
+    
+    async def _handle_user_prompt(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle user prompt operations with real stdin/stdout."""
+        params = task.parameters.copy()
+        
+        # Pass template manager for runtime rendering if available
+        if hasattr(self, '_template_manager') and self._template_manager:
+            params['template_manager'] = self._template_manager
+        
+        return await self.user_prompt_tool.execute(**params)
+    
+    async def _handle_approval_gate(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle approval gate operations with real user interaction."""
+        params = task.parameters.copy()
+        
+        # Pass template manager for runtime rendering if available
+        if hasattr(self, '_template_manager') and self._template_manager:
+            params['template_manager'] = self._template_manager
+        
+        return await self.approval_gate_tool.execute(**params)
+    
+    async def _handle_feedback_collection(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle feedback collection with real user input."""
+        params = task.parameters.copy()
+        
+        # Pass template manager for runtime rendering if available
+        if hasattr(self, '_template_manager') and self._template_manager:
+            params['template_manager'] = self._template_manager
+        
+        return await self.feedback_collection_tool.execute(**params)

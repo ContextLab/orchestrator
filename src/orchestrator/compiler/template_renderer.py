@@ -46,6 +46,10 @@ class TemplateRenderer:
                 # Special case for execution.timestamp when not in context
                 if var_expr == "execution.timestamp":
                     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                # Special case for now() function
+                if var_expr == "now()":
+                    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # Handle filters
             if "|" in var_expr:
