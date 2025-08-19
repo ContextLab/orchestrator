@@ -29,7 +29,7 @@ steps:
     action: analyze_text
     parameters:
       text: "{{ input_text }}"
-      model: <AUTO task="analyze">Select a model for text analysis</AUTO>
+      model: "ollama:llama3.2:1b"
       analysis_type: "comprehensive"
       
   # Determine if text needs enhancement
@@ -42,7 +42,7 @@ steps:
         Analysis: {{ analyze_text }}
         
         Respond with either "improve" or "acceptable" based on the quality assessment.
-      model: <AUTO task="analyze">Select a model for quality assessment</AUTO>
+      model: "ollama:llama3.2:1b"
       max_tokens: 50
     dependencies:
       - analyze_text
@@ -56,7 +56,7 @@ steps:
         Improve the following text to make it clearer and more professional. Output ONLY the improved version, no explanations:
         
         Original text: {{ input_text }}
-      model: <AUTO task="generate">Select a model for text improvement</AUTO>
+      model: "ollama:llama3.2:1b"
       max_tokens: 500
     dependencies:
       - check_quality
@@ -73,7 +73,7 @@ steps:
         Output ONLY this text without any changes or additions:
         {{ input_text }}
         {% endif %}
-      model: <AUTO task="generate">Select a model to pass through text</AUTO>
+      model: "ollama:llama3.2:1b"
       max_tokens: 600
     dependencies:
       - enhance_text
@@ -92,16 +92,27 @@ steps:
             Translate the following text to {{ $item }}. Provide ONLY the direct translation, no explanations or commentary:
             
             Text to translate: "{{ input_text }}"
-          model: <AUTO task="translate">Select a model for translation to {{ $item }}</AUTO>
+          model: "ollama:llama3.2:1b"
           max_tokens: 600
           
       # Validate translation quality
       - id: validate_translation
-        action: analyze_text
+        action: generate_text
         parameters:
-          text: "{{ translate }}"
-          model: <AUTO task="analyze">Select a model for quality assessment</AUTO>
-          analysis_type: "quality"
+          prompt: |
+            Assess the quality of this translation from English to {{ $item }}:
+            
+            Original English: "{{ input_text }}"
+            Translation: "{{ translate }}"
+            
+            Evaluate the translation for:
+            1. Accuracy - Does it convey the same meaning as the original?
+            2. Fluency - Is it natural and grammatically correct in {{ $item }}?
+            3. Completeness - Are all concepts from the original included?
+            
+            Provide a brief quality assessment and rate it as: excellent, good, acceptable, or poor.
+          model: "ollama:llama3.2:1b"
+          max_tokens: 1500
         dependencies:
           - translate
           
@@ -136,7 +147,7 @@ steps:
         Create a brief summary of the translation process.
         Original text: {{ input_text }}
         Languages: {{ languages }}
-      model: <AUTO task="summarize">Select a model for brief summary</AUTO>
+      model: "ollama:llama3.2:1b"
       max_tokens: 100
     dependencies:
       - translate_text
@@ -150,7 +161,7 @@ steps:
         Original text: {{ input_text }}
         Languages: {{ languages }}
         Analysis: {{ analyze_text }}
-      model: <AUTO task="summarize">Select a model for detailed summary</AUTO>
+      model: "ollama:llama3.2:1b"
       max_tokens: 200
     dependencies:
       - translate_text
@@ -165,7 +176,7 @@ steps:
         Brief summary: {{ create_brief_summary | default('N/A') }}
         Detailed summary: {{ create_detailed_summary | default('N/A') }}
         Return just a number.
-      model: <AUTO task="analyze">Select a model for counting</AUTO>
+      model: "ollama:llama3.2:1b"
       max_tokens: 10
     dependencies:
       - create_brief_summary
