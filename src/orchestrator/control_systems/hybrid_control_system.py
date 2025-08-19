@@ -140,6 +140,14 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if this is an action loop
         if action_str == "action_loop":
             return await self._handle_action_loop(task, context)
+        
+        # Check if this is text analysis
+        if action_str == "analyze_text" or action_str == "analyze":
+            return await self._handle_analyze_text(task, context)
+        
+        # Check if this is text generation
+        if action_str == "generate_text" or action_str == "generate":
+            return await self._handle_generate_text(task, context)
 
         # Otherwise use model-based execution
         return await super()._execute_task_impl(task, context)
@@ -1104,3 +1112,101 @@ Just return the optimized prompt, nothing else."""
             params['template_manager'] = self._template_manager
         
         return await self.feedback_collection_tool.execute(**params)
+    
+    async def _handle_analyze_text(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle text analysis using AI models."""
+        from ..core.model import Model
+        
+        # Get parameters
+        params = task.parameters.copy()
+        text = params.get("text", "")
+        analysis_type = params.get("analysis_type", "general")
+        prompt = params.get("prompt", f"Analyze the following text for {analysis_type}:\n\n{text}")
+        model_spec = params.get("model", "<AUTO>")
+        
+        # Select model
+        if self.model_registry:
+            if model_spec == "<AUTO>" or model_spec.startswith("<AUTO>"):
+                # Auto-select model
+                requirements = {
+                    "tasks": ["analyze", "generate"],
+                    "context_window": len(prompt.encode()) // 4  # Rough token estimate
+                }
+                model = await self.model_registry.select_model(requirements)
+            else:
+                # Get specific model
+                model = self.model_registry.get_model(model_spec)
+        else:
+            # Fallback to creating a model directly
+            from ..models.openai_model import OpenAIModel
+            model = OpenAIModel(name="gpt-4")
+        
+        if not model:
+            return {
+                "success": False,
+                "error": "No suitable model found for text analysis"
+            }
+        
+        # Call model
+        try:
+            response = await model.generate(
+                prompt=prompt,
+                max_tokens=params.get("max_tokens", 1000),
+                temperature=params.get("temperature", 0.7)
+            )
+            
+            # Try to parse as JSON if expected
+            result = response
+            if "json" in analysis_type.lower() or "JSON" in prompt:
+                try:
+                    import json
+                    result = json.loads(response)
+                except json.JSONDecodeError:
+                    # Clean up response and try again
+                    cleaned = response.strip()
+                    if cleaned.startswith("```json"):
+                        cleaned = cleaned[7:]
+                    if cleaned.startswith("```"):
+                        cleaned = cleaned[3:]
+                    if cleaned.endswith("```"):
+                        cleaned = cleaned[:-3]
+                    try:
+                        result = json.loads(cleaned.strip())
+                    except json.JSONDecodeError:
+                        # Keep as string if can't parse
+                        pass
+            
+            return {
+                "action": "analyze_text",
+                "analysis_type": analysis_type,
+                "result": result,
+                "model_used": model.name if hasattr(model, 'name') else str(model),
+                "success": True
+            }
+            
+        except Exception as e:
+            return {
+                "action": "analyze_text",
+                "success": False,
+                "error": str(e)
+            }
+    
+    async def _handle_generate_text(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle text generation using AI models (alias for analyze_text)."""
+        # Generate text is essentially the same as analyze_text
+        # Just with a different default prompt structure
+        params = task.parameters.copy()
+        
+        # If no analysis_type specified, set it to generation
+        if "analysis_type" not in params:
+            params["analysis_type"] = "text_generation"
+        
+        # Create task for analyze_text handler
+        analyze_task = Task(
+            id=task.id,
+            action="analyze_text",
+            parameters=params,
+            dependencies=task.dependencies
+        )
+        
+        return await self._handle_analyze_text(analyze_task, context)
