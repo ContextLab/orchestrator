@@ -72,7 +72,7 @@ steps:
     action: write
     parameters:
       path: "{{ output_dir }}/data/output.{{ get_output_format.value }}"
-      content: "{{ approve_results.modified_content | default(process_data.result) }}"
+      content: "{{ approve_results.modified_content | default(read_data.content) }}"
     dependencies:
       - approve_results
     condition: "{{ approve_results.approved }}"

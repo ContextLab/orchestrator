@@ -1,18 +1,18 @@
 # Pipeline Execution Summary
 
 ## User Selections
-- Processing Method: standard
-- Output Format: csv
+- Processing Method: advanced
+- Output Format: json
 
 ## Processing Results
-- Input File: {{parameters.input_file}}
+- Input File: data/input.csv
 - Processing Status: Rejected
-- Rejection Reason: {{rejection_reason}}
+- Rejection Reason: Data quality issues
 
 ## Feedback Summary
-- Ease of Use: 5.0/5
-- Would Use Again: Yes
+- Ease of Use: 2.5/5
+- Would Use Again: No
 - Completion Rate: 100.0%
 
 ## Timestamp
-Generated at: 2025-08-19 12:46:46.895854
+Generated at: 2025-08-19 14:25:52.678189
