@@ -427,7 +427,13 @@ class MultiModelRoutingTool(Tool):
 
         # Use TaskDelegationTool for analysis
         delegation_tool = TaskDelegationTool()
-        result = await delegation_tool.execute(task=request)
+        delegation_tool.model_registry = self.model_registry
+        result = await delegation_tool._execute_impl(
+            task=request,
+            fallback_enabled=True,
+            cost_weight=0.3,
+            quality_weight=0.7
+        )
 
         if result["success"] and result["selected_model"] in models:
             return (

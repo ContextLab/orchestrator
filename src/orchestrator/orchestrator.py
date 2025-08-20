@@ -271,6 +271,10 @@ class Orchestrator:
         # Also register 'inputs' as a separate object for backward compatibility
         if pipeline.context:
             self.template_manager.register_context("inputs", pipeline.context)
+            
+        # Register parameters object for template access (Issue #166)
+        # This allows templates to use {{ parameters.output_path }} syntax
+        self.template_manager.register_context("parameters", pipeline.context)
 
         try:
             # Register pipeline as running

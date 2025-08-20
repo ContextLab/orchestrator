@@ -104,6 +104,6 @@ steps:
     action: write
     parameters:
       path: "{{ parameters.output_path }}/reports/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
-      content: "{{ generate_report.result }}"
+      content: "{{ generate_report }}"
     dependencies:
       - generate_report

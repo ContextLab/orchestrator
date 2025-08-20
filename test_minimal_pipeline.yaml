@@ -1,0 +1,22 @@
+# Minimal test pipeline
+id: test_minimal
+name: Test Minimal Pipeline
+version: "1.0.0"
+
+parameters:
+  output_path:
+    type: string
+    default: "examples/outputs/test_minimal"
+
+steps:
+  - id: create_content
+    action: echo "This is test content"
+    
+  - id: save_file
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ parameters.output_path }}/test.txt"
+      content: "{{ create_content.result }}"
+    dependencies:
+      - create_content
