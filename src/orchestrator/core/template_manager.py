@@ -690,7 +690,8 @@ class TemplateManager:
                     # More detailed error logging
                     import traceback
                     logger.error(f"Error rendering template: {e}")
-                    logger.error(f"Template preview: {data[:200]}...")
+                    logger.error(f"Error type: {type(e).__name__}")
+                    logger.error(f"Error rendering template (first 200 chars): {data[:200]}...")
                     logger.debug(f"Full traceback: {traceback.format_exc()}")
                     # Check if it's an undefined variable error
                     if "is undefined" in str(e):

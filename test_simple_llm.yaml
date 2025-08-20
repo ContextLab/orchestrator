@@ -1,0 +1,26 @@
+# Simple test pipeline for LLM tools
+id: test_llm_tools
+name: Test LLM Tools Pipeline
+version: "1.0.0"
+
+parameters:
+  task:
+    type: string
+    default: "Write a hello world function"
+
+steps:
+  - id: delegate
+    tool: task-delegation
+    action: execute
+    parameters:
+      task: "{{ parameters.task }}"
+      requirements:
+        complexity: "simple"
+      cost_weight: 0.5
+      quality_weight: 0.5
+      
+  - id: show_result
+    action: |
+      echo "Selected model: {{ delegate.selected_model }}"
+      echo "Score: {{ delegate.score }}"
+      echo "Task type: {{ delegate.task_analysis.task_type }}"

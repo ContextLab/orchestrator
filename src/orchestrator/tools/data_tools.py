@@ -240,7 +240,12 @@ class DataProcessingTool(Tool):
             try:
                 data = json.loads(data)
             except json.JSONDecodeError:
-                return {"action": "aggregate", "success": False, "error": f"Could not parse JSON data"}
+                # Try eval for Python list syntax
+                try:
+                    import ast
+                    data = ast.literal_eval(data)
+                except:
+                    return {"action": "aggregate", "success": False, "error": f"Could not parse JSON data"}
         
         group_by = operation.get("group_by", [])
         aggregations = operation.get("aggregations", {})
@@ -354,6 +359,10 @@ class DataProcessingTool(Tool):
     async def _transform_data(self, data: Any, operation: Dict, input_format: str = "json", output_format: str = "json") -> Dict[str, Any]:
         """Transform data structure with enhanced operations support."""
         import json
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        logger.debug(f"transform_data input - type: {type(data)}, format: {input_format}, first 100 chars: {str(data)[:100] if data else 'None'}")
         
         # Parse input based on format
         if isinstance(data, str):
@@ -364,7 +373,13 @@ class DataProcessingTool(Tool):
                 try:
                     data = json.loads(data)
                 except json.JSONDecodeError:
-                    pass
+                    # Try eval for Python list syntax
+                    try:
+                        import ast
+                        data = ast.literal_eval(data)
+                        logger.debug(f"Parsed Python list syntax to {type(data)}")
+                    except:
+                        pass
         
         # Support both 'transformations' and 'operations' parameters
         transformations = operation.get("transformations", operation.get("operations", []))
@@ -675,7 +690,12 @@ class DataProcessingTool(Tool):
             try:
                 data = json.loads(data)
             except json.JSONDecodeError:
-                return {"action": "pivot", "success": False, "error": "Could not parse JSON data"}
+                # Try eval for Python list syntax
+                try:
+                    import ast
+                    data = ast.literal_eval(data)
+                except:
+                    return {"action": "pivot", "success": False, "error": "Could not parse JSON data"}
         
         if not isinstance(data, list):
             return {"action": "pivot", "success": False, "error": "Data must be a list"}

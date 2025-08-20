@@ -1,0 +1,23 @@
+# Test saving report
+id: test_report_save
+name: Test Report Save
+version: "1.0.0"
+
+parameters:
+  output_path:
+    type: string
+    default: "examples/outputs/test_report"
+
+steps:
+  - id: generate_text
+    action: |
+      Generate this text: "# Test Report\n\nThis is a test report."
+      
+  - id: save_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ parameters.output_path }}/test_report.md"
+      content: "{{ generate_text.result }}"
+    dependencies:
+      - generate_text

@@ -677,10 +677,16 @@ class PromptOptimizationTool(Tool):
         preserve_intent = kwargs.get("preserve_intent", True)
 
         # Detect model if not specified
-        if not model:
+        if not model and self.model_registry:
             # Use task delegation to find best model
             delegation_tool = TaskDelegationTool()
-            delegation_result = await delegation_tool.execute(task=prompt)
+            delegation_tool.model_registry = self.model_registry
+            delegation_result = await delegation_tool._execute_impl(
+                task=prompt,
+                fallback_enabled=True,
+                cost_weight=0.3,
+                quality_weight=0.7
+            )
             if delegation_result["success"]:
                 model = delegation_result["selected_model"]
 

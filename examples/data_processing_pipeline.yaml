@@ -43,6 +43,7 @@ steps:
     action: validate
     parameters:
       data: "{{ read_data.content }}"
+      mode: "CSV"  # Use CSV validation mode
       schema:
         type: object
         properties:
@@ -76,7 +77,7 @@ steps:
     action: transform
     parameters:
       data: "{{ validate_schema.data if validate_schema.valid else read_data.content }}"
-      format: "csv"
+      format: "json"  # The validated data is already parsed as JSON
       output_format: "json"
       operations:
         # Remove duplicates
@@ -137,24 +138,39 @@ steps:
     dependencies:
       - clean_data
           
-  # Step 6: Statistical analysis
+  # Step 6: Statistical analysis  
   - id: analyze_trends
     action: analyze_text
     parameters:
-      text: "{{ aggregate_monthly.processed_data.result | default(aggregate_monthly.processed_data) }}"
       analysis_type: "statistical_trends"
       prompt: |
-        Analyze these monthly sales aggregations and provide:
-        1. Overall growth rate (as percentage)
-        2. Top 5 products by revenue
-        3. Any seasonal patterns observed
-        4. Any anomalies or unusual trends
+        Analyze the following sales data and create a JSON response.
         
-        Format your response as JSON with these fields:
-        - growth_rate: number
-        - top_products: array of {product: string, revenue: number}
-        - seasonal_patterns: array of strings describing patterns
-        - anomalies: array of {month: string, metric: string, description: string}
+        Monthly sales data ({{ aggregate_monthly.processed_data | length }} products):
+        {% for row in aggregate_monthly.processed_data %}
+        - Product: {{ row.product_name }}, Revenue: ${{ row.total_revenue | round(2) }}, Quantity: {{ row.total_quantity }}, Month: {{ row.order_month }}
+        {% endfor %}
+        
+        Based on this data, create a JSON response with the following:
+        
+        1. Calculate the growth_rate: If there are multiple months, calculate month-over-month growth percentage. If only one month, set to 0.
+        
+        2. Identify top_products: List all products sorted by total revenue (highest to lowest). Include product name and actual revenue from the data.
+        
+        3. Identify seasonal_patterns: Look for patterns across months if multiple months exist, otherwise note the time period covered.
+        
+        4. Detect anomalies: Identify any unusual patterns, sudden changes, or outliers in the data.
+        
+        Return ONLY a valid JSON object with this structure:
+        {
+          "growth_rate": <calculated_growth_rate>,
+          "top_products": [
+            {"product": "<product_name>", "revenue": <actual_revenue>},
+            ...
+          ],
+          "seasonal_patterns": ["<pattern_description>"],
+          "anomalies": [<any_anomalies_found>]
+        }
       model: "<AUTO>"
     dependencies:
       - aggregate_monthly
@@ -180,29 +196,53 @@ steps:
     action: analyze_text
     parameters:
       text: |
-        Original data profile: {{ profile_data.processed_data }}
-        Validation results: {{ validate_schema }}
-        Rows processed: {{ clean_data.row_count | default(5) }}
+        Data profile summary:
+        - Total rows: {{ profile_data.processed_data.row_count }}
+        - Total columns: {{ profile_data.processed_data.column_count }}
+        - Duplicate rows: {{ profile_data.processed_data.duplicate_rows }}
+        - Columns with missing data: {% for col_name, col_data in profile_data.processed_data.columns.items() %}{% if col_data.missing_count > 0 %}{{ col_name }} ({{ col_data.missing_percentage }}%), {% endif %}{% endfor %}None
+        - Data types: {% for col_name, col_data in profile_data.processed_data.columns.items() %}{{ col_name }}:{{ col_data.data_type }}, {% endfor %}
+        - Validation passed: {{ validate_schema.valid | default(false) }}
+        - Rows after cleaning: {{ clean_data.processed_data | from_json | length if clean_data.processed_data else 0 }}
       analysis_type: "quality_assessment"
       prompt: |
-        Based on the data profile and validation results, assess the overall data quality.
-        Provide a quality score between 0 and 1, where:
-        - 1.0 = Perfect quality (no issues)
-        - 0.8-0.99 = High quality (minor issues)
-        - 0.6-0.79 = Acceptable quality (some issues but usable)
-        - Below 0.6 = Poor quality (significant issues)
+        Based on this data profile summary, calculate a data quality score.
         
-        Also list any data quality issues found and recommendations.
+        Score calculation:
+        - Start with 1.0 (perfect score)
+        - Deduct 0.1 for duplicate rows (we have {{ profile_data.processed_data.duplicate_rows }} duplicates)
+        - Deduct 0.05 for each column with >10% missing data
+        - Deduct 0.1 if validation failed (validation passed: {{ validate_schema.valid | default(false) }})
+        - Deduct 0.05 for outliers if >10% (quantity column has {{ profile_data.processed_data.columns.quantity.outlier_percentage }}% outliers)
         
         Return as JSON with fields:
-        - quality_score: number between 0 and 1
-        - issues_found: array of strings
-        - recommendations: array of strings
+        - quality_score: calculated score between 0 and 1
+        - issues_found: list specific issues found in THIS data
+        - recommendations: list specific recommendations for THIS data
       model: "<AUTO>"
     dependencies:
       - profile_data
       - validate_schema
       - clean_data
+      
+  # Step 3b: Save validation report (always save for audit trail)
+  - id: save_validation_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output_path }}/validation_report.json"
+      content: |
+        {
+          "validation_success": {{ validate_schema.valid | default(false) | to_json }},
+          "errors": {{ validate_schema.errors | default([]) | to_json }},
+          "warnings": {{ validate_schema.warnings | default([]) | to_json }},
+          "rows_validated": {{ validate_schema.rows_validated | default(0) }},
+          "timestamp": "{{ now() }}",
+          "input_file": "{{ input_file }}",
+          "validation_mode": "{{ validate_schema.mode | default('strict') }}"
+        }
+    dependencies:
+      - validate_schema
               
   # Step 9: Export processed data
   - id: export_data
@@ -237,15 +277,24 @@ steps:
         
         - **Input File**: {{ input_file }}
         - **Output Path**: {{ output_path }}
-        - **Rows Processed**: {{ clean_data.row_count | default(0) }}
+        - **Rows Processed**: {{ clean_data.processed_data | from_json | length if clean_data.processed_data else 0 }}
         - **Data Profile**: 
           - Total Rows: {{ profile_data.processed_data.row_count | default(0) }}
           - Total Columns: {{ profile_data.processed_data.column_count | default(0) }}
           - Duplicate Rows: {{ profile_data.processed_data.duplicate_rows | default(0) }}
         
+        ## Data Validation Results
+        
+        {% if validate_schema.valid %}
+        ✅ **Validation Passed**: All data conforms to schema requirements
+        {% else %}
+        ❌ **Validation Failed**: {{ validate_schema.error | default("Schema validation errors detected") }}
+        - Validation report saved to: `{{ output_path }}/validation_report.json`
+        {% endif %}
+        
         ## Data Quality Assessment
         
-        ### Quality Score: {{ quality_check.result.quality_score | default(0) | round(2) }}/1.0
+        ### Quality Score: {% if quality_check.result.quality_score %}{{ quality_check.result.quality_score | round(2) }}{% else %}0.00{% endif %}/1.0
         
         ### Issues Found
         {% if quality_check.result.issues_found %}
@@ -261,16 +310,16 @@ steps:
         | Column | Type | Missing % | Unique Values | Min | Max | Mean |
         |--------|------|-----------|---------------|-----|-----|------|
         {% for col_name, col_data in profile_data.processed_data.columns.items() %}
-        | {{ col_name }} | {{ col_data.data_type }} | {{ col_data.missing_percentage | round(1) }}% | {{ col_data.unique_count }} | {{ col_data.min | default('N/A') }} | {{ col_data.max | default('N/A') }} | {{ col_data.mean | default('N/A') | round(2) }} |
+        | {{ col_name }} | {{ col_data.data_type }} | {{ col_data.missing_percentage | round(1) }}% | {{ col_data.unique_count }} | {{ col_data.min | default('N/A') }} | {{ col_data.max | default('N/A') }} | {% if col_data.data_type == 'numeric' and col_data.mean is defined %}{{ col_data.mean | round(2) }}{% else %}N/A{% endif %} |
         {% endfor %}
         
         ## Monthly Aggregations
         
-        {% if aggregate_monthly.processed_data.result %}
+        {% if aggregate_monthly.processed_data %}
         | Month | Total Quantity | Total Revenue | Avg Price | Order Count | Unique Customers |
         |-------|----------------|---------------|-----------|-------------|------------------|
-        {% for row in aggregate_monthly.processed_data.result %}
-        | {{ row.order_month }} | {{ row.total_quantity | default(0) }} | ${{ row.total_revenue | default(0) | round(2) }} | ${{ row.average_price | default(0) | round(2) }} | {{ row.order_count | default(0) }} | {{ row.unique_customers | default(0) }} |
+        {% for row in aggregate_monthly.processed_data %}
+        | {{ row.order_month }} | {{ row.total_quantity | default(0) }} | ${% if row.total_revenue %}{{ row.total_revenue | round(2) }}{% else %}0.00{% endif %} | ${% if row.average_price %}{{ row.average_price | round(2) }}{% else %}0.00{% endif %} | {{ row.order_count | default(0) }} | {{ row.unique_customers | default(0) }} |
         {% endfor %}
         {% else %}
         *No monthly aggregation data available*
@@ -278,10 +327,10 @@ steps:
         
         ## Product Status Distribution (Pivot Table)
         
-        {% if pivot_analysis.processed_data.result %}
+        {% if pivot_analysis.processed_data %}
         | Product | Pending | Processing | Shipped | Delivered | Total |
         |---------|---------|------------|---------|-----------|-------|
-        {% for row in pivot_analysis.processed_data.result %}
+        {% for row in pivot_analysis.processed_data %}
         | {{ row.product_name }} | {{ row.pending | default(0) }} | {{ row.processing | default(0) }} | {{ row.shipped | default(0) }} | {{ row.delivered | default(0) }} | {{ (row.pending | default(0)) + (row.processing | default(0)) + (row.shipped | default(0)) + (row.delivered | default(0)) }} |
         {% endfor %}
         {% else %}
@@ -295,7 +344,7 @@ steps:
         
         ### Top Products by Revenue
         {% for product in analyze_trends.result.top_products | default([]) %}
-        {{ loop.index }}. **{{ product.product }}** - ${{ product.revenue | round(2) }}
+        {{ loop.index }}. **{{ product.product }}** - ${% if product.revenue %}{{ product.revenue | round(2) }}{% else %}0.00{% endif %}
         {% endfor %}
         
         ### Seasonal Patterns
@@ -353,6 +402,8 @@ steps:
 outputs:
   processed_file: "{{ output_path }}/processed_data.csv"
   quality_score: "{{ quality_check.result.quality_score | default(0) }}"
-  rows_processed: "{{ clean_data.row_count | default(0) }}"
+  rows_processed: "{{ profile_data.processed_data.row_count | default(0) }}"
   report_path: "{{ output_path }}/data_processing_report.md"
-  growth_rate: "{{ analyze_trends.result.growth_rate }}"
+  validation_report: "{{ output_path }}/validation_report.json"
+  validation_passed: "{{ validate_schema.valid | default(false) }}"
+  growth_rate: "{{ analyze_trends.result.growth_rate | default('N/A') }}"

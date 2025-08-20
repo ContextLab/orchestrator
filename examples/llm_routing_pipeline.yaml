@@ -6,6 +6,9 @@ description: Automatically selects the best model and optimizes prompts for task
 version: "1.0.0"
 
 parameters:
+  output_path:
+    type: string
+    default: "examples/outputs/llm_routing_pipeline"
   task:
     type: string
     default: "Write a comprehensive analysis of renewable energy trends"
@@ -50,11 +53,8 @@ steps:
       - optimize_prompt
     
   - id: generate_report
-    tool: report-generator
-    action: generate
-    parameters:
-      title: "LLM Routing Report"
-      content: |
+    action: |
+      Generate the following markdown report content:
         # LLM Task Routing and Optimization Report
         
         ## Task Analysis
@@ -103,7 +103,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/llm_routing_pipeline/reports/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
-      content: "{{ generate_report.markdown }}"
+      path: "{{ parameters.output_path }}/reports/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
+      content: "{{ generate_report.result }}"
     dependencies:
       - generate_report

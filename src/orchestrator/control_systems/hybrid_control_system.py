@@ -21,6 +21,11 @@ from ..tools.user_interaction_tools import (
     ApprovalGateTool, 
     FeedbackCollectionTool
 )
+from ..tools.llm_tools import (
+    TaskDelegationTool,
+    MultiModelRoutingTool,
+    PromptOptimizationTool
+)
 from ..compiler.template_renderer import TemplateRenderer
 from ..runtime import RuntimeResolutionIntegration
 
@@ -87,6 +92,11 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.user_prompt_tool = UserPromptTool()
         self.approval_gate_tool = ApprovalGateTool()
         self.feedback_collection_tool = FeedbackCollectionTool()
+        
+        # Initialize LLM routing tools (Issue #166)
+        self.task_delegation_tool = TaskDelegationTool()
+        self.multi_model_routing_tool = MultiModelRoutingTool()
+        self.prompt_optimization_tool = PromptOptimizationTool()
         
         # Initialize runtime resolution system (Issue #211)
         self.runtime_resolution = None  # Will be initialized per pipeline
@@ -168,7 +178,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             "checkpoint": self._handle_checkpoint,
             "image-generation": self._handle_image_generation,
             "image-analysis": self._handle_image_analysis,
-            "prompt-optimization": self._handle_prompt_optimization,
+            "task-delegation": self._handle_task_delegation,
+            "multi-model-routing": self._handle_multi_model_routing,
+            "prompt-optimization": self._handle_prompt_optimization_real,
             "user-prompt": self._handle_user_prompt,
             "approval-gate": self._handle_approval_gate,
             "feedback-collection": self._handle_feedback_collection,
@@ -961,9 +973,9 @@ class HybridControlSystem(ModelBasedControlSystem):
         params = task.parameters.copy()
         return await self.image_analysis_tool.execute(**params)
     
-    async def _handle_prompt_optimization(self, task: Task, context: Dict[str, Any]) -> Any:
-        """Handle prompt optimization operations."""
-        # For now, use the model to optimize the prompt
+    async def _handle_prompt_optimization_placeholder(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle prompt optimization operations (DEPRECATED - kept for reference)."""
+        # This is the old placeholder implementation - replaced by _handle_prompt_optimization_real
         prompt = task.parameters.get("prompt", "")
         task_type = task.parameters.get("task", "image-generation")
         goal = task.parameters.get("optimization_goal", "quality")
@@ -1112,6 +1124,67 @@ Just return the optimized prompt, nothing else."""
             params['template_manager'] = self._template_manager
         
         return await self.feedback_collection_tool.execute(**params)
+    
+    async def _handle_task_delegation(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle task delegation using TaskDelegationTool."""
+        params = task.parameters.copy()
+        
+        # Handle AUTO tags if present in requirements
+        if "requirements" in params and isinstance(params["requirements"], dict):
+            for key, value in params["requirements"].items():
+                if isinstance(value, str) and value.startswith("<AUTO>"):
+                    # Use runtime resolution for AUTO tags if available
+                    if self.runtime_resolution:
+                        resolved = await self.runtime_resolution.resolve_auto_tag(
+                            value, context
+                        )
+                        params["requirements"][key] = resolved
+                    else:
+                        # Fallback: extract the prompt from AUTO tag
+                        import re
+                        match = re.match(r'<AUTO>(.*?)</AUTO>', value)
+                        if match:
+                            # Use a model to resolve the AUTO tag
+                            auto_prompt = match.group(1)
+                            model = await self.model_registry.select_model({"tasks": ["generate"]})
+                            if model:
+                                response = await model.generate(
+                                    f"{auto_prompt}\nBased on the task: '{params.get('task', '')}'\nRespond with only: simple, moderate, or complex"
+                                )
+                                # Extract complexity from response
+                                response_lower = response.lower()
+                                if "complex" in response_lower:
+                                    params["requirements"][key] = "complex"
+                                elif "moderate" in response_lower:
+                                    params["requirements"][key] = "moderate"
+                                else:
+                                    params["requirements"][key] = "simple"
+        
+        # Ensure model registry is accessible
+        if not hasattr(self.task_delegation_tool, 'model_registry'):
+            self.task_delegation_tool.model_registry = self.model_registry
+        
+        return await self.task_delegation_tool._execute_impl(**params)
+    
+    async def _handle_multi_model_routing(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle multi-model routing using MultiModelRoutingTool."""
+        params = task.parameters.copy()
+        
+        # Ensure model registry is accessible
+        if not hasattr(self.multi_model_routing_tool, 'model_registry'):
+            self.multi_model_routing_tool.model_registry = self.model_registry
+        
+        return await self.multi_model_routing_tool._execute_impl(**params)
+    
+    async def _handle_prompt_optimization_real(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle prompt optimization using real PromptOptimizationTool."""
+        params = task.parameters.copy()
+        
+        # Ensure model registry is accessible
+        if not hasattr(self.prompt_optimization_tool, 'model_registry'):
+            self.prompt_optimization_tool.model_registry = self.model_registry
+        
+        return await self.prompt_optimization_tool._execute_impl(**params)
     
     async def _handle_analyze_text(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle text analysis using AI models."""

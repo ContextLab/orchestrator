@@ -1941,18 +1941,23 @@ class Orchestrator:
                     # Also create objects with .result attribute for backward compatibility
                     context = {}
                     for step_id, step_result in results.items():
-                        context[step_id] = step_result
-                        # Create an object-like dict with result attribute
+                        # Create an object-like dict for template access
                         if isinstance(step_result, str):
                             context[step_id] = type(
-                                "Result", (), {"result": step_result}
+                                "Result", (), {"result": step_result, "value": step_result}
                             )()
-                        elif isinstance(step_result, dict) and "result" in step_result:
-                            context[step_id] = type("Result", (), step_result)()
                         elif isinstance(step_result, dict):
-                            # If dict doesn't have 'result' key, wrap the whole dict
+                            # Create Result object with all dict keys as attributes
+                            # This allows both step.field and step.result access
+                            attrs = dict(step_result)
+                            # Add result attribute for backward compatibility if not present
+                            if "result" not in attrs:
+                                attrs["result"] = step_result
+                            context[step_id] = type("Result", (), attrs)()
+                        else:
+                            # For other types, wrap as result
                             context[step_id] = type(
-                                "Result", (), {"result": step_result}
+                                "Result", (), {"result": step_result, "value": step_result}
                             )()
 
                     # Render the template

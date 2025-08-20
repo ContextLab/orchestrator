@@ -441,13 +441,45 @@ class ValidationTool(Tool):
         if not schema:
             return {"success": False, "error": "No schema provided for validation"}
         
-        # Parse JSON string if needed
+        # Parse data string if needed
         if isinstance(data, str):
             import json
+            import csv
+            import io
+            
+            # First try JSON
             try:
                 data = json.loads(data)
-            except json.JSONDecodeError as e:
-                return {"success": False, "error": f"Invalid JSON data: {str(e)}", "valid": False}
+            except json.JSONDecodeError:
+                # Try CSV if JSON fails
+                try:
+                    # Check if it looks like CSV (has commas and newlines)
+                    if ',' in data and '\n' in data:
+                        reader = csv.DictReader(io.StringIO(data))
+                        data = list(reader)
+                        
+                        # Convert numeric strings to appropriate types based on schema
+                        if isinstance(data, list) and data and schema.get("type") == "object":
+                            # For CSV validation, each row should match the schema
+                            for row in data:
+                                for field, value in row.items():
+                                    if field in schema.get("properties", {}):
+                                        field_type = schema["properties"][field].get("type")
+                                        if field_type == "integer" and value:
+                                            try:
+                                                row[field] = int(value)
+                                            except ValueError:
+                                                pass
+                                        elif field_type == "number" and value:
+                                            try:
+                                                row[field] = float(value)
+                                            except ValueError:
+                                                pass
+                    else:
+                        # Not CSV, return error
+                        return {"success": False, "error": f"Invalid data format: not JSON or CSV", "valid": False}
+                except Exception as e:
+                    return {"success": False, "error": f"Failed to parse CSV data: {str(e)}", "valid": False}
 
         # Parse validation mode
         try:
@@ -455,17 +487,48 @@ class ValidationTool(Tool):
         except ValueError:
             mode = ValidationMode.STRICT
 
-        # Perform validation
-        result = self.schema_validator.validate(data, schema, mode)
+        # Handle CSV validation (array of objects)
+        if isinstance(data, list) and all(isinstance(row, dict) for row in data):
+            # Validate each row against the schema
+            all_valid = True
+            all_errors = []
+            all_warnings = []
+            validated_data = []
+            
+            for i, row in enumerate(data):
+                result = self.schema_validator.validate(row, schema, mode)
+                if not result.valid:
+                    all_valid = False
+                    # Add row number to error messages
+                    for error in result.errors:
+                        error["row"] = i + 1
+                        all_errors.append(error)
+                for warning in result.warnings:
+                    warning["row"] = i + 1
+                    all_warnings.append(warning)
+                validated_data.append(result.data or row)
+            
+            return {
+                "success": True,
+                "valid": all_valid,
+                "errors": all_errors,
+                "warnings": all_warnings,
+                "data": validated_data,
+                "mode": mode.value,
+                "rows_validated": len(data),
+            }
+        else:
+            # Perform single object validation
+            result = self.schema_validator.validate(data, schema, mode)
 
-        return {
-            "success": True,
-            "valid": result.valid,
-            "errors": result.errors,
-            "warnings": result.warnings,
-            "data": result.data,
-            "mode": mode.value,
-        }
+            return {
+                "success": True,
+                "valid": result.valid,
+                "errors": result.errors,
+                "warnings": result.warnings,
+                "data": result.data,
+                "mode": mode.value,
+            }
 
     async def _extract_structured(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Extract structured data from text using LLM."""
