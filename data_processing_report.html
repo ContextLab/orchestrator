@@ -18,21 +18,21 @@
     
     <div class="metric">
         <h2>Processing Summary</h2>
-        <p><strong>Input File:</strong> sales_data.csv</p>
-        <p><strong>Output Path:</strong> examples/outputs/data_processing_pipeline</p>
-        <p><strong>Rows Processed:</strong> {{row_count}}</p>
+        <p><strong>Input File:</strong> {{ input_file }}</p>
+        <p><strong>Output Path:</strong> {{ output_path }}</p>
+        <p><strong>Rows Processed:</strong> {{ clean_data.row_count }}</p>
         <p><strong>Quality Score:</strong> 
-            <span class="warning">
-                0.0
+            <span class="{% if quality_check.result.quality_score >= quality_threshold %}success{% else %}warning{% endif %}">
+                {{ quality_check.result.quality_score | round(2) }}
             </span>
         </p>
     </div>
     
     <h2>Data Quality Issues</h2>
     <ul>
-        <li class="warning">No data profile or validation results were provided to assess — assessment cannot be performed.</li>
-        <li class="warning">No schema, column-level metrics (null rates, distinct counts, distributions), or sample records were supplied.</li>
-        <li class="warning">No information about validation rules, error counts, or severity was provided.</li>
+    {% for issue in quality_check.result.issues_found %}
+        <li class="warning">{{ issue }}</li>
+    {% endfor %}
     </ul>
     
     <h2>Monthly Revenue Trends</h2>
@@ -43,35 +43,49 @@
             <th>Order Count</th>
             <th>Unique Customers</th>
         </tr>
+        {% for row in aggregate_monthly.result %}
+        <tr>
+            <td>{{ row.order_month }}</td>
+            <td>${{ row.total_revenue | round(2) }}</td>
+            <td>{{ row.order_count }}</td>
+            <td>{{ row.unique_customers }}</td>
+        </tr>
+        {% endfor %}
     </table>
     
     <h2>Top Products</h2>
     <ol>
+    {% for product in analyze_trends.result.top_products %}
+        <li>{{ product.product }} - ${{ product.revenue | round(2) }}</li>
+    {% endfor %}
     </ol>
     
     <h2>Order Status Distribution</h2>
     <table>
         <tr>
             <th>Product</th>
-            <th>Pending</th>
-            <th>Processing</th>
-            <th>Shipped</th>
-            <th>Delivered</th>
+            {% for status in ['pending', 'processing', 'shipped', 'delivered'] %}
+            <th>{{ status | title }}</th>
+            {% endfor %}
         </tr>
+        {% for row in pivot_analysis.result %}
+        <tr>
+            <td>{{ row.product_name }}</td>
+            {% for status in ['pending', 'processing', 'shipped', 'delivered'] %}
+            <td>{{ row[status] or 0 }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
     </table>
     
     <h2>Recommendations</h2>
     <ul>
-        <li>Provide the data profile and validation results (or a link). At minimum include: row count, list of columns with types, null/empty percentage per column, distinct counts, sample values, min/max for numeric/date fields, and any detected constraint violations.</li>
-        <li>If available, include validation outputs: number of failed rows per rule, examples of failing records, and severity (blocker/warning).</li>
-        <li>Compute or share per-dimension metrics so a composite quality score can be calculated. Typical dimensions and suggested weights: completeness (25%), validity/accuracy (25%), consistency (20%), uniqueness (15%), timeliness (10%), and integrity/referential checks (5%).</li>
-        <li>Run and share automated checks for common issues: missing/null values, duplicates, out-of-range values, schema mismatches, malformed formats (dates, emails), referential integrity failures, and unexpected distribution shifts/outliers.</li>
-        <li>Where problems are found, provide sample failing records and the business rules that define correct values to enable targeted remediation.</li>
-        <li>Establish monitoring: add data quality checks into pipelines with alerts, track metric trends over time, and enforce critical constraints (not null, unique, foreign keys) where appropriate.</li>
-        <li>After providing the requested profile/validation data, ask for a follow-up assessment so a numeric quality_score between 0 and 1 can be calculated and justified.</li>
+    {% for rec in quality_check.result.recommendations %}
+        <li>{{ rec }}</li>
+    {% endfor %}
     </ul>
     
     <hr>
-    <p><em>Report generated on {{current_date}}</em></p>
+    <p><em>Report generated on {{ current_date }}</em></p>
 </body>
 </html>

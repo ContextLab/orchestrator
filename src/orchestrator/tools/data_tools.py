@@ -112,8 +112,8 @@ class DataProcessingTool(Tool):
 
         try:
             if action == "convert":
-                # For convert action, use output_format if specified, otherwise use format
-                target_format = output_format if output_format != format else format
+                # For convert action, use output_format if specified
+                target_format = output_format or format
                 return await self._convert_data(data, target_format, operation)
             elif action == "filter":
                 return await self._filter_data(data, operation, format)
@@ -146,8 +146,8 @@ class DataProcessingTool(Tool):
         self, data: Any, target_format: str, operation: Dict
     ) -> Dict[str, Any]:
         """Convert data between formats."""
-        # Handle file paths
-        if isinstance(data, str) and Path(data).exists():
+        # Handle file paths (check length first to avoid "File name too long" error)
+        if isinstance(data, str) and len(data) < 255 and Path(data).exists():
             with open(data, "r") as f:
                 if data.endswith(".json"):
                     data = json.load(f)
@@ -235,6 +235,12 @@ class DataProcessingTool(Tool):
         if isinstance(data, str) and input_format == "csv":
             reader = csv.DictReader(io.StringIO(data))
             data = list(reader)
+        # Parse JSON string if needed
+        elif isinstance(data, str) and input_format == "json":
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                return {"action": "aggregate", "success": False, "error": f"Could not parse JSON data"}
         
         group_by = operation.get("group_by", [])
         aggregations = operation.get("aggregations", {})
@@ -664,11 +670,12 @@ class DataProcessingTool(Tool):
         if isinstance(data, str) and input_format == "csv":
             reader = csv.DictReader(io.StringIO(data))
             data = list(reader)
-        elif isinstance(data, str):
+        # Parse JSON string if needed
+        elif isinstance(data, str) and input_format == "json":
             try:
                 data = json.loads(data)
             except json.JSONDecodeError:
-                return {"action": "pivot", "success": False, "error": "Could not parse data"}
+                return {"action": "pivot", "success": False, "error": "Could not parse JSON data"}
         
         if not isinstance(data, list):
             return {"action": "pivot", "success": False, "error": "Data must be a list"}
