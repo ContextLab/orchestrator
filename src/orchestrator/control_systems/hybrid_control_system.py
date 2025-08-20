@@ -1149,15 +1149,25 @@ Just return the optimized prompt, nothing else."""
         
         # Call model
         try:
+            # Log the model call for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Calling model {model.name if hasattr(model, 'name') else str(model)} for analyze_text")
+            logger.debug(f"Prompt length: {len(prompt)} chars, First 200 chars: {prompt[:200]}")
+            
             response = await model.generate(
                 prompt=prompt,
                 max_tokens=params.get("max_tokens", 1000),
                 temperature=params.get("temperature", 0.7)
             )
             
+            logger.info(f"Model response length: {len(response) if response else 0} chars")
+            if not response:
+                logger.warning("Model returned empty response!")
+            
             # Try to parse as JSON if expected
             result = response
-            if "json" in analysis_type.lower() or "JSON" in prompt:
+            if "json" in analysis_type.lower() or "JSON" in prompt or "JSON" in str(prompt):
                 try:
                     import json
                     result = json.loads(response)
@@ -1173,6 +1183,10 @@ Just return the optimized prompt, nothing else."""
                     try:
                         result = json.loads(cleaned.strip())
                     except json.JSONDecodeError:
+                        # Log the failure for debugging
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Failed to parse JSON from analyze_text response. First 200 chars: {cleaned[:200]}")
                         # Keep as string if can't parse
                         pass
             

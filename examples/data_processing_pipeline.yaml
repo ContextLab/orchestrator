@@ -294,17 +294,17 @@ steps:
         ### Growth Rate: {{ analyze_trends.result.growth_rate | default('N/A') }}%
         
         ### Top Products by Revenue
-        {% for product in analyze_trends.result.top_products %}
+        {% for product in analyze_trends.result.top_products | default([]) %}
         {{ loop.index }}. **{{ product.product }}** - ${{ product.revenue | round(2) }}
         {% endfor %}
         
         ### Seasonal Patterns
-        {% for pattern in analyze_trends.result.seasonal_patterns %}
+        {% for pattern in analyze_trends.result.seasonal_patterns | default([]) %}
         - {{ pattern }}
         {% endfor %}
         
         ### Anomalies Detected
-        {% for anomaly in analyze_trends.result.anomalies %}
+        {% for anomaly in analyze_trends.result.anomalies | default([]) %}
         - **{{ anomaly.month }}**: {{ anomaly.description }} ({{ anomaly.metric }})
         {% endfor %}
         {% else %}
