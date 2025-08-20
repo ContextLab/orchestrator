@@ -452,6 +452,16 @@ class MultiModelRoutingTool(Tool):
         max_concurrent = kwargs.get("max_concurrent", 5)
         kwargs.get("timeout", 30.0)
 
+        # Handle models parameter - could be a string representation of a list
+        if isinstance(models, str):
+            # Try to parse as Python list literal
+            import ast
+            try:
+                models = ast.literal_eval(models)
+            except:
+                # If it fails, treat as a single model
+                models = [models]
+        
         # Get available models if not specified
         if not models:
             models = await self.model_registry.get_available_models()

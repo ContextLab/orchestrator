@@ -52,9 +52,12 @@ steps:
     dependencies:
       - optimize_prompt
     
-  - id: generate_report
-    action: |
-      Generate the following markdown report content:
+  - id: save_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ parameters.output_path }}/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
+      content: |
         # LLM Task Routing and Optimization Report
         
         ## Task Analysis
@@ -73,7 +76,7 @@ steps:
         - **Original Length**: {{ optimize_prompt.metrics.original_tokens }} tokens
         - **Optimized Length**: {{ optimize_prompt.metrics.optimized_tokens }} tokens
         - **Reduction**: {{ optimize_prompt.metrics.reduction_percentage | round(1) }}%
-        - **Applied Optimizations**: {{ optimize_prompt.applied_optimizations | join(', ') }}
+        - **Applied Optimizations**: {{ optimize_prompt.applied_optimizations | join(', ') if optimize_prompt.applied_optimizations else 'None' }}
         
         ### Optimized Prompt
         ```
@@ -98,12 +101,3 @@ steps:
         {% endfor %}
     dependencies:
       - route_request
-    
-  - id: save_report
-    tool: filesystem
-    action: write
-    parameters:
-      path: "{{ parameters.output_path }}/reports/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
-      content: "{{ generate_report }}"
-    dependencies:
-      - generate_report
