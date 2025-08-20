@@ -406,15 +406,25 @@ class OpenAIModel(Model):
                 messages.insert(
                     0, {"role": "system", "content": kwargs["system_prompt"]}
                 )
+            # For GPT-5, add system message if JSON is expected and no system prompt provided
+            elif "gpt-5" in self._model_id.lower() and ("json" in prompt.lower() or "JSON" in prompt):
+                messages.insert(
+                    0, {"role": "system", "content": "You are a helpful assistant that provides structured responses. When asked for JSON, always return valid JSON."}
+                )
 
             # Prepare API call parameters
             api_params = {
                 "model": self._model_id,
                 "messages": messages,
-                "temperature": temperature,
                 "n": 1,
                 "stream": False,
             }
+            
+            # GPT-5 only supports temperature=1
+            if "gpt-5" in self._model_id.lower():
+                api_params["temperature"] = 1.0
+            else:
+                api_params["temperature"] = temperature
             
             # Handle max_tokens vs max_completion_tokens based on model
             max_tokens_value = max_tokens or self.capabilities.max_tokens

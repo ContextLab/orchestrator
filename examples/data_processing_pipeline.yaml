@@ -335,7 +335,7 @@ steps:
     tool: filesystem
     action: copy
     parameters:
-      source: "data_processing_report.md"
+      path: "data_processing_report.md"  # source file
       destination: "{{ output_path }}/data_processing_report.md"
     dependencies:
       - generate_report

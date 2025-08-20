@@ -1157,13 +1157,22 @@ Just return the optimized prompt, nothing else."""
             
             response = await model.generate(
                 prompt=prompt,
-                max_tokens=params.get("max_tokens", 1000),
+                max_tokens=params.get("max_tokens", 2000),  # Increased for GPT-5
                 temperature=params.get("temperature", 0.7)
             )
             
             logger.info(f"Model response length: {len(response) if response else 0} chars")
             if not response:
                 logger.warning("Model returned empty response!")
+                logger.warning(f"Prompt was: {prompt[:500]}")
+                # Return a default structure for empty responses
+                return {
+                    "action": "analyze_text",
+                    "analysis_type": analysis_type,
+                    "result": {"error": "Model returned empty response"},
+                    "model_used": model.name if hasattr(model, 'name') else str(model),
+                    "success": False
+                }
             
             # Try to parse as JSON if expected
             result = response
