@@ -50,43 +50,48 @@ class PipelineExecutorTool(Tool):
             "pipeline", "string", "Pipeline definition (YAML path, ID, or inline YAML)"
         )
         self.add_parameter(
-            "inputs", "object", "Input parameters for the pipeline", default={}
+            "inputs", "object", "Input parameters for the pipeline", required=False, default={}
         )
         self.add_parameter(
             "inherit_context",
             "boolean",
             "Inherit context from parent pipeline",
+            required=False,
             default=True,
         )
         self.add_parameter(
             "wait_for_completion",
             "boolean",
             "Wait for pipeline to complete",
+            required=False,
             default=True,
         )
         self.add_parameter(
             "timeout",
             "number",
             "Execution timeout in seconds (0 for no timeout)",
+            required=False,
             default=0,
         )
         self.add_parameter(
             "output_mapping",
             "object",
             "Map pipeline outputs to parent context",
+            required=False,
             default={},
         )
         self.add_parameter(
             "error_handling",
             "string",
             "Error handling: fail, continue, retry",
+            required=False,
             default="fail",
         )
         self.add_parameter(
-            "retry_count", "integer", "Number of retries on failure", default=3
+            "retry_count", "integer", "Number of retries on failure", required=False, default=3
         )
         self.add_parameter(
-            "retry_delay", "number", "Delay between retries in seconds", default=1.0
+            "retry_delay", "number", "Delay between retries in seconds", required=False, default=1.0
         )
 
         self.logger = logging.getLogger(__name__)
