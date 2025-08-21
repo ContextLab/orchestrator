@@ -15,6 +15,7 @@ from ..tools.validation import ValidationTool
 from ..tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from ..tools.report_tools import ReportGeneratorTool, PDFCompilerTool
 from ..tools.checkpoint_tool import CheckpointTool
+from ..tools.code_execution import PythonExecutorTool
 from ..tools.multimodal_tools import ImageGenerationTool, ImageAnalysisTool
 from ..tools.user_interaction_tools import (
     UserPromptTool, 
@@ -96,6 +97,9 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Import and initialize VisualizationTool
         from ..tools.visualization_tools import VisualizationTool
         self.visualization_tool = VisualizationTool()
+        
+        # Initialize Python executor tool
+        self.python_executor_tool = PythonExecutorTool()
         
         # Initialize user interaction tools (Issue #165)
         self.user_prompt_tool = UserPromptTool()
@@ -202,6 +206,7 @@ class HybridControlSystem(ModelBasedControlSystem):
             "mcp-memory": self._handle_mcp_memory,
             "mcp-resource": self._handle_mcp_resource,
             "visualization": self._handle_visualization,
+            "python-executor": self._handle_python_executor,
         }
         
         if tool_name in tool_handlers:
@@ -1359,4 +1364,31 @@ Just return the optimized prompt, nothing else."""
         if "action" not in params and task.action:
             params["action"] = task.action
         return await self.visualization_tool.execute(**params)
+    
+    async def _handle_python_executor(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle Python code execution."""
+        params = task.parameters.copy()
+        
+        # Pass context to the code if needed
+        code = params.get("code", "")
+        if "context" in code:
+            # Inject context as a variable
+            context_setup = f"""
+import json
+context = {repr(context)}
+"""
+            params["code"] = context_setup + code
+        
+        result = await self.python_executor_tool.execute(**params)
+        
+        # Try to parse stdout as JSON for structured results
+        if result.get("success") and result.get("stdout"):
+            try:
+                import json
+                result["result"] = json.loads(result["stdout"].strip())
+            except:
+                # If not JSON, just use the stdout as result
+                result["result"] = result["stdout"].strip()
+        
+        return result
 

@@ -1,44 +1,150 @@
-# Simple Sentiment Analysis Sub-Pipeline
+# Sentiment Analysis Sub-Pipeline with Python Executor
 id: sentiment_analysis
 name: Sentiment Analysis Sub-Pipeline
-description: Analyze sentiment in text data
+description: Analyze sentiment patterns in text data
 version: "2.0.0"
 
 parameters:
   data:
     type: object
-    description: Input data with text to analyze
+    description: Input data for analysis (CSV format with text columns)
   text_column:
     type: string
-    default: "comments"
+    default: "text"
+    description: Name of the column containing text to analyze
 
 steps:
   - id: analyze_sentiment
-    action: generate_text
+    tool: python-executor
+    action: execute
     parameters:
-      prompt: |
-        Analyze the sentiment of customer comments in this dataset.
-        Look for the 'comments' column and analyze the first 10 unique comments.
+      code: |
+        import pandas as pd
+        import numpy as np
+        import json
+        import io
+        import re
+        from collections import Counter
         
-        Data sample (first 500 chars): {{ inputs.data | default('{}') | string | truncate(500) }}
+        # Get input data - expecting CSV string
+        data_str = """{{ inputs.data }}"""
+        text_column = "{{ inputs.text_column | default('text') }}"
         
-        Rate the overall sentiment on a scale of 1-5 and identify key themes.
-        Return your analysis as JSON with keys: average_sentiment, positive_themes, negative_themes
-      model: <AUTO>
-      response_format: json
+        # Parse CSV data
+        df = pd.read_csv(io.StringIO(data_str))
+        
+        # Simple sentiment analysis using keywords
+        positive_words = [
+            'good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic',
+            'love', 'best', 'awesome', 'perfect', 'beautiful', 'happy', 'positive',
+            'increase', 'growth', 'improvement', 'success', 'gain', 'profit'
+        ]
+        
+        negative_words = [
+            'bad', 'poor', 'terrible', 'awful', 'horrible', 'worst', 'hate',
+            'negative', 'fail', 'loss', 'decrease', 'decline', 'problem', 'issue',
+            'error', 'wrong', 'difficult', 'hard', 'slow', 'expensive'
+        ]
+        
+        neutral_words = [
+            'okay', 'fine', 'average', 'normal', 'moderate', 'regular', 'standard'
+        ]
+        
+        sentiments = []
+        sentiment_scores = []
+        
+        # Check if text column exists
+        if text_column in df.columns:
+            for text in df[text_column]:
+                text_lower = str(text).lower()
+                
+                # Count sentiment indicators
+                pos_count = sum(1 for word in positive_words if word in text_lower)
+                neg_count = sum(1 for word in negative_words if word in text_lower)
+                neu_count = sum(1 for word in neutral_words if word in text_lower)
+                
+                # Calculate sentiment score (-1 to 1)
+                total = pos_count + neg_count + neu_count
+                if total == 0:
+                    score = 0
+                    sentiment = 'neutral'
+                else:
+                    score = (pos_count - neg_count) / max(total, 1)
+                    if score > 0.3:
+                        sentiment = 'positive'
+                    elif score < -0.3:
+                        sentiment = 'negative'
+                    else:
+                        sentiment = 'neutral'
+                
+                sentiments.append(sentiment)
+                sentiment_scores.append(float(score))
+        
+        # If no text column, analyze numeric data for trends
+        elif len(df.columns) > 0:
+            # Use first numeric column for trend analysis
+            numeric_cols = df.select_dtypes(include=[np.number]).columns
+            if len(numeric_cols) > 0:
+                col = numeric_cols[0]
+                values = df[col].dropna()
+                
+                if len(values) > 1:
+                    # Calculate trend
+                    trend = np.polyfit(range(len(values)), values, 1)[0]
+                    
+                    # Generate sentiments based on trend
+                    for i, val in enumerate(values):
+                        if i == 0:
+                            sentiments.append('neutral')
+                            sentiment_scores.append(0.0)
+                        else:
+                            change = (val - values.iloc[i-1]) / max(abs(values.iloc[i-1]), 1)
+                            if change > 0.05:
+                                sentiments.append('positive')
+                                sentiment_scores.append(min(change, 1.0))
+                            elif change < -0.05:
+                                sentiments.append('negative')
+                                sentiment_scores.append(max(change, -1.0))
+                            else:
+                                sentiments.append('neutral')
+                                sentiment_scores.append(change)
+        
+        # Calculate overall statistics
+        sentiment_counts = Counter(sentiments)
+        
+        result = {
+            'total_items': len(sentiments),
+            'sentiment_distribution': dict(sentiment_counts),
+            'average_score': float(np.mean(sentiment_scores)) if sentiment_scores else 0,
+            'sentiment_percentages': {
+                'positive': float(sentiment_counts.get('positive', 0) / max(len(sentiments), 1) * 100),
+                'negative': float(sentiment_counts.get('negative', 0) / max(len(sentiments), 1) * 100),
+                'neutral': float(sentiment_counts.get('neutral', 0) / max(len(sentiments), 1) * 100)
+            },
+            'dominant_sentiment': max(sentiment_counts, key=sentiment_counts.get) if sentiment_counts else 'neutral',
+            'confidence': float(max(sentiment_counts.values()) / max(sum(sentiment_counts.values()), 1)) if sentiment_counts else 0
+        }
+        
+        print(json.dumps(result))
     
-  - id: summarize_sentiment
+  - id: generate_insights
     action: generate_text
     parameters:
       prompt: |
-        Based on the sentiment analysis results:
-        {{ analyze_sentiment.result | default('No sentiment data') }}
+        Analyze these sentiment analysis results and provide actionable insights:
         
-        Provide a brief summary of overall sentiment trends.
+        {{ analyze_sentiment.result | default('{}') }}
+        
+        Provide 3-4 key insights about:
+        1. Overall sentiment trends and patterns
+        2. What the dominant sentiment indicates
+        3. Recommendations based on the sentiment distribution
+        
+        Be specific and use the actual percentages and scores from the analysis.
       model: <AUTO>
     dependencies:
       - analyze_sentiment
 
 outputs:
-  sentiment_scores: "{{ analyze_sentiment.result }}"
-  sentiment_summary: "{{ summarize_sentiment.result }}"
+  analysis: "{{ analyze_sentiment.result }}"
+  insights: "{{ generate_insights.result }}"

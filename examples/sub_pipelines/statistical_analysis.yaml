@@ -1,7 +1,7 @@
-# Simple Statistical Analysis Sub-Pipeline
+# Statistical Analysis Sub-Pipeline with Python Executor
 id: statistical_analysis
 name: Statistical Analysis Sub-Pipeline
-description: Basic statistical analysis using data-processing tool
+description: Compute descriptive statistics, correlations, and hypothesis tests
 version: "2.0.0"
 
 parameters:
@@ -14,23 +14,100 @@ parameters:
 
 steps:
   - id: compute_stats
-    tool: data-processing
-    action: transform
+    tool: python-executor
+    action: execute
     parameters:
-      data: "{{ inputs.data }}"
-      format: "csv"
-      operation:
-        type: "select"
-        columns: ["sales", "revenue", "average_price", "units_sold", "customer_satisfaction"]
+      code: |
+        import pandas as pd
+        import numpy as np
+        from scipy import stats
+        import json
+        import io
+        
+        # Get input data - expecting CSV string
+        data_str = """{{ inputs.data }}"""
+        
+        # Parse CSV data
+        df = pd.read_csv(io.StringIO(data_str))
+        
+        # Compute descriptive statistics for numeric columns
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        confidence_level = {{ inputs.confidence_level | default(0.95) }}
+        
+        stats_dict = {}
+        for col in numeric_cols[:10]:  # Limit to first 10 columns
+            series = df[col].dropna()
+            if len(series) > 0:
+                mean = series.mean()
+                std_err = stats.sem(series) if len(series) > 1 else 0
+                
+                # Calculate confidence interval
+                if len(series) > 1:
+                    ci = stats.t.interval(confidence_level, len(series)-1, loc=mean, scale=std_err)
+                else:
+                    ci = (mean, mean)
+                
+                stats_dict[col] = {
+                    'count': int(len(series)),
+                    'mean': float(mean),
+                    'std': float(series.std()) if len(series) > 1 else 0,
+                    'min': float(series.min()),
+                    'q1': float(series.quantile(0.25)),
+                    'median': float(series.median()),
+                    'q3': float(series.quantile(0.75)),
+                    'max': float(series.max()),
+                    'confidence_interval': [float(ci[0]), float(ci[1])]
+                }
+        
+        # Calculate correlations
+        correlations = {}
+        if len(numeric_cols) > 1:
+            numeric_df = df[numeric_cols]
+            pearson_corr = numeric_df.corr(method='pearson')
+            
+            # Find significant correlations
+            significant = []
+            for i, col1 in enumerate(pearson_corr.columns):
+                for j, col2 in enumerate(pearson_corr.columns):
+                    if i < j:
+                        corr_value = pearson_corr.iloc[i, j]
+                        if abs(corr_value) > 0.5:
+                            significant.append({
+                                'var1': col1,
+                                'var2': col2,
+                                'correlation': float(corr_value),
+                                'strength': 'strong' if abs(corr_value) > 0.7 else 'moderate'
+                            })
+            
+            correlations = {
+                'matrix': pearson_corr.to_dict(),
+                'significant': significant
+            }
+        
+        # Output results
+        result = {
+            'descriptive_stats': stats_dict,
+            'correlations': correlations,
+            'data_shape': {'rows': len(df), 'columns': len(df.columns)},
+            'column_names': list(df.columns)
+        }
+        
+        print(json.dumps(result))
     
   - id: generate_summary
     action: generate_text
     parameters:
       prompt: |
-        Analyze this statistical data and provide a brief summary:
-        {{ compute_stats.result | default('No data available') }}
+        Analyze these statistical results and provide a concise summary:
         
-        Provide 2-3 key insights about the data.
+        {{ compute_stats.result | default('{}') }}
+        
+        Provide 3-4 key insights about:
+        1. Data characteristics (size, central tendencies)
+        2. Important relationships or correlations
+        3. Notable patterns or outliers
+        
+        Be specific and use actual numbers from the analysis.
       model: <AUTO>
     dependencies:
       - compute_stats

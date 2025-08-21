@@ -1,4 +1,4 @@
-# Simple Trend Analysis Sub-Pipeline
+# Trend Analysis Sub-Pipeline with Python Executor
 id: trend_analysis
 name: Trend Analysis Sub-Pipeline
 description: Analyze trends in time series data
@@ -7,7 +7,7 @@ version: "2.0.0"
 parameters:
   data:
     type: object
-    description: Input time series data
+    description: Input time series data (CSV format)
   time_column:
     type: string
     default: "timestamp"
@@ -17,37 +17,142 @@ parameters:
 
 steps:
   - id: analyze_trends
-    action: generate_text
+    tool: python-executor
+    action: execute
     parameters:
-      prompt: |
-        Analyze the following time series data for trends:
+      code: |
+        import pandas as pd
+        import numpy as np
+        import json
+        import io
+        from scipy import stats
+        from datetime import datetime, timedelta
         
-        Data: {{ inputs.data | default('{}') }}
-        Time column: {{ inputs.time_column }}
-        Value columns: {{ inputs.value_columns }}
+        # Get input data - expecting CSV string
+        data_str = """{{ inputs.data }}"""
+        time_column = "{{ inputs.time_column | default('timestamp') }}"
+        value_columns = {{ inputs.value_columns | default(['sales', 'revenue']) }}
         
-        Identify:
-        1. Overall trend direction (increasing/decreasing/stable)
-        2. Any seasonal patterns
-        3. Notable outliers or anomalies
+        # Parse CSV data
+        df = pd.read_csv(io.StringIO(data_str))
         
-        Return your analysis as a structured JSON object with keys: 
-        trend_direction, seasonality, outliers, forecast_next_period
-      model: <AUTO>
-      response_format: json
+        # Find numeric columns if value_columns not in data
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        actual_value_columns = [col for col in value_columns if col in df.columns]
+        
+        # If no specified columns exist, use first 3 numeric columns
+        if not actual_value_columns:
+            actual_value_columns = numeric_cols[:3]
+        
+        trends = {}
+        
+        for col in actual_value_columns:
+            if col in df.columns:
+                values = df[col].dropna()
+                
+                if len(values) > 1:
+                    # Calculate linear trend
+                    x = np.arange(len(values))
+                    slope, intercept, r_value, p_value, std_err = stats.linregress(x, values)
+                    
+                    # Determine trend direction
+                    if abs(slope) < 0.01 * values.mean():
+                        direction = 'stable'
+                    elif slope > 0:
+                        direction = 'increasing'
+                    else:
+                        direction = 'decreasing'
+                    
+                    # Calculate percentage change
+                    pct_change = ((values.iloc[-1] - values.iloc[0]) / values.iloc[0] * 100) if values.iloc[0] != 0 else 0
+                    
+                    # Detect outliers using IQR method
+                    Q1 = values.quantile(0.25)
+                    Q3 = values.quantile(0.75)
+                    IQR = Q3 - Q1
+                    lower_bound = Q1 - 1.5 * IQR
+                    upper_bound = Q3 + 1.5 * IQR
+                    outliers = values[(values < lower_bound) | (values > upper_bound)]
+                    
+                    # Calculate moving averages
+                    window_size = min(7, len(values) // 3)
+                    if window_size > 1:
+                        ma = values.rolling(window=window_size).mean()
+                        volatility = values.rolling(window=window_size).std().mean()
+                    else:
+                        ma = values
+                        volatility = values.std()
+                    
+                    # Simple forecast - using linear trend
+                    next_period_forecast = slope * len(values) + intercept
+                    
+                    # Detect seasonality (simple approach - check for repeating patterns)
+                    seasonality = 'none'
+                    if len(values) >= 14:
+                        # Check weekly pattern (7-day cycle)
+                        weekly_pattern = []
+                        for i in range(7):
+                            day_values = [values.iloc[j] for j in range(i, len(values), 7) if j < len(values)]
+                            if day_values:
+                                weekly_pattern.append(np.mean(day_values))
+                        
+                        if weekly_pattern:
+                            pattern_std = np.std(weekly_pattern)
+                            pattern_mean = np.mean(weekly_pattern)
+                            if pattern_std / pattern_mean > 0.1:  # Coefficient of variation > 10%
+                                seasonality = 'weekly'
+                    
+                    trends[col] = {
+                        'direction': direction,
+                        'slope': float(slope),
+                        'r_squared': float(r_value ** 2),
+                        'percent_change': float(pct_change),
+                        'current_value': float(values.iloc[-1]),
+                        'mean': float(values.mean()),
+                        'std_dev': float(values.std()),
+                        'volatility': float(volatility) if not pd.isna(volatility) else 0,
+                        'outliers_count': len(outliers),
+                        'outlier_values': outliers.tolist()[:5],  # First 5 outliers
+                        'seasonality': seasonality,
+                        'forecast_next': float(next_period_forecast),
+                        'confidence_interval': [
+                            float(next_period_forecast - 1.96 * std_err),
+                            float(next_period_forecast + 1.96 * std_err)
+                        ]
+                    }
+        
+        # Overall summary
+        result = {
+            'trends': trends,
+            'summary': {
+                'analyzed_columns': list(trends.keys()),
+                'dominant_trend': max(set([t['direction'] for t in trends.values()]), 
+                                     key=[t['direction'] for t in trends.values()].count) if trends else 'unknown',
+                'average_volatility': float(np.mean([t['volatility'] for t in trends.values()])) if trends else 0,
+                'total_outliers': sum(t['outliers_count'] for t in trends.values()) if trends else 0
+            }
+        }
+        
+        print(json.dumps(result))
     
-  - id: create_forecast
+  - id: generate_insights
     action: generate_text
     parameters:
       prompt: |
-        Based on the trend analysis:
+        Analyze these trend analysis results and provide actionable insights:
+        
         {{ analyze_trends.result | default('{}') }}
         
-        Provide a brief forecast for the next period.
+        Provide 3-4 key insights about:
+        1. The overall trend direction and what it means for the business
+        2. Any concerning patterns or outliers that need attention
+        3. Forecast reliability and recommendations for the next period
+        
+        Be specific and use the actual numbers, percentages, and R-squared values from the analysis.
       model: <AUTO>
     dependencies:
       - analyze_trends
 
 outputs:
-  trends: "{{ analyze_trends.result }}"
-  forecasts: "{{ create_forecast.result }}"
+  analysis: "{{ analyze_trends.result }}"
+  insights: "{{ generate_insights.result }}"

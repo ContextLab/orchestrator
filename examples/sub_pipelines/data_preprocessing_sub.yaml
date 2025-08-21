@@ -1,0 +1,30 @@
+# Data Preprocessing Sub-Pipeline
+id: data_preprocessing_sub
+name: Data Preprocessing Sub-Pipeline
+description: Clean and normalize data for analysis
+version: "2.0.0"
+
+parameters:
+  raw_data:
+    type: object
+    description: Raw data to process
+
+steps:
+  - id: clean_data
+    tool: data-processing
+    action: transform
+    parameters:
+      data: "{{ inputs.raw_data }}"
+      operation: clean
+
+  - id: normalize_data
+    tool: data-processing
+    action: transform
+    parameters:
+      data: "{{ clean_data.result }}"
+      operation: normalize
+    dependencies:
+      - clean_data
+
+outputs:
+  processed_data: "{{ normalize_data.result }}"
