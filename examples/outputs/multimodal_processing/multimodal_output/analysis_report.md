@@ -5,9 +5,9 @@
 ### Description
 This image shows a simple, minimalist design against a solid blue-gray background. In the center of the image, there is a yellow rectangular outline or border forming an empty frame. The rectangle is horizontally oriented and appears to be perfectly centered in the composition.
 
-Above this yellow rectangle, there is white text that reads "Test Image for Pipeline" in what appears to be a clean, sans-serif font. The text is positioned in the upper portion of the image, well above the yellow rectangle.
+Above this yellow rectangle, there is white text that reads "Test Image for Pipeline" in what appears to be a clean, sans-serif font. The text is positioned in the upper portion of the image, well above the yellow rectangular frame.
 
-The overall design is very clean and appears to be a placeholder or test image, as indicated by the text. The color scheme consists of just three colors: the blue-gray background, the yellow outline of the rectangle, and the white text. The simplicity and the message suggest this might be used for testing purposes in some kind of digital pipeline or workflow system.
+The overall design is very clean and appears to be a placeholder or test image, as indicated by the text. The color scheme consists of just three elements: the blue-gray background, the yellow outline of the rectangle, and the white text. The simplicity and the message suggest this might be used for testing purposes in some kind of digital pipeline or workflow system.
 
 ### Detected Objects
 In this image, I can identify the following objects and their locations:
@@ -38,8 +38,8 @@ Beeeeeeeeeeep
 Video analysis placeholder
 
 ### Key Information
-- Duration: 0.0s
-- Resolution: 1920x1080
+- Duration: 3.0s
+- Resolution: 640x480
 - FPS: 30.0
 
 ### Scene Analysis
@@ -47,7 +47,7 @@ Video analysis placeholder
 - Scene changes at: [5.2, 15.7, 23.1]
 
 ### Key Frame Analysis
-{{analysis.result}}
+This image shows a simple animation frame against a black background. In the upper left portion of the frame, there is a solid blue circle. The circle appears to be a medium-sized, perfectly round shape with a bright blue color that stands out against the dark background. In the center of the image, there is white text that reads "Frame 0", indicating this is the first frame or starting position of what appears to be an animation sequence. The overall composition is minimalist, with just these two elements - the blue circle and the frame label - visible against the black backdrop.
 
 ## Processing Summary
 - Total media files processed: 3

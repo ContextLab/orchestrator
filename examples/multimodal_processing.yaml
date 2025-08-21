@@ -14,7 +14,7 @@ parameters:
     default: "samples/test_audio.wav"
   input_video:
     type: string
-    default: "samples/test_video.mp4"
+    default: "samples/test_video_real.mp4"
   output_dir:
     type: string
     default: "multimodal_output"
@@ -85,7 +85,7 @@ steps:
     parameters:
       video: "{{ parameters.input_video }}"
       operation: "extract_frames"
-      frame_interval: 5.0
+      frame_interval: 0.5
       output_path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/video_frames"
     dependencies:
       - analyze_video
