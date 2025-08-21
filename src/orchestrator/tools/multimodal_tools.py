@@ -6,10 +6,45 @@ import json
 import logging
 import os
 import time
+import tempfile
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 from PIL import Image
 import numpy as np
+
+# Audio processing imports
+try:
+    import librosa
+    import soundfile as sf
+    LIBROSA_AVAILABLE = True
+except ImportError:
+    LIBROSA_AVAILABLE = False
+
+try:
+    from pydub import AudioSegment
+    from pydub.effects import normalize
+    PYDUB_AVAILABLE = True
+except ImportError:
+    PYDUB_AVAILABLE = False
+
+try:
+    import speech_recognition as sr
+    SPEECH_RECOGNITION_AVAILABLE = True
+except ImportError:
+    SPEECH_RECOGNITION_AVAILABLE = False
+
+# Video processing imports
+try:
+    import cv2
+    OPENCV_AVAILABLE = True
+except ImportError:
+    OPENCV_AVAILABLE = False
+
+try:
+    from moviepy.editor import VideoFileClip
+    MOVIEPY_AVAILABLE = True
+except ImportError:
+    MOVIEPY_AVAILABLE = False
 
 from .base import Tool
 
@@ -605,14 +640,42 @@ class AudioProcessingTool(Tool):
         try:
             # Check if it's a file path
             if os.path.exists(audio_input):
-                # Get audio info using wave or other library
-
-                # For now, create placeholder metadata
-                # In production, use proper audio libraries
+                # Get real audio info using librosa or soundfile
+                if LIBROSA_AVAILABLE:
+                    try:
+                        # Load audio data and get metadata
+                        y, sr = librosa.load(audio_input, sr=None, mono=False)
+                        duration = librosa.get_duration(y=y, sr=sr)
+                        
+                        # Get number of channels
+                        if len(y.shape) == 1:
+                            channels = 1
+                        else:
+                            channels = y.shape[0]
+                        
+                        # Read raw data for storage
+                        with open(audio_input, "rb") as f:
+                            audio_data = f.read()
+                        
+                        return AudioData(
+                            data=audio_data,
+                            format=os.path.splitext(audio_input)[1][1:],
+                            duration=float(duration),
+                            sample_rate=int(sr),
+                            channels=channels,
+                            metadata={"source": "file", "path": audio_input},
+                        )
+                    except Exception as e:
+                        self.logger.warning(f"Librosa failed to load audio: {e}, falling back")
+                
+                # Fallback to basic file reading
+                with open(audio_input, "rb") as f:
+                    audio_data = f.read()
+                
                 return AudioData(
-                    data=open(audio_input, "rb").read(),
+                    data=audio_data,
                     format=os.path.splitext(audio_input)[1][1:],
-                    duration=0.0,  # Would calculate from file
+                    duration=0.0,  # Will be calculated if needed
                     sample_rate=44100,
                     channels=2,
                     metadata={"source": "file", "path": audio_input},
@@ -623,13 +686,34 @@ class AudioProcessingTool(Tool):
                     audio_input = audio_input.split(",")[1]
 
                 audio_bytes = base64.b64decode(audio_input)
+                
+                # Try to get metadata from decoded audio
+                duration = 0.0
+                sample_rate = 44100
+                channels = 2
+                
+                if LIBROSA_AVAILABLE:
+                    try:
+                        # Save to temp file to analyze
+                        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                            tmp.write(audio_bytes)
+                            tmp_path = tmp.name
+                        
+                        y, sr = librosa.load(tmp_path, sr=None, mono=False)
+                        duration = librosa.get_duration(y=y, sr=sr)
+                        sample_rate = int(sr)
+                        channels = 1 if len(y.shape) == 1 else y.shape[0]
+                        
+                        os.unlink(tmp_path)
+                    except Exception:
+                        pass
 
                 return AudioData(
                     data=audio_bytes,
                     format="wav",  # Assume WAV for base64
-                    duration=0.0,
-                    sample_rate=44100,
-                    channels=2,
+                    duration=duration,
+                    sample_rate=sample_rate,
+                    channels=channels,
                     metadata={"source": "base64"},
                 )
 
@@ -639,34 +723,217 @@ class AudioProcessingTool(Tool):
     async def _transcribe_audio(
         self, audio_data: AudioData, language: str, model_name: Optional[str]
     ) -> Dict[str, Any]:
-        """Transcribe audio to text."""
-        # Get model registry
-        from ..models.registry_singleton import get_model_registry
-
-        get_model_registry()
-
-        # For now, return a placeholder
-        # In production, would use speech-to-text models
+        """Transcribe audio to text using real speech-to-text services."""
+        transcription = None
+        confidence = 0.0
+        
+        # Try OpenAI Whisper API first (if we have OpenAI key)
+        try:
+            openai_key = os.getenv("OPENAI_API_KEY")
+            
+            if openai_key:
+                import openai
+                
+                # Save audio to temp file if needed
+                if hasattr(audio_data, 'path') and audio_data.metadata.get("path"):
+                    audio_file_path = audio_data.metadata["path"]
+                else:
+                    # Save bytes to temp file
+                    with tempfile.NamedTemporaryFile(suffix=f".{audio_data.format}", delete=False) as tmp:
+                        tmp.write(audio_data.data if isinstance(audio_data.data, bytes) else audio_data.data.read())
+                        audio_file_path = tmp.name
+                
+                try:
+                    client = openai.OpenAI(api_key=openai_key)
+                    
+                    with open(audio_file_path, "rb") as audio_file:
+                        # Use Whisper API
+                        response = client.audio.transcriptions.create(
+                            model="whisper-1",
+                            file=audio_file,
+                            language=language if language != "auto" else None,
+                            response_format="json"
+                        )
+                    
+                    transcription = response.text
+                    confidence = 0.95  # Whisper is generally very confident
+                    
+                    # Clean up temp file if we created one
+                    if audio_file_path != audio_data.metadata.get("path"):
+                        os.unlink(audio_file_path)
+                    
+                except Exception as e:
+                    self.logger.warning(f"OpenAI Whisper transcription failed: {e}")
+                    # Clean up temp file if we created one
+                    if audio_file_path != audio_data.metadata.get("path") and os.path.exists(audio_file_path):
+                        os.unlink(audio_file_path)
+        
+        except Exception as e:
+            self.logger.warning(f"Failed to use OpenAI Whisper: {e}")
+        
+        # Fallback to SpeechRecognition library
+        if transcription is None and SPEECH_RECOGNITION_AVAILABLE:
+            try:
+                recognizer = sr.Recognizer()
+                
+                # Convert audio to format that SpeechRecognition can handle
+                if hasattr(audio_data, 'path') and audio_data.metadata.get("path"):
+                    audio_file_path = audio_data.metadata["path"]
+                else:
+                    # Save bytes to temp file
+                    with tempfile.NamedTemporaryFile(suffix=f".{audio_data.format}", delete=False) as tmp:
+                        tmp.write(audio_data.data if isinstance(audio_data.data, bytes) else audio_data.data.read())
+                        audio_file_path = tmp.name
+                
+                # Load audio file
+                with sr.AudioFile(audio_file_path) as source:
+                    audio = recognizer.record(source)
+                
+                # Try Google Web Speech API (free, no key required)
+                try:
+                    transcription = recognizer.recognize_google(
+                        audio,
+                        language=language if language != "auto" else "en-US"
+                    )
+                    confidence = 0.8  # Google Web Speech is reasonably good
+                except sr.UnknownValueError:
+                    self.logger.warning("Google Speech Recognition could not understand audio")
+                except sr.RequestError as e:
+                    self.logger.warning(f"Google Speech Recognition error: {e}")
+                
+                # Clean up temp file if we created one
+                if audio_file_path != audio_data.metadata.get("path") and os.path.exists(audio_file_path):
+                    os.unlink(audio_file_path)
+                    
+            except Exception as e:
+                self.logger.warning(f"SpeechRecognition failed: {e}")
+        
+        # If all else fails, return informative message
+        if transcription is None:
+            transcription = f"[Unable to transcribe {audio_data.format} audio - no speech-to-text service available]"
+            confidence = 0.0
+        
         return {
-            "transcription": f"[Audio transcription placeholder for {audio_data.format} file]",
+            "transcription": transcription,
             "language": language,
             "duration": audio_data.duration,
-            "confidence": 0.95,
+            "confidence": confidence,
         }
 
     async def _analyze_audio(self, audio_data: AudioData) -> Dict[str, Any]:
-        """Analyze audio properties."""
-        return {
+        """Analyze audio properties using real audio analysis libraries."""
+        analysis_result = {
             "format": audio_data.format,
             "duration": audio_data.duration,
             "sample_rate": audio_data.sample_rate,
             "channels": audio_data.channels,
-            "analysis": {
-                "volume_levels": "normal",
-                "noise_level": "low",
-                "clarity": "good",
-            },
         }
+        
+        # Perform real audio analysis with librosa
+        if LIBROSA_AVAILABLE:
+            try:
+                # Get audio file path
+                if hasattr(audio_data, 'path') and audio_data.metadata.get("path"):
+                    audio_file_path = audio_data.metadata["path"]
+                else:
+                    # Save bytes to temp file
+                    with tempfile.NamedTemporaryFile(suffix=f".{audio_data.format}", delete=False) as tmp:
+                        tmp.write(audio_data.data if isinstance(audio_data.data, bytes) else audio_data.data.read())
+                        audio_file_path = tmp.name
+                
+                # Load audio with librosa
+                y, sr = librosa.load(audio_file_path, sr=None, mono=False)
+                
+                # Convert to mono for analysis if multichannel
+                if len(y.shape) > 1:
+                    y_mono = librosa.to_mono(y)
+                else:
+                    y_mono = y
+                
+                # Extract various audio features
+                
+                # Tempo and beat tracking
+                tempo, beats = librosa.beat.beat_track(y=y_mono, sr=sr)
+                
+                # Spectral features
+                spectral_centroid = librosa.feature.spectral_centroid(y=y_mono, sr=sr)
+                spectral_rolloff = librosa.feature.spectral_rolloff(y=y_mono, sr=sr)
+                spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y_mono, sr=sr)
+                
+                # Energy features
+                rms = librosa.feature.rms(y=y_mono)
+                zero_crossing_rate = librosa.feature.zero_crossing_rate(y_mono)
+                
+                # MFCC (Mel-frequency cepstral coefficients) - useful for speech/music classification
+                mfccs = librosa.feature.mfcc(y=y_mono, sr=sr, n_mfcc=13)
+                
+                # Calculate statistics
+                peak_amplitude = float(np.max(np.abs(y_mono)))
+                mean_amplitude = float(np.mean(np.abs(y_mono)))
+                
+                # Determine volume level
+                rms_mean = float(rms.mean())
+                if rms_mean < 0.01:
+                    volume_level = "very_quiet"
+                elif rms_mean < 0.05:
+                    volume_level = "quiet"
+                elif rms_mean < 0.15:
+                    volume_level = "normal"
+                elif rms_mean < 0.3:
+                    volume_level = "loud"
+                else:
+                    volume_level = "very_loud"
+                
+                # Estimate noise level based on spectral features
+                spectral_flatness = float(np.mean(spectral_centroid) / (np.std(spectral_centroid) + 1e-6))
+                if spectral_flatness > 0.8:
+                    noise_level = "high"  # More like white noise
+                elif spectral_flatness > 0.5:
+                    noise_level = "medium"
+                else:
+                    noise_level = "low"  # More tonal
+                
+                # Build detailed analysis
+                analysis_result["analysis"] = {
+                    "volume_level": volume_level,
+                    "noise_level": noise_level,
+                    "tempo_bpm": float(tempo),
+                    "beat_count": len(beats),
+                    "peak_amplitude": peak_amplitude,
+                    "mean_amplitude": mean_amplitude,
+                    "rms_energy": rms_mean,
+                    "spectral_centroid_hz": float(spectral_centroid.mean()),
+                    "spectral_rolloff_hz": float(spectral_rolloff.mean()),
+                    "spectral_bandwidth_hz": float(spectral_bandwidth.mean()),
+                    "zero_crossing_rate": float(zero_crossing_rate.mean()),
+                    "mfcc_mean": [float(m) for m in mfccs.mean(axis=1).tolist()[:5]],  # First 5 MFCCs
+                }
+                
+                # Update duration if it wasn't set
+                if audio_data.duration == 0.0:
+                    analysis_result["duration"] = librosa.get_duration(y=y_mono, sr=sr)
+                
+                # Clean up temp file if we created one
+                if audio_file_path != audio_data.metadata.get("path") and os.path.exists(audio_file_path):
+                    os.unlink(audio_file_path)
+                    
+            except Exception as e:
+                self.logger.warning(f"Librosa analysis failed: {e}")
+                # Fallback to basic analysis
+                analysis_result["analysis"] = {
+                    "volume_level": "unknown",
+                    "noise_level": "unknown",
+                    "error": f"Audio analysis failed: {str(e)}"
+                }
+        else:
+            # No librosa available, return basic info
+            analysis_result["analysis"] = {
+                "volume_level": "unknown",
+                "noise_level": "unknown",
+                "note": "Install librosa for detailed audio analysis"
+            }
+        
+        return analysis_result
 
     async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute audio processing."""
@@ -762,21 +1029,89 @@ class VideoProcessingTool(Tool):
         self.logger = logging.getLogger(__name__)
 
     def _load_video_metadata(self, video_path: str) -> VideoData:
-        """Load video metadata."""
-        # Placeholder implementation
-        # In production, use cv2 or ffmpeg-python
+        """Load video metadata using OpenCV."""
+        if not os.path.exists(video_path):
+            # For URLs or non-existent files, return basic metadata
+            return VideoData(
+                data=video_path,
+                format="mp4",
+                duration=0.0,
+                fps=30.0,
+                width=1920,
+                height=1080,
+                metadata={"source": "url", "error": "File not found or URL provided"},
+            )
+        
+        if OPENCV_AVAILABLE:
+            try:
+                # Open video with OpenCV
+                cap = cv2.VideoCapture(video_path)
+                
+                if not cap.isOpened():
+                    raise ValueError(f"Failed to open video: {video_path}")
+                
+                # Get video properties
+                fps = cap.get(cv2.CAP_PROP_FPS)
+                frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                
+                # Calculate duration
+                duration = frame_count / fps if fps > 0 else 0.0
+                
+                # Get format from file extension
+                format_ext = os.path.splitext(video_path)[1][1:]
+                
+                metadata = {
+                    "source": "file",
+                    "frame_count": int(frame_count),
+                    "codec": cap.get(cv2.CAP_PROP_FOURCC),
+                }
+                
+                cap.release()
+                
+                return VideoData(
+                    data=video_path,
+                    format=format_ext,
+                    duration=float(duration),
+                    fps=float(fps),
+                    width=width,
+                    height=height,
+                    metadata=metadata,
+                )
+                
+            except Exception as e:
+                self.logger.warning(f"OpenCV failed to load video metadata: {e}")
+        
+        # Fallback with moviepy if available
+        if MOVIEPY_AVAILABLE:
+            try:
+                clip = VideoFileClip(video_path)
+                
+                return VideoData(
+                    data=video_path,
+                    format=os.path.splitext(video_path)[1][1:],
+                    duration=float(clip.duration),
+                    fps=float(clip.fps),
+                    width=clip.w,
+                    height=clip.h,
+                    metadata={
+                        "source": "file",
+                        "frame_count": int(clip.duration * clip.fps),
+                    },
+                )
+            except Exception as e:
+                self.logger.warning(f"MoviePy failed to load video metadata: {e}")
+        
+        # Last resort fallback
         return VideoData(
             data=video_path,
-            format=(
-                os.path.splitext(video_path)[1][1:]
-                if os.path.exists(video_path)
-                else "mp4"
-            ),
-            duration=60.0,  # Placeholder
+            format=os.path.splitext(video_path)[1][1:],
+            duration=0.0,
             fps=30.0,
             width=1920,
             height=1080,
-            metadata={"source": "file" if os.path.exists(video_path) else "url"},
+            metadata={"source": "file", "error": "Could not load video metadata"},
         )
 
     async def _analyze_video(
@@ -804,31 +1139,99 @@ class VideoProcessingTool(Tool):
         end: Optional[float],
         output_path: str,
     ) -> List[str]:
-        """Extract frames from video."""
+        """Extract frames from video using OpenCV."""
         os.makedirs(output_path, exist_ok=True)
-
-        # Placeholder - in production use cv2
         frames = []
-        current_time = start
-        end_time = end or video_data.duration
-        frame_count = 0
-
-        while current_time < end_time:
-            # Create placeholder frame
-            frame_path = os.path.join(output_path, f"frame_{frame_count:04d}.jpg")
-
-            # Create a placeholder image
+        
+        if not os.path.exists(video_data.data):
+            self.logger.error(f"Video file not found: {video_data.data}")
+            return frames
+        
+        if OPENCV_AVAILABLE:
+            try:
+                cap = cv2.VideoCapture(video_data.data)
+                
+                if not cap.isOpened():
+                    raise ValueError(f"Failed to open video: {video_data.data}")
+                
+                fps = cap.get(cv2.CAP_PROP_FPS)
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                
+                # Calculate end time
+                end_time = end if end is not None else video_data.duration
+                
+                # Calculate frame numbers to extract
+                current_time = start
+                frame_count = 0
+                
+                while current_time < end_time and frame_count < 100:  # Limit to 100 frames max
+                    # Calculate frame number
+                    frame_number = int(current_time * fps)
+                    
+                    if frame_number >= total_frames:
+                        break
+                    
+                    # Seek to frame
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+                    
+                    # Read frame
+                    ret, frame = cap.read()
+                    
+                    if ret:
+                        # Save frame
+                        frame_path = os.path.join(output_path, f"frame_{frame_count:04d}.jpg")
+                        cv2.imwrite(frame_path, frame)
+                        frames.append(frame_path)
+                        frame_count += 1
+                    
+                    current_time += interval
+                
+                cap.release()
+                
+            except Exception as e:
+                self.logger.error(f"OpenCV frame extraction failed: {e}")
+                
+        elif MOVIEPY_AVAILABLE:
+            # Fallback to moviepy
+            try:
+                clip = VideoFileClip(video_data.data)
+                
+                current_time = start
+                end_time = end if end is not None else clip.duration
+                frame_count = 0
+                
+                while current_time < end_time and frame_count < 100:
+                    if current_time <= clip.duration:
+                        # Extract frame at current time
+                        frame = clip.get_frame(current_time)
+                        
+                        # Convert to PIL Image and save
+                        img = Image.fromarray(frame)
+                        frame_path = os.path.join(output_path, f"frame_{frame_count:04d}.jpg")
+                        img.save(frame_path)
+                        frames.append(frame_path)
+                        frame_count += 1
+                    
+                    current_time += interval
+                
+                clip.close()
+                
+            except Exception as e:
+                self.logger.error(f"MoviePy frame extraction failed: {e}")
+        
+        else:
+            # No video processing library available
+            self.logger.error("No video processing library available (install opencv-python or moviepy)")
+            
+            # Create at least one placeholder frame
+            frame_path = os.path.join(output_path, "frame_0000.jpg")
             img = Image.new("RGB", (320, 240), color=(100, 100, 100))
+            from PIL import ImageDraw
+            draw = ImageDraw.Draw(img)
+            draw.text((10, 100), "Install OpenCV for video processing", fill=(255, 255, 255))
             img.save(frame_path)
-
             frames.append(frame_path)
-            current_time += interval
-            frame_count += 1
-
-            # Limit frames for demo
-            if frame_count >= 5:
-                break
-
+        
         return frames
 
     async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
