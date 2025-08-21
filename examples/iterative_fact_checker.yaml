@@ -1,0 +1,240 @@
+# Iterative Fact-Checking Pipeline
+# Uses while loops to iteratively verify and add references to documents
+id: iterative_fact_checker
+name: Iterative Fact Checker
+description: Iteratively processes documents to ensure all claims have proper references
+version: "2.0.0"
+
+parameters:
+  input_document:
+    type: string
+    default: "test_climate_document.md"
+    description: Path to the document to fact-check
+  quality_threshold:
+    type: number
+    default: 0.95
+    description: Minimum percentage of claims that must have references
+  max_iterations:
+    type: integer
+    default: 5
+    description: Maximum number of improvement iterations
+
+steps:
+  # Initialize with the input document
+  - id: initialize_vars
+    action: generate
+    parameters:
+      prompt: "Initialize fact-checking process for document: {{ parameters.input_document }}"
+      model: "claude-sonnet-4-20250514"
+      max_tokens: 50
+    
+  # Load the initial document
+  - id: load_initial_doc
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ parameters.input_document }}"
+    dependencies:
+      - initialize_vars
+    
+  # Main iterative fact-checking loop
+  - id: fact_check_loop
+    while: "{{ quality_score | default(0) < parameters.quality_threshold }}"
+    max_iterations: {{ parameters.max_iterations }}
+    dependencies:
+      - load_initial_doc
+    steps:
+      # Load current document (first iteration from initial, then from previous iteration)
+      - id: load_document
+        tool: filesystem
+        action: read
+        parameters:
+          path: |
+            {% if $iteration == 1 %}
+            {{ parameters.input_document }}
+            {% else %}
+            {{ output_path }}/iteration_{{ $iteration - 1 }}_document.md
+            {% endif %}
+    
+      # Extract all claims and existing references
+      - id: extract_claims
+        action: generate-structured
+        parameters:
+          prompt: |
+            Analyze this document and extract all factual claims and their references.
+            
+            Document:
+            {{ load_document.content }}
+            
+            For each claim:
+            1. Extract the claim text
+            2. Note if it has a reference/citation
+            3. If it has a reference, extract the reference details
+          schema:
+            type: object
+            properties:
+              claims:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    text:
+                      type: string
+                    has_reference:
+                      type: boolean
+                    reference_url:
+                      type: string
+              total_claims:
+                type: integer
+              claims_with_references:
+                type: integer
+              percentage_referenced:
+                type: number
+          model: "claude-sonnet-4-20250514"
+          max_tokens: 2000
+    
+      # Verify existing references using headless browser
+      - id: verify_refs
+        for_each: "{{ extract_claims.claims | selectattr('has_reference') | selectattr('reference_url') | list }}"
+        max_parallel: 3
+        steps:
+          - id: check_url
+            tool: headless-browser
+            action: navigate
+            parameters:
+              url: "{{ item.reference_url }}"
+              wait_for: 2000
+              timeout: 10000
+              validate_ssl: false
+    
+      # Find citations for unreferenced claims
+      - id: find_citations
+        action: generate
+        parameters:
+          prompt: |
+            Find reliable sources and citations for these unreferenced claims:
+            
+            {% for claim in extract_claims.claims %}
+            {% if not claim.has_reference %}
+            - {{ claim.text }}
+            {% endif %}
+            {% endfor %}
+            
+            For each claim, provide:
+            1. A reliable source URL
+            2. The source title
+            3. A brief explanation of why this source supports the claim
+            
+            Format as a list with clear citations.
+          model: "claude-sonnet-4-20250514"
+          max_tokens: 2000
+    
+      # Update document with new references and corrections
+      - id: update_document
+        action: generate
+        parameters:
+          prompt: |
+            Update this document by:
+            1. Adding citations for all unreferenced claims using the sources found
+            2. Fixing any broken references (URLs that returned errors)
+            3. Formatting all references consistently as footnotes at the end
+            
+            Original document:
+            {{ load_document.content }}
+            
+            Claims analysis:
+            {{ extract_claims }}
+            
+            Reference verification results:
+            {{ verify_refs }}
+            
+            New citations to add:
+            {{ find_citations.result }}
+            
+            Return the complete updated document with all improvements.
+          model: "claude-sonnet-4-20250514"
+          max_tokens: 5000
+    
+      # Save iteration document
+      - id: save_iteration
+        tool: filesystem
+        action: write
+        parameters:
+          path: "{{ output_path }}/iteration_{{ $iteration }}_document.md"
+          content: "{{ update_document.result }}"
+      
+      # Update quality score variable for loop condition
+      - id: update_score
+        action: generate
+        parameters:
+          prompt: |
+            The document now has {{ extract_claims.claims_with_references }} out of {{ extract_claims.total_claims }} claims with references.
+            This is {{ extract_claims.percentage_referenced }}% referenced.
+            Output just the decimal percentage (e.g., 0.95 for 95%).
+          model: "claude-sonnet-4-20250514"
+          max_tokens: 10
+        produces: quality_score
+    
+  # Save the final verified document
+  - id: save_final_document
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output_path }}/{{ parameters.input_document | basename | regex_replace('\\.md$', '') }}_verified.md"
+      content: |
+        {% if fact_check_loop.iterations %}
+        {{ fact_check_loop.iterations[-1].update_document.result }}
+        {% else %}
+        {{ load_initial_doc.content }}
+        {% endif %}
+    dependencies:
+      - fact_check_loop
+    
+  # Generate comprehensive fact-checking report
+  - id: generate_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output_path }}/fact_checking_report.md"
+      content: |
+        # Fact-Checking Report
+        
+        ## Document Information
+        - **Source Document**: {{ parameters.input_document }}
+        - **Date Processed**: {{ timestamp }}
+        
+        ## Processing Summary
+        - **Total Iterations**: {{ fact_check_loop.iteration_count | default(1) }}
+        - **Quality Threshold**: {{ parameters.quality_threshold * 100 }}%
+        - **Final Quality Score**: {% if fact_check_loop.iterations %}{{ fact_check_loop.iterations[-1].extract_claims.percentage_referenced }}%{% else %}N/A{% endif %}
+        
+        ## Iteration Details
+        {% for iteration in fact_check_loop.iterations %}
+        ### Iteration {{ loop.index }}
+        - Claims analyzed: {{ iteration.extract_claims.total_claims }}
+        - Claims with references: {{ iteration.extract_claims.claims_with_references }}
+        - Percentage referenced: {{ iteration.extract_claims.percentage_referenced }}%
+        - New citations added: {{ iteration.find_citations.result | length | default(0) }}
+        {% endfor %}
+        
+        ## Final Status
+        {% if fact_check_loop.iterations and fact_check_loop.iterations[-1].extract_claims.percentage_referenced >= parameters.quality_threshold * 100 %}
+        ✅ **Quality threshold met**: All or most claims now have proper references.
+        {% else %}
+        ⚠️ **Maximum iterations reached**: Some claims may still lack references.
+        {% endif %}
+        
+        ## Output Files
+        - Verified document: `{{ parameters.input_document | basename | regex_replace('\\.md$', '') }}_verified.md`
+        - Iteration documents: `iteration_*_document.md`
+        
+        ---
+        *Generated by Iterative Fact Checker Pipeline v2.0*
+    dependencies:
+      - save_final_document
+
+outputs:
+  verified_document: "{{ save_final_document.path }}"
+  report: "{{ generate_report.path }}"
+  iterations_performed: "{{ fact_check_loop.iteration_count | default(0) }}"
+  final_quality: "{% if fact_check_loop.iterations %}{{ fact_check_loop.iterations[-1].extract_claims.percentage_referenced }}%{% else %}N/A{% endif %}"
