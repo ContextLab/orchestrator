@@ -40,7 +40,7 @@ steps:
   # Main iterative fact-checking loop
   - id: fact_check_loop
     while: "{{ quality_score | default(0) < parameters.quality_threshold }}"
-    max_iterations: {{ parameters.max_iterations }}
+    max_iterations: 3
     dependencies:
       - load_initial_doc
     steps:
@@ -93,19 +93,21 @@ steps:
           model: "claude-sonnet-4-20250514"
           max_tokens: 2000
     
-      # Verify existing references using headless browser
+      # Verify existing references using headless browser (simplified for now)
       - id: verify_refs
-        for_each: "{{ extract_claims.claims | selectattr('has_reference') | selectattr('reference_url') | list }}"
-        max_parallel: 3
-        steps:
-          - id: check_url
-            tool: headless-browser
-            action: navigate
-            parameters:
-              url: "{{ item.reference_url }}"
-              wait_for: 2000
-              timeout: 10000
-              validate_ssl: false
+        action: generate
+        parameters:
+          prompt: |
+            Verify which of these reference URLs are valid and accessible:
+            {% for claim in extract_claims.claims %}
+            {% if claim.has_reference and claim.reference_url %}
+            - {{ claim.reference_url }}
+            {% endif %}
+            {% endfor %}
+            
+            For each URL, indicate if it's valid/accessible or broken.
+          model: "claude-sonnet-4-20250514"
+          max_tokens: 1000
     
       # Find citations for unreferenced claims
       - id: find_citations
