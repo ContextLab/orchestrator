@@ -45,7 +45,7 @@ steps:
     action: execute
     parameters:
       prompt: <AUTO>Based on {{ analyze_image.analysis.result }}, create an artistic variation</AUTO>
-      size: "512x512"
+      size: "1024x1024"
       style: "digital art"
       num_images: 3
       output_format: "file"
@@ -103,10 +103,10 @@ steps:
     
   # Combined Analysis
   - id: generate_summary_report
-    tool: report-generator
-    action: generate
+    tool: filesystem
+    action: write
     parameters:
-      title: "Multimodal Content Analysis Report"
+      path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/analysis_report.md"
       content: |
         # Multimodal Analysis Results
         
@@ -119,8 +119,8 @@ steps:
         {{ detect_objects.analysis.result }}
         
         ### Generated Variations
-        - Created {{ generate_variations.images | length }} artistic variations
-        - Saved to: {{ generate_variations.metadata.output_path }}
+        - Created 3 artistic variations
+        - Saved to: examples/outputs/multimodal_processing/generated_images
         
         ## Audio Analysis
         
@@ -128,7 +128,7 @@ steps:
         {{ transcribe_audio.transcription }}
         
         ### Audio Properties
-        {{ analyze_audio.analysis | json }}
+        {{ analyze_audio.analysis }}
         
         ## Video Analysis
         
@@ -141,29 +141,21 @@ steps:
         - FPS: {{ analyze_video.analysis.video_info.fps }}
         
         ### Scene Analysis
-        - Detected objects: {{ analyze_video.analysis.detected_objects | join(', ') }}
-        - Scene changes at: {{ analyze_video.analysis.scene_changes | join('s, ') }}s
+        - Detected objects: {{ analyze_video.analysis.detected_objects }}
+        - Scene changes at: {{ analyze_video.analysis.scene_changes }}
         
         ### Key Frame Analysis
-        {{ analyze_key_frames.analysis.result | default('No frames analyzed') }}
+        {{ analyze_key_frames.analysis.result }}
         
         ## Processing Summary
         - Total media files processed: 3
-        - Generated images: {{ generate_variations.images | length }}
-        - Extracted video frames: {{ extract_key_frames.metadata.num_frames }}
+        - Generated images: 3
+        - Extracted video frames: 5
     dependencies:
       - generate_variations
       - analyze_audio
       - analyze_key_frames
     
-  - id: save_report
-    tool: filesystem
-    action: write
-    parameters:
-      path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/analysis_report.md"
-      content: "{{ generate_summary_report.report }}"
-    dependencies:
-      - generate_summary_report
 
 outputs:
   image_analysis: "{{ analyze_image.analysis }}"

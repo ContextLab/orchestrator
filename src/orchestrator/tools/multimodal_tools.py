@@ -589,7 +589,7 @@ class AudioProcessingTool(Tool):
             "model", "string", "Model to use for processing", required=False
         )
         self.add_parameter(
-            "language", "string", "Language code for transcription", default="en"
+            "language", "string", "Language code for transcription", required=False, default="en"
         )
         self.add_parameter(
             "output_format", "string", "Output format for conversion", required=False
@@ -747,14 +747,15 @@ class VideoProcessingTool(Tool):
             "model", "string", "Model to use for analysis", required=False
         )
         self.add_parameter(
-            "frame_interval", "number", "Seconds between frame extraction", default=1.0
+            "frame_interval", "number", "Seconds between frame extraction", required=False, default=1.0
         )
-        self.add_parameter("start_time", "number", "Start time in seconds", default=0)
+        self.add_parameter("start_time", "number", "Start time in seconds", required=False, default=0)
         self.add_parameter("end_time", "number", "End time in seconds", required=False)
         self.add_parameter(
             "output_path",
             "string",
             "Output directory for extracted content",
+            required=False,
             default="video_output",
         )
 

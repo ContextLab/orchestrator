@@ -16,7 +16,12 @@ from ..tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from ..tools.report_tools import ReportGeneratorTool, PDFCompilerTool
 from ..tools.checkpoint_tool import CheckpointTool
 from ..tools.code_execution import PythonExecutorTool
-from ..tools.multimodal_tools import ImageGenerationTool, ImageAnalysisTool
+from ..tools.multimodal_tools import (
+    ImageGenerationTool, 
+    ImageAnalysisTool,
+    AudioProcessingTool,
+    VideoProcessingTool
+)
 from ..tools.user_interaction_tools import (
     UserPromptTool, 
     ApprovalGateTool, 
@@ -93,6 +98,8 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.checkpoint_tool = CheckpointTool()
         self.image_generation_tool = ImageGenerationTool()
         self.image_analysis_tool = ImageAnalysisTool()
+        self.audio_processing_tool = AudioProcessingTool()
+        self.video_processing_tool = VideoProcessingTool()
         
         # Import and initialize VisualizationTool
         from ..tools.visualization_tools import VisualizationTool
@@ -196,6 +203,8 @@ class HybridControlSystem(ModelBasedControlSystem):
             "checkpoint": self._handle_checkpoint,
             "image-generation": self._handle_image_generation,
             "image-analysis": self._handle_image_analysis,
+            "audio-processing": self._handle_audio_processing,
+            "video-processing": self._handle_video_processing,
             "task-delegation": self._handle_task_delegation,
             "multi-model-routing": self._handle_multi_model_routing,
             "prompt-optimization": self._handle_prompt_optimization_real,
@@ -995,6 +1004,18 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Execute using image analysis tool
         params = task.parameters.copy()
         return await self.image_analysis_tool.execute(**params)
+    
+    async def _handle_audio_processing(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle audio processing operations."""
+        # Execute using audio processing tool
+        params = task.parameters.copy()
+        return await self.audio_processing_tool.execute(**params)
+    
+    async def _handle_video_processing(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle video processing operations."""
+        # Execute using video processing tool
+        params = task.parameters.copy()
+        return await self.video_processing_tool.execute(**params)
     
     async def _handle_prompt_optimization_placeholder(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle prompt optimization operations (DEPRECATED - kept for reference)."""
