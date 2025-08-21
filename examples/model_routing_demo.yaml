@@ -14,8 +14,9 @@ steps:
   # Step 1: Analyze task complexity to route appropriately
   - id: assess_requirements
     tool: multi-model-routing
-    action: route
+    action: execute
     parameters:
+      action: "route"
       tasks:
         - task: "Summarize this document in 2-3 sentences"
           context: |
@@ -37,7 +38,7 @@ steps:
     action: generate_text
     parameters:
       prompt: |
-        Summarize this document in 2-3 sentences:
+        Provide a concise 2-3 sentence summary of this document. Focus on the key points only:
         
         Artificial intelligence continues to revolutionize industries worldwide.
         From healthcare to finance, AI applications are becoming increasingly sophisticated.
@@ -53,14 +54,15 @@ steps:
     action: generate_text
     parameters:
       prompt: |
-        Write a Python function to calculate fibonacci numbers.
+        Write a complete, production-ready Python function to calculate fibonacci numbers.
         Requirements:
-        - Should be efficient and handle large inputs
-        - Include type hints
-        - Add docstring
-        - Handle edge cases
-      # Use routing recommendation
-      model: "{{ assess_requirements.recommendations[1].model }}"
+        - Use efficient algorithm (memoization or iterative)
+        - Include proper type hints
+        - Add comprehensive docstring
+        - Handle edge cases (negative numbers, zero, large inputs)
+        - Return the code only, no explanations
+      # Use a working model since GPT-5-nano has issues
+      model: "{{ assess_requirements.recommendations[0].model }}"
     dependencies:
       - assess_requirements
       
@@ -75,7 +77,7 @@ steps:
         - Average Order Value: $167 (3% growth YoY)
         - Top Product Categories: Electronics (45%), Home & Garden (30%), Clothing (25%)
       analysis_type: "trends"
-      prompt: "Analyze the sales data trends and provide 3 key insights"
+      prompt: "Analyze the sales data trends and provide exactly 3 key insights. For each insight, include: the finding, why it matters, and a specific action. Be concise and data-driven. No conversational text."
       # Use routing recommendation
       model: "{{ assess_requirements.recommendations[2].model }}"
     dependencies:
@@ -84,13 +86,14 @@ steps:
   # Step 5: Cost optimization demonstration
   - id: batch_processing
     tool: multi-model-routing
-    action: optimize_batch
+    action: execute
     parameters:
+      action: "optimize_batch"
       tasks:
-        - "Translate 'Hello World' to Spanish"
-        - "Translate 'Good morning' to French"
-        - "Translate 'Thank you' to German"
-        - "Translate 'Goodbye' to Italian"
+        - "Translate to Spanish (provide translation only): Hello World"
+        - "Translate to French (provide translation only): Good morning"
+        - "Translate to German (provide translation only): Thank you"
+        - "Translate to Italian (provide translation only): Goodbye"
       optimization_goal: "minimize_cost"
       constraints:
         max_budget_per_task: 0.05
@@ -99,11 +102,10 @@ steps:
       
   # Step 6: Generate routing report
   - id: routing_report
-    tool: report-generator
-    action: generate
+    tool: filesystem
+    action: write
     parameters:
-      title: "Model Routing Analysis"
-      format: "markdown"
+      path: "{{ output_path }}/{{ priority }}_routing_analysis.md"
       content: |
         # Model Routing Results
         
@@ -121,7 +123,10 @@ steps:
         ### Code Generation
         - Assigned Model: {{ assess_requirements.recommendations[1].model }}
         - Estimated Cost: ${{ assess_requirements.recommendations[1].estimated_cost }}
-        - Result Preview: {{ generate_code.result | truncate(200) }}
+        - Code Generated: 
+        ```python
+        {{ generate_code.result | replace('```python', '') | replace('```', '') | truncate(500) }}
+        ```
         
         ### Data Analysis
         - Assigned Model: {{ assess_requirements.recommendations[2].model }}
@@ -129,11 +134,17 @@ steps:
         - Insights: {{ analyze_data.result }}
         
         ## Batch Translation Optimization
-        - Strategy: {{ batch_processing.strategy }}
-        - Total Tasks: {{ batch_processing.task_count }}
+        - Optimization Goal: {{ batch_processing.optimization_goal | default('minimize_cost') }}
+        - Total Tasks: {{ batch_processing.results | length }}
         - Models Used: {{ batch_processing.models_used | join(', ') }}
         - Total Cost: ${{ batch_processing.total_cost }}
-        - Average Cost per Task: ${{ batch_processing.average_cost }}
+        - Average Cost per Task: ${{ (batch_processing.total_cost / (batch_processing.results | length)) | round(4) }}
+        
+        ### Translation Results:
+        1. Spanish: {{ batch_processing.results[0] | truncate(100) }}
+        2. French: {{ batch_processing.results[1] | truncate(100) }}
+        3. German: {{ batch_processing.results[2] | truncate(100) }}
+        4. Italian: {{ batch_processing.results[3] | truncate(100) }}
         
         ## Summary
         - Total Pipeline Cost: ${{ assess_requirements.total_estimated_cost + batch_processing.total_cost }}
@@ -142,30 +153,9 @@ steps:
     dependencies:
       - batch_processing
       
-  # Step 7: Save final report
-  - id: save_report
-    tool: filesystem
-    action: write
-    parameters:
-      path: "examples/outputs/model-routing-demo/outputs/model_routing_demo/report_{{ execution.timestamp | slugify }}.md"
-      content: |
-        # Model Routing Demo Report
-        
-        **Generated:** {{ execution.timestamp }}
-        **Budget:** ${{ task_budget }}
-        **Priority:** {{ priority }}
-        
-        ## Routing Results
-        
-        {{ routing_report.content }}
-        
-        ---
-        *Generated by Model Routing Demonstration Pipeline*
-    dependencies:
-      - routing_report
       
 outputs:
-  routing_report: "{{ routing_report.content }}"
-  total_cost: "{{ assess_requirements.total_estimated_cost + batch_processing.total_cost }}"
-  models_used: "{{ assess_requirements.models_selected + batch_processing.models_used }}"
-  report_path: "examples/outputs/model-routing-demo/{{ save_report.filepath }}"
+  routing_report: "{{ routing_report.path }}"
+  total_cost: "{{ assess_requirements.total_estimated_cost | default(0) + batch_processing.total_cost | default(0) }}"
+  models_used: "{{ (assess_requirements.models_selected | default([])) + (batch_processing.models_used | default([])) }}"
+  report_path: "{{ routing_report.path }}"

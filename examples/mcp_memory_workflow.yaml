@@ -12,6 +12,9 @@ parameters:
   task_description:
     type: string
     default: "Analyze sales data and create visualizations"
+  output_path:
+    type: string
+    default: "examples/outputs/mcp_memory_workflow"
 
 steps:
   # Initialize conversation context
@@ -23,9 +26,9 @@ steps:
       namespace: "conversation"
       key: "user_profile"
       value:
-        name: "{{ parameters.user_name }}"
-        task: "{{ parameters.task_description }}"
-        started_at: "{{ now() }}"
+        name: "{{ user_name }}"
+        task: "{{ task_description }}"
+        started_at: "{{ execution['timestamp'] }}"
       ttl: 7200  # 2 hours
     
   # Store task breakdown
@@ -50,7 +53,7 @@ steps:
     tool: task-delegation
     action: execute
     parameters:
-      task: <AUTO>Based on {{ parameters.task_description }}, what specific data should we load?</AUTO>
+      task: "Identify specific data sources for: {{ task_description }}"
       requirements:
         capabilities: ["data-analysis"]
     dependencies:
@@ -84,18 +87,22 @@ steps:
     
   # Build context summary
   - id: build_context_summary
-    tool: report-generator
-    action: generate
+    tool: filesystem
+    action: write
     parameters:
-      title: "Context Summary"
+      path: "{{ output_path }}/{{ user_name | slugify }}_context_summary.md"
       content: |
+        # Context Summary
+        
+        **Generated on:** {{ execution['timestamp'] }}
+        
         ## Current Context State
         
         **Namespace**: conversation
-        **Active Keys**: {{ get_full_context.keys | join(', ') }}
+        **Active Keys**: {{ get_full_context['keys'] | join(', ') }}
         
         ### Details:
-        {% for key in get_full_context.keys %}
+        {% for key in get_full_context['keys'] %}
         - **{{ key }}**: Stored in memory
         {% endfor %}
     dependencies:
@@ -106,15 +113,15 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/mcp_memory_workflow/mcp_memory_export.json"
+      path: "{{ output_path }}/{{ user_name | slugify }}_memory_export.json"
       content: |
         {
           "namespace": "conversation",
-          "exported_at": "{{ now() }}",
-          "keys": {{ get_full_context.keys | json }},
+          "exported_at": "{{ execution['timestamp'] }}",
+          "keys": {{ get_full_context['keys'] | tojson }},
           "metadata": {
-            "user": "{{ parameters.user_name }}",
-            "task": "{{ parameters.task_description }}"
+            "user": "{{ user_name }}",
+            "task": "{{ task_description }}"
           }
         }
     dependencies:
@@ -143,7 +150,7 @@ steps:
     condition: "false"  # Disabled by default
 
 outputs:
-  context_keys: "{{ get_full_context.keys }}"
-  user_profile_found: "{{ check_expiration.found }}"
-  memory_export_path: "examples/outputs/mcp_memory_workflow/mcp_memory_export.json"
-  context_summary: "{{ build_context_summary.report }}"
+  context_keys: "{{ get_full_context['keys'] | tojson }}"
+  user_profile_found: "{{ check_expiration['found'] }}"
+  memory_export_path: "{{ output_path }}/{{ user_name | slugify }}_memory_export.json"
+  context_summary_path: "{{ output_path }}/{{ user_name | slugify }}_context_summary.md"

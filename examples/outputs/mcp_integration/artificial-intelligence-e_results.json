@@ -1,0 +1,38 @@
+{
+  "query": "artificial intelligence ethics governance",
+  "timestamp": "2025-08-20T15:48:23.554084",
+  "total_results": 5,
+  "results": [
+    {
+      "title": "ARTIFICIAL Definition & Meaning - Merriam-Webster",
+      "url": "https://www.merriam-webster.com/dictionary/artificial",
+      "snippet": "The meaning of ARTIFICIAL is made, produced, or done by humans especially to seem like something natural : man-made. How to use artificial in a sentence.",
+      "rank": 1
+    },
+    {
+      "title": "ARTIFICIAL | English meaning - Cambridge Dictionary",
+      "url": "https://dictionary.cambridge.org/dictionary/english/artificial",
+      "snippet": "artificial adjective (NOT SINCERE) not sincere; not truly intended: an artificial smile",
+      "rank": 2
+    },
+    {
+      "title": "ARTIFICIAL Definition & Meaning | Dictionary.com",
+      "url": "https://www.dictionary.com/browse/artificial",
+      "snippet": "Artificial is used to describe things that are made or manufactured as opposed to occurring naturally. Artificial is often used as the opposite of natural. A close synonym of artificial is \u2026",
+      "rank": 3
+    },
+    {
+      "title": "Artificial - definition of artificial by The Free Dictionary",
+      "url": "https://www.thefreedictionary.com/artificial",
+      "snippet": "Not arising from natural or necessary causes; contrived or arbitrary: \"Hausa [in Niger] ... are separated from their brethren in Nigeria by a porous and artificial border that the colonial powers left behind\" (Jeffrey Tayler).",
+      "rank": 4
+    },
+    {
+      "title": "ARTIFICIAL definition and meaning | Collins English Dictionary",
+      "url": "https://www.collinsdictionary.com/dictionary/english/artificial",
+      "snippet": "If you describe someone or their behaviour as artificial, you disapprove of them because they pretend to have attitudes and feelings which they do not really have.",
+      "rank": 5
+    }
+  ],
+  "pipeline": "mcp_integration"
+}

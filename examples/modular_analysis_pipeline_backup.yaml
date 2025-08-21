@@ -1,9 +1,9 @@
-# Modular Analysis Pipeline with Sub-Pipelines (Fixed Version)
+# Modular Analysis Pipeline with Sub-Pipelines
 # Demonstrates using sub-pipelines for modular workflow design
 id: modular_analysis
 name: Modular Analysis Pipeline
 description: Main pipeline that orchestrates multiple analysis sub-pipelines
-version: "2.0.0"
+version: "1.0.0"
 
 parameters:
   dataset:
@@ -21,7 +21,7 @@ steps:
     tool: filesystem
     action: read
     parameters:
-      path: "{{ output_path }}/{{ parameters.dataset }}"
+      path: "examples/outputs/modular_analysis/{{ parameters.dataset }}"
     
   - id: data_preprocessing
     tool: pipeline-executor
@@ -37,7 +37,7 @@ steps:
             parameters:
               data: "{{ inputs.raw_data }}"
               remove_duplicates: true
-              handle_missing: "forward_fill"
+              handle_missing: "interpolate"
           
           - id: normalize_data
             tool: data-processing
@@ -52,14 +52,7 @@ steps:
           processed_data: "{{ normalize_data.result }}"
       inputs:
         raw_data: "{{ load_data.content }}"
-      output_mapping:
-        processed_data: "processed_data"
-      inherit_context: true
       wait_for_completion: true
-      timeout: 60000
-      error_handling: "fail"
-      retry_count: 3
-      retry_delay: 1
     dependencies:
       - load_data
     
@@ -74,12 +67,6 @@ steps:
       output_mapping:
         statistics: "statistical_results"
         summary: "statistical_summary"
-      inherit_context: true
-      timeout: 60000
-      error_handling: "fail"
-      retry_count: 3
-      retry_delay: 1
-      wait_for_completion: true
     dependencies:
       - data_preprocessing
     condition: "'statistical' in {{ parameters.analysis_types }}"
@@ -94,13 +81,7 @@ steps:
         text_column: "comments"
       output_mapping:
         sentiment_scores: "sentiment_results"
-        sentiment_summary: "sentiment_summary"
-      inherit_context: true
-      timeout: 60000
-      error_handling: "fail"
-      retry_count: 3
-      retry_delay: 1
-      wait_for_completion: true
+        overall_sentiment: "sentiment_summary"
     dependencies:
       - data_preprocessing
     condition: "'sentiment' in {{ parameters.analysis_types }}"
@@ -117,12 +98,6 @@ steps:
       output_mapping:
         trends: "trend_results"
         forecasts: "trend_forecasts"
-      inherit_context: true
-      timeout: 60000
-      error_handling: "fail"
-      retry_count: 3
-      retry_delay: 1
-      wait_for_completion: true
     dependencies:
       - data_preprocessing
     condition: "'trend' in {{ parameters.analysis_types }}"
@@ -145,27 +120,37 @@ steps:
       - trend_analysis
     
   - id: generate_visualizations
-    tool: visualization
-    action: create_charts
+    tool: pipeline-executor
+    action: execute
     parameters:
-      data: "{{ data_preprocessing.outputs.processed_data }}"
-      chart_types: ["auto"]
-      output_dir: "{{ output_path }}/charts"
-      title: "Analysis Results"
-      theme: "seaborn"
+      pipeline: |
+        id: visualization_sub
+        name: Visualization Generation
+        steps:
+          - id: create_charts
+            tool: visualization
+            action: create_charts
+            parameters:
+              data: "{{ inputs.analysis_results }}"
+              chart_types: <AUTO>Based on the data structure, select appropriate visualizations</AUTO>
+              
+          - id: create_dashboard
+            tool: visualization
+            action: create_dashboard
+            parameters:
+              charts: "{{ create_charts.charts }}"
+              layout: "grid"
+              title: "Analysis Dashboard"
+        
+        outputs:
+          dashboard_url: "{{ create_dashboard.url }}"
+          chart_files: "{{ create_charts.files }}"
+      inputs:
+        analysis_results: "{{ combine_results.result }}"
+      error_handling: "continue"
+      retry_count: 2
     dependencies:
       - combine_results
-    
-  - id: create_dashboard
-    tool: visualization
-    action: create_dashboard
-    parameters:
-      charts: "{{ generate_visualizations.charts }}"
-      layout: "grid"
-      title: "Analysis Dashboard"
-      output_dir: "{{ output_path }}"
-    dependencies:
-      - generate_visualizations
     
   - id: compile_report
     tool: report-generator
@@ -201,32 +186,44 @@ steps:
           
         - title: "Visualizations"
           content: |
-            Dashboard available at: {{ create_dashboard.url }}
-            Generated charts: {{ generate_visualizations.charts | length }} files
+            Dashboard available at: {{ generate_visualizations.outputs.dashboard_url }}
+            Generated charts: {{ generate_visualizations.outputs.chart_files | length }} files
       
       include_visualizations: true
-      visualization_files: "{{ generate_visualizations.charts }}"
+      visualization_files: "{{ generate_visualizations.outputs.chart_files }}"
     dependencies:
-      - create_dashboard
+      - generate_visualizations
     
   - id: export_report
     tool: pdf-compiler
     action: compile
     parameters:
       content: "{{ compile_report.report }}"
-      output_path: "{{ output_path }}/analysis_report.{{ parameters.output_format }}"
+      output_path: "examples/outputs/modular_analysis/output/analysis_report.{{ parameters.output_format }}"
       format: "{{ parameters.output_format }}"
       include_toc: true
       include_timestamp: true
     dependencies:
       - compile_report
     
+  - id: cleanup_temp_files
+    tool: filesystem
+    action: delete
+    parameters:
+      paths:
+        - "temp/*.tmp"
+        - "cache/*.cache"
+      recursive: false
+    dependencies:
+      - export_report
+    condition: "{{ export_report.success }}"
+
   # Save pipeline results
   - id: save_results
     tool: filesystem
     action: write
     parameters:
-      path: "{{ output_path }}/results_{{ execution.timestamp | replace(':', '-') }}.md"
+      path: "examples/outputs/modular_analysis/results_{{ execution.timestamp | slugify }}.md"
       content: |
         # Modular Analysis Pipeline Results
         
@@ -237,26 +234,13 @@ steps:
         
         Pipeline completed successfully.
         
-        ### Analysis Types Performed
-        {{ parameters.analysis_types | join(', ') }}
-        
-        ### Key Results
-        - Statistical Analysis: {{ 'Completed' if 'statistical' in parameters.analysis_types else 'Skipped' }}
-        - Sentiment Analysis: {{ 'Completed' if 'sentiment' in parameters.analysis_types else 'Skipped' }}
-        - Trend Analysis: {{ 'Completed' if 'trend' in parameters.analysis_types else 'Skipped' }}
-        
-        ### Output Files
-        - Report: {{ output_path }}/analysis_report.{{ parameters.output_format }}
-        - Dashboard: {{ create_dashboard.url | default('Not generated') }}
-        - Charts: {{ generate_visualizations.charts | length }} files generated
-        
         ---
         *Generated by Modular Analysis Pipeline*
     dependencies:
-      - export_report
+      - cleanup_temp_files
 
 outputs:
-  report_path: "{{ output_path }}/analysis_report.{{ parameters.output_format }}"
-  dashboard_url: "{{ create_dashboard.url }}"
+  report_path: "examples/outputs/modular_analysis/{{ export_report.output_path }}"
+  dashboard_url: "{{ generate_visualizations.outputs.dashboard_url }}"
   analysis_summary: "{{ compile_report.summary }}"
-  charts_generated: "{{ generate_visualizations.charts }}"
+  processing_time: "{{ execution_time }}"

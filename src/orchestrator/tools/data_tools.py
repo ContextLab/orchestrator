@@ -21,7 +21,7 @@ class DataProcessingTool(Tool):
             description="Process and transform data in various formats",
         )
         self.add_parameter(
-            "action", "string", "Action: 'convert', 'filter', 'aggregate', 'transform', 'profile', 'pivot'"
+            "action", "string", "Action: 'convert', 'filter', 'aggregate', 'transform', 'profile', 'pivot', 'clean', 'merge'"
         )
         # Support both 'data' and 'input_data' parameter names
         self.add_parameter("data", "object", "Input data or file path", required=False)
@@ -86,6 +86,31 @@ class DataProcessingTool(Tool):
             "profiling_options", "array", "Profiling options", required=False
         )
         
+        # Clean parameters
+        self.add_parameter(
+            "remove_duplicates", "boolean", "Remove duplicate rows", required=False, default=True
+        )
+        self.add_parameter(
+            "handle_missing", "string", "How to handle missing values: drop, forward_fill, backward_fill, interpolate, mean", required=False, default="drop"
+        )
+        self.add_parameter(
+            "remove_outliers", "boolean", "Remove statistical outliers", required=False, default=False
+        )
+        
+        # Merge parameters
+        self.add_parameter(
+            "datasets", "array", "List of datasets to merge", required=False
+        )
+        self.add_parameter(
+            "merge_strategy", "string", "Merge strategy: combine, join, concat", required=False, default="combine"
+        )
+        self.add_parameter(
+            "join_on", "string", "Column to join on", required=False
+        )
+        self.add_parameter(
+            "join_type", "string", "Join type: inner, outer, left, right", required=False, default="inner"
+        )
+        
         # Other parameters
         self.add_parameter(
             "compression", "string", "Compression type for parquet", required=False
@@ -136,6 +161,21 @@ class DataProcessingTool(Tool):
                     "fill_value": kwargs.get("fill_value", 0)
                 }
                 return await self._pivot_data(data, format, output_format, pivot_params)
+            elif action == "clean":
+                clean_params = {
+                    "remove_duplicates": kwargs.get("remove_duplicates", True),
+                    "handle_missing": kwargs.get("handle_missing", "drop"),
+                    "remove_outliers": kwargs.get("remove_outliers", False)
+                }
+                return await self._clean_data(data, format, clean_params)
+            elif action == "merge":
+                merge_params = {
+                    "datasets": kwargs.get("datasets", []),
+                    "merge_strategy": kwargs.get("merge_strategy", "combine"),
+                    "join_on": kwargs.get("join_on"),
+                    "join_type": kwargs.get("join_type", "inner")
+                }
+                return await self._merge_data(merge_params)
             else:
                 raise ValueError(f"Unknown data processing action: {action}")
 
@@ -950,3 +990,166 @@ class DataProcessingTool(Tool):
 #
 #         # Rule passed
 #         return {"rule": rule_type, "message": "Rule passed", "severity": "info"}
+
+    async def _clean_data(self, data: Any, format: str, params: Dict) -> Dict[str, Any]:
+        """Clean data by removing duplicates, handling missing values, and outliers."""
+        import pandas as pd
+        import numpy as np
+        
+        # Load data into DataFrame
+        if isinstance(data, str):
+            try:
+                # Try to parse as JSON
+                import json
+                data = json.loads(data)
+            except:
+                # Try as CSV string
+                import io
+                df = pd.read_csv(io.StringIO(data))
+        
+        if not isinstance(data, pd.DataFrame):
+            if isinstance(data, list):
+                df = pd.DataFrame(data)
+            elif isinstance(data, dict):
+                df = pd.DataFrame([data]) if not any(isinstance(v, (list, dict)) for v in data.values()) else pd.DataFrame(data)
+            else:
+                df = pd.DataFrame(data)
+        else:
+            df = data
+        
+        original_shape = df.shape
+        
+        # Remove duplicates
+        if params.get("remove_duplicates", True):
+            df = df.drop_duplicates()
+        
+        # Handle missing values
+        handle_missing = params.get("handle_missing", "drop")
+        if handle_missing == "drop":
+            df = df.dropna()
+        elif handle_missing == "forward_fill":
+            df = df.fillna(method='ffill')
+        elif handle_missing == "backward_fill":
+            df = df.fillna(method='bfill')
+        elif handle_missing == "interpolate":
+            numeric_cols = df.select_dtypes(include=[np.number]).columns
+            df[numeric_cols] = df[numeric_cols].interpolate()
+        elif handle_missing == "mean":
+            numeric_cols = df.select_dtypes(include=[np.number]).columns
+            for col in numeric_cols:
+                df[col] = df[col].fillna(df[col].mean())
+        
+        # Remove outliers (using IQR method)
+        if params.get("remove_outliers", False):
+            numeric_cols = df.select_dtypes(include=[np.number]).columns
+            for col in numeric_cols:
+                Q1 = df[col].quantile(0.25)
+                Q3 = df[col].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                df = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
+        
+        cleaned_shape = df.shape
+        
+        # Convert back to format
+        if format == "json":
+            result_data = df.to_dict(orient='records')
+        elif format == "csv":
+            import io
+            output = io.StringIO()
+            df.to_csv(output, index=False)
+            result_data = output.getvalue()
+        else:
+            result_data = df.to_dict(orient='records')
+        
+        return {
+            "action": "clean",
+            "result": result_data,
+            "original_shape": {"rows": original_shape[0], "columns": original_shape[1]},
+            "cleaned_shape": {"rows": cleaned_shape[0], "columns": cleaned_shape[1]},
+            "rows_removed": original_shape[0] - cleaned_shape[0],
+            "success": True
+        }
+    
+    async def _merge_data(self, params: Dict) -> Dict[str, Any]:
+        """Merge multiple datasets."""
+        import pandas as pd
+        
+        datasets = params.get("datasets", [])
+        strategy = params.get("merge_strategy", "combine")
+        
+        if not datasets:
+            return {
+                "action": "merge",
+                "success": False,
+                "error": "No datasets provided to merge"
+            }
+        
+        # Convert datasets to DataFrames
+        dfs = []
+        for dataset in datasets:
+            data = dataset.get("data", {})
+            name = dataset.get("name", f"dataset_{len(dfs)}")
+            
+            if isinstance(data, pd.DataFrame):
+                df = data
+            elif isinstance(data, list):
+                df = pd.DataFrame(data)
+            elif isinstance(data, dict):
+                # Check if it's a single record or multiple
+                if any(isinstance(v, (list, dict)) for v in data.values()):
+                    df = pd.DataFrame(data)
+                else:
+                    df = pd.DataFrame([data])
+            else:
+                continue
+            
+            # Add source column if combining
+            if strategy == "combine":
+                df["_source"] = name
+            
+            dfs.append(df)
+        
+        if not dfs:
+            return {
+                "action": "merge",
+                "success": False,
+                "error": "No valid datasets to merge"
+            }
+        
+        # Merge based on strategy
+        if strategy == "combine" or strategy == "concat":
+            # Concatenate all dataframes
+            result_df = pd.concat(dfs, ignore_index=True, sort=False)
+        
+        elif strategy == "join":
+            # Join dataframes on specified column
+            join_on = params.get("join_on")
+            join_type = params.get("join_type", "inner")
+            
+            if len(dfs) == 1:
+                result_df = dfs[0]
+            else:
+                result_df = dfs[0]
+                for df in dfs[1:]:
+                    if join_on:
+                        result_df = pd.merge(result_df, df, on=join_on, how=join_type)
+                    else:
+                        result_df = pd.merge(result_df, df, left_index=True, right_index=True, how=join_type)
+        else:
+            # Default to combine
+            result_df = pd.concat(dfs, ignore_index=True, sort=False)
+        
+        # Convert to dictionary for output
+        result = result_df.to_dict(orient='records')
+        
+        return {
+            "action": "merge",
+            "result": result,
+            "datasets_merged": len(dfs),
+            "total_rows": len(result_df),
+            "total_columns": len(result_df.columns),
+            "columns": list(result_df.columns),
+            "success": True
+        }

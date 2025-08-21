@@ -6,15 +6,12 @@ description: Automatically selects the best model and optimizes prompts for task
 version: "1.0.0"
 
 parameters:
-  output_path:
-    type: string
-    default: "examples/outputs/llm_routing_pipeline"
   task:
     type: string
     default: "Write a comprehensive analysis of renewable energy trends"
   optimization_goals:
     type: array
-    default: ["clarity", "model_specific"]
+    default: ["clarity", "brevity", "model_specific"]
   routing_strategy:
     type: string
     default: "capability_based"
@@ -25,8 +22,6 @@ steps:
     action: execute
     parameters:
       task: "{{ parameters.task }}"
-      requirements:
-        complexity: <AUTO>Analyze the task and determine if it's simple, moderate, or complex</AUTO>
       cost_weight: 0.3
       quality_weight: 0.7
     
@@ -56,7 +51,7 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "{{ parameters.output_path }}/llm_routing_{{ now() | date('Y-m-d_H-i-s') }}.md"
+      path: "examples/outputs/llm_routing_pipeline/{{ parameters.task[:50] | slugify }}_report.md"
       content: |
         # LLM Task Routing and Optimization Report
         
@@ -95,9 +90,11 @@ steps:
         {% endfor %}
         
         ## Alternative Models
-        {% for score in analyze_task.all_scores[:3] %}
+        {% for score in analyze_task.all_scores if score.model != analyze_task.selected_model %}
+        {% if loop.index <= 3 %}
         - **{{ score.model }}** (Score: {{ score.score }})
           - {{ score.reasons | join(', ') }}
+        {% endif %}
         {% endfor %}
     dependencies:
       - route_request

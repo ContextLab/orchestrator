@@ -1,0 +1,9 @@
+{
+  "namespace": "conversation",
+  "exported_at": "2025-08-20T16:38:32.316762",
+  "keys": ["user_profile", "task_steps", "progress"],
+  "metadata": {
+    "user": "Alice Johnson",
+    "task": "Analyze Q1 sales data"
+  }
+}

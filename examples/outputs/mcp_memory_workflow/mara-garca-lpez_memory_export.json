@@ -1,0 +1,9 @@
+{
+  "namespace": "conversation",
+  "exported_at": "2025-08-20T16:39:30.970937",
+  "keys": ["user_profile", "task_steps", "progress"],
+  "metadata": {
+    "user": "María García-López",
+    "task": "Análisis de datos financieros Q4 2024"
+  }
+}

@@ -1,5 +1,7 @@
 """MCP (Model Context Protocol) tools for interacting with MCP servers."""
 
+import asyncio
+import json
 import logging
 import os
 import subprocess
@@ -18,9 +20,12 @@ class MCPConnection:
     command: str
     args: List[str]
     env: Dict[str, str] = field(default_factory=dict)
-    process: Optional[subprocess.Popen] = None
+    process: Optional[asyncio.subprocess.Process] = None
     connected: bool = False
     capabilities: Dict[str, Any] = field(default_factory=dict)
+    reader: Optional[asyncio.StreamReader] = None
+    writer: Optional[asyncio.StreamWriter] = None
+    request_id: int = 0
 
 
 @dataclass
@@ -77,7 +82,7 @@ class MCPServerTool(Tool):
         self.connections: Dict[str, MCPConnection] = {}
 
     async def _connect_server(self, server_name: str, config: Dict[str, Any]) -> bool:
-        """Connect to an MCP server."""
+        """Connect to a real MCP server via stdio transport."""
         if server_name in self.connections and self.connections[server_name].connected:
             return True
 
@@ -93,26 +98,87 @@ class MCPServerTool(Tool):
         )
 
         try:
-            # Start the MCP server process
+            # Start the actual MCP server process
             self.logger.info(
                 f"Starting MCP server '{server_name}': {command} {' '.join(args)}"
             )
-
-            # For demonstration, we'll simulate a connection
-            # In production, this would start the actual MCP server process
-            connection.connected = True
-            connection.capabilities = {
-                "tools": True,
-                "resources": True,
-                "prompts": True,
+            
+            # Create subprocess with stdio communication
+            connection.process = await asyncio.create_subprocess_exec(
+                command,
+                *args,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env
+            )
+            
+            # Initialize JSON-RPC communication
+            connection.reader = connection.process.stdout
+            connection.writer = connection.process.stdin
+            
+            # Send initialize request
+            init_request = {
+                "jsonrpc": "2.0",
+                "id": connection.request_id,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "1.0",
+                    "capabilities": {}
+                }
             }
-
-            self.connections[server_name] = connection
-            return True
+            connection.request_id += 1
+            
+            await self._send_request(connection, init_request)
+            response = await self._read_response(connection)
+            
+            if response and response.get("result"):
+                connection.connected = True
+                connection.capabilities = response["result"].get("capabilities", {})
+                self.connections[server_name] = connection
+                self.logger.info(f"Successfully connected to MCP server '{server_name}'")
+                return True
+            else:
+                self.logger.error(f"Failed to initialize MCP server '{server_name}'")
+                if connection.process:
+                    connection.process.terminate()
+                return False
 
         except Exception as e:
             self.logger.error(f"Failed to connect to MCP server '{server_name}': {e}")
+            if connection.process:
+                connection.process.terminate()
             return False
+    
+    async def _send_request(self, connection: MCPConnection, request: Dict[str, Any]) -> None:
+        """Send a JSON-RPC request to the MCP server."""
+        if not connection.writer:
+            raise ValueError("No writer available for connection")
+        
+        request_str = json.dumps(request) + "\n"
+        connection.writer.write(request_str.encode())
+        await connection.writer.drain()
+    
+    async def _read_response(self, connection: MCPConnection) -> Optional[Dict[str, Any]]:
+        """Read a JSON-RPC response from the MCP server."""
+        if not connection.reader:
+            return None
+        
+        try:
+            # Read line from server
+            line = await asyncio.wait_for(connection.reader.readline(), timeout=10.0)
+            if not line:
+                return None
+            
+            # Parse JSON response
+            response = json.loads(line.decode().strip())
+            return response
+        except asyncio.TimeoutError:
+            self.logger.error("Timeout reading response from MCP server")
+            return None
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Failed to parse JSON response: {e}")
+            return None
 
     async def _list_server_tools(self, server_name: str) -> List[MCPToolInfo]:
         """List available tools from a server."""
@@ -122,33 +188,38 @@ class MCPServerTool(Tool):
         ):
             return []
 
-        # In production, this would query the actual MCP server
-        # For now, return example tools
-        return [
-            MCPToolInfo(
-                name="search",
-                description="Search for information",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "query": {"type": "string"},
-                        "max_results": {"type": "integer", "default": 10},
-                    },
-                    "required": ["query"],
-                },
-                server=server_name,
-            ),
-            MCPToolInfo(
-                name="fetch_resource",
-                description="Fetch a resource by URI",
-                input_schema={
-                    "type": "object",
-                    "properties": {"uri": {"type": "string"}},
-                    "required": ["uri"],
-                },
-                server=server_name,
-            ),
-        ]
+        connection = self.connections[server_name]
+        
+        # Send list tools request via JSON-RPC
+        request = {
+            "jsonrpc": "2.0",
+            "id": connection.request_id,
+            "method": "tools/list",
+            "params": {}
+        }
+        connection.request_id += 1
+        
+        try:
+            await self._send_request(connection, request)
+            response = await self._read_response(connection)
+            
+            if response and "result" in response:
+                tools = response["result"].get("tools", [])
+                return [
+                    MCPToolInfo(
+                        name=tool.get("name", ""),
+                        description=tool.get("description", ""),
+                        input_schema=tool.get("inputSchema", {}),
+                        server=server_name
+                    )
+                    for tool in tools
+                ]
+            else:
+                self.logger.error(f"Failed to list tools from server '{server_name}'")
+                return []
+        except Exception as e:
+            self.logger.error(f"Error listing tools from '{server_name}': {e}")
+            return []
 
     async def _execute_tool(
         self, server_name: str, tool_name: str, params: Dict[str, Any]
@@ -160,31 +231,38 @@ class MCPServerTool(Tool):
         ):
             raise ValueError(f"Server '{server_name}' not connected")
 
-        # In production, this would send the request to the MCP server
-        # For demonstration, return simulated results
+        connection = self.connections[server_name]
+        
+        # Send tool execution request via JSON-RPC
+        request = {
+            "jsonrpc": "2.0",
+            "id": connection.request_id,
+            "method": "tools/call",
+            "params": {
+                "name": tool_name,
+                "arguments": params
+            }
+        }
+        connection.request_id += 1
+        
         self.logger.info(
             f"Executing tool '{tool_name}' on server '{server_name}' with params: {params}"
         )
-
-        # Simulate tool execution
-        if tool_name == "search":
-            return {
-                "results": [
-                    {
-                        "title": f"Result for {params.get('query', 'unknown')}",
-                        "url": "http://example.com",
-                    },
-                    {"title": "Another result", "url": "http://example.org"},
-                ],
-                "total": 2,
-            }
-        elif tool_name == "fetch_resource":
-            return {
-                "content": f"Resource content for URI: {params.get('uri', 'unknown')}",
-                "metadata": {"fetched_at": time.time()},
-            }
-        else:
-            return {"error": f"Unknown tool: {tool_name}"}
+        
+        try:
+            await self._send_request(connection, request)
+            response = await self._read_response(connection)
+            
+            if response and "result" in response:
+                return response["result"]
+            elif response and "error" in response:
+                error = response["error"]
+                return {"error": f"Tool execution failed: {error.get('message', 'Unknown error')}"}
+            else:
+                return {"error": f"No response from tool '{tool_name}'"}
+        except Exception as e:
+            self.logger.error(f"Error executing tool '{tool_name}': {e}")
+            return {"error": str(e)}
 
     async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute MCP server operations."""
@@ -206,6 +284,18 @@ class MCPServerTool(Tool):
                         "success": False,
                         "error": "server_config required for connect action",
                     }
+                
+                # Handle string server_config (might come from YAML template)
+                if isinstance(server_config, str):
+                    try:
+                        import ast
+                        server_config = ast.literal_eval(server_config)
+                    except:
+                        self.logger.error(f"Invalid server_config format: {server_config}")
+                        return {
+                            "success": False,
+                            "error": f"server_config must be a dict, got: {type(server_config).__name__}",
+                        }
 
                 server_name = kwargs.get("server_name", "default")
                 connected = await self._connect_server(server_name, server_config)
@@ -259,8 +349,27 @@ class MCPServerTool(Tool):
                 server_name = kwargs.get("server_name", "default")
                 if server_name in self.connections:
                     connection = self.connections[server_name]
+                    
+                    # Send shutdown notification if connected
+                    if connection.connected and connection.writer:
+                        try:
+                            shutdown_request = {
+                                "jsonrpc": "2.0",
+                                "method": "shutdown",
+                                "params": {}
+                            }
+                            await self._send_request(connection, shutdown_request)
+                        except:
+                            pass  # Ignore errors during shutdown
+                    
+                    # Terminate the process
                     if connection.process:
                         connection.process.terminate()
+                        try:
+                            await asyncio.wait_for(connection.process.wait(), timeout=5.0)
+                        except asyncio.TimeoutError:
+                            connection.process.kill()
+                    
                     connection.connected = False
                     del self.connections[server_name]
 
@@ -288,7 +397,7 @@ class MCPMemoryTool(Tool):
         self.add_parameter("value", "any", "Value to store", required=False)
         self.add_parameter("namespace", "string", "Memory namespace", default="default")
         self.add_parameter(
-            "ttl", "integer", "Time to live in seconds (0 for permanent)", default=0
+            "ttl", "integer", "Time to live in seconds (0 for permanent)", required=False, default=0
         )
 
         self.logger = logging.getLogger(__name__)

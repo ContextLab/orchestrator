@@ -172,14 +172,28 @@ class ModelBasedControlSystem(ControlSystem):
             # For analyze_text action, build analysis prompt
             text = task.parameters.get("text", "")
             analysis_type = task.parameters.get("analysis_type", "comprehensive")
+            custom_prompt = task.parameters.get("prompt", "")
             
-            # Build analysis prompt
-            prompt = f"Perform a {analysis_type} analysis of the following text:\n\n{text}"
-            
-            if analysis_type == "comprehensive":
-                prompt += "\n\nProvide a detailed analysis covering structure, content, style, and key themes."
-            elif analysis_type == "quality":
-                prompt += "\n\nAssess the quality of this text on a scale of 0-1, considering clarity, coherence, and completeness."
+            # If a custom prompt is provided, use it with the text
+            if custom_prompt:
+                prompt = f"{custom_prompt}\n\nData:\n{text}"
+                # Debug logging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Task {task.id}: Using custom prompt for analyze_text")
+                logger.info(f"  Prompt: {custom_prompt[:100]}...")
+                logger.info(f"  Text: {text[:100]}...")
+                logger.info(f"  Full prompt length: {len(prompt)} chars")
+            else:
+                # Build default analysis prompt
+                prompt = f"Perform a {analysis_type} analysis of the following text:\n\n{text}"
+                
+                if analysis_type == "comprehensive":
+                    prompt += "\n\nProvide a detailed analysis covering structure, content, style, and key themes."
+                elif analysis_type == "quality":
+                    prompt += "\n\nAssess the quality of this text on a scale of 0-1, considering clarity, coherence, and completeness."
+                elif analysis_type == "trends":
+                    prompt += "\n\nIdentify and analyze key trends, patterns, and insights from this data."
         else:
             # For other actions, use the action as the prompt
             action_text = str(task.action)  # Convert to string in case it's not

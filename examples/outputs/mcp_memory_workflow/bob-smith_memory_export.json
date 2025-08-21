@@ -1,0 +1,9 @@
+{
+  "namespace": "conversation",
+  "exported_at": "2025-08-20T16:38:48.444784",
+  "keys": ["user_profile", "task_steps", "progress"],
+  "metadata": {
+    "user": "Bob Smith",
+    "task": "Generate marketing analytics dashboard"
+  }
+}

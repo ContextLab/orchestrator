@@ -19,6 +19,7 @@ except ImportError:
 from orchestrator.core.model import (
     Model,
     ModelCapabilities,
+    ModelCost,
     ModelMetrics,
     ModelRequirements,
 )
@@ -29,6 +30,107 @@ class OpenAIModel(Model):
 
     # Model configurations
     MODEL_CONFIGS = {
+        # GPT-5 series (latest models)
+        "gpt-5": {
+            "capabilities": ModelCapabilities(
+                supported_tasks=[
+                    "generate", "analyze", "transform", "code", "reasoning",
+                    "vision", "multimodal", "complex_reasoning"
+                ],
+                context_window=256000,
+                supports_function_calling=True,
+                supports_structured_output=True,
+                supports_streaming=True,
+                languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
+                max_tokens=16384,
+                temperature_range=(0.0, 2.0),
+            ),
+            "requirements": ModelRequirements(
+                memory_gb=0.1,
+                cpu_cores=1,
+                disk_space_gb=0.1,
+                min_python_version="3.8",
+                requires_gpu=False,
+            ),
+            "metrics": ModelMetrics(
+                latency_p50=1.0,
+                latency_p95=3.0,
+                throughput=20.0,
+                accuracy=0.98,
+                cost_per_token=0.00002,  # Will be converted to proper cost
+                success_rate=0.98,
+            ),
+            "cost": ModelCost(
+                input_cost_per_1k_tokens=0.015,  # $0.015 per 1k input tokens
+                output_cost_per_1k_tokens=0.060,  # $0.060 per 1k output tokens
+            ),
+        },
+        "gpt-5-mini": {
+            "capabilities": ModelCapabilities(
+                supported_tasks=[
+                    "generate", "analyze", "transform", "code", "reasoning"
+                ],
+                context_window=128000,
+                supports_function_calling=True,
+                supports_structured_output=True,
+                supports_streaming=True,
+                languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
+                max_tokens=8192,
+                temperature_range=(0.0, 2.0),
+            ),
+            "requirements": ModelRequirements(
+                memory_gb=0.1,
+                cpu_cores=1,
+                disk_space_gb=0.1,
+                min_python_version="3.8",
+                requires_gpu=False,
+            ),
+            "metrics": ModelMetrics(
+                latency_p50=0.8,
+                latency_p95=2.0,
+                throughput=30.0,
+                accuracy=0.95,
+                cost_per_token=0.000005,
+                success_rate=0.98,
+            ),
+            "cost": ModelCost(
+                input_cost_per_1k_tokens=0.003,  # $0.003 per 1k input tokens
+                output_cost_per_1k_tokens=0.012,  # $0.012 per 1k output tokens
+            ),
+        },
+        "gpt-5-nano": {
+            "capabilities": ModelCapabilities(
+                supported_tasks=[
+                    "generate", "analyze", "transform", "simple_tasks"
+                ],
+                context_window=32000,
+                supports_function_calling=True,
+                supports_structured_output=True,
+                supports_streaming=True,
+                languages=["en", "es", "fr", "de", "it", "pt"],
+                max_tokens=4096,
+                temperature_range=(0.0, 2.0),
+            ),
+            "requirements": ModelRequirements(
+                memory_gb=0.1,
+                cpu_cores=1,
+                disk_space_gb=0.1,
+                min_python_version="3.8",
+                requires_gpu=False,
+            ),
+            "metrics": ModelMetrics(
+                latency_p50=0.5,
+                latency_p95=1.5,
+                throughput=50.0,
+                accuracy=0.92,
+                cost_per_token=0.000001,
+                success_rate=0.98,
+            ),
+            "cost": ModelCost(
+                input_cost_per_1k_tokens=0.0005,  # $0.0005 per 1k input tokens
+                output_cost_per_1k_tokens=0.002,  # $0.002 per 1k output tokens
+            ),
+        },
         "gpt-4": {
             "capabilities": ModelCapabilities(
                 supported_tasks=[
@@ -60,6 +162,10 @@ class OpenAIModel(Model):
                 accuracy=0.95,
                 cost_per_token=0.00003,
                 success_rate=0.99,
+            ),
+            "cost": ModelCost(
+                input_cost_per_1k_tokens=0.010,  # $0.01 per 1k input tokens
+                output_cost_per_1k_tokens=0.030,  # $0.03 per 1k output tokens
             ),
         },
         "gpt-4-turbo": {
@@ -95,6 +201,10 @@ class OpenAIModel(Model):
                 cost_per_token=0.00001,
                 success_rate=0.99,
             ),
+            "cost": ModelCost(
+                input_cost_per_1k_tokens=0.001,  # $0.001 per 1k input tokens
+                output_cost_per_1k_tokens=0.002,  # $0.002 per 1k output tokens
+            ),
         },
         "gpt-3.5-turbo": {
             "capabilities": ModelCapabilities(
@@ -121,6 +231,10 @@ class OpenAIModel(Model):
                 accuracy=0.88,
                 cost_per_token=0.0000015,
                 success_rate=0.98,
+            ),
+            "cost": ModelCost(
+                input_cost_per_1k_tokens=0.0005,  # $0.0005 per 1k input tokens
+                output_cost_per_1k_tokens=0.0015,  # $0.0015 per 1k output tokens
             ),
         },
     }
@@ -185,12 +299,16 @@ class OpenAIModel(Model):
                 # Default to gpt-3.5-turbo config
                 config = self.MODEL_CONFIGS["gpt-3.5-turbo"]
 
+        # Use cost from config if available, otherwise create default
+        cost = config.get("cost", ModelCost())
+        
         super().__init__(
             name=model_name,
             provider="openai",
             capabilities=config["capabilities"],
             requirements=config["requirements"],
             metrics=config["metrics"],
+            cost=cost,
             **kwargs,
         )
 

@@ -1,0 +1,169 @@
+id: sentiment_analysis
+name: Sentiment Analysis Sub-Pipeline
+description: Analyze sentiment, extract entities, and identify key themes
+version: 1.0.0
+parameters:
+  data:
+    type: object
+    description: Input data containing text to analyze
+  text_column:
+    type: string
+    default: comments
+    description: Name of the column containing text data
+steps:
+- id: prepare_text_data
+  action: execute
+  tool: python-executor
+  parameters:
+    code: "import pandas as pd\nimport json\n\n# Get input data\ndata = context.get('data',\
+      \ {})\ntext_column = context.get('text_column', 'comments')\n\n# Convert to\
+      \ DataFrame\nif isinstance(data, str):\n    try:\n        data = json.loads(data)\n\
+      \    except:\n        import io\n        df = pd.read_csv(io.StringIO(data))\n\
+      elif isinstance(data, list):\n    df = pd.DataFrame(data)\nelif isinstance(data,\
+      \ dict):\n    df = pd.DataFrame([data]) if not any(isinstance(v, (list, dict))\
+      \ for v in data.values()) else pd.DataFrame(data)\nelse:\n    df = pd.DataFrame(data)\n\
+      \n# Extract text data\nif text_column in df.columns:\n    texts = df[text_column].dropna().tolist()\n\
+      else:\n    # Try to find any text column\n    text_cols = df.select_dtypes(include=['object']).columns\n\
+      \    if len(text_cols) > 0:\n        texts = df[text_cols[0]].dropna().tolist()\n\
+      \        text_column = text_cols[0]\n    else:\n        texts = []\n\n# Limit\
+      \ to reasonable number for API calls\ntexts = texts[:100]  # Process up to 100\
+      \ texts\n\ncontext['texts'] = texts\ncontext['text_column_used'] = text_column\n\
+      \nresult = {\n    'text_count': len(texts),\n    'text_column': text_column,\n\
+      \    'sample_texts': texts[:3] if texts else []\n}\n"
+- id: batch_sentiment_analysis
+  action: batch_process
+  tool: task-delegation
+  parameters:
+    tasks: "{% set texts = prepare_text_data.result.get('sample_texts', []) %}\n{%\
+      \ if texts %}\n[\n  {% for text in texts[:20] %}\n  {\n    \"task\": \"Analyze\
+      \ the sentiment of this text and provide a score from -1 (very negative) to\
+      \ 1 (very positive), along with the primary emotion detected. Respond with JSON\
+      \ only: {\\\"score\\\": <number>, \\\"emotion\\\": \\\"<emotion>\\\", \\\"confidence\\\
+      \": <0-1>}\",\n    \"context\": \"{{ text | truncate(500) | replace('\\\"',\
+      \ '\\\\\\\"') }}\"\n  }{% if not loop.last %},{% endif %}\n  {% endfor %}\n\
+      ]\n{% else %}\n[\n  {\n    \"task\": \"Analyze sentiment\",\n    \"context\"\
+      : \"No text data available for analysis\"\n  }\n]\n{% endif %}\n"
+    model: <AUTO>Select fast model for sentiment analysis</AUTO>
+    max_concurrent: 5
+  dependencies:
+  - prepare_text_data
+- id: entity_extraction
+  action: generate_text
+  parameters:
+    prompt: "Extract key entities from the following text samples:\n\n{% for text\
+      \ in prepare_text_data.result.sample_texts[:10] %}\nText {{ loop.index }}: {{\
+      \ text | truncate(200) }}\n{% endfor %}\n\nIdentify and list:\n1. People/Names\
+      \ mentioned\n2. Organizations/Companies\n3. Products/Services\n4. Locations\n\
+      5. Key topics/themes\n\nProvide the results in JSON format:\n{\n  \"people\"\
+      : [...],\n  \"organizations\": [...],\n  \"products\": [...],\n  \"locations\"\
+      : [...],\n  \"topics\": [...]\n}\n"
+    model: <AUTO>
+    response_format: json
+  dependencies:
+  - prepare_text_data
+  condition: '{{ prepare_text_data.result.text_count > 0 }}'
+- id: keyword_analysis
+  action: execute
+  tool: python-executor
+  parameters:
+    code: "import re\nfrom collections import Counter\n\ntexts = context.get('texts',\
+      \ [])\n\n# Simple keyword extraction\nall_words = []\nfor text in texts:\n \
+      \   if isinstance(text, str):\n        # Extract words (simple tokenization)\n\
+      \        words = re.findall(r'\\b[a-z]+\\b', text.lower())\n        all_words.extend(words)\n\
+      \n# Remove common stop words\nstop_words = {'the', 'a', 'an', 'and', 'or', 'but',\
+      \ 'in', 'on', 'at', 'to', 'for',\n             'of', 'with', 'by', 'from', 'as',\
+      \ 'is', 'was', 'are', 'were', 'be',\n             'have', 'has', 'had', 'do',\
+      \ 'does', 'did', 'will', 'would', 'could',\n             'should', 'may', 'might',\
+      \ 'must', 'can', 'this', 'that', 'these',\n             'those', 'i', 'you',\
+      \ 'he', 'she', 'it', 'we', 'they', 'what', 'which'}\n\nfiltered_words = [w for\
+      \ w in all_words if w not in stop_words and len(w) > 3]\n\n# Count frequencies\n\
+      word_freq = Counter(filtered_words)\ntop_keywords = word_freq.most_common(20)\n\
+      \n# Create bigrams (two-word phrases)\nbigrams = []\nfor text in texts[:50]:\
+      \  # Limit for performance\n    if isinstance(text, str):\n        words = re.findall(r'\\\
+      b[a-z]+\\b', text.lower())\n        words = [w for w in words if w not in stop_words]\n\
+      \        for i in range(len(words) - 1):\n            bigrams.append(f\"{words[i]}\
+      \ {words[i+1]}\")\n\nbigram_freq = Counter(bigrams)\ntop_phrases = bigram_freq.most_common(10)\n\
+      \nresult = {\n    'top_keywords': [{'word': word, 'count': count} for word,\
+      \ count in top_keywords],\n    'top_phrases': [{'phrase': phrase, 'count': count}\
+      \ for phrase, count in top_phrases],\n    'total_words_analyzed': len(all_words),\n\
+      \    'unique_words': len(set(all_words))\n}\n"
+  dependencies:
+  - prepare_text_data
+- id: aggregate_sentiment_scores
+  action: execute
+  tool: python-executor
+  parameters:
+    code: "import json\nimport numpy as np\n\n# Get batch sentiment results\nbatch_results\
+      \ = context.get('batch_sentiment_analysis', {}).get('result', {}).get('results',\
+      \ [])\n\nscores = []\nemotions = []\n\nfor result in batch_results:\n    if\
+      \ isinstance(result, str):\n        try:\n            parsed = json.loads(result)\n\
+      \            if 'score' in parsed:\n                scores.append(float(parsed['score']))\n\
+      \            if 'emotion' in parsed:\n                emotions.append(parsed['emotion'])\n\
+      \        except:\n            pass\n    elif isinstance(result, dict):\n   \
+      \     if 'score' in result:\n            scores.append(float(result['score']))\n\
+      \        if 'emotion' in result:\n            emotions.append(result['emotion'])\n\
+      \n# Calculate aggregate metrics\nif scores:\n    sentiment_stats = {\n     \
+      \   'mean_sentiment': float(np.mean(scores)),\n        'median_sentiment': float(np.median(scores)),\n\
+      \        'std_sentiment': float(np.std(scores)),\n        'min_sentiment': float(np.min(scores)),\n\
+      \        'max_sentiment': float(np.max(scores)),\n        'positive_ratio':\
+      \ float(sum(1 for s in scores if s > 0.1) / len(scores)),\n        'negative_ratio':\
+      \ float(sum(1 for s in scores if s < -0.1) / len(scores)),\n        'neutral_ratio':\
+      \ float(sum(1 for s in scores if -0.1 <= s <= 0.1) / len(scores))\n    }\nelse:\n\
+      \    sentiment_stats = {\n        'mean_sentiment': 0,\n        'median_sentiment':\
+      \ 0,\n        'positive_ratio': 0,\n        'negative_ratio': 0,\n        'neutral_ratio':\
+      \ 1\n    }\n\n# Count emotions\nfrom collections import Counter\nemotion_counts\
+      \ = Counter(emotions)\n\nresult = {\n    'sentiment_statistics': sentiment_stats,\n\
+      \    'emotion_distribution': dict(emotion_counts),\n    'dominant_emotion':\
+      \ emotion_counts.most_common(1)[0][0] if emotion_counts else 'neutral',\n  \
+      \  'sample_count': len(scores)\n}\n"
+  dependencies:
+  - batch_sentiment_analysis
+- id: generate_sentiment_summary
+  action: generate_text
+  parameters:
+    prompt: 'Based on the sentiment analysis results, provide a concise summary:
+
+
+      Sentiment Statistics:
+
+      {{ aggregate_sentiment_scores.result.sentiment_statistics | json }}
+
+
+      Emotion Distribution:
+
+      {{ aggregate_sentiment_scores.result.emotion_distribution | json }}
+
+
+      Top Keywords:
+
+      {{ keyword_analysis.result.top_keywords[:10] | json }}
+
+
+      Extracted Entities:
+
+      {{ entity_extraction.result | default(''No entities extracted'') }}
+
+
+      Write a 3-4 sentence summary that includes:
+
+      1. Overall sentiment trend (positive/negative/neutral)
+
+      2. Primary emotions detected
+
+      3. Key topics or themes identified
+
+      4. Any notable patterns or insights
+
+      '
+    model: <AUTO>
+  dependencies:
+  - aggregate_sentiment_scores
+  - keyword_analysis
+  - entity_extraction
+outputs:
+  sentiment_scores: '{{ aggregate_sentiment_scores.result }}'
+  keywords: '{{ keyword_analysis.result }}'
+  entities: '{{ entity_extraction.result | default({}) }}'
+  overall_sentiment: '{{ aggregate_sentiment_scores.result.sentiment_statistics.mean_sentiment
+    | default(0) }}'
+  sentiment_summary: '{{ generate_sentiment_summary.result }}'

@@ -1,0 +1,38 @@
+{
+  "query": "blockchain cryptocurrency applications",
+  "timestamp": "2025-08-20T15:48:28.669907",
+  "total_results": 5,
+  "results": [
+    {
+      "title": "TON (blockchain) - Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/TON_(blockchain)",
+      "snippet": "TON, also known as The Open Network, is a decentralized layer-1 blockchain. TON was originally developed by Nikolai Durov who is also known for his role in creating the messaging platform, Telegram.",
+      "rank": 1
+    },
+    {
+      "title": "Blockchain.com | Be early to the future of finance",
+      "url": "https://www.blockchain.com/",
+      "snippet": "Powerful Blockchain Data API Industry leading charts Real-time crypto prices Explore now",
+      "rank": 2
+    },
+    {
+      "title": "Learning Portal | Blockchain.com",
+      "url": "https://www.blockchain.com/learning-portal",
+      "snippet": "Apr 11, 2024 \u00b7 How do I buy crypto? Buy Bitcoin, Ehtereum, and more with a Blockchain.com Wallet. Buy crypto with USD, GBP, EUR.",
+      "rank": 3
+    },
+    {
+      "title": "Blockchain | Bitcoin",
+      "url": "https://www.blockchain.com/learning-portal/tokens/bitcoin-explained",
+      "snippet": "The Bitcoin blockchain can be accessed and managed by any computer, anywhere in the world. The computers that run on the bitcoin blockchain are embedded with a set of rules which makes the \u2026",
+      "rank": 4
+    },
+    {
+      "title": "Wallet \u2013 Blockchain Support Center",
+      "url": "https://support.blockchain.com/hc/en-us/categories/4416659837460-Wallet",
+      "snippet": "Company About Careers Hiring Press Center Prime Ventures English (US) Blockchain.com Blockchain.com, Inc. NMLS ID# 2024031 | NMLS Consumer Access",
+      "rank": 5
+    }
+  ],
+  "pipeline": "mcp_integration"
+}

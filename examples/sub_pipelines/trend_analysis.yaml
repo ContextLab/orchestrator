@@ -1,0 +1,218 @@
+id: trend_analysis
+name: Trend Analysis Sub-Pipeline
+description: Analyze trends, patterns, and generate simple forecasts
+version: 1.0.0
+parameters:
+  data:
+    type: object
+    description: Input data for trend analysis
+  time_column:
+    type: string
+    default: timestamp
+    description: Column containing time/date information
+  value_columns:
+    type: array
+    default:
+    - sales
+    - revenue
+    description: Columns to analyze for trends
+steps:
+- id: prepare_time_series
+  action: execute
+  tool: python-executor
+  parameters:
+    code: "import pandas as pd\nimport numpy as np\nimport json\nfrom datetime import\
+      \ datetime, timedelta\n\n# Get parameters\ndata = context.get('data', {})\n\
+      time_column = context.get('time_column', 'timestamp')\nvalue_columns = context.get('value_columns',\
+      \ ['sales', 'revenue'])\n\n# Convert to DataFrame\nif isinstance(data, str):\n\
+      \    try:\n        data = json.loads(data)\n    except:\n        import io\n\
+      \        df = pd.read_csv(io.StringIO(data))\nelif isinstance(data, list):\n\
+      \    df = pd.DataFrame(data)\nelif isinstance(data, dict):\n    df = pd.DataFrame([data])\
+      \ if not any(isinstance(v, (list, dict)) for v in data.values()) else pd.DataFrame(data)\n\
+      else:\n    df = pd.DataFrame(data)\n\n# Try to find time column\nif time_column\
+      \ not in df.columns:\n    # Look for date-like columns\n    date_cols = [col\
+      \ for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]\n\
+      \    if date_cols:\n        time_column = date_cols[0]\n    else:\n        #\
+      \ Create a synthetic time series\n        df[time_column] = pd.date_range(start='2024-01-01',\
+      \ periods=len(df), freq='D')\n\n# Convert time column to datetime\ntry:\n  \
+      \  df[time_column] = pd.to_datetime(df[time_column])\nexcept:\n    # If conversion\
+      \ fails, create synthetic dates\n    df[time_column] = pd.date_range(start='2024-01-01',\
+      \ periods=len(df), freq='D')\n\n# Sort by time\ndf = df.sort_values(time_column)\n\
+      \n# Identify numeric columns if value_columns not in data\nnumeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()\n\
+      actual_value_columns = [col for col in value_columns if col in df.columns]\n\
+      \nif not actual_value_columns and numeric_cols:\n    actual_value_columns =\
+      \ numeric_cols[:3]  # Take first 3 numeric columns\n\n# Store prepared data\n\
+      context['time_series_df'] = df\ncontext['time_column'] = time_column\ncontext['value_columns']\
+      \ = actual_value_columns\n\nresult = {\n    'rows': len(df),\n    'time_column':\
+      \ time_column,\n    'value_columns': actual_value_columns,\n    'date_range':\
+      \ {\n        'start': str(df[time_column].min()),\n        'end': str(df[time_column].max())\n\
+      \    }\n}\n"
+- id: calculate_moving_averages
+  action: execute
+  tool: python-executor
+  parameters:
+    code: "import pandas as pd\nimport numpy as np\n\ndf = context.get('time_series_df',\
+      \ pd.DataFrame())\ntime_column = context.get('time_column', 'timestamp')\nvalue_columns\
+      \ = context.get('value_columns', [])\n\nmoving_averages = {}\n\nfor col in value_columns:\n\
+      \    if col in df.columns:\n        series = df[col].fillna(method='ffill').fillna(method='bfill')\n\
+      \        \n        # Calculate different moving averages\n        ma_7 = series.rolling(window=min(7,\
+      \ len(series))).mean()\n        ma_30 = series.rolling(window=min(30, len(series))).mean()\n\
+      \        ma_90 = series.rolling(window=min(90, len(series))).mean()\n      \
+      \  \n        moving_averages[col] = {\n            '7_day_ma': float(ma_7.iloc[-1])\
+      \ if len(ma_7) > 0 and not pd.isna(ma_7.iloc[-1]) else None,\n            '30_day_ma':\
+      \ float(ma_30.iloc[-1]) if len(ma_30) > 0 and not pd.isna(ma_30.iloc[-1]) else\
+      \ None,\n            '90_day_ma': float(ma_90.iloc[-1]) if len(ma_90) > 0 and\
+      \ not pd.isna(ma_90.iloc[-1]) else None,\n            'current_value': float(series.iloc[-1])\
+      \ if len(series) > 0 and not pd.isna(series.iloc[-1]) else None\n        }\n\
+      \        \n        # Store for visualization\n        df[f'{col}_ma7'] = ma_7\n\
+      \        df[f'{col}_ma30'] = ma_30\n\ncontext['df_with_ma'] = df\nresult = moving_averages\n"
+  dependencies:
+  - prepare_time_series
+- id: detect_trends
+  action: execute
+  tool: python-executor
+  parameters:
+    code: "import pandas as pd\nimport numpy as np\nfrom scipy import stats\n\ndf\
+      \ = context.get('time_series_df', pd.DataFrame())\nvalue_columns = context.get('value_columns',\
+      \ [])\n\ntrend_analysis = {}\n\nfor col in value_columns:\n    if col in df.columns:\n\
+      \        series = df[col].dropna()\n        if len(series) > 1:\n          \
+      \  # Create time index for regression\n            x = np.arange(len(series))\n\
+      \            y = series.values\n            \n            # Linear regression\
+      \ for trend\n            slope, intercept, r_value, p_value, std_err = stats.linregress(x,\
+      \ y)\n            \n            # Determine trend direction\n            if\
+      \ p_value < 0.05:  # Statistically significant\n                if slope > 0:\n\
+      \                    trend = 'upward'\n                elif slope < 0:\n   \
+      \                 trend = 'downward'\n                else:\n              \
+      \      trend = 'stable'\n            else:\n                trend = 'no_significant_trend'\n\
+      \            \n            # Calculate percent change\n            if len(series)\
+      \ > 0 and series.iloc[0] != 0:\n                pct_change = ((series.iloc[-1]\
+      \ - series.iloc[0]) / series.iloc[0]) * 100\n            else:\n           \
+      \     pct_change = 0\n            \n            # Detect volatility\n      \
+      \      volatility = series.std() / series.mean() if series.mean() != 0 else\
+      \ 0\n            \n            trend_analysis[col] = {\n                'trend_direction':\
+      \ trend,\n                'slope': float(slope),\n                'r_squared':\
+      \ float(r_value ** 2),\n                'p_value': float(p_value),\n       \
+      \         'percent_change': float(pct_change),\n                'volatility':\
+      \ float(volatility),\n                'interpretation': f\"{trend.replace('_',\
+      \ ' ').title()} trend with {abs(pct_change):.1f}% change\"\n            }\n\n\
+      result = trend_analysis\ncontext['trends'] = trend_analysis\n"
+  dependencies:
+  - prepare_time_series
+- id: detect_seasonality
+  action: execute
+  tool: python-executor
+  parameters:
+    code: "import pandas as pd\nimport numpy as np\n\ndf = context.get('time_series_df',\
+      \ pd.DataFrame())\ntime_column = context.get('time_column', 'timestamp')\nvalue_columns\
+      \ = context.get('value_columns', [])\n\nseasonality_analysis = {}\n\nfor col\
+      \ in value_columns:\n    if col in df.columns and time_column in df.columns:\n\
+      \        # Add time-based features\n        df['month'] = pd.to_datetime(df[time_column]).dt.month\n\
+      \        df['day_of_week'] = pd.to_datetime(df[time_column]).dt.dayofweek\n\
+      \        df['quarter'] = pd.to_datetime(df[time_column]).dt.quarter\n      \
+      \  \n        seasonal_patterns = {}\n        \n        # Monthly seasonality\n\
+      \        if 'month' in df.columns:\n            monthly_avg = df.groupby('month')[col].mean()\n\
+      \            if len(monthly_avg) > 0:\n                seasonal_patterns['monthly']\
+      \ = {\n                    'peak_month': int(monthly_avg.idxmax()) if not monthly_avg.empty\
+      \ else None,\n                    'low_month': int(monthly_avg.idxmin()) if\
+      \ not monthly_avg.empty else None,\n                    'variation': float((monthly_avg.max()\
+      \ - monthly_avg.min()) / monthly_avg.mean()) if monthly_avg.mean() != 0 else\
+      \ 0\n                }\n        \n        # Day of week seasonality\n      \
+      \  if 'day_of_week' in df.columns:\n            daily_avg = df.groupby('day_of_week')[col].mean()\n\
+      \            if len(daily_avg) > 0:\n                days = ['Monday', 'Tuesday',\
+      \ 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']\n               \
+      \ peak_day_idx = daily_avg.idxmax() if not daily_avg.empty else 0\n        \
+      \        low_day_idx = daily_avg.idxmin() if not daily_avg.empty else 0\n  \
+      \              seasonal_patterns['weekly'] = {\n                    'peak_day':\
+      \ days[peak_day_idx] if peak_day_idx < len(days) else 'Unknown',\n         \
+      \           'low_day': days[low_day_idx] if low_day_idx < len(days) else 'Unknown',\n\
+      \                    'weekend_vs_weekday': float(daily_avg[5:].mean() / daily_avg[:5].mean())\
+      \ if daily_avg[:5].mean() != 0 else 1\n                }\n        \n       \
+      \ # Quarterly seasonality\n        if 'quarter' in df.columns:\n           \
+      \ quarterly_avg = df.groupby('quarter')[col].mean()\n            if len(quarterly_avg)\
+      \ > 0:\n                seasonal_patterns['quarterly'] = {\n               \
+      \     'peak_quarter': f\"Q{int(quarterly_avg.idxmax())}\" if not quarterly_avg.empty\
+      \ else None,\n                    'low_quarter': f\"Q{int(quarterly_avg.idxmin())}\"\
+      \ if not quarterly_avg.empty else None\n                }\n        \n      \
+      \  seasonality_analysis[col] = seasonal_patterns\n\nresult = seasonality_analysis\n\
+      context['seasonality'] = seasonality_analysis\n"
+  dependencies:
+  - prepare_time_series
+- id: generate_forecast
+  action: execute
+  tool: python-executor
+  parameters:
+    code: "import pandas as pd\nimport numpy as np\nfrom scipy import stats\n\ndf\
+      \ = context.get('time_series_df', pd.DataFrame())\nvalue_columns = context.get('value_columns',\
+      \ [])\ntrends = context.get('trends', {})\n\nforecasts = {}\n\nfor col in value_columns:\n\
+      \    if col in df.columns and col in trends:\n        series = df[col].dropna()\n\
+      \        if len(series) > 1:\n            # Simple linear projection\n     \
+      \       x = np.arange(len(series))\n            y = series.values\n        \
+      \    \n            # Get trend line parameters\n            slope = trends[col].get('slope',\
+      \ 0)\n            _, intercept, _, _, _ = stats.linregress(x, y)\n         \
+      \   \n            # Project forward (10% of data length)\n            forecast_periods\
+      \ = max(1, min(30, len(series) // 10))\n            future_x = np.arange(len(series),\
+      \ len(series) + forecast_periods)\n            forecast_values = slope * future_x\
+      \ + intercept\n            \n            # Add some uncertainty based on historical\
+      \ volatility\n            volatility = series.std()\n            \n        \
+      \    forecasts[col] = {\n                'forecast_periods': int(forecast_periods),\n\
+      \                'forecast_values': [float(v) for v in forecast_values[:5]],\
+      \  # First 5 forecasts\n                'forecast_mean': float(forecast_values.mean()),\n\
+      \                'confidence_interval': {\n                    'lower': float(forecast_values.mean()\
+      \ - 1.96 * volatility),\n                    'upper': float(forecast_values.mean()\
+      \ + 1.96 * volatility)\n                },\n                'expected_change':\
+      \ float(slope * forecast_periods),\n                'method': 'linear_projection'\n\
+      \            }\n\nresult = forecasts\ncontext['forecasts'] = forecasts\n"
+  dependencies:
+  - detect_trends
+- id: generate_trend_summary
+  action: generate_text
+  parameters:
+    prompt: 'Based on the trend analysis results, provide a comprehensive summary:
+
+
+      Trend Analysis:
+
+      {{ detect_trends.result | json }}
+
+
+      Moving Averages:
+
+      {{ calculate_moving_averages.result | json }}
+
+
+      Seasonality Patterns:
+
+      {{ detect_seasonality.result | json }}
+
+
+      Forecasts:
+
+      {{ generate_forecast.result | json }}
+
+
+      Write a 4-5 sentence summary that includes:
+
+      1. Overall trend direction for key metrics
+
+      2. Any seasonal patterns detected
+
+      3. Short-term forecast expectations
+
+      4. Key insights or recommendations based on the trends
+
+
+      Use specific numbers and percentages from the analysis.
+
+      '
+    model: <AUTO>
+  dependencies:
+  - detect_trends
+  - calculate_moving_averages
+  - detect_seasonality
+  - generate_forecast
+outputs:
+  trends: '{{ detect_trends.result }}'
+  moving_averages: '{{ calculate_moving_averages.result }}'
+  seasonality: '{{ detect_seasonality.result }}'
+  forecasts: '{{ generate_forecast.result }}'
+  trend_summary: '{{ generate_trend_summary.result }}'

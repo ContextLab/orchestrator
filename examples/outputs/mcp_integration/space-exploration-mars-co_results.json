@@ -1,0 +1,38 @@
+{
+  "query": "space exploration Mars colonization",
+  "timestamp": "2025-08-20T15:48:31.522790",
+  "total_results": 5,
+  "results": [
+    {
+      "title": "Colonization of Mars - Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Colonization_of_Mars",
+      "snippet": "1 week ago - Crewed missions to Mars have been proposed, but no person has attempted to travel to the planet, and there have been no return missions. Most of the human mission concepts as currently conceived by national governmental space programs would not be direct precursors to colonization.",
+      "rank": 1
+    },
+    {
+      "title": "SpaceX Mars colonization program - Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/SpaceX_Mars_colonization_program",
+      "snippet": "1 week ago - Elon Musk, founder of SpaceX, has advocated colonization of Mars at the Mars Society since at least 2001. As early as 2007, Musk publicly stated a personal goal of eventually enabling humans to explore and settle on Mars. SpaceX has stated that its goal is to colonize Mars to ensure the long-term ...",
+      "rank": 2
+    },
+    {
+      "title": "Exploration of Mars - Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Exploration_of_Mars",
+      "snippet": "1 day ago - In 2017, the focus of NASA shifted to a return to the Moon by 2024 with the Artemis program, a flight to Mars could follow after this project. The long-term goal of the private corporation SpaceX is the establishment of routine flights to Mars to enable colonization.",
+      "rank": 3
+    },
+    {
+      "title": "Mars Colonization: Beyond Getting There - PMC",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6383964/",
+      "snippet": "Beyond an active target for space exploration, colonization of Mars has become a popular topic nowadays, fuelled by a potentially naive and somewhat questionable belief that this planet could at some point in time be terraformed to sustain human life.1 Indeed, the Moon, while very close, is ...",
+      "rank": 4
+    },
+    {
+      "title": "Mars - NASA Science",
+      "url": "https://science.nasa.gov/mars/",
+      "snippet": "June 1, 2023 - Mars is one of the most explored bodies in our solar system, and it's the only planet where we've sent rovers to explore the alien landscape. NASA missions have found lots of evidence that Mars was much wetter and warmer, with a thicker atmosphere, billions of years ago.",
+      "rank": 5
+    }
+  ],
+  "pipeline": "mcp_integration"
+}

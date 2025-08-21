@@ -1,0 +1,38 @@
+{
+  "query": "climate change renewable energy solutions",
+  "timestamp": "2025-08-20T15:48:20.218449",
+  "total_results": 5,
+  "results": [
+    {
+      "title": "Renewable energy \u2013 powering a safer future",
+      "url": "https://www.un.org/en/climatechange/raising-ambition/renewable-energy",
+      "snippet": "Switching to clean sources of energy, such as wind and solar, helps address not only climate change but also air pollution and health.",
+      "rank": 1
+    },
+    {
+      "title": "Renewable Energy Is Key to Fighting Climate Change",
+      "url": "https://www.nrdc.org/bio/noah-long/renewable-energy-key-fighting-climate-change",
+      "snippet": "Jul 26, 2016 \u2014 Renewable energy is one of the most effective tools we have in the fight against climate change, and there is every reason to believe it will succeed.",
+      "rank": 2
+    },
+    {
+      "title": "How Climate Change Impacts Renewable Energy",
+      "url": "https://news.climate.columbia.edu/2024/10/31/how-climate-change-impacts-affect-renewable-energy/",
+      "snippet": "Oct 31, 2024 \u2014 Both the supply of and demand for renewables are affected by climate impacts such as high heat, drought, altered precipitation patterns, flooding, extreme ...",
+      "rank": 3
+    },
+    {
+      "title": "The Role of the Sustainable Energy Transition in Tackling ...",
+      "url": "https://energy.sais.jhu.edu/articles/the-future-of-sustainable-energy/",
+      "snippet": "Jul 21, 2025 \u2014 Some ways we can accelerate the sustainable energy transition include: scaling renewable energy production and storage, improving energy ...",
+      "rank": 4
+    },
+    {
+      "title": "Countering Climate Change With Renewable Energy ...",
+      "url": "https://fas.org/publication/countering-climate-change-with-renewable-energy-technologies/",
+      "snippet": "Aug 7, 2021 \u2014 Renewable energy technologies, such as advanced biofuels for transportation, are key for U.S. efforts to mitigate climate change.",
+      "rank": 5
+    }
+  ],
+  "pipeline": "mcp_integration"
+}

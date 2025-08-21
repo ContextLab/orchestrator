@@ -1,18 +1,11 @@
 # MCP Integration Pipeline
-# Demonstrates using MCP servers, memory, and resources
+# Demonstrates using MCP servers for DuckDuckGo search
 id: mcp_integration
 name: MCP Integration Pipeline
 description: Connect to MCP servers and utilize their capabilities
 version: "1.0.0"
 
 parameters:
-  mcp_server_config:
-    type: object
-    default:
-      command: "npx"
-      args: ["-y", "@modelcontextprotocol/server-brave-search"]
-      env:
-        BRAVE_API_KEY: "${BRAVE_API_KEY}"
   search_query:
     type: string
     default: "AI orchestration frameworks"
@@ -24,8 +17,11 @@ steps:
     action: execute
     parameters:
       action: "connect"
-      server_name: "brave-search"
-      server_config: "{{ parameters.mcp_server_config }}"
+      server_name: "duckduckgo-search"
+      server_config:
+        command: "python"
+        args: ["src/orchestrator/tools/mcp_servers/duckduckgo_server.py"]
+        env: {}
     
   # List available tools
   - id: list_tools
@@ -33,10 +29,9 @@ steps:
     action: execute
     parameters:
       action: "list_tools"
-      server_name: "brave-search"
+      server_name: "duckduckgo-search"
     dependencies:
       - connect_mcp
-    condition: "{{ connect_mcp.connected }}"
     
   # Store search context in memory
   - id: store_context
@@ -57,7 +52,7 @@ steps:
     action: execute
     parameters:
       action: "execute_tool"
-      server_name: "brave-search"
+      server_name: "duckduckgo-search"
       tool_name: "search"
       tool_params:
         query: "{{ parameters.search_query }}"
@@ -65,7 +60,7 @@ steps:
     dependencies:
       - list_tools
     
-  # Store search results
+  # Store search results in memory
   - id: store_results
     tool: mcp-memory
     action: execute
@@ -78,51 +73,7 @@ steps:
     dependencies:
       - search_web
     
-  # List available resources
-  - id: list_resources
-    tool: mcp-resource
-    action: execute
-    parameters:
-      action: "list"
-      server_name: "brave-search"
-    dependencies:
-      - connect_mcp
-    
-  # Read a configuration resource
-  - id: read_config
-    tool: mcp-resource
-    action: execute
-    parameters:
-      action: "read"
-      server_name: "brave-search"
-      uri: "file:///data/config.json"
-    dependencies:
-      - list_resources
-    
-  # Subscribe to updates
-  - id: subscribe_updates
-    tool: mcp-resource
-    action: execute
-    parameters:
-      action: "subscribe"
-      server_name: "brave-search"
-      uri: "api://weather/current"
-    dependencies:
-      - list_resources
-    
-  # Process search results
-  - id: analyze_results
-    tool: data-processing
-    action: analyze
-    parameters:
-      data: "{{ search_web.result }}"
-      analysis_type: "summarize"
-      format: "json"
-    dependencies:
-      - search_web
-    condition: "{{ search_web.success }}"
-    
-  # Retrieve all stored data
+  # List memory contents
   - id: list_memory
     tool: mcp-memory
     action: execute
@@ -132,89 +83,29 @@ steps:
     dependencies:
       - store_results
     
-  # Generate report
-  - id: generate_report
-    tool: report-generator
-    action: generate
+  # Save search results to file
+  - id: save_results
+    tool: filesystem
+    action: write
     parameters:
-      title: "MCP Integration Results"
-      content: |
-        # MCP Server Integration Report
-        
-        ## Connection Status
-        - Server: {{ connect_mcp.server_name }}
-        - Connected: {{ connect_mcp.connected }}
-        - Capabilities: {{ connect_mcp.capabilities | json }}
-        
-        ## Available Tools
-        {% for tool in list_tools.tools %}
-        - **{{ tool.name }}**: {{ tool.description }}
-        {% endfor %}
-        
-        ## Search Results
-        Query: "{{ parameters.search_query }}"
-        
-        {% if search_web.success %}
-        ### Results Summary
-        {{ analyze_results.result | json }}
-        
-        ### Raw Results
-        Total found: {{ search_web.result.total | default(0) }}
-        {% else %}
-        Search failed: {{ search_web.error }}
-        {% endif %}
-        
-        ## Resources
-        Available resources: {{ list_resources.count }}
-        {% for resource in list_resources.resources %}
-        - {{ resource.name }} ({{ resource.uri }})
-        {% endfor %}
-        
-        ## Memory State
-        Stored keys: {{ list_memory.keys | join(', ') }}
-        
-        ## Subscriptions
-        {% if subscribe_updates.success %}
-        Active subscription: {{ subscribe_updates.subscription_id }}
-        {% endif %}
+      path: "examples/outputs/mcp_integration/{{ parameters.search_query[:25] | slugify }}_results.json"
+      content: "{{ {'query': parameters.search_query, 'timestamp': execution.timestamp, 'results': search_web.result.results if search_web.result else [], 'total': search_web.result.total if search_web.result else 0, 'memory_keys': list_memory.keys if list_memory.keys else []} | tojson(indent=2) }}"
     dependencies:
-      - analyze_results
       - list_memory
-      - subscribe_updates
     
-  # Clean up - disconnect
+  # Disconnect from server
   - id: disconnect_mcp
     tool: mcp-server
     action: execute
     parameters:
       action: "disconnect"
-      server_name: "brave-search"
+      server_name: "duckduckgo-search"
     dependencies:
-      - generate_report
-
-  # Save pipeline results
-  - id: save_results
-    tool: filesystem
-    action: write
-    parameters:
-      path: "examples/outputs/mcp_integration/results_{{ execution.timestamp | slugify }}.md"
-      content: |
-        # MCP Integration Pipeline Results
-        
-        **Date:** {{ execution.timestamp }}
-        **Pipeline ID:** mcp_integration
-        
-        ## Execution Summary
-        
-        Pipeline completed successfully.
-        
-        ---
-        *Generated by MCP Integration Pipeline*
-    dependencies:
-      - disconnect_mcp
+      - save_results
 
 outputs:
-  search_results: "{{ search_web.result }}"
-  analysis: "{{ analyze_results.result }}"
-  report: "{{ generate_report.report }}"
-  subscription_id: "{{ subscribe_updates.subscription_id }}"
+  connected: "{{ connect_mcp.connected }}"
+  tools_available: "{{ list_tools.tools | length if list_tools.tools else 0 }}"
+  search_results: "{{ search_web.result if search_web.result else {} }}"
+  results_saved: "{{ save_results.success }}"
+  output_file: "examples/outputs/mcp_integration/{{ parameters.search_query[:25] | slugify }}_results.json"

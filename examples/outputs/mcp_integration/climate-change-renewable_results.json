@@ -1,0 +1,1 @@
+{{ {'query': parameters.search_query, 'timestamp': execution.timestamp, 'results': search_web.result.results if search_web.result else [], 'total': search_web.result.total if search_web.result else 0, 'memory_keys': list_memory.keys if list_memory.keys else []} | tojson(indent=2) }}

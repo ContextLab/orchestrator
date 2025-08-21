@@ -1,0 +1,38 @@
+{
+  "query": "machine learning algorithms",
+  "timestamp": "2025-08-20T15:48:14.510770",
+  "total_results": 5,
+  "results": [
+    {
+      "title": "Outline of machine learning",
+      "url": "https://en.wikipedia.org/wiki/Outline_of_machine_learning",
+      "snippet": "The following outline is provided as an overview of, and topical guide to, machine learning:",
+      "rank": 1
+    },
+    {
+      "title": "Machine Learning Algorithms - GeeksforGeeks",
+      "url": "https://www.geeksforgeeks.org/machine-learning/machine-learning-algorithms/",
+      "snippet": "Jul 23, 2025 \u00b7 Machine learning algorithms are essentially sets of instructions that allow computers to learn from data, make predictions, and improve their performance over time \u2026",
+      "rank": 2
+    },
+    {
+      "title": "10 Machine Learning Algorithms to Know in 2025 - Coursera",
+      "url": "https://www.coursera.org/articles/machine-learning-algorithms?msockid=0f9b9b3ed5bb6bf026c78d70d47c6ad0",
+      "snippet": "May 21, 2025 \u00b7 In this article, you'll learn about 10 of the most popular machine learning algorithms used to complete tasks today, their different uses, and how they apply to different \u2026",
+      "rank": 3
+    },
+    {
+      "title": "A Tour of Machine Learning Algorithms",
+      "url": "https://machinelearningmastery.com/a-tour-of-machine-learning-algorithms/",
+      "snippet": "Aug 11, 2019 \u00b7 After reading this post, you will have a much better understanding of the most popular machine learning algorithms for supervised learning and how they are related. Kick \u2026",
+      "rank": 4
+    },
+    {
+      "title": "The Machine Learning Algorithms List: Types and Use Cases",
+      "url": "https://www.simplilearn.com/10-algorithms-machine-learning-engineers-need-to-know-article",
+      "snippet": "Jul 31, 2025 \u00b7 Looking for a machine learning algorithms list? Explore key ML models, their types, examples, and how they drive AI and data science advancements in 2025.",
+      "rank": 5
+    }
+  ],
+  "pipeline": "mcp_integration"
+}

@@ -25,7 +25,6 @@ steps:
     
   - id: data_preprocessing
     tool: pipeline-executor
-    action: execute
     parameters:
       pipeline: |
         id: data_preprocessing_sub
@@ -52,20 +51,13 @@ steps:
           processed_data: "{{ normalize_data.result }}"
       inputs:
         raw_data: "{{ load_data.content }}"
-      output_mapping:
-        processed_data: "processed_data"
       inherit_context: true
       wait_for_completion: true
-      timeout: 60000
-      error_handling: "fail"
-      retry_count: 3
-      retry_delay: 1
     dependencies:
       - load_data
     
   - id: statistical_analysis
     tool: pipeline-executor
-    action: execute
     parameters:
       pipeline: "examples/sub_pipelines/statistical_analysis.yaml"
       inputs:
@@ -75,18 +67,12 @@ steps:
         statistics: "statistical_results"
         summary: "statistical_summary"
       inherit_context: true
-      timeout: 60000
-      error_handling: "fail"
-      retry_count: 3
-      retry_delay: 1
-      wait_for_completion: true
     dependencies:
       - data_preprocessing
     condition: "'statistical' in {{ parameters.analysis_types }}"
     
   - id: sentiment_analysis
     tool: pipeline-executor
-    action: execute
     parameters:
       pipeline: "examples/sub_pipelines/sentiment_analysis.yaml"
       inputs:
@@ -96,18 +82,12 @@ steps:
         sentiment_scores: "sentiment_results"
         sentiment_summary: "sentiment_summary"
       inherit_context: true
-      timeout: 60000
-      error_handling: "fail"
-      retry_count: 3
-      retry_delay: 1
-      wait_for_completion: true
     dependencies:
       - data_preprocessing
     condition: "'sentiment' in {{ parameters.analysis_types }}"
     
   - id: trend_analysis
     tool: pipeline-executor
-    action: execute
     parameters:
       pipeline: "examples/sub_pipelines/trend_analysis.yaml"
       inputs:
@@ -118,11 +98,6 @@ steps:
         trends: "trend_results"
         forecasts: "trend_forecasts"
       inherit_context: true
-      timeout: 60000
-      error_handling: "fail"
-      retry_count: 3
-      retry_delay: 1
-      wait_for_completion: true
     dependencies:
       - data_preprocessing
     condition: "'trend' in {{ parameters.analysis_types }}"

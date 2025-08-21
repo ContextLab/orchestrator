@@ -651,6 +651,7 @@ def migrate_from_base_registry(base_registry: ToolRegistry) -> None:
         "image-generation": ToolCategory.MULTIMODAL,
         "audio-processing": ToolCategory.MULTIMODAL,
         "video-processing": ToolCategory.MULTIMODAL,
+        "visualization": ToolCategory.DATA,
         "mcp-server": ToolCategory.MCP_INTEGRATION,
         "mcp-memory": ToolCategory.MCP_INTEGRATION,
         "mcp-resource": ToolCategory.MCP_INTEGRATION,

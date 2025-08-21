@@ -1,0 +1,38 @@
+{
+  "query": "Python web frameworks Django Flask",
+  "timestamp": "2025-08-20T15:48:26.111587",
+  "total_results": 5,
+  "results": [
+    {
+      "title": "python - What is the purpose of the -m switch? - Stack Overflow",
+      "url": "https://stackoverflow.com/questions/7610001/what-is-the-purpose-of-the-m-switch",
+      "snippet": "Python 2.4 adds the command line switch -m to allow modules to be located using the Python module namespace for execution as scripts. The motivating examples were standard library \u2026",
+      "rank": 1
+    },
+    {
+      "title": "What does colon equal (:=) in Python mean? - Stack Overflow",
+      "url": "https://stackoverflow.com/questions/26000198/what-does-colon-equal-in-python-mean",
+      "snippet": "Mar 21, 2023 \u00b7 In Python this is simply =. To translate this pseudocode into Python you would need to know the data structures being referenced, and a bit more of the algorithm \u2026",
+      "rank": 2
+    },
+    {
+      "title": "Is there a \"not equal\" operator in Python? - Stack Overflow",
+      "url": "https://stackoverflow.com/questions/11060506/is-there-a-not-equal-operator-in-python",
+      "snippet": "Jun 16, 2012 \u00b7 There are two operators in Python for the \"not equal\" condition - a.) != If values of the two operands are not equal, then the condition becomes true. (a != b) is true.",
+      "rank": 3
+    },
+    {
+      "title": "Using or in if statement (Python) - Stack Overflow",
+      "url": "https://stackoverflow.com/questions/48465536/using-or-in-if-statement-python",
+      "snippet": "Using or in if statement (Python) [duplicate] Asked 7 years, 6 months ago Modified 9 months ago Viewed 151k times",
+      "rank": 4
+    },
+    {
+      "title": "What does the \"at\" (@) symbol do in Python? - Stack Overflow",
+      "url": "https://stackoverflow.com/questions/6392739/what-does-the-at-symbol-do-in-python",
+      "snippet": "Jun 17, 2011 \u00b7 96 What does the \u201cat\u201d (@) symbol do in Python? @ symbol is a syntactic sugar python provides to utilize decorator, to paraphrase the question, It's exactly about what does \u2026",
+      "rank": 5
+    }
+  ],
+  "pipeline": "mcp_integration"
+}

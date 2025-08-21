@@ -26,6 +26,11 @@ from ..tools.llm_tools import (
     MultiModelRoutingTool,
     PromptOptimizationTool
 )
+from ..tools.mcp_tools import (
+    MCPServerTool,
+    MCPMemoryTool,
+    MCPResourceTool
+)
 from ..compiler.template_renderer import TemplateRenderer
 from ..runtime import RuntimeResolutionIntegration
 
@@ -88,6 +93,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.image_generation_tool = ImageGenerationTool()
         self.image_analysis_tool = ImageAnalysisTool()
         
+        # Import and initialize VisualizationTool
+        from ..tools.visualization_tools import VisualizationTool
+        self.visualization_tool = VisualizationTool()
+        
         # Initialize user interaction tools (Issue #165)
         self.user_prompt_tool = UserPromptTool()
         self.approval_gate_tool = ApprovalGateTool()
@@ -97,6 +106,11 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.task_delegation_tool = TaskDelegationTool()
         self.multi_model_routing_tool = MultiModelRoutingTool()
         self.prompt_optimization_tool = PromptOptimizationTool()
+        
+        # Initialize MCP tools (Issue #167)
+        self.mcp_server_tool = MCPServerTool()
+        self.mcp_memory_tool = MCPMemoryTool()
+        self.mcp_resource_tool = MCPResourceTool()
         
         # Initialize runtime resolution system (Issue #211)
         self.runtime_resolution = None  # Will be initialized per pipeline
@@ -184,6 +198,10 @@ class HybridControlSystem(ModelBasedControlSystem):
             "user-prompt": self._handle_user_prompt,
             "approval-gate": self._handle_approval_gate,
             "feedback-collection": self._handle_feedback_collection,
+            "mcp-server": self._handle_mcp_server,
+            "mcp-memory": self._handle_mcp_memory,
+            "mcp-resource": self._handle_mcp_resource,
+            "visualization": self._handle_visualization,
         }
         
         if tool_name in tool_handlers:
@@ -1194,7 +1212,18 @@ Just return the optimized prompt, nothing else."""
         params = task.parameters.copy()
         text = params.get("text", "")
         analysis_type = params.get("analysis_type", "general")
-        prompt = params.get("prompt", f"Analyze the following text for {analysis_type}:\n\n{text}")
+        custom_prompt = params.get("prompt", "")
+        
+        # Build the full prompt - if custom prompt exists, combine it with the text
+        if custom_prompt:
+            prompt = f"{custom_prompt}\n\nData:\n{text}"
+        else:
+            prompt = f"Analyze the following text for {analysis_type}:\n\n{text}"
+        
+        # Add system instruction to avoid conversational text
+        if analysis_type == "trends":
+            prompt += "\n\nProvide only the analysis results. Do not include conversational text like 'If you want...' or 'I can help...' or questions to the user."
+        
         model_spec = params.get("model", "<AUTO>")
         
         # Select model
@@ -1227,6 +1256,10 @@ Just return the optimized prompt, nothing else."""
             logger = logging.getLogger(__name__)
             logger.info(f"Calling model {model.name if hasattr(model, 'name') else str(model)} for analyze_text")
             logger.debug(f"Prompt length: {len(prompt)} chars, First 200 chars: {prompt[:200]}")
+            
+            # Incorporate quality instructions into the prompt itself
+            if analysis_type == "trends" or analysis_type == "text_generation":
+                prompt = f"Instructions: Provide clear, concise, and accurate responses. Avoid conversational fillers or questions back to the user.\n\n{prompt}"
             
             response = await model.generate(
                 prompt=prompt,
@@ -1300,9 +1333,30 @@ Just return the optimized prompt, nothing else."""
         # Create task for analyze_text handler
         analyze_task = Task(
             id=task.id,
+            name=task.name if hasattr(task, 'name') else task.id,
             action="analyze_text",
             parameters=params,
             dependencies=task.dependencies
         )
         
         return await self._handle_analyze_text(analyze_task, context)
+    
+    async def _handle_mcp_server(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle MCP server operations."""
+        return await self.mcp_server_tool.execute(**task.parameters, context=context)
+    
+    async def _handle_mcp_memory(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle MCP memory operations."""
+        return await self.mcp_memory_tool.execute(**task.parameters, context=context)
+    
+    async def _handle_mcp_resource(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle MCP resource operations."""
+        return await self.mcp_resource_tool.execute(**task.parameters, context=context)
+    
+    async def _handle_visualization(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle visualization operations."""
+        params = task.parameters.copy()
+        if "action" not in params and task.action:
+            params["action"] = task.action
+        return await self.visualization_tool.execute(**params)
+

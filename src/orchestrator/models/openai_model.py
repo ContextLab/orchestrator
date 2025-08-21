@@ -361,6 +361,14 @@ class OpenAIModel(Model):
     ) -> str:
         """Generate using LangChain backend."""
         try:
+            # Filter out non-LangChain kwargs
+            # LangChain only accepts specific parameters, not arbitrary config
+            langchain_kwargs = {}
+            if temperature != 0.7:
+                langchain_kwargs['temperature'] = temperature
+            if max_tokens:
+                langchain_kwargs['max_tokens'] = max_tokens
+            
             # Handle system prompt for LangChain
             if "system_prompt" in kwargs:
                 from langchain_core.messages import SystemMessage, HumanMessage
@@ -370,15 +378,15 @@ class OpenAIModel(Model):
                 ]
                 
                 if hasattr(self.langchain_model, 'ainvoke'):
-                    response = await self.langchain_model.ainvoke(messages)
+                    response = await self.langchain_model.ainvoke(messages, **langchain_kwargs)
                 else:
-                    response = await asyncio.to_thread(self.langchain_model.invoke, messages)
+                    response = await asyncio.to_thread(self.langchain_model.invoke, messages, **langchain_kwargs)
             else:
                 # Simple prompt
                 if hasattr(self.langchain_model, 'ainvoke'):
-                    response = await self.langchain_model.ainvoke(prompt)
+                    response = await self.langchain_model.ainvoke(prompt, **langchain_kwargs)
                 else:
-                    response = await asyncio.to_thread(self.langchain_model.invoke, prompt)
+                    response = await asyncio.to_thread(self.langchain_model.invoke, prompt, **langchain_kwargs)
 
             # Extract content from LangChain response
             if hasattr(response, 'content'):

@@ -1,0 +1,73 @@
+# Simple MCP Test Pipeline
+# Tests basic MCP server connection and DuckDuckGo search
+id: mcp_simple_test
+name: Simple MCP Test
+description: Basic test of MCP server with DuckDuckGo search
+version: "1.0.0"
+
+parameters:
+  search_query:
+    type: string
+    default: "Python programming"
+
+steps:
+  # Connect to DuckDuckGo MCP server
+  - id: connect
+    tool: mcp-server
+    action: execute
+    parameters:
+      action: "connect"
+      server_name: "duckduckgo"
+      server_config:
+        command: "python"
+        args: ["src/orchestrator/tools/mcp_servers/duckduckgo_server.py"]
+        env: {}
+    
+  # List available tools
+  - id: list_tools
+    tool: mcp-server
+    action: execute
+    parameters:
+      action: "list_tools"
+      server_name: "duckduckgo"
+    dependencies:
+      - connect
+    
+  # Execute search
+  - id: search
+    tool: mcp-server
+    action: execute
+    parameters:
+      action: "execute_tool"
+      server_name: "duckduckgo"
+      tool_name: "search"
+      tool_params:
+        query: "{{ parameters.search_query }}"
+        max_results: 3
+    dependencies:
+      - list_tools
+    
+  # Save results with query-based filename
+  - id: save_results
+    tool: filesystem
+    action: write
+    parameters:
+      path: "examples/outputs/mcp_simple_test/{{ parameters.search_query[:20] | slugify }}_results.json"
+      content: "{{ search.result | tojson(indent=2) }}"
+    dependencies:
+      - search
+    
+  # Disconnect
+  - id: disconnect
+    tool: mcp-server
+    action: execute
+    parameters:
+      action: "disconnect"
+      server_name: "duckduckgo"
+    dependencies:
+      - save_results
+
+outputs:
+  connected: "{{ connect.connected }}"
+  tools_count: "{{ list_tools.tools | length if list_tools.tools else 0 }}"
+  search_results: "{{ search.result }}"

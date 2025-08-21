@@ -1,0 +1,32 @@
+# Simple test pipeline
+id: simple_test
+name: Simple Test Pipeline
+description: Test basic functionality
+
+steps:
+  - id: generate_data
+    action: generate_text
+    parameters:
+      prompt: "Generate a CSV with 3 rows: id,value,category\n1,100,A\n2,200,B\n3,150,A"
+      model: <AUTO>
+    
+  - id: save_data
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output_path }}/test_data.csv"
+      content: "id,value,category\n1,100,A\n2,200,B\n3,150,A"
+    
+  - id: create_chart
+    tool: visualization
+    action: create_charts
+    parameters:
+      data: [{"id": 1, "value": 100, "category": "A"}, {"id": 2, "value": 200, "category": "B"}, {"id": 3, "value": 150, "category": "A"}]
+      chart_types: ["bar", "pie"]
+      output_dir: "{{ output_path }}/charts"
+      title: "Test Chart"
+    dependencies:
+      - save_data
+
+outputs:
+  charts: "{{ create_chart.charts }}"
