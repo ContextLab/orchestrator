@@ -434,6 +434,9 @@ class RecursionControlTool(Tool):
             "Action: check_condition, update_state, get_state, reset",
         )
         self.add_parameter(
+            "context_id", "string", "Context ID for state tracking", required=False, default="default"
+        )
+        self.add_parameter(
             "condition", "string", "Termination condition expression", required=False
         )
         self.add_parameter("state_key", "string", "Key for state value", required=False)
@@ -444,12 +447,12 @@ class RecursionControlTool(Tool):
             "increment", "number", "Increment state value by amount", required=False
         )
         self.add_parameter(
-            "max_iterations", "integer", "Maximum iterations allowed", default=1000
+            "max_iterations", "integer", "Maximum iterations allowed", required=False, default=1000
         )
         self.add_parameter(
-            "depth_limit", "integer", "Maximum recursion depth", default=10
+            "depth_limit", "integer", "Maximum recursion depth", required=False, default=10
         )
-        self.add_parameter("time_limit", "number", "Time limit in seconds", default=0)
+        self.add_parameter("time_limit", "number", "Time limit in seconds", required=False, default=0)
 
         self.logger = logging.getLogger(__name__)
 

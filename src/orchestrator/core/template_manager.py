@@ -288,6 +288,15 @@ class TemplateManager:
             'include_file': include_file_sync,
             'file_exists': file_exists,
             'basename': basename,
+            'format': lambda s, *args, **kwargs: s % args if args else s.format(**kwargs),
+            'split': lambda s, sep=' ': s.split(sep) if isinstance(s, str) else [],
+            'join': lambda lst, sep=', ': sep.join(str(x) for x in lst) if lst else '',
+            'length': len,
+            'int': int,
+            'float': float,
+            'round': round,
+            'last': lambda lst: lst[-1] if lst else None,
+            'regex_replace': lambda text, pattern, replacement='': re.sub(pattern, replacement, text) if isinstance(text, str) else text,
         })
         
         # Register global functions

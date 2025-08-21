@@ -37,6 +37,10 @@ from ..tools.mcp_tools import (
     MCPMemoryTool,
     MCPResourceTool
 )
+from ..tools.pipeline_recursion_tools import (
+    PipelineExecutorTool,
+    RecursionControlTool
+)
 from ..compiler.template_renderer import TemplateRenderer
 from ..runtime import RuntimeResolutionIntegration
 
@@ -122,6 +126,9 @@ class HybridControlSystem(ModelBasedControlSystem):
         self.mcp_server_tool = MCPServerTool()
         self.mcp_memory_tool = MCPMemoryTool()
         self.mcp_resource_tool = MCPResourceTool()
+        
+        # Initialize recursion control tool (Issue #172)
+        self.recursion_control_tool = RecursionControlTool()
         
         # Initialize runtime resolution system (Issue #211)
         self.runtime_resolution = None  # Will be initialized per pipeline
@@ -216,6 +223,7 @@ class HybridControlSystem(ModelBasedControlSystem):
             "mcp-resource": self._handle_mcp_resource,
             "visualization": self._handle_visualization,
             "python-executor": self._handle_python_executor,
+            "recursion-control": self._handle_recursion_control,
         }
         
         if tool_name in tool_handlers:
@@ -1412,4 +1420,18 @@ context = {repr(context)}
                 result["result"] = result["stdout"].strip()
         
         return result
+
+    async def _handle_recursion_control(self, task: Task, context: Dict[str, Any]) -> Any:
+        """Handle recursion control operations."""
+        params = task.parameters.copy()
+        
+        # Pass the action from the task
+        params['action'] = task.action
+        
+        # Pass the execution_id from context if available
+        if 'execution_id' in context and 'context_id' not in params:
+            params['context_id'] = context['execution_id']
+        
+        # Execute the recursion control tool
+        return await self.recursion_control_tool.execute(**params)
 

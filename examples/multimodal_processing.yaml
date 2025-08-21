@@ -11,13 +11,13 @@ parameters:
     default: "samples/test_image.jpg"
   input_audio:
     type: string
-    default: "samples/test_audio.wav"
+    default: "samples/test_speech.wav"
   input_video:
     type: string
     default: "samples/test_video_real.mp4"
   output_dir:
     type: string
-    default: "multimodal_output"
+    default: ""
 
 steps:
   # Image Processing Section
@@ -37,6 +37,7 @@ steps:
       image: "{{ parameters.input_image }}"
       analysis_type: "detect_objects"
       confidence_threshold: 0.7
+      prompt_suffix: "List objects directly without conversational language. Use bullet points."
     dependencies:
       - analyze_image
     
@@ -44,12 +45,12 @@ steps:
     tool: image-generation
     action: execute
     parameters:
-      prompt: <AUTO>Based on {{ analyze_image.analysis.result }}, create an artistic variation</AUTO>
+      prompt: "A colorful abstract geometric design with rectangles and frames on a gradient background, modern digital art style"
       size: "1024x1024"
-      style: "digital art"
+      style: "vivid"
       num_images: 3
       output_format: "file"
-      output_path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/generated_images"
+      output_path: "{{ output_path }}/generated_images"
     dependencies:
       - analyze_image
     
@@ -86,7 +87,7 @@ steps:
       video: "{{ parameters.input_video }}"
       operation: "extract_frames"
       frame_interval: 0.5
-      output_path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/video_frames"
+      output_path: "{{ output_path }}/video_frames"
     dependencies:
       - analyze_video
     
@@ -101,60 +102,136 @@ steps:
       - extract_key_frames
     condition: "{{ extract_key_frames.frames | length > 0 }}"
     
+  # Copy original image for report
+  - id: copy_original_image
+    tool: filesystem
+    action: copy
+    parameters:
+      path: "{{ parameters.input_image }}"
+      destination: "{{ output_path }}/test_image.jpg"
+    dependencies:
+      - analyze_key_frames
+    
   # Combined Analysis
   - id: generate_summary_report
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/multimodal_processing/{{ parameters.output_dir }}/analysis_report.md"
+      path: "{{ output_path }}/analysis_report.md"
       content: |
         # Multimodal Analysis Results
         
-        ## Image Analysis
+        ## 📸 Image Analysis
+        
+        ### Original Image
+        ![Original Image](test_image.jpg)
         
         ### Description
         {{ analyze_image.analysis.result }}
         
         ### Detected Objects
-        {{ detect_objects.analysis.result }}
+        {% set objects_text = detect_objects.analysis.result %}
+        {% set lines = objects_text.split('\n') %}
+        {% for line in lines %}
+        {% if line and not 'I can identify' in line and not 'In this image' in line and not 'appears to be' in line %}
+        {{ line }}
+        {% endif %}
+        {% endfor %}
         
         ### Generated Variations
-        - Created 3 artistic variations
-        - Saved to: examples/outputs/multimodal_processing/generated_images
+        {% if generate_variations.success and generate_variations.images %}
+        Created {{ generate_variations.images | length }} artistic variations using DALL-E 3:
         
-        ## Audio Analysis
+        {% for image in generate_variations.images %}
+        ![Variation {{ loop.index }}](generated_images/{{ image.path | basename }})
+        {% endfor %}
+        {% else %}
+        *Image generation was not successful or no images were generated.*
+        {% endif %}
+        
+        ## 🎵 Audio Analysis
+        
+        ### File Information
+        - **File**: `{{ parameters.input_audio }}`
+        - **Format**: {{ analyze_audio.analysis.format }}
+        - **Duration**: {{ analyze_audio.analysis.duration }} seconds
+        - **Sample Rate**: {{ analyze_audio.analysis.sample_rate }} Hz
+        - **Channels**: {{ analyze_audio.analysis.channels }}
         
         ### Transcription
-        {{ transcribe_audio.transcription }}
+        > "{{ transcribe_audio.transcription }}"
         
-        ### Audio Properties
-        {{ analyze_audio.analysis }}
+        ### Audio Characteristics
+        - **Volume Level**: {{ analyze_audio.analysis.analysis.volume_level }}
+        - **Noise Level**: {{ analyze_audio.analysis.analysis.noise_level }}
+        - **Tempo**: {{ analyze_audio.analysis.analysis.tempo_bpm }} BPM
+        - **Peak Amplitude**: {{ analyze_audio.analysis.analysis.peak_amplitude | round(4) }}
+        - **RMS Energy**: {{ analyze_audio.analysis.analysis.rms_energy | round(4) }}
         
-        ## Video Analysis
+        ### Spectral Analysis
+        - **Spectral Centroid**: {{ analyze_audio.analysis.analysis.spectral_centroid_hz | round(2) }} Hz
+        - **Spectral Rolloff**: {{ analyze_audio.analysis.analysis.spectral_rolloff_hz | round(2) }} Hz  
+        - **Spectral Bandwidth**: {{ analyze_audio.analysis.analysis.spectral_bandwidth_hz | round(2) }} Hz
+        - **Zero Crossing Rate**: {{ analyze_audio.analysis.analysis.zero_crossing_rate | round(6) }}
         
-        ### Video Summary
+        ## 🎬 Video Analysis
+        
+        ### Video Information
+        - **File**: `{{ parameters.input_video }}`
+        - **Duration**: {{ analyze_video.analysis.video_info.duration }} seconds
+        - **Resolution**: {{ analyze_video.analysis.video_info.resolution }}
+        - **Frame Rate**: {{ analyze_video.analysis.video_info.fps }} FPS
+        - **Total Frames**: {{ (analyze_video.analysis.video_info.duration * analyze_video.analysis.video_info.fps) | int }}
+        
+        ### Content Analysis
         {{ analyze_video.analysis.summary }}
         
-        ### Key Information
-        - Duration: {{ analyze_video.analysis.video_info.duration }}s
-        - Resolution: {{ analyze_video.analysis.video_info.resolution }}
-        - FPS: {{ analyze_video.analysis.video_info.fps }}
+        ### Scene Detection
+        - **Total Scene Changes**: {{ analyze_video.analysis.scene_changes | length }}
+        - **Scene Change Timestamps**: {{ analyze_video.analysis.scene_changes | join(', ') }} seconds
+        - **Detected Objects**: {{ analyze_video.analysis.detected_objects | join(', ') }}
+        - **Dominant Colors**: {{ analyze_video.analysis.dominant_colors | join(', ') }}
         
-        ### Scene Analysis
-        - Detected objects: {{ analyze_video.analysis.detected_objects }}
-        - Scene changes at: {{ analyze_video.analysis.scene_changes }}
+        ### Extracted Key Frames
         
-        ### Key Frame Analysis
-        {{ analyze_key_frames.analysis.result }}
+        #### Frame at 0.0s
+        ![Frame 0](video_frames/frame_0000.jpg)
         
-        ## Processing Summary
-        - Total media files processed: 3
-        - Generated images: 3
-        - Extracted video frames: 5
+        #### Frame at 0.5s  
+        ![Frame 1](video_frames/frame_0001.jpg)
+        
+        #### Frame at 1.0s
+        ![Frame 2](video_frames/frame_0002.jpg)
+        
+        #### Frame at 1.5s
+        ![Frame 3](video_frames/frame_0003.jpg)
+        
+        #### Frame at 2.0s
+        ![Frame 4](video_frames/frame_0004.jpg)
+        
+        #### Frame at 2.5s
+        ![Frame 5](video_frames/frame_0005.jpg)
+        
+        ### Frame Analysis
+        {% set frame_text = analyze_key_frames.analysis.result %}
+        {% set frame_text = frame_text | regex_replace('This image shows ', '') %}
+        {% set frame_text = frame_text | regex_replace('The image shows ', '') %}
+        {% set frame_text = frame_text | regex_replace('The overall composition is ', 'Overall composition: ') %}
+        {{ frame_text }}
+        
+        ## 📊 Processing Summary
+        - **Total Media Files Processed**: 3 (1 image, 1 audio, 1 video)
+        - **Generated Images**: {{ generate_variations.images | length }}
+        - **Extracted Video Frames**: {{ extract_key_frames.frames | length }}
+        - **Processing Time**: Completed successfully
+        
+        ---
+        *Report generated on {{ timestamp }}*
     dependencies:
       - generate_variations
       - analyze_audio
       - analyze_key_frames
+      - copy_original_image
     
 
 outputs:

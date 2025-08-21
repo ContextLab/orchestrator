@@ -121,17 +121,17 @@ steps:
     tool: filesystem
     action: write
     parameters:
-      path: "examples/outputs/recursive_data_processor/processed_data_final.csv"
+      path: "{{ output_path }}/processed_data_final.csv"
       content: "{{ update_current_data.full_state.current_data }}"
     dependencies:
       - check_termination
     condition: "{{ check_termination.should_terminate }}"
     
   - id: generate_report
-    tool: report-generator
-    action: generate
+    tool: filesystem
+    action: write
     parameters:
-      title: "Recursive Processing Report"
+      path: "{{ output_path }}/recursive_processing_report.md"
       content: |
         # Recursive Data Processing Results
         
