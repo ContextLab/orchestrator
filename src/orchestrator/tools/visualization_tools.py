@@ -193,33 +193,97 @@ class VisualizationTool(Tool):
         # Use proper figure size (convert pixels to inches at 100 DPI)
         width_inches = kwargs.get('width', 1000) / 100
         height_inches = kwargs.get('height', 600) / 100
-        fig, ax = plt.subplots(figsize=(width_inches, height_inches))
         
         # Plot numeric columns - select appropriate ones for time series
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         
-        # Prioritize certain columns for better visualization
-        priority_cols = ['sales', 'revenue', 'units_sold', 'average_price', 'customer_satisfaction']
-        cols_to_plot = [col for col in priority_cols if col in numeric_cols]
+        # Group columns by scale to avoid massive differences
+        # Remove redundant columns (sales and units_sold are identical)
+        small_scale_cols = ['conversion_rate', 'return_rate', 'discount_percentage']  # 0-1 scale
+        medium_scale_cols = ['customer_satisfaction', 'sales', 'average_price']  # Different scales
+        large_scale_cols = ['revenue', 'inventory_level', 'marketing_spend']
         
-        # If no priority columns, use first 3 numeric columns
-        if not cols_to_plot:
-            cols_to_plot = list(numeric_cols[:3])
+        # Find which columns exist in the data
+        small_cols = [col for col in small_scale_cols if col in numeric_cols]
+        medium_cols = [col for col in medium_scale_cols if col in numeric_cols]
+        large_cols = [col for col in large_scale_cols if col in numeric_cols]
         
-        # Plot each column with appropriate scaling
-        for i, col in enumerate(cols_to_plot):
-            # Don't use markers for large datasets
-            if len(df) > 100:
-                ax.plot(df.index, df[col], label=col, linewidth=1.5, alpha=0.8)
+        # Choose columns and determine if we need normalization or dual axes
+        if small_cols and 'customer_satisfaction' in numeric_cols:
+            # We have both small scale (0-0.1) and customer satisfaction (1-5)
+            # Normalize all to 0-1 scale for comparability
+            cols_to_plot = small_cols[:2] + ['customer_satisfaction']
+            chart_title = 'Performance Metrics Over Time (Normalized)'
+            normalize = True
+        elif small_cols and len(small_cols) >= 2:
+            cols_to_plot = small_cols[:3]  # Rate metrics on same scale
+            chart_title = 'Performance Rates Over Time'
+            normalize = False
+        elif medium_cols:
+            if 'sales' in medium_cols:
+                cols_to_plot = ['sales']  # Just sales
+                chart_title = 'Sales Volume Over Time'
             else:
-                ax.plot(df.index, df[col], label=col, marker='o', markersize=4, linewidth=1.5, alpha=0.8)
+                cols_to_plot = medium_cols[:2]
+                chart_title = 'Sales Metrics Over Time'
+            normalize = False
+        elif large_cols:
+            cols_to_plot = large_cols[:3]  # Financial metrics
+            chart_title = 'Financial Metrics Over Time'
+            normalize = False
+        else:
+            cols_to_plot = list(numeric_cols[:3])
+            chart_title = 'Metrics Over Time'
+            normalize = False
         
-        ax.set_title(title or 'Time Series Analysis', fontsize=14, fontweight='bold')
-        ax.set_xlabel('Index', fontsize=12)
-        ax.set_ylabel('Value', fontsize=12)
+        fig, ax = plt.subplots(figsize=(width_inches, height_inches))
         
-        # Position legend outside plot area
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
+        # Plot each column
+        for i, col in enumerate(cols_to_plot):
+            if normalize:
+                # Normalize to 0-1 scale
+                col_data = df[col].values
+                min_val = col_data.min()
+                max_val = col_data.max()
+                if max_val > min_val:
+                    normalized = (col_data - min_val) / (max_val - min_val)
+                else:
+                    normalized = col_data
+                
+                # Add original scale range to label
+                if col == 'customer_satisfaction':
+                    label = f'{col.replace("_", " ").title()} (1-5 scale)'
+                elif col in ['conversion_rate', 'return_rate', 'discount_percentage']:
+                    label = f'{col.replace("_", " ").title()} ({df[col].min():.1%}-{df[col].max():.1%})'
+                else:
+                    label = col.replace('_', ' ').title()
+                
+                if len(df) > 100:
+                    ax.plot(df.index, normalized, label=label, linewidth=1.5, alpha=0.8)
+                else:
+                    ax.plot(df.index, normalized, label=label, marker='o', markersize=4, linewidth=1.5, alpha=0.8)
+            else:
+                # Plot without normalization
+                if len(df) > 100:
+                    ax.plot(df.index, df[col], label=col.replace('_', ' ').title(), linewidth=1.5, alpha=0.8)
+                else:
+                    ax.plot(df.index, df[col], label=col.replace('_', ' ').title(), marker='o', markersize=4, linewidth=1.5, alpha=0.8)
+        
+        # Check if index looks like dates/time
+        x_label = 'Date' if 'date' in str(df.index.name).lower() or 'time' in str(df.index.name).lower() else 'Day'
+        
+        ax.set_title(chart_title, fontsize=14, fontweight='bold')
+        ax.set_xlabel(x_label, fontsize=12)
+        
+        # Y-axis label depends on normalization
+        if normalize:
+            ax.set_ylabel('Normalized Value (0-1)', fontsize=12)
+            ax.set_ylim(-0.05, 1.05)  # Add some padding
+        else:
+            ax.set_ylabel('Value', fontsize=12)
+        
+        # Position legend outside plot area but not overlapping
+        ax.legend(bbox_to_anchor=(0.02, 0.98), loc='upper left', fontsize=9, framealpha=0.9)
         
         ax.grid(True, alpha=0.3)
         
@@ -268,8 +332,15 @@ class VisualizationTool(Tool):
             grouped = df.groupby(cat_col)[num_col].sum()
             grouped = grouped.nlargest(20)  # Limit to top 20 for readability
             grouped.plot(kind='bar', ax=ax, color='steelblue')
-            ax.set_xlabel(cat_col, fontsize=12)
-            ax.set_ylabel(f'Total {num_col}', fontsize=12)
+            ax.set_xlabel(cat_col.replace('_', ' ').title(), fontsize=12)
+            ax.set_ylabel(f'Total {num_col.replace("_", " ").title()}', fontsize=12)
+            
+            # Format y-axis for large numbers
+            import matplotlib.ticker as ticker
+            if grouped.max() > 10000:
+                ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'${x/1000:.0f}K' if num_col == 'revenue' else f'{x/1000:.0f}K'))
+            elif grouped.max() > 1000:
+                ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f'${x:.0f}' if num_col == 'revenue' else f'{x:.0f}'))
         elif len(numeric_cols) > 0:
             # Use first numeric column
             df[numeric_cols[0]].plot(kind='bar', ax=ax, color='steelblue')
@@ -281,7 +352,13 @@ class VisualizationTool(Tool):
             ax.set_xlabel('Values', fontsize=12)
             ax.set_ylabel('Count', fontsize=12)
         
-        ax.set_title(title or 'Bar Chart', fontsize=14, fontweight='bold')
+        # Create descriptive title based on what's being plotted
+        if cat_col and num_col:
+            chart_title = f'Total {num_col.replace("_", " ").title()} by {cat_col.replace("_", " ").title()}'
+        else:
+            chart_title = 'Category Distribution'
+        
+        ax.set_title(chart_title, fontsize=14, fontweight='bold')
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         plt.savefig(output_path, dpi=100, bbox_inches='tight')
@@ -307,7 +384,13 @@ class VisualizationTool(Tool):
             ax.set_xlabel('Index')
             ax.set_ylabel(numeric_cols[0] if numeric_cols else df.columns[0])
         
-        ax.set_title(title or 'Scatter Plot', fontsize=14, fontweight='bold')
+        # Create descriptive title
+        if len(numeric_cols) >= 2:
+            chart_title = f'{numeric_cols[1].replace("_", " ").title()} vs {numeric_cols[0].replace("_", " ").title()}'
+        else:
+            chart_title = f'{(numeric_cols[0] if numeric_cols else df.columns[0]).replace("_", " ").title()} Distribution'
+        
+        ax.set_title(chart_title, fontsize=14, fontweight='bold')
         ax.grid(True, alpha=0.3)
         
         plt.tight_layout()
@@ -332,7 +415,13 @@ class VisualizationTool(Tool):
             df[df.columns[0]].value_counts().plot(kind='bar', ax=ax)
             ax.set_xlabel(df.columns[0])
         
-        ax.set_title(title or 'Histogram', fontsize=14, fontweight='bold')
+        # Create descriptive title
+        if numeric_cols.any():
+            chart_title = f'Distribution of {numeric_cols[0].replace("_", " ").title()}'
+        else:
+            chart_title = f'Distribution of {df.columns[0].replace("_", " ").title()}'
+        
+        ax.set_title(chart_title, fontsize=14, fontweight='bold')
         ax.set_ylabel('Frequency', fontsize=12)
         
         plt.tight_layout()
@@ -399,8 +488,46 @@ class VisualizationTool(Tool):
             else:
                 data = df[df.columns[0]].value_counts().head(10)
         
-        ax.pie(data.values, labels=data.index, autopct='%1.1f%%', startangle=90)
-        ax.set_title(title or 'Pie Chart', fontsize=14, fontweight='bold')
+        # For pie charts, handle text overlap
+        # Combine small slices into 'Other' category
+        threshold = 0.02  # 2% threshold
+        total = data.sum()
+        small_slices = data[data / total < threshold]
+        
+        if len(small_slices) > 0:
+            # Combine small slices into 'Other'
+            other_value = small_slices.sum()
+            data = data[data / total >= threshold]
+            if other_value > 0:
+                data['Other'] = other_value
+        
+        # Create pie chart with better text placement
+        wedges, texts, autotexts = ax.pie(data.values, labels=None, autopct='%1.1f%%', 
+                                           startangle=90, pctdistance=0.85)
+        
+        # Add legend to avoid label overlap
+        ax.legend(wedges, data.index, 
+                 title=cat_col_to_use.replace('_', ' ').title() if cat_col_to_use else 'Categories',
+                 loc="center left", bbox_to_anchor=(1, 0, 0.5, 1),
+                 fontsize=10)
+        
+        # Make percentage text smaller and only show for larger slices
+        for i, autotext in enumerate(autotexts):
+            if data.values[i] / total < 0.03:  # Hide percentage for slices < 3%
+                autotext.set_text('')
+            else:
+                autotext.set_fontsize(9)
+                autotext.set_color('white' if data.values[i] / total > 0.15 else 'black')
+        
+        # Create descriptive title
+        if cat_col_to_use and num_col_to_use:
+            chart_title = f'{num_col_to_use.replace("_", " ").title()} by {cat_col_to_use.replace("_", " ").title()}'
+        elif cat_col_to_use:
+            chart_title = f'Distribution of {cat_col_to_use.replace("_", " ").title()}'
+        else:
+            chart_title = 'Category Distribution'
+        
+        ax.set_title(chart_title, fontsize=14, fontweight='bold')
         
         plt.tight_layout()
         plt.savefig(output_path, dpi=100, bbox_inches='tight')
@@ -421,7 +548,7 @@ class VisualizationTool(Tool):
             corr_matrix = numeric_df.corr()
             sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', 
                        center=0, ax=ax, cbar_kws={'label': 'Correlation'})
-            ax.set_title(title or 'Correlation Heatmap', fontsize=14, fontweight='bold')
+            ax.set_title('Correlation Matrix of Numeric Variables', fontsize=14, fontweight='bold')
         else:
             ax.text(0.5, 0.5, 'Insufficient numeric data for heatmap', 
                    ha='center', va='center', transform=ax.transAxes)
@@ -437,56 +564,64 @@ class VisualizationTool(Tool):
         self, charts: List[str], title: str, layout: str, output_path: Path
     ) -> str:
         """Create an HTML dashboard with embedded charts."""
-        if not PLOTLY_AVAILABLE:
-            # Fallback to simple HTML with image tags
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>{title or 'Analysis Dashboard'}</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                    h1 {{ color: #333; }}
-                    .chart-container {{ 
-                        display: {'grid' if layout == 'grid' else 'flex'};
-                        {'grid-template-columns: repeat(2, 1fr);' if layout == 'grid' else ''}
-                        {'flex-direction: column;' if layout == 'vertical' else ''}
-                        gap: 20px;
-                        margin-top: 20px;
-                    }}
-                    .chart {{ 
-                        border: 1px solid #ddd;
-                        padding: 10px;
-                        background: white;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    }}
-                    img {{ max-width: 100%; height: auto; }}
-                </style>
-            </head>
-            <body>
-                <h1>{title or 'Analysis Dashboard'}</h1>
-                <div class="chart-container">
-            """
-            
-            for chart_path in charts:
-                if Path(chart_path).exists():
-                    # Embed image as base64
-                    with open(chart_path, 'rb') as f:
-                        img_data = base64.b64encode(f.read()).decode()
-                    chart_name = Path(chart_path).stem.replace('_', ' ').title()
-                    html_content += f"""
-                    <div class="chart">
-                        <h3>{chart_name}</h3>
-                        <img src="data:image/png;base64,{img_data}" alt="{chart_name}">
-                    </div>
-                    """
-            
-            html_content += """
+        # Always use simple HTML with embedded images - plotly interactive mode is broken
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>{title or 'Analysis Dashboard'}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
+                h1 {{ color: #333; text-align: center; }}
+                .chart-container {{ 
+                    display: {'grid' if layout == 'grid' else 'flex'};
+                    {'grid-template-columns: repeat(2, 1fr);' if layout == 'grid' else ''}
+                    {'flex-direction: column;' if layout == 'vertical' else ''}
+                    gap: 20px;
+                    margin-top: 20px;
+                    max-width: 1400px;
+                    margin: 0 auto;
+                }}
+                .chart {{ 
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                    background: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    border-radius: 8px;
+                }}
+                .chart h3 {{
+                    margin-top: 0;
+                    color: #555;
+                    font-size: 1.1em;
+                }}
+                img {{ max-width: 100%; height: auto; display: block; }}
+            </style>
+        </head>
+        <body>
+            <h1>{title or 'Analysis Dashboard'}</h1>
+            <div class="chart-container">
+        """
+        
+        for chart_path in charts:
+            if Path(chart_path).exists():
+                # Embed image as base64
+                with open(chart_path, 'rb') as f:
+                    img_data = base64.b64encode(f.read()).decode()
+                # Don't add redundant h3 title - the chart already has its title in the image
+                html_content += f"""
+                <div class="chart">
+                    <img src="data:image/png;base64,{img_data}" alt="Chart">
                 </div>
-            </body>
-            </html>
-            """
-        else:
+                """
+        
+        html_content += """
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Old plotly code removed - it was creating broken dashboards
+        if False and PLOTLY_AVAILABLE:
             # Use plotly for interactive dashboard
             from plotly.subplots import make_subplots
             import plotly.graph_objects as go
@@ -590,7 +725,7 @@ class VisualizationTool(Tool):
                     # Remove title from kwargs if present to avoid duplicate
                     chart_kwargs = {k: v for k, v in kwargs.items() if k != 'title'}
                     file_path = await chart_creators[chart_type](
-                        df, f"{title} - {chart_type.title()}" if title else None,
+                        df, None,  # Let each chart creator determine its own descriptive title
                         output_path, **chart_kwargs
                     )
                     created_files.append(file_path)
