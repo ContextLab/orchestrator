@@ -143,7 +143,12 @@ class VisualizationTool(Tool):
         """Automatically detect appropriate chart types based on data."""
         chart_types = []
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        
+        # Get categorical columns but exclude timestamp/date columns
+        all_categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        categorical_cols = [col for col in all_categorical_cols 
+                           if 'date' not in col.lower() and 'time' not in col.lower()]
+        
         datetime_cols = df.select_dtypes(include=['datetime64']).columns.tolist()
         
         # Time series chart if datetime column exists
@@ -186,24 +191,35 @@ class VisualizationTool(Tool):
     ) -> str:
         """Create a line chart."""
         # Use proper figure size (convert pixels to inches at 100 DPI)
-        width_inches = kwargs.get('width', 800) / 100
+        width_inches = kwargs.get('width', 1000) / 100
         height_inches = kwargs.get('height', 600) / 100
         fig, ax = plt.subplots(figsize=(width_inches, height_inches))
         
-        # Plot numeric columns
+        # Plot numeric columns - select appropriate ones for time series
         numeric_cols = df.select_dtypes(include=[np.number]).columns
-        for col in numeric_cols[:5]:  # Limit to 5 lines for clarity
-            ax.plot(df.index, df[col], label=col, marker='o', markersize=4)
         
-        ax.set_title(title or 'Line Chart', fontsize=14, fontweight='bold')
+        # Prioritize certain columns for better visualization
+        priority_cols = ['sales', 'revenue', 'units_sold', 'average_price', 'customer_satisfaction']
+        cols_to_plot = [col for col in priority_cols if col in numeric_cols]
+        
+        # If no priority columns, use first 3 numeric columns
+        if not cols_to_plot:
+            cols_to_plot = list(numeric_cols[:3])
+        
+        # Plot each column with appropriate scaling
+        for i, col in enumerate(cols_to_plot):
+            # Don't use markers for large datasets
+            if len(df) > 100:
+                ax.plot(df.index, df[col], label=col, linewidth=1.5, alpha=0.8)
+            else:
+                ax.plot(df.index, df[col], label=col, marker='o', markersize=4, linewidth=1.5, alpha=0.8)
+        
+        ax.set_title(title or 'Time Series Analysis', fontsize=14, fontweight='bold')
         ax.set_xlabel('Index', fontsize=12)
         ax.set_ylabel('Value', fontsize=12)
         
-        # Position legend outside plot area if too many items
-        if len(numeric_cols) > 2:
-            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
-        else:
-            ax.legend(fontsize=10)
+        # Position legend outside plot area
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
         
         ax.grid(True, alpha=0.3)
         
@@ -221,16 +237,39 @@ class VisualizationTool(Tool):
         height_inches = kwargs.get('height', 600) / 100
         fig, ax = plt.subplots(figsize=(width_inches, height_inches))
         
-        # Use first categorical and numeric columns
-        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+        # Get categorical columns but exclude timestamp/date columns
+        all_categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        categorical_cols = [col for col in all_categorical_cols 
+                           if 'date' not in col.lower() and 'time' not in col.lower()]
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         
-        if len(categorical_cols) > 0 and len(numeric_cols) > 0:
+        # Prioritize meaningful categorical columns
+        priority_cat_cols = ['product_category', 'region', 'product_type', 'category']
+        cat_col = None
+        for col in priority_cat_cols:
+            if col in categorical_cols:
+                cat_col = col
+                break
+        if not cat_col and len(categorical_cols) > 0:
+            cat_col = categorical_cols[0]
+        
+        # Prioritize meaningful numeric columns
+        priority_num_cols = ['revenue', 'sales', 'units_sold', 'amount', 'value']
+        num_col = None
+        for col in priority_num_cols:
+            if col in numeric_cols:
+                num_col = col
+                break
+        if not num_col and len(numeric_cols) > 0:
+            num_col = numeric_cols[0]
+        
+        if cat_col and num_col:
             # Group by categorical and sum numeric
-            grouped = df.groupby(categorical_cols[0])[numeric_cols[0]].sum()
+            grouped = df.groupby(cat_col)[num_col].sum()
+            grouped = grouped.nlargest(20)  # Limit to top 20 for readability
             grouped.plot(kind='bar', ax=ax, color='steelblue')
-            ax.set_xlabel(categorical_cols[0], fontsize=12)
-            ax.set_ylabel(numeric_cols[0], fontsize=12)
+            ax.set_xlabel(cat_col, fontsize=12)
+            ax.set_ylabel(f'Total {num_col}', fontsize=12)
         elif len(numeric_cols) > 0:
             # Use first numeric column
             df[numeric_cols[0]].plot(kind='bar', ax=ax, color='steelblue')
@@ -310,15 +349,55 @@ class VisualizationTool(Tool):
         height_inches = kwargs.get('height', 800) / 100
         fig, ax = plt.subplots(figsize=(width_inches, height_inches))
         
-        # Use first categorical column for labels and first numeric for values
-        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+        # Get categorical columns but exclude timestamp/date columns
+        all_categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        categorical_cols = [col for col in all_categorical_cols 
+                           if 'date' not in col.lower() and 'time' not in col.lower()]
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         
-        if categorical_cols.any() and numeric_cols.any():
-            data = df.groupby(categorical_cols[0])[numeric_cols[0]].sum()
+        # Find the best categorical column for pie chart
+        priority_cat_cols = ['product_category', 'region', 'category', 'type', 'status']
+        cat_col_to_use = None
+        
+        for col in priority_cat_cols:
+            if col in categorical_cols:
+                cat_col_to_use = col
+                break
+        
+        # If no priority column found, use first categorical column
+        if cat_col_to_use is None and len(categorical_cols) > 0:
+            # Skip date-like columns for pie charts
+            for col in categorical_cols:
+                if 'date' not in col.lower() and 'time' not in col.lower():
+                    cat_col_to_use = col
+                    break
+        
+        # Find best numeric column for values
+        priority_num_cols = ['revenue', 'sales', 'amount', 'value', 'count']
+        num_col_to_use = None
+        
+        for col in priority_num_cols:
+            if col in numeric_cols:
+                num_col_to_use = col
+                break
+        
+        if num_col_to_use is None and len(numeric_cols) > 0:
+            num_col_to_use = numeric_cols[0]
+        
+        if cat_col_to_use and num_col_to_use:
+            # Group by categorical column and sum numeric values
+            data = df.groupby(cat_col_to_use)[num_col_to_use].sum()
             data = data.nlargest(10)  # Limit to top 10 categories
+        elif cat_col_to_use:
+            # Use categorical column value counts
+            data = df[cat_col_to_use].value_counts().head(10)
         else:
-            data = df[df.columns[0]].value_counts().head(10)
+            # Fallback - don't use timestamp or date columns
+            non_date_cols = [col for col in df.columns if 'date' not in col.lower() and 'time' not in col.lower()]
+            if non_date_cols:
+                data = df[non_date_cols[0]].value_counts().head(10)
+            else:
+                data = df[df.columns[0]].value_counts().head(10)
         
         ax.pie(data.values, labels=data.index, autopct='%1.1f%%', startangle=90)
         ax.set_title(title or 'Pie Chart', fontsize=14, fontweight='bold')
@@ -538,6 +617,18 @@ class VisualizationTool(Tool):
         
         # Create output directory
         output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Ensure charts is a list
+        if isinstance(charts, str):
+            # If it's a string representation of a list, try to parse it
+            if charts.startswith('[') and charts.endswith(']'):
+                import ast
+                try:
+                    charts = ast.literal_eval(charts)
+                except:
+                    charts = []
+            else:
+                charts = [charts]  # Single chart path
         
         # If no charts provided, look for existing chart files
         if not charts:

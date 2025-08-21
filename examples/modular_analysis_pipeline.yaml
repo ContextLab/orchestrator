@@ -69,7 +69,7 @@ steps:
     parameters:
       pipeline: "examples/sub_pipelines/statistical_analysis.yaml"
       inputs:
-        data: "{{ data_preprocessing.outputs.processed_data }}"
+        data: "{{ load_data.content }}"
         confidence_level: 0.95
       output_mapping:
         statistics: "statistical_results"
@@ -90,7 +90,7 @@ steps:
     parameters:
       pipeline: "examples/sub_pipelines/sentiment_analysis.yaml"
       inputs:
-        data: "{{ data_preprocessing.outputs.processed_data }}"
+        data: "{{ load_data.content }}"
         text_column: "comments"
       output_mapping:
         sentiment_scores: "sentiment_results"
@@ -111,7 +111,7 @@ steps:
     parameters:
       pipeline: "examples/sub_pipelines/trend_analysis.yaml"
       inputs:
-        data: "{{ data_preprocessing.outputs.processed_data }}"
+        data: "{{ load_data.content }}"
         time_column: "timestamp"
         value_columns: ["sales", "revenue"]
       output_mapping:

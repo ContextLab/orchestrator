@@ -258,6 +258,13 @@ class PipelineExecutorTool(Tool):
                         else []
                     ),
                 }
+                
+                # Handle sub-pipeline output path
+                if "output_path" in inputs:
+                    # Create sub_pipelines directory under main output path
+                    sub_pipeline_name = pipeline_id.replace("/", "_").replace(".", "_")
+                    inputs["output_path"] = f"{inputs['output_path']}/sub_pipelines/{sub_pipeline_name}"
+                
                 result = await orchestrator.execute_pipeline_from_dict(
                     pipeline_def, inputs=inputs, context=context
                 )
