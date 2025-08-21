@@ -101,23 +101,32 @@ class VisualizationTool(Tool):
             return data
         
         if isinstance(data, str):
-            # Check if it's a file path
-            path = Path(data)
-            if path.exists():
-                if path.suffix == '.csv':
-                    return pd.read_csv(path)
-                elif path.suffix == '.json':
-                    with open(path, 'r') as f:
-                        json_data = json.load(f)
-                        return pd.DataFrame(json_data)
-            else:
-                # Try to parse as JSON string
+            # Check if it looks like CSV content (has newlines and commas)
+            if '\n' in data and ',' in data:
+                # Treat as CSV string
+                return pd.read_csv(io.StringIO(data))
+            
+            # Check if it's a file path (short string without newlines)
+            if len(data) < 500 and '\n' not in data:
                 try:
-                    json_data = json.loads(data)
-                    return pd.DataFrame(json_data)
+                    path = Path(data)
+                    if path.exists():
+                        if path.suffix == '.csv':
+                            return pd.read_csv(path)
+                        elif path.suffix == '.json':
+                            with open(path, 'r') as f:
+                                json_data = json.load(f)
+                                return pd.DataFrame(json_data)
                 except:
-                    # Treat as CSV string
-                    return pd.read_csv(io.StringIO(data))
+                    pass
+            
+            # Try to parse as JSON string
+            try:
+                json_data = json.loads(data)
+                return pd.DataFrame(json_data)
+            except:
+                # Final fallback - treat as CSV
+                return pd.read_csv(io.StringIO(data))
         
         if isinstance(data, dict):
             # Check if it's nested data that needs flattening

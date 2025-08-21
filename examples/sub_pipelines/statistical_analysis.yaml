@@ -1,7 +1,9 @@
+# Simple Statistical Analysis Sub-Pipeline
 id: statistical_analysis
 name: Statistical Analysis Sub-Pipeline
-description: Compute descriptive statistics, correlations, and hypothesis tests
-version: 1.0.0
+description: Basic statistical analysis using data-processing tool
+version: "2.0.0"
+
 parameters:
   data:
     type: object
@@ -9,150 +11,30 @@ parameters:
   confidence_level:
     type: number
     default: 0.95
-    description: Confidence level for statistical tests
+
 steps:
-- id: prepare_data
-  action: execute
-  tool: python-executor
-  parameters:
-    code: "import pandas as pd\nimport numpy as np\nimport json\n\n# Convert input\
-      \ data to DataFrame\ndata = context.get('data', {})\nif isinstance(data, str):\n\
-      \    try:\n        data = json.loads(data)\n    except:\n        # Try to read\
-      \ as CSV string\n        import io\n        df = pd.read_csv(io.StringIO(data))\n\
-      elif isinstance(data, list):\n    df = pd.DataFrame(data)\nelif isinstance(data,\
-      \ dict):\n    df = pd.DataFrame([data]) if not any(isinstance(v, (list, dict))\
-      \ for v in data.values()) else pd.DataFrame(data)\nelse:\n    df = pd.DataFrame(data)\n\
-      \n# Store for next steps\ncontext['dataframe'] = df\nprint(f\"Data shape: {df.shape}\"\
-      )\nprint(f\"Columns: {list(df.columns)}\")\n\nresult = {\n    'rows': len(df),\n\
-      \    'columns': len(df.columns),\n    'column_names': list(df.columns)\n}\n"
-- id: compute_descriptive_stats
-  action: execute
-  tool: python-executor
-  parameters:
-    code: "import pandas as pd\nimport numpy as np\nfrom scipy import stats\n\ndf\
-      \ = context.get('dataframe', pd.DataFrame())\nconfidence_level = context.get('confidence_level',\
-      \ 0.95)\n\n# Compute descriptive statistics\nnumeric_cols = df.select_dtypes(include=[np.number]).columns\n\
-      \nstats_dict = {}\nfor col in numeric_cols:\n    series = df[col].dropna()\n\
-      \    if len(series) > 0:\n        # Calculate confidence interval\n        mean\
-      \ = series.mean()\n        std_err = stats.sem(series)\n        ci = stats.t.interval(confidence_level,\
-      \ len(series)-1, loc=mean, scale=std_err)\n        \n        stats_dict[col]\
-      \ = {\n            'count': int(len(series)),\n            'mean': float(mean),\n\
-      \            'std': float(series.std()),\n            'min': float(series.min()),\n\
-      \            'q1': float(series.quantile(0.25)),\n            'median': float(series.median()),\n\
-      \            'q3': float(series.quantile(0.75)),\n            'max': float(series.max()),\n\
-      \            'variance': float(series.var()),\n            'skewness': float(series.skew()),\n\
-      \            'kurtosis': float(series.kurtosis()),\n            'confidence_interval':\
-      \ [float(ci[0]), float(ci[1])] if not np.isnan(ci[0]) else [None, None]\n  \
-      \      }\n\nresult = stats_dict\ncontext['descriptive_stats'] = stats_dict\n"
-  dependencies:
-  - prepare_data
-- id: compute_correlations
-  action: execute
-  tool: python-executor
-  parameters:
-    code: "import pandas as pd\nimport numpy as np\nfrom scipy import stats\n\ndf\
-      \ = context.get('dataframe', pd.DataFrame())\n\n# Compute correlation matrix\n\
-      numeric_df = df.select_dtypes(include=[np.number])\n\ncorrelations = {}\nif\
-      \ len(numeric_df.columns) > 1:\n    # Pearson correlation\n    pearson_corr\
-      \ = numeric_df.corr(method='pearson')\n    \n    # Spearman correlation (rank-based)\n\
-      \    spearman_corr = numeric_df.corr(method='spearman')\n    \n    # Convert\
-      \ to dict format\n    correlations = {\n        'pearson': pearson_corr.to_dict(),\n\
-      \        'spearman': spearman_corr.to_dict(),\n        'significant_correlations':\
-      \ []\n    }\n    \n    # Find significant correlations (excluding diagonal)\n\
-      \    for i, col1 in enumerate(pearson_corr.columns):\n        for j, col2 in\
-      \ enumerate(pearson_corr.columns):\n            if i < j:  # Upper triangle\
-      \ only\n                corr_value = pearson_corr.iloc[i, j]\n             \
-      \   if abs(corr_value) > 0.5:  # Threshold for significance\n              \
-      \      correlations['significant_correlations'].append({\n                 \
-      \       'var1': col1,\n                        'var2': col2,\n             \
-      \           'correlation': float(corr_value),\n                        'strength':\
-      \ 'strong' if abs(corr_value) > 0.7 else 'moderate'\n                    })\n\
-      \nresult = correlations\ncontext['correlations'] = correlations\n"
-  dependencies:
-  - prepare_data
-- id: hypothesis_testing
-  action: execute
-  tool: python-executor
-  parameters:
-    code: "import pandas as pd\nimport numpy as np\nfrom scipy import stats\n\ndf\
-      \ = context.get('dataframe', pd.DataFrame())\nconfidence_level = context.get('confidence_level',\
-      \ 0.95)\n\ntest_results = {}\nnumeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()\n\
-      \n# Normality tests for each numeric column\nfor col in numeric_cols[:5]:  #\
-      \ Limit to first 5 columns for performance\n    series = df[col].dropna()\n\
-      \    if len(series) > 3:\n        # Shapiro-Wilk test for normality\n      \
-      \  stat, p_value = stats.shapiro(series[:min(5000, len(series))])  # Limit sample\
-      \ size\n        test_results[f'{col}_normality'] = {\n            'test': 'Shapiro-Wilk',\n\
-      \            'statistic': float(stat),\n            'p_value': float(p_value),\n\
-      \            'is_normal': p_value > (1 - confidence_level),\n            'interpretation':\
-      \ 'Normally distributed' if p_value > (1 - confidence_level) else 'Not normally\
-      \ distributed'\n        }\n\n# If we have at least 2 numeric columns, do t-test\n\
-      if len(numeric_cols) >= 2:\n    col1, col2 = numeric_cols[0], numeric_cols[1]\n\
-      \    series1 = df[col1].dropna()\n    series2 = df[col2].dropna()\n    \n  \
-      \  if len(series1) > 1 and len(series2) > 1:\n        # Independent samples\
-      \ t-test\n        stat, p_value = stats.ttest_ind(series1, series2)\n      \
-      \  test_results['ttest_independent'] = {\n            'test': f't-test: {col1}\
-      \ vs {col2}',\n            'statistic': float(stat),\n            'p_value':\
-      \ float(p_value),\n            'significant': p_value < (1 - confidence_level),\n\
-      \            'interpretation': f\"Significant difference between {col1} and\
-      \ {col2}\" if p_value < (1 - confidence_level) else f\"No significant difference\
-      \ between {col1} and {col2}\"\n        }\n\n# ANOVA if we have categorical and\
-      \ numeric data\ncategorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()\n\
-      if categorical_cols and numeric_cols:\n    cat_col = categorical_cols[0]\n \
-      \   num_col = numeric_cols[0]\n    \n    groups = []\n    for category in df[cat_col].unique()[:10]:\
-      \  # Limit to 10 categories\n        group_data = df[df[cat_col] == category][num_col].dropna()\n\
-      \        if len(group_data) > 0:\n            groups.append(group_data)\n  \
-      \  \n    if len(groups) >= 2:\n        stat, p_value = stats.f_oneway(*groups)\n\
-      \        test_results['anova'] = {\n            'test': f'ANOVA: {num_col} by\
-      \ {cat_col}',\n            'statistic': float(stat),\n            'p_value':\
-      \ float(p_value),\n            'significant': p_value < (1 - confidence_level),\n\
-      \            'interpretation': f\"Significant differences across {cat_col} groups\"\
-      \ if p_value < (1 - confidence_level) else f\"No significant differences across\
-      \ {cat_col} groups\"\n        }\n\nresult = test_results\ncontext['hypothesis_tests']\
-      \ = test_results\n"
-  dependencies:
-  - prepare_data
-- id: generate_summary
-  action: generate_text
-  parameters:
-    prompt: 'Based on the statistical analysis results below, provide a concise summary
-      of key findings:
+  - id: compute_stats
+    tool: data-processing
+    action: transform
+    parameters:
+      data: "{{ inputs.data }}"
+      format: "csv"
+      operation:
+        type: "select"
+        columns: ["sales", "revenue", "average_price", "units_sold", "customer_satisfaction"]
+    
+  - id: generate_summary
+    action: generate_text
+    parameters:
+      prompt: |
+        Analyze this statistical data and provide a brief summary:
+        {{ compute_stats.result | default('No data available') }}
+        
+        Provide 2-3 key insights about the data.
+      model: <AUTO>
+    dependencies:
+      - compute_stats
 
-
-      Descriptive Statistics:
-
-      {{ compute_descriptive_stats.result | json }}
-
-
-      Correlations:
-
-      {{ compute_correlations.result | json }}
-
-
-      Hypothesis Tests:
-
-      {{ hypothesis_testing.result | json }}
-
-
-      Provide a 3-4 sentence summary highlighting:
-
-      1. Key characteristics of the data (size, central tendencies)
-
-      2. Important relationships or correlations
-
-      3. Results of statistical tests
-
-
-      Be specific and use actual numbers from the analysis.
-
-      '
-    model: <AUTO>
-  dependencies:
-  - compute_descriptive_stats
-  - compute_correlations
-  - hypothesis_testing
 outputs:
-  statistics: '{{ compute_descriptive_stats.result }}'
-  correlations: '{{ compute_correlations.result }}'
-  hypothesis_tests: '{{ hypothesis_testing.result }}'
-  summary: '{{ generate_summary.result }}'
-  data_shape: '{{ prepare_data.result }}'
+  statistics: "{{ compute_stats.result }}"
+  summary: "{{ generate_summary.result }}"
