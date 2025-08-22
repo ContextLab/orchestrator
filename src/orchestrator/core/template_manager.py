@@ -282,6 +282,7 @@ class TemplateManager:
             'truncate_words': truncate_words,
             'regex_search': regex_search,
             'to_json': to_json,
+            'json': to_json,
             'from_json': from_json,
             'date': date_format,
             'markdown_format': markdown_format,
