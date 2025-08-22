@@ -91,6 +91,11 @@ class TemplateResolutionContext:
         # Add loop variables
         if self.loop_variables:
             context.update(self.loop_variables)
+            # Also add loop variables without $ prefix for Jinja2 compatibility
+            for key, value in self.loop_variables.items():
+                if key.startswith('$') and '.' not in key:  # Only for top-level $ variables, not nested ones
+                    clean_key = key[1:]  # Remove $ prefix
+                    context[clean_key] = value
         
         # Add tool parameters
         if self.tool_parameters:
@@ -142,6 +147,9 @@ class UnifiedTemplateResolver:
         
         # Ensure template manager is initialized in context manager
         self.context_manager.initialize_template_manager(self.template_manager)
+        
+        # Ensure template manager uses the same loop context manager
+        self.template_manager.loop_context_manager = self.loop_context_manager
         
         # Current resolution context
         self._current_context: Optional[TemplateResolutionContext] = None
@@ -378,7 +386,7 @@ class UnifiedTemplateResolver:
             "template_manager_debug": self.template_manager.get_debug_info(),
             "loop_context_manager": {
                 "active_loops": list(self.loop_context_manager.active_loops.keys()),
-                "historical_loops": list(self.loop_context_manager.historical_loops.keys())
+                "historical_loops": list(self.loop_context_manager.loop_history.keys())
             }
         }
         

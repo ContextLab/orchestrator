@@ -156,7 +156,11 @@ class Orchestrator:
         from .control_flow import WhileLoopHandler, DynamicFlowHandler
         from .control_flow.auto_resolver import ControlFlowAutoResolver
         self.control_flow_resolver = ControlFlowAutoResolver(self.model_registry)
-        self.while_loop_handler = WhileLoopHandler(self.control_flow_resolver)
+        
+        # Ensure unified template resolver uses the same loop context manager as the loop handlers
+        # to maintain consistency in loop variable resolution
+        loop_context_manager = self.unified_template_resolver.loop_context_manager
+        self.while_loop_handler = WhileLoopHandler(self.control_flow_resolver, loop_context_manager)
         self.dynamic_flow_handler = DynamicFlowHandler(self.control_flow_resolver)
 
         # Execution state
@@ -1725,7 +1729,9 @@ class Orchestrator:
         
         # Import the ForLoopHandler to reuse its loop context management
         from .control_flow.loops import ForLoopHandler
-        loop_handler = ForLoopHandler(self.control_flow_resolver)
+        # Use the same loop context manager as the unified template resolver
+        loop_context_manager = self.unified_template_resolver.loop_context_manager
+        loop_handler = ForLoopHandler(self.control_flow_resolver, loop_context_manager)
         
         for idx, item in enumerate(resolved_items):
             # Create comprehensive context for this iteration
