@@ -109,6 +109,7 @@ Organization = "https://www.context-lab.com/"
 py-orc = "orchestrator.cli:main"
 orchestrator = "orchestrator.cli:main"
 orchestrator-install-configs = "orchestrator.install_configs:install_default_configs"
+py-orc-test = "orchestrator.test_runner:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
