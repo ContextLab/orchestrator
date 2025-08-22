@@ -72,7 +72,8 @@ class ToolValidator:
         """
         self.tool_registry = tool_registry or default_registry
         self.development_mode = development_mode
-        self.allow_unknown_tools = allow_unknown_tools
+        # In development mode, automatically allow unknown tools
+        self.allow_unknown_tools = allow_unknown_tools or development_mode
         
         # Load all available tools to ensure registry is populated
         self._ensure_tools_loaded()
