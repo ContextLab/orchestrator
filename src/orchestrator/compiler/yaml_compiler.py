@@ -20,6 +20,7 @@ from .auto_tag_yaml_parser import AutoTagYAMLParser
 from .schema_validator import SchemaValidator
 from .error_handler_schema import ErrorHandlerSchemaValidator
 from ..validation.template_validator import TemplateValidator
+from ..validation.tool_validator import ToolValidator
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,10 @@ class YAMLCompiler:
         error_handler_validator: Optional[ErrorHandlerSchemaValidator] = None,
         file_inclusion_processor: Optional[FileInclusionProcessor] = None,
         template_validator: Optional[TemplateValidator] = None,
+        tool_validator: Optional[ToolValidator] = None,
         validate_templates: bool = True,
+        validate_tools: bool = True,
+        development_mode: bool = False,
     ) -> None:
         """
         Initialize YAML compiler.
@@ -67,13 +71,19 @@ class YAMLCompiler:
             error_handler_validator: Error handler validator instance
             file_inclusion_processor: File inclusion processor instance
             template_validator: Template validator instance
+            tool_validator: Tool validator instance
             validate_templates: Whether to perform template validation
+            validate_tools: Whether to perform tool configuration validation
+            development_mode: Enable development mode (allows some validation bypasses)
         """
         self.schema_validator = schema_validator or SchemaValidator()
         self.error_handler_validator = error_handler_validator or ErrorHandlerSchemaValidator()
         self.file_inclusion_processor = file_inclusion_processor or FileInclusionProcessor()
         self.template_validator = template_validator or TemplateValidator()
+        self.tool_validator = tool_validator or ToolValidator(development_mode=development_mode)
         self.validate_templates = validate_templates
+        self.validate_tools = validate_tools
+        self.development_mode = development_mode
 
         # Create ambiguity resolver - optional for compilation without resolution
         if ambiguity_resolver:
@@ -148,16 +158,20 @@ class YAMLCompiler:
             if self.validate_templates:
                 await self._validate_templates(raw_pipeline, merged_context)
 
-            # Step 7: Process templates
+            # Step 7: Validate tool configurations if enabled
+            if self.validate_tools:
+                await self._validate_tools(raw_pipeline)
+
+            # Step 8: Process templates
             processed = self._process_templates(raw_pipeline, merged_context)
 
-            # Step 8: Detect and resolve ambiguities
+            # Step 9: Detect and resolve ambiguities
             if resolve_ambiguities:
                 resolved = await self._resolve_ambiguities(processed)
             else:
                 resolved = processed
 
-            # Step 9: Build pipeline object with context
+            # Step 10: Build pipeline object with context
             return self._build_pipeline(resolved, merged_context)
 
         except Exception as e:
@@ -329,6 +343,52 @@ class YAMLCompiler:
             raise
         except Exception as e:
             raise YAMLCompilerError(f"Template validation failed: {e}") from e
+
+    async def _validate_tools(self, pipeline_def: Dict[str, Any]) -> None:
+        """
+        Validate all tool configurations in the pipeline definition.
+
+        Args:
+            pipeline_def: Pipeline definition
+
+        Raises:
+            YAMLCompilerError: If tool validation fails
+        """
+        try:
+            logger.debug("Validating tool configurations in pipeline definition")
+            
+            # Use tool validator to check all tool configurations
+            validation_result = self.tool_validator.validate_pipeline_tools(pipeline_def)
+            
+            # Report validation results
+            if validation_result.has_errors:
+                error_messages = []
+                for error in validation_result.errors:
+                    error_messages.append(str(error))
+                
+                raise YAMLCompilerError(
+                    f"Tool validation failed with {len(validation_result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log warnings if present
+            if validation_result.has_warnings:
+                logger.warning(f"Tool validation completed with {len(validation_result.warnings)} warnings")
+                for warning in validation_result.warnings:
+                    logger.warning(str(warning))
+            else:
+                logger.info("Tool validation completed successfully")
+                
+            # Log summary
+            logger.info(f"Tool validation summary: {validation_result.summary()}")
+            available_tools = [tool for tool, available in validation_result.tool_availability.items() if available]
+            logger.debug(f"Available tools used: {available_tools}")
+                    
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors
+            raise
+        except Exception as e:
+            raise YAMLCompilerError(f"Tool validation failed: {e}") from e
 
     def _process_templates(
         self, pipeline_def: Dict[str, Any], context: Dict[str, Any]
