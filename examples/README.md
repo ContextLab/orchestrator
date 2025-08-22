@@ -15,166 +15,228 @@ With inputs:
 python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i another_key="complex value"
 ```
 
-## Complete Pipeline Index
+## Complete Pipeline Index (41 Pipelines)
 
-### 🔬 Research Pipelines
+### 🧠 AI & Model Features
+1. **[auto_tags_demo.yaml](auto_tags_demo.yaml)** - AUTO Tags Demonstration
+   - Dynamic parameter resolution with AI-driven decisions
+   - Conditional logic and model selection
+   - **Docs**: [auto_tags_demo.md](../docs/examples/auto_tags_demo.md)
 
-1. **[research_minimal.yaml](research_minimal.yaml)** - Minimal Research Pipeline
-   - Simplest approach - just search and summarize
-   - Requires only web-search tool
-   - Best for: Quick topic overviews
+2. **[model_routing_demo.yaml](model_routing_demo.yaml)** - Model Routing Demonstration  
+   - Intelligent model selection based on task complexity
+   - Cost-optimized routing with fallback strategies
+   - Quality vs efficiency tradeoffs
 
-2. **[research_basic.yaml](research_basic.yaml)** - Basic Research Pipeline
-   - Uses standard LLM actions (analyze_text, generate_text)
-   - No specialized tools required (beyond web-search)
-   - Best for: Detailed research without special tools
+3. **[llm_routing_pipeline.yaml](llm_routing_pipeline.yaml)** - Smart LLM Routing Pipeline
+   - Advanced routing logic with prompt optimization
+   - Automatic task complexity analysis
+   - Performance monitoring and adaptation
 
-3. **[research_advanced_tools.yaml](research_advanced_tools.yaml)** - Research Pipeline with Advanced Tools
-   - Uses specialized tools (headless-browser, report-generator, pdf-compiler)
-   - Can scrape full web pages and generate PDFs
-   - Best for: Professional reports with PDF output
+### 🔬 Research & Analysis
+4. **[research_minimal.yaml](research_minimal.yaml)** - Minimal Research Pipeline
+   - Simplest research workflow - search and summarize
+   - JSON-structured output with source attribution
+   - **Docs**: [research_minimal.md](../docs/examples/research_minimal.md)
+   - **Example**: [quantum-computing-basics_summary.md](outputs/research_minimal/quantum-computing-basics_summary.md)
 
-### 🧠 Core AI Features
+5. **[research_basic.yaml](research_basic.yaml)** - Basic Research Pipeline
+   - Standard research with structured analysis
+   - Multiple search strategies and content analysis
+   - Professional report formatting
 
-4. **[auto_tags_demo.yaml](auto_tags_demo.yaml)** - AUTO Tags Demonstration
-   - Dynamic parameter resolution
-   - Conditional logic with AUTO tags
-   - Error handling decisions
+6. **[research_advanced_tools.yaml](research_advanced_tools.yaml)** - Research Pipeline with Advanced Tools
+   - Uses headless browser, PDF compiler, report generator
+   - Professional publication-quality output
+   - Advanced scraping and citation handling
 
-5. **[model_routing_demo.yaml](model_routing_demo.yaml)** - Model Routing Demonstration
-   - Automatic model selection
-   - Cost-optimized routing
-   - Fallback strategies
+7. **[web_research_pipeline.yaml](web_research_pipeline.yaml)** - Web Research Automation
+   - Comprehensive web research with validation
+   - Multi-source aggregation and cross-referencing
+   - Quality scoring and source credibility assessment
 
-6. **[llm_routing_pipeline.yaml](llm_routing_pipeline.yaml)** - Smart LLM Routing Pipeline
-   - Automatically selects the best model
-   - Optimizes prompts for tasks
-   - Advanced routing logic
+8. **[working_web_search.yaml](working_web_search.yaml)** - Web Search and Summary
+   - Basic web search with immediate summarization
+   - Quick fact-finding and verification
+   - Simple output format
 
-### 📊 Data Processing
+9. **[enhanced_research_pipeline.yaml](enhanced_research_pipeline.yaml)** - Enhanced Research Pipeline
+   - Advanced research with tool integration
+   - Multi-modal analysis and report generation
+   - Custom formatting and visualization
 
-7. **[data_processing_pipeline.yaml](data_processing_pipeline.yaml)** - Comprehensive Data Processing
-   - Multiple format support
-   - Filtering and aggregation
-   - Validation and transformation
+### 📊 Data Processing & Analysis
+10. **[simple_data_processing.yaml](simple_data_processing.yaml)** - Simple Data Processing
+    - CSV filtering and basic transformations
+    - **Docs**: [simple_data_processing.md](../docs/examples/simple_data_processing.md)  
+    - **Outputs**: [filtered_output.csv](outputs/simple_data_processing/filtered_output.csv), [analysis_report.md](outputs/simple_data_processing/analysis_report.md)
 
-8. **[data_processing.yaml](data_processing.yaml)** - Data Processing Pipeline
-   - Process and validate data from various sources
-   - Schema validation
-   - Data transformation
+11. **[data_processing.yaml](data_processing.yaml)** - Data Processing Pipeline
+    - Multi-format data processing with validation
+    - Schema checking and transformation pipelines
+    - Error handling and recovery
 
-9. **[simple_data_processing.yaml](simple_data_processing.yaml)** - Simple Data Processing
-   - Read CSV files
-   - Filter data based on criteria
-   - Save filtered results and generate report
-   - **Example outputs:**
-     - [Filtered CSV output](outputs/simple_data_processing/filtered_output.csv)
-     - [Analysis report](outputs/simple_data_processing/analysis_report.md)
+12. **[data_processing_pipeline.yaml](data_processing_pipeline.yaml)** - Comprehensive Data Processing
+    - Advanced ETL operations with multiple sources
+    - Data quality assessment and reporting
+    - **Outputs**: [processing report](outputs/data_processing_pipeline/data_processing_report.md)
 
-10. **[recursive_data_processing.yaml](recursive_data_processing.yaml)** - Recursive Data Processing
-    - Process data recursively
-    - Quality threshold checking
-    - Iterative improvement
+13. **[statistical_analysis.yaml](statistical_analysis.yaml)** - Statistical Analysis Pipeline
+    - Statistical computation and visualization
+    - Data exploration and hypothesis testing
+    - Chart generation and statistical reporting
 
-11. **[validation_pipeline.yaml](validation_pipeline.yaml)** - Data Validation Pipeline
-    - Validate data against schemas
-    - Extract structured information
-    - Data quality checks
+14. **[validation_pipeline.yaml](validation_pipeline.yaml)** - Data Validation Pipeline
+    - Schema validation and data quality checks  
+    - Structured data extraction and verification
+    - Compliance and format validation
 
-12. **[test_validation_pipeline.yaml](test_validation_pipeline.yaml)** - Test Validation Pipeline
-    - Test pipeline for validating data
-    - AUTO tags integration
-    - Validation testing
+### 🔄 Control Flow & Iteration
+15. **[control_flow_conditional.yaml](control_flow_conditional.yaml)** - Conditional File Processing
+    - File processing based on size, type, or content
+    - Dynamic branching and decision trees
+    - **Outputs**: Multiple processed files in [outputs](outputs/control_flow_conditional/)
 
-13. **[statistical_analysis.yaml](statistical_analysis.yaml)** - Statistical Analysis Sub-Pipeline
-    - Comprehensive statistical analysis
-    - Data visualization
-    - Statistical reporting
+16. **[control_flow_for_loop.yaml](control_flow_for_loop.yaml)** - Batch File Processing
+    - Parallel batch processing with for-each loops
+    - Loop variables and dependency management
+    - **Docs**: [control_flow_for_loop.md](../docs/examples/control_flow_for_loop.md)
+    - **Outputs**: [summary.md](outputs/control_flow_for_loop/summary.md)
 
-### 🔄 Control Flow Examples
+17. **[control_flow_while_loop.yaml](control_flow_while_loop.yaml)** - Iterative Processing
+    - While loop with condition-based termination
+    - State management and iterative refinement
+    - **Outputs**: [result.txt](outputs/control_flow_while_loop/result.txt)
 
-14. **[control_flow_conditional.yaml](control_flow_conditional.yaml)** - Conditional File Processing
-    - Process files based on size
-    - Conditional branching
-    - Dynamic decision making
+18. **[control_flow_dynamic.yaml](control_flow_dynamic.yaml)** - Dynamic Flow Control
+    - Runtime decision making and adaptive execution
+    - Error recovery and alternative paths
+    - Context-sensitive processing
 
-15. **[control_flow_for_loop.yaml](control_flow_for_loop.yaml)** - Batch File Processing
-    - Process multiple files in parallel
-    - For-each loops
-    - Batch operations
+19. **[control_flow_advanced.yaml](control_flow_advanced.yaml)** - Multi-Stage Complex Workflows
+    - Multi-language text processing pipeline
+    - Complex dependency chains and parallel processing
+    - **Outputs**: [Translation results](outputs/control_flow_advanced/)
 
-16. **[control_flow_while_loop.yaml](control_flow_while_loop.yaml)** - Iterative Number Guessing
-    - Generate numbers until target reached
-    - While loop implementation
-    - Iterative processing
+20. **[until_condition_examples.yaml](until_condition_examples.yaml)** - Until Loop Examples
+    - Until condition processing patterns
+    - Threshold-based termination
+    - Quality-driven iteration
 
-17. **[control_flow_dynamic.yaml](control_flow_dynamic.yaml)** - Error Handling Pipeline
-    - Dynamic flow control
-    - Error condition handling
-    - Adaptive execution
+21. **[enhanced_until_conditions_demo.yaml](enhanced_until_conditions_demo.yaml)** - Advanced Until Conditions
+    - Complex until conditions with multi-criteria evaluation
+    - Dynamic threshold adjustment
+    - Performance optimization patterns
 
-18. **[control_flow_advanced.yaml](control_flow_advanced.yaml)** - Multi-Stage Text Processing
-    - Process text through multiple stages
-    - Conditional paths
-    - Complex control flow
-
-### 🌐 Web and Search
-
-19. **[web_research_pipeline.yaml](web_research_pipeline.yaml)** - Web Research Automation
-    - Web search integration
-    - Content analysis
-    - Report generation
-
-20. **[working_web_search.yaml](working_web_search.yaml)** - Web Search and Summary
-    - Search the web
-    - Summarize findings
-    - Basic web research
-
-### 🎨 Multimodal and Creative
-
-21. **[multimodal_processing.yaml](multimodal_processing.yaml)** - Multimodal Content Processing
-    - Process various media types
-    - AI-powered analysis
-    - Multi-format support
-
+### 🎨 Creative & Multimodal
 22. **[creative_image_pipeline.yaml](creative_image_pipeline.yaml)** - Creative Image Generation
-    - Generate images from prompts
-    - Analyze generated images
-    - Creative workflows
+    - AI image generation with style variations
+    - Image analysis and gallery creation
+    - **Docs**: [creative_image_pipeline.md](../docs/examples/creative_image_pipeline.md)
+    - **Outputs**: [Image galleries](outputs/creative_image_pipeline/)
 
-### 💻 Code and System
+23. **[multimodal_processing.yaml](multimodal_processing.yaml)** - Multimodal Content Processing
+    - Process images, video, audio, and text
+    - Cross-modal analysis and integration
+    - **Outputs**: [analysis_report.md](outputs/multimodal_processing/analysis_report.md)
 
-23. **[code_optimization.yaml](code_optimization.yaml)** - Code Optimization Pipeline
-    - Analyze code for performance
-    - Best practice checking
-    - Code improvement suggestions
+### ✅ Quality Assurance & Fact-Checking  
+24. **[fact_checker.yaml](fact_checker.yaml)** - Intelligent Fact-Checker
+    - Parallel fact-checking with source verification
+    - AUTO tags for dynamic list processing
+    - **Docs**: [fact_checker.md](../docs/examples/fact_checker.md)
+    - **Outputs**: [fact_check_report.md](outputs/fact_checker/fact_check_report.md)
 
-24. **[terminal_automation.yaml](terminal_automation.yaml)** - System Information and Setup
-    - Gather system information
-    - Perform setup tasks
-    - System automation
+25. **[iterative_fact_checker.yaml](iterative_fact_checker.yaml)** - Iterative Fact Verification
+    - Multi-pass fact checking with refinement
+    - Progressive verification and evidence gathering
+    - **Outputs**: [fact_checking_report.md](outputs/iterative_fact_checker/fact_checking_report.md)
 
-### 🔌 Integration and Advanced
+26. **[iterative_fact_checker_simple.yaml](iterative_fact_checker_simple.yaml)** - Simple Iterative Fact-Checker
+    - Streamlined iterative fact verification
+    - Basic claim validation workflow
+    - **Outputs**: [fact_checking_report.md](outputs/iterative_fact_checker_simple/fact_checking_report.md)
 
-25. **[mcp_integration_pipeline.yaml](mcp_integration_pipeline.yaml)** - MCP Integration Pipeline
-    - Connect to MCP servers
-    - Utilize MCP capabilities
-    - Server integration
+### 💻 Code & System Operations
+27. **[code_optimization.yaml](code_optimization.yaml)** - Code Optimization Pipeline
+    - Multi-language code analysis and improvement
+    - Performance optimization suggestions
+    - **Outputs**: [Optimization reports and improved code](outputs/code_optimization/)
 
-26. **[mcp_memory_workflow.yaml](mcp_memory_workflow.yaml)** - MCP Memory Context Management
-    - Use MCP memory for context
-    - Maintain state across steps
-    - Memory management
+28. **[terminal_automation.yaml](terminal_automation.yaml)** - System Information and Automation
+    - System discovery and automated setup
+    - Environment configuration and validation
+    - Command execution and monitoring
 
-27. **[modular_analysis_pipeline.yaml](modular_analysis_pipeline.yaml)** - Modular Analysis Pipeline
-    - Orchestrate multiple sub-pipelines
-    - Modular architecture
-    - Component composition
+### 🔌 Integration & Advanced Features
+29. **[mcp_integration_pipeline.yaml](mcp_integration_pipeline.yaml)** - MCP Integration Pipeline
+    - Model Context Protocol server integration
+    - External service orchestration
+    - **Outputs**: [Search results](outputs/mcp_integration/)
 
-28. **[interactive_pipeline.yaml](interactive_pipeline.yaml)** - Interactive Data Processing
-    - User input integration
-    - Approval gates
-    - Feedback collection
+30. **[mcp_memory_workflow.yaml](mcp_memory_workflow.yaml)** - MCP Memory Context Management
+    - Persistent context and state management
+    - Cross-session memory and retrieval
+    - **Outputs**: [User context summaries](outputs/mcp_memory_workflow/)
+
+31. **[mcp_simple_test.yaml](mcp_simple_test.yaml)** - Basic MCP Testing
+    - Simple MCP functionality validation
+    - Connection testing and basic operations
+    - Integration verification
+
+32. **[modular_analysis_pipeline.yaml](modular_analysis_pipeline.yaml)** - Modular Analysis Pipeline
+    - Sub-pipeline orchestration and composition
+    - Modular architecture with data visualization  
+    - **Outputs**: [Dashboard and charts](outputs/modular_analysis/)
+
+33. **[interactive_pipeline.yaml](interactive_pipeline.yaml)** - Interactive Data Processing
+    - User input integration and approval gates
+    - Feedback collection and adaptive processing
+    - **Outputs**: [Interactive results](outputs/interactive_pipeline/)
+
+### ⚠️ Error Handling & Reliability
+34. **[error_handling_examples.yaml](error_handling_examples.yaml)** - Error Handling Examples
+    - Comprehensive error handling patterns
+    - Recovery strategies and fallback mechanisms
+    - Graceful degradation techniques
+
+35. **[simple_error_handling.yaml](simple_error_handling.yaml)** - Basic Error Handling
+    - Simple error detection and recovery
+    - Basic retry logic and error reporting
+    - Foundation error handling patterns
+
+36. **[simple_timeout_test.yaml](simple_timeout_test.yaml)** - Timeout Handling Test
+    - Timeout configuration and handling
+    - Time-bound operation management
+    - Performance monitoring
+
+### 📁 File & Template Operations
+37. **[file_inclusion_demo.yaml](file_inclusion_demo.yaml)** - Dynamic File Inclusion
+    - Runtime file inclusion and template processing
+    - Dynamic content aggregation
+    - File-based workflow composition
+
+### 🧪 Testing & Development
+38. **[test_simple_pipeline.yaml](test_simple_pipeline.yaml)** - Simple Pipeline Testing
+    - Basic pipeline testing framework
+    - Validation and verification patterns
+    - Development and debugging support
+
+### 📋 Legacy & Backup Examples
+39. **[modular_analysis_pipeline_backup.yaml](modular_analysis_pipeline_backup.yaml)** - Modular Analysis Backup
+    - Backup version of modular analysis pipeline
+    - Alternative implementation approach
+    - Development history preservation
+
+40. **[modular_analysis_pipeline_fixed.yaml](modular_analysis_pipeline_fixed.yaml)** - Fixed Modular Analysis
+    - Corrected version of modular analysis pipeline
+    - Bug fixes and improvements
+    - Production-ready implementation
+
+41. **[original_research_report_pipeline.yaml](original_research_report_pipeline.yaml)** - Original Research Report
+    - Original research pipeline implementation
+    - Baseline research functionality
+    - Reference implementation
 
 ## Pipeline Categories Summary
 
