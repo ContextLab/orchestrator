@@ -97,7 +97,12 @@ class OutputSanitizer:
         self._compile_patterns()
     
     def _compile_patterns(self):
-        """Compile regex patterns for better performance."""
+        """
+        Compile regex patterns for better performance.
+        
+        Pre-compiles all regex patterns to improve sanitization performance
+        when processing multiple texts. Called automatically during initialization.
+        """
         self.compiled_starters = [re.compile(pattern, re.IGNORECASE | re.MULTILINE) 
                                  for pattern in self.conversational_starters]
         self.compiled_endings = [re.compile(pattern, re.IGNORECASE | re.MULTILINE) 
