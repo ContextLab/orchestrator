@@ -22,6 +22,7 @@ from .error_handler_schema import ErrorHandlerSchemaValidator
 from ..validation.template_validator import TemplateValidator
 from ..validation.tool_validator import ToolValidator
 from ..validation.model_validator import ModelValidator
+from ..validation.data_flow_validator import DataFlowValidator
 from ..validation.validation_report import (
     ValidationReport, ValidationLevel, OutputFormat, ValidationSeverity, ValidationIssue,
     create_template_issue, create_tool_issue, create_dependency_issue, create_model_issue
@@ -63,9 +64,11 @@ class YAMLCompiler:
         template_validator: Optional[TemplateValidator] = None,
         tool_validator: Optional[ToolValidator] = None,
         model_validator: Optional[ModelValidator] = None,
+        data_flow_validator: Optional[DataFlowValidator] = None,
         validate_templates: bool = True,
         validate_tools: bool = True,
         validate_models: bool = True,
+        validate_data_flow: bool = True,
         development_mode: bool = False,
         validation_level: Optional[ValidationLevel] = None,
         enable_validation_report: bool = True,
@@ -82,9 +85,11 @@ class YAMLCompiler:
             template_validator: Template validator instance
             tool_validator: Tool validator instance
             model_validator: Model validator instance
+            data_flow_validator: Data flow validator instance
             validate_templates: Whether to perform template validation
             validate_tools: Whether to perform tool configuration validation
             validate_models: Whether to perform model validation
+            validate_data_flow: Whether to perform data flow validation
             development_mode: Enable development mode (allows some validation bypasses)
             validation_level: Validation strictness level (strict/permissive/development)
             enable_validation_report: Whether to use unified validation reporting
@@ -97,9 +102,13 @@ class YAMLCompiler:
         self.model_validator = model_validator or ModelValidator(
             model_registry=model_registry, development_mode=development_mode
         )
+        self.data_flow_validator = data_flow_validator or DataFlowValidator(
+            development_mode=development_mode, tool_validator=self.tool_validator
+        )
         self.validate_templates = validate_templates
         self.validate_tools = validate_tools
         self.validate_models = validate_models
+        self.validate_data_flow = validate_data_flow
         self.development_mode = development_mode
         self.enable_validation_report = enable_validation_report
         
@@ -214,16 +223,20 @@ class YAMLCompiler:
             if self.validate_models:
                 await self._validate_models(raw_pipeline)
 
-            # Step 10: Process templates
+            # Step 10: Validate data flow if enabled
+            if self.validate_data_flow:
+                await self._validate_data_flow(raw_pipeline)
+
+            # Step 11: Process templates
             processed = self._process_templates(raw_pipeline, merged_context)
 
-            # Step 11: Detect and resolve ambiguities
+            # Step 12: Detect and resolve ambiguities
             if resolve_ambiguities:
                 resolved = await self._resolve_ambiguities(processed)
             else:
                 resolved = processed
 
-            # Step 12: Build pipeline object with context
+            # Step 13: Build pipeline object with context
             pipeline = self._build_pipeline(resolved, merged_context)
             
             # Finalize validation report
@@ -681,6 +694,122 @@ class YAMLCompiler:
                     component="validation_system",
                     message=error_msg,
                     code="model_validation_error"
+                ))
+            else:
+                raise YAMLCompilerError(error_msg) from e
+
+    async def _validate_data_flow(self, pipeline_def: Dict[str, Any]) -> None:
+        """
+        Validate data flow between pipeline steps.
+
+        Args:
+            pipeline_def: Pipeline definition
+
+        Raises:
+            YAMLCompilerError: If data flow validation fails and using legacy error handling
+        """
+        try:
+            logger.debug("Validating data flow in pipeline definition")
+            
+            # Use data flow validator to check data flow
+            validation_result = self.data_flow_validator.validate_pipeline_data_flow(pipeline_def)
+            
+            # Process results through validation report if enabled
+            if self.validation_report:
+                # Convert data flow validation errors to unified format
+                for error in validation_result.errors:
+                    # Create a data flow validation issue (using dependency category as closest match)
+                    issue = ValidationIssue(
+                        severity=ValidationSeverity.ERROR,
+                        category="data_flow",
+                        component=error.task_id,
+                        message=error.message,
+                        code=f"data_flow_{error.error_type}",
+                        path=error.parameter_name,
+                        suggestions=error.suggestions,
+                        metadata={
+                            "error_type": error.error_type,
+                            "variable_reference": error.variable_reference,
+                            "source_task": error.source_task
+                        }
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Convert data flow validation warnings to unified format
+                for warning in validation_result.warnings:
+                    issue = ValidationIssue(
+                        severity=ValidationSeverity.WARNING,
+                        category="data_flow",
+                        component=warning.task_id,
+                        message=warning.message,
+                        code=f"data_flow_{warning.error_type}",
+                        path=warning.parameter_name,
+                        suggestions=warning.suggestions,
+                        metadata={
+                            "error_type": warning.error_type,
+                            "variable_reference": warning.variable_reference,
+                            "source_task": warning.source_task
+                        }
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Add data flow graph info if available
+                if validation_result.data_flow_graph:
+                    dependencies_info = []
+                    for task_id, deps in validation_result.data_flow_graph.items():
+                        if deps:
+                            dependencies_info.append(f"{task_id} depends on: {', '.join(sorted(deps))}")
+                    
+                    if dependencies_info:
+                        issue = ValidationIssue(
+                            severity=ValidationSeverity.INFO,
+                            category="data_flow", 
+                            component="dependency_graph",
+                            message=f"Data flow dependencies computed: {'; '.join(dependencies_info)}",
+                            code="data_flow_graph_computed"
+                        )
+                        self.validation_report.add_issue(issue)
+            
+            # Legacy error handling - only raise if not using validation report
+            if not self.validation_report and validation_result.has_errors:
+                error_messages = []
+                for error in validation_result.errors:
+                    error_messages.append(str(error))
+                
+                raise YAMLCompilerError(
+                    f"Data flow validation failed with {len(validation_result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log validation results
+            if validation_result.has_warnings and not self.validation_report:
+                logger.warning(f"Data flow validation completed with {len(validation_result.warnings)} warnings")
+                for warning in validation_result.warnings:
+                    logger.warning(str(warning))
+            elif not validation_result.has_errors and not validation_result.has_warnings:
+                logger.info("Data flow validation completed successfully")
+                
+            # Log summary
+            if not self.validation_report:
+                logger.info(f"Data flow validation summary: {validation_result.summary()}")
+                if validation_result.data_flow_graph:
+                    total_deps = sum(len(deps) for deps in validation_result.data_flow_graph.values())
+                    logger.debug(f"Computed {total_deps} data flow dependencies across {validation_result.validated_tasks} tasks")
+                    
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors (only in legacy mode)
+            if not self.validation_report:
+                raise
+        except Exception as e:
+            error_msg = f"Data flow validation failed: {e}"
+            if self.validation_report:
+                # Add to validation report instead of raising
+                self.validation_report.add_issue(ValidationIssue(
+                    severity=ValidationSeverity.ERROR,
+                    category="data_flow",
+                    component="validation_system",
+                    message=error_msg,
+                    code="data_flow_validation_error"
                 ))
             else:
                 raise YAMLCompilerError(error_msg) from e

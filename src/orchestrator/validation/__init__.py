@@ -32,6 +32,11 @@ from .model_validator import (
     ModelValidationError,
     ModelValidationResult
 )
+from .data_flow_validator import (
+    DataFlowValidator,
+    DataFlowError,
+    DataFlowResult
+)
 from .validation_report import (
     ValidationReport,
     ValidationLevel,
@@ -65,6 +70,9 @@ __all__ = [
     "ModelValidator",
     "ModelValidationError",
     "ModelValidationResult",
+    "DataFlowValidator",
+    "DataFlowError",
+    "DataFlowResult",
     "ValidationReport",
     "ValidationLevel",
     "OutputFormat",
