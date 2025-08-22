@@ -268,6 +268,15 @@ class ControlSystem(ABC):
                 for var_name, var_value in loop_ctx.items():
                     template_manager.register_context(var_name, var_value)
             
+            # Register loop variables if this is a while loop task (Issue #219)
+            if "loop_variables" in rendered_task.metadata:
+                loop_vars = rendered_task.metadata["loop_variables"]
+                import logging
+                logging.info(f"Registering loop_variables from task metadata: {loop_vars}")
+                for var_name, var_value in loop_vars.items():
+                    template_manager.register_context(var_name, var_value)
+                    logging.info(f"Registered loop variable '{var_name}' = {var_value}")
+            
             # Register pipeline inputs if stored in task metadata
             if "pipeline_inputs" in rendered_task.metadata:
                 pipeline_inputs = rendered_task.metadata["pipeline_inputs"]

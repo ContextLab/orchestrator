@@ -450,6 +450,10 @@ class HybridControlSystem(ModelBasedControlSystem):
                     logger.info(f"Found loop_variables in task metadata: {loop_vars}")
                     # Add loop variables to context so they get registered
                     context.update(loop_vars)
+                    # Also directly register with template manager
+                    for var_name, var_value in loop_vars.items():
+                        template_manager.register_context(var_name, var_value)
+                        logger.info(f"Directly registered loop variable {var_name}={var_value} with template manager")
                 
                 # Register all results using the helper method
                 self._register_results_with_template_manager(template_manager, context)
@@ -492,6 +496,10 @@ class HybridControlSystem(ModelBasedControlSystem):
                     logger.info(f"Found loop_variables in task metadata: {loop_vars}")
                     # Add loop variables to context so they get registered
                     context.update(loop_vars)
+                    # Also directly register with template manager
+                    for var_name, var_value in loop_vars.items():
+                        template_manager.register_context(var_name, var_value)
+                        logger.info(f"Directly registered loop variable {var_name}={var_value} with template manager")
                 
                 # Register all results using the helper method
                 self._register_results_with_template_manager(template_manager, context)
