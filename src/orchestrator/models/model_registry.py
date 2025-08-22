@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import math
 from typing import Any, Dict, List, Optional
 
@@ -12,6 +13,8 @@ from .performance_optimizations import ModelRegistryOptimizer, BatchModelProcess
 from .memory_optimization import MemoryOptimizedRegistry, MemoryMonitor, optimize_model_registry_memory
 from .advanced_caching import CacheManager, background_cache_maintenance
 from .langchain_adapter import LangChainModelAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class ModelRegistry:
@@ -432,7 +435,7 @@ class ModelRegistry:
         Raises:
             NoEligibleModelsError: If no models meet requirements
         """
-        print(f">> DEBUG ModelRegistry.select_model called with: {requirements}")
+        logger.debug(f"ModelRegistry.select_model called with: {requirements}")
 
         # Check advanced cache first
         if self._advanced_caching_enabled and self.cache_manager:
@@ -443,16 +446,14 @@ class ModelRegistry:
                 # Verify cached model is still healthy and eligible
                 cached_model = self.models[cached_model_key]
                 if await self._is_model_healthy(cached_model):
-                    print(f">> DEBUG: Using cached selection: {cached_model_key}")
+                    logger.debug(f"Using cached selection: {cached_model_key}")
                     return cached_model
 
         # Step 1: Filter by capabilities
         eligible_models = await self._filter_by_capabilities(requirements)
 
         if not eligible_models:
-            print(
-                f">> DEBUG: No models passed capability filter. Total models: {len(self.models)}"
-            )
+            logger.debug(f"No models passed capability filter. Total models: {len(self.models)}")
             raise NoEligibleModelsError("No models meet the specified requirements")
 
         # Step 2: Filter by health
@@ -522,7 +523,7 @@ class ModelRegistry:
         # Log the prioritization for debugging
         if sorted_models:
             first_model = self._get_model_key(sorted_models[0])
-            print(f">> DEBUG: Prioritized model selection, chose: {first_model}")
+            logger.debug(f"Prioritized model selection, chose: {first_model}")
         
         return sorted_models
 
@@ -1105,7 +1106,7 @@ class ModelRegistry:
         # This prevents the timeout issues caused by making parallel API calls to all models
         # TODO: Implement proper async health checking with caching for production use
         
-        print(f">> DEBUG: Skipping health checks for {len(models)} models (Issue #156 fix)")
+        logger.debug(f"Skipping health checks for {len(models)} models (Issue #156 fix)")
         return models
         
         # Original health checking code (commented out to fix timeout issues):
