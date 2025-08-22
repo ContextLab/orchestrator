@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.template_manager import TemplateManager
+    from ..core.unified_template_resolver import UnifiedTemplateResolver, TemplateResolutionContext
 
 
 @dataclass
@@ -29,11 +30,20 @@ class Tool(ABC):
 
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute the tool with given parameters (with automatic template rendering)."""
-        # Extract template manager from kwargs if available
+        # Extract template resolution components from kwargs
         template_manager = kwargs.pop('template_manager', None)
+        unified_resolver = kwargs.pop('unified_template_resolver', None)
+        resolution_context = kwargs.pop('template_resolution_context', None)
         
-        # Render templates in parameters if template manager is available
-        if template_manager:
+        # Use unified template resolver if available (preferred method)
+        if unified_resolver and resolution_context:
+            rendered_kwargs = unified_resolver.resolve_before_tool_execution(
+                tool_name=self.name,
+                tool_parameters=kwargs,
+                context=resolution_context
+            )
+        # Fallback to legacy template manager method
+        elif template_manager:
             rendered_kwargs = self._render_parameters(kwargs, template_manager)
         else:
             rendered_kwargs = kwargs
@@ -41,9 +51,13 @@ class Tool(ABC):
         # Validate rendered parameters
         self.validate_parameters(rendered_kwargs)
         
-        # Pass template_manager to implementation if it needs runtime rendering
+        # Pass template resolution components to implementation if it needs runtime rendering
         if template_manager and self.name == "filesystem":
             rendered_kwargs['_template_manager'] = template_manager
+        if unified_resolver:
+            rendered_kwargs['_unified_resolver'] = unified_resolver
+        if resolution_context:
+            rendered_kwargs['_resolution_context'] = resolution_context
         
         # Execute the actual implementation
         return await self._execute_impl(**rendered_kwargs)

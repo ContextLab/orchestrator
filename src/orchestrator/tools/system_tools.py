@@ -121,30 +121,64 @@ class FileSystemTool(Tool):
             "destination", "string", "Destination path (for copy/move)", required=False
         )
 
+    def _preprocess_dollar_variables(self, template_str: str, template_manager) -> str:
+        """Preprocess $ variables for Jinja2 compatibility.
+        
+        Converts $variable to variable for Jinja2 templates.
+        This is a safety fallback when unified resolver is not available.
+        """
+        if not isinstance(template_str, str) or '$' not in template_str:
+            return template_str
+            
+        import re
+        
+        # Replace $variable patterns with variable (for Jinja2 compatibility)
+        # This handles: {{ $iteration }} -> {{ iteration }}
+        def replace_dollar_var(match):
+            full_match = match.group(0)  # Full match like "{{ $iteration }}"
+            var_name = match.group(1)    # Variable name like "iteration"
+            return full_match.replace(f'${var_name}', var_name)
+        
+        # Find all template expressions with $variables
+        pattern = r'\{\{\s*\$([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}'
+        result = re.sub(pattern, replace_dollar_var, template_str)
+        
+        return result
+    
     async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute file system operation."""
         action = kwargs.get("action", "")
         path = kwargs.get("path", "")
-        # Extract template manager if available
-        _template_manager = kwargs.get("_template_manager")
         
-        # Render path if it contains templates
-        if _template_manager and isinstance(path, str) and ('{{' in path or '{%' in path):
-            try:
-                from ..core.template_manager import TemplateManager
-                if isinstance(_template_manager, TemplateManager):
-                    path = _template_manager.render(path)
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Failed to render path template: {e}")
+        # Extract template resolution components
+        _template_manager = kwargs.get("_template_manager")
+        _unified_resolver = kwargs.get("_unified_resolver")
+        _resolution_context = kwargs.get("_resolution_context")
+        
+        # Render path if it contains templates (should already be done, but safety check)
+        if isinstance(path, str) and ('{{' in path or '{%' in path):
+            if _unified_resolver and _resolution_context:
+                # Use unified resolver (preferred)
+                path = _unified_resolver.resolve_templates(path, _resolution_context)
+            elif _template_manager:
+                # Fallback to legacy template manager with $ variable preprocessing
+                try:
+                    from ..core.template_manager import TemplateManager
+                    if isinstance(_template_manager, TemplateManager):
+                        # Preprocess $ variables for Jinja2 compatibility
+                        preprocessed_path = self._preprocess_dollar_variables(path, _template_manager)
+                        path = _template_manager.render(preprocessed_path)
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Failed to render path template: {e}")
 
         try:
             if action == "read":
                 return await self._read_file(path)
             elif action == "write":
                 content = kwargs.get("content", "")
-                return await self._write_file(path, content, _template_manager)
+                return await self._write_file(path, content, _template_manager, _unified_resolver, _resolution_context)
             elif action == "copy":
                 destination = kwargs.get("destination", "")
                 return await self._copy_file(path, destination)
@@ -181,7 +215,7 @@ class FileSystemTool(Tool):
             "success": True,
         }
 
-    async def _write_file(self, path: str, content: str, _template_manager=None) -> Dict[str, Any]:
+    async def _write_file(self, path: str, content: str, _template_manager=None, _unified_resolver=None, _resolution_context=None) -> Dict[str, Any]:
         """Write content to file with optional runtime template rendering."""
         path_obj = Path(path)
 
@@ -200,52 +234,68 @@ class FileSystemTool(Tool):
             if isinstance(_template_manager, TemplateManager):
                 logger.info(f"Template manager context keys: {list(_template_manager.context.keys())}")
         
-        # If template manager is available and content has templates, render at runtime
-        if _template_manager and isinstance(content, str) and ('{{' in content or '{%' in content):
-            try:
-                # Import here to avoid circular dependency
-                from ..core.template_manager import TemplateManager
-                logger.info(f"Template manager type: {type(_template_manager)}")
-                if isinstance(_template_manager, TemplateManager):
-                    logger.info("Attempting to render templates with deep_render...")
-                    
-                    # Debug: Check what's actually in the template manager context
-                    logger.info(f"Template manager has {len(_template_manager.context)} context items")
-                    
-                    # Log key context items for debugging
-                    important_keys = ['$item', 'item', 'input_text', 'translate', 'validate_translation']
-                    for key in important_keys:
-                        if key in _template_manager.context:
-                            value = _template_manager.context[key]
-                            if isinstance(value, str):
-                                logger.info(f"  ✓ {key} = '{value[:50]}...' (str)")
-                            else:
-                                logger.info(f"  ✓ {key} = {type(value).__name__}")
-                        else:
-                            logger.warning(f"  ✗ {key} NOT in context!")
-                    
-                    # Check first few template variables
-                    import re
-                    template_vars = re.findall(r'{{\s*(\w+(?:\.\w+)*)', content[:500])
-                    logger.info(f"First few template variables found: {template_vars[:5]}")
-                    
-                    # Use deep_render to handle complex nested templates
-                    rendered = _template_manager.deep_render(content)
-                    logger.info(f"Template rendering successful. Original had templates: {('{{' in content)}, Rendered has templates: {('{{' in rendered)}")
-                    
-                    # Check if rendering actually worked
-                    if rendered == content and '{{' in content:
-                        logger.warning("Template rendering returned original content unchanged!")
-                        logger.warning(f"First 200 chars of content: {content[:200]}")
-                    else:
-                        logger.info(f"Templates rendered: {len(content)} chars -> {len(rendered)} chars")
-                    
+        # Render content templates if available (should already be done, but safety check for runtime rendering)
+        if isinstance(content, str) and ('{{' in content or '{%' in content):
+            if _unified_resolver and _resolution_context:
+                # Use unified resolver (preferred)
+                try:
+                    logger.info("Using unified resolver for content template rendering")
+                    rendered = _unified_resolver.resolve_templates(content, _resolution_context)
+                    logger.info(f"Unified resolver: Original had templates: {('{{' in content)}, Rendered has templates: {('{{' in rendered)}")
                     content = rendered
-                else:
-                    logger.warning(f"Template manager is not TemplateManager type: {type(_template_manager)}")
-            except Exception as e:
-                # If rendering fails, log but continue with original content
-                logger.error(f"Failed to render templates in content: {e}", exc_info=True)
+                except Exception as e:
+                    logger.error(f"Failed to render templates with unified resolver: {e}", exc_info=True)
+            elif _template_manager:
+                # Fallback to legacy template manager with $ variable preprocessing
+                try:
+                    # Import here to avoid circular dependency
+                    from ..core.template_manager import TemplateManager
+                    logger.info(f"Template manager type: {type(_template_manager)}")
+                    if isinstance(_template_manager, TemplateManager):
+                        logger.info("Attempting to render templates with deep_render...")
+                        
+                        # Debug: Check what's actually in the template manager context
+                        logger.info(f"Template manager has {len(_template_manager.context)} context items")
+                        
+                        # Log key context items for debugging
+                        important_keys = ['$item', 'item', 'input_text', 'translate', 'validate_translation', '$iteration', 'iteration', 'parameters']
+                        for key in important_keys:
+                            if key in _template_manager.context:
+                                value = _template_manager.context[key]
+                                if isinstance(value, str):
+                                    logger.info(f"  ✓ {key} = '{value[:50]}...' (str)")
+                                else:
+                                    logger.info(f"  ✓ {key} = {type(value).__name__}")
+                            else:
+                                logger.warning(f"  ✗ {key} NOT in context!")
+                        
+                        # Check first few template variables
+                        import re
+                        template_vars = re.findall(r'{{\s*(\$?\w+(?:\.\w+)*)', content[:500])
+                        logger.info(f"First few template variables found: {template_vars[:5]}")
+                        
+                        # Preprocess $ variables for Jinja2 compatibility
+                        preprocessed_content = self._preprocess_dollar_variables(content, _template_manager)
+                        if preprocessed_content != content:
+                            logger.info(f"Preprocessed $ variables in content: {content[:100]}... -> {preprocessed_content[:100]}...")
+                        
+                        # Use deep_render to handle complex nested templates
+                        rendered = _template_manager.deep_render(preprocessed_content)
+                        logger.info(f"Template rendering successful. Original had templates: {('{{' in content)}, Rendered has templates: {('{{' in rendered)}")
+                        
+                        # Check if rendering actually worked
+                        if rendered == preprocessed_content and '{{' in preprocessed_content:
+                            logger.warning("Template rendering returned original content unchanged!")
+                            logger.warning(f"First 200 chars of preprocessed content: {preprocessed_content[:200]}")
+                        else:
+                            logger.info(f"Templates rendered: {len(preprocessed_content)} chars -> {len(rendered)} chars")
+                        
+                        content = rendered
+                    else:
+                        logger.warning(f"Template manager is not TemplateManager type: {type(_template_manager)}")
+                except Exception as e:
+                    # If rendering fails, log but continue with original content
+                    logger.error(f"Failed to render templates in content: {e}", exc_info=True)
 
         path_obj.write_text(content, encoding="utf-8")
 

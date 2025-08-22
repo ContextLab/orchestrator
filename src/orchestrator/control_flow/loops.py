@@ -566,13 +566,23 @@ class WhileLoopHandler:
                 enhanced_context = context.copy()
                 enhanced_context.update(step_results)
                 enhanced_context.update(self.loop_context_manager.get_accessible_loop_variables())
-                enhanced_context.update({
+                
+                # Add while loop specific variables - both $ and non-$ versions for compatibility
+                while_loop_vars = {
                     "$loop_state": loop_state,
                     "loop_state": loop_state,  # Also available without $ for Jinja2
                     "$iteration": iteration,
                     "iteration": iteration,  # Also available without $ for Jinja2
-                    "loop_id": loop_id
-                })
+                    "loop_id": loop_id,
+                    # Also add standard loop context variables for consistency
+                    "$index": iteration,  # For while loops, index is the same as iteration
+                    "index": iteration,
+                    "$is_first": iteration == 0,
+                    "is_first": iteration == 0,
+                    "$position": iteration + 1,
+                    "position": iteration + 1,
+                }
+                enhanced_context.update(while_loop_vars)
 
                 # Deep copy step definition
                 task_def = copy.deepcopy(step_def)
@@ -591,14 +601,8 @@ class WhileLoopHandler:
                 task_def["metadata"]["loop_iteration"] = iteration
                 task_def["metadata"]["is_while_loop_child"] = True
                 task_def["metadata"]["loop_context"] = while_context.get_debug_info()
-                # Add loop variables for template rendering
-                task_def["metadata"]["loop_variables"] = {
-                    "$iteration": iteration,
-                    "iteration": iteration,
-                    "$loop_state": loop_state,
-                    "loop_state": loop_state,
-                    "loop_id": loop_id
-                }
+                # Add loop variables for template rendering (must match enhanced_context)
+                task_def["metadata"]["loop_variables"] = while_loop_vars
                 
                 # Process action field if it contains templates
                 if "action" in task_def:
