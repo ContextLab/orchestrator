@@ -38,7 +38,33 @@
 - [ ] Verify fixes work
 - [ ] Test edge cases
 
-## Next Steps
-1. Examine actual failing pipeline to understand exact issue
-2. Test current template resolution logic
-3. Implement fixes for identified problems
+## Implementation Details
+
+### Root Cause
+The filesystem tool was receiving template strings with `$` variables (e.g., `{{ $iteration }}`) but Jinja2 doesn't support `$` in variable names. The base Tool class template resolution was failing with syntax errors.
+
+### Solution Implemented
+Added `_preprocess_dollar_variables()` method to FileSystemTool that:
+1. Converts `{{ $variable }}` to `{{ variable }}` before Jinja2 processing
+2. Uses regex pattern `r'\{\{\s*\$([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}'` to find and replace
+3. Applied to both path and content parameters
+4. Works as fallback when unified resolver not available
+
+### Code Changes
+- Added preprocessing method to handle $ variables  
+- Updated `_execute_impl()` to preprocess path templates
+- Updated `_write_file()` to preprocess content templates
+- Enhanced logging for debugging template resolution
+
+### Verification
+✅ Test script confirms path and content templates now resolve correctly
+✅ Pipeline execution creates files with resolved paths instead of literal template syntax
+✅ Template variables like `{{ parameters.input_document }}` and `{{ $iteration }}` properly resolved
+
+## Status: COMPLETED ✅
+
+All filesystem tool template resolution issues have been fixed. The tool now properly:
+- Resolves `$` variables in both paths and content
+- Creates files with resolved filenames instead of literal template syntax  
+- Processes template content before writing to files
+- Works with both unified resolver and legacy template manager

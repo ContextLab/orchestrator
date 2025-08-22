@@ -121,6 +121,30 @@ class FileSystemTool(Tool):
             "destination", "string", "Destination path (for copy/move)", required=False
         )
 
+    def _preprocess_dollar_variables(self, template_str: str, template_manager) -> str:
+        """Preprocess $ variables for Jinja2 compatibility.
+        
+        Converts $variable to variable for Jinja2 templates.
+        This is a safety fallback when unified resolver is not available.
+        """
+        if not isinstance(template_str, str) or '$' not in template_str:
+            return template_str
+            
+        import re
+        
+        # Replace $variable patterns with variable (for Jinja2 compatibility)
+        # This handles: {{ $iteration }} -> {{ iteration }}
+        def replace_dollar_var(match):
+            full_match = match.group(0)  # Full match like "{{ $iteration }}"
+            var_name = match.group(1)    # Variable name like "iteration"
+            return full_match.replace(f'${var_name}', var_name)
+        
+        # Find all template expressions with $variables
+        pattern = r'\{\{\s*\$([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}'
+        result = re.sub(pattern, replace_dollar_var, template_str)
+        
+        return result
+    
     async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
         """Execute file system operation."""
         action = kwargs.get("action", "")
@@ -134,14 +158,16 @@ class FileSystemTool(Tool):
         # Render path if it contains templates (should already be done, but safety check)
         if isinstance(path, str) and ('{{' in path or '{%' in path):
             if _unified_resolver and _resolution_context:
-                # Use unified resolver
+                # Use unified resolver (preferred)
                 path = _unified_resolver.resolve_templates(path, _resolution_context)
             elif _template_manager:
-                # Fallback to legacy template manager
+                # Fallback to legacy template manager with $ variable preprocessing
                 try:
                     from ..core.template_manager import TemplateManager
                     if isinstance(_template_manager, TemplateManager):
-                        path = _template_manager.render(path)
+                        # Preprocess $ variables for Jinja2 compatibility
+                        preprocessed_path = self._preprocess_dollar_variables(path, _template_manager)
+                        path = _template_manager.render(preprocessed_path)
                 except Exception as e:
                     import logging
                     logger = logging.getLogger(__name__)
@@ -220,7 +246,7 @@ class FileSystemTool(Tool):
                 except Exception as e:
                     logger.error(f"Failed to render templates with unified resolver: {e}", exc_info=True)
             elif _template_manager:
-                # Fallback to legacy template manager
+                # Fallback to legacy template manager with $ variable preprocessing
                 try:
                     # Import here to avoid circular dependency
                     from ..core.template_manager import TemplateManager
@@ -232,7 +258,7 @@ class FileSystemTool(Tool):
                         logger.info(f"Template manager has {len(_template_manager.context)} context items")
                         
                         # Log key context items for debugging
-                        important_keys = ['$item', 'item', 'input_text', 'translate', 'validate_translation']
+                        important_keys = ['$item', 'item', 'input_text', 'translate', 'validate_translation', '$iteration', 'iteration', 'parameters']
                         for key in important_keys:
                             if key in _template_manager.context:
                                 value = _template_manager.context[key]
@@ -245,19 +271,24 @@ class FileSystemTool(Tool):
                         
                         # Check first few template variables
                         import re
-                        template_vars = re.findall(r'{{\s*(\w+(?:\.\w+)*)', content[:500])
+                        template_vars = re.findall(r'{{\s*(\$?\w+(?:\.\w+)*)', content[:500])
                         logger.info(f"First few template variables found: {template_vars[:5]}")
                         
+                        # Preprocess $ variables for Jinja2 compatibility
+                        preprocessed_content = self._preprocess_dollar_variables(content, _template_manager)
+                        if preprocessed_content != content:
+                            logger.info(f"Preprocessed $ variables in content: {content[:100]}... -> {preprocessed_content[:100]}...")
+                        
                         # Use deep_render to handle complex nested templates
-                        rendered = _template_manager.deep_render(content)
+                        rendered = _template_manager.deep_render(preprocessed_content)
                         logger.info(f"Template rendering successful. Original had templates: {('{{' in content)}, Rendered has templates: {('{{' in rendered)}")
                         
                         # Check if rendering actually worked
-                        if rendered == content and '{{' in content:
+                        if rendered == preprocessed_content and '{{' in preprocessed_content:
                             logger.warning("Template rendering returned original content unchanged!")
-                            logger.warning(f"First 200 chars of content: {content[:200]}")
+                            logger.warning(f"First 200 chars of preprocessed content: {preprocessed_content[:200]}")
                         else:
-                            logger.info(f"Templates rendered: {len(content)} chars -> {len(rendered)} chars")
+                            logger.info(f"Templates rendered: {len(preprocessed_content)} chars -> {len(rendered)} chars")
                         
                         content = rendered
                     else:
