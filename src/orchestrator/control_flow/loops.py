@@ -430,7 +430,9 @@ class WhileLoopHandler:
         enhanced_context.update(
             {
                 "$iteration": iteration,
+                "iteration": iteration,  # Also available without $ for Jinja2 templates
                 "$loop_state": loop_state,
+                "loop_state": loop_state,  # Also available without $ for Jinja2 templates
                 "current_result": (
                     step_results.get(f"{loop_id}_{iteration-1}_result")
                     if iteration > 0
@@ -565,7 +567,10 @@ class WhileLoopHandler:
                 enhanced_context.update(step_results)
                 enhanced_context.update(self.loop_context_manager.get_accessible_loop_variables())
                 enhanced_context.update({
-                    "$loop_state": loop_state, 
+                    "$loop_state": loop_state,
+                    "loop_state": loop_state,  # Also available without $ for Jinja2
+                    "$iteration": iteration,
+                    "iteration": iteration,  # Also available without $ for Jinja2
                     "loop_id": loop_id
                 })
 
@@ -586,6 +591,14 @@ class WhileLoopHandler:
                 task_def["metadata"]["loop_iteration"] = iteration
                 task_def["metadata"]["is_while_loop_child"] = True
                 task_def["metadata"]["loop_context"] = while_context.get_debug_info()
+                # Add loop variables for template rendering
+                task_def["metadata"]["loop_variables"] = {
+                    "$iteration": iteration,
+                    "iteration": iteration,
+                    "$loop_state": loop_state,
+                    "loop_state": loop_state,
+                    "loop_id": loop_id
+                }
                 
                 # Process action field if it contains templates
                 if "action" in task_def:
@@ -842,9 +855,12 @@ class WhileLoopHandler:
         
         # Build enhanced context with loop info
         enhanced_context = context.copy()
+        loop_state = self.loop_states.get(loop_id, {})
         enhanced_context.update({
             "$iteration": iteration,
-            "$loop_state": self.loop_states.get(loop_id, {}),
+            "iteration": iteration,  # Also available without $ for Jinja2 templates
+            "$loop_state": loop_state,
+            "loop_state": loop_state,  # Also available without $ for Jinja2 templates
             "current_result": (
                 step_results.get(f"{loop_id}_{iteration-1}_result")
                 if iteration > 0

@@ -370,7 +370,7 @@ class HybridControlSystem(ModelBasedControlSystem):
                     logger.info(f"Registering pipeline param {key}: {str(value)[:100]}")
         
         # Register loop variables if present (both with and without $ prefix)
-        for loop_var in ["$item", "$index", "$is_first", "$is_last"]:
+        for loop_var in ["$item", "$index", "$is_first", "$is_last", "$iteration", "$loop_state"]:
             if loop_var in context:
                 template_manager.register_context(loop_var, context[loop_var])
                 logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
@@ -380,7 +380,7 @@ class HybridControlSystem(ModelBasedControlSystem):
                 logger.info(f"Registering loop variable {var_name}: {context[loop_var]}")
         
         # Also check for loop variables without $ prefix (from loop_context)
-        for loop_var in ["item", "index", "is_first", "is_last"]:
+        for loop_var in ["item", "index", "is_first", "is_last", "iteration", "loop_state"]:
             if loop_var in context and loop_var not in template_manager.context:
                 template_manager.register_context(loop_var, context[loop_var])
                 logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
@@ -444,6 +444,13 @@ class HybridControlSystem(ModelBasedControlSystem):
             if "_template_manager" in context:
                 template_manager = context["_template_manager"]
                 
+                # If task has loop_variables in metadata, add them to context first
+                if "loop_variables" in task.metadata:
+                    loop_vars = task.metadata["loop_variables"]
+                    logger.info(f"Found loop_variables in task metadata: {loop_vars}")
+                    # Add loop variables to context so they get registered
+                    context.update(loop_vars)
+                
                 # Register all results using the helper method
                 self._register_results_with_template_manager(template_manager, context)
                 
@@ -478,6 +485,13 @@ class HybridControlSystem(ModelBasedControlSystem):
             # Pass template_manager from context if available
             if "_template_manager" in context:
                 template_manager = context["_template_manager"]
+                
+                # If task has loop_variables in metadata, add them to context first
+                if "loop_variables" in task.metadata:
+                    loop_vars = task.metadata["loop_variables"]
+                    logger.info(f"Found loop_variables in task metadata: {loop_vars}")
+                    # Add loop variables to context so they get registered
+                    context.update(loop_vars)
                 
                 # Register all results using the helper method
                 self._register_results_with_template_manager(template_manager, context)
