@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, Dict, List, Optional
 
@@ -9,6 +10,8 @@ from ..core.control_system import ControlSystem
 from ..core.pipeline import Pipeline
 from ..core.task import Task
 from ..models.model_registry import ModelRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class ModelBasedControlSystem(ControlSystem):
@@ -246,7 +249,7 @@ class ModelBasedControlSystem(ControlSystem):
 
         except Exception as e:
             # Log the error and re-raise it
-            print(f">> Model execution error: {str(e)}")
+            logger.error(f"Model execution error: {str(e)}")
             raise RuntimeError(f"Failed to execute task {task.id}: {str(e)}") from e
 
     def _get_task_requirements(self, task: Task) -> Dict[str, Any]:
@@ -254,15 +257,13 @@ class ModelBasedControlSystem(ControlSystem):
         # Determine task type
         task_types = []
         action_lower = str(task.action).lower()  # Convert to string first
-        print(
-            f">> DEBUG: Processing action: '{action_lower}' (type: {type(task.action)})"
-        )
+        logger.debug(f"Processing action: '{action_lower}' (type: {type(task.action)})")
 
         # Map action to supported task types
         if "generate_text" in action_lower or action_lower == "generate_text":
             # Special case for generate_text action - map to "generate"
             task_types.append("generate")
-            print(">> DEBUG: Mapped generate_text to generate")
+            logger.debug("Mapped generate_text to generate")
         elif any(word in action_lower for word in ["generate", "create", "write"]):
             task_types.append("generate")
         if any(word in action_lower for word in ["analyze", "extract", "identify"]):
@@ -276,14 +277,14 @@ class ModelBasedControlSystem(ControlSystem):
         if not task_types:
             task_types = ["generate"]
 
-        # Debug print
+        # Calculate requirements
         context_estimate = len(str(task.parameters)) // 4
         requirements = {
             "tasks": task_types,
             "context_window": context_estimate,  # Rough estimate
             "expertise": self._determine_expertise(task),
         }
-        print(f">> DEBUG: Task requirements for {task.action}: {requirements}")
+        logger.debug(f"Task requirements for {task.action}: {requirements}")
         return requirements
 
     def _determine_expertise(self, task: Task) -> list[str]:
