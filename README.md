@@ -145,26 +145,43 @@ Configure available models in `models.yaml`:
 models:
   # Local models (via Ollama) - downloaded on first use
   - source: ollama
-    name: llama3.1:8b
-    expertise: [general, reasoning, multilingual]
+    name: deepseek-r1:8b
+    expertise: [reasoning, code, math]
     size: 8b
     
   - source: ollama
     name: qwen2.5-coder:7b
     expertise: [code, programming]
     size: 7b
+    
+  - source: ollama
+    name: gemma3:12b
+    expertise: [general, reasoning, analysis]
+    size: 12b
 
-  # Cloud models
+  # Cloud models  
   - source: openai
-    name: gpt-4o
-    expertise: [general, reasoning, code, analysis, vision]
-    size: 1760b  # Estimated
+    name: gpt-5
+    expertise: [general, reasoning, code, analysis, vision, multimodal]
+    size: 2000b  # Estimated
+    
+  - source: anthropic
+    name: claude-sonnet-4-20250514
+    expertise: [general, reasoning, efficient]
+    size: 600b  # Estimated
+    
+  - source: google
+    name: gemini-2.5-flash
+    expertise: [general, fast, efficient, thinking]
+    size: 80b  # Estimated
 
 defaults:
   expertise_preferences:
-    code: qwen2.5-coder:7b
-    reasoning: deepseek-r1:8b
+    code: qwen2.5-coder:32b
+    reasoning: deepseek-r1:32b
     fast: llama3.2:1b
+    general: llama3.1:8b
+    analysis: gemma3:27b
 ```
 
 Models are downloaded only when first used, saving disk space and initialization time.
