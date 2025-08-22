@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from ..core.control_system import ControlSystem
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..core.unified_template_resolver import UnifiedTemplateResolver, TemplateResolutionContext
 from ..models.model_registry import ModelRegistry
 from ..utils.output_sanitizer import sanitize_output
 
@@ -63,6 +64,9 @@ class ModelBasedControlSystem(ControlSystem):
         super().__init__(name, config)
         self.model_registry = model_registry
         self._execution_history = []
+        
+        # Initialize unified template resolver
+        self.unified_template_resolver = UnifiedTemplateResolver(debug_mode=True)
 
     async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """
@@ -75,58 +79,40 @@ class ModelBasedControlSystem(ControlSystem):
         Returns:
             Task execution result
         """
-        # Render templates in task parameters if template_manager is available
-        if "_template_manager" in context and task.parameters:
-            template_manager = context["_template_manager"]
-            rendered_params = {}
+        # Use UnifiedTemplateResolver to render templates in task parameters
+        if task.parameters:
+            # Collect comprehensive context for template resolution
+            template_context = self.unified_template_resolver.collect_context(
+                pipeline_id=context.get("pipeline_id"),
+                task_id=task.id,
+                pipeline_inputs=context.get("pipeline_inputs", {}),
+                pipeline_parameters=context.get("pipeline_params", {}),
+                step_results=context.get("previous_results", {}),
+                additional_context={
+                    # Add loop variables
+                    "$item": context.get("$item"),
+                    "$index": context.get("$index"),
+                    "$is_first": context.get("$is_first"),
+                    "$is_last": context.get("$is_last"),
+                    "$iteration": context.get("$iteration"),
+                    # Add any other context variables
+                    **{k: v for k, v in context.items() 
+                       if k not in ["pipeline_id", "pipeline_inputs", "pipeline_params", "previous_results", "_template_manager"]}
+                }
+            )
             
-            for key, value in task.parameters.items():
-                if isinstance(value, str) and ("{{" in value or "{%" in value):
-                    # This is a template string that needs rendering
-                    try:
-                        # Build comprehensive context for rendering
-                        render_context = {
-                            **context.get("pipeline_params", {}),  # Pipeline parameters
-                            **context.get("previous_results", {}),  # Previous step results
-                            **context.get("results", {}),          # Alternative results key
-                            "$item": context.get("$item"),         # Loop item if in loop
-                            "$index": context.get("$index"),       # Loop index if in loop
-                        }
-                        
-                        # Render the template
-                        rendered_value = template_manager.render(
-                            value,
-                            additional_context=render_context
-                        )
-                        rendered_params[key] = rendered_value
-                        
-                        # Log the rendering for debugging
-                        import logging
-                        logger = logging.getLogger(__name__)
-                        if key == "prompt":
-                            logger.info(f"Task {task.id}: Rendered prompt template successfully")
-                            logger.debug(f"  From: '{value[:100]}...'")
-                            logger.debug(f"  To: '{rendered_value[:100]}...'")
-                        else:
-                            logger.debug(f"Task {task.id}: Rendered {key} template")
-                        
-                        # Validate that no unrendered templates remain
-                        if "{{" in rendered_value or "{%" in rendered_value:
-                            logger.warning(f"Task {task.id}: Rendered {key} still contains template markers!")
-                            logger.debug(f"  Rendered value: {rendered_value[:200]}")
-                    except Exception as e:
-                        # If rendering fails, use original value
-                        import logging
-                        logger = logging.getLogger(__name__)
-                        logger.warning(f"Task {task.id}: Failed to render template for {key}: {e}")
-                        logger.debug(f"  Original value: {value[:200]}")
-                        logger.debug(f"  Available context keys: {list(render_context.keys())}")
-                        rendered_params[key] = value
-                else:
-                    rendered_params[key] = value
+            # Resolve templates in task parameters
+            rendered_params = self.unified_template_resolver.resolve_templates(
+                task.parameters, template_context
+            )
             
             # Update task parameters with rendered values
             task.parameters = rendered_params
+            
+            # Log template resolution for debugging
+            logger.info(f"Task {task.id}: Template resolution completed using UnifiedTemplateResolver")
+            if "prompt" in rendered_params:
+                logger.debug(f"  Resolved prompt length: {len(str(rendered_params['prompt']))} chars")
         
         # Validate required parameters for text generation actions
         if task.action in ["generate_text", "generate"] and (
