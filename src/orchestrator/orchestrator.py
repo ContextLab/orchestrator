@@ -16,6 +16,7 @@ from .core.pipeline_resume_manager import PipelineResumeManager, ResumeStrategy
 from .core.resource_allocator import ResourceAllocator
 from .core.task import Task, TaskStatus
 from .core.template_manager import TemplateManager
+from .core.unified_template_resolver import UnifiedTemplateResolver
 from .executor.parallel_executor import ParallelExecutor
 from .models.model_registry import ModelRegistry
 from .models.registry_singleton import get_model_registry
@@ -54,6 +55,7 @@ class Orchestrator:
         resource_allocator: Optional[ResourceAllocator] = None,
         parallel_executor: Optional[ParallelExecutor] = None,
         template_manager: Optional[TemplateManager] = None,
+        unified_template_resolver: Optional[UnifiedTemplateResolver] = None,
         max_concurrent_tasks: int = 10,
         debug_templates: bool = False,
         use_langgraph_state: bool = False,
@@ -78,6 +80,7 @@ class Orchestrator:
             resource_allocator: Resource allocator for task scheduling
             parallel_executor: Parallel executor for concurrent execution
             template_manager: Template manager for deferred rendering
+            unified_template_resolver: Unified template resolver for comprehensive template resolution
             max_concurrent_tasks: Maximum concurrent tasks
             debug_templates: Enable debug mode for template rendering
             use_langgraph_state: Use new LangGraph-based state management
@@ -128,6 +131,12 @@ class Orchestrator:
 
         # Initialize template manager
         self.template_manager = template_manager or TemplateManager(debug_mode=debug_templates)
+        
+        # Initialize unified template resolver
+        self.unified_template_resolver = unified_template_resolver or UnifiedTemplateResolver(
+            template_manager=self.template_manager,
+            debug_mode=debug_templates
+        )
         
         # No default models - must be explicitly initialized
         # Use ControlFlowCompiler to handle for_each, while, and conditionals
@@ -494,42 +503,125 @@ class Orchestrator:
         import time
         start_time = time.time()
         
-        # Pre-render templates in task parameters before execution
-        if task.parameters and self.template_manager:
+        # Use unified template resolver for comprehensive template resolution
+        if task.parameters and self.unified_template_resolver:
+            # Collect comprehensive context for template resolution
+            template_context = self.unified_template_resolver.collect_context(
+                pipeline_id=context.get("pipeline_id"),
+                task_id=task.id,
+                tool_name=task.action,
+                pipeline_inputs=context.get("inputs", {}),
+                pipeline_parameters=context.get("pipeline_params", {}),
+                step_results=context.get("previous_results", {}),
+                tool_parameters=task.parameters,
+                additional_context={
+                    "$item": context.get("$item"),
+                    "$index": context.get("$index"),
+                    "item": context.get("item"),
+                    "index": context.get("index"),
+                    "iteration": context.get("iteration"),
+                    "$iteration": context.get("$iteration"),
+                }
+            )
+            
+            # Resolve templates in task parameters using unified resolver
+            try:
+                rendered_params = self.unified_template_resolver.resolve_templates(
+                    task.parameters, template_context
+                )
+                
+                # Log parameter rendering for debugging
+                for key, original_value in task.parameters.items():
+                    rendered_value = rendered_params.get(key, original_value)
+                    if isinstance(original_value, str) and original_value != rendered_value:
+                        if key == "prompt":
+                            self.logger.debug(f"Unified resolver rendered prompt: '{original_value[:100]}...' -> '{rendered_value[:100]}...'")
+                        else:
+                            self.logger.debug(f"Unified resolver rendered {key}: '{original_value}' -> '{rendered_value}'")
+                
+                # Update task parameters with rendered values
+                task.parameters = rendered_params
+                
+            except Exception as e:
+                self.logger.error(f"Failed to resolve templates with unified resolver for task {task.id}: {e}")
+                # Fallback to legacy template manager
+                if self.template_manager:
+                    self.logger.warning(f"Falling back to legacy template manager for task {task.id}")
+                    rendered_params = {}
+                    render_context = {
+                        **context.get("pipeline_params", {}),
+                        **context.get("previous_results", {}),
+                        "$item": context.get("$item"),
+                        "$index": context.get("$index"),
+                    }
+                    
+                    for key, value in task.parameters.items():
+                        if isinstance(value, str) and ("{{" in value or "{%" in value):
+                            try:
+                                rendered_value = self.template_manager.render(value, additional_context=render_context)
+                                rendered_params[key] = rendered_value
+                            except Exception as legacy_e:
+                                self.logger.warning(f"Legacy template rendering also failed for {key}: {legacy_e}")
+                                rendered_params[key] = value
+                        else:
+                            rendered_params[key] = value
+                    
+                    task.parameters = rendered_params
+        elif task.parameters and self.template_manager:
+            # Fallback to legacy template manager if unified resolver not available
             rendered_params = {}
-            # Build comprehensive context for template rendering
             render_context = {
-                **context.get("pipeline_params", {}),  # Pipeline parameters
-                **context.get("previous_results", {}),  # Previous step results
-                "$item": context.get("$item"),         # Loop item if in loop
-                "$index": context.get("$index"),       # Loop index if in loop
+                **context.get("pipeline_params", {}),
+                **context.get("previous_results", {}),
+                "$item": context.get("$item"),
+                "$index": context.get("$index"),
             }
             
             for key, value in task.parameters.items():
                 if isinstance(value, str) and ("{{" in value or "{%" in value):
                     try:
-                        # Render the template
-                        rendered_value = self.template_manager.render(
-                            value,
-                            additional_context=render_context
-                        )
+                        rendered_value = self.template_manager.render(value, additional_context=render_context)
                         rendered_params[key] = rendered_value
-                        
-                        # Log prompt rendering for debugging
                         if key == "prompt":
-                            self.logger.debug(f"Pre-rendered prompt: '{value[:100]}...' -> '{rendered_value[:100]}...'")
+                            self.logger.debug(f"Legacy pre-rendered prompt: '{value[:100]}...' -> '{rendered_value[:100]}...'")
                     except Exception as e:
                         self.logger.warning(f"Failed to pre-render template for {key}: {e}")
                         rendered_params[key] = value
                 else:
                     rendered_params[key] = value
             
-            # Update task parameters with rendered values
             task.parameters = rendered_params
+        
+        # Prepare enhanced context for tool execution
+        enhanced_context = context.copy()
+        enhanced_context["template_manager"] = self.template_manager
+        enhanced_context["_template_manager"] = self.template_manager  # Legacy compatibility
+        enhanced_context["unified_template_resolver"] = self.unified_template_resolver
+        
+        # Add template resolution context if we used unified resolver
+        if task.parameters and self.unified_template_resolver:
+            template_context = self.unified_template_resolver.collect_context(
+                pipeline_id=context.get("pipeline_id"),
+                task_id=task.id,
+                tool_name=task.action,
+                pipeline_inputs=context.get("inputs", {}),
+                pipeline_parameters=context.get("pipeline_params", {}),
+                step_results=context.get("previous_results", {}),
+                tool_parameters=task.parameters,
+                additional_context={
+                    "$item": context.get("$item"),
+                    "$index": context.get("$index"),
+                    "item": context.get("item"),
+                    "index": context.get("index"),
+                    "iteration": context.get("iteration"),
+                    "$iteration": context.get("$iteration"),
+                }
+            )
+            enhanced_context["template_resolution_context"] = template_context
         
         # Execute task using control system
         try:
-            result = await self.control_system.execute_task(task, context)
+            result = await self.control_system.execute_task(task, enhanced_context)
             execution_time = time.time() - start_time
             
             # Enhanced result tracking for LangGraph
