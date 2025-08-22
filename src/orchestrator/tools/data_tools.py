@@ -134,6 +134,12 @@ class DataProcessingTool(Tool):
         # Merge operations into operation dict for backward compatibility
         if operations and not operation:
             operation = {"operations": operations}
+        
+        # Handle AUTO tags - if any parameter still contains AUTO tags, 
+        # it means they weren't resolved at compile time, so we should error
+        auto_tag_params = self._check_for_auto_tags(kwargs)
+        if auto_tag_params:
+            return {"result": None, "success": False, "error": f"Unresolved AUTO tags found in parameters: {', '.join(auto_tag_params)}"}
 
         try:
             if action == "convert":
@@ -186,22 +192,46 @@ class DataProcessingTool(Tool):
         self, data: Any, target_format: str, operation: Dict
     ) -> Dict[str, Any]:
         """Convert data between formats."""
-        # Handle file paths (check length first to avoid "File name too long" error)
-        if isinstance(data, str) and len(data) < 255 and Path(data).exists():
-            with open(data, "r") as f:
-                if data.endswith(".json"):
-                    data = json.load(f)
-                elif data.endswith(".csv"):
-                    reader = csv.DictReader(f)
-                    data = list(reader)
+        # Handle file paths - check if it's a valid file path first
+        if isinstance(data, str):
+            # Check if this could be a file path (not too long and looks like a path)
+            data_path = Path(data) if len(data) < 4096 and ('/' in data or '\\' in data or '.' in data) else None
+            if data_path and data_path.exists():
+                try:
+                    with open(data_path, "r", encoding='utf-8') as f:
+                        if str(data_path).endswith(".json"):
+                            data = json.load(f)
+                        elif str(data_path).endswith(".csv"):
+                            reader = csv.DictReader(f)
+                            data = list(reader)
+                            # Handle empty CSV files
+                            if not data:
+                                data = []
+                        else:
+                            data = f.read()
+                except (IOError, OSError, UnicodeDecodeError) as e:
+                    # If file reading fails, treat as data string
+                    pass
+            else:
+                # Not a file path, try to parse as CSV or JSON string
+                if self._looks_like_csv(data):
+                    try:
+                        reader = csv.DictReader(io.StringIO(data))
+                        parsed_data = list(reader)
+                        if parsed_data:  # Only use if we got actual data
+                            data = parsed_data
+                    except Exception:
+                        # If CSV parsing fails, try JSON
+                        try:
+                            data = json.loads(data)
+                        except json.JSONDecodeError:
+                            pass  # Keep as string
                 else:
-                    data = f.read()
-        # Try to parse JSON string
-        elif isinstance(data, str):
-            try:
-                data = json.loads(data)
-            except json.JSONDecodeError:
-                pass
+                    # Try to parse JSON string
+                    try:
+                        data = json.loads(data)
+                    except json.JSONDecodeError:
+                        pass  # Keep as string
 
         # Convert to target format
         if target_format == "json":
@@ -233,12 +263,10 @@ class DataProcessingTool(Tool):
         """Filter data based on criteria."""
         criteria = operation.get("criteria", {})
         
-        # If data is a string and looks like CSV, parse it first
-        if isinstance(data, str) and format == "csv":
-            import csv
-            import io
-            reader = csv.DictReader(io.StringIO(data))
-            data = list(reader)
+        # Parse CSV data if needed
+        data = await self._parse_input_data(data, format)
+        if data is None:
+            return {"result": None, "success": False, "error": "Failed to parse input data"}
 
         if isinstance(data, list):
             filtered_data = []
@@ -277,21 +305,10 @@ class DataProcessingTool(Tool):
 
     async def _aggregate_data(self, data: Any, operation: Dict, input_format: str = "json", output_format: str = "json") -> Dict[str, Any]:
         """Aggregate data with enhanced grouping support."""
-        # Parse CSV if needed
-        if isinstance(data, str) and input_format == "csv":
-            reader = csv.DictReader(io.StringIO(data))
-            data = list(reader)
-        # Parse JSON string if needed
-        elif isinstance(data, str) and input_format == "json":
-            try:
-                data = json.loads(data)
-            except json.JSONDecodeError:
-                # Try eval for Python list syntax
-                try:
-                    import ast
-                    data = ast.literal_eval(data)
-                except:
-                    return {"result": None, "success": False, "error": f"Could not parse JSON data"}
+        # Parse input data
+        data = await self._parse_input_data(data, input_format)
+        if data is None:
+            return {"result": None, "success": False, "error": "Could not parse input data"}
         
         group_by = operation.get("group_by", [])
         aggregations = operation.get("aggregations", {})
@@ -410,22 +427,12 @@ class DataProcessingTool(Tool):
         logger = logging.getLogger(__name__)
         logger.debug(f"transform_data input - type: {type(data)}, format: {input_format}, first 100 chars: {str(data)[:100] if data else 'None'}")
         
-        # Parse input based on format
-        if isinstance(data, str):
-            if input_format == "csv":
-                reader = csv.DictReader(io.StringIO(data))
-                data = list(reader)
-            else:
-                try:
-                    data = json.loads(data)
-                except json.JSONDecodeError:
-                    # Try eval for Python list syntax
-                    try:
-                        import ast
-                        data = ast.literal_eval(data)
-                        logger.debug(f"Parsed Python list syntax to {type(data)}")
-                    except:
-                        pass
+        # Parse input data
+        original_data = data
+        data = await self._parse_input_data(data, input_format)
+        if data is None:
+            logger.error(f"Failed to parse input data: {str(original_data)[:100] if original_data else 'None'}")
+            return {"result": None, "success": False, "error": "Could not parse input data"}
         
         # Support both 'transformations' and 'operations' parameters
         transformations = operation.get("transformations", operation.get("operations", []))
@@ -624,18 +631,29 @@ class DataProcessingTool(Tool):
 
     async def _profile_data(self, data: Any, input_format: str, profiling_options: List[str]) -> Dict[str, Any]:
         """Profile data to analyze quality and statistics."""
-        # Parse CSV if needed
-        if isinstance(data, str) and input_format == "csv":
-            reader = csv.DictReader(io.StringIO(data))
-            data = list(reader)
-        elif isinstance(data, str):
-            try:
-                data = json.loads(data)
-            except json.JSONDecodeError:
-                return {"result": None, "success": False, "error": "Could not parse data"}
+        # Parse input data
+        data = await self._parse_input_data(data, input_format)
+        if data is None:
+            return {"result": None, "success": False, "error": "Could not parse input data"}
         
-        if not isinstance(data, list) or not data:
-            return {"result": None, "success": False, "error": "Data must be a non-empty list"}
+        if not isinstance(data, list):
+            return {"result": None, "success": False, "error": "Data must be a list"}
+        
+        # Handle empty data case
+        if not data:
+            return {
+                "result": {
+                    "action": "profile",
+                    "data": {
+                        "row_count": 0,
+                        "column_count": 0,
+                        "columns": {},
+                        "message": "No data to profile"
+                    }
+                },
+                "success": True,
+                "error": None
+            }
         
         profile_result = {
             "row_count": len(data),
@@ -733,21 +751,10 @@ class DataProcessingTool(Tool):
     
     async def _pivot_data(self, data: Any, input_format: str, output_format: str, pivot_params: Dict) -> Dict[str, Any]:
         """Create pivot table from data."""
-        # Parse CSV if needed
-        if isinstance(data, str) and input_format == "csv":
-            reader = csv.DictReader(io.StringIO(data))
-            data = list(reader)
-        # Parse JSON string if needed
-        elif isinstance(data, str) and input_format == "json":
-            try:
-                data = json.loads(data)
-            except json.JSONDecodeError:
-                # Try eval for Python list syntax
-                try:
-                    import ast
-                    data = ast.literal_eval(data)
-                except:
-                    return {"result": None, "success": False, "error": "Could not parse JSON data"}
+        # Parse input data
+        data = await self._parse_input_data(data, input_format)
+        if data is None:
+            return {"result": None, "success": False, "error": "Could not parse input data"}
         
         if not isinstance(data, list):
             return {"result": None, "success": False, "error": "Data must be a list"}
@@ -882,6 +889,110 @@ class DataProcessingTool(Tool):
                 return False
 
         return True
+
+    def _looks_like_csv(self, data: str) -> bool:
+        """Heuristic to determine if a string looks like CSV data."""
+        if not isinstance(data, str) or not data.strip():
+            return False
+        
+        lines = data.strip().split('\n')
+        if len(lines) < 1:
+            return False
+            
+        # Check if first line has commas (likely header)
+        first_line = lines[0]
+        if ',' not in first_line:
+            return False
+            
+        # Check if we have multiple lines with consistent comma count
+        if len(lines) > 1:
+            comma_count = first_line.count(',')
+            for line in lines[1:3]:  # Check first few lines
+                if line.strip() and abs(line.count(',') - comma_count) > 1:
+                    return False
+        
+        # Check if it doesn't look like JSON
+        if data.strip().startswith(('{', '[')):
+            return False
+            
+        return True
+
+    async def _parse_input_data(self, data: Any, input_format: str) -> Any:
+        """Parse input data from various formats and sources."""
+        if not isinstance(data, str):
+            return data  # Already parsed
+            
+        original_data = data
+        
+        # Handle file paths - check if it's a valid file path first
+        data_path = Path(data) if len(data) < 4096 and ('/' in data or '\\' in data or '.' in data) else None
+        if data_path and data_path.exists():
+            try:
+                with open(data_path, "r", encoding='utf-8') as f:
+                    if str(data_path).endswith(".json"):
+                        return json.load(f)
+                    elif str(data_path).endswith(".csv"):
+                        reader = csv.DictReader(f)
+                        result = list(reader)
+                        return result if result else []
+                    else:
+                        data = f.read()  # Continue processing as string
+            except (IOError, OSError, UnicodeDecodeError):
+                # If file reading fails, treat as data string
+                pass
+        
+        # Parse string data based on format
+        if input_format == "csv" or (input_format == "json" and self._looks_like_csv(data)):
+            try:
+                reader = csv.DictReader(io.StringIO(data))
+                result = list(reader)
+                if result:  # Only return if we got actual data
+                    return result
+                elif not data.strip():  # Empty string
+                    return []
+                else:
+                    # Empty CSV with headers only
+                    return []
+            except Exception:
+                # CSV parsing failed, try other formats
+                pass
+        
+        # Try JSON parsing
+        if input_format == "json" or input_format != "csv":
+            try:
+                return json.loads(data)
+            except json.JSONDecodeError:
+                # Try Python literal evaluation for lists/dicts
+                try:
+                    import ast
+                    return ast.literal_eval(data)
+                except (ValueError, SyntaxError):
+                    pass
+        
+        # If all parsing fails, return None to indicate failure
+        return None
+
+    def _check_for_auto_tags(self, params: Dict[str, Any]) -> List[str]:
+        """Check for unresolved AUTO tags in parameters."""
+        import re
+        
+        auto_tag_pattern = re.compile(r'<AUTO>.*?</AUTO>', re.DOTALL)
+        problematic_params = []
+        
+        def check_value(value: Any, param_path: str):
+            if isinstance(value, str) and auto_tag_pattern.search(value):
+                problematic_params.append(param_path)
+            elif isinstance(value, dict):
+                for key, val in value.items():
+                    check_value(val, f"{param_path}.{key}")
+            elif isinstance(value, list):
+                for i, val in enumerate(value):
+                    check_value(val, f"{param_path}[{i}]")
+        
+        for param_name, param_value in params.items():
+            check_value(param_value, param_name)
+        
+        return problematic_params
 
 
 # NOTE: ValidationTool has been moved to validation.py with comprehensive implementation
