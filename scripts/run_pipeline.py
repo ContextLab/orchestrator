@@ -6,6 +6,8 @@ Simple pipeline runner - the main script for executing pipelines.
 import asyncio
 import argparse
 import json
+import logging
+import os
 from pathlib import Path
 from datetime import datetime
 import sys
@@ -14,6 +16,33 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from orchestrator import Orchestrator, init_models
+
+
+def setup_logging():
+    """Configure logging based on LOG_LEVEL environment variable."""
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    
+    # Map string levels to logging constants
+    level_map = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
+    }
+    
+    level = level_map.get(log_level, logging.INFO)
+    
+    # Configure logging
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    
+    # Set orchestrator logger to the specified level
+    logger = logging.getLogger("orchestrator")
+    logger.setLevel(level)
 
 
 def check_output_path_usage(yaml_content: str, output_dir: str) -> bool:
@@ -131,8 +160,16 @@ def main():
     parser.add_argument('-i', '--input', action='append', help='Input key=value pairs')
     parser.add_argument('-f', '--input-file', help='JSON file with inputs')
     parser.add_argument('-o', '--output-dir', help='Output directory for results')
+    parser.add_argument('--log-level', 
+                       choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                       help='Set logging level (overrides LOG_LEVEL environment variable)')
     
     args = parser.parse_args()
+    
+    # Set up logging - apply command line parameter if provided
+    if args.log_level:
+        os.environ["LOG_LEVEL"] = args.log_level.upper()
+    setup_logging()
     
     # Parse inputs
     inputs = {}

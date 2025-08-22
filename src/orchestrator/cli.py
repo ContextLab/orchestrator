@@ -1,6 +1,8 @@
 """Command-line interface for Orchestrator."""
 
 import click
+import logging
+import os
 import sys
 from pathlib import Path
 from typing import Optional
@@ -8,10 +10,44 @@ from typing import Optional
 from .utils.api_keys import get_configured_providers, add_api_key, validate_api_keys
 
 
+def setup_logging():
+    """Configure logging based on LOG_LEVEL environment variable."""
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    
+    # Map string levels to logging constants
+    level_map = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
+    }
+    
+    level = level_map.get(log_level, logging.INFO)
+    
+    # Configure logging
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    
+    # Set orchestrator logger to the specified level
+    logger = logging.getLogger("orchestrator")
+    logger.setLevel(level)
+
+
 @click.group()
-def cli():
+@click.option("--log-level", 
+              type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], 
+                               case_sensitive=False),
+              help="Set logging level (overrides LOG_LEVEL environment variable)")
+def cli(log_level):
     """Orchestrator - AI pipeline orchestration framework."""
-    pass
+    # Set up logging - apply CLI parameter if provided
+    if log_level:
+        os.environ["LOG_LEVEL"] = log_level.upper()
+    setup_logging()
 
 
 @cli.group()
