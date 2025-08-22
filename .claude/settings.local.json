@@ -43,7 +43,13 @@
       "Bash(git checkout:*)",
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(python -m pytest tests/test_dependency_validator.py -v)",
+      "Bash(python -m pytest tests/test_dependency_validator.py::TestDependencyValidator::test_missing_task_id -v)",
+      "Bash(python -m pytest tests/test_dependency_integration.py -v)",
+      "Bash(python -m pytest tests/test_dependency_integration.py::TestYAMLCompilerIntegration::test_dependency_validation_in_compile_pipeline -v)",
+      "Bash(python -m pytest tests/test_dependency_integration.py::TestYAMLCompilerIntegration::test_complex_dependency_patterns_validation -v)",
+      "Bash(python -m pytest tests/test_dependency_validator.py tests/test_dependency_integration.py -v)"
     ]
   }
 }

@@ -564,12 +564,19 @@ class SchemaValidator:
 
         return errors
 
-    def validate_complete(self, pipeline_def: Dict[str, Any]) -> List[str]:
+    def validate_complete(
+        self, 
+        pipeline_def: Dict[str, Any], 
+        enable_dependency_validation: bool = True,
+        development_mode: bool = False
+    ) -> List[str]:
         """
         Perform complete validation including custom checks.
 
         Args:
             pipeline_def: Pipeline definition
+            enable_dependency_validation: Whether to perform comprehensive dependency validation
+            development_mode: Enable development mode (more lenient validation)
 
         Returns:
             List of all validation errors
@@ -583,4 +590,58 @@ class SchemaValidator:
         errors.extend(self.validate_task_dependencies(pipeline_def))
         errors.extend(self.validate_unique_task_ids(pipeline_def))
 
+        # Comprehensive dependency validation
+        if enable_dependency_validation:
+            errors.extend(self.validate_comprehensive_dependencies(
+                pipeline_def, development_mode=development_mode
+            ))
+
         return errors
+
+    def validate_comprehensive_dependencies(
+        self, 
+        pipeline_def: Dict[str, Any],
+        development_mode: bool = False
+    ) -> List[str]:
+        """
+        Perform comprehensive dependency validation using DependencyValidator.
+
+        Args:
+            pipeline_def: Pipeline definition
+            development_mode: Enable development mode
+
+        Returns:
+            List of dependency validation errors
+        """
+        try:
+            from ..validation.dependency_validator import DependencyValidator
+            
+            validator = DependencyValidator(development_mode=development_mode)
+            result = validator.validate_pipeline_dependencies(pipeline_def)
+            
+            errors = []
+            
+            # Convert dependency issues to error strings
+            for issue in result.issues:
+                if issue.severity == 'error' or (not development_mode and issue.severity == 'warning'):
+                    error_msg = issue.message
+                    
+                    if issue.involved_tasks:
+                        error_msg += f" (involves tasks: {', '.join(issue.involved_tasks)})"
+                    
+                    if issue.dependency_chain:
+                        error_msg += f" (chain: {' -> '.join(issue.dependency_chain)})"
+                    
+                    if issue.recommendation:
+                        error_msg += f" - Recommendation: {issue.recommendation}"
+                    
+                    errors.append(error_msg)
+            
+            return errors
+            
+        except ImportError as e:
+            # DependencyValidator not available, fall back to basic validation
+            return [f"Comprehensive dependency validation unavailable: {e}"]
+        except Exception as e:
+            # Error in dependency validation
+            return [f"Error during dependency validation: {e}"]

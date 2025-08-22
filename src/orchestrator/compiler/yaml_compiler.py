@@ -144,34 +144,38 @@ class YAMLCompiler:
             # Step 3: Validate against schema
             self.schema_validator.validate(raw_pipeline)
             
-            # Step 4: Validate error handling configurations
+            # Step 4: Validate dependencies comprehensively
+            if not self.development_mode:  # Skip in development mode for faster compilation
+                await self._validate_dependencies(raw_pipeline)
+            
+            # Step 5: Validate error handling configurations
             error_issues = self.error_handler_validator.validate_pipeline_error_handling(raw_pipeline)
             if error_issues:
                 raise YAMLCompilerError(f"Error handler validation failed: {'; '.join(error_issues)}")
 
-            # Step 5: Merge default values with context
+            # Step 6: Merge default values with context
             merged_context = self._merge_defaults_with_context(
                 raw_pipeline, context or {}
             )
 
-            # Step 6: Validate templates if enabled
+            # Step 7: Validate templates if enabled
             if self.validate_templates:
                 await self._validate_templates(raw_pipeline, merged_context)
 
-            # Step 7: Validate tool configurations if enabled
+            # Step 8: Validate tool configurations if enabled
             if self.validate_tools:
                 await self._validate_tools(raw_pipeline)
 
-            # Step 8: Process templates
+            # Step 9: Process templates
             processed = self._process_templates(raw_pipeline, merged_context)
 
-            # Step 9: Detect and resolve ambiguities
+            # Step 10: Detect and resolve ambiguities
             if resolve_ambiguities:
                 resolved = await self._resolve_ambiguities(processed)
             else:
                 resolved = processed
 
-            # Step 10: Build pipeline object with context
+            # Step 11: Build pipeline object with context
             return self._build_pipeline(resolved, merged_context)
 
         except Exception as e:
@@ -389,6 +393,76 @@ class YAMLCompiler:
             raise
         except Exception as e:
             raise YAMLCompilerError(f"Tool validation failed: {e}") from e
+
+    async def _validate_dependencies(self, pipeline_def: Dict[str, Any]) -> None:
+        """
+        Validate all dependencies in the pipeline definition using comprehensive dependency validation.
+
+        Args:
+            pipeline_def: Pipeline definition
+
+        Raises:
+            YAMLCompilerError: If dependency validation fails
+        """
+        try:
+            logger.debug("Performing comprehensive dependency validation")
+            
+            # Import dependency validator
+            from ..validation.dependency_validator import DependencyValidator
+            
+            # Create validator with development mode setting
+            validator = DependencyValidator(development_mode=self.development_mode)
+            
+            # Perform validation
+            result = validator.validate_pipeline_dependencies(pipeline_def)
+            
+            # Check if validation passed
+            if not result.is_valid:
+                error_messages = []
+                
+                # Collect all error messages
+                for issue in result.errors:
+                    error_msg = issue.message
+                    
+                    if issue.involved_tasks:
+                        error_msg += f" (involves tasks: {', '.join(issue.involved_tasks)})"
+                    
+                    if issue.dependency_chain:
+                        error_msg += f" (chain: {' -> '.join(issue.dependency_chain)})"
+                    
+                    if issue.recommendation:
+                        error_msg += f" - Recommendation: {issue.recommendation}"
+                    
+                    error_messages.append(error_msg)
+                
+                raise YAMLCompilerError(
+                    f"Dependency validation failed with {len(result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log warnings if present  
+            if result.has_warnings:
+                logger.warning(f"Dependency validation completed with {len(result.warnings)} warnings")
+                for warning in result.warnings:
+                    warning_msg = warning.message
+                    if warning.recommendation:
+                        warning_msg += f" - Recommendation: {warning.recommendation}"
+                    logger.warning(warning_msg)
+            else:
+                logger.info("Dependency validation completed successfully")
+                
+            # Log execution order if computed
+            if result.execution_order:
+                logger.debug(f"Computed execution order: {' -> '.join(result.execution_order)}")
+                
+        except ImportError:
+            # DependencyValidator not available, skip comprehensive validation
+            logger.warning("DependencyValidator not available, skipping comprehensive dependency validation")
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors
+            raise
+        except Exception as e:
+            raise YAMLCompilerError(f"Dependency validation failed: {e}") from e
 
     def _process_templates(
         self, pipeline_def: Dict[str, Any], context: Dict[str, Any]

@@ -35,6 +35,7 @@ dependencies = [
     "redis>=4.0.0",
     "psycopg2-binary>=2.9.0",
     "cryptography>=3.4.0",
+    "networkx>=3.0.0",
     "openai>=1.0.0",
     "anthropic>=0.7.0",
     # LangChain for structured outputs

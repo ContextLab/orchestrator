@@ -22,6 +22,11 @@ from .tool_validator import (
     ToolValidationError,
     ToolValidationResult
 )
+from .dependency_validator import (
+    DependencyValidator,
+    DependencyIssue,
+    DependencyValidationResult
+)
 
 __all__ = [
     "OutputValidator",
@@ -36,5 +41,8 @@ __all__ = [
     "TemplateValidationResult",
     "ToolValidator",
     "ToolValidationError",
-    "ToolValidationResult"
+    "ToolValidationResult",
+    "DependencyValidator",
+    "DependencyIssue",
+    "DependencyValidationResult"
 ]
