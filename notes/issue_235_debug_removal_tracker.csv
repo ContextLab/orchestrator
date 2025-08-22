@@ -1,0 +1,8 @@
+Unique_ID,File_Path,Current_Behavior,Desired_Behavior,Status,Notes,Commit_Hash
+235-001,src/orchestrator/control_systems/model_based_control_system.py,Contains debug print statements in lines 258-286,Replace with proper logging using logger.debug(),completed,Found 3 debug print statements: lines 257-258 & 265 & 286,9c882de
+235-002,src/orchestrator/models/model_registry.py,Contains debug print statements in lines 435-525,Replace with proper logging using logger.debug(),completed,Found 4 debug print statements: lines 435 & 446 & 525 & 1108,250a453
+235-003,src/orchestrator/orchestrator.py,Contains DEBUG and print statements,Replace with proper logging,completed,No debug statements found - file is clean,N/A
+235-004,src/orchestrator/control_systems/hybrid_control_system.py,Contains debug print statements,Replace with proper logging,completed,Found 6 debug statements in lines 641-647,b7f2d62
+235-005,src/ (general search),May contain print() and DEBUG statements,Replace all with proper logging,completed,Found 6 total debug statements across 3 files,
+235-006,Main entry points,No LOG_LEVEL environment variable support,Add logging configuration support,completed,Added to CLI and run_pipeline.py with --log-level option and LOG_LEVEL env var support,5901cb1
+235-007,Test logging functionality,N/A,Verify logging works correctly at different levels,completed,Tested DEBUG and INFO levels - working correctly,N/A

@@ -1,0 +1,17 @@
+File Path,Status,Commit Hash,Issue Number,Notes
+src/orchestrator/core/model.py,COMPLETE,ccd4ab1,,Removed MockModel class
+src/orchestrator/core/control_system.py,COMPLETE,ccd4ab1,,Removed MockControlSystem class
+src/orchestrator/control_systems/research_control_system.py,COMPLETE,ccd4ab1,,Refactored to inherit from ControlSystem
+src/orchestrator/control_systems/tool_integrated_control_system.py,COMPLETE,ccd4ab1,,Refactored to inherit from ControlSystem
+src/orchestrator/control_systems/hybrid_control_system.py,COMPLETE,ccd4ab1,,Added new control system
+src/orchestrator/core/cache.py,COMPLETE,bcf9ea2,,Removed mock_mode from RedisCache
+src/orchestrator/__init__.py,COMPLETE,bcf9ea2,,Updated warning message
+src/orchestrator/compiler/ambiguity_resolver.py,COMPLETE,bcf9ea2,,Updated comment
+src/orchestrator/engine/runtime_auto_resolver.py,COMPLETE,bcf9ea2,,Updated comment
+src/orchestrator/control_systems/model_based_control_system.py,COMPLETE,998d04d,,Fixed to raise exceptions
+src/orchestrator/adapters/langgraph_adapter.py,PENDING,,12,Needs real task execution
+src/orchestrator/adapters/mcp_adapter.py,PENDING,,13 14,Needs real MCP transport and execution
+src/orchestrator/executor/sandboxed_executor.py,PENDING,,15,Needs real resource monitoring
+examples/research_control_system.py,COMPLETE,c709530,,Updated to use real ControlSystem
+examples/tool_integrated_control_system.py,COMPLETE,c709530,,Updated to use real ControlSystem
+EOF < /dev/null
