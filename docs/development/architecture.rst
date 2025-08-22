@@ -233,6 +233,18 @@ Pipeline Execution Flow
    Validation → AUTO Tag → Task → Model → Output
                Resolution  Queue  Calls
 
+Template Resolution Flow
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The UnifiedTemplateResolver coordinates template resolution across all components:
+
+1. **Context Collection**: Comprehensive context is collected from pipeline, tasks, loops, and tools
+2. **Context Registration**: Context is registered with the template manager
+3. **Template Resolution**: Templates are resolved using Jinja2-style rendering
+4. **Variable Validation**: Template variables are validated against available context
+5. **Output Sanitization**: Results are cleaned of conversational markers using OutputSanitizer
+6. **Result Return**: Clean, resolved values are returned to the caller
+
 AUTO Tag Resolution Flow
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -377,6 +389,8 @@ Planned architectural improvements include:
 
 1. **Distributed Execution**: Multi-node pipeline execution
 2. **Plugin System**: Dynamic loading of extensions
-3. **Workflow Optimization**: Automatic pipeline optimization
-4. **Monitoring Integration**: Built-in observability features
-5. **Model Fine-tuning**: Automatic model improvement based on usage
+3. **Workflow Optimization**: Automatic pipeline optimization based on validation insights
+4. **Enhanced Monitoring**: Built-in observability with comprehensive validation reporting
+5. **Model Fine-tuning**: Automatic model improvement based on usage patterns
+6. **Advanced Validation**: Real-time validation during pipeline execution
+7. **Smart Template Caching**: Intelligent caching of template resolution results
