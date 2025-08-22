@@ -1,6 +1,7 @@
 """Hybrid control system that handles both model-based tasks and tool operations."""
 
 from typing import Any, Dict, Optional
+import logging
 import re
 from pathlib import Path
 from datetime import datetime
@@ -43,6 +44,8 @@ from ..tools.pipeline_recursion_tools import (
 )
 from ..compiler.template_renderer import TemplateRenderer
 from ..runtime import RuntimeResolutionIntegration
+
+logger = logging.getLogger(__name__)
 
 
 class HybridControlSystem(ModelBasedControlSystem):
@@ -632,16 +635,16 @@ class HybridControlSystem(ModelBasedControlSystem):
                 else:
                     template_context[step_id] = {"result": result}
         
-        # DEBUG: Print what's available in the context for template rendering
+        # Debug: Log what's available in the context for template rendering
         task_id = context.get("task_id", context.get("current_task_id"))
         if task_id == "save_report":
-            print(f">> DEBUG: Building template context for save_report")
-            print(f">> Available step IDs in previous_results: {list(context.get('previous_results', {}).keys())}")
-            print(f">> Available step IDs in template_context: {list(template_context.keys())}")
+            logger.debug("Building template context for save_report")
+            logger.debug(f"Available step IDs in previous_results: {list(context.get('previous_results', {}).keys())}")
+            logger.debug(f"Available step IDs in template_context: {list(template_context.keys())}")
             if "create_report" in template_context:
-                print(f">> create_report keys: {list(template_context['create_report'].keys()) if isinstance(template_context['create_report'], dict) else 'Not a dict'}")
+                logger.debug(f"create_report keys: {list(template_context['create_report'].keys()) if isinstance(template_context['create_report'], dict) else 'Not a dict'}")
             if "distribution_plan" in template_context:
-                print(f">> distribution_plan keys: {list(template_context['distribution_plan'].keys()) if isinstance(template_context['distribution_plan'], dict) else 'Not a dict'}")
+                logger.debug(f"distribution_plan keys: {list(template_context['distribution_plan'].keys()) if isinstance(template_context['distribution_plan'], dict) else 'Not a dict'}")
 
         # Add pipeline parameters if available
         if "pipeline_metadata" in context and isinstance(context["pipeline_metadata"], dict):
