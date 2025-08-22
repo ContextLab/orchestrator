@@ -21,6 +21,7 @@ from .schema_validator import SchemaValidator
 from .error_handler_schema import ErrorHandlerSchemaValidator
 from ..validation.template_validator import TemplateValidator
 from ..validation.tool_validator import ToolValidator
+from ..validation.model_validator import ModelValidator
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +58,10 @@ class YAMLCompiler:
         file_inclusion_processor: Optional[FileInclusionProcessor] = None,
         template_validator: Optional[TemplateValidator] = None,
         tool_validator: Optional[ToolValidator] = None,
+        model_validator: Optional[ModelValidator] = None,
         validate_templates: bool = True,
         validate_tools: bool = True,
+        validate_models: bool = True,
         development_mode: bool = False,
     ) -> None:
         """
@@ -72,8 +75,10 @@ class YAMLCompiler:
             file_inclusion_processor: File inclusion processor instance
             template_validator: Template validator instance
             tool_validator: Tool validator instance
+            model_validator: Model validator instance
             validate_templates: Whether to perform template validation
             validate_tools: Whether to perform tool configuration validation
+            validate_models: Whether to perform model validation
             development_mode: Enable development mode (allows some validation bypasses)
         """
         self.schema_validator = schema_validator or SchemaValidator()
@@ -81,8 +86,12 @@ class YAMLCompiler:
         self.file_inclusion_processor = file_inclusion_processor or FileInclusionProcessor()
         self.template_validator = template_validator or TemplateValidator()
         self.tool_validator = tool_validator or ToolValidator(development_mode=development_mode)
+        self.model_validator = model_validator or ModelValidator(
+            model_registry=model_registry, development_mode=development_mode
+        )
         self.validate_templates = validate_templates
         self.validate_tools = validate_tools
+        self.validate_models = validate_models
         self.development_mode = development_mode
 
         # Create ambiguity resolver - optional for compilation without resolution
@@ -166,16 +175,20 @@ class YAMLCompiler:
             if self.validate_tools:
                 await self._validate_tools(raw_pipeline)
 
-            # Step 9: Process templates
+            # Step 9: Validate model requirements if enabled
+            if self.validate_models:
+                await self._validate_models(raw_pipeline)
+
+            # Step 10: Process templates
             processed = self._process_templates(raw_pipeline, merged_context)
 
-            # Step 10: Detect and resolve ambiguities
+            # Step 11: Detect and resolve ambiguities
             if resolve_ambiguities:
                 resolved = await self._resolve_ambiguities(processed)
             else:
                 resolved = processed
 
-            # Step 11: Build pipeline object with context
+            # Step 12: Build pipeline object with context
             return self._build_pipeline(resolved, merged_context)
 
         except Exception as e:
@@ -393,6 +406,56 @@ class YAMLCompiler:
             raise
         except Exception as e:
             raise YAMLCompilerError(f"Tool validation failed: {e}") from e
+
+    async def _validate_models(self, pipeline_def: Dict[str, Any]) -> None:
+        """
+        Validate all model requirements in the pipeline definition.
+
+        Args:
+            pipeline_def: Pipeline definition
+
+        Raises:
+            YAMLCompilerError: If model validation fails
+        """
+        try:
+            logger.debug("Validating model requirements in pipeline definition")
+            
+            # Use model validator to check all model requirements
+            validation_result = self.model_validator.validate_pipeline_models(pipeline_def)
+            
+            # Report validation results
+            if validation_result.has_errors:
+                error_messages = []
+                for error in validation_result.errors:
+                    error_messages.append(str(error))
+                
+                raise YAMLCompilerError(
+                    f"Model validation failed with {len(validation_result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log warnings if present
+            if validation_result.has_warnings:
+                logger.warning(f"Model validation completed with {len(validation_result.warnings)} warnings")
+                for warning in validation_result.warnings:
+                    logger.warning(str(warning))
+            else:
+                logger.info("Model validation completed successfully")
+                
+            # Log summary
+            logger.info(f"Model validation summary: {validation_result.summary()}")
+            if validation_result.validated_models:
+                logger.debug(f"Validated models: {', '.join(validation_result.validated_models)}")
+            if validation_result.missing_models and not self.development_mode:
+                logger.warning(f"Missing models: {', '.join(validation_result.missing_models)}")
+            if validation_result.capability_mismatches:
+                logger.debug(f"Models with capability limitations: {list(validation_result.capability_mismatches.keys())}")
+                    
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors
+            raise
+        except Exception as e:
+            raise YAMLCompilerError(f"Model validation failed: {e}") from e
 
     async def _validate_dependencies(self, pipeline_def: Dict[str, Any]) -> None:
         """
