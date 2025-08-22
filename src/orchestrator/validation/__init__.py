@@ -27,6 +27,11 @@ from .dependency_validator import (
     DependencyIssue,
     DependencyValidationResult
 )
+from .model_validator import (
+    ModelValidator,
+    ModelValidationError,
+    ModelValidationResult
+)
 
 __all__ = [
     "OutputValidator",
@@ -44,5 +49,8 @@ __all__ = [
     "ToolValidationResult",
     "DependencyValidator",
     "DependencyIssue",
-    "DependencyValidationResult"
+    "DependencyValidationResult",
+    "ModelValidator",
+    "ModelValidationError",
+    "ModelValidationResult"
 ]
