@@ -211,41 +211,72 @@ class ModelBasedControlSystem(ControlSystem):
             prompt = self._build_prompt(task, action_text, context)
 
         try:
-            # Use the model to generate result
-            # Get generation parameters from task
-            temperature = (
-                task.parameters.get("temperature", 0.7) if task.parameters else 0.7
-            )
-            max_tokens = (
-                task.parameters.get("max_tokens", 1000) if task.parameters else 1000
-            )
+            # Check if this is a structured generation task
+            if task.action == "generate-structured":
+                # Use structured generation
+                if not task.parameters or "schema" not in task.parameters:
+                    raise ValueError(
+                        f"Task '{task.id}' with action 'generate-structured' requires a 'schema' parameter"
+                    )
+                
+                temperature = (
+                    task.parameters.get("temperature", 0.7) if task.parameters else 0.7
+                )
+                
+                # Build structured generation kwargs
+                structured_kwargs = {
+                    "prompt": prompt,
+                    "schema": task.parameters["schema"],
+                    "temperature": temperature,
+                }
+                
+                # Add any additional kwargs, excluding system parameters
+                if task.parameters:
+                    for key, value in task.parameters.items():
+                        if key not in ["prompt", "schema", "temperature", "model", "max_tokens"]:
+                            structured_kwargs[key] = value
+                
+                result = await model.generate_structured(**structured_kwargs)
+                
+                # Parse the result based on expected format
+                return self._parse_result(result, task)
             
-            # Build generation kwargs
-            # Handle model-specific parameter names
-            gen_kwargs = {
-                "prompt": prompt,
-                "temperature": temperature,
-            }
-            
-            # Check if model requires max_completion_tokens instead of max_tokens
-            # GPT-5 models from OpenAI require max_completion_tokens
-            if model and hasattr(model, 'provider') and model.provider == 'openai':
-                # Check if it's a GPT-5 model
-                if hasattr(model, 'name') and 'gpt-5' in model.name.lower():
-                    gen_kwargs["max_completion_tokens"] = max_tokens
+            else:
+                # Use regular generation
+                # Get generation parameters from task
+                temperature = (
+                    task.parameters.get("temperature", 0.7) if task.parameters else 0.7
+                )
+                max_tokens = (
+                    task.parameters.get("max_tokens", 1000) if task.parameters else 1000
+                )
+                
+                # Build generation kwargs
+                # Handle model-specific parameter names
+                gen_kwargs = {
+                    "prompt": prompt,
+                    "temperature": temperature,
+                }
+                
+                # Check if model requires max_completion_tokens instead of max_tokens
+                # GPT-5 models from OpenAI require max_completion_tokens
+                if model and hasattr(model, 'provider') and model.provider == 'openai':
+                    # Check if it's a GPT-5 model
+                    if hasattr(model, 'name') and 'gpt-5' in model.name.lower():
+                        gen_kwargs["max_completion_tokens"] = max_tokens
+                    else:
+                        gen_kwargs["max_tokens"] = max_tokens
                 else:
                     gen_kwargs["max_tokens"] = max_tokens
-            else:
-                gen_kwargs["max_tokens"] = max_tokens
-            
-            # Add response_format if specified
-            if task.parameters and "response_format" in task.parameters:
-                gen_kwargs["response_format"] = task.parameters["response_format"]
+                
+                # Add response_format if specified
+                if task.parameters and "response_format" in task.parameters:
+                    gen_kwargs["response_format"] = task.parameters["response_format"]
 
-            result = await model.generate(**gen_kwargs)
+                result = await model.generate(**gen_kwargs)
 
-            # Parse the result based on expected format
-            return self._parse_result(result, task)
+                # Parse the result based on expected format
+                return self._parse_result(result, task)
 
         except Exception as e:
             # Log the error and re-raise it
@@ -383,10 +414,26 @@ class ModelBasedControlSystem(ControlSystem):
 
         return "\n".join(prompt_parts)
 
-    def _parse_result(self, result: str, task: Task) -> Any:
+    def _parse_result(self, result: Any, task: Task) -> Any:
         """Parse model result based on expected format."""
-        # For now, return the raw result
-        # In the future, this could parse JSON, extract specific fields, etc.
+        # For generate-structured actions, the result should already be a structured object
+        if task.action == "generate-structured":
+            # If it's still a string, try to parse it as JSON
+            if isinstance(result, str):
+                try:
+                    import json
+                    return json.loads(result)
+                except json.JSONDecodeError:
+                    # If parsing fails, return the string as-is
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Task {task.id}: Could not parse generate-structured result as JSON")
+                    return result
+            else:
+                # Already structured, return as-is
+                return result
+        
+        # For other actions, return the raw result
         return result
 
     async def execute_pipeline(self, pipeline: Pipeline) -> Dict[str, Any]:
