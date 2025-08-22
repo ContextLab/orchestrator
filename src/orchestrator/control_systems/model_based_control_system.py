@@ -10,6 +10,7 @@ from ..core.control_system import ControlSystem
 from ..core.pipeline import Pipeline
 from ..core.task import Task
 from ..models.model_registry import ModelRegistry
+from ..utils.output_sanitizer import sanitize_output
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +240,12 @@ class ModelBasedControlSystem(ControlSystem):
                 result = await model.generate_structured(**structured_kwargs)
                 
                 # Parse the result based on expected format
-                return self._parse_result(result, task)
+                parsed_result = self._parse_result(result, task)
+                
+                # Apply output sanitization to clean conversational markers
+                sanitized_result = sanitize_output(parsed_result)
+                
+                return sanitized_result
             
             else:
                 # Use regular generation
@@ -276,7 +282,12 @@ class ModelBasedControlSystem(ControlSystem):
                 result = await model.generate(**gen_kwargs)
 
                 # Parse the result based on expected format
-                return self._parse_result(result, task)
+                parsed_result = self._parse_result(result, task)
+                
+                # Apply output sanitization to clean conversational markers
+                sanitized_result = sanitize_output(parsed_result)
+                
+                return sanitized_result
 
         except Exception as e:
             # Log the error and re-raise it
