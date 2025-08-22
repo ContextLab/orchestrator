@@ -425,9 +425,9 @@ class ValidationTool(Tool):
             elif action == "infer_schema":
                 return await self._infer_schema(kwargs)
             else:
-                return {"success": False, "error": f"Unknown action: {action}"}
+                return {"result": None, "success": False, "error": f"Unknown action: {action}"}
         except Exception as e:
-            return {"success": False, "error": str(e), "action": action}
+            return {"result": None, "success": False, "error": str(e)}
 
     async def _validate_data(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Validate data against a schema."""
@@ -436,10 +436,10 @@ class ValidationTool(Tool):
         mode_str = params.get("mode", "strict")
 
         if data is None:
-            return {"success": False, "error": "No data provided for validation"}
+            return {"result": None, "success": False, "error": "No data provided for validation"}
 
         if not schema:
-            return {"success": False, "error": "No schema provided for validation"}
+            return {"result": None, "success": False, "error": "No schema provided for validation"}
         
         # Parse data string if needed
         if isinstance(data, str):
@@ -477,9 +477,9 @@ class ValidationTool(Tool):
                                                 pass
                     else:
                         # Not CSV, return error
-                        return {"success": False, "error": f"Invalid data format: not JSON or CSV", "valid": False}
+                        return {"result": None, "success": False, "error": f"Invalid data format: not JSON or CSV"}
                 except Exception as e:
-                    return {"success": False, "error": f"Failed to parse CSV data: {str(e)}", "valid": False}
+                    return {"result": None, "success": False, "error": f"Failed to parse CSV data: {str(e)}"}
 
         # Parse validation mode
         try:
@@ -509,25 +509,31 @@ class ValidationTool(Tool):
                 validated_data.append(result.data or row)
             
             return {
+                "result": {
+                    "valid": all_valid,
+                    "errors": all_errors,
+                    "warnings": all_warnings,
+                    "data": validated_data,
+                    "mode": mode.value,
+                    "rows_validated": len(data),
+                },
                 "success": True,
-                "valid": all_valid,
-                "errors": all_errors,
-                "warnings": all_warnings,
-                "data": validated_data,
-                "mode": mode.value,
-                "rows_validated": len(data),
+                "error": None,
             }
         else:
             # Perform single object validation
             result = self.schema_validator.validate(data, schema, mode)
 
             return {
+                "result": {
+                    "valid": result.valid,
+                    "errors": result.errors,
+                    "warnings": result.warnings,
+                    "data": result.data,
+                    "mode": mode.value,
+                },
                 "success": True,
-                "valid": result.valid,
-                "errors": result.errors,
-                "warnings": result.warnings,
-                "data": result.data,
-                "mode": mode.value,
+                "error": None,
             }
 
     async def _extract_structured(self, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -537,14 +543,15 @@ class ValidationTool(Tool):
         model_name = params.get("model", self.model_name)
 
         if not text:
-            return {"success": False, "error": "No text provided for extraction"}
+            return {"result": None, "success": False, "error": "No text provided for extraction"}
 
         if not schema:
-            return {"success": False, "error": "No schema provided for extraction"}
+            return {"result": None, "success": False, "error": "No schema provided for extraction"}
 
         # Check if we have a model available
         if not self.model and not model_name:
             return {
+                "result": None,
                 "success": False,
                 "error": "No model available for structured extraction. Please provide 'model' parameter or initialize with a model.",
             }
@@ -581,9 +588,9 @@ Return the extracted data as a JSON object that matches the schema."""
                         raise ValueError("No JSON found in response")
                 except (json.JSONDecodeError, ValueError) as e:
                     return {
+                        "result": None,
                         "success": False,
                         "error": f"Failed to parse model response as JSON: {str(e)}",
-                        "raw_response": response,
                     }
 
                 # Validate extracted data against schema
@@ -592,35 +599,38 @@ Return the extracted data as a JSON object that matches the schema."""
                 )
 
                 return {
+                    "result": {
+                        "valid": validation_result.valid,
+                        "data": validation_result.data or extracted_data,
+                        "errors": validation_result.errors,
+                        "warnings": validation_result.warnings,
+                        "model_used": self.model.__class__.__name__,
+                    },
                     "success": True,
-                    "valid": validation_result.valid,
-                    "data": validation_result.data or extracted_data,
-                    "errors": validation_result.errors,
-                    "warnings": validation_result.warnings,
-                    "model_used": self.model.__class__.__name__,
+                    "error": None,
                 }
             else:
                 # TODO: Implement LangChain structured output when model_name is provided
                 return {
+                    "result": None,
                     "success": False,
                     "error": "LangChain structured output integration not yet implemented",
-                    "note": "Currently only direct model extraction is supported",
                 }
 
         except Exception as e:
-            return {"success": False, "error": f"Extraction failed: {str(e)}"}
+            return {"result": None, "success": False, "error": f"Extraction failed: {str(e)}"}
 
     async def _infer_schema(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Infer a JSON Schema from sample data."""
         data = params.get("data")
 
         if data is None:
-            return {"success": False, "error": "No data provided for schema inference"}
+            return {"result": None, "success": False, "error": "No data provided for schema inference"}
 
         # Basic schema inference
         schema = self._infer_schema_from_data(data)
 
-        return {"success": True, "schema": schema, "data_type": type(data).__name__}
+        return {"result": {"schema": schema, "data_type": type(data).__name__}, "success": True, "error": None}
 
     def _infer_schema_from_data(self, data: Any) -> Dict[str, Any]:
         """Infer a basic JSON Schema from data."""

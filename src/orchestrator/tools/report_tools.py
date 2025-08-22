@@ -165,11 +165,14 @@ class ReportGeneratorTool(Tool):
         markdown_content = "\n".join(report_lines)
 
         return {
+            "result": {
+                "markdown": markdown_content,
+                "word_count": len(markdown_content.split()),
+                "timestamp": timestamp,
+                "title": title,
+            },
             "success": True,
-            "markdown": markdown_content,
-            "word_count": len(markdown_content.split()),
-            "timestamp": timestamp,
-            "title": title,
+            "error": None,
         }
 
     def _generate_executive_summary(
@@ -377,7 +380,7 @@ class PDFCompilerTool(Tool):
         install_if_missing = kwargs.get("install_if_missing", True)
 
         if not markdown_content:
-            return {"success": False, "error": "No markdown content provided"}
+            return {"result": None, "success": False, "error": "No markdown content provided"}
 
         # Check if pandoc is installed
         if not self._is_pandoc_installed():
@@ -388,6 +391,7 @@ class PDFCompilerTool(Tool):
                     return install_result
             else:
                 return {
+                    "result": None,
                     "success": False,
                     "error": "Pandoc is not installed. Set install_if_missing=True to install automatically.",
                 }
@@ -436,10 +440,13 @@ class PDFCompilerTool(Tool):
                 file_size = os.path.getsize(output_path)
 
                 return {
+                    "result": {
+                        "output_path": output_path,
+                        "file_size": file_size,
+                        "message": f"PDF generated successfully: {output_path}",
+                    },
                     "success": True,
-                    "output_path": output_path,
-                    "file_size": file_size,
-                    "message": f"PDF generated successfully: {output_path}",
+                    "error": None,
                 }
             else:
                 # If xelatex fails, try with lualatex (also has good Unicode support)
@@ -450,10 +457,13 @@ class PDFCompilerTool(Tool):
                 if result.returncode == 0:
                     file_size = os.path.getsize(output_path)
                     return {
+                        "result": {
+                            "output_path": output_path,
+                            "file_size": file_size,
+                            "message": f"PDF generated successfully (using lualatex): {output_path}",
+                        },
                         "success": True,
-                        "output_path": output_path,
-                        "file_size": file_size,
-                        "message": f"PDF generated successfully (using lualatex): {output_path}",
+                        "error": None,
                     }
                 else:
                     # Last resort: try pdflatex with inputenc for basic Unicode support

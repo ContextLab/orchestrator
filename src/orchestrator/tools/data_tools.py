@@ -180,7 +180,7 @@ class DataProcessingTool(Tool):
                 raise ValueError(f"Unknown data processing action: {action}")
 
         except Exception as e:
-            return {"action": action, "success": False, "error": str(e)}
+            return {"result": None, "success": False, "error": str(e)}
 
     async def _convert_data(
         self, data: Any, target_format: str, operation: Dict
@@ -219,11 +219,14 @@ class DataProcessingTool(Tool):
             result = str(data)
 
         return {
-            "action": "convert",
-            "target_format": target_format,
-            "result": result,
-            "original_type": type(data).__name__,
+            "result": {
+                "action": "convert",
+                "target_format": target_format,
+                "data": result,
+                "original_type": type(data).__name__,
+            },
             "success": True,
+            "error": None,
         }
 
     async def _filter_data(self, data: Any, operation: Dict, format: str = "json") -> Dict[str, Any]:
@@ -257,16 +260,19 @@ class DataProcessingTool(Tool):
                 result = output.getvalue()
         
         return {
-            "action": "filter",
-            "criteria": criteria,
-            "result": result,
-            "original_count": len(data) if isinstance(data, list) else 1,
-            "filtered_count": (
-                len(filtered_data)
-                if isinstance(filtered_data, list)
-                else (1 if filtered_data else 0)
-            ),
+            "result": {
+                "action": "filter",
+                "criteria": criteria,
+                "data": result,
+                "original_count": len(data) if isinstance(data, list) else 1,
+                "filtered_count": (
+                    len(filtered_data)
+                    if isinstance(filtered_data, list)
+                    else (1 if filtered_data else 0)
+                ),
+            },
             "success": True,
+            "error": None,
         }
 
     async def _aggregate_data(self, data: Any, operation: Dict, input_format: str = "json", output_format: str = "json") -> Dict[str, Any]:
@@ -285,7 +291,7 @@ class DataProcessingTool(Tool):
                     import ast
                     data = ast.literal_eval(data)
                 except:
-                    return {"action": "aggregate", "success": False, "error": f"Could not parse JSON data"}
+                    return {"result": None, "success": False, "error": f"Could not parse JSON data"}
         
         group_by = operation.get("group_by", [])
         aggregations = operation.get("aggregations", {})
@@ -326,7 +332,7 @@ class DataProcessingTool(Tool):
                 elif agg_type == "median" and numeric_values:
                     result["aggregations"][result_key] = statistics.median(numeric_values)
                 
-            return {"action": "aggregate", "result": result, "success": True}
+            return {"result": {"action": "aggregate", "data": result}, "success": True, "error": None}
         
         # Group-by aggregation
         grouped_data = defaultdict(list)
@@ -394,7 +400,7 @@ class DataProcessingTool(Tool):
         else:
             formatted_result = result
             
-        return {"action": "aggregate", "result": formatted_result, "row_count": len(result), "success": True}
+        return {"result": {"action": "aggregate", "data": formatted_result, "row_count": len(result)}, "success": True, "error": None}
 
     async def _transform_data(self, data: Any, operation: Dict, input_format: str = "json", output_format: str = "json") -> Dict[str, Any]:
         """Transform data structure with enhanced operations support."""
@@ -601,17 +607,20 @@ class DataProcessingTool(Tool):
         # Add row_count for list results
         row_count = len(result) if isinstance(result, list) else None
         
-        return_val = {
+        result_data = {
             "action": "transform",
             "transformations": transformations,
-            "result": formatted_result,
-            "success": True,
+            "data": formatted_result,
         }
         
         if row_count is not None:
-            return_val["row_count"] = row_count
+            result_data["row_count"] = row_count
             
-        return return_val
+        return {
+            "result": result_data,
+            "success": True,
+            "error": None,
+        }
 
     async def _profile_data(self, data: Any, input_format: str, profiling_options: List[str]) -> Dict[str, Any]:
         """Profile data to analyze quality and statistics."""
@@ -623,10 +632,10 @@ class DataProcessingTool(Tool):
             try:
                 data = json.loads(data)
             except json.JSONDecodeError:
-                return {"action": "profile", "success": False, "error": "Could not parse data"}
+                return {"result": None, "success": False, "error": "Could not parse data"}
         
         if not isinstance(data, list) or not data:
-            return {"action": "profile", "success": False, "error": "Data must be a non-empty list"}
+            return {"result": None, "success": False, "error": "Data must be a non-empty list"}
         
         profile_result = {
             "row_count": len(data),
@@ -714,9 +723,12 @@ class DataProcessingTool(Tool):
             profile_result["duplicate_percentage"] = (duplicate_count / len(data)) * 100
         
         return {
-            "action": "profile",
-            "result": profile_result,
-            "success": True
+            "result": {
+                "action": "profile",
+                "data": profile_result,
+            },
+            "success": True,
+            "error": None,
         }
     
     async def _pivot_data(self, data: Any, input_format: str, output_format: str, pivot_params: Dict) -> Dict[str, Any]:
@@ -735,10 +747,10 @@ class DataProcessingTool(Tool):
                     import ast
                     data = ast.literal_eval(data)
                 except:
-                    return {"action": "pivot", "success": False, "error": "Could not parse JSON data"}
+                    return {"result": None, "success": False, "error": "Could not parse JSON data"}
         
         if not isinstance(data, list):
-            return {"action": "pivot", "success": False, "error": "Data must be a list"}
+            return {"result": None, "success": False, "error": "Data must be a list"}
         
         index_cols = pivot_params.get("index", [])
         column_cols = pivot_params.get("columns", [])
@@ -747,7 +759,7 @@ class DataProcessingTool(Tool):
         fill_value = pivot_params.get("fill_value", 0)
         
         if not index_cols or not value_cols:
-            return {"action": "pivot", "success": False, "error": "Index and values parameters are required"}
+            return {"result": None, "success": False, "error": "Index and values parameters are required"}
         
         # Build pivot structure
         pivot_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
@@ -834,10 +846,13 @@ class DataProcessingTool(Tool):
             formatted_result = result
         
         return {
-            "action": "pivot",
-            "result": formatted_result,
-            "row_count": len(result),
-            "success": True
+            "result": {
+                "action": "pivot",
+                "data": formatted_result,
+                "row_count": len(result),
+            },
+            "success": True,
+            "error": None,
         }
     
     def _parse_numeric(self, value: Any) -> Optional[float]:
@@ -1064,12 +1079,15 @@ class DataProcessingTool(Tool):
             result_data = df.to_dict(orient='records')
         
         return {
-            "action": "clean",
-            "result": result_data,
-            "original_shape": {"rows": original_shape[0], "columns": original_shape[1]},
-            "cleaned_shape": {"rows": cleaned_shape[0], "columns": cleaned_shape[1]},
-            "rows_removed": original_shape[0] - cleaned_shape[0],
-            "success": True
+            "result": {
+                "action": "clean",
+                "data": result_data,
+                "original_shape": {"rows": original_shape[0], "columns": original_shape[1]},
+                "cleaned_shape": {"rows": cleaned_shape[0], "columns": cleaned_shape[1]},
+                "rows_removed": original_shape[0] - cleaned_shape[0],
+            },
+            "success": True,
+            "error": None,
         }
     
     async def _merge_data(self, params: Dict) -> Dict[str, Any]:
@@ -1081,7 +1099,7 @@ class DataProcessingTool(Tool):
         
         if not datasets:
             return {
-                "action": "merge",
+                "result": None,
                 "success": False,
                 "error": "No datasets provided to merge"
             }
@@ -1113,7 +1131,7 @@ class DataProcessingTool(Tool):
         
         if not dfs:
             return {
-                "action": "merge",
+                "result": None,
                 "success": False,
                 "error": "No valid datasets to merge"
             }
@@ -1145,11 +1163,14 @@ class DataProcessingTool(Tool):
         result = result_df.to_dict(orient='records')
         
         return {
-            "action": "merge",
-            "result": result,
-            "datasets_merged": len(dfs),
-            "total_rows": len(result_df),
-            "total_columns": len(result_df.columns),
-            "columns": list(result_df.columns),
-            "success": True
+            "result": {
+                "action": "merge",
+                "data": result,
+                "datasets_merged": len(dfs),
+                "total_rows": len(result_df),
+                "total_columns": len(result_df.columns),
+                "columns": list(result_df.columns),
+            },
+            "success": True,
+            "error": None,
         }
