@@ -19,6 +19,7 @@ from .ambiguity_resolver import AmbiguityResolver
 from .auto_tag_yaml_parser import AutoTagYAMLParser
 from .schema_validator import SchemaValidator
 from .error_handler_schema import ErrorHandlerSchemaValidator
+from ..validation.template_validator import TemplateValidator
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,8 @@ class YAMLCompiler:
         model_registry: Optional[Any] = None,
         error_handler_validator: Optional[ErrorHandlerSchemaValidator] = None,
         file_inclusion_processor: Optional[FileInclusionProcessor] = None,
+        template_validator: Optional[TemplateValidator] = None,
+        validate_templates: bool = True,
     ) -> None:
         """
         Initialize YAML compiler.
@@ -63,10 +66,14 @@ class YAMLCompiler:
             model_registry: Model registry for ambiguity resolution
             error_handler_validator: Error handler validator instance
             file_inclusion_processor: File inclusion processor instance
+            template_validator: Template validator instance
+            validate_templates: Whether to perform template validation
         """
         self.schema_validator = schema_validator or SchemaValidator()
         self.error_handler_validator = error_handler_validator or ErrorHandlerSchemaValidator()
         self.file_inclusion_processor = file_inclusion_processor or FileInclusionProcessor()
+        self.template_validator = template_validator or TemplateValidator()
+        self.validate_templates = validate_templates
 
         # Create ambiguity resolver - optional for compilation without resolution
         if ambiguity_resolver:
@@ -137,16 +144,20 @@ class YAMLCompiler:
                 raw_pipeline, context or {}
             )
 
-            # Step 6: Process templates
+            # Step 6: Validate templates if enabled
+            if self.validate_templates:
+                await self._validate_templates(raw_pipeline, merged_context)
+
+            # Step 7: Process templates
             processed = self._process_templates(raw_pipeline, merged_context)
 
-            # Step 7: Detect and resolve ambiguities
+            # Step 8: Detect and resolve ambiguities
             if resolve_ambiguities:
                 resolved = await self._resolve_ambiguities(processed)
             else:
                 resolved = processed
 
-            # Step 8: Build pipeline object with context
+            # Step 9: Build pipeline object with context
             return self._build_pipeline(resolved, merged_context)
 
         except Exception as e:
@@ -264,6 +275,60 @@ class YAMLCompiler:
             return parser.parse(yaml_content)
         except (yaml.YAMLError, ValueError) as e:
             raise YAMLCompilerError(f"Invalid YAML: {e}") from e
+
+    async def _validate_templates(
+        self, pipeline_def: Dict[str, Any], context: Dict[str, Any]
+    ) -> None:
+        """
+        Validate all templates in the pipeline definition.
+
+        Args:
+            pipeline_def: Pipeline definition
+            context: Template context variables
+
+        Raises:
+            YAMLCompilerError: If template validation fails
+        """
+        try:
+            logger.debug("Validating templates in pipeline definition")
+            
+            # Use template validator to check all templates
+            validation_result = self.template_validator.validate_pipeline_templates(
+                pipeline_def, context
+            )
+            
+            # Report validation results
+            if validation_result.has_errors:
+                error_messages = []
+                for error in validation_result.errors:
+                    error_messages.append(str(error))
+                
+                raise YAMLCompilerError(
+                    f"Template validation failed with {len(validation_result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log warnings if present
+            if validation_result.has_warnings:
+                logger.warning(f"Template validation completed with {len(validation_result.warnings)} warnings")
+                for warning in validation_result.warnings:
+                    logger.warning(str(warning))
+            else:
+                logger.info("Template validation completed successfully")
+                
+            # Log summary
+            if self.template_validator.debug_mode:
+                logger.debug(f"Template validation summary: {validation_result.summary()}")
+                logger.debug(f"Available variables: {sorted(validation_result.available_variables)}")
+                logger.debug(f"Used variables: {sorted(validation_result.used_variables)}")
+                if validation_result.undefined_variables:
+                    logger.debug(f"Undefined variables: {sorted(validation_result.undefined_variables)}")
+                    
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors
+            raise
+        except Exception as e:
+            raise YAMLCompilerError(f"Template validation failed: {e}") from e
 
     def _process_templates(
         self, pipeline_def: Dict[str, Any], context: Dict[str, Any]

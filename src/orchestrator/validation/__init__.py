@@ -12,6 +12,11 @@ from .output_validator import (
     DependencyValidationRule,
     FileSystemValidationRule
 )
+from .template_validator import (
+    TemplateValidator,
+    TemplateValidationError,
+    TemplateValidationResult
+)
 
 __all__ = [
     "OutputValidator",
@@ -20,5 +25,8 @@ __all__ = [
     "ConsistencyValidationRule",
     "FormatValidationRule",
     "DependencyValidationRule",
-    "FileSystemValidationRule"
+    "FileSystemValidationRule",
+    "TemplateValidator",
+    "TemplateValidationError", 
+    "TemplateValidationResult"
 ]
