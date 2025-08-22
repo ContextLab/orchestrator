@@ -18,6 +18,7 @@ except ImportError:
 from ..core.control_system import ControlSystem
 from ..core.task import Task, TaskStatus
 from ..core.pipeline import Pipeline
+from ..core.unified_template_resolver import UnifiedTemplateResolver, TemplateResolutionContext
 
 
 class ResearchReportControlSystem(ControlSystem):
@@ -45,6 +46,9 @@ class ResearchReportControlSystem(ControlSystem):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._results = {}
+        
+        # Initialize unified template resolver
+        self.unified_template_resolver = UnifiedTemplateResolver(debug_mode=True)
 
     async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute a research task."""
@@ -118,36 +122,27 @@ class ResearchReportControlSystem(ControlSystem):
             return False
 
     def _resolve_references(self, task: Task, context: dict):
-        """Resolve $results and template references."""
+        """Resolve $results and template references using UnifiedTemplateResolver."""
         if not task.parameters:
             return
 
-        for key, value in task.parameters.items():
-            if isinstance(value, str):
-                # Handle $results references
-                if value.startswith("$results."):
-                    parts = value.split(".")
-                    if len(parts) >= 2:
-                        task_id = parts[1]
-                        if task_id in self._results:
-                            result = self._results[task_id]
-                            for part in parts[2:]:
-                                if isinstance(result, dict) and part in result:
-                                    result = result[part]
-                                else:
-                                    result = None
-                                    break
-                            task.parameters[key] = result
-
-                # Handle template variables
-                elif "{{" in value and "}}" in value:
-                    # Simple template replacement
-                    if context and "inputs" in context:
-                        for input_key, input_value in context["inputs"].items():
-                            value = value.replace(
-                                f"{{{{ inputs.{input_key} }}}}", str(input_value)
-                            )
-                    task.parameters[key] = value
+        # Use UnifiedTemplateResolver for comprehensive template resolution
+        template_context = self.unified_template_resolver.collect_context(
+            pipeline_id=context.get("pipeline_id"),
+            task_id=task.id,
+            pipeline_inputs=context.get("inputs", {}),
+            pipeline_parameters=context.get("pipeline_params", {}),
+            step_results=self._results,
+            additional_context=context
+        )
+        
+        # Resolve all templates in task parameters
+        resolved_params = self.unified_template_resolver.resolve_templates(
+            task.parameters, template_context
+        )
+        
+        # Update task parameters with resolved values
+        task.parameters = resolved_params
 
     async def _search_web(self, task: Task, context: dict) -> Dict[str, Any]:
         """Perform web search for research."""
