@@ -32,6 +32,18 @@ from .model_validator import (
     ModelValidationError,
     ModelValidationResult
 )
+from .validation_report import (
+    ValidationReport,
+    ValidationLevel,
+    OutputFormat,
+    ValidationSeverity,
+    ValidationIssue,
+    ValidationStats,
+    create_template_issue,
+    create_tool_issue,
+    create_dependency_issue,
+    create_model_issue
+)
 
 __all__ = [
     "OutputValidator",
@@ -52,5 +64,15 @@ __all__ = [
     "DependencyValidationResult",
     "ModelValidator",
     "ModelValidationError",
-    "ModelValidationResult"
+    "ModelValidationResult",
+    "ValidationReport",
+    "ValidationLevel",
+    "OutputFormat",
+    "ValidationSeverity",
+    "ValidationIssue",
+    "ValidationStats",
+    "create_template_issue",
+    "create_tool_issue",
+    "create_dependency_issue",
+    "create_model_issue"
 ]
