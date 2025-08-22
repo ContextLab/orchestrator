@@ -31,19 +31,33 @@ While loop variables like `$iteration` are not available in templates within loo
 ## Current Work
 - [x] Analyze current while loop variable handling
 - [x] Identify disconnect between loop context and template rendering
-- [ ] Fix the while loop variable injection
-- [ ] Test the fix with filesystem tool
-- [ ] Verify for-each loops still work
-- [ ] Run comprehensive tests
+- [x] Fix the while loop variable injection
+- [x] Test the fix with filesystem tool
+- [x] Verify for-each loops still work
+- [x] Run comprehensive tests
 
-## Next Steps
-1. Fix the while loop context to properly provide `$iteration`
-2. Ensure template variables are correctly passed to template manager
-3. Test with the failing test case
-4. Verify no regression in for-each loops
+## Solution Implemented
+1. **Root Cause**: `LoopContextVariables.get_debug_info()` and `to_template_dict()` methods were designed for for-each loops and didn't include `$iteration` variables for while loops.
+
+2. **Fix Applied**: 
+   - Modified `get_debug_info()` to detect while loops (empty items list) and add `$iteration` and `iteration` variables
+   - Modified `to_template_dict()` to include `$iteration` in both named and default variable sets for while loops
+   - Enhanced `WhileLoopHandler.create_iteration_tasks()` to provide comprehensive loop variables
+
+3. **Key Changes**:
+   - While loops now properly provide `$iteration` = iteration number (0, 1, 2, ...)
+   - Both `{{ $iteration }}` and `{{ iteration }}` syntax work correctly
+   - For-each loops unchanged (still provide `$item`, `$index`, `$is_first`, etc.)
+   - Template manager receives variables in correct format
+
+## Test Results
+- ✅ **Basic while loop test**: Creates `iteration_0.txt`, `iteration_1.txt`, `iteration_2.txt` correctly
+- ✅ **For-each loop test**: Still works with `$item`, `$index`, `$is_first`, `$is_last` variables (no regression)
+- ✅ **Comprehensive syntax test**: Both `{{ $iteration }}` and `{{ iteration }}` work, mixed usage works
 
 ## Files Modified
-- (none yet)
+- `src/orchestrator/core/loop_context.py`: Updated `LoopContextVariables` class methods
+- `src/orchestrator/control_flow/loops.py`: Enhanced `WhileLoopHandler.create_iteration_tasks()`
 
 ## Commits
-- (none yet)
+- `6b9452a`: Issue #219: Fix while loop variables ($iteration) not available in templates
