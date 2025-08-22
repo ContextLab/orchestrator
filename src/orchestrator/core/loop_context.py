@@ -209,6 +209,12 @@ class LoopContextVariables:
             f"${self.loop_name}.has_prev": self.has_prev,
         }
         
+        # For while loops (empty items list), add iteration variables
+        if not self.items or self.length == 0:
+            named_vars.update({
+                f"${self.loop_name}.iteration": self.index,
+            })
+        
         # If this is the current loop, also provide default $ variables
         if is_current_loop:
             default_vars = {
@@ -223,13 +229,20 @@ class LoopContextVariables:
                 "$has_next": self.has_next,
                 "$has_prev": self.has_prev,
             }
+            
+            # For while loops, add iteration variables to default vars too
+            if not self.items or self.length == 0:
+                default_vars.update({
+                    "$iteration": self.index,
+                })
+            
             named_vars.update(default_vars)
         
         return named_vars
     
     def get_debug_info(self) -> Dict[str, Any]:
         """Get debug information about this loop context."""
-        return {
+        debug_info = {
             "loop_name": self.loop_name,
             "loop_id": self.loop_id,
             "is_auto_generated": self.is_auto_generated,
@@ -257,6 +270,15 @@ class LoopContextVariables:
             "$has_prev": self.has_prev,
             "$length": self.length,
         }
+        
+        # For while loops (empty items list), add iteration variables
+        if not self.items or self.length == 0:
+            debug_info.update({
+                "$iteration": self.index,  # For while loops, index IS the iteration
+                "iteration": self.index,
+            })
+        
+        return debug_info
 
 
 class GlobalLoopContextManager:

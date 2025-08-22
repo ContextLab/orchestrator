@@ -5,7 +5,6 @@ import asyncio
 import tempfile
 import shutil
 from pathlib import Path
-import yaml
 
 async def test_iteration_variables():
     """Test that iteration variables work in while loops."""
