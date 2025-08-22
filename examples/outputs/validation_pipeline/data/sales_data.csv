@@ -1,0 +1,6 @@
+date,customer_id,product,category,quantity,unit_price,region
+2024-01-20,101,Laptop,Electronics,1,1200.00,North
+2024-01-21,102,Chair,Furniture,2,150.00,South
+2024-01-22,103,Phone,Electronics,1,800.00,East
+2024-01-23,101,Desk,Furniture,1,300.00,North
+2024-01-24,104,Tablet,Electronics,3,400.00,West
