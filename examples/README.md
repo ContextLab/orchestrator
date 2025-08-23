@@ -27,11 +27,13 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
    - Intelligent model selection based on task complexity
    - Cost-optimized routing with fallback strategies
    - Quality vs efficiency tradeoffs
+   - **Docs**: [model_routing_demo.md](../docs/examples/model_routing_demo.md)
 
 3. **[llm_routing_pipeline.yaml](llm_routing_pipeline.yaml)** - Smart LLM Routing Pipeline
    - Advanced routing logic with prompt optimization
    - Automatic task complexity analysis
    - Performance monitoring and adaptation
+   - **Docs**: [llm_routing_pipeline.md](../docs/examples/llm_routing_pipeline.md)
 
 ### 🔬 Research & Analysis
 4. **[research_minimal.yaml](research_minimal.yaml)** - Minimal Research Pipeline
@@ -44,21 +46,25 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
    - Standard research with structured analysis
    - Multiple search strategies and content analysis
    - Professional report formatting
+   - **Docs**: [research_basic.md](../docs/examples/research_basic.md)
 
 6. **[research_advanced_tools.yaml](research_advanced_tools.yaml)** - Research Pipeline with Advanced Tools
    - Uses headless browser, PDF compiler, report generator
    - Professional publication-quality output
    - Advanced scraping and citation handling
+   - **Docs**: [research_advanced_tools.md](../docs/examples/research_advanced_tools.md)
 
 7. **[web_research_pipeline.yaml](web_research_pipeline.yaml)** - Web Research Automation
    - Comprehensive web research with validation
    - Multi-source aggregation and cross-referencing
    - Quality scoring and source credibility assessment
+   - **Docs**: [web_research_pipeline.md](../docs/examples/web_research_pipeline.md)
 
 8. **[working_web_search.yaml](working_web_search.yaml)** - Web Search and Summary
    - Basic web search with immediate summarization
    - Quick fact-finding and verification
    - Simple output format
+   - **Docs**: [working_web_search.md](../docs/examples/working_web_search.md)
 
 9. **[enhanced_research_pipeline.yaml](enhanced_research_pipeline.yaml)** - Enhanced Research Pipeline
    - Advanced research with tool integration
@@ -85,11 +91,13 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
     - Statistical computation and visualization
     - Data exploration and hypothesis testing
     - Chart generation and statistical reporting
+    - **Docs**: [statistical_analysis.md](../docs/examples/statistical_analysis.md)
 
 14. **[validation_pipeline.yaml](validation_pipeline.yaml)** - Data Validation Pipeline
     - Schema validation and data quality checks  
     - Structured data extraction and verification
     - Compliance and format validation
+    - **Docs**: [validation_pipeline.md](../docs/examples/validation_pipeline.md)
 
 ### 🔄 Control Flow & Iteration
 15. **[control_flow_conditional.yaml](control_flow_conditional.yaml)** - Conditional File Processing
@@ -122,6 +130,7 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
     - Until condition processing patterns
     - Threshold-based termination
     - Quality-driven iteration
+    - **Docs**: [until_condition_examples.md](../docs/examples/until_condition_examples.md)
 
 21. **[enhanced_until_conditions_demo.yaml](enhanced_until_conditions_demo.yaml)** - Advanced Until Conditions
     - Complex until conditions with multi-criteria evaluation
@@ -150,11 +159,13 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
 25. **[iterative_fact_checker.yaml](iterative_fact_checker.yaml)** - Iterative Fact Verification
     - Multi-pass fact checking with refinement
     - Progressive verification and evidence gathering
+    - **Docs**: [iterative_fact_checker.md](../docs/examples/iterative_fact_checker.md)
     - **Outputs**: [fact_checking_report.md](outputs/iterative_fact_checker/fact_checking_report.md)
 
 26. **[iterative_fact_checker_simple.yaml](iterative_fact_checker_simple.yaml)** - Simple Iterative Fact-Checker
     - Streamlined iterative fact verification
     - Basic claim validation workflow
+    - **Docs**: [iterative_fact_checker_simple.md](../docs/examples/iterative_fact_checker_simple.md)
     - **Outputs**: [fact_checking_report.md](outputs/iterative_fact_checker_simple/fact_checking_report.md)
 
 ### 💻 Code & System Operations
@@ -167,6 +178,7 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
     - System discovery and automated setup
     - Environment configuration and validation
     - Command execution and monitoring
+    - **Docs**: [terminal_automation.md](../docs/examples/terminal_automation.md)
 
 ### 🔌 Integration & Advanced Features
 29. **[mcp_integration_pipeline.yaml](mcp_integration_pipeline.yaml)** - MCP Integration Pipeline
@@ -177,21 +189,25 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
 30. **[mcp_memory_workflow.yaml](mcp_memory_workflow.yaml)** - MCP Memory Context Management
     - Persistent context and state management
     - Cross-session memory and retrieval
+    - **Docs**: [mcp_memory_workflow.md](../docs/examples/mcp_memory_workflow.md)
     - **Outputs**: [User context summaries](outputs/mcp_memory_workflow/)
 
 31. **[mcp_simple_test.yaml](mcp_simple_test.yaml)** - Basic MCP Testing
     - Simple MCP functionality validation
     - Connection testing and basic operations
     - Integration verification
+    - **Docs**: [mcp_simple_test.md](../docs/examples/mcp_simple_test.md)
 
 32. **[modular_analysis_pipeline.yaml](modular_analysis_pipeline.yaml)** - Modular Analysis Pipeline
     - Sub-pipeline orchestration and composition
     - Modular architecture with data visualization  
+    - **Docs**: [modular_analysis_pipeline.md](../docs/examples/modular_analysis_pipeline.md)
     - **Outputs**: [Dashboard and charts](outputs/modular_analysis/)
 
 33. **[interactive_pipeline.yaml](interactive_pipeline.yaml)** - Interactive Data Processing
     - User input integration and approval gates
     - Feedback collection and adaptive processing
+    - **Docs**: [interactive_pipeline.md](../docs/examples/interactive_pipeline.md)
     - **Outputs**: [Interactive results](outputs/interactive_pipeline/)
 
 ### ⚠️ Error Handling & Reliability
@@ -199,44 +215,52 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
     - Comprehensive error handling patterns
     - Recovery strategies and fallback mechanisms
     - Graceful degradation techniques
+    - **Docs**: [error_handling_examples.md](../docs/examples/error_handling_examples.md)
 
 35. **[simple_error_handling.yaml](simple_error_handling.yaml)** - Basic Error Handling
     - Simple error detection and recovery
     - Basic retry logic and error reporting
     - Foundation error handling patterns
+    - **Docs**: [simple_error_handling.md](../docs/examples/simple_error_handling.md)
 
 36. **[simple_timeout_test.yaml](simple_timeout_test.yaml)** - Timeout Handling Test
     - Timeout configuration and handling
     - Time-bound operation management
     - Performance monitoring
+    - **Docs**: [simple_timeout_test.md](../docs/examples/simple_timeout_test.md)
 
 ### 📁 File & Template Operations
 37. **[file_inclusion_demo.yaml](file_inclusion_demo.yaml)** - Dynamic File Inclusion
     - Runtime file inclusion and template processing
     - Dynamic content aggregation
     - File-based workflow composition
+    - **Docs**: [file_inclusion_demo.md](../docs/examples/file_inclusion_demo.md)
 
 ### 🧪 Testing & Development
 38. **[test_simple_pipeline.yaml](test_simple_pipeline.yaml)** - Simple Pipeline Testing
     - Basic pipeline testing framework
     - Validation and verification patterns
     - Development and debugging support
+    - **Docs**: [test_simple_pipeline.md](../docs/examples/test_simple_pipeline.md)
 
 ### 📋 Legacy & Backup Examples
 39. **[modular_analysis_pipeline_backup.yaml](modular_analysis_pipeline_backup.yaml)** - Modular Analysis Backup
     - Backup version of modular analysis pipeline
     - Alternative implementation approach
     - Development history preservation
+    - **Docs**: [modular_analysis_pipeline_backup.md](../docs/examples/modular_analysis_pipeline_backup.md)
 
 40. **[modular_analysis_pipeline_fixed.yaml](modular_analysis_pipeline_fixed.yaml)** - Fixed Modular Analysis
     - Corrected version of modular analysis pipeline
     - Bug fixes and improvements
     - Production-ready implementation
+    - **Docs**: [modular_analysis_pipeline_fixed.md](../docs/examples/modular_analysis_pipeline_fixed.md)
 
 41. **[original_research_report_pipeline.yaml](original_research_report_pipeline.yaml)** - Original Research Report
     - Original research pipeline implementation
     - Baseline research functionality
     - Reference implementation
+    - **Docs**: [original_research_report_pipeline.md](../docs/examples/original_research_report_pipeline.md)
 
 ## Pipeline Categories Summary
 
