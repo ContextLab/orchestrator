@@ -623,39 +623,188 @@ Access MCP-managed resources.
 
 ## Validation Tools
 
-### ValidationTool
-**ID:** `validation`
+The orchestrator framework provides comprehensive validation capabilities through multiple specialized validators.
 
-Validate data against schemas.
+### PipelineValidationTool
+**ID:** `pipeline-validation`
+
+Comprehensive pipeline validation using the unified validation framework.
 
 **Actions:**
-- `validate` - Validate data
-- `extract` - Extract and validate
-- `transform` - Transform to match schema
+- `validate` - Full pipeline validation
+- `check-templates` - Template-only validation  
+- `check-dependencies` - Dependency validation
+- `check-tools` - Tool configuration validation
+- `check-models` - Model configuration validation
+- `check-outputs` - Output validation
 
-**Modes:**
-- `STRICT` - Fail on any violation
-- `LENIENT` - Fix minor issues
-- `REPORT_ONLY` - Report issues without failing
+**Parameters:**
+- `validation_level` - Validation strictness (`strict`, `permissive`, `development`)
+- `output_format` - Report format (`text`, `json`, `detailed`, `summary`)
+- `validators` - List of validators to run (optional, runs all by default)
 
 **Example:**
 ```yaml
-- id: validate_input
-  tool: validation
+- id: validate_pipeline
+  tool: pipeline-validation
   action: validate
   parameters:
-    data: "{{ user_input }}"
-    schema:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-        age:
-          type: number
-          minimum: 18
-      required: ["email", "age"]
+    pipeline: "{{ pipeline_config }}"
+    validation_level: "strict"
+    output_format: "detailed"
+    validators: ["template", "dependency", "tool"]
+```
+
+### TemplateValidationTool
+**ID:** `template-validation`
+
+Validates Jinja2 templates for syntax errors and undefined variables.
+
+**Actions:**
+- `validate` - Validate template syntax and variables
+- `render` - Test render template with context
+- `analyze` - Analyze template dependencies
+
+**Example:**
+```yaml
+- id: check_template
+  tool: template-validation
+  action: validate
+  parameters:
+    template: "Hello {{name}}, your score is {{score}}"
+    context:
+      name: "Alice"
+      score: 95
+    strict: true
+```
+
+### OutputValidationTool  
+**ID:** `output-validation`
+
+Validates data against schemas and validation rules.
+
+**Actions:**
+- `validate` - Validate data against rules
+- `extract` - Extract and validate specific fields
+- `transform` - Transform data to match schema
+
+**Validation Rules:**
+- `consistency` - Check required fields, data consistency
+- `format` - Validate data formats (JSON, YAML, markdown, etc.)
+- `dependency` - Validate cross-references and relationships
+- `filesystem` - Validate file system outputs
+
+**Example:**
+```yaml
+- id: validate_output
+  tool: output-validation
+  action: validate
+  parameters:
+    data: "{{ analysis_result }}"
+    rules:
+      - name: "required_fields"
+        type: "consistency"
+        parameters:
+          required: ["title", "summary", "findings"]
+      - name: "format_check"
+        type: "format"
+        parameters:
+          format: "markdown"
+          schema:
+            type: object
+            properties:
+              title: {type: string}
+              summary: {type: string}
+              findings: {type: array}
     mode: "STRICT"
+```
+
+### DataFlowValidationTool
+**ID:** `dataflow-validation`
+
+Validates data flow between pipeline steps.
+
+**Actions:**
+- `validate` - Check data flow consistency
+- `trace` - Trace data dependencies
+- `analyze` - Analyze data types and compatibility
+
+**Example:**
+```yaml
+- id: check_dataflow  
+  tool: dataflow-validation
+  action: validate
+  parameters:
+    pipeline: "{{ pipeline_config }}"
+    check_types: true
+    strict_mode: false
+```
+
+### DependencyValidationTool
+**ID:** `dependency-validation`
+
+Validates task dependencies and execution order.
+
+**Actions:**
+- `validate` - Check dependency graph validity
+- `detect-cycles` - Find circular dependencies
+- `order` - Generate execution order
+
+**Example:**
+```yaml
+- id: check_dependencies
+  tool: dependency-validation  
+  action: validate
+  parameters:
+    pipeline: "{{ pipeline_config }}"
+    allow_optional_deps: true
+    max_parallel: 5
+```
+
+### ModelValidationTool
+**ID:** `model-validation`
+
+Validates model configurations and availability.
+
+**Actions:**
+- `validate` - Validate model configuration
+- `test` - Test model connectivity  
+- `compatibility` - Check model compatibility
+
+**Example:**
+```yaml
+- id: validate_model
+  tool: model-validation
+  action: validate
+  parameters:
+    model_config:
+      name: "gpt-4o-mini"
+      provider: "openai"
+      parameters:
+        temperature: 0.7
+        max_tokens: 1000
+    check_availability: true
+```
+
+### ToolValidationTool
+**ID:** `tool-validation`
+
+Validates tool configurations and parameters.
+
+**Actions:**
+- `validate` - Validate tool configuration
+- `check-params` - Validate parameters
+- `test` - Test tool execution
+
+**Example:**
+```yaml
+- id: validate_tools
+  tool: tool-validation
+  action: validate
+  parameters:
+    tools_config: "{{ pipeline_config.steps }}"
+    check_availability: true
+    validate_params: true
 ```
 
 ---

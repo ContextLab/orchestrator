@@ -363,7 +363,7 @@ class ValidationTool(Tool):
         self.add_parameter(
             "action",
             "string",
-            "Action: 'validate', 'extract_structured', 'infer_schema'",
+            "Action: 'validate', 'extract_structured', 'infer_schema', 'quality_check'",
             required=False,
             default="validate",
         )
@@ -391,6 +391,13 @@ class ValidationTool(Tool):
             "string",
             "Pydantic model class name for validation",
             required=False,
+        )
+        self.add_parameter(
+            "threshold",
+            "number",
+            "Quality threshold for validation (0.0-1.0)",
+            required=False,
+            default=0.8,
         )
 
         # Core components
@@ -424,10 +431,12 @@ class ValidationTool(Tool):
                 return await self._extract_structured(kwargs)
             elif action == "infer_schema":
                 return await self._infer_schema(kwargs)
+            elif action == "quality_check":
+                return await self._validate_quality_check(kwargs)
             else:
-                return {"success": False, "error": f"Unknown action: {action}"}
+                return {"result": None, "success": False, "error": f"Unknown action: {action}"}
         except Exception as e:
-            return {"success": False, "error": str(e), "action": action}
+            return {"result": None, "success": False, "error": str(e)}
 
     async def _validate_data(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Validate data against a schema."""
@@ -436,10 +445,10 @@ class ValidationTool(Tool):
         mode_str = params.get("mode", "strict")
 
         if data is None:
-            return {"success": False, "error": "No data provided for validation"}
+            return {"result": None, "success": False, "error": "No data provided for validation"}
 
         if not schema:
-            return {"success": False, "error": "No schema provided for validation"}
+            return {"result": None, "success": False, "error": "No schema provided for validation"}
         
         # Parse data string if needed
         if isinstance(data, str):
@@ -477,9 +486,9 @@ class ValidationTool(Tool):
                                                 pass
                     else:
                         # Not CSV, return error
-                        return {"success": False, "error": f"Invalid data format: not JSON or CSV", "valid": False}
+                        return {"result": None, "success": False, "error": f"Invalid data format: not JSON or CSV"}
                 except Exception as e:
-                    return {"success": False, "error": f"Failed to parse CSV data: {str(e)}", "valid": False}
+                    return {"result": None, "success": False, "error": f"Failed to parse CSV data: {str(e)}"}
 
         # Parse validation mode
         try:
@@ -509,25 +518,31 @@ class ValidationTool(Tool):
                 validated_data.append(result.data or row)
             
             return {
+                "result": {
+                    "valid": all_valid,
+                    "errors": all_errors,
+                    "warnings": all_warnings,
+                    "data": validated_data,
+                    "mode": mode.value,
+                    "rows_validated": len(data),
+                },
                 "success": True,
-                "valid": all_valid,
-                "errors": all_errors,
-                "warnings": all_warnings,
-                "data": validated_data,
-                "mode": mode.value,
-                "rows_validated": len(data),
+                "error": None,
             }
         else:
             # Perform single object validation
             result = self.schema_validator.validate(data, schema, mode)
 
             return {
+                "result": {
+                    "valid": result.valid,
+                    "errors": result.errors,
+                    "warnings": result.warnings,
+                    "data": result.data,
+                    "mode": mode.value,
+                },
                 "success": True,
-                "valid": result.valid,
-                "errors": result.errors,
-                "warnings": result.warnings,
-                "data": result.data,
-                "mode": mode.value,
+                "error": None,
             }
 
     async def _extract_structured(self, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -537,14 +552,15 @@ class ValidationTool(Tool):
         model_name = params.get("model", self.model_name)
 
         if not text:
-            return {"success": False, "error": "No text provided for extraction"}
+            return {"result": None, "success": False, "error": "No text provided for extraction"}
 
         if not schema:
-            return {"success": False, "error": "No schema provided for extraction"}
+            return {"result": None, "success": False, "error": "No schema provided for extraction"}
 
         # Check if we have a model available
         if not self.model and not model_name:
             return {
+                "result": None,
                 "success": False,
                 "error": "No model available for structured extraction. Please provide 'model' parameter or initialize with a model.",
             }
@@ -581,9 +597,9 @@ Return the extracted data as a JSON object that matches the schema."""
                         raise ValueError("No JSON found in response")
                 except (json.JSONDecodeError, ValueError) as e:
                     return {
+                        "result": None,
                         "success": False,
                         "error": f"Failed to parse model response as JSON: {str(e)}",
-                        "raw_response": response,
                     }
 
                 # Validate extracted data against schema
@@ -592,35 +608,38 @@ Return the extracted data as a JSON object that matches the schema."""
                 )
 
                 return {
+                    "result": {
+                        "valid": validation_result.valid,
+                        "data": validation_result.data or extracted_data,
+                        "errors": validation_result.errors,
+                        "warnings": validation_result.warnings,
+                        "model_used": self.model.__class__.__name__,
+                    },
                     "success": True,
-                    "valid": validation_result.valid,
-                    "data": validation_result.data or extracted_data,
-                    "errors": validation_result.errors,
-                    "warnings": validation_result.warnings,
-                    "model_used": self.model.__class__.__name__,
+                    "error": None,
                 }
             else:
                 # TODO: Implement LangChain structured output when model_name is provided
                 return {
+                    "result": None,
                     "success": False,
                     "error": "LangChain structured output integration not yet implemented",
-                    "note": "Currently only direct model extraction is supported",
                 }
 
         except Exception as e:
-            return {"success": False, "error": f"Extraction failed: {str(e)}"}
+            return {"result": None, "success": False, "error": f"Extraction failed: {str(e)}"}
 
     async def _infer_schema(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Infer a JSON Schema from sample data."""
         data = params.get("data")
 
         if data is None:
-            return {"success": False, "error": "No data provided for schema inference"}
+            return {"result": None, "success": False, "error": "No data provided for schema inference"}
 
         # Basic schema inference
         schema = self._infer_schema_from_data(data)
 
-        return {"success": True, "schema": schema, "data_type": type(data).__name__}
+        return {"result": {"schema": schema, "data_type": type(data).__name__}, "success": True, "error": None}
 
     def _infer_schema_from_data(self, data: Any) -> Dict[str, Any]:
         """Infer a basic JSON Schema from data."""
@@ -719,3 +738,256 @@ Return the extracted data as a JSON object that matches the schema."""
             return Dict[str, Any]
         else:
             return Any
+
+    async def _validate_quality_check(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Perform comprehensive quality check on data."""
+        data = params.get("data")
+        threshold = params.get("threshold", 0.8)
+        
+        if data is None:
+            return {"result": None, "success": False, "error": "No data provided for quality check"}
+        
+        # Parse data if it's a string
+        if isinstance(data, str):
+            import json
+            import csv
+            import io
+            
+            # Try JSON first
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                # Try CSV if JSON fails
+                try:
+                    if ',' in data and '\n' in data:
+                        reader = csv.DictReader(io.StringIO(data))
+                        data = list(reader)
+                        if not data:
+                            data = []
+                    else:
+                        return {"result": None, "success": False, "error": "Invalid data format: not JSON or CSV"}
+                except Exception as e:
+                    return {"result": None, "success": False, "error": f"Failed to parse data: {str(e)}"}
+        
+        # Initialize quality metrics
+        completeness_score = 0.0
+        accuracy_score = 0.0
+        consistency_score = 0.0
+        
+        try:
+            # Analyze data based on type
+            if isinstance(data, list) and data:
+                # Analyze array of records
+                completeness_score = self._analyze_completeness(data)
+                accuracy_score = self._analyze_accuracy(data)
+                consistency_score = self._analyze_consistency(data)
+            elif isinstance(data, dict):
+                # Analyze single record
+                completeness_score = self._analyze_completeness([data])
+                accuracy_score = self._analyze_accuracy([data])
+                consistency_score = self._analyze_consistency([data])
+            elif isinstance(data, list) and not data:
+                # Empty data
+                completeness_score = 0.0
+                accuracy_score = 1.0  # No data to be inaccurate
+                consistency_score = 1.0  # Empty data is consistent
+            else:
+                # Other data types - basic checks
+                completeness_score = 1.0 if data is not None else 0.0
+                accuracy_score = 1.0  # Assume accurate if not null
+                consistency_score = 1.0  # Single value is consistent
+            
+            # Calculate overall score
+            overall_score = (completeness_score + accuracy_score + consistency_score) / 3.0
+            
+            # Determine validity based on threshold
+            is_valid = overall_score >= threshold
+            
+            result = {
+                'completeness': round(completeness_score, 3),
+                'accuracy': round(accuracy_score, 3),
+                'consistency': round(consistency_score, 3),
+                'overall_score': round(overall_score, 3),
+                'valid': is_valid
+            }
+            
+            return {
+                "result": result,
+                "success": True,
+                "error": None
+            }
+            
+        except Exception as e:
+            return {"result": None, "success": False, "error": f"Quality check failed: {str(e)}"}
+    
+    def _analyze_completeness(self, data: List[Dict]) -> float:
+        """Analyze data completeness."""
+        if not data:
+            return 0.0
+        
+        total_fields = 0
+        filled_fields = 0
+        
+        # Get all possible field names
+        all_fields = set()
+        for record in data:
+            if isinstance(record, dict):
+                all_fields.update(record.keys())
+        
+        if not all_fields:
+            return 1.0  # No fields to check
+        
+        # Check completeness for each record
+        for record in data:
+            if isinstance(record, dict):
+                for field in all_fields:
+                    total_fields += 1
+                    value = record.get(field)
+                    # Consider non-null, non-empty values as complete
+                    if value is not None and value != "" and str(value).strip():
+                        filled_fields += 1
+        
+        return filled_fields / total_fields if total_fields > 0 else 1.0
+    
+    def _analyze_accuracy(self, data: List[Dict]) -> float:
+        """Analyze data accuracy based on format validation."""
+        if not data:
+            return 1.0  # No data to be inaccurate
+        
+        total_values = 0
+        accurate_values = 0
+        
+        for record in data:
+            if isinstance(record, dict):
+                for field, value in record.items():
+                    if value is not None and value != "":
+                        total_values += 1
+                        # Basic accuracy checks
+                        if self._is_value_accurate(field, value):
+                            accurate_values += 1
+        
+        return accurate_values / total_values if total_values > 0 else 1.0
+    
+    def _analyze_consistency(self, data: List[Dict]) -> float:
+        """Analyze data consistency."""
+        if not data or len(data) < 2:
+            return 1.0  # Single records are consistent
+        
+        # Track data types and formats for each field
+        field_types = {}
+        field_formats = {}
+        
+        for record in data:
+            if isinstance(record, dict):
+                for field, value in record.items():
+                    if value is not None and value != "":
+                        value_type = type(value).__name__
+                        
+                        # Track types for this field
+                        if field not in field_types:
+                            field_types[field] = {}
+                        field_types[field][value_type] = field_types[field].get(value_type, 0) + 1
+                        
+                        # Track formats for string fields
+                        if isinstance(value, str):
+                            format_pattern = self._detect_format_pattern(value)
+                            if format_pattern:
+                                if field not in field_formats:
+                                    field_formats[field] = {}
+                                field_formats[field][format_pattern] = field_formats[field].get(format_pattern, 0) + 1
+        
+        # Calculate consistency scores
+        total_fields = 0
+        consistent_fields = 0
+        
+        for field in field_types:
+            total_fields += 1
+            # Field is consistent if one type represents >80% of values
+            type_counts = field_types[field]
+            total_count = sum(type_counts.values())
+            max_type_count = max(type_counts.values())
+            
+            type_consistency = max_type_count / total_count
+            
+            # Check format consistency for strings
+            format_consistency = 1.0
+            if field in field_formats:
+                format_counts = field_formats[field]
+                total_format_count = sum(format_counts.values())
+                max_format_count = max(format_counts.values())
+                format_consistency = max_format_count / total_format_count
+            
+            # Combined consistency score for this field
+            field_consistency = (type_consistency + format_consistency) / 2
+            if field_consistency >= 0.8:
+                consistent_fields += 1
+        
+        return consistent_fields / total_fields if total_fields > 0 else 1.0
+    
+    def _is_value_accurate(self, field: str, value: Any) -> bool:
+        """Check if a value appears to be accurate for its field."""
+        # Basic accuracy checks
+        
+        # Email validation
+        if 'email' in field.lower():
+            if isinstance(value, str):
+                import re
+                return bool(re.match(r'^[^@]+@[^@]+\.[^@]+$', value))
+            return False
+        
+        # Date validation
+        if 'date' in field.lower():
+            if isinstance(value, str):
+                import re
+                # Check for common date formats
+                date_patterns = [
+                    r'\d{4}-\d{2}-\d{2}',  # YYYY-MM-DD
+                    r'\d{2}/\d{2}/\d{4}',  # MM/DD/YYYY
+                    r'\d{2}-\d{2}-\d{4}',  # MM-DD-YYYY
+                ]
+                return any(re.match(pattern, value) for pattern in date_patterns)
+            return False
+        
+        # Numeric fields
+        if any(keyword in field.lower() for keyword in ['id', 'count', 'number', 'quantity', 'amount']):
+            if isinstance(value, str):
+                try:
+                    float(value)
+                    return True
+                except ValueError:
+                    return False
+            return isinstance(value, (int, float))
+        
+        # URL validation
+        if 'url' in field.lower() or 'link' in field.lower():
+            if isinstance(value, str):
+                import re
+                return bool(re.match(r'https?://', value))
+            return False
+        
+        # Default: assume accurate if not obviously wrong
+        return True
+    
+    def _detect_format_pattern(self, value: str) -> Optional[str]:
+        """Detect common format patterns in string values."""
+        import re
+        
+        # Common patterns
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', value):
+            return 'date_iso'
+        elif re.match(r'^\d{2}/\d{2}/\d{4}$', value):
+            return 'date_us'
+        elif re.match(r'^[^@]+@[^@]+\.[^@]+$', value):
+            return 'email'
+        elif re.match(r'^https?://', value):
+            return 'url'
+        elif re.match(r'^\d+$', value):
+            return 'numeric'
+        elif re.match(r'^\d*\.\d+$', value):
+            return 'decimal'
+        elif re.match(r'^[A-Z]{2,3}$', value):
+            return 'code_upper'
+        elif re.match(r'^[a-z]{2,3}$', value):
+            return 'code_lower'
+        else:
+            return None

@@ -1,0 +1,9 @@
+{
+  "namespace": "conversation",
+  "exported_at": "{{ execution['timestamp'] }}",
+  "keys": {{ get_full_context['keys'] | tojson }},
+  "metadata": {
+    "user": "Test User",
+    "task": "Test memory persistence functionality"
+  }
+}

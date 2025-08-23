@@ -7,6 +7,7 @@ from typing import Any, Dict
 from ..core.control_system import ControlSystem
 from ..core.task import Task, TaskStatus
 from ..core.pipeline import Pipeline
+from ..core.unified_template_resolver import UnifiedTemplateResolver, TemplateResolutionContext
 from ..tools.base import default_registry
 from ..tools.mcp_server import default_mcp_server
 
@@ -54,6 +55,9 @@ class ToolIntegratedControlSystem(ControlSystem):
 
         # Register default tools
         self.tool_server.register_default_tools()
+        
+        # Initialize unified template resolver
+        self.unified_template_resolver = UnifiedTemplateResolver(debug_mode=True)
 
     async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """Execute task using integrated tools."""
@@ -162,50 +166,46 @@ class ToolIntegratedControlSystem(ControlSystem):
             # Map task parameters to tool parameters
             tool_params = self._map_task_to_tool_params(task, tool_name)
             
-            # Deep render all template parameters before passing to tool
-            from ..core.template_manager import TemplateManager
+            # Use UnifiedTemplateResolver to render templates in tool parameters
+            # Collect comprehensive context for template resolution
+            template_context = self.unified_template_resolver.collect_context(
+                pipeline_id=context.get("pipeline_id"),
+                task_id=task.id,
+                tool_name=tool_name,
+                pipeline_inputs=context.get("pipeline_inputs", {}),
+                pipeline_parameters=context.get("pipeline_params", {}),
+                step_results=context.get("previous_results", context.get("results", {})),
+                tool_parameters=tool_params,
+                additional_context={
+                    # Add results from internal storage
+                    **self._results,
+                    # Add loop variables
+                    "$item": context.get("$item"),
+                    "$index": context.get("$index"),
+                    "$is_first": context.get("$is_first"),
+                    "$is_last": context.get("$is_last"),
+                    "$iteration": context.get("$iteration"),
+                    # Add other context variables
+                    **{k: v for k, v in context.items() 
+                       if k not in ["pipeline_id", "pipeline_inputs", "pipeline_params", "previous_results", "results", "_template_manager"]
+                       and not k.startswith("_")}
+                }
+            )
             
-            # Use the template manager from context if available (which has pipeline inputs)
-            # Otherwise create a new one
-            if "_template_manager" in context and isinstance(context["_template_manager"], TemplateManager):
-                template_manager = context["_template_manager"]
-            else:
-                template_manager = TemplateManager()
-                
-                # Register context in template manager
-                # Handle both 'results' and 'previous_results' keys
-                if "results" in context:
-                    template_manager.register_all_results(context["results"])
-                elif "previous_results" in context:
-                    template_manager.register_all_results(context["previous_results"])
-                
-                # Also add results from self._results
-                if self._results:
-                    template_manager.register_all_results(self._results)
-                
-                # Add other context values
-                for key, value in context.items():
-                    if key not in ["results", "previous_results", "_template_manager"] and not key.startswith("_"):
-                        template_manager.register_context(key, value)
-            
-            # Deep render tool parameters to handle all template strings
-                
-            # For filesystem tool with write action, pass template_manager for runtime rendering
+            # For filesystem tool with write action, preserve runtime rendering capability
             if tool_name == "filesystem" and tool_params.get("action") == "write":
-                # Don't render the content parameter - let FileSystemTool do it at runtime
-                rendered_params = {}
-                for key, value in tool_params.items():
-                    if key == "content":
-                        # Keep content as-is for runtime rendering
-                        rendered_params[key] = value
-                    else:
-                        # Render other parameters
-                        rendered_params[key] = template_manager.deep_render(value)
-                # Pass template_manager to the tool
-                rendered_params["_template_manager"] = template_manager
+                # Use resolve_before_tool_execution but pass additional components for runtime rendering
+                rendered_params = self.unified_template_resolver.resolve_before_tool_execution(
+                    tool_name, tool_params, template_context
+                )
+                # Pass the resolver components for runtime rendering if needed
+                rendered_params["unified_template_resolver"] = self.unified_template_resolver
+                rendered_params["template_resolution_context"] = template_context
             else:
-                # For other tools, render all parameters
-                rendered_params = template_manager.deep_render(tool_params)
+                # For other tools, fully resolve all parameters
+                rendered_params = self.unified_template_resolver.resolve_before_tool_execution(
+                    tool_name, tool_params, template_context
+                )
 
             # Execute tool with rendered parameters
             result = await self.tool_server.handle_tool_call(tool_name, rendered_params)

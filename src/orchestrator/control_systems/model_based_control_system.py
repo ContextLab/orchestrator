@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, Dict, List, Optional
 
 from ..core.control_system import ControlSystem
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..core.unified_template_resolver import UnifiedTemplateResolver, TemplateResolutionContext
 from ..models.model_registry import ModelRegistry
+from ..utils.output_sanitizer import sanitize_output
+
+logger = logging.getLogger(__name__)
 
 
 class ModelBasedControlSystem(ControlSystem):
@@ -59,6 +64,9 @@ class ModelBasedControlSystem(ControlSystem):
         super().__init__(name, config)
         self.model_registry = model_registry
         self._execution_history = []
+        
+        # Initialize unified template resolver
+        self.unified_template_resolver = UnifiedTemplateResolver(debug_mode=True)
 
     async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
         """
@@ -71,58 +79,40 @@ class ModelBasedControlSystem(ControlSystem):
         Returns:
             Task execution result
         """
-        # Render templates in task parameters if template_manager is available
-        if "_template_manager" in context and task.parameters:
-            template_manager = context["_template_manager"]
-            rendered_params = {}
+        # Use UnifiedTemplateResolver to render templates in task parameters
+        if task.parameters:
+            # Collect comprehensive context for template resolution
+            template_context = self.unified_template_resolver.collect_context(
+                pipeline_id=context.get("pipeline_id"),
+                task_id=task.id,
+                pipeline_inputs=context.get("pipeline_inputs", {}),
+                pipeline_parameters=context.get("pipeline_params", {}),
+                step_results=context.get("previous_results", {}),
+                additional_context={
+                    # Add loop variables
+                    "$item": context.get("$item"),
+                    "$index": context.get("$index"),
+                    "$is_first": context.get("$is_first"),
+                    "$is_last": context.get("$is_last"),
+                    "$iteration": context.get("$iteration"),
+                    # Add any other context variables
+                    **{k: v for k, v in context.items() 
+                       if k not in ["pipeline_id", "pipeline_inputs", "pipeline_params", "previous_results", "_template_manager"]}
+                }
+            )
             
-            for key, value in task.parameters.items():
-                if isinstance(value, str) and ("{{" in value or "{%" in value):
-                    # This is a template string that needs rendering
-                    try:
-                        # Build comprehensive context for rendering
-                        render_context = {
-                            **context.get("pipeline_params", {}),  # Pipeline parameters
-                            **context.get("previous_results", {}),  # Previous step results
-                            **context.get("results", {}),          # Alternative results key
-                            "$item": context.get("$item"),         # Loop item if in loop
-                            "$index": context.get("$index"),       # Loop index if in loop
-                        }
-                        
-                        # Render the template
-                        rendered_value = template_manager.render(
-                            value,
-                            additional_context=render_context
-                        )
-                        rendered_params[key] = rendered_value
-                        
-                        # Log the rendering for debugging
-                        import logging
-                        logger = logging.getLogger(__name__)
-                        if key == "prompt":
-                            logger.info(f"Task {task.id}: Rendered prompt template successfully")
-                            logger.debug(f"  From: '{value[:100]}...'")
-                            logger.debug(f"  To: '{rendered_value[:100]}...'")
-                        else:
-                            logger.debug(f"Task {task.id}: Rendered {key} template")
-                        
-                        # Validate that no unrendered templates remain
-                        if "{{" in rendered_value or "{%" in rendered_value:
-                            logger.warning(f"Task {task.id}: Rendered {key} still contains template markers!")
-                            logger.debug(f"  Rendered value: {rendered_value[:200]}")
-                    except Exception as e:
-                        # If rendering fails, use original value
-                        import logging
-                        logger = logging.getLogger(__name__)
-                        logger.warning(f"Task {task.id}: Failed to render template for {key}: {e}")
-                        logger.debug(f"  Original value: {value[:200]}")
-                        logger.debug(f"  Available context keys: {list(render_context.keys())}")
-                        rendered_params[key] = value
-                else:
-                    rendered_params[key] = value
+            # Resolve templates in task parameters
+            rendered_params = self.unified_template_resolver.resolve_templates(
+                task.parameters, template_context
+            )
             
             # Update task parameters with rendered values
             task.parameters = rendered_params
+            
+            # Log template resolution for debugging
+            logger.info(f"Task {task.id}: Template resolution completed using UnifiedTemplateResolver")
+            if "prompt" in rendered_params:
+                logger.debug(f"  Resolved prompt length: {len(str(rendered_params['prompt']))} chars")
         
         # Validate required parameters for text generation actions
         if task.action in ["generate_text", "generate"] and (
@@ -208,45 +198,86 @@ class ModelBasedControlSystem(ControlSystem):
             prompt = self._build_prompt(task, action_text, context)
 
         try:
-            # Use the model to generate result
-            # Get generation parameters from task
-            temperature = (
-                task.parameters.get("temperature", 0.7) if task.parameters else 0.7
-            )
-            max_tokens = (
-                task.parameters.get("max_tokens", 1000) if task.parameters else 1000
-            )
+            # Check if this is a structured generation task
+            if task.action == "generate-structured":
+                # Use structured generation
+                if not task.parameters or "schema" not in task.parameters:
+                    raise ValueError(
+                        f"Task '{task.id}' with action 'generate-structured' requires a 'schema' parameter"
+                    )
+                
+                temperature = (
+                    task.parameters.get("temperature", 0.7) if task.parameters else 0.7
+                )
+                
+                # Build structured generation kwargs
+                structured_kwargs = {
+                    "prompt": prompt,
+                    "schema": task.parameters["schema"],
+                    "temperature": temperature,
+                }
+                
+                # Add any additional kwargs, excluding system parameters
+                if task.parameters:
+                    for key, value in task.parameters.items():
+                        if key not in ["prompt", "schema", "temperature", "model", "max_tokens"]:
+                            structured_kwargs[key] = value
+                
+                result = await model.generate_structured(**structured_kwargs)
+                
+                # Parse the result based on expected format
+                parsed_result = self._parse_result(result, task)
+                
+                # Apply output sanitization to clean conversational markers
+                sanitized_result = sanitize_output(parsed_result)
+                
+                return sanitized_result
             
-            # Build generation kwargs
-            # Handle model-specific parameter names
-            gen_kwargs = {
-                "prompt": prompt,
-                "temperature": temperature,
-            }
-            
-            # Check if model requires max_completion_tokens instead of max_tokens
-            # GPT-5 models from OpenAI require max_completion_tokens
-            if model and hasattr(model, 'provider') and model.provider == 'openai':
-                # Check if it's a GPT-5 model
-                if hasattr(model, 'name') and 'gpt-5' in model.name.lower():
-                    gen_kwargs["max_completion_tokens"] = max_tokens
+            else:
+                # Use regular generation
+                # Get generation parameters from task
+                temperature = (
+                    task.parameters.get("temperature", 0.7) if task.parameters else 0.7
+                )
+                max_tokens = (
+                    task.parameters.get("max_tokens", 1000) if task.parameters else 1000
+                )
+                
+                # Build generation kwargs
+                # Handle model-specific parameter names
+                gen_kwargs = {
+                    "prompt": prompt,
+                    "temperature": temperature,
+                }
+                
+                # Check if model requires max_completion_tokens instead of max_tokens
+                # GPT-5 models from OpenAI require max_completion_tokens
+                if model and hasattr(model, 'provider') and model.provider == 'openai':
+                    # Check if it's a GPT-5 model
+                    if hasattr(model, 'name') and 'gpt-5' in model.name.lower():
+                        gen_kwargs["max_completion_tokens"] = max_tokens
+                    else:
+                        gen_kwargs["max_tokens"] = max_tokens
                 else:
                     gen_kwargs["max_tokens"] = max_tokens
-            else:
-                gen_kwargs["max_tokens"] = max_tokens
-            
-            # Add response_format if specified
-            if task.parameters and "response_format" in task.parameters:
-                gen_kwargs["response_format"] = task.parameters["response_format"]
+                
+                # Add response_format if specified
+                if task.parameters and "response_format" in task.parameters:
+                    gen_kwargs["response_format"] = task.parameters["response_format"]
 
-            result = await model.generate(**gen_kwargs)
+                result = await model.generate(**gen_kwargs)
 
-            # Parse the result based on expected format
-            return self._parse_result(result, task)
+                # Parse the result based on expected format
+                parsed_result = self._parse_result(result, task)
+                
+                # Apply output sanitization to clean conversational markers
+                sanitized_result = sanitize_output(parsed_result)
+                
+                return sanitized_result
 
         except Exception as e:
             # Log the error and re-raise it
-            print(f">> Model execution error: {str(e)}")
+            logger.error(f"Model execution error: {str(e)}")
             raise RuntimeError(f"Failed to execute task {task.id}: {str(e)}") from e
 
     def _get_task_requirements(self, task: Task) -> Dict[str, Any]:
@@ -254,15 +285,13 @@ class ModelBasedControlSystem(ControlSystem):
         # Determine task type
         task_types = []
         action_lower = str(task.action).lower()  # Convert to string first
-        print(
-            f">> DEBUG: Processing action: '{action_lower}' (type: {type(task.action)})"
-        )
+        logger.debug(f"Processing action: '{action_lower}' (type: {type(task.action)})")
 
         # Map action to supported task types
         if "generate_text" in action_lower or action_lower == "generate_text":
             # Special case for generate_text action - map to "generate"
             task_types.append("generate")
-            print(">> DEBUG: Mapped generate_text to generate")
+            logger.debug("Mapped generate_text to generate")
         elif any(word in action_lower for word in ["generate", "create", "write"]):
             task_types.append("generate")
         if any(word in action_lower for word in ["analyze", "extract", "identify"]):
@@ -276,14 +305,14 @@ class ModelBasedControlSystem(ControlSystem):
         if not task_types:
             task_types = ["generate"]
 
-        # Debug print
+        # Calculate requirements
         context_estimate = len(str(task.parameters)) // 4
         requirements = {
             "tasks": task_types,
             "context_window": context_estimate,  # Rough estimate
             "expertise": self._determine_expertise(task),
         }
-        print(f">> DEBUG: Task requirements for {task.action}: {requirements}")
+        logger.debug(f"Task requirements for {task.action}: {requirements}")
         return requirements
 
     def _determine_expertise(self, task: Task) -> list[str]:
@@ -382,10 +411,26 @@ class ModelBasedControlSystem(ControlSystem):
 
         return "\n".join(prompt_parts)
 
-    def _parse_result(self, result: str, task: Task) -> Any:
+    def _parse_result(self, result: Any, task: Task) -> Any:
         """Parse model result based on expected format."""
-        # For now, return the raw result
-        # In the future, this could parse JSON, extract specific fields, etc.
+        # For generate-structured actions, the result should already be a structured object
+        if task.action == "generate-structured":
+            # If it's still a string, try to parse it as JSON
+            if isinstance(result, str):
+                try:
+                    import json
+                    return json.loads(result)
+                except json.JSONDecodeError:
+                    # If parsing fails, return the string as-is
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Task {task.id}: Could not parse generate-structured result as JSON")
+                    return result
+            else:
+                # Already structured, return as-is
+                return result
+        
+        # For other actions, return the raw result
         return result
 
     async def execute_pipeline(self, pipeline: Pipeline) -> Dict[str, Any]:

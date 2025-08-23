@@ -159,6 +159,8 @@ This documentation is organized into several sections:
    api/models
    api/state
    api/adapters
+   api/utilities
+   api/validation
 
 .. toctree::
    :maxdepth: 2

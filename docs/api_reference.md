@@ -351,6 +351,47 @@ from orchestrator.core.exceptions import (
 
 ## Utilities
 
+### OutputSanitizer
+
+Removes conversational markers and unnecessary content from AI model outputs.
+
+```python
+from orchestrator.utils.output_sanitizer import OutputSanitizer, sanitize_output
+
+# Using the class directly
+sanitizer = OutputSanitizer(enabled=True)
+clean_text = sanitizer.sanitize("Certainly! Here is the analysis you requested: Data shows growth.")
+# Returns: "Data shows growth."
+
+# Using the convenience function
+clean_text = sanitize_output("Sure! I'd be happy to help. The answer is 42.")
+# Returns: "The answer is 42."
+
+# Batch processing
+texts = ["Certainly! Result 1", "Of course! Result 2"] 
+clean_texts = sanitizer.sanitize_batch(texts)
+# Returns: ["Result 1", "Result 2"]
+```
+
+#### Configuration
+
+```python
+from orchestrator.utils.output_sanitizer import configure_sanitizer
+
+# Global configuration
+configure_sanitizer(
+    enabled=True,
+    custom_patterns={
+        "starter": [r"^My analysis:\s*"],
+        "ending": [r"\s*End of analysis\.\s*$"]
+    }
+)
+
+# Per-instance configuration
+sanitizer = OutputSanitizer(enabled=True)
+sanitizer.add_custom_pattern(r"^Custom prefix:\s*", "starter")
+```
+
 ### Template Resolution
 
 ```python
@@ -369,6 +410,121 @@ resolved = resolve_template(
 from orchestrator.utils.schema_validator import validate_yaml_schema
 
 is_valid = validate_yaml_schema(yaml_content)
+```
+
+## Validation Framework
+
+The orchestrator framework provides comprehensive validation capabilities through multiple specialized validators.
+
+### Pipeline Validation
+
+```python
+from orchestrator.validation import (
+    ValidationReport, ValidationLevel, OutputFormat,
+    TemplateValidator, ToolValidator, DependencyValidator
+)
+
+def validate_pipeline(pipeline_config):
+    """Comprehensive pipeline validation."""
+    
+    # Create validation report
+    report = ValidationReport(
+        validation_level=ValidationLevel.STRICT,
+        output_format=OutputFormat.DETAILED
+    )
+    
+    # Initialize validators
+    template_validator = TemplateValidator()
+    tool_validator = ToolValidator()
+    dependency_validator = DependencyValidator()
+    
+    # Run validations
+    template_result = template_validator.validate_pipeline(pipeline_config)
+    report.add_issues(template_result.issues)
+    
+    tool_result = tool_validator.validate_pipeline(pipeline_config)
+    report.add_issues(tool_result.issues)
+    
+    dep_result = dependency_validator.validate_dependencies(pipeline_config)
+    report.add_issues(dep_result.issues)
+    
+    # Check results
+    if report.has_errors():
+        print("Validation failed:")
+        print(report.to_text())
+        return False
+    
+    print("Pipeline validation passed!")
+    return True
+```
+
+### Output Validation
+
+```python
+from orchestrator.validation import OutputValidator, ValidationRule, ValidationSeverity
+
+# Define validation rules
+rules = [
+    ValidationRule(
+        name="required_fields",
+        rule_type="consistency", 
+        parameters={"required": ["title", "content"]}
+    ),
+    ValidationRule(
+        name="format_check",
+        rule_type="format",
+        parameters={"format": "markdown"}
+    )
+]
+
+# Validate output
+validator = OutputValidator()
+result = validator.validate_output(output_data, rules)
+
+if result.is_valid:
+    print("Output validation passed")
+else:
+    for issue in result.issues:
+        print(f"{issue.severity.value}: {issue.message}")
+        if issue.suggestions:
+            print(f"  Suggestions: {', '.join(issue.suggestions)}")
+```
+
+### Template Validation
+
+```python
+from orchestrator.validation import TemplateValidator
+
+validator = TemplateValidator()
+
+# Validate single template
+result = validator.validate_template(
+    template="Hello {{name}}, your score is {{score}}",
+    context={"name": "Alice"},  # Missing 'score' variable
+    template_id="greeting"
+)
+
+if not result.is_valid:
+    for issue in result.issues:
+        print(f"Template error: {issue.message}")
+        if issue.code == "TEMPLATE_UNDEFINED_VAR":
+            print(f"  Add missing variable or use default: {{score | default(0)}}")
+```
+
+### Dependency Validation
+
+```python
+from orchestrator.validation import DependencyValidator
+
+validator = DependencyValidator()
+
+# Check for circular dependencies
+result = validator.validate_dependencies(pipeline_config)
+
+if result.has_cycles:
+    print("Circular dependencies detected:")
+    for cycle in result.cycles:
+        print(f"  {' -> '.join(cycle)}")
 ```
 
 ## Complete Example

@@ -60,7 +60,10 @@ class Tool(ABC):
             rendered_kwargs['_resolution_context'] = resolution_context
         
         # Execute the actual implementation
-        return await self._execute_impl(**rendered_kwargs)
+        result = await self._execute_impl(**rendered_kwargs)
+        
+        # Validate and standardize the return format
+        return self._validate_return_format(result)
     
     @abstractmethod
     async def _execute_impl(self, **kwargs) -> Dict[str, Any]:
@@ -118,6 +121,57 @@ class Tool(ABC):
                 raise ValueError(
                     f"Required parameter '{param.name}' not provided for tool '{self.name}'"
                 )
+    
+    def _validate_return_format(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate and standardize tool return format.
+        
+        Expected format: {'result': ..., 'success': bool, 'error': str}
+        This method ensures all tools return the standard format while maintaining 
+        backward compatibility.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # If result is None or not a dict, wrap it
+        if result is None:
+            return {'result': None, 'success': False, 'error': 'Tool returned None'}
+        
+        if not isinstance(result, dict):
+            return {'result': result, 'success': True, 'error': None}
+        
+        # If already in standard format, validate and return
+        if 'success' in result and 'result' in result:
+            # Ensure error field is present
+            if 'error' not in result:
+                result['error'] = None
+            return result
+        
+        # If has 'success' but missing 'result', try to convert
+        if 'success' in result:
+            # Extract the actual result data (everything except success/error)
+            actual_result = {k: v for k, v in result.items() if k not in ['success', 'error']}
+            return {
+                'result': actual_result if actual_result else result.get('data'),
+                'success': result.get('success', True),
+                'error': result.get('error')
+            }
+        
+        # Check for old formats and convert them
+        if 'error' in result and result['error']:
+            # Error case - extract error message
+            return {
+                'result': None,
+                'success': False,
+                'error': result['error']
+            }
+        
+        # Default case: wrap the entire result as successful
+        logger.warning(f"Tool '{self.name}' returned non-standard format. Converting to standard format.")
+        return {
+            'result': result,
+            'success': True,
+            'error': None
+        }
 
 
 class ToolRegistry:

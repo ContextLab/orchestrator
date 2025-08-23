@@ -1,0 +1,10 @@
+test_id,test_path,current_behavior,desired_behavior,status,notes,commit_hash
+CB001,tests/test_error_handling.py::TestCircuitBreaker::test_circuit_breaker_state_transitions,Circuit breaker opens after 2 failures and stays open,Circuit breaker should remain closed with only 2 failures,complete,Threshold logic issue - Issue #129,70f4b86
+CB002,tests/test_error_handling.py::TestCircuitBreaker::test_circuit_breaker_timeout_recovery,Circuit breaker opens after 2 failures,Circuit breaker should handle timeout recovery properly,complete,Same root cause as CB001 - Issue #130,70f4b86
+YAML001,tests/test_example_yaml_files.py::TestSpecificExamples::test_control_flow_examples,Assertion fails checking for specific content,Test should pass with expected control flow results,complete,Need to investigate expected vs actual output - Issue #131,3011bd6
+REC001,tests/test_pipeline_recursion_tools.py::test_recursion_depth_limit,Returns regular error instead of RecursionError,Should raise RecursionError at depth limit,complete,Tool 'pipeline-executor' not found in hybrid control system - Issue #132,1614581
+POOL001,tests/test_process_pool_execution.py::TestProcessPoolExecution::test_process_pool_timeout,Does not raise TimeoutError,Should raise TimeoutError on timeout,complete,Process pool timeout handling issue - Issue #133,c709475
+RES001,tests/test_resource_allocator.py::TestResourceRequest::test_resource_request_creation_custom,timeout=300.0 instead of 600.0,Custom timeout should be 600.0,complete,Default timeout being used instead of custom - Issue #134,65fa911
+TASK001,tests/test_task_comprehensive.py::TestTask::test_task_creation_full,task.timeout is None,task.timeout should be 300,complete,Timeout not being set in Task constructor - Issue #135,eb507de
+TASK002,tests/test_task_comprehensive.py::TestTask::test_task_to_dict,timeout field missing from dict,timeout field should be 60 in dict,complete,to_dict() not including timeout field - Issue #135,eb507de
+TASK003,tests/test_task.py::TestTask::test_to_dict,timeout field missing from dict,timeout field should be 60 in dict,complete,Same as TASK002 - to_dict() issue - Issue #135,eb507de

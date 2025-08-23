@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from .base import Tool
 from ..models import get_model_registry
 from ..core.model import Model
+from ..utils.output_sanitizer import sanitize_output
 
 
 @dataclass
@@ -902,7 +903,9 @@ class MultiModelRoutingTool(Tool):
                             temperature=0.3,
                             max_tokens=50
                         )
-                        results.append(result)
+                        # Sanitize the result to remove conversational markers
+                        sanitized_result = sanitize_output(result)
+                        results.append(sanitized_result)
                     else:
                         # Simple translation mapping for demo
                         translations = {

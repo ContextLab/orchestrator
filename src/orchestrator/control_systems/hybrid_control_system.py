@@ -1,6 +1,7 @@
 """Hybrid control system that handles both model-based tasks and tool operations."""
 
 from typing import Any, Dict, Optional
+import logging
 import re
 from pathlib import Path
 from datetime import datetime
@@ -8,6 +9,7 @@ from datetime import datetime
 from .model_based_control_system import ModelBasedControlSystem
 from ..core.task import Task
 from ..core.action_loop_task import ActionLoopTask
+from ..core.unified_template_resolver import UnifiedTemplateResolver, TemplateResolutionContext
 from ..models.model_registry import ModelRegistry
 from ..tools.system_tools import FileSystemTool, TerminalTool
 from ..tools.data_tools import DataProcessingTool
@@ -43,6 +45,8 @@ from ..tools.pipeline_recursion_tools import (
 )
 from ..compiler.template_renderer import TemplateRenderer
 from ..runtime import RuntimeResolutionIntegration
+
+logger = logging.getLogger(__name__)
 
 
 class HybridControlSystem(ModelBasedControlSystem):
@@ -89,6 +93,10 @@ class HybridControlSystem(ModelBasedControlSystem):
             }
 
         super().__init__(model_registry, name, config)
+
+        # Initialize unified template resolver (in addition to the parent's resolver)
+        # This gives us more control for hybrid-specific template handling
+        self.hybrid_template_resolver = UnifiedTemplateResolver(debug_mode=True)
 
         # Initialize tools
         self.filesystem_tool = FileSystemTool()
@@ -296,12 +304,10 @@ class HybridControlSystem(ModelBasedControlSystem):
             "action": "echo",
         }
 
-    def _register_results_with_template_manager(
-        self, template_manager, context: Dict[str, Any]
-    ) -> None:
-        """Register results with template manager, including loop context mapping.
+    def _prepare_template_context(self, context: Dict[str, Any]) -> TemplateResolutionContext:
+        """Prepare comprehensive template context using UnifiedTemplateResolver.
         
-        Enhanced with runtime resolution system (Issue #211) for better dependency tracking.
+        This replaces the old template manager registration methods with the unified system.
         """
         import logging
         logger = logging.getLogger(__name__)
@@ -312,103 +318,48 @@ class HybridControlSystem(ModelBasedControlSystem):
             self.runtime_resolution = RuntimeResolutionIntegration(pipeline_id)
             logger.info(f"Initialized runtime resolution for pipeline {pipeline_id}")
         
-        # Register all previous results with both systems
-        if "previous_results" in context:
-            logger.info(f"Registering {len(context['previous_results'])} results with template manager for filesystem operation")
-            
-            # First, register ALL results to ensure they're available
-            # This is important for templates that reference results from outside the loop
-            for step_id, result in context["previous_results"].items():
-                # Log what we're registering
-                logger.debug(f"Registering result {step_id}: type={type(result).__name__}, value={str(result)[:100] if isinstance(result, str) else 'complex'}")
-                
-                # Register with runtime resolution system
-                self.runtime_resolution.register_task_result(step_id, result)
-                
-                # Register each result with the template manager
-                # For string results, make them directly accessible
-                if isinstance(result, str):
-                    # Register the string directly
-                    template_manager.register_context(step_id, result)
-                    # Also register wrapped for compatibility
-                    template_manager.register_context(f"{step_id}_result", {"result": result})
-                    template_manager.register_context(f"{step_id}_str", result)
-                elif isinstance(result, dict) and "result" in result:
-                    # If result is a dict with 'result' key, register both
-                    template_manager.register_context(step_id, result)
-                    if isinstance(result["result"], str):
-                        # Also register the result directly for easier access
-                        template_manager.register_context(f"{step_id}_direct", result["result"])
-                        template_manager.register_context(f"{step_id}_str", result["result"])
-                else:
-                    template_manager.register_context(step_id, result)
-            
-            # Check if we have a loop context mapping for short names
-            loop_context_mapping = context.get("_loop_context_mapping", {})
-            if loop_context_mapping:
-                logger.info(f"Found loop context mapping with {len(loop_context_mapping)} entries: {loop_context_mapping}")
-                # Also register results with short names for loop iteration
-                for short_name, full_task_id in loop_context_mapping.items():
-                    if full_task_id in context["previous_results"]:
-                        result = context["previous_results"][full_task_id]
-                        logger.info(f"Registering loop iteration result with short name '{short_name}' (from {full_task_id}): {str(result)[:100] if isinstance(result, str) else 'complex'}")
-                        
-                        # Register with short name for template access
-                        template_manager.register_context(short_name, result)
-                        
-                        # Also handle the common pattern of accessing .result
-                        if isinstance(result, dict) and "result" in result:
-                            template_manager.register_context(f"{short_name}_result", result["result"])
+        # Collect comprehensive template context
+        template_context = self.hybrid_template_resolver.collect_context(
+            pipeline_id=context.get("pipeline_id"),
+            task_id=context.get("task_id"),
+            pipeline_inputs=context.get("pipeline_inputs", {}),
+            pipeline_parameters=context.get("pipeline_params", {}),
+            step_results=context.get("previous_results", {}),
+            additional_context={
+                # Add results from runtime resolution
+                **self._get_runtime_resolution_context(context),
+                # Add loop context mapping for short names
+                **context.get("_loop_context_mapping", {}),
+                # Add loop variables
+                "$item": context.get("$item"),
+                "$index": context.get("$index"),
+                "$is_first": context.get("$is_first"),
+                "$is_last": context.get("$is_last"),
+                "$iteration": context.get("$iteration"),
+                "$loop_state": context.get("$loop_state"),
+                # Add other context variables
+                **{k: v for k, v in context.items() 
+                   if k not in ["pipeline_id", "pipeline_inputs", "pipeline_params", "previous_results", "_template_manager"]
+                   and not k.startswith("_")}
+            }
+        )
         
-        # Also register pipeline parameters if available
-        if "pipeline_params" in context:
-            for key, value in context["pipeline_params"].items():
-                if key not in ["previous_results", "_template_manager"]:
-                    # Register with both systems
-                    self.runtime_resolution.state.register_variable(key, value)
-                    template_manager.register_context(key, value)
-                    logger.info(f"Registering pipeline param {key}: {str(value)[:100]}")
-        
-        # Register loop variables if present (both with and without $ prefix)
-        for loop_var in ["$item", "$index", "$is_first", "$is_last", "$iteration", "$loop_state"]:
-            if loop_var in context:
-                template_manager.register_context(loop_var, context[loop_var])
-                logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
-                # Also register without $ prefix for template compatibility
-                var_name = loop_var[1:]  # Remove $ prefix
-                template_manager.register_context(var_name, context[loop_var])
-                logger.info(f"Registering loop variable {var_name}: {context[loop_var]}")
-        
-        # Also check for loop variables without $ prefix (from loop_context)
-        for loop_var in ["item", "index", "is_first", "is_last", "iteration", "loop_state"]:
-            if loop_var in context and loop_var not in template_manager.context:
-                template_manager.register_context(loop_var, context[loop_var])
-                logger.info(f"Registering loop variable {loop_var}: {context[loop_var]}")
+        logger.info(f"Prepared template context with {len(template_context.to_flat_dict())} variables")
+        return template_context
     
-    def _resolve_template_with_runtime(self, template_str: str, context: Dict[str, Any]) -> str:
-        """Use runtime resolution system to resolve templates.
-        
-        This provides better handling of complex dependencies and loop contexts.
-        """
+    def _get_runtime_resolution_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Get context from runtime resolution system if available."""
         if self.runtime_resolution is None:
-            return template_str
+            return {}
         
         try:
-            # Add any additional context
-            additional_context = {}
-            if "_loop_context_mapping" in context:
-                additional_context.update(context["_loop_context_mapping"])
-            
-            # Use runtime resolution
-            resolved = self.runtime_resolution.resolve_template_with_context(
-                template_str, additional_context
-            )
-            return resolved
+            # Get state variables from runtime resolution
+            return self.runtime_resolution.state.get_all_variables()
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.debug(f"Runtime resolution failed, returning original: {e}")
-            return template_str
+            logger.debug(f"Could not get runtime resolution context: {e}")
+            return {}
     
     async def _handle_file_operation(
         self, task: Task, context: Dict[str, Any]
@@ -419,108 +370,65 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         # If task has parameters and tool is filesystem, use FileSystemTool for all operations
         if task.metadata.get("tool") == "filesystem" and task.parameters:
-            # Templates have already been rendered by ControlSystem._render_task_templates
-            # Don't override the action if it's already in parameters
+            # Use UnifiedTemplateResolver for template resolution
             resolved_params = task.parameters.copy()
             if "action" not in resolved_params:
                 resolved_params["action"] = action_text
             
-            # Debug: Check what loop variables are in context
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"FileSystem tool context has 'item': {'item' in context}, value: {context.get('item', 'NOT FOUND')}")
-            logger.warning(f"FileSystem tool context has 'index': {'index' in context}, value: {context.get('index', 'NOT FOUND')}")
-            logger.warning(f"FileSystem tool context has 'items': {'items' in context}, value: {context.get('items', 'NOT FOUND')}")
-            if 'loop_context' in task.metadata:
-                lc = task.metadata['loop_context']
-                logger.warning(f"FileSystem tool loop_context type: {type(lc)}, keys: {list(lc.keys()) if isinstance(lc, dict) else 'NOT A DICT'}")
-                if isinstance(lc, dict) and 'item' in lc:
-                    logger.warning(f"  loop_context.item = {lc['item']}")
-            else:
-                logger.warning(f"FileSystem tool task.metadata.loop_context: NOT IN METADATA")
-            logger.warning(f"FileSystem tool task.metadata keys: {list(task.metadata.keys())}")
+            # Prepare template context using the unified system
+            template_context = self._prepare_template_context(context)
             
-            # Pass template_manager from context if available
-            if "_template_manager" in context:
-                template_manager = context["_template_manager"]
-                
-                # If task has loop_variables in metadata, add them to context first
-                if "loop_variables" in task.metadata:
-                    loop_vars = task.metadata["loop_variables"]
-                    logger.info(f"Found loop_variables in task metadata: {loop_vars}")
-                    # Add loop variables to context so they get registered
-                    context.update(loop_vars)
-                    # Also directly register with template manager
-                    for var_name, var_value in loop_vars.items():
-                        template_manager.register_context(var_name, var_value)
-                        logger.info(f"Directly registered loop variable {var_name}={var_value} with template manager")
-                
-                # Register all results using the helper method
-                self._register_results_with_template_manager(template_manager, context)
-                
-                # Also register individual step results for direct access
-                if "previous_results" in context:
-                    for step_id, result in context["previous_results"].items():
-                        # Register the result directly for template access
-                        template_manager.register_context(step_id, result)
-                        # If it's a dict with 'result' key, also register that
-                        if isinstance(result, dict) and 'result' in result:
-                            template_manager.register_context(f"{step_id}_result", result['result'])
-                
-                # Pass the loop context mapping to the filesystem tool
-                if "_loop_context_mapping" in context:
-                    resolved_params["_loop_context_mapping"] = context["_loop_context_mapping"]
-                
-                resolved_params["_template_manager"] = template_manager
-                print(f"   📋 Passing _template_manager to filesystem tool with {len(context.get('previous_results', {}))} results")
-            else:
-                print(f"   ⚠️  No _template_manager in context! Available keys: {list(context.keys())}")
+            # Add task-specific metadata to context
+            if "loop_variables" in task.metadata:
+                loop_vars = task.metadata["loop_variables"]
+                template_context.additional_context.update(loop_vars)
+            
+            # Resolve templates using UnifiedTemplateResolver
+            resolved_params = self.hybrid_template_resolver.resolve_before_tool_execution(
+                "filesystem", resolved_params, template_context
+            )
+            
+            # Pass the unified resolver components to the tool for runtime rendering
+            resolved_params["unified_template_resolver"] = self.hybrid_template_resolver
+            resolved_params["template_resolution_context"] = template_context
+            
+            # Also pass loop context mapping if available
+            if "_loop_context_mapping" in context:
+                resolved_params["_loop_context_mapping"] = context["_loop_context_mapping"]
+            
+            print(f"   📋 Using UnifiedTemplateResolver for filesystem tool with {len(context.get('previous_results', {}))} results")
             
             return await self.filesystem_tool.execute(**resolved_params)
         
         # If the action is a known filesystem operation, use FileSystemTool
         filesystem_actions = ["read", "write", "copy", "move", "delete", "list", "file"]
         if action_text in filesystem_actions and task.parameters:
-            # Templates have already been rendered by ControlSystem._render_task_templates
-            # Just add the action and pass through
+            # Use UnifiedTemplateResolver for template resolution
             resolved_params = task.parameters.copy()
             resolved_params["action"] = action_text
             
-            # Pass template_manager from context if available
-            if "_template_manager" in context:
-                template_manager = context["_template_manager"]
-                
-                # If task has loop_variables in metadata, add them to context first
-                if "loop_variables" in task.metadata:
-                    loop_vars = task.metadata["loop_variables"]
-                    logger.info(f"Found loop_variables in task metadata: {loop_vars}")
-                    # Add loop variables to context so they get registered
-                    context.update(loop_vars)
-                    # Also directly register with template manager
-                    for var_name, var_value in loop_vars.items():
-                        template_manager.register_context(var_name, var_value)
-                        logger.info(f"Directly registered loop variable {var_name}={var_value} with template manager")
-                
-                # Register all results using the helper method
-                self._register_results_with_template_manager(template_manager, context)
-                
-                # Also register individual step results for direct access
-                if "previous_results" in context:
-                    for step_id, result in context["previous_results"].items():
-                        # Register the result directly for template access
-                        template_manager.register_context(step_id, result)
-                        # If it's a dict with 'result' key, also register that
-                        if isinstance(result, dict) and 'result' in result:
-                            template_manager.register_context(f"{step_id}_result", result['result'])
-                
-                # Pass the loop context mapping to the filesystem tool
-                if "_loop_context_mapping" in context:
-                    resolved_params["_loop_context_mapping"] = context["_loop_context_mapping"]
-                
-                resolved_params["_template_manager"] = template_manager
-                print(f"   📋 Passing _template_manager to filesystem tool with {len(context.get('previous_results', {}))} results")
-            else:
-                print(f"   ⚠️  No _template_manager in context! Available keys: {list(context.keys())}")
+            # Prepare template context using the unified system
+            template_context = self._prepare_template_context(context)
+            
+            # Add task-specific metadata to context
+            if "loop_variables" in task.metadata:
+                loop_vars = task.metadata["loop_variables"]
+                template_context.additional_context.update(loop_vars)
+            
+            # Resolve templates using UnifiedTemplateResolver
+            resolved_params = self.hybrid_template_resolver.resolve_before_tool_execution(
+                "filesystem", resolved_params, template_context
+            )
+            
+            # Pass the unified resolver components to the tool for runtime rendering
+            resolved_params["unified_template_resolver"] = self.hybrid_template_resolver
+            resolved_params["template_resolution_context"] = template_context
+            
+            # Also pass loop context mapping if available
+            if "_loop_context_mapping" in context:
+                resolved_params["_loop_context_mapping"] = context["_loop_context_mapping"]
+            
+            print(f"   📋 Using UnifiedTemplateResolver for filesystem tool with {len(context.get('previous_results', {}))} results")
             
             return await self.filesystem_tool.execute(**resolved_params)
 
@@ -609,155 +517,47 @@ class HybridControlSystem(ModelBasedControlSystem):
         return action_text
 
     def _build_template_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Build complete context for template resolution."""
-        template_context = context.copy()
-
+        """Build complete context for template resolution using UnifiedTemplateResolver.
+        
+        This method is kept for backward compatibility but now uses the unified system.
+        """
+        # Use the new unified template context preparation
+        template_context_obj = self._prepare_template_context(context)
+        
         # Add execution metadata
-        template_context.update(
-            {
-                "execution": {
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "time": datetime.now().strftime("%H:%M:%S"),
-                }
+        execution_metadata = {
+            "execution": {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "time": datetime.now().strftime("%H:%M:%S"),
             }
-        )
-
-
-        # Flatten previous_results for easier access
-        if "previous_results" in context:
-            for step_id, result in context["previous_results"].items():
-                if isinstance(result, dict):
-                    template_context[step_id] = result
-                else:
-                    template_context[step_id] = {"result": result}
+        }
         
-        # DEBUG: Print what's available in the context for template rendering
-        task_id = context.get("task_id", context.get("current_task_id"))
-        if task_id == "save_report":
-            print(f">> DEBUG: Building template context for save_report")
-            print(f">> Available step IDs in previous_results: {list(context.get('previous_results', {}).keys())}")
-            print(f">> Available step IDs in template_context: {list(template_context.keys())}")
-            if "create_report" in template_context:
-                print(f">> create_report keys: {list(template_context['create_report'].keys()) if isinstance(template_context['create_report'], dict) else 'Not a dict'}")
-            if "distribution_plan" in template_context:
-                print(f">> distribution_plan keys: {list(template_context['distribution_plan'].keys()) if isinstance(template_context['distribution_plan'], dict) else 'Not a dict'}")
-
-        # Add pipeline parameters if available
-        if "pipeline_metadata" in context and isinstance(context["pipeline_metadata"], dict):
-            # Check for both 'parameters' and 'inputs' keys
-            params = context["pipeline_metadata"].get("parameters", {})
-            for param_name, param_value in params.items():
-                if param_name not in template_context:
-                    template_context[param_name] = param_value
-            
-            # Also add inputs
-            inputs = context["pipeline_metadata"].get("inputs", {})
-            for input_name, input_value in inputs.items():
-                if input_name not in template_context:
-                    template_context[input_name] = input_value
+        # Convert to flat dict and add execution metadata
+        flat_context = template_context_obj.to_flat_dict()
+        flat_context.update(execution_metadata)
         
-        # Add pipeline_params directly if available
-        if "pipeline_params" in context and isinstance(context["pipeline_params"], dict):
-            for key, value in context["pipeline_params"].items():
-                if key not in template_context:
-                    template_context[key] = value
-        
-        # Add loop variables if present
-        if "$item" in context:
-            template_context["$item"] = context["$item"]
-        if "$index" in context:
-            template_context["$index"] = context["$index"]
-        if "$is_first" in context:
-            template_context["$is_first"] = context["$is_first"]
-        if "$is_last" in context:
-            template_context["$is_last"] = context["$is_last"]
-        
-        # Add pipeline context values (which should contain inputs)
-        if "pipeline_context" in context and isinstance(context["pipeline_context"], dict):
-            for key, value in context["pipeline_context"].items():
-                if key not in template_context:
-                    template_context[key] = value
-        
-        # Also check for results in the main context (from pipeline execution)
-        # Look for any keys that look like task results
-        for key, value in context.items():
-            if key not in template_context and key not in [
-                "model",
-                "pipeline",
-                "execution",
-                "task_id",
-                "pipeline_id",
-                "pipeline_metadata",
-                "execution_id",
-                "checkpoint_enabled",
-                "max_retries",
-                "start_time",
-                "current_level",
-                "resource_allocation"
-            ]:
-                # Check if this might be a task result or parameter
-                if isinstance(value, (str, int, float, bool, list, dict)):
-                    template_context[key] = value
-
-        return template_context
+        return flat_context
 
     def _resolve_templates(self, text: str, context: Dict[str, Any]) -> str:
-        """Resolve template variables in text using Jinja2."""
+        """Resolve template variables in text using UnifiedTemplateResolver.
+        
+        This method is kept for backward compatibility but now uses the unified system.
+        """
         try:
-            from jinja2 import Template, Environment, StrictUndefined
+            # Prepare template context using the unified system
+            template_context_obj = self._prepare_template_context(context)
             
-            # Create Jinja2 environment with custom filters
-            env = Environment(undefined=StrictUndefined)
+            # Use the unified template resolver
+            resolved = self.hybrid_template_resolver.resolve_templates(text, template_context_obj)
             
-            # Add custom filters
-            from datetime import datetime
-            import json
-            
-            # Date filter
-            def date_filter(value, format="%Y-%m-%d %H:%M:%S"):
-                if isinstance(value, str):
-                    try:
-                        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
-                    except:
-                        value = datetime.now()
-                elif not isinstance(value, datetime):
-                    value = datetime.now()
-                return value.strftime(format)
-            
-            # JSON filters
-            def from_json_filter(value):
-                if isinstance(value, str):
-                    try:
-                        return json.loads(value)
-                    except:
-                        return value
-                return value
-            
-            # Register filters
-            env.filters['date'] = date_filter
-            env.filters['from_json'] = from_json_filter
-            env.filters['to_json'] = lambda v: json.dumps(v, default=str)
-            env.filters['slugify'] = lambda v: str(v).lower().replace(' ', '-').replace('_', '-')
-            env.filters['default'] = lambda v, d='': v if v is not None else d
-            
-            # Render template
-            template = env.from_string(text)
-            return template.render(**context)
+            return resolved
         except Exception as e:
-            # If Jinja2 fails, it might be due to missing data
-            # Try to return the original text with basic variable substitution
-            result = text
-            
-            # Do basic variable substitution for common patterns
-            for key, value in context.items():
-                if isinstance(value, (str, int, float)):
-                    result = result.replace(f"{{{{{key}}}}}", str(value))
-            
-            # If we still have unrendered templates, return original
-            if "{{" in result or "{%" in result:
-                return text
-            return result
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Template resolution failed: {e}")
+            # Return original text as fallback
+            return text
 
     async def _handle_data_processing(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle data processing operations."""

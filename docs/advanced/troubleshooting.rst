@@ -6,6 +6,94 @@ This comprehensive troubleshooting guide covers common issues, debugging techniq
 Common Issues and Solutions
 ---------------------------
 
+Model Configuration Issues
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Problem: Model not found (e.g., openai/gpt-3.5-turbo not found)**
+
+.. code-block:: bash
+
+    # Check your models.yaml configuration
+    cat models.yaml
+    
+    # Verify model names match exactly what's in your config
+    # For OpenAI, use: gpt-4o, gpt-4o-mini, gpt-5
+    # For Anthropic, use: claude-sonnet-4-20250514
+    # For Ollama, ensure model is available: ollama list
+
+**Problem: API key not configured**
+
+.. code-block:: bash
+
+    # Use the setup script
+    python scripts/setup_api_keys.py
+    
+    # Or set environment variables
+    export OPENAI_API_KEY="your-key-here"
+    export ANTHROPIC_API_KEY="your-key-here"
+    export GOOGLE_AI_API_KEY="your-key-here"
+
+**Problem: Ollama model download fails**
+
+.. code-block:: bash
+
+    # Check Ollama service status
+    ollama serve
+    
+    # Manually pull the model
+    ollama pull deepseek-r1:8b
+    
+    # Check available models
+    ollama list
+
+Template Rendering Issues
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Problem: Variables not resolved in templates**
+
+.. code-block:: python
+
+    # Check template context using UnifiedTemplateResolver debug mode
+    from orchestrator.core.unified_template_resolver import UnifiedTemplateResolver
+    
+    resolver = UnifiedTemplateResolver(debug_mode=True)
+    debug_info = resolver.get_debug_info()
+    print(f"Available context: {debug_info}")
+    
+    # Common issues:
+    # - Variable names don't match (case sensitive)
+    # - Variables not in scope (check dependencies)
+    # - Loop variables need $ prefix in some contexts
+
+**Problem: Template syntax errors**
+
+.. code-block:: python
+
+    # Validate template syntax
+    from orchestrator.core.unified_template_resolver import UnifiedTemplateResolver
+    
+    resolver = UnifiedTemplateResolver()
+    errors = resolver.validate_templates("{{ your_template }}")
+    if errors:
+        print(f"Template errors: {errors}")
+
+Pipeline Validation Issues
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Problem: Pipeline validation fails**
+
+.. code-block:: python
+
+    # Run comprehensive validation
+    from orchestrator.validation.validation_report import ValidationReport
+    
+    report = ValidationReport()
+    validation_results = report.validate_pipeline("your_pipeline.yaml")
+    print(validation_results.to_dict())
+    
+    # Use the validation script
+    python scripts/validate_all_pipelines.py your_pipeline.yaml
+
 Pipeline Execution Issues
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -29,17 +117,24 @@ Pipeline Execution Issues
 
 .. code-block:: python
 
-    # Debug dependency issues
-    from orchestrator.core.task import Task
+    # Use the validation framework to debug dependencies
+    from orchestrator.validation.dependency_validator import DependencyValidator
     
-    def debug_dependencies(pipeline):
-        for task in pipeline.tasks:
-            missing_deps = []
-            for dep in task.dependencies:
-                if dep not in [t.id for t in pipeline.tasks]:
-                    missing_deps.append(dep)
-            if missing_deps:
-                print(f"Task {task.id} has missing dependencies: {missing_deps}")
+    validator = DependencyValidator()
+    validation_result = validator.validate(pipeline)
+    
+    if not validation_result.is_valid:
+        print(f"Dependency issues: {validation_result.errors}")
+        for error in validation_result.errors:
+            print(f"- {error.message} (severity: {error.severity})")
+    
+    # Check data flow between tasks
+    from orchestrator.validation.data_flow_validator import DataFlowValidator
+    
+    flow_validator = DataFlowValidator()
+    flow_result = flow_validator.validate(pipeline)
+    if not flow_result.is_valid:
+        print(f"Data flow issues: {flow_result.errors}")
 
 **Problem: AUTO tag resolution fails**
 
@@ -47,6 +142,30 @@ Pipeline Execution Issues
 
     # Debug AUTO tag parsing
     from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+    from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+    
+    # Check AUTO tag syntax
+    auto_parser = AutoTagYAMLParser()
+    parsed_content = auto_parser.parse_yaml_file("pipeline.yaml")
+    
+    # Verify model availability for resolution
+    resolver = AmbiguityResolver()
+    available_models = resolver.get_available_models()
+    print(f"Available models for AUTO resolution: {available_models}")
+
+**Problem: Output contains conversational markers**
+
+.. code-block:: python
+
+    # Check OutputSanitizer configuration
+    from orchestrator.utils.output_sanitizer import OutputSanitizer
+    
+    sanitizer = OutputSanitizer(enabled=True)
+    cleaned_output = sanitizer.sanitize("Certainly! Here is your result: actual content")
+    print(f"Cleaned: {cleaned_output}")
+    
+    # Configure custom patterns if needed
+    sanitizer.add_custom_pattern(r"^Your custom pattern", "starter")
     
     parser = AutoTagYAMLParser()
     try:
@@ -633,6 +752,128 @@ Disaster Recovery
             print("System recovery successful")
         else:
             print(f"Recovery issues: {health_check.issues}")
+
+Performance Issues
+^^^^^^^^^^^^^^^^^^
+
+**Problem: Slow pipeline execution**
+
+.. code-block:: python
+
+    # Enable profiling and monitoring
+    import orchestrator as orc
+    
+    # Use performance monitoring
+    from orchestrator.monitoring.performance_monitor import PerformanceMonitor
+    
+    monitor = PerformanceMonitor()
+    
+    # Run pipeline with monitoring
+    with monitor.profile_execution():
+        result = pipeline.run()
+    
+    # Analyze results
+    performance_report = monitor.get_report()
+    print(f"Execution time: {performance_report.total_time}")
+    print(f"Bottlenecks: {performance_report.bottlenecks}")
+    
+    # Check template resolution performance
+    from orchestrator.core.unified_template_resolver import UnifiedTemplateResolver
+    
+    resolver = UnifiedTemplateResolver(debug_mode=True)
+    debug_info = resolver.get_debug_info()
+    print(f"Template resolution stats: {debug_info}")
+
+**Problem: High memory usage**
+
+.. code-block:: python
+
+    # Monitor memory usage during pipeline execution
+    import psutil
+    import os
+    
+    def check_memory_usage():
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        print(f"RSS: {memory_info.rss / 1024 / 1024:.2f} MB")
+        print(f"VMS: {memory_info.vms / 1024 / 1024:.2f} MB")
+    
+    # Check before pipeline
+    check_memory_usage()
+    
+    # Run pipeline
+    result = pipeline.run()
+    
+    # Check after pipeline
+    check_memory_usage()
+    
+    # Use memory-efficient model loading
+    orc.init_models(lazy_loading=True)
+
+Debugging Techniques
+^^^^^^^^^^^^^^^^^^^^
+
+**Enable Debug Mode**
+
+.. code-block:: python
+
+    import logging
+    import orchestrator as orc
+    
+    # Set debug logging level
+    logging.basicConfig(level=logging.DEBUG)
+    
+    # Initialize with debug mode
+    orc.init_models(debug_mode=True)
+    
+    # Use debug mode for template resolution
+    from orchestrator.core.unified_template_resolver import UnifiedTemplateResolver
+    
+    resolver = UnifiedTemplateResolver(debug_mode=True)
+
+**Validate Pipeline Before Execution**
+
+.. code-block:: python
+
+    # Use the validation script before running pipelines
+    from orchestrator.validation.validation_report import ValidationReport
+    
+    # Comprehensive validation
+    report = ValidationReport()
+    result = report.validate_pipeline("your_pipeline.yaml")
+    
+    # Check all validation aspects
+    if not result.is_valid:
+        print("Validation failed:")
+        for category, errors in result.errors_by_category.items():
+            print(f"  {category}: {len(errors)} errors")
+            for error in errors[:3]:  # Show first 3 errors per category
+                print(f"    - {error.message}")
+    
+    # Use command line validation
+    # python scripts/validate_all_pipelines.py examples/
+
+**Inspect Pipeline State**
+
+.. code-block:: python
+
+    # Access pipeline execution state
+    from orchestrator.core.context_manager import ContextManager
+    
+    # Get current execution context
+    context_manager = ContextManager()
+    current_context = context_manager.get_current_context()
+    
+    print(f"Pipeline ID: {current_context.get('pipeline_id')}")
+    print(f"Current Step: {current_context.get('current_step')}")
+    print(f"Available Variables: {list(current_context.keys())}")
+    
+    # Check loop contexts
+    from orchestrator.core.loop_context import GlobalLoopContextManager
+    
+    loop_manager = GlobalLoopContextManager()
+    active_loops = loop_manager.active_loops
+    print(f"Active loops: {list(active_loops.keys())}")
 
 Best Practices for Troubleshooting
 -----------------------------------

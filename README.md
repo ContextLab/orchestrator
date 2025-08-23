@@ -19,12 +19,14 @@ Orchestrator is a powerful, flexible AI pipeline orchestration framework that si
 - 🧠 **Intelligent Model Selection**: Automatically choose the best model based on task requirements
 - 🔄 **Automatic Ambiguity Resolution**: Use `<AUTO>` tags to let AI resolve configuration ambiguities
 - 📦 **Modular Architecture**: Extend with custom models, tools, and control systems
-- 🛡️ **Production Ready**: Built-in error handling, retries, checkpointing, and monitoring
+- 🛡️ **Production Ready**: Built-in error handling, retries, checkpointing, and comprehensive validation
 - ⚡ **Parallel Execution**: Efficient resource management and parallel task execution
 - 🐳 **Sandboxed Execution**: Secure code execution in isolated environments
 - 💾 **Lazy Model Loading**: Models are downloaded only when needed, saving disk space
-- 🔧 **Reliable Tool Execution**: Guaranteed execution of file operations with LangChain structured outputs
-- 📝 **Advanced Templates**: Support for nested variables, filters, and Jinja2-style templates
+- 🔧 **Reliable Tool Execution**: Guaranteed execution with structured outputs and comprehensive validation
+- 📝 **Advanced Templates**: Unified template resolution with support for nested variables, filters, and Jinja2-style templates
+- 🧹 **Output Sanitization**: Automatic removal of conversational markers and AI fluff from outputs
+- ✅ **Comprehensive Validation**: Built-in validation framework for pipelines, dependencies, and data flow
 
 ## Quick Start
 
@@ -47,20 +49,14 @@ pip install py-orc[all]          # Everything
 Orchestrator supports multiple AI providers. Configure your API keys using the interactive setup:
 
 ```bash
-# Interactive setup for all providers
-orchestrator keys setup
+# Interactive API key setup
+python scripts/setup_api_keys.py
 
-# Or add individual keys
-orchestrator keys add openai
-orchestrator keys add anthropic
-orchestrator keys add google
-orchestrator keys add huggingface
-
-# Check configured providers
-orchestrator keys list
-
-# Validate your configuration
-orchestrator keys validate
+# Or set environment variables directly
+export OPENAI_API_KEY="your-openai-key"
+export ANTHROPIC_API_KEY="your-anthropic-key"
+export GOOGLE_AI_API_KEY="your-google-ai-key"
+export HF_TOKEN="your-huggingface-token"
 ```
 
 API keys are stored securely in `~/.orchestrator/.env` with file permissions set to 600 (owner read/write only).
@@ -149,26 +145,43 @@ Configure available models in `models.yaml`:
 models:
   # Local models (via Ollama) - downloaded on first use
   - source: ollama
-    name: llama3.1:8b
-    expertise: [general, reasoning, multilingual]
+    name: deepseek-r1:8b
+    expertise: [reasoning, code, math]
     size: 8b
     
   - source: ollama
     name: qwen2.5-coder:7b
     expertise: [code, programming]
     size: 7b
+    
+  - source: ollama
+    name: gemma3:12b
+    expertise: [general, reasoning, analysis]
+    size: 12b
 
-  # Cloud models
+  # Cloud models  
   - source: openai
-    name: gpt-4o
-    expertise: [general, reasoning, code, analysis, vision]
-    size: 1760b  # Estimated
+    name: gpt-5
+    expertise: [general, reasoning, code, analysis, vision, multimodal]
+    size: 2000b  # Estimated
+    
+  - source: anthropic
+    name: claude-sonnet-4-20250514
+    expertise: [general, reasoning, efficient]
+    size: 600b  # Estimated
+    
+  - source: google
+    name: gemini-2.5-flash
+    expertise: [general, fast, efficient, thinking]
+    size: 80b  # Estimated
 
 defaults:
   expertise_preferences:
-    code: qwen2.5-coder:7b
-    reasoning: deepseek-r1:8b
+    code: qwen2.5-coder:32b
+    reasoning: deepseek-r1:32b
     fast: llama3.2:1b
+    general: llama3.1:8b
+    analysis: gemma3:27b
 ```
 
 Models are downloaded only when first used, saving disk space and initialization time.
@@ -380,16 +393,16 @@ Comprehensive documentation is available at [orc.readthedocs.io](https://orc.rea
 Orchestrator supports a wide range of models:
 
 ### Local Models (via Ollama)
-- **Gemma3 27B**: Google's powerful general-purpose model
+- **DeepSeek-R1**: Advanced reasoning and coding (1.5b, 8b, 32b)
+- **Gemma3**: Fast general-purpose models (1b, 4b, 12b)
 - **Llama 3.x**: General purpose, multilingual support
-- **DeepSeek-R1**: Advanced reasoning and coding
 - **Qwen2.5-Coder**: Specialized for code generation
 - **Mistral**: Fast and efficient general purpose
 
 ### Cloud Models
-- **OpenAI**: GPT-4.1 (latest)
-- **Anthropic**: Claude Sonnet 4 (claude-sonnet-4-20250514)
-- **Google**: Gemini 2.5 Flash (gemini-2.5-flash)
+- **OpenAI**: GPT-4o, GPT-4o-mini, and other GPT models
+- **Anthropic**: Claude Sonnet 4 (claude-sonnet-4-20250514), Claude Haiku 4
+- **Google**: Gemini 2.5 Flash (gemini-2.5-flash), Gemini Pro
 
 ### HuggingFace Models
 - **Mistral 7B Instruct v0.3**: High-quality instruction-following model
@@ -452,13 +465,15 @@ orchestrator/
 ├── scripts/               # Utility scripts
 │   ├── run_pipeline.py   # Main pipeline runner
 │   ├── setup_api_keys.py # API key configuration
-│   └── install_web_deps.sh # Install web dependencies
+│   └── validate_all_pipelines.py # Pipeline validation
 ├── src/orchestrator/      # Source code
-│   ├── core/             # Core components (Pipeline, Task, etc.)
+│   ├── core/             # Core components (Pipeline, Task, UnifiedTemplateResolver)
 │   ├── models/           # Model integrations
 │   ├── tools/            # Tool implementations
 │   ├── compiler/         # YAML compiler and template engine
-│   └── control_systems/  # Execution control systems
+│   ├── control_systems/  # Execution control systems
+│   ├── validation/       # Validation framework
+│   └── utils/            # Utilities (OutputSanitizer, etc.)
 ├── tests/                 # Test suite
 │   ├── integration/      # Integration tests
 │   ├── local/           # Tests requiring local resources

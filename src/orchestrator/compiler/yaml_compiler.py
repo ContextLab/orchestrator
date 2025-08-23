@@ -20,6 +20,13 @@ from .auto_tag_yaml_parser import AutoTagYAMLParser
 from .schema_validator import SchemaValidator
 from .error_handler_schema import ErrorHandlerSchemaValidator
 from ..validation.template_validator import TemplateValidator
+from ..validation.tool_validator import ToolValidator
+from ..validation.model_validator import ModelValidator
+from ..validation.data_flow_validator import DataFlowValidator
+from ..validation.validation_report import (
+    ValidationReport, ValidationLevel, OutputFormat, ValidationSeverity, ValidationIssue,
+    create_template_issue, create_tool_issue, create_dependency_issue, create_model_issue
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +62,16 @@ class YAMLCompiler:
         error_handler_validator: Optional[ErrorHandlerSchemaValidator] = None,
         file_inclusion_processor: Optional[FileInclusionProcessor] = None,
         template_validator: Optional[TemplateValidator] = None,
+        tool_validator: Optional[ToolValidator] = None,
+        model_validator: Optional[ModelValidator] = None,
+        data_flow_validator: Optional[DataFlowValidator] = None,
         validate_templates: bool = True,
+        validate_tools: bool = True,
+        validate_models: bool = True,
+        validate_data_flow: bool = True,
+        development_mode: bool = False,
+        validation_level: Optional[ValidationLevel] = None,
+        enable_validation_report: bool = True,
     ) -> None:
         """
         Initialize YAML compiler.
@@ -67,13 +83,46 @@ class YAMLCompiler:
             error_handler_validator: Error handler validator instance
             file_inclusion_processor: File inclusion processor instance
             template_validator: Template validator instance
+            tool_validator: Tool validator instance
+            model_validator: Model validator instance
+            data_flow_validator: Data flow validator instance
             validate_templates: Whether to perform template validation
+            validate_tools: Whether to perform tool configuration validation
+            validate_models: Whether to perform model validation
+            validate_data_flow: Whether to perform data flow validation
+            development_mode: Enable development mode (allows some validation bypasses)
+            validation_level: Validation strictness level (strict/permissive/development)
+            enable_validation_report: Whether to use unified validation reporting
         """
         self.schema_validator = schema_validator or SchemaValidator()
         self.error_handler_validator = error_handler_validator or ErrorHandlerSchemaValidator()
         self.file_inclusion_processor = file_inclusion_processor or FileInclusionProcessor()
         self.template_validator = template_validator or TemplateValidator()
+        self.tool_validator = tool_validator or ToolValidator(development_mode=development_mode)
+        self.model_validator = model_validator or ModelValidator(
+            model_registry=model_registry, development_mode=development_mode
+        )
+        self.data_flow_validator = data_flow_validator or DataFlowValidator(
+            development_mode=development_mode, tool_validator=self.tool_validator
+        )
         self.validate_templates = validate_templates
+        self.validate_tools = validate_tools
+        self.validate_models = validate_models
+        self.validate_data_flow = validate_data_flow
+        self.development_mode = development_mode
+        self.enable_validation_report = enable_validation_report
+        
+        # Determine validation level
+        if validation_level is None:
+            if development_mode:
+                self.validation_level = ValidationLevel.DEVELOPMENT
+            else:
+                self.validation_level = ValidationLevel.STRICT
+        else:
+            self.validation_level = validation_level
+        
+        # Initialize validation report
+        self.validation_report = ValidationReport(self.validation_level) if enable_validation_report else None
 
         # Create ambiguity resolver - optional for compilation without resolution
         if ambiguity_resolver:
@@ -125,6 +174,20 @@ class YAMLCompiler:
             YAMLCompilerError: If compilation fails
         """
         try:
+            # Initialize validation report if enabled
+            if self.validation_report:
+                # Extract pipeline ID for context
+                try:
+                    temp_parsed = self._parse_yaml(yaml_content)
+                    pipeline_id = temp_parsed.get("id", temp_parsed.get("name", "unnamed_pipeline"))
+                except:
+                    pipeline_id = "unknown_pipeline"
+                
+                self.validation_report.start_validation(
+                    pipeline_id=pipeline_id,
+                    context=context or {}
+                )
+            
             # Step 1: Process file inclusions in YAML content
             processed_yaml_content = await self._process_file_inclusions(yaml_content)
 
@@ -134,33 +197,84 @@ class YAMLCompiler:
             # Step 3: Validate against schema
             self.schema_validator.validate(raw_pipeline)
             
-            # Step 4: Validate error handling configurations
+            # Step 4: Validate dependencies comprehensively
+            if not self.development_mode:  # Skip in development mode for faster compilation
+                await self._validate_dependencies(raw_pipeline)
+            
+            # Step 5: Validate error handling configurations
             error_issues = self.error_handler_validator.validate_pipeline_error_handling(raw_pipeline)
             if error_issues:
                 raise YAMLCompilerError(f"Error handler validation failed: {'; '.join(error_issues)}")
 
-            # Step 5: Merge default values with context
+            # Step 6: Merge default values with context
             merged_context = self._merge_defaults_with_context(
                 raw_pipeline, context or {}
             )
 
-            # Step 6: Validate templates if enabled
+            # Step 7: Validate templates if enabled
             if self.validate_templates:
                 await self._validate_templates(raw_pipeline, merged_context)
 
-            # Step 7: Process templates
+            # Step 8: Validate tool configurations if enabled
+            if self.validate_tools:
+                await self._validate_tools(raw_pipeline)
+
+            # Step 9: Validate model requirements if enabled
+            if self.validate_models:
+                await self._validate_models(raw_pipeline)
+
+            # Step 10: Validate data flow if enabled
+            if self.validate_data_flow:
+                await self._validate_data_flow(raw_pipeline)
+
+            # Step 11: Process templates
             processed = self._process_templates(raw_pipeline, merged_context)
 
-            # Step 8: Detect and resolve ambiguities
+            # Step 12: Detect and resolve ambiguities
             if resolve_ambiguities:
                 resolved = await self._resolve_ambiguities(processed)
             else:
                 resolved = processed
 
-            # Step 9: Build pipeline object with context
-            return self._build_pipeline(resolved, merged_context)
+            # Step 13: Build pipeline object with context
+            pipeline = self._build_pipeline(resolved, merged_context)
+            
+            # Finalize validation report
+            if self.validation_report:
+                self.validation_report.end_validation()
+                
+                # If validation failed and we're not in development mode, raise error
+                if self.validation_report.has_errors and self.validation_level == ValidationLevel.STRICT:
+                    # Create comprehensive error message from validation report
+                    error_message = self.validation_report.format_report(format_type=OutputFormat.SUMMARY)
+                    raise YAMLCompilerError(f"Pipeline validation failed:\n{error_message}")
+                
+                # Log validation summary
+                if self.validation_report.has_issues:
+                    if self.validation_report.has_errors:
+                        logger.warning("Validation completed with errors (proceeding due to validation level)")
+                    logger.info(f"Validation summary: {self.validation_report.stats.total_issues} issues " +
+                              f"({self.validation_report.stats.errors} errors, {self.validation_report.stats.warnings} warnings)")
+                else:
+                    logger.info("Validation completed successfully - no issues found")
+            
+            return pipeline
 
         except Exception as e:
+            # Finalize validation report even on error
+            if self.validation_report:
+                self.validation_report.end_validation()
+                
+                # Add compilation error to report if it's not already a validation error
+                if not isinstance(e, YAMLCompilerError) or "validation" not in str(e).lower():
+                    self.validation_report.add_issue(ValidationIssue(
+                        severity=ValidationSeverity.ERROR,
+                        category="compilation",
+                        component="yaml_compiler",
+                        message=f"Compilation failed: {str(e)}",
+                        code="compilation_error"
+                    ))
+            
             raise YAMLCompilerError(f"Failed to compile YAML: {e}") from e
 
     def _merge_defaults_with_context(
@@ -287,7 +401,7 @@ class YAMLCompiler:
             context: Template context variables
 
         Raises:
-            YAMLCompilerError: If template validation fails
+            YAMLCompilerError: If template validation fails and using legacy error handling
         """
         try:
             logger.debug("Validating templates in pipeline definition")
@@ -297,8 +411,43 @@ class YAMLCompiler:
                 pipeline_def, context
             )
             
-            # Report validation results
-            if validation_result.has_errors:
+            # Process results through validation report if enabled
+            if self.validation_report:
+                # Convert template validation errors to unified format
+                for error in validation_result.errors:
+                    issue = create_template_issue(
+                        severity=ValidationSeverity.ERROR,
+                        component=error.context_path or "unknown",
+                        message=error.message,
+                        path=error.context_path,
+                        suggestions=error.suggestions
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Convert template validation warnings to unified format
+                for warning in validation_result.warnings:
+                    issue = create_template_issue(
+                        severity=ValidationSeverity.WARNING,
+                        component=warning.context_path or "unknown",
+                        message=warning.message,
+                        path=warning.context_path,
+                        suggestions=warning.suggestions
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Add debug info if available
+                if validation_result.undefined_variables:
+                    for var in validation_result.undefined_variables:
+                        issue = create_template_issue(
+                            severity=ValidationSeverity.INFO,
+                            component="undefined_variables",
+                            message=f"Undefined template variable: '{var}'",
+                            suggestions=["Ensure variable is provided in context or defined by dependent step"]
+                        )
+                        self.validation_report.add_issue(issue)
+            
+            # Legacy error handling - only raise if not using validation report
+            if not self.validation_report and validation_result.has_errors:
                 error_messages = []
                 for error in validation_result.errors:
                     error_messages.append(str(error))
@@ -308,15 +457,15 @@ class YAMLCompiler:
                     "\n".join(error_messages)
                 )
             
-            # Log warnings if present
-            if validation_result.has_warnings:
+            # Log validation results
+            if validation_result.has_warnings and not self.validation_report:
                 logger.warning(f"Template validation completed with {len(validation_result.warnings)} warnings")
                 for warning in validation_result.warnings:
                     logger.warning(str(warning))
-            else:
+            elif not validation_result.has_errors and not validation_result.has_warnings:
                 logger.info("Template validation completed successfully")
                 
-            # Log summary
+            # Log summary in debug mode
             if self.template_validator.debug_mode:
                 logger.debug(f"Template validation summary: {validation_result.summary()}")
                 logger.debug(f"Available variables: {sorted(validation_result.available_variables)}")
@@ -325,10 +474,469 @@ class YAMLCompiler:
                     logger.debug(f"Undefined variables: {sorted(validation_result.undefined_variables)}")
                     
         except YAMLCompilerError:
-            # Re-raise YAML compiler errors
-            raise
+            # Re-raise YAML compiler errors (only in legacy mode)
+            if not self.validation_report:
+                raise
         except Exception as e:
-            raise YAMLCompilerError(f"Template validation failed: {e}") from e
+            error_msg = f"Template validation failed: {e}"
+            if self.validation_report:
+                # Add to validation report instead of raising
+                self.validation_report.add_issue(ValidationIssue(
+                    severity=ValidationSeverity.ERROR,
+                    category="template",
+                    component="validation_system",
+                    message=error_msg,
+                    code="template_validation_error"
+                ))
+            else:
+                raise YAMLCompilerError(error_msg) from e
+
+    async def _validate_tools(self, pipeline_def: Dict[str, Any]) -> None:
+        """
+        Validate all tool configurations in the pipeline definition.
+
+        Args:
+            pipeline_def: Pipeline definition
+
+        Raises:
+            YAMLCompilerError: If tool validation fails and using legacy error handling
+        """
+        try:
+            logger.debug("Validating tool configurations in pipeline definition")
+            
+            # Use tool validator to check all tool configurations
+            validation_result = self.tool_validator.validate_pipeline_tools(pipeline_def)
+            
+            # Process results through validation report if enabled
+            if self.validation_report:
+                # Convert tool validation errors to unified format
+                for error in validation_result.errors:
+                    issue = create_tool_issue(
+                        severity=ValidationSeverity.ERROR,
+                        component=error.task_id,
+                        message=error.message,
+                        tool_name=error.tool_name,
+                        parameter=error.parameter_name,
+                        suggestions=[f"Check tool '{error.tool_name}' configuration"]
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Convert tool validation warnings to unified format
+                for warning in validation_result.warnings:
+                    issue = create_tool_issue(
+                        severity=ValidationSeverity.WARNING,
+                        component=warning.task_id,
+                        message=warning.message,
+                        tool_name=warning.tool_name,
+                        parameter=warning.parameter_name,
+                        suggestions=[f"Review tool '{warning.tool_name}' configuration"]
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Add tool availability info
+                for tool_name, available in validation_result.tool_availability.items():
+                    if available:
+                        issue = ValidationIssue(
+                            severity=ValidationSeverity.INFO,
+                            category="tool",
+                            component=tool_name,
+                            message=f"Tool '{tool_name}' is available and ready",
+                            code="tool_available"
+                        )
+                        self.validation_report.add_issue(issue)
+            
+            # Legacy error handling - only raise if not using validation report
+            if not self.validation_report and validation_result.has_errors:
+                error_messages = []
+                for error in validation_result.errors:
+                    error_messages.append(str(error))
+                
+                raise YAMLCompilerError(
+                    f"Tool validation failed with {len(validation_result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log validation results
+            if validation_result.has_warnings and not self.validation_report:
+                logger.warning(f"Tool validation completed with {len(validation_result.warnings)} warnings")
+                for warning in validation_result.warnings:
+                    logger.warning(str(warning))
+            elif not validation_result.has_errors and not validation_result.has_warnings:
+                logger.info("Tool validation completed successfully")
+                
+            # Log summary
+            if not self.validation_report:
+                logger.info(f"Tool validation summary: {validation_result.summary()}")
+                available_tools = [tool for tool, available in validation_result.tool_availability.items() if available]
+                logger.debug(f"Available tools used: {available_tools}")
+                    
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors (only in legacy mode)
+            if not self.validation_report:
+                raise
+        except Exception as e:
+            error_msg = f"Tool validation failed: {e}"
+            if self.validation_report:
+                # Add to validation report instead of raising
+                self.validation_report.add_issue(ValidationIssue(
+                    severity=ValidationSeverity.ERROR,
+                    category="tool",
+                    component="validation_system",
+                    message=error_msg,
+                    code="tool_validation_error"
+                ))
+            else:
+                raise YAMLCompilerError(error_msg) from e
+
+    async def _validate_models(self, pipeline_def: Dict[str, Any]) -> None:
+        """
+        Validate all model requirements in the pipeline definition.
+
+        Args:
+            pipeline_def: Pipeline definition
+
+        Raises:
+            YAMLCompilerError: If model validation fails and using legacy error handling
+        """
+        try:
+            logger.debug("Validating model requirements in pipeline definition")
+            
+            # Use model validator to check all model requirements
+            validation_result = self.model_validator.validate_pipeline_models(pipeline_def)
+            
+            # Process results through validation report if enabled
+            if self.validation_report:
+                # Convert model validation errors to unified format
+                for error in validation_result.errors:
+                    issue = create_model_issue(
+                        severity=ValidationSeverity.ERROR,
+                        component=error.task_id if hasattr(error, 'task_id') else "unknown",
+                        message=error.message if hasattr(error, 'message') else str(error),
+                        model_name=error.model_name if hasattr(error, 'model_name') else None,
+                        suggestions=["Check model availability and configuration"]
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Convert model validation warnings to unified format
+                for warning in validation_result.warnings:
+                    issue = create_model_issue(
+                        severity=ValidationSeverity.WARNING,
+                        component=warning.task_id if hasattr(warning, 'task_id') else "unknown",
+                        message=warning.message if hasattr(warning, 'message') else str(warning),
+                        model_name=warning.model_name if hasattr(warning, 'model_name') else None,
+                        suggestions=["Review model configuration"]
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Add model availability info
+                if hasattr(validation_result, 'validated_models') and validation_result.validated_models:
+                    for model_name in validation_result.validated_models:
+                        issue = create_model_issue(
+                            severity=ValidationSeverity.INFO,
+                            component=model_name,
+                            message=f"Model '{model_name}' is validated and available",
+                            model_name=model_name
+                        )
+                        self.validation_report.add_issue(issue)
+                
+                # Add missing model warnings
+                if hasattr(validation_result, 'missing_models') and validation_result.missing_models:
+                    for model_name in validation_result.missing_models:
+                        issue = create_model_issue(
+                            severity=ValidationSeverity.WARNING if self.development_mode else ValidationSeverity.ERROR,
+                            component=model_name,
+                            message=f"Model '{model_name}' is missing or not accessible",
+                            model_name=model_name,
+                            suggestions=[f"Install or configure access to model '{model_name}'"]
+                        )
+                        self.validation_report.add_issue(issue)
+            
+            # Legacy error handling - only raise if not using validation report
+            if not self.validation_report and validation_result.has_errors:
+                error_messages = []
+                for error in validation_result.errors:
+                    error_messages.append(str(error))
+                
+                raise YAMLCompilerError(
+                    f"Model validation failed with {len(validation_result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log validation results
+            if validation_result.has_warnings and not self.validation_report:
+                logger.warning(f"Model validation completed with {len(validation_result.warnings)} warnings")
+                for warning in validation_result.warnings:
+                    logger.warning(str(warning))
+            elif not validation_result.has_errors and not validation_result.has_warnings:
+                logger.info("Model validation completed successfully")
+                
+            # Log summary
+            if not self.validation_report:
+                logger.info(f"Model validation summary: {validation_result.summary()}")
+                if hasattr(validation_result, 'validated_models') and validation_result.validated_models:
+                    logger.debug(f"Validated models: {', '.join(validation_result.validated_models)}")
+                if hasattr(validation_result, 'missing_models') and validation_result.missing_models and not self.development_mode:
+                    logger.warning(f"Missing models: {', '.join(validation_result.missing_models)}")
+                if hasattr(validation_result, 'capability_mismatches') and validation_result.capability_mismatches:
+                    logger.debug(f"Models with capability limitations: {list(validation_result.capability_mismatches.keys())}")
+                    
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors (only in legacy mode)
+            if not self.validation_report:
+                raise
+        except Exception as e:
+            error_msg = f"Model validation failed: {e}"
+            if self.validation_report:
+                # Add to validation report instead of raising
+                self.validation_report.add_issue(ValidationIssue(
+                    severity=ValidationSeverity.ERROR,
+                    category="model",
+                    component="validation_system",
+                    message=error_msg,
+                    code="model_validation_error"
+                ))
+            else:
+                raise YAMLCompilerError(error_msg) from e
+
+    async def _validate_data_flow(self, pipeline_def: Dict[str, Any]) -> None:
+        """
+        Validate data flow between pipeline steps.
+
+        Args:
+            pipeline_def: Pipeline definition
+
+        Raises:
+            YAMLCompilerError: If data flow validation fails and using legacy error handling
+        """
+        try:
+            logger.debug("Validating data flow in pipeline definition")
+            
+            # Use data flow validator to check data flow
+            validation_result = self.data_flow_validator.validate_pipeline_data_flow(pipeline_def)
+            
+            # Process results through validation report if enabled
+            if self.validation_report:
+                # Convert data flow validation errors to unified format
+                for error in validation_result.errors:
+                    # Create a data flow validation issue (using dependency category as closest match)
+                    issue = ValidationIssue(
+                        severity=ValidationSeverity.ERROR,
+                        category="data_flow",
+                        component=error.task_id,
+                        message=error.message,
+                        code=f"data_flow_{error.error_type}",
+                        path=error.parameter_name,
+                        suggestions=error.suggestions,
+                        metadata={
+                            "error_type": error.error_type,
+                            "variable_reference": error.variable_reference,
+                            "source_task": error.source_task
+                        }
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Convert data flow validation warnings to unified format
+                for warning in validation_result.warnings:
+                    issue = ValidationIssue(
+                        severity=ValidationSeverity.WARNING,
+                        category="data_flow",
+                        component=warning.task_id,
+                        message=warning.message,
+                        code=f"data_flow_{warning.error_type}",
+                        path=warning.parameter_name,
+                        suggestions=warning.suggestions,
+                        metadata={
+                            "error_type": warning.error_type,
+                            "variable_reference": warning.variable_reference,
+                            "source_task": warning.source_task
+                        }
+                    )
+                    self.validation_report.add_issue(issue)
+                
+                # Add data flow graph info if available
+                if validation_result.data_flow_graph:
+                    dependencies_info = []
+                    for task_id, deps in validation_result.data_flow_graph.items():
+                        if deps:
+                            dependencies_info.append(f"{task_id} depends on: {', '.join(sorted(deps))}")
+                    
+                    if dependencies_info:
+                        issue = ValidationIssue(
+                            severity=ValidationSeverity.INFO,
+                            category="data_flow", 
+                            component="dependency_graph",
+                            message=f"Data flow dependencies computed: {'; '.join(dependencies_info)}",
+                            code="data_flow_graph_computed"
+                        )
+                        self.validation_report.add_issue(issue)
+            
+            # Legacy error handling - only raise if not using validation report
+            if not self.validation_report and validation_result.has_errors:
+                error_messages = []
+                for error in validation_result.errors:
+                    error_messages.append(str(error))
+                
+                raise YAMLCompilerError(
+                    f"Data flow validation failed with {len(validation_result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log validation results
+            if validation_result.has_warnings and not self.validation_report:
+                logger.warning(f"Data flow validation completed with {len(validation_result.warnings)} warnings")
+                for warning in validation_result.warnings:
+                    logger.warning(str(warning))
+            elif not validation_result.has_errors and not validation_result.has_warnings:
+                logger.info("Data flow validation completed successfully")
+                
+            # Log summary
+            if not self.validation_report:
+                logger.info(f"Data flow validation summary: {validation_result.summary()}")
+                if validation_result.data_flow_graph:
+                    total_deps = sum(len(deps) for deps in validation_result.data_flow_graph.values())
+                    logger.debug(f"Computed {total_deps} data flow dependencies across {validation_result.validated_tasks} tasks")
+                    
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors (only in legacy mode)
+            if not self.validation_report:
+                raise
+        except Exception as e:
+            error_msg = f"Data flow validation failed: {e}"
+            if self.validation_report:
+                # Add to validation report instead of raising
+                self.validation_report.add_issue(ValidationIssue(
+                    severity=ValidationSeverity.ERROR,
+                    category="data_flow",
+                    component="validation_system",
+                    message=error_msg,
+                    code="data_flow_validation_error"
+                ))
+            else:
+                raise YAMLCompilerError(error_msg) from e
+
+    async def _validate_dependencies(self, pipeline_def: Dict[str, Any]) -> None:
+        """
+        Validate all dependencies in the pipeline definition using comprehensive dependency validation.
+
+        Args:
+            pipeline_def: Pipeline definition
+
+        Raises:
+            YAMLCompilerError: If dependency validation fails and using legacy error handling
+        """
+        try:
+            logger.debug("Performing comprehensive dependency validation")
+            
+            # Import dependency validator
+            from ..validation.dependency_validator import DependencyValidator
+            
+            # Create validator with development mode setting
+            validator = DependencyValidator(development_mode=self.development_mode)
+            
+            # Perform validation
+            result = validator.validate_pipeline_dependencies(pipeline_def)
+            
+            # Process results through validation report if enabled
+            if self.validation_report:
+                # Convert dependency validation issues to unified format
+                for issue in result.issues:
+                    severity = ValidationSeverity.ERROR if issue.severity == "error" else ValidationSeverity.WARNING
+                    
+                    suggestions = []
+                    if issue.recommendation:
+                        suggestions.append(issue.recommendation)
+                    
+                    if issue.dependency_chain:
+                        suggestions.append(f"Dependency chain: {' -> '.join(issue.dependency_chain)}")
+                    
+                    validation_issue = create_dependency_issue(
+                        severity=severity,
+                        component=", ".join(issue.involved_tasks) if issue.involved_tasks else "pipeline",
+                        message=issue.message,
+                        dependency_chain=issue.dependency_chain,
+                        suggestions=suggestions
+                    )
+                    self.validation_report.add_issue(validation_issue)
+                
+                # Add execution order info if available
+                if result.execution_order:
+                    info_issue = ValidationIssue(
+                        severity=ValidationSeverity.INFO,
+                        category="dependency",
+                        component="execution_order",
+                        message=f"Computed execution order: {' -> '.join(result.execution_order)}",
+                        code="execution_order_computed"
+                    )
+                    self.validation_report.add_issue(info_issue)
+            
+            # Legacy error handling - only raise if not using validation report
+            if not self.validation_report and not result.is_valid:
+                error_messages = []
+                
+                # Collect all error messages
+                for issue in result.errors:
+                    error_msg = issue.message
+                    
+                    if issue.involved_tasks:
+                        error_msg += f" (involves tasks: {', '.join(issue.involved_tasks)})"
+                    
+                    if issue.dependency_chain:
+                        error_msg += f" (chain: {' -> '.join(issue.dependency_chain)})"
+                    
+                    if issue.recommendation:
+                        error_msg += f" - Recommendation: {issue.recommendation}"
+                    
+                    error_messages.append(error_msg)
+                
+                raise YAMLCompilerError(
+                    f"Dependency validation failed with {len(result.errors)} errors:\n" +
+                    "\n".join(error_messages)
+                )
+            
+            # Log validation results
+            if result.has_warnings and not self.validation_report:
+                logger.warning(f"Dependency validation completed with {len(result.warnings)} warnings")
+                for warning in result.warnings:
+                    warning_msg = warning.message
+                    if warning.recommendation:
+                        warning_msg += f" - Recommendation: {warning.recommendation}"
+                    logger.warning(warning_msg)
+            elif result.is_valid and not result.has_warnings:
+                logger.info("Dependency validation completed successfully")
+                
+            # Log execution order if computed
+            if result.execution_order and not self.validation_report:
+                logger.debug(f"Computed execution order: {' -> '.join(result.execution_order)}")
+                
+        except ImportError:
+            # DependencyValidator not available, skip comprehensive validation
+            warning_msg = "DependencyValidator not available, skipping comprehensive dependency validation"
+            logger.warning(warning_msg)
+            if self.validation_report:
+                self.validation_report.add_issue(ValidationIssue(
+                    severity=ValidationSeverity.WARNING,
+                    category="dependency",
+                    component="validation_system",
+                    message=warning_msg,
+                    code="validator_unavailable"
+                ))
+        except YAMLCompilerError:
+            # Re-raise YAML compiler errors (only in legacy mode)
+            if not self.validation_report:
+                raise
+        except Exception as e:
+            error_msg = f"Dependency validation failed: {e}"
+            if self.validation_report:
+                # Add to validation report instead of raising
+                self.validation_report.add_issue(ValidationIssue(
+                    severity=ValidationSeverity.ERROR,
+                    category="dependency",
+                    component="validation_system",
+                    message=error_msg,
+                    code="dependency_validation_error"
+                ))
+            else:
+                raise YAMLCompilerError(error_msg) from e
 
     def _process_templates(
         self, pipeline_def: Dict[str, Any], context: Dict[str, Any]
@@ -1188,3 +1796,39 @@ class YAMLCompiler:
         
         else:
             raise ValueError(f"Invalid error handler configuration: {type(handler_config)}")
+    
+    def get_validation_report(self) -> Optional[ValidationReport]:
+        """
+        Get the current validation report.
+        
+        Returns:
+            ValidationReport instance if enabled, None otherwise
+        """
+        return self.validation_report
+    
+    def save_validation_report(self, file_path: str, format_type: OutputFormat = OutputFormat.JSON):
+        """
+        Save the validation report to a file.
+        
+        Args:
+            file_path: Path to save the report
+            format_type: Format to save in (JSON, TEXT, etc.)
+        """
+        if self.validation_report:
+            self.validation_report.save_to_file(file_path, format_type)
+            logger.info(f"Validation report saved to: {file_path}")
+        else:
+            logger.warning("No validation report available to save")
+    
+    def print_validation_report(self, format_type: OutputFormat = OutputFormat.TEXT, use_colors: bool = True):
+        """
+        Print the validation report to console.
+        
+        Args:
+            format_type: Format to print in
+            use_colors: Whether to use color coding
+        """
+        if self.validation_report:
+            self.validation_report.print_report(format_type, use_colors=use_colors)
+        else:
+            logger.warning("No validation report available to print")
