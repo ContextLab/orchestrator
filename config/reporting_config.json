@@ -1,0 +1,27 @@
+{
+  "reporting": {
+    "health_score_threshold": 80.0,
+    "trend_analysis_days": 30,
+    "generate_charts": true,
+    "include_historical_data": true,
+    "max_history_points": 100
+  },
+  "report_formats": {
+    "dashboard": true,
+    "detailed_json": true,
+    "summary_markdown": true,
+    "charts": false,
+    "stakeholder_summary": true
+  },
+  "alert_thresholds": {
+    "health_score_critical": 50.0,
+    "health_score_warning": 70.0,
+    "violations_critical": 20,
+    "violations_warning": 10
+  },
+  "stakeholder_config": {
+    "include_technical_details": false,
+    "focus_on_trends": true,
+    "executive_summary": true
+  }
+}
