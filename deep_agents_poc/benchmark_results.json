@@ -1,0 +1,202 @@
+{
+  "benchmark_summary": {
+    "total_tests": 5,
+    "deep_agents_success_rate": 1.0,
+    "current_system_success_rate": 1.0,
+    "average_deep_agents_time": 0.4438666820526123,
+    "average_current_system_time": 2.2,
+    "timestamp": "2025-08-25T00:07:14.225778"
+  },
+  "detailed_results": [
+    {
+      "test_name": "simple_sequential",
+      "system_type": "deep_agents",
+      "execution_time": 0.30159497261047363,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 3,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:12.307475"
+    },
+    {
+      "test_name": "simple_sequential",
+      "system_type": "current_system",
+      "execution_time": 1.5,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 3,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:12.307509"
+    },
+    {
+      "test_name": "parallel_execution",
+      "system_type": "deep_agents",
+      "execution_time": 0.5059309005737305,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 5,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:12.813494"
+    },
+    {
+      "test_name": "parallel_execution",
+      "system_type": "current_system",
+      "execution_time": 2.5,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 5,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:12.813537"
+    },
+    {
+      "test_name": "complex_pipeline",
+      "system_type": "deep_agents",
+      "execution_time": 0.6052818298339844,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 6,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:13.418880"
+    },
+    {
+      "test_name": "complex_pipeline",
+      "system_type": "current_system",
+      "execution_time": 3.0,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 6,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:13.418916"
+    },
+    {
+      "test_name": "state_management",
+      "system_type": "deep_agents",
+      "execution_time": 0.40289878845214844,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 4,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:13.821863"
+    },
+    {
+      "test_name": "state_management",
+      "system_type": "current_system",
+      "execution_time": 2.0,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 4,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:13.821888"
+    },
+    {
+      "test_name": "long_running_tasks",
+      "system_type": "deep_agents",
+      "execution_time": 0.4036269187927246,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 4,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:14.225546"
+    },
+    {
+      "test_name": "long_running_tasks",
+      "system_type": "current_system",
+      "execution_time": 2.0,
+      "memory_usage": null,
+      "cpu_usage": null,
+      "success": true,
+      "error": null,
+      "task_count": 4,
+      "parallel_tasks": 0,
+      "timestamp": "2025-08-25T00:07:14.225570"
+    }
+  ],
+  "comparison_metrics": [
+    {
+      "test_name": "simple_sequential",
+      "current_system_time": 1.5,
+      "deep_agents_time": 0.30159497261047363,
+      "time_improvement": 1.1984050273895264,
+      "time_improvement_percent": 79.8936684926351,
+      "deep_agents_overhead": 0.1515949726104736,
+      "parallel_efficiency": 0.0,
+      "complexity_handling": 0.3
+    },
+    {
+      "test_name": "parallel_execution",
+      "current_system_time": 2.5,
+      "deep_agents_time": 0.5059309005737305,
+      "time_improvement": 1.9940690994262695,
+      "time_improvement_percent": 79.76276397705078,
+      "deep_agents_overhead": 0.25593090057373047,
+      "parallel_efficiency": 0.0,
+      "complexity_handling": 0.7
+    },
+    {
+      "test_name": "complex_pipeline",
+      "current_system_time": 3.0,
+      "deep_agents_time": 0.6052818298339844,
+      "time_improvement": 2.3947181701660156,
+      "time_improvement_percent": 79.82393900553384,
+      "deep_agents_overhead": 0.30528182983398433,
+      "parallel_efficiency": 0.0,
+      "complexity_handling": 0.9
+    },
+    {
+      "test_name": "state_management",
+      "current_system_time": 2.0,
+      "deep_agents_time": 0.40289878845214844,
+      "time_improvement": 1.5971012115478516,
+      "time_improvement_percent": 79.85506057739258,
+      "deep_agents_overhead": 0.20289878845214843,
+      "parallel_efficiency": 0.0,
+      "complexity_handling": 0.8
+    },
+    {
+      "test_name": "long_running_tasks",
+      "current_system_time": 2.0,
+      "deep_agents_time": 0.4036269187927246,
+      "time_improvement": 1.5963730812072754,
+      "time_improvement_percent": 79.81865406036377,
+      "deep_agents_overhead": 0.2036269187927246,
+      "parallel_efficiency": 0.0,
+      "complexity_handling": 0.6
+    }
+  ],
+  "overall_assessment": {
+    "overall_score": 47.864050134023024,
+    "time_improvement_avg": 79.83081722259521,
+    "parallel_efficiency_avg": 0.0,
+    "complexity_handling_avg": 0.66,
+    "overhead_avg": 0.2238666820526123,
+    "recommendation": "NOT_RECOMMENDED",
+    "justification": "Deep Agents does not provide sufficient benefits over current system",
+    "key_strengths": [
+      "Significant time improvement in long_running_tasks",
+      "Significant time improvement in parallel_execution",
+      "Significant time improvement in state_management",
+      "Excellent complexity handling in complex_pipeline",
+      "Significant time improvement in complex_pipeline",
+      "Significant time improvement in simple_sequential"
+    ],
+    "key_weaknesses": []
+  }
+}
