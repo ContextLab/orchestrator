@@ -17,9 +17,10 @@ from datetime import datetime
 # Add orchestrator to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from orchestrator import Orchestrator
+from orchestrator import Orchestrator, init_models
 from orchestrator.models import get_model_registry
 from orchestrator.compiler.yaml_compiler import YAMLCompiler
+from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
 
 class PipelineValidator:
@@ -31,6 +32,8 @@ class PipelineValidator:
         self.examples_dir = Path("examples")
         self.output_dir = Path("examples/outputs/validation_run")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.model_registry = None
+        self.control_system = None
         
     async def validate_pipeline(self, pipeline_path: Path) -> Dict[str, Any]:
         """Validate a single pipeline."""
@@ -60,19 +63,21 @@ class PipelineValidator:
             # Get appropriate inputs
             inputs = self._get_test_inputs(pipeline_path.name)
             
-            # Setup orchestrator
-            orchestrator = Orchestrator()
+            # Setup orchestrator with models and control system
+            orchestrator = Orchestrator(
+                model_registry=self.model_registry,
+                control_system=self.control_system
+            )
             
             # Run pipeline
             output_path = self.output_dir / pipeline_path.stem
             output_path.mkdir(exist_ok=True)
             
-            results = await orchestrator.run(
-                pipeline,
-                inputs=inputs,
-                output_dir=str(output_path),
-                max_concurrent_tasks=2
-            )
+            # Add output_path to inputs if not present
+            if 'output_path' not in inputs:
+                inputs['output_path'] = str(output_path)
+            
+            results = await orchestrator.execute_yaml(yaml_content, inputs)
             
             # Check for issues
             issues = self._check_for_issues(results, output_path)
@@ -190,6 +195,17 @@ class PipelineValidator:
     
     async def validate_all(self):
         """Validate all example pipelines."""
+        # Initialize models first
+        print("Initializing models...")
+        self.model_registry = init_models()
+        
+        if not self.model_registry or not self.model_registry.models:
+            print("❌ No models available. Please check your API keys and models.yaml")
+            return
+        
+        # Create control system with models
+        self.control_system = HybridControlSystem(self.model_registry)
+        
         # Get all pipeline files
         pipelines = sorted(self.examples_dir.glob("*.yaml"))
         

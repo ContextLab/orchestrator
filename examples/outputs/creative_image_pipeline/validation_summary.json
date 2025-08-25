@@ -1,0 +1,37 @@
+{
+  "pipeline": "creative_image_pipeline.yaml",
+  "timestamp": "2025-08-22T14:51:16.223381",
+  "status": "completed_with_issues",
+  "quality_score": 90.0,
+  "execution_time": 8.059278964996338,
+  "issues": [
+    "conversational_marker: Let me"
+  ],
+  "outputs": [
+    ".DS_Store",
+    "astronaut_kitten_guitar_space/enhanced.png",
+    "astronaut_kitten_guitar_space/cyberpunk.png",
+    "astronaut_kitten_guitar_space/impressionist.png",
+    "astronaut_kitten_guitar_space/README.md",
+    "astronaut_kitten_guitar_space/base.png",
+    "astronaut_kitten_guitar_space/photorealistic.png",
+    "futuristic_neuro_lab/enhanced.png",
+    "futuristic_neuro_lab/cyberpunk.png",
+    "futuristic_neuro_lab/impressionist.png",
+    "futuristic_neuro_lab/README.md",
+    "futuristic_neuro_lab/base.png",
+    "futuristic_neuro_lab/photorealistic.png",
+    "palm_tree_bicycle_rainbow/enhanced.png",
+    "palm_tree_bicycle_rainbow/cyberpunk.png",
+    "palm_tree_bicycle_rainbow/impressionist.png",
+    "palm_tree_bicycle_rainbow/README.md",
+    "palm_tree_bicycle_rainbow/base.png",
+    "palm_tree_bicycle_rainbow/photorealistic.png",
+    "{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'futuristic_city_flying_cars', 'model_used': 'gemini-2.5-flash-lite-preview-06-17', 'success': True}/enhanced.png",
+    "{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'futuristic_city_flying_cars', 'model_used': 'gemini-2.5-flash-lite-preview-06-17', 'success': True}/cyberpunk.png",
+    "{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'futuristic_city_flying_cars', 'model_used': 'gemini-2.5-flash-lite-preview-06-17', 'success': True}/neo-tokyo.png",
+    "{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'futuristic_city_flying_cars', 'model_used': 'gemini-2.5-flash-lite-preview-06-17', 'success': True}/blade runner.png",
+    "{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'futuristic_city_flying_cars', 'model_used': 'gemini-2.5-flash-lite-preview-06-17', 'success': True}/README.md",
+    "{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'futuristic_city_flying_cars', 'model_used': 'gemini-2.5-flash-lite-preview-06-17', 'success': True}/base.png"
+  ]
+}

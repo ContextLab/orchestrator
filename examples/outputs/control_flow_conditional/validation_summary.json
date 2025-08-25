@@ -1,0 +1,36 @@
+{
+  "pipeline": "control_flow_conditional.yaml",
+  "timestamp": "2025-08-22T14:50:42.178453",
+  "status": "completed_with_issues",
+  "quality_score": 60.0,
+  "execution_time": 4.820819854736328,
+  "issues": [
+    "unrendered_templates",
+    "templates_in_file: processed_sample.md",
+    "templates_in_file: processed_test.md"
+  ],
+  "outputs": [
+    "processed_special.md",
+    "processed_threshold.md",
+    "processed_multiline.md",
+    "processed_small.md",
+    "processed_large.md",
+    "processed_empty_conv.md",
+    "processed_extension_test.md",
+    "processed_special_chars.md",
+    "processed_large_conv.md",
+    "processed_repeated_x.md",
+    "processed_sample.md",
+    "processed_repeated_a.md",
+    "processed_long_line.md",
+    "processed_size_test.md",
+    "processed_tiny.md",
+    "processed_just_over.md",
+    "processed_medium_repetitive.md",
+    "processed_exact_threshold.md",
+    "processed_empty.md",
+    "processed_small_conv.md",
+    "processed_repetitive.md",
+    "processed_test.md"
+  ]
+}

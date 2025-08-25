@@ -1,68 +1,14 @@
 # Processed: file3.txt
 
 File index: 2
-Is first: False
-Is last: True
+Is first: {{ $is_first }}
+Is last: {{ $is_last }}
 
 ## Original Size
-148 bytes
+{{ read_file.size }} bytes
 
 ## Analysis
-# Text Analysis Summary
-
-## Document Overview
-**File:** `data/file3.txt`  
-**Size:** 148 bytes  
-**Type:** Plain text file
-
-## Content Summary
-
-This text file serves as the final component in a three-part test dataset. The content explicitly identifies itself as "the third and final test file" and provides meta-information about its purpose within a larger system.
-
-### Key Points:
-
-1. **Position in Dataset**: This is file 3 of 3 in the test dataset
-2. **Purpose**: Completes a test dataset designed for testing `for_each` loop functionality
-3. **Processing Intent**: The file indicates that parallel processing is expected when possible
-
-### Technical Context
-
-The text suggests this file is part of a test suite for:
-- Loop iteration testing (specifically `for_each` loops)
-- Parallel processing capabilities
-- Multi-file batch operations
-
-### Content Characteristics
-
-- **Length**: Brief (3 lines, 148 bytes)
-- **Style**: Technical/instructional
-- **Audience**: Developers or system testers
-- **Tone**: Informative and straightforward
-
-## Significance
-
-This file appears to be a test fixture designed to verify that file processing systems can:
-1. Handle multiple files in sequence
-2. Complete full dataset processing
-3. Potentially execute parallel operations where the system architecture permits
-
-The self-referential nature of the content (describing its own purpose) is typical of test data files used in software development and testing scenarios.
+{{ analyze_content.result }}
 
 ## Transformed Content
-Here are a few options for a more concise version of the text, aiming for clarity and brevity while retaining the key information:
-
-**Option 1 (Most Concise):**
-
-“This is the final test file for the for_each loop. It completes a three-part test dataset, designed for parallel processing. File `data/file3.txt` is 148 bytes and contains meta-information about its purpose: completing a test dataset for loop iteration testing and parallel processing capabilities.  It’s a test fixture verifying system performance.”
-
-**Option 2 (Slightly more detail):**
-
-“This is the final test file for the for_each loop, completing a three-part test dataset. It's 148 bytes and describes the purpose of the file: verifying parallel processing and loop iteration testing.  The file’s content highlights its role in a larger system.”
-
-**Option 3 (Focus on the purpose):**
-
-“This is the final test file for the for_each loop. It’s a three-part test dataset designed to verify parallel processing and complete a test suite, with a focus on file handling and loop iteration testing. File `data/file3.txt` is 148 bytes and contains key information about its purpose.”
-
----
-
-**Which option is best depends on the context.**  If you need to highlight the testing aspect, Option 1 is best. If you want to
+{{ transform_content.result }}

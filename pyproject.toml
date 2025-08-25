@@ -64,6 +64,8 @@ dependencies = [
     "imageio-ffmpeg>=0.4.9",
     # Additional dependencies
     "six>=1.16.0",
+    # RouteLLM for intelligent model routing and cost optimization
+    "routellm[serve,eval]>=0.1.0",
 ]
 
 [project.optional-dependencies]
