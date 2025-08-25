@@ -1,0 +1,34 @@
+# Analysis Report for {{ project_name }}
+
+<role>{{ analyst_role | default("Data Analyst") }}</role>
+<task>Analyze {{ data_source }} and provide insights for {{ stakeholder }}</task>
+
+Generated on: {{ timestamp | date }}
+Pipeline: {{ pipeline_id }}
+
+## Data Sources
+{% for source in data_sources %}
+<document src="{{ source.path }}" type="{{ source.type }}">
+  {{ source.description }}
+</document>
+{% endfor %}
+
+## Analysis Results
+{{ results.summary }}
+
+<example>
+  <input>What are the key trends in {{ domain }}?</input>
+  <output>{{ results.key_trends | default("Key trends analysis pending") }}</output>
+</example>
+
+<hint>Focus on trends relevant to {{ business_context }}</hint>
+{% if quality_threshold %}
+<hint>Only include findings with confidence > {{ quality_threshold }}%</hint>
+{% endif %}
+
+<output-format>
+Provide comprehensive analysis in JSON format with:
+- metrics: {{ metrics_required | to_json }}
+- insights: structured findings
+- recommendations: actionable next steps
+</output-format>

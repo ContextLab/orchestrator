@@ -1,0 +1,38 @@
+<role>Technical Report Writer</role>
+<task>Create a comprehensive data processing report based on pipeline results</task>
+
+<document src="{{ input_data_path }}" type="csv">
+  Source data for analysis
+</document>
+
+<example>
+  <input>Generate report for sales pipeline results</input>
+  <output>
+    # Data Processing Report
+    
+    ## Overview
+    Processed 2,500 sales records from Q1 2024
+    
+    ## Key Findings
+    - Total revenue: $125,000
+    - Top performing region: North America
+    - Average deal size: $50
+    
+    ## Data Quality
+    - Completeness: 98.2%
+    - Accuracy: 99.1%
+    - Consistency: 97.8%
+  </output>
+</example>
+
+<hint>Include data quality metrics and processing statistics</hint>
+<hint>Use tables and charts when describing complex data relationships</hint>
+
+<output-format>
+Generate report in Markdown format with:
+- Executive summary
+- Data processing metrics
+- Quality assessment
+- Detailed findings
+- Recommendations for next steps
+</output-format>
