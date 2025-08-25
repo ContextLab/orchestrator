@@ -575,6 +575,175 @@ class ConfigurationManager:
             logger.error(f"Failed to save configuration for {wrapper_name}: {e}")
 
 
+# External Tool Configuration Classes
+
+@dataclass
+class ExternalToolConfig(BaseWrapperConfig):
+    """Configuration for external tool integrations."""
+    
+    # API Configuration
+    api_endpoint: str = ""
+    api_key: str = ""
+    api_version: str = "v1"
+    
+    # Authentication
+    auth_type: str = "bearer"  # bearer, api_key, oauth
+    oauth_client_id: Optional[str] = None
+    oauth_client_secret: Optional[str] = None
+    
+    # Rate Limiting
+    rate_limit_requests_per_minute: int = 60
+    rate_limit_tokens_per_minute: int = 10000
+    rate_limit_burst_size: int = 10
+    
+    # Connection Settings
+    connection_timeout_seconds: float = 10.0
+    read_timeout_seconds: float = 30.0
+    max_connections: int = 100
+    max_keepalive_connections: int = 20
+    
+    # Retry Configuration
+    retry_backoff_factor: float = 2.0
+    retry_max_delay_seconds: float = 60.0
+    retry_jitter: bool = True
+    
+    # Health Check Settings
+    health_check_enabled: bool = True
+    health_check_interval_seconds: int = 30
+    health_check_endpoint: str = "/health"
+    health_check_timeout_seconds: float = 5.0
+    
+    # Cost and Budget Settings
+    daily_budget: Optional[float] = None
+    monthly_budget: Optional[float] = None
+    budget_alert_thresholds: Dict[str, float] = field(default_factory=lambda: {"warning": 0.8, "critical": 0.95})
+    cost_tracking_enabled: bool = True
+    
+    def get_config_fields(self) -> Dict[str, ConfigField]:
+        """Get external tool specific configuration fields."""
+        base_fields = {}
+        try:
+            if hasattr(super(), 'get_config_fields'):
+                base_fields = super().get_config_fields()
+        except:
+            pass
+            
+        return {
+            **base_fields,
+            "api_endpoint": ConfigField(
+                "api_endpoint", str, "", 
+                "API endpoint URL", 
+                required=True,
+                validator=lambda x: x.startswith(('http://', 'https://')) if x else False
+            ),
+            "api_key": ConfigField(
+                "api_key", str, "", 
+                "API key for authentication",
+                sensitive=True,
+                environment_var="EXTERNAL_API_KEY"
+            ),
+            "api_version": ConfigField(
+                "api_version", str, "v1",
+                "API version to use",
+                allowed_values=["v1", "v2", "beta"]
+            ),
+            "auth_type": ConfigField(
+                "auth_type", str, "bearer",
+                "Authentication type",
+                allowed_values=["bearer", "api_key", "oauth", "basic"]
+            ),
+            "rate_limit_requests_per_minute": ConfigField(
+                "rate_limit_requests_per_minute", int, 60,
+                "Maximum requests per minute",
+                min_value=1, max_value=10000
+            ),
+            "rate_limit_tokens_per_minute": ConfigField(
+                "rate_limit_tokens_per_minute", int, 10000,
+                "Maximum tokens per minute",
+                min_value=1, max_value=1000000
+            ),
+            "connection_timeout_seconds": ConfigField(
+                "connection_timeout_seconds", float, 10.0,
+                "Connection timeout in seconds",
+                min_value=1.0, max_value=300.0
+            ),
+            "read_timeout_seconds": ConfigField(
+                "read_timeout_seconds", float, 30.0,
+                "Read timeout in seconds",
+                min_value=1.0, max_value=600.0
+            ),
+            "max_connections": ConfigField(
+                "max_connections", int, 100,
+                "Maximum concurrent connections",
+                min_value=1, max_value=1000
+            ),
+            "retry_backoff_factor": ConfigField(
+                "retry_backoff_factor", float, 2.0,
+                "Backoff factor for retries",
+                min_value=1.0, max_value=10.0
+            ),
+            "health_check_enabled": ConfigField(
+                "health_check_enabled", bool, True,
+                "Enable health check monitoring"
+            ),
+            "health_check_interval_seconds": ConfigField(
+                "health_check_interval_seconds", int, 30,
+                "Health check interval in seconds",
+                min_value=5, max_value=3600
+            ),
+            "daily_budget": ConfigField(
+                "daily_budget", float, None,
+                "Daily cost budget in USD"
+            ),
+            "monthly_budget": ConfigField(
+                "monthly_budget", float, None,
+                "Monthly cost budget in USD"
+            ),
+            "cost_tracking_enabled": ConfigField(
+                "cost_tracking_enabled", bool, True,
+                "Enable cost tracking and monitoring"
+            )
+        }
+    
+    def validate(self) -> None:
+        """Extended validation for external tool configuration."""
+        super().validate()
+        
+        errors = []
+        
+        # Validate API endpoint
+        if self.api_endpoint and not self.api_endpoint.startswith(('http://', 'https://')):
+            errors.append("api_endpoint must start with http:// or https://")
+        
+        # Validate authentication configuration
+        if self.auth_type == "oauth" and not (self.oauth_client_id and self.oauth_client_secret):
+            errors.append("oauth_client_id and oauth_client_secret required for OAuth authentication")
+        
+        # Validate budget settings
+        if self.daily_budget is not None and self.daily_budget <= 0:
+            errors.append("daily_budget must be positive")
+        
+        if self.monthly_budget is not None and self.monthly_budget <= 0:
+            errors.append("monthly_budget must be positive")
+        
+        if self.daily_budget and self.monthly_budget and self.daily_budget * 31 > self.monthly_budget * 1.5:
+            errors.append("daily_budget seems inconsistent with monthly_budget")
+        
+        # Validate rate limiting
+        if self.rate_limit_requests_per_minute <= 0:
+            errors.append("rate_limit_requests_per_minute must be positive")
+        
+        if self.rate_limit_tokens_per_minute <= 0:
+            errors.append("rate_limit_tokens_per_minute must be positive")
+        
+        # Validate timeouts
+        if self.connection_timeout_seconds >= self.read_timeout_seconds:
+            errors.append("connection_timeout_seconds should be less than read_timeout_seconds")
+        
+        if errors:
+            raise ConfigValidationError(f"External tool configuration validation failed: {'; '.join(errors)}")
+
+
 # Example concrete configuration classes
 
 @dataclass
