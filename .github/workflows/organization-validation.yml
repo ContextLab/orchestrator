@@ -1,0 +1,126 @@
+name: Repository Organization Validation
+
+on:
+  push:
+    branches: [ main, develop, epic/* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run validation daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  organization-validation:
+    name: Validate Repository Organization
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Install any required dependencies for validation
+        
+    - name: Create required directories
+      run: |
+        mkdir -p temp/validation
+        mkdir -p temp/monitoring
+        
+    - name: Run Repository Organization Validation
+      id: validation
+      run: |
+        python scripts/organization_validator.py \
+          --config config/validation_config.json \
+          --suite ci_validation \
+          --junit-xml temp/validation/junit-results.xml \
+          --verbose
+      continue-on-error: true
+      
+    - name: Upload validation results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: organization-validation-results
+        path: |
+          temp/validation/
+          
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Organization Validation Results
+        path: temp/validation/junit-results.xml
+        reporter: java-junit
+        
+    - name: Generate organization health report
+      if: always()
+      run: |
+        echo "## Repository Organization Health Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Get current health status
+        python scripts/repository_organization_monitor.py --dashboard >> health_report.txt
+        
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        cat health_report.txt >> $GITHUB_STEP_SUMMARY  
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
+        # Add validation summary
+        if [ -f temp/validation/validation_report.json ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract key metrics from validation report
+          python -c "
+import json
+with open('temp/validation/validation_report.json') as f:
+    report = json.load(f)
+print(f'- **Overall Status**: {report[\"overall_status\"]}')
+print(f'- **Tests Passed**: {report[\"passed_tests\"]}/{report[\"total_tests\"]}')
+print(f'- **Critical Issues**: {report[\"summary\"][\"by_severity\"][\"critical\"]}')
+print(f'- **Errors**: {report[\"summary\"][\"by_severity\"][\"error\"]}')
+print(f'- **Warnings**: {report[\"summary\"][\"by_severity\"][\"warning\"]}')
+" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: Fail if validation failed
+      if: steps.validation.outcome == 'failure'
+      run: |
+        echo "❌ Repository organization validation failed!"
+        echo "Please review the validation results and fix organization issues."
+        exit 1
+        
+  monitoring-health-check:
+    name: Monitoring System Health Check
+    runs-on: ubuntu-latest
+    needs: organization-validation
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Test monitoring system
+      run: |
+        # Verify monitoring system can initialize
+        python scripts/repository_organization_monitor.py --status
+        
+        # Run single scan to verify system health
+        python scripts/repository_organization_monitor.py --scan-once
+        
+    - name: Create monitoring readiness badge
+      run: |
+        echo "✅ Monitoring system operational" >> $GITHUB_STEP_SUMMARY

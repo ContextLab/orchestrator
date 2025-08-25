@@ -1,0 +1,45 @@
+{
+  "validation_rules": {
+    "max_root_files": 20,
+    "max_root_scattered_files": 5,
+    "max_malformed_directories": 0,
+    "max_naming_violations": 0,
+    "max_large_files_mb": 100,
+    "required_directories": ["src", "scripts", "examples", "tests", "temp"],
+    "forbidden_root_extensions": [".tmp", ".bak", ".orig"],
+    "required_gitignore_patterns": ["*.pyc", "__pycache__", ".DS_Store", "temp/"]
+  },
+  "ci_cd_settings": {
+    "fail_on_warnings": false,
+    "generate_junit_xml": true,
+    "create_github_annotations": true,
+    "report_output_file": "temp/validation/validation_report.json"
+  },
+  "test_suites": {
+    "pre_commit": [
+      "root_directory_cleanliness",
+      "critical_file_protection",
+      "naming_standards"
+    ],
+    "ci_validation": [
+      "root_directory_cleanliness",
+      "directory_naming_conventions", 
+      "file_organization",
+      "structure_compliance",
+      "naming_standards",
+      "critical_file_protection"
+    ],
+    "full_validation": [
+      "root_directory_cleanliness",
+      "directory_naming_conventions",
+      "file_organization", 
+      "structure_compliance",
+      "naming_standards",
+      "file_size_compliance",
+      "archive_organization",
+      "critical_file_protection",
+      "git_integration_health",
+      "monitoring_readiness"
+    ]
+  }
+}
