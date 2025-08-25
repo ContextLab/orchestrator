@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+
+{% block title %}System Dashboard - Orchestrator Monitoring{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">System Dashboard</h1>
+    <div>
+        <span class="text-muted">Last updated: </span>
+        <span id="last-updated" class="fw-bold">--</span>
+        <button id="refresh-btn" class="btn btn-outline-primary btn-sm ms-2">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+</div>
+
+<!-- System Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-muted mb-1">System Health</h5>
+                        <h2 id="system-health-score" class="mb-0">--</h2>
+                        <small id="system-health-status" class="text-muted">Loading...</small>
+                    </div>
+                    <i class="fas fa-heartbeat fa-2x text-primary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-muted mb-1">Active Wrappers</h5>
+                        <h2 id="active-wrappers" class="mb-0">--</h2>
+                        <small id="healthy-wrappers" class="text-muted">Loading...</small>
+                    </div>
+                    <i class="fas fa-cube fa-2x text-success"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-muted mb-1">Total Operations</h5>
+                        <h2 id="total-operations" class="mb-0">--</h2>
+                        <small id="operations-rate" class="text-muted">Loading...</small>
+                    </div>
+                    <i class="fas fa-chart-line fa-2x text-info"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-muted mb-1">Success Rate</h5>
+                        <h2 id="success-rate" class="mb-0">--</h2>
+                        <small id="error-count" class="text-muted">Loading...</small>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x text-success"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Charts -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="chart-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">System Performance</h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-timerange="1">1H</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-timerange="24">24H</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-timerange="168">7D</button>
+                </div>
+            </div>
+            <div id="performance-chart" class="loading-spinner">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading performance data...</p>
+                </div>
+            </div>
+            <div id="performance-chart-error" class="error-message">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Unable to load performance chart data.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="chart-container">
+            <h5 class="mb-3">Wrapper Health Status</h5>
+            <div id="health-chart" class="loading-spinner">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading health data...</p>
+                </div>
+            </div>
+            <div id="health-chart-error" class="error-message">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Unable to load health chart data.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wrapper Status Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Wrapper Status Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Wrapper</th>
+                                <th>Status</th>
+                                <th>Health Score</th>
+                                <th>Success Rate</th>
+                                <th>Operations</th>
+                                <th>Last Activity</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wrapper-status-table">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    Loading wrapper status...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Feed -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div id="activity-feed">
+                    <div class="text-center text-muted">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Loading recent activity...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Dashboard-specific variables
+    let performanceChart = null;
+    let healthChart = null;
+    let currentTimeRange = 24;
+    let autoRefreshInterval = null;
+    
+    // Initialize dashboard
+    function initializeDashboard() {
+        loadSystemMetrics();
+        loadWrapperStatus();
+        loadPerformanceChart();
+        loadHealthChart();
+        loadActivityFeed();
+        
+        // Set up auto-refresh every 30 seconds
+        autoRefreshInterval = setInterval(() => {
+            loadSystemMetrics();
+            loadWrapperStatus();
+        }, 30000);
+    }
+    
+    // Load system-wide metrics
+    async function loadSystemMetrics() {
+        try {
+            const response = await fetch('/api/system/health');
+            const result = await response.json();
+            
+            if (result.success) {
+                updateSystemMetricsCards(result.data);
+                document.getElementById('last-updated').textContent = formatTimestamp(result.timestamp);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Error loading system metrics:', error);
+            showError('Failed to load system metrics: ' + error.message);
+        }
+    }
+    
+    // Update system metrics cards
+    function updateSystemMetricsCards(data) {
+        // System health score
+        const healthScore = (data.overall_health_score * 100).toFixed(1);
+        document.getElementById('system-health-score').textContent = healthScore + '%';
+        document.getElementById('system-health-status').textContent = data.system_status || 'Unknown';
+        
+        // Active wrappers
+        document.getElementById('active-wrappers').textContent = data.active_wrappers || 0;
+        document.getElementById('healthy-wrappers').textContent = 
+            `${data.healthy_wrappers || 0} healthy`;
+        
+        // Total operations
+        document.getElementById('total-operations').textContent = 
+            (data.total_operations || 0).toLocaleString();
+        document.getElementById('operations-rate').textContent = 
+            `${(data.operations_per_minute || 0).toFixed(1)}/min`;
+        
+        // Success rate
+        const successRate = (data.overall_success_rate * 100).toFixed(1);
+        document.getElementById('success-rate').textContent = successRate + '%';
+        document.getElementById('error-count').textContent = 
+            `${data.error_count || 0} errors`;
+    }
+    
+    // Load wrapper status table
+    async function loadWrapperStatus() {
+        try {
+            const response = await fetch('/api/wrappers/health');
+            const result = await response.json();
+            
+            if (result.success) {
+                updateWrapperStatusTable(result.data);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Error loading wrapper status:', error);
+            const tbody = document.getElementById('wrapper-status-table');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error loading wrapper status: ${error.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    // Update wrapper status table
+    function updateWrapperStatusTable(wrappers) {
+        const tbody = document.getElementById('wrapper-status-table');
+        
+        if (Object.keys(wrappers).length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        No active wrappers found
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = Object.entries(wrappers).map(([name, data]) => {
+            const statusClass = getStatusClass(data.health_score);
+            const statusText = getStatusText(data.health_score);
+            
+            return `
+                <tr>
+                    <td>
+                        <strong>${name}</strong>
+                    </td>
+                    <td>
+                        <span class="status-indicator ${statusClass}"></span>
+                        ${statusText}
+                    </td>
+                    <td>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar ${statusClass.replace('status-', 'bg-')}" 
+                                 style="width: ${data.health_score * 100}%">
+                                ${(data.health_score * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                    </td>
+                    <td>${formatPercentage(data.success_rate)}</td>
+                    <td>${data.total_operations.toLocaleString()}</td>
+                    <td>${data.last_activity ? formatTimestamp(data.last_activity) : 'Never'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" 
+                                onclick="viewWrapperDetails('${name}')">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    // Load performance chart
+    async function loadPerformanceChart() {
+        const container = document.getElementById('performance-chart');
+        const errorContainer = document.getElementById('performance-chart-error');
+        
+        try {
+            container.style.display = 'block';
+            errorContainer.style.display = 'none';
+            
+            const response = await fetch(`/api/charts/performance?hours=${currentTimeRange}`);
+            const chartData = await response.json();
+            
+            if (chartData.error) {
+                throw new Error(chartData.error);
+            }
+            
+            performanceChart = Plotly.newPlot('performance-chart', chartData.data, chartData.layout, {
+                responsive: true,
+                displayModeBar: false
+            });
+            
+        } catch (error) {
+            console.error('Error loading performance chart:', error);
+            container.style.display = 'none';
+            errorContainer.style.display = 'block';
+        }
+    }
+    
+    // Load health chart
+    async function loadHealthChart() {
+        const container = document.getElementById('health-chart');
+        const errorContainer = document.getElementById('health-chart-error');
+        
+        try {
+            container.style.display = 'block';
+            errorContainer.style.display = 'none';
+            
+            const response = await fetch('/api/charts/health');
+            const chartData = await response.json();
+            
+            if (chartData.error) {
+                throw new Error(chartData.error);
+            }
+            
+            healthChart = Plotly.newPlot('health-chart', chartData.data, chartData.layout, {
+                responsive: true,
+                displayModeBar: false
+            });
+            
+        } catch (error) {
+            console.error('Error loading health chart:', error);
+            container.style.display = 'none';
+            errorContainer.style.display = 'block';
+        }
+    }
+    
+    // Load activity feed
+    async function loadActivityFeed() {
+        const container = document.getElementById('activity-feed');
+        
+        try {
+            // For now, show placeholder content
+            // In a real implementation, this would load from an activity log API
+            container.innerHTML = `
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <i class="fas fa-check-circle text-success"></i>
+                                <strong>RouteLLM Wrapper</strong> completed operation successfully
+                            </div>
+                            <small class="text-muted">${formatTimestamp(new Date())}</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <i class="fas fa-info-circle text-info"></i>
+                                <strong>POML Wrapper</strong> configuration updated
+                            </div>
+                            <small class="text-muted">${formatTimestamp(new Date(Date.now() - 300000))}</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                <strong>External API Wrapper</strong> rate limit threshold reached
+                            </div>
+                            <small class="text-muted">${formatTimestamp(new Date(Date.now() - 600000))}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error loading activity feed:', error);
+            container.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Unable to load activity feed.
+                </div>
+            `;
+        }
+    }
+    
+    // Helper functions
+    function getStatusClass(healthScore) {
+        if (healthScore >= 0.8) return 'status-healthy';
+        if (healthScore >= 0.6) return 'status-warning';
+        return 'status-critical';
+    }
+    
+    function getStatusText(healthScore) {
+        if (healthScore >= 0.8) return 'Healthy';
+        if (healthScore >= 0.6) return 'Warning';
+        return 'Critical';
+    }
+    
+    function viewWrapperDetails(wrapperName) {
+        // Navigate to wrapper details page (to be implemented)
+        alert(`Wrapper details for ${wrapperName} - Feature coming soon!`);
+    }
+    
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDashboard();
+        
+        // Refresh button
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            const btn = this;
+            const icon = btn.querySelector('i');
+            
+            btn.disabled = true;
+            icon.className = 'fas fa-spinner fa-spin';
+            
+            Promise.all([
+                loadSystemMetrics(),
+                loadWrapperStatus(),
+                loadPerformanceChart(),
+                loadHealthChart()
+            ]).finally(() => {
+                btn.disabled = false;
+                icon.className = 'fas fa-sync-alt';
+            });
+        });
+        
+        // Time range buttons
+        document.querySelectorAll('[data-timerange]').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('[data-timerange]').forEach(btn => 
+                    btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                currentTimeRange = parseInt(this.dataset.timerange);
+                loadPerformanceChart();
+            });
+        });
+    });
+    
+    // Socket event handlers
+    socket.on('metrics_update', function(data) {
+        if (data.wrapper === 'all') {
+            updateSystemMetricsCards(data.data);
+        }
+    });
+    
+    socket.on('metrics_broadcast', function(data) {
+        updateSystemMetricsCards(data.system_health);
+        document.getElementById('last-updated').textContent = formatTimestamp(data.timestamp);
+    });
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+# Web interface dependencies for Orchestrator Monitoring Dashboard
+# Issue #251: Configuration & Monitoring - Web Dashboard Requirements
+
+# Core web framework
+flask>=2.3.0
+flask-socketio>=5.3.0
+
+# Real-time communication
+python-socketio>=5.8.0
+
+# Data visualization
+plotly>=5.15.0
+
+# Additional utilities
+python-engineio>=4.6.0
+
+# Development and testing (optional)
+pytest>=7.0.0
+pytest-flask>=1.2.0
+requests>=2.25.0  # For testing HTTP endpoints

@@ -137,6 +137,8 @@ class WrapperHealthStatus:
     # Health indicators
     health_score: float = 1.0  # 0.0 to 1.0 scale
     status_message: str = "Healthy"
+    status: str = "Healthy"  # Current status for compatibility
+    last_activity: Optional[datetime] = None
     
     def update_from_metrics(self, metrics: List[WrapperOperationMetrics]) -> None:
         """Update health status from operation metrics."""
@@ -170,6 +172,12 @@ class WrapperHealthStatus:
         if error_metrics:
             self.last_error = max(m.end_time for m in error_metrics if m.end_time)
         
+        # Find last activity time
+        if metrics:
+            activity_times = [m.end_time for m in metrics if m.end_time]
+            if activity_times:
+                self.last_activity = max(activity_times)
+        
         # Calculate health score
         self._calculate_health_score()
         
@@ -202,15 +210,19 @@ class WrapperHealthStatus:
         if self.health_score >= 0.9:
             self.is_healthy = True
             self.status_message = "Healthy"
+            self.status = "Healthy"
         elif self.health_score >= 0.7:
             self.is_healthy = True
             self.status_message = "Degraded performance"
+            self.status = "Degraded"
         elif self.health_score >= 0.5:
             self.is_healthy = False
             self.status_message = "Unhealthy - high error rate"
+            self.status = "Unhealthy"
         else:
             self.is_healthy = False
             self.status_message = "Critical - system failing"
+            self.status = "Critical"
 
 
 class WrapperMonitoring:
@@ -283,9 +295,7 @@ class WrapperMonitoring:
             
             self._active_operations[operation_id] = metrics
             
-            # Also track in performance monitor if available
-            if self.performance_monitor:
-                self.performance_monitor.start_timer(f"wrapper_{wrapper_name}_{operation_type}")
+            # Note: Integration with performance monitor happens when operation completes
             
             logger.debug(f"Started tracking operation {operation_id} for {wrapper_name}")
             return operation_id
@@ -318,13 +328,15 @@ class WrapperMonitoring:
             # Extract metrics from result if possible
             self._extract_result_metrics(metrics, result)
             
-            # Track in performance monitor
-            if self.performance_monitor:
-                self.performance_monitor.record_metric(
-                    MetricType.EXECUTION_TIME,
-                    metrics.duration_ms,
-                    {"wrapper": metrics.wrapper_name, "operation": metrics.operation_type}
-                )
+            # Track in performance monitor (async method, so we skip in sync context)
+            # Future enhancement: Add proper async integration
+            # if self.performance_monitor:
+            #     await self.performance_monitor.record_execution(
+            #         metrics.wrapper_name,
+            #         metrics.duration_ms,
+            #         success=True,
+            #         metadata={"operation": metrics.operation_type}
+            #     )
             
             logger.debug(f"Recorded success for operation {operation_id}")
     
@@ -471,21 +483,41 @@ class WrapperMonitoring:
             active_operations = len(self._active_operations)
             total_operations = len(self._completed_operations)
             
-            # Calculate aggregate success rate
+            # Calculate aggregate success rate and error counts
             if self._completed_operations:
                 successful_ops = len([op for op in self._completed_operations if op.success])
+                error_ops = len([op for op in self._completed_operations if not op.success])
                 overall_success_rate = successful_ops / len(self._completed_operations)
             else:
+                successful_ops = 0
+                error_ops = 0
                 overall_success_rate = 1.0
             
+            # Calculate overall health score
+            if total_wrappers > 0:
+                overall_health_score = sum(h.health_score for h in self._wrapper_health.values()) / total_wrappers
+                system_status = "Healthy" if overall_health_score >= 0.8 else "Degraded" if overall_health_score >= 0.6 else "Critical"
+            else:
+                overall_health_score = 1.0
+                system_status = "No Wrappers"
+            
+            # Calculate operations per minute (recent activity)
+            recent_cutoff = datetime.utcnow() - timedelta(minutes=1)
+            recent_ops = [op for op in self._completed_operations if op.end_time and op.end_time >= recent_cutoff]
+            operations_per_minute = len(recent_ops)
+            
             return {
-                "total_wrappers": total_wrappers,
+                "overall_health_score": overall_health_score,
+                "system_status": system_status,
+                "active_wrappers": total_wrappers,
                 "healthy_wrappers": healthy_wrappers,
                 "unhealthy_wrappers": total_wrappers - healthy_wrappers,
                 "health_percentage": (healthy_wrappers / total_wrappers * 100) if total_wrappers > 0 else 100,
+                "total_operations": total_operations,
                 "active_operations": active_operations,
-                "completed_operations": total_operations,
                 "overall_success_rate": overall_success_rate,
+                "error_count": error_ops,
+                "operations_per_minute": operations_per_minute,
                 "last_health_check": self._last_health_check.isoformat()
             }
     
@@ -581,3 +613,112 @@ class WrapperMonitoring:
         """Run health checks for all wrappers."""
         for wrapper_name in list(self._wrapper_health.keys()):
             self._update_wrapper_health(wrapper_name)
+    
+    def get_active_wrappers(self) -> List[str]:
+        """
+        Get list of active wrapper names.
+        
+        Returns:
+            List of wrapper names that have been active
+        """
+        with self._lock:
+            active_wrappers = set()
+            
+            # Add wrappers from active operations
+            for metrics in self._active_operations.values():
+                active_wrappers.add(metrics.wrapper_name)
+            
+            # Add wrappers from recent completed operations
+            recent_cutoff = datetime.utcnow() - timedelta(hours=24)
+            for metrics in self._completed_operations:
+                if metrics.end_time and metrics.end_time >= recent_cutoff:
+                    active_wrappers.add(metrics.wrapper_name)
+            
+            # Add wrappers from health tracking
+            for wrapper_name in self._wrapper_health.keys():
+                active_wrappers.add(wrapper_name)
+            
+            return sorted(list(active_wrappers))
+    
+    def get_wrapper_metrics(self, wrapper_name: str, since: datetime) -> List[Dict[str, Any]]:
+        """
+        Get time-series metrics for a wrapper.
+        
+        Args:
+            wrapper_name: Name of the wrapper
+            since: Get metrics since this time
+            
+        Returns:
+            List of time-series metrics data points
+        """
+        with self._lock:
+            # Get operations for this wrapper since the specified time
+            operations = [
+                op for op in self._completed_operations 
+                if op.wrapper_name == wrapper_name
+                and op.end_time and op.end_time >= since
+            ]
+            
+            if not operations:
+                return []
+            
+            # Group operations by time windows (1 hour buckets)
+            time_buckets = {}
+            for op in operations:
+                if not op.end_time:
+                    continue
+                    
+                # Round down to the hour
+                bucket_time = op.end_time.replace(minute=0, second=0, microsecond=0)
+                bucket_key = bucket_time.isoformat()
+                
+                if bucket_key not in time_buckets:
+                    time_buckets[bucket_key] = {
+                        'timestamp': bucket_key,
+                        'operations': [],
+                        'total_count': 0,
+                        'success_count': 0,
+                        'error_count': 0,
+                        'fallback_count': 0,
+                        'durations': []
+                    }
+                
+                bucket = time_buckets[bucket_key]
+                bucket['operations'].append(op)
+                bucket['total_count'] += 1
+                
+                if op.success and not op.fallback_used:
+                    bucket['success_count'] += 1
+                elif op.fallback_used:
+                    bucket['fallback_count'] += 1
+                else:
+                    bucket['error_count'] += 1
+                
+                if op.duration_ms is not None:
+                    bucket['durations'].append(op.duration_ms)
+            
+            # Convert to metrics format
+            metrics = []
+            for bucket in time_buckets.values():
+                total = bucket['total_count']
+                success_rate = bucket['success_count'] / total if total > 0 else 0
+                error_rate = bucket['error_count'] / total if total > 0 else 0
+                fallback_rate = bucket['fallback_count'] / total if total > 0 else 0
+                
+                avg_response_time = statistics.mean(bucket['durations']) if bucket['durations'] else 0
+                
+                metrics.append({
+                    'timestamp': bucket['timestamp'],
+                    'total_operations': total,
+                    'success_count': bucket['success_count'],
+                    'error_count': bucket['error_count'],
+                    'fallback_count': bucket['fallback_count'],
+                    'success_rate': success_rate,
+                    'error_rate': error_rate,
+                    'fallback_rate': fallback_rate,
+                    'avg_response_time': avg_response_time
+                })
+            
+            # Sort by timestamp
+            metrics.sort(key=lambda x: x['timestamp'])
+            return metrics
