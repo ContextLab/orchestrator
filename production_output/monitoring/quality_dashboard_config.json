@@ -1,0 +1,10 @@
+{
+  "dashboard_name": "quality_dashboard",
+  "description": "Validation quality and accuracy metrics",
+  "panels": [
+    "quality_scores",
+    "issue_trends",
+    "improvement_recommendations"
+  ],
+  "created_at": "2025-08-25T11:49:00.393972"
+}

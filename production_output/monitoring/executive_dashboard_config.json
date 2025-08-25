@@ -1,0 +1,10 @@
+{
+  "dashboard_name": "executive_dashboard",
+  "description": "High-level system health and performance metrics",
+  "panels": [
+    "system_status",
+    "validation_summary",
+    "cost_overview"
+  ],
+  "created_at": "2025-08-25T11:49:00.392318"
+}

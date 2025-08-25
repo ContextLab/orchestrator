@@ -1,0 +1,10 @@
+{
+  "dashboard_name": "operational_dashboard",
+  "description": "Detailed operational metrics and alerts",
+  "panels": [
+    "performance_metrics",
+    "error_analysis",
+    "resource_usage"
+  ],
+  "created_at": "2025-08-25T11:49:00.393539"
+}

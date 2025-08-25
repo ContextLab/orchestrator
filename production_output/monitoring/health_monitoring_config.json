@@ -1,0 +1,35 @@
+{
+  "health_checks": [
+    {
+      "name": "system_resources",
+      "check_interval": 300,
+      "thresholds": {
+        "cpu_usage": 85,
+        "memory_usage": 90,
+        "disk_usage": 95
+      }
+    },
+    {
+      "name": "validation_performance",
+      "check_interval": 900,
+      "thresholds": {
+        "success_rate": 98,
+        "avg_execution_time": 300,
+        "error_rate": 5
+      }
+    },
+    {
+      "name": "cost_monitoring",
+      "check_interval": 3600,
+      "thresholds": {
+        "daily_cost": 2,
+        "monthly_projection": 60
+      }
+    }
+  ],
+  "notification_settings": {
+    "email_enabled": false,
+    "slack_enabled": false,
+    "log_level": "INFO"
+  }
+}
