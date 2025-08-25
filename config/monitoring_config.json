@@ -1,0 +1,35 @@
+{
+  "max_violations_history": 1000,
+  "monitoring": {
+    "scan_interval_seconds": 300,
+    "alert_cooldown_seconds": 3600,
+    "auto_fix_enabled": false,
+    "max_auto_fix_files": 10
+  },
+  "violation_thresholds": {
+    "scattered_files_threshold": 3,
+    "malformed_directories_threshold": 1,
+    "large_files_threshold_mb": 50,
+    "old_files_threshold_days": 90
+  },
+  "organization_standards": {
+    "max_root_files": 20,
+    "required_directories": ["src", "scripts", "examples", "tests", "temp"],
+    "forbidden_root_patterns": [
+      "^test_.*\\.py$",
+      "^debug_.*",
+      "^temp_.*",
+      ".*\\.tmp$",
+      "^validate_.*\\.py$",
+      "^verify_.*\\.py$",
+      ".*_output\\..*",
+      ".*_report\\..*"
+    ]
+  },
+  "alerts": {
+    "enabled": true,
+    "log_file": "temp/monitoring/violations.log",
+    "email_enabled": false,
+    "slack_enabled": false
+  }
+}
