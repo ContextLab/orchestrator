@@ -2,75 +2,100 @@
 
 ## Processing Summary
 
-- **Input File**: sales_data.csv
-- **Output Path**: examples/outputs/data_processing_pipeline
-- **Rows Processed**: 5
+- **Input File**: {{ input_file }}
+- **Output Path**: {{ output_path }}
+- **Rows Processed**: {{ clean_data.processed_data | from_json | length if clean_data.processed_data else 0 }}
 - **Data Profile**: 
-  - Total Rows: 5
-  - Total Columns: 7
-  - Duplicate Rows: 0
+  - Total Rows: {{ profile_data.processed_data.row_count | default(0) }}
+  - Total Columns: {{ profile_data.processed_data.column_count | default(0) }}
+  - Duplicate Rows: {{ profile_data.processed_data.duplicate_rows | default(0) }}
 
 ## Data Validation Results
 
+{% if validate_schema.valid %}
 ✅ **Validation Passed**: All data conforms to schema requirements
+{% else %}
+❌ **Validation Failed**: {{ validate_schema.error | default("Schema validation errors detected") }}
+- Validation report saved to: `{{ output_path }}/validation_report.json`
+{% endif %}
 
 ## Data Quality Assessment
 
-### Quality Score: 0.95/1.0
+### Quality Score: {% if quality_check.result.quality_score %}{{ quality_check.result.quality_score | round(2) }}{% else %}0.00{% endif %}/1.0
 
 ### Issues Found
-- ⚠️ High outlier rate: 'quantity' column has 20.0% outliers (exceeds 10% threshold).
+{% if quality_check.result.issues_found %}
+{% for issue in quality_check.result.issues_found %}
+- ⚠️ {{ issue }}
+{% endfor %}
+{% else %}
+- ✅ No major issues detected
+{% endif %}
 
 ## Column Statistics
 
 | Column | Type | Missing % | Unique Values | Min | Max | Mean |
 |--------|------|-----------|---------------|-----|-----|------|
-| order_id | date | 0.0% | 5 | N/A | N/A | N/A |
-| customer_id | date | 0.0% | 3 | N/A | N/A | N/A |
-| product_name | string | 0.0% | 4 | N/A | N/A | N/A |
-| quantity | numeric | 0.0% | 5 | 1.0 | 10.0 | 4.2 |
-| unit_price | numeric | 0.0% | 4 | 19.99 | 49.99 | 31.99 |
-| order_date | date | 0.0% | 5 | N/A | N/A | N/A |
-| status | string | 0.0% | 4 | N/A | N/A | N/A |
+{% for col_name, col_data in profile_data.processed_data.columns.items() %}
+| {{ col_name }} | {{ col_data.data_type }} | {{ col_data.missing_percentage | round(1) }}% | {{ col_data.unique_count }} | {{ col_data.min | default('N/A') }} | {{ col_data.max | default('N/A') }} | {% if col_data.data_type == 'numeric' and col_data.mean is defined %}{{ col_data.mean | round(2) }}{% else %}N/A{% endif %} |
+{% endfor %}
 
 ## Monthly Aggregations
 
+{% if aggregate_monthly.processed_data %}
 | Month | Total Quantity | Total Revenue | Avg Price | Order Count | Unique Customers |
 |-------|----------------|---------------|-----------|-------------|------------------|
-| 2024-01 | 15.0 | $299.85 | $19.99 | 2 | 2 |
-| 2024-01 | 3.0 | $89.97 | $29.99 | 1 | 1 |
-| 2024-01 | 1.0 | $49.99 | $49.99 | 1 | 1 |
-| 2024-01 | 2.0 | $79.98 | $39.99 | 1 | 1 |
+{% for row in aggregate_monthly.processed_data %}
+| {{ row.order_month }} | {{ row.total_quantity | default(0) }} | ${% if row.total_revenue %}{{ row.total_revenue | round(2) }}{% else %}0.00{% endif %} | ${% if row.average_price %}{{ row.average_price | round(2) }}{% else %}0.00{% endif %} | {{ row.order_count | default(0) }} | {{ row.unique_customers | default(0) }} |
+{% endfor %}
+{% else %}
+*No monthly aggregation data available*
+{% endif %}
 
 ## Product Status Distribution (Pivot Table)
 
+{% if pivot_analysis.processed_data %}
 | Product | Pending | Processing | Shipped | Delivered | Total |
 |---------|---------|------------|---------|-----------|-------|
-| Widget A | 0 | 0 | 0 | 15.0 | 15.0 |
-| Widget B | 0 | 0 | 3.0 | 0 | 3.0 |
-| Widget C | 0 | 1.0 | 0 | 0 | 1.0 |
-| Widget D | 2.0 | 0 | 0 | 0 | 2.0 |
+{% for row in pivot_analysis.processed_data %}
+| {{ row.product_name }} | {{ row.pending | default(0) }} | {{ row.processing | default(0) }} | {{ row.shipped | default(0) }} | {{ row.delivered | default(0) }} | {{ (row.pending | default(0)) + (row.processing | default(0)) + (row.shipped | default(0)) + (row.delivered | default(0)) }} |
+{% endfor %}
+{% else %}
+*No pivot table data available*
+{% endif %}
 
 ## Statistical Analysis
 
-### Growth Rate: 0%
+{% if analyze_trends.result %}
+### Growth Rate: {{ analyze_trends.result.growth_rate | default('N/A') }}%
 
 ### Top Products by Revenue
-1. **Widget A** - $299.852. **Widget B** - $89.973. **Widget D** - $79.984. **Widget C** - $49.99
+{% for product in analyze_trends.result.top_products | default([]) %}
+{{ loop.index }}. **{{ product.product }}** - ${% if product.revenue %}{{ product.revenue | round(2) }}{% else %}0.00{% endif %}
+{% endfor %}
+
 ### Seasonal Patterns
-- Single-month data provided (2024-01); cannot identify seasonal patterns across multiple months.
+{% for pattern in analyze_trends.result.seasonal_patterns | default([]) %}
+- {{ pattern }}
+{% endfor %}
 
 ### Anomalies Detected
+{% for anomaly in analyze_trends.result.anomalies | default([]) %}
+- **{{ anomaly.month }}**: {{ anomaly.description }} ({{ anomaly.metric }})
+{% endfor %}
+{% else %}
+*Statistical analysis pending*
+{% endif %}
 
 ## Recommendations
 
-- 📌 Investigate the 'quantity' outlier records to determine root cause (data entry error, unit/scale mismatch, legitimate extremes).
-- 📌 Correct or remove records confirmed as errors; document any changes.
-- 📌 If outliers are legitimate, apply robust treatments (e.g., winsorization, trimming, or a log transform) before analysis or modeling.
-- 📌 Add/strengthen validation rules at data capture for 'quantity' (acceptable range, data type checks, required fields) to prevent future anomalous values.
-- 📌 Implement monitoring/alerting on outlier rate for 'quantity' (and other key numeric fields) so spikes are caught early.
+{% if quality_check.result.recommendations %}
+{% for rec in quality_check.result.recommendations %}
+- 📌 {{ rec }}
+{% endfor %}
+{% endif %}
 
 ---
 
-*Report generated on: 2025-08-19 23:41:49.044083*
-*Pipeline ID: data-processing-pipeline*
+*Report generated on: {{ now() }}*
+*Pipeline ID: {{ pipeline_id }}*

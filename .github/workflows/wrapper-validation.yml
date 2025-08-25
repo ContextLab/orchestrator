@@ -1,0 +1,161 @@
+name: Wrapper Integration Validation
+
+on:
+  push:
+    branches: [ main, epic/explore-wrappers ]
+    paths:
+      - 'src/orchestrator/core/wrapper_*.py'
+      - 'tests/integration/test_pipeline_wrapper_validation.py'
+      - 'tests/performance/test_wrapper_performance_regression.py'
+      - 'tests/quality/test_output_quality_validation.py'
+      - 'examples/*.yaml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/orchestrator/core/wrapper_*.py'
+      - 'tests/**'
+      - 'examples/*.yaml'
+
+jobs:
+  wrapper-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f pyproject.toml ]; then pip install -e .; fi
+        pip install pytest pytest-asyncio psutil
+        
+    - name: Setup test environment
+      run: |
+        mkdir -p tests/results/ci
+        mkdir -p examples/outputs/ci_validation
+        
+    - name: Validate testing frameworks
+      run: |
+        echo "🔍 Validating testing framework components..."
+        python scripts/quick_wrapper_validation_demo.py
+        
+    - name: Run pipeline wrapper validation
+      env:
+        # Add any required API keys as secrets
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      run: |
+        echo "🧪 Running pipeline wrapper validation tests..."
+        python -m pytest tests/integration/test_pipeline_wrapper_validation.py::test_baseline_configuration -v --tb=short
+        
+    - name: Run performance regression tests
+      run: |
+        echo "⚡ Running performance regression tests..."
+        python -m pytest tests/performance/test_wrapper_performance_regression.py::test_wrapper_performance_overhead -v --tb=short
+        
+    - name: Run quality validation tests
+      run: |
+        echo "🎯 Running quality validation tests..."
+        python -m pytest tests/quality/test_output_quality_validation.py::test_baseline_quality_creation -v --tb=short
+        
+    - name: Run comprehensive validation (quick mode)
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      run: |
+        echo "🚀 Running comprehensive wrapper validation..."
+        python scripts/test_all_pipelines_with_wrappers.py --quick --skip-performance
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: wrapper-validation-results-${{ matrix.python-version }}
+        path: |
+          tests/results/
+          pipeline_wrapper_testing.log
+          
+    - name: Generate test summary
+      if: always()
+      run: |
+        echo "📊 Test Summary:" >> $GITHUB_STEP_SUMMARY
+        echo "- Python Version: ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Testing Framework: Validated" >> $GITHUB_STEP_SUMMARY
+        if [ -f tests/results/comprehensive/validation_summary_*.json ]; then
+          echo "- Comprehensive Validation: Completed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- Comprehensive Validation: Partial" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run security checks
+      run: |
+        echo "🔒 Running security checks on testing framework..."
+        # Check for hardcoded secrets in test files
+        if grep -r "sk-" tests/ scripts/ || grep -r "api_key.*=" tests/ scripts/; then
+          echo "❌ Potential hardcoded API keys found"
+          exit 1
+        else
+          echo "✅ No hardcoded secrets detected"
+        fi
+        
+    - name: Check file permissions
+      run: |
+        echo "🔐 Checking file permissions..."
+        find tests/ scripts/ -name "*.py" -type f -executable | while read file; do
+          echo "Executable: $file"
+        done
+        
+  documentation-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate documentation
+      run: |
+        echo "📚 Validating testing documentation..."
+        
+        # Check for required documentation files
+        required_docs=(
+          ".claude/epics/explore-wrappers/252-analysis.md"
+          ".claude/epics/explore-wrappers/updates/252/stream-A.md"
+        )
+        
+        for doc in "${required_docs[@]}"; do
+          if [ -f "$doc" ]; then
+            echo "✅ Found: $doc"
+          else
+            echo "❌ Missing: $doc"
+            exit 1
+          fi
+        done
+        
+        echo "✅ All required documentation present"

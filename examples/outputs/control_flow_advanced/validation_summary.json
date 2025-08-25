@@ -1,0 +1,29 @@
+{
+  "pipeline": "control_flow_advanced.yaml",
+  "timestamp": "2025-08-22T14:50:36.296400",
+  "status": "completed_with_issues",
+  "quality_score": 90.0,
+  "execution_time": 12.500226259231567,
+  "issues": [
+    "conversational_marker: Here's"
+  ],
+  "outputs": [
+    ".DS_Store",
+    "our-enterprise-platform-delivers-real-time-analyti_report.md",
+    "climate-change-is-affecting-global-weather-pattern_report.md",
+    "test-text_report.md",
+    "artificial-intelligence-is-transforming-healthcare_report.md",
+    "translations/climate-change-is-affecting-global-weather-pattern_de.md",
+    "translations/artificial-intelligence-is-transforming-healthcare_Spanish.md",
+    "translations/climate-change-is-affecting-global-weather-pattern_fr.md",
+    "translations/climate-change-is-affecting-global-weather-pattern_es.md",
+    "translations/test-text_de.md",
+    "translations/our-enterprise-platform-delivers-real-time-analyti_es.md",
+    "translations/artificial-intelligence-is-transforming-healthcare_French.md",
+    "translations/our-enterprise-platform-delivers-real-time-analyti_fr.md",
+    "translations/our-enterprise-platform-delivers-real-time-analyti_de.md",
+    "translations/test-text_es.md",
+    "translations/artificial-intelligence-is-transforming-healthcare_German.md",
+    "translations/test-text_fr.md"
+  ]
+}

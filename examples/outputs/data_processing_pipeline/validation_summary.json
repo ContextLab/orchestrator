@@ -1,0 +1,19 @@
+{
+  "pipeline": "data_processing_pipeline.yaml",
+  "timestamp": "2025-08-22T14:53:00.533096",
+  "status": "completed_with_issues",
+  "quality_score": 60.0,
+  "execution_time": 101.13480806350708,
+  "issues": [
+    "unrendered_templates",
+    "conversational_marker: Let me",
+    "templates_in_file: data_processing_report.md"
+  ],
+  "outputs": [
+    "sales_data.csv",
+    ".DS_Store",
+    "processed_data.csv",
+    "validation_report.json",
+    "data_processing_report.md"
+  ]
+}

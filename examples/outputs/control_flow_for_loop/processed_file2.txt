@@ -1,37 +1,14 @@
 # Processed: file2.txt
 
 File index: 1
-Is first: False
-Is last: False
+Is first: {{ $is_first }}
+Is last: {{ $is_last }}
 
 ## Original Size
-135 bytes
+{{ read_file.size }} bytes
 
 ## Analysis
-Okay, based on the task parameters and the result from the `process_files_1_read_file` step, I will generate a summary of the text content.
-
-**Analysis:**
-
-*   **Text Source:** The text to be analyzed comes from the file "data/file2.txt", as indicated by the `process_files_1_read_file` result.
-*   **Text Content:** The content of the file is "This is the second test file.\nIt has different content than the first file.\nThe batch processing should handle each file independently."
-*   **Analysis Type:** The requested analysis type is "summary".
-
-**Summary:**
-
-This text is from the second test file. It explicitly states that its content differs from the first file.  It also emphasizes that the batch processing system should treat each file separately.
-
+{{ analyze_content.result }}
 
 ## Transformed Content
-Here's a more concise version of the text:
-
-This is the second test file, containing different content than the first. The batch processing system should handle each file independently.
-
-**Analysis:**
-
-*   **Source:** data/file2.txt (identified by `process_files_1_read_file`)
-*   **Content:** "This is the second test file.\nIt has different content than the first file.\nThe batch processing should handle each file independently."
-*   **Analysis Type:** Summary
-
-**Summary:**
-
-The text from the second test file confirms its difference from the first and emphasizes independent file processing.
+{{ transform_content.result }}
