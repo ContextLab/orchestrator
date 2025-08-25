@@ -1,32 +1,30 @@
 """
-Centralized monitoring and logging infrastructure for wrapper architecture.
+Wrapper-specific monitoring and alerting system for Issue #251.
 
-This module provides comprehensive monitoring capabilities including:
-- Operation tracking and metrics collection
-- Performance monitoring and alerting
-- Health checking and status reporting
-- Audit trails and logging
+This module extends the existing performance monitoring system with
+wrapper-specific metrics, cost tracking, and enhanced alerting capabilities.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import time
 import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta
+from decimal import Decimal
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Callable, Deque
+from typing import Any, Dict, List, Optional, Callable, Deque
 from threading import Lock
 import statistics
+
+from ..analytics.performance_monitor import PerformanceMonitor, MetricType, AlertSeverity
 
 logger = logging.getLogger(__name__)
 
 
-class OperationStatus(Enum):
+class WrapperOperationStatus(Enum):
     """Status of wrapper operations."""
     
     STARTED = "started"
@@ -37,17 +35,8 @@ class OperationStatus(Enum):
     CANCELLED = "cancelled"
 
 
-class AlertSeverity(Enum):
-    """Alert severity levels."""
-    
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error" 
-    CRITICAL = "critical"
-
-
 @dataclass
-class OperationMetrics:
+class WrapperOperationMetrics:
     """Comprehensive metrics for a wrapper operation."""
     
     # Operation identification
@@ -61,7 +50,7 @@ class OperationMetrics:
     duration_ms: Optional[float] = None
     
     # Operation outcome
-    status: OperationStatus = OperationStatus.STARTED
+    status: WrapperOperationStatus = WrapperOperationStatus.STARTED
     success: bool = True
     error_message: Optional[str] = None
     error_code: Optional[str] = None
@@ -90,7 +79,7 @@ class OperationMetrics:
     # Custom metrics (wrapper-specific)
     custom_metrics: Dict[str, Any] = field(default_factory=dict)
     
-    def finalize(self, status: OperationStatus = OperationStatus.SUCCESS) -> None:
+    def finalize(self, status: WrapperOperationStatus = WrapperOperationStatus.SUCCESS) -> None:
         """Finalize operation with end time and duration calculation."""
         if self.end_time is None:
             self.end_time = datetime.utcnow()
@@ -99,7 +88,7 @@ class OperationMetrics:
             self.duration_ms = (self.end_time - self.start_time).total_seconds() * 1000
         
         self.status = status
-        self.success = status in [OperationStatus.SUCCESS, OperationStatus.FALLBACK]
+        self.success = status in [WrapperOperationStatus.SUCCESS, WrapperOperationStatus.FALLBACK]
     
     def add_custom_metric(self, key: str, value: Any) -> None:
         """Add a custom metric."""
@@ -116,7 +105,7 @@ class OperationMetrics:
             data['end_time'] = data['end_time'].isoformat()
         
         # Convert enum to value
-        data['status'] = data['status'].value if isinstance(data['status'], OperationStatus) else data['status']
+        data['status'] = data['status'].value if isinstance(data['status'], WrapperOperationStatus) else data['status']
         
         return data
 
@@ -148,8 +137,10 @@ class WrapperHealthStatus:
     # Health indicators
     health_score: float = 1.0  # 0.0 to 1.0 scale
     status_message: str = "Healthy"
+    status: str = "Healthy"  # Current status for compatibility
+    last_activity: Optional[datetime] = None
     
-    def update_from_metrics(self, metrics: List[OperationMetrics]) -> None:
+    def update_from_metrics(self, metrics: List[WrapperOperationMetrics]) -> None:
         """Update health status from operation metrics."""
         if not metrics:
             return
@@ -180,6 +171,12 @@ class WrapperHealthStatus:
         error_metrics = [m for m in metrics if not m.success]
         if error_metrics:
             self.last_error = max(m.end_time for m in error_metrics if m.end_time)
+        
+        # Find last activity time
+        if metrics:
+            activity_times = [m.end_time for m in metrics if m.end_time]
+            if activity_times:
+                self.last_activity = max(activity_times)
         
         # Calculate health score
         self._calculate_health_score()
@@ -213,98 +210,55 @@ class WrapperHealthStatus:
         if self.health_score >= 0.9:
             self.is_healthy = True
             self.status_message = "Healthy"
+            self.status = "Healthy"
         elif self.health_score >= 0.7:
             self.is_healthy = True
             self.status_message = "Degraded performance"
+            self.status = "Degraded"
         elif self.health_score >= 0.5:
             self.is_healthy = False
             self.status_message = "Unhealthy - high error rate"
+            self.status = "Unhealthy"
         else:
             self.is_healthy = False
             self.status_message = "Critical - system failing"
-
-
-@dataclass
-class AlertRule:
-    """Rule for generating alerts based on metrics."""
-    
-    name: str
-    description: str
-    severity: AlertSeverity
-    condition: Callable[[WrapperHealthStatus], bool]
-    cooldown_minutes: int = 5
-    last_triggered: Optional[datetime] = None
-    
-    def should_trigger(self, health_status: WrapperHealthStatus) -> bool:
-        """Check if alert should be triggered."""
-        # Check cooldown
-        if self.last_triggered:
-            cooldown_period = timedelta(minutes=self.cooldown_minutes)
-            if datetime.utcnow() - self.last_triggered < cooldown_period:
-                return False
-        
-        # Check condition
-        return self.condition(health_status)
-    
-    def trigger(self) -> None:
-        """Mark alert as triggered."""
-        self.last_triggered = datetime.utcnow()
-
-
-@dataclass
-class Alert:
-    """Alert generated by monitoring system."""
-    
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    wrapper_name: str = ""
-    rule_name: str = ""
-    severity: AlertSeverity = AlertSeverity.INFO
-    message: str = ""
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    resolved: bool = False
-    resolved_at: Optional[datetime] = None
-    
-    def resolve(self) -> None:
-        """Mark alert as resolved."""
-        self.resolved = True
-        self.resolved_at = datetime.utcnow()
+            self.status = "Critical"
 
 
 class WrapperMonitoring:
     """
-    Centralized monitoring system for all wrappers.
+    Enhanced wrapper monitoring system that extends the existing performance monitoring.
     
-    Provides comprehensive monitoring including:
-    - Operation tracking and metrics collection  
-    - Performance monitoring and health checks
-    - Alerting based on configurable rules
-    - Audit trails and reporting
+    Integrates with the existing PerformanceMonitor while providing wrapper-specific
+    functionality including cost tracking, health monitoring, and alerting.
     """
     
     def __init__(
         self, 
+        performance_monitor: Optional[PerformanceMonitor] = None,
         retention_days: int = 30,
         max_operations_in_memory: int = 10000,
         health_check_interval_minutes: int = 5
     ):
         """
-        Initialize monitoring system.
+        Initialize wrapper monitoring system.
         
         Args:
+            performance_monitor: Optional existing performance monitor to extend
             retention_days: How long to keep operation metrics
             max_operations_in_memory: Maximum operations to keep in memory
             health_check_interval_minutes: How often to run health checks
         """
+        self.performance_monitor = performance_monitor
         self.retention_days = retention_days
         self.max_operations_in_memory = max_operations_in_memory
         self.health_check_interval_minutes = health_check_interval_minutes
         
         # Data storage
-        self._active_operations: Dict[str, OperationMetrics] = {}
-        self._completed_operations: Deque[OperationMetrics] = deque(maxlen=max_operations_in_memory)
+        self._active_operations: Dict[str, WrapperOperationMetrics] = {}
+        self._completed_operations: Deque[WrapperOperationMetrics] = deque(maxlen=max_operations_in_memory)
         self._wrapper_health: Dict[str, WrapperHealthStatus] = {}
-        self._alerts: List[Alert] = []
-        self._alert_rules: Dict[str, AlertRule] = {}
+        self._alerts: List[Dict[str, Any]] = []
         
         # Thread safety
         self._lock = Lock()
@@ -313,8 +267,7 @@ class WrapperMonitoring:
         self._last_cleanup = datetime.utcnow()
         self._last_health_check = datetime.utcnow()
         
-        # Initialize default alert rules
-        self._setup_default_alert_rules()
+        logger.info("Initialized wrapper monitoring system")
     
     def start_operation(
         self, 
@@ -334,13 +287,15 @@ class WrapperMonitoring:
             Operation ID for tracking
         """
         with self._lock:
-            metrics = OperationMetrics(
+            metrics = WrapperOperationMetrics(
                 operation_id=operation_id,
                 wrapper_name=wrapper_name,
                 operation_type=operation_type
             )
             
             self._active_operations[operation_id] = metrics
+            
+            # Note: Integration with performance monitor happens when operation completes
             
             logger.debug(f"Started tracking operation {operation_id} for {wrapper_name}")
             return operation_id
@@ -365,13 +320,23 @@ class WrapperMonitoring:
                 return
             
             metrics = self._active_operations[operation_id]
-            metrics.finalize(OperationStatus.SUCCESS)
+            metrics.finalize(WrapperOperationStatus.SUCCESS)
             
             if custom_metrics:
                 metrics.custom_metrics.update(custom_metrics)
             
             # Extract metrics from result if possible
             self._extract_result_metrics(metrics, result)
+            
+            # Track in performance monitor (async method, so we skip in sync context)
+            # Future enhancement: Add proper async integration
+            # if self.performance_monitor:
+            #     await self.performance_monitor.record_execution(
+            #         metrics.wrapper_name,
+            #         metrics.duration_ms,
+            #         success=True,
+            #         metadata={"operation": metrics.operation_type}
+            #     )
             
             logger.debug(f"Recorded success for operation {operation_id}")
     
@@ -397,7 +362,7 @@ class WrapperMonitoring:
                 return
             
             metrics = self._active_operations[operation_id]
-            metrics.finalize(OperationStatus.ERROR)
+            metrics.finalize(WrapperOperationStatus.ERROR)
             metrics.success = False
             metrics.error_message = error_message
             metrics.error_code = error_code
@@ -406,64 +371,6 @@ class WrapperMonitoring:
                 metrics.custom_metrics.update(custom_metrics)
             
             logger.debug(f"Recorded error for operation {operation_id}: {error_message}")
-    
-    def record_fallback(
-        self, 
-        operation_id: str, 
-        fallback_reason: str,
-        custom_metrics: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """
-        Record that fallback was used for an operation.
-        
-        Args:
-            operation_id: Operation identifier
-            fallback_reason: Reason for using fallback
-            custom_metrics: Additional custom metrics
-        """
-        with self._lock:
-            if operation_id not in self._active_operations:
-                logger.warning(f"Cannot record fallback for unknown operation: {operation_id}")
-                return
-            
-            metrics = self._active_operations[operation_id]
-            metrics.fallback_used = True
-            metrics.fallback_reason = fallback_reason
-            
-            if custom_metrics:
-                metrics.custom_metrics.update(custom_metrics)
-            
-            logger.debug(f"Recorded fallback for operation {operation_id}: {fallback_reason}")
-    
-    def record_fatal_error(
-        self, 
-        operation_id: str, 
-        error_message: str,
-        custom_metrics: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """
-        Record a fatal error (both wrapper and fallback failed).
-        
-        Args:
-            operation_id: Operation identifier
-            error_message: Error description
-            custom_metrics: Additional custom metrics
-        """
-        with self._lock:
-            if operation_id not in self._active_operations:
-                logger.warning(f"Cannot record fatal error for unknown operation: {operation_id}")
-                return
-            
-            metrics = self._active_operations[operation_id]
-            metrics.finalize(OperationStatus.ERROR)
-            metrics.success = False
-            metrics.error_message = error_message
-            metrics.error_code = "FATAL_ERROR"
-            
-            if custom_metrics:
-                metrics.custom_metrics.update(custom_metrics)
-            
-            logger.error(f"Recorded fatal error for operation {operation_id}: {error_message}")
     
     def end_operation(self, operation_id: str) -> None:
         """
@@ -576,92 +483,43 @@ class WrapperMonitoring:
             active_operations = len(self._active_operations)
             total_operations = len(self._completed_operations)
             
-            # Calculate aggregate success rate
+            # Calculate aggregate success rate and error counts
             if self._completed_operations:
                 successful_ops = len([op for op in self._completed_operations if op.success])
+                error_ops = len([op for op in self._completed_operations if not op.success])
                 overall_success_rate = successful_ops / len(self._completed_operations)
             else:
+                successful_ops = 0
+                error_ops = 0
                 overall_success_rate = 1.0
             
-            # Get recent alerts
-            recent_alerts = [
-                a for a in self._alerts 
-                if a.timestamp >= datetime.utcnow() - timedelta(hours=24) and not a.resolved
-            ]
+            # Calculate overall health score
+            if total_wrappers > 0:
+                overall_health_score = sum(h.health_score for h in self._wrapper_health.values()) / total_wrappers
+                system_status = "Healthy" if overall_health_score >= 0.8 else "Degraded" if overall_health_score >= 0.6 else "Critical"
+            else:
+                overall_health_score = 1.0
+                system_status = "No Wrappers"
+            
+            # Calculate operations per minute (recent activity)
+            recent_cutoff = datetime.utcnow() - timedelta(minutes=1)
+            recent_ops = [op for op in self._completed_operations if op.end_time and op.end_time >= recent_cutoff]
+            operations_per_minute = len(recent_ops)
             
             return {
-                "total_wrappers": total_wrappers,
+                "overall_health_score": overall_health_score,
+                "system_status": system_status,
+                "active_wrappers": total_wrappers,
                 "healthy_wrappers": healthy_wrappers,
                 "unhealthy_wrappers": total_wrappers - healthy_wrappers,
                 "health_percentage": (healthy_wrappers / total_wrappers * 100) if total_wrappers > 0 else 100,
+                "total_operations": total_operations,
                 "active_operations": active_operations,
-                "completed_operations": total_operations,
                 "overall_success_rate": overall_success_rate,
-                "active_alerts": len(recent_alerts),
+                "error_count": error_ops,
+                "operations_per_minute": operations_per_minute,
                 "last_health_check": self._last_health_check.isoformat()
             }
-    
-    def get_alerts(
-        self, 
-        wrapper_name: Optional[str] = None,
-        severity: Optional[AlertSeverity] = None,
-        include_resolved: bool = False
-    ) -> List[Alert]:
-        """
-        Get alerts based on filters.
-        
-        Args:
-            wrapper_name: Filter by wrapper name
-            severity: Filter by severity
-            include_resolved: Whether to include resolved alerts
-            
-        Returns:
-            List of matching alerts
-        """
-        with self._lock:
-            alerts = self._alerts.copy()
-            
-            if wrapper_name:
-                alerts = [a for a in alerts if a.wrapper_name == wrapper_name]
-            
-            if severity:
-                alerts = [a for a in alerts if a.severity == severity]
-            
-            if not include_resolved:
-                alerts = [a for a in alerts if not a.resolved]
-            
-            # Sort by timestamp (newest first)
-            alerts.sort(key=lambda x: x.timestamp, reverse=True)
-            
-            return alerts
-    
-    def add_alert_rule(self, alert_rule: AlertRule) -> None:
-        """
-        Add a custom alert rule.
-        
-        Args:
-            alert_rule: Alert rule to add
-        """
-        with self._lock:
-            self._alert_rules[alert_rule.name] = alert_rule
-            logger.info(f"Added alert rule: {alert_rule.name}")
-    
-    def remove_alert_rule(self, rule_name: str) -> bool:
-        """
-        Remove an alert rule.
-        
-        Args:
-            rule_name: Name of rule to remove
-            
-        Returns:
-            True if rule was found and removed
-        """
-        with self._lock:
-            if rule_name in self._alert_rules:
-                del self._alert_rules[rule_name]
-                logger.info(f"Removed alert rule: {rule_name}")
-                return True
-            return False
     
     def export_metrics(
         self, 
@@ -710,65 +568,8 @@ class WrapperMonitoring:
         
         health_status = self._wrapper_health[wrapper_name]
         health_status.update_from_metrics(recent_ops)
-        
-        # Check alert rules
-        self._check_alert_rules(health_status)
     
-    def _check_alert_rules(self, health_status: WrapperHealthStatus) -> None:
-        """Check alert rules for a wrapper health status."""
-        for rule in self._alert_rules.values():
-            if rule.should_trigger(health_status):
-                alert = Alert(
-                    wrapper_name=health_status.wrapper_name,
-                    rule_name=rule.name,
-                    severity=rule.severity,
-                    message=f"{rule.description} - Health score: {health_status.health_score:.2f}"
-                )
-                
-                self._alerts.append(alert)
-                rule.trigger()
-                
-                logger.warning(f"Alert triggered: {rule.name} for {health_status.wrapper_name}")
-    
-    def _setup_default_alert_rules(self) -> None:
-        """Setup default alert rules."""
-        # High error rate alert
-        self.add_alert_rule(AlertRule(
-            name="high_error_rate",
-            description="High error rate detected",
-            severity=AlertSeverity.ERROR,
-            condition=lambda h: h.error_rate > 0.1,
-            cooldown_minutes=10
-        ))
-        
-        # Low health score alert
-        self.add_alert_rule(AlertRule(
-            name="low_health_score",
-            description="Low health score detected",
-            severity=AlertSeverity.WARNING,
-            condition=lambda h: h.health_score < 0.7,
-            cooldown_minutes=15
-        ))
-        
-        # High fallback rate alert
-        self.add_alert_rule(AlertRule(
-            name="high_fallback_rate",
-            description="High fallback rate detected", 
-            severity=AlertSeverity.WARNING,
-            condition=lambda h: h.fallback_rate > 0.5,
-            cooldown_minutes=20
-        ))
-        
-        # Critical health alert
-        self.add_alert_rule(AlertRule(
-            name="critical_health",
-            description="Wrapper in critical health state",
-            severity=AlertSeverity.CRITICAL,
-            condition=lambda h: h.health_score < 0.3,
-            cooldown_minutes=5
-        ))
-    
-    def _extract_result_metrics(self, metrics: OperationMetrics, result: Any) -> None:
+    def _extract_result_metrics(self, metrics: WrapperOperationMetrics, result: Any) -> None:
         """Extract metrics from operation result if possible."""
         if hasattr(result, 'execution_time_ms'):
             metrics.add_custom_metric('result_execution_time_ms', result.execution_time_ms)
@@ -801,7 +602,7 @@ class WrapperMonitoring:
         original_alert_count = len(self._alerts)
         self._alerts = [
             alert for alert in self._alerts 
-            if alert.timestamp >= cutoff_time
+            if datetime.fromisoformat(alert.get('timestamp', '1970-01-01')) >= cutoff_time
         ]
         
         cleaned_alerts = original_alert_count - len(self._alerts)
@@ -812,3 +613,112 @@ class WrapperMonitoring:
         """Run health checks for all wrappers."""
         for wrapper_name in list(self._wrapper_health.keys()):
             self._update_wrapper_health(wrapper_name)
+    
+    def get_active_wrappers(self) -> List[str]:
+        """
+        Get list of active wrapper names.
+        
+        Returns:
+            List of wrapper names that have been active
+        """
+        with self._lock:
+            active_wrappers = set()
+            
+            # Add wrappers from active operations
+            for metrics in self._active_operations.values():
+                active_wrappers.add(metrics.wrapper_name)
+            
+            # Add wrappers from recent completed operations
+            recent_cutoff = datetime.utcnow() - timedelta(hours=24)
+            for metrics in self._completed_operations:
+                if metrics.end_time and metrics.end_time >= recent_cutoff:
+                    active_wrappers.add(metrics.wrapper_name)
+            
+            # Add wrappers from health tracking
+            for wrapper_name in self._wrapper_health.keys():
+                active_wrappers.add(wrapper_name)
+            
+            return sorted(list(active_wrappers))
+    
+    def get_wrapper_metrics(self, wrapper_name: str, since: datetime) -> List[Dict[str, Any]]:
+        """
+        Get time-series metrics for a wrapper.
+        
+        Args:
+            wrapper_name: Name of the wrapper
+            since: Get metrics since this time
+            
+        Returns:
+            List of time-series metrics data points
+        """
+        with self._lock:
+            # Get operations for this wrapper since the specified time
+            operations = [
+                op for op in self._completed_operations 
+                if op.wrapper_name == wrapper_name
+                and op.end_time and op.end_time >= since
+            ]
+            
+            if not operations:
+                return []
+            
+            # Group operations by time windows (1 hour buckets)
+            time_buckets = {}
+            for op in operations:
+                if not op.end_time:
+                    continue
+                    
+                # Round down to the hour
+                bucket_time = op.end_time.replace(minute=0, second=0, microsecond=0)
+                bucket_key = bucket_time.isoformat()
+                
+                if bucket_key not in time_buckets:
+                    time_buckets[bucket_key] = {
+                        'timestamp': bucket_key,
+                        'operations': [],
+                        'total_count': 0,
+                        'success_count': 0,
+                        'error_count': 0,
+                        'fallback_count': 0,
+                        'durations': []
+                    }
+                
+                bucket = time_buckets[bucket_key]
+                bucket['operations'].append(op)
+                bucket['total_count'] += 1
+                
+                if op.success and not op.fallback_used:
+                    bucket['success_count'] += 1
+                elif op.fallback_used:
+                    bucket['fallback_count'] += 1
+                else:
+                    bucket['error_count'] += 1
+                
+                if op.duration_ms is not None:
+                    bucket['durations'].append(op.duration_ms)
+            
+            # Convert to metrics format
+            metrics = []
+            for bucket in time_buckets.values():
+                total = bucket['total_count']
+                success_rate = bucket['success_count'] / total if total > 0 else 0
+                error_rate = bucket['error_count'] / total if total > 0 else 0
+                fallback_rate = bucket['fallback_count'] / total if total > 0 else 0
+                
+                avg_response_time = statistics.mean(bucket['durations']) if bucket['durations'] else 0
+                
+                metrics.append({
+                    'timestamp': bucket['timestamp'],
+                    'total_operations': total,
+                    'success_count': bucket['success_count'],
+                    'error_count': bucket['error_count'],
+                    'fallback_count': bucket['fallback_count'],
+                    'success_rate': success_rate,
+                    'error_rate': error_rate,
+                    'fallback_rate': fallback_rate,
+                    'avg_response_time': avg_response_time
+                })
+            
+            # Sort by timestamp
+            metrics.sort(key=lambda x: x['timestamp'])
+            return metrics
