@@ -8,22 +8,21 @@ Is last: False
 None bytes
 
 ## Analysis
-It looks like the placeholder None didn’t contain any text, so I don’t have the document to analyze.
+It looks like the text placeholder didn’t load on my end, so I can’t see the content to summarize. Please paste the text here, attach the file, or share a link, and I’ll generate the summary.
 
-Please paste the text here or attach the file, and let me know:
-- Desired summary length/format (e.g., 1–2 sentences, 5 bullets, detailed brief)
-- Audience/purpose (e.g., executive, technical, general)
-- Any focus areas to emphasize (e.g., findings, methodology, recommendations)
+To tailor the summary, let me know:
+- Length: TL;DR (1–2 sentences), short (100–200 words), or detailed.
+- Focus: main findings, arguments, methods, results, implications, or action items.
+- Audience and tone: executive, technical, general, or academic.
+- Extras to include: key stats/quotes, named entities (people/orgs), dates, open questions, recommendations.
 
-Once I have the content, I can deliver:
-- One-sentence gist
-- Key points/themes
-- Structure and flow
-- Notable data/quotes
-- Gaps/limitations
-- Actionable takeaways (if applicable)
+Default output (unless you prefer otherwise):
+- One-sentence TL;DR
+- 5–7 key points
+- Notable data/claims and their sources (if present)
+- Open issues or next steps
 
-If it’s very long, I can summarize in chunks—feel free to send it in parts.
+If the document is long, you can send it in parts—I’ll keep context across chunks and provide a consolidated summary.
 
 ## Transformed Content
 {'error': 'Model returned empty response'}

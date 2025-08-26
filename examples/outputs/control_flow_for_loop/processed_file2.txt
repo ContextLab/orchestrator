@@ -8,14 +8,25 @@ Is last: False
 None bytes
 
 ## Analysis
-I don’t have access to None. Please paste the text (or a sizable excerpt) here, or upload the file, and I’ll summarize it.
+I don’t have access to read_file.content in this chat. Please paste the text (or attach the file), and tell me how you’d like it summarized.
 
-Helpful details to speed this up:
-- Desired summary style: bullet points, executive summary, abstract, or recap?
-- Length: ultra-brief (1–2 sentences), short (100–150 words), or longer?
-- Audience/purpose: general reader, expert, decision-maker, study notes?
+Options I can provide:
+- Executive summary (5–8 bullets)
+- One-paragraph abstract
+- Key takeaways, themes, and implications
+- Outline of structure/arguments
+- Facts vs. opinions/claims with evidence
+- Action items and open questions
+- Tone, audience, and bias analysis
+- Named entities, dates, figures extracted
 
-If the text is very long, you can send it in chunks; I’ll track context and summarize cumulatively. If you prefer a default, I’ll return: a 3–5 sentence overview, key points, and any action items or conclusions.
+Helpful details:
+- Desired length (e.g., 100 words, 5 bullets)
+- Target audience/purpose (e.g., brief for execs, study notes)
+- Any sections to focus on
+- Language preference
+
+If the text is long, I can chunk it and summarize per section, then synthesize a global summary.
 
 ## Transformed Content
 {'error': 'Model returned empty response'}

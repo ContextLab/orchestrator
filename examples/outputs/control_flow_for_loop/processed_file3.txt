@@ -8,22 +8,14 @@ Is last: True
 None bytes
 
 ## Analysis
-It looks like the text content wasn’t included. Please paste the text you want summarized (or re-run the request with the file’s contents), and tell me:
+I don’t see any text attached (I only see the placeholder None). Please paste the text here or re-run your request with the content included, and I’ll summarize it.
 
-- Desired summary length (e.g., 3–5 sentences, 200 words, bullet points)
-- Audience/purpose (e.g., executive brief, academic overview, study notes)
-- Any aspects to emphasize (e.g., methodology, key findings, limitations, action items)
+If you have preferences, let me know:
+- Length: ultra-brief (1–2 sentences), short (1 paragraph), or detailed (bulleted key points).
+- Focus: main ideas, arguments/evidence, takeaways/action items, tone/sentiment, entities/dates, or gaps/risks.
+- Audience: exec/briefing, technical, or general.
 
-What I can provide:
-- One-paragraph abstract
-- Key points and supporting evidence
-- Structure/flow of arguments
-- Assumptions, biases, and limitations
-- Tone and intended audience
-- Notable quotes/data
-- Actionable takeaways and open questions
-
-If the text is long, you can send it in parts and I’ll stitch the summary together.
+Default output if you don’t specify: an executive summary (3–6 bullets), key points, notable facts/quotes, and any action items or open questions. If the text is long, you can send it in parts and I’ll stitch the summaries together.
 
 ## Transformed Content
 {'error': 'Model returned empty response'}

@@ -509,6 +509,35 @@ class Orchestrator:
         
         # Use unified template resolver for comprehensive template resolution
         if task.parameters and self.unified_template_resolver:
+            # Build enhanced step_results that includes loop iteration context
+            enhanced_step_results = dict(context.get("previous_results", {}))
+            
+            # For loop tasks, add results from sibling tasks in the same iteration using loop context mapping
+            if "_loop_context_mapping" in context and task.metadata.get("is_for_each_child"):
+                loop_context_mapping = context["_loop_context_mapping"]
+                available_results = list(context.get("previous_results", {}).keys())
+                self.logger.info(f"STREAM_C_DEBUG: Enhancing step_results for loop task {task.id}")
+                self.logger.info(f"STREAM_C_DEBUG:   Loop context mapping has {len(loop_context_mapping)} entries: {list(loop_context_mapping.keys())}")
+                self.logger.info(f"STREAM_C_DEBUG:   Available previous_results: {available_results}")
+                
+                # Add results using both full task IDs and short names for cross-step references
+                for short_name, full_task_id in loop_context_mapping.items():
+                    if full_task_id in context.get("previous_results", {}):
+                        result = context["previous_results"][full_task_id]
+                        # Register with short name for cross-step references like {{ read_file.content }}
+                        enhanced_step_results[short_name] = result
+                        self.logger.info(f"STREAM_C_DEBUG:     Mapped loop result '{short_name}' -> {type(result).__name__} (available)")
+                        
+                        # Also ensure it's available with the full task ID
+                        enhanced_step_results[full_task_id] = result
+                    else:
+                        self.logger.info(f"STREAM_C_DEBUG:     Skip '{short_name}' -> '{full_task_id}' (not available yet)")
+            else:
+                if "_loop_context_mapping" not in context:
+                    self.logger.info(f"STREAM_C_DEBUG: No loop context mapping for task {task.id}")
+                if not task.metadata.get("is_for_each_child"):
+                    self.logger.info(f"STREAM_C_DEBUG: Task {task.id} is not a for_each_child")
+            
             # Collect comprehensive context for template resolution
             template_context = self.unified_template_resolver.collect_context(
                 pipeline_id=context.get("pipeline_id"),
@@ -516,7 +545,7 @@ class Orchestrator:
                 tool_name=task.action,
                 pipeline_inputs=context.get("inputs", {}),
                 pipeline_parameters=context.get("pipeline_params", {}),
-                step_results=context.get("previous_results", {}),
+                step_results=enhanced_step_results,
                 tool_parameters=task.parameters,
                 additional_context={
                     "$item": context.get("$item"),
@@ -606,13 +635,29 @@ class Orchestrator:
         
         # Add template resolution context if we used unified resolver
         if task.parameters and self.unified_template_resolver:
+            # Use the same enhanced_step_results for consistency
+            final_step_results = dict(context.get("previous_results", {}))
+            
+            # For loop tasks, add results from sibling tasks in the same iteration using loop context mapping
+            if "_loop_context_mapping" in context and task.metadata.get("is_for_each_child"):
+                loop_context_mapping = context["_loop_context_mapping"]
+                
+                # Add results using both full task IDs and short names for cross-step references
+                for short_name, full_task_id in loop_context_mapping.items():
+                    if full_task_id in context.get("previous_results", {}):
+                        result = context["previous_results"][full_task_id]
+                        # Register with short name for cross-step references like {{ read_file.content }}
+                        final_step_results[short_name] = result
+                        # Also ensure it's available with the full task ID
+                        final_step_results[full_task_id] = result
+            
             template_context = self.unified_template_resolver.collect_context(
                 pipeline_id=context.get("pipeline_id"),
                 task_id=task.id,
                 tool_name=task.action,
                 pipeline_inputs=context.get("inputs", {}),
                 pipeline_parameters=context.get("pipeline_params", {}),
-                step_results=context.get("previous_results", {}),
+                step_results=final_step_results,
                 tool_parameters=task.parameters,
                 additional_context={
                     "$item": context.get("$item"),

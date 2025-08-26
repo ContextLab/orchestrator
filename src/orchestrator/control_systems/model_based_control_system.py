@@ -81,13 +81,42 @@ class ModelBasedControlSystem(ControlSystem):
         """
         # Use UnifiedTemplateResolver to render templates in task parameters
         if task.parameters:
+            # Build enhanced step_results that includes loop iteration context
+            enhanced_step_results = dict(context.get("previous_results", {}))
+            
+            # For loop tasks, add results from sibling tasks in the same iteration using loop context mapping
+            if "_loop_context_mapping" in context and task.metadata.get("is_for_each_child"):
+                loop_context_mapping = context["_loop_context_mapping"]
+                available_results = list(context.get("previous_results", {}).keys())
+                logger.info(f"STREAM_C_MODEL_DEBUG: Enhancing step_results for AI model task {task.id}")
+                logger.info(f"STREAM_C_MODEL_DEBUG:   Loop context mapping has {len(loop_context_mapping)} entries: {list(loop_context_mapping.keys())}")
+                logger.info(f"STREAM_C_MODEL_DEBUG:   Available previous_results: {available_results}")
+                
+                # Add results using both full task IDs and short names for cross-step references
+                for short_name, full_task_id in loop_context_mapping.items():
+                    if full_task_id in context.get("previous_results", {}):
+                        result = context["previous_results"][full_task_id]
+                        # Register with short name for cross-step references like {{ read_file.content }}
+                        enhanced_step_results[short_name] = result
+                        logger.info(f"STREAM_C_MODEL_DEBUG:     Mapped loop result '{short_name}' -> {type(result).__name__} (available)")
+                        
+                        # Also ensure it's available with the full task ID
+                        enhanced_step_results[full_task_id] = result
+                    else:
+                        logger.info(f"STREAM_C_MODEL_DEBUG:     Skip '{short_name}' -> '{full_task_id}' (not available yet)")
+            else:
+                if "_loop_context_mapping" not in context:
+                    logger.info(f"STREAM_C_MODEL_DEBUG: No loop context mapping for AI model task {task.id}")
+                if not task.metadata.get("is_for_each_child"):
+                    logger.info(f"STREAM_C_MODEL_DEBUG: AI model task {task.id} is not a for_each_child")
+            
             # Collect comprehensive context for template resolution
             template_context = self.unified_template_resolver.collect_context(
                 pipeline_id=context.get("pipeline_id"),
                 task_id=task.id,
                 pipeline_inputs=context.get("pipeline_inputs", {}),
                 pipeline_parameters=context.get("pipeline_params", {}),
-                step_results=context.get("previous_results", {}),
+                step_results=enhanced_step_results,
                 additional_context={
                     # Add loop variables
                     "$item": context.get("$item"),
