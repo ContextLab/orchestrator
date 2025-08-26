@@ -7,10 +7,10 @@ automated file organization operations. Provides safe, atomic operations with
 rollback capabilities.
 
 Usage:
-    python scripts/repository_organizer.py --scan           # Analyze repository
-    python scripts/repository_organizer.py --plan          # Generate organization plan  
-    python scripts/repository_organizer.py --execute       # Execute organization
-    python scripts/repository_organizer.py --dry-run       # Preview changes only
+    python scripts/utilities/repository_organizer.py --scan           # Analyze repository
+    python scripts/utilities/repository_organizer.py --plan          # Generate organization plan  
+    python scripts/utilities/repository_organizer.py --execute       # Execute organization
+    python scripts/utilities/repository_organizer.py --dry-run       # Preview changes only
 """
 
 import json

@@ -785,21 +785,21 @@ and comprehensive reporting capabilities.
 
 1. Run validation for all pipelines:
    ```bash
-   python scripts/production_deploy.py --mode=validate-all
+   python scripts/production/production_deploy.py --mode=validate-all
    ```
 
 2. Run validation for specific pipeline:
    ```bash
-   python scripts/run_pipeline.py examples/your_pipeline.yaml --validate
+   python scripts/execution/run_pipeline.py examples/your_pipeline.yaml --validate
    ```
 
 3. View validation reports:
    ```bash
    # View latest report
-   python scripts/production_deploy.py --mode=show-report
+   python scripts/production/production_deploy.py --mode=show-report
    
    # View specific report
-   python scripts/production_deploy.py --report-id=<deployment_id>
+   python scripts/production/production_deploy.py --report-id=<deployment_id>
    ```
 
 """
@@ -829,7 +829,7 @@ Add to your GitHub Actions workflow:
 ```yaml
 - name: Validate Pipelines
   run: |
-    python scripts/production_deploy.py --mode=cicd-validate
+    python scripts/production/production_deploy.py --mode=cicd-validate
 ```
 
 """
@@ -925,17 +925,17 @@ The system includes automated maintenance procedures:
 
 1. **Check System Health:**
    ```bash
-   python scripts/production_deploy.py --mode=health-check
+   python scripts/production/production_deploy.py --mode=health-check
    ```
 
 2. **Emergency Disable:**
    ```bash
-   python scripts/production_deploy.py --mode=emergency-disable
+   python scripts/production/production_deploy.py --mode=emergency-disable
    ```
 
 3. **Restart Components:**
    ```bash
-   python scripts/production_deploy.py --mode=restart-components
+   python scripts/production/production_deploy.py --mode=restart-components
    ```
 
 ### Escalation Contacts

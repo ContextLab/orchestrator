@@ -10,8 +10,8 @@ Successfully validated and fixed pipeline execution issues across the orchestrat
 - **Problem**: Validation scripts were not initializing models properly
 - **Solution**: Added proper `init_models()` call and `HybridControlSystem` initialization
 - **Files Fixed**:
-  - `scripts/quick_validate.py`
-  - `scripts/validate_all_pipelines.py`
+  - `scripts/validation/quick_validate.py`
+  - `scripts/validation/validate_all_pipelines.py`
 
 ### 2. Pipeline Compilation Status
 - **Total Pipelines**: 41 in examples directory
@@ -75,10 +75,10 @@ Based on testing with the quick validation script:
 4. Better error messages for missing tools
 
 ### Validation Scripts Created:
-- `scripts/quick_validate.py` - Quick validation of 3 test pipelines
+- `scripts/validation/quick_validate.py` - Quick validation of 3 test pipelines
 - `scripts/fast_compile_check.py` - Fast compilation check for all pipelines
-- `scripts/test_all_real_pipelines.py` - Comprehensive execution tests
-- `scripts/validate_all_pipelines.py` - Full validation with quality scoring
+- `scripts/testing/test_all_real_pipelines.py` - Comprehensive execution tests
+- `scripts/validation/validate_all_pipelines.py` - Full validation with quality scoring
 
 ## Recommendations
 
@@ -108,10 +108,10 @@ The pipeline infrastructure is fundamentally sound. Most pipelines compile succe
 - `/tests/pipeline_tests/*.py` (comprehensive test coverage)
 
 ### Validation Scripts:
-- `/scripts/quick_validate.py`
-- `/scripts/validate_all_pipelines.py`
+- `/scripts/validation/quick_validate.py`
+- `/scripts/validation/validate_all_pipelines.py`
 - `/scripts/fast_compile_check.py`
-- `/scripts/test_all_real_pipelines.py`
+- `/scripts/testing/test_all_real_pipelines.py`
 
 ---
 

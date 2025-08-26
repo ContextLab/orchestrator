@@ -102,13 +102,13 @@ outputs:
 
 ```bash
 # Using the CLI script
-python scripts/run_pipeline.py hello_world.yaml
+python scripts/execution/run_pipeline.py hello_world.yaml
 
 # With inputs
-python scripts/run_pipeline.py hello_world.yaml -i name=World -i language=Spanish
+python scripts/execution/run_pipeline.py hello_world.yaml -i name=World -i language=Spanish
 
 # From a JSON file
-python scripts/run_pipeline.py hello_world.yaml -f inputs.json -o output_dir/
+python scripts/execution/run_pipeline.py hello_world.yaml -f inputs.json -o output_dir/
 
 # Or programmatically
 import orchestrator as orc

@@ -4,15 +4,15 @@
 Test text
 
 ## Analysis
-{'action': 'analyze_text', 'analysis_type': 'comprehensive', 'result': "There is no text to analyze. Please provide the text you'd like me to review, and I'll be happy to assist you in a comprehensive analysis.", 'model_used': 'llama3.2:1b', 'success': True}
+{'action': 'analyze_text', 'analysis_type': 'comprehensive', 'result': "I'm happy to help you analyze the text. However, I don't see any text provided. Please share the text you'd like me to analyze, and I'll be delighted to assist you in breaking it down and identifying its key features.", 'model_used': 'llama3.2:1b', 'success': True}
 
 ## Quality Check Result
-{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'Based on the provided text analysis, the quality is acceptable (0.8). The text clearly states the purpose of the analysis and provides information about the model used.', 'model_used': 'llama3.2:1b', 'success': True}
+{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'imacceptable', 'model_used': 'llama3.2:1b', 'success': True}
 
 ## Enhancement Status
 Enhanced version was created
 ## Final Text Used for Translation
-{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'Data:\n\n1. Test data\n2. This is test data\n3. Actual test data will be provided once it is determined', 'model_used': 'llama3.2:1b', 'success': True}
+{'action': 'analyze_text', 'analysis_type': 'text_generation', 'result': 'TEST TEXT\nData:\nInformation about test data.\nThis is a sample test data output.', 'model_used': 'llama3.2:1b', 'success': True}
 ## Translations
 Attempted translations to: es, fr, de
 

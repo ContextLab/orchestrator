@@ -13,7 +13,7 @@ Basic Usage
 
 .. code-block:: bash
 
-   python scripts/run_pipeline.py <pipeline_file> [options]
+   python scripts/execution/run_pipeline.py <pipeline_file> [options]
 
 Arguments
 ^^^^^^^^^
@@ -44,19 +44,19 @@ Examples
 
 .. code-block:: bash
 
-   python scripts/run_pipeline.py examples/research_minimal.yaml
+   python scripts/execution/run_pipeline.py examples/research_minimal.yaml
 
 **Run a pipeline with custom inputs:**
 
 .. code-block:: bash
 
-   python scripts/run_pipeline.py examples/research_minimal.yaml -i topic="artificial intelligence"
+   python scripts/execution/run_pipeline.py examples/research_minimal.yaml -i topic="artificial intelligence"
 
 **Run a pipeline with multiple inputs:**
 
 .. code-block:: bash
 
-   python scripts/run_pipeline.py examples/research_basic.yaml \\
+   python scripts/execution/run_pipeline.py examples/research_basic.yaml \\
        -i topic="machine learning" \\
        -i depth="comprehensive"
 
@@ -64,7 +64,7 @@ Examples
 
 .. code-block:: bash
 
-   python scripts/run_pipeline.py examples/research_minimal.yaml \\
+   python scripts/execution/run_pipeline.py examples/research_minimal.yaml \\
        -i topic="quantum computing" \\
        -o /path/to/custom/output
 
@@ -72,7 +72,7 @@ Examples
 
 .. code-block:: bash
 
-   python scripts/run_pipeline.py examples/web_research_pipeline.yaml \\
+   python scripts/execution/run_pipeline.py examples/web_research_pipeline.yaml \\
        -f pipeline_inputs.json \\
        -o ./research_results
 
@@ -122,7 +122,7 @@ The CLI will automatically detect incompatible pipelines and display a warning:
 
 .. code-block:: bash
 
-   $ python scripts/run_pipeline.py examples/old_pipeline.yaml -o /tmp/output
+   $ python scripts/execution/run_pipeline.py examples/old_pipeline.yaml -o /tmp/output
    
    ⚠️  Warning: This pipeline may not respect the -o flag.
       Pipeline uses hardcoded output paths instead of {{ output_path }} parameter.
@@ -159,7 +159,7 @@ To make a pipeline compatible with the ``-o`` flag:
 
    .. code-block:: bash
 
-      python scripts/run_pipeline.py examples/my_pipeline.yaml -o /tmp/test_output
+      python scripts/execution/run_pipeline.py examples/my_pipeline.yaml -o /tmp/test_output
 
 Input File Formats
 ^^^^^^^^^^^^^^^^^^^
@@ -210,28 +210,28 @@ The CLI provides detailed error messages for common issues:
 
 .. code-block:: bash
 
-   $ python scripts/run_pipeline.py nonexistent.yaml
+   $ python scripts/execution/run_pipeline.py nonexistent.yaml
    Error: Pipeline file 'nonexistent.yaml' not found.
 
 **Invalid Input Format:**
 
 .. code-block:: bash
 
-   $ python scripts/run_pipeline.py examples/pipeline.yaml -i "invalid_format"
+   $ python scripts/execution/run_pipeline.py examples/pipeline.yaml -i "invalid_format"
    Error: Input must be in key=value format. Got: invalid_format
 
 **Missing Required Parameters:**
 
 .. code-block:: bash
 
-   $ python scripts/run_pipeline.py examples/pipeline.yaml
+   $ python scripts/execution/run_pipeline.py examples/pipeline.yaml
    Error: Missing required parameter 'topic'. Use -i topic="your_topic"
 
 **API Key Not Set:**
 
 .. code-block:: bash
 
-   $ python scripts/run_pipeline.py examples/pipeline.yaml
+   $ python scripts/execution/run_pipeline.py examples/pipeline.yaml
    Error: No API keys found. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY.
 
 Exit Codes
@@ -251,20 +251,20 @@ Best Practices
 
    .. code-block:: bash
 
-      python scripts/run_pipeline.py pipeline.yaml -o ./results/$(date +%Y%m%d_%H%M%S)
+      python scripts/execution/run_pipeline.py pipeline.yaml -o ./results/$(date +%Y%m%d_%H%M%S)
 
 2. **Use input files** for complex configurations:
 
    .. code-block:: bash
 
-      python scripts/run_pipeline.py pipeline.yaml -f production_config.yaml
+      python scripts/execution/run_pipeline.py pipeline.yaml -f production_config.yaml
 
 3. **Check pipeline compatibility** before running in production:
 
    .. code-block:: bash
 
       # Test with a temporary output directory
-      python scripts/run_pipeline.py pipeline.yaml -o /tmp/test_run
+      python scripts/execution/run_pipeline.py pipeline.yaml -o /tmp/test_run
 
 4. **Set up proper API keys** in your environment or ``.env`` file.
 
