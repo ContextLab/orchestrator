@@ -220,6 +220,9 @@ cache/
 *.tmp
 temp/
 tmp/
+debug_*
+.temp*
+temp_*
 # Redis cache directories with invalid Windows paths
 redis:*/
 redis:/

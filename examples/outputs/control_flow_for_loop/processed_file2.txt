@@ -2,31 +2,39 @@
 
 File index: 1
 Is first: False
-Is last: False
+Is last: True
 
 ## Original Size
 None bytes
 
 ## Analysis
-I don’t have access to read_file.content in this chat. Please paste the text (or attach the file), and tell me how you’d like it summarized.
+I don’t have the actual text behind None. Please provide the text (paste it here, or upload the file), and I’ll generate a summary.
 
-Options I can provide:
-- Executive summary (5–8 bullets)
-- One-paragraph abstract
-- Key takeaways, themes, and implications
-- Outline of structure/arguments
-- Facts vs. opinions/claims with evidence
-- Action items and open questions
-- Tone, audience, and bias analysis
-- Named entities, dates, figures extracted
+Tell me your preferences so I can tailor the output:
+- Desired length: 1-2 sentence quick summary, 3-5 bullet points, or a longer executive-style summary (1 page)
+- Format: concise summary, key takeaways, section-by-section outline, or a critical/analytical summary with strengths and weaknesses
+- Focus: main idea and purpose, key arguments and supporting evidence, notable data/quotes, implications or recommendations
+- Audience: general readers, stakeholders, researchers, etc.
 
-Helpful details:
-- Desired length (e.g., 100 words, 5 bullets)
-- Target audience/purpose (e.g., brief for execs, study notes)
-- Any sections to focus on
-- Language preference
+If you’re unsure, I can start with:
+- One-sentence overview of the main idea
+- 5 bullet-point key takeaways
+- A brief outline of sections (with 1-sentence notes per section)
 
-If the text is long, I can chunk it and summarize per section, then synthesize a global summary.
+You can paste the text in chunks if it’s very long.
 
 ## Transformed Content
-{'error': 'Model returned empty response'}
+Okay, I understand. I need the text content from `None` to provide a concise summary. Please provide the text.
+
+To help me tailor the output, please also specify your preferences:
+
+*   **Desired Length:** (1-2 sentences, 3-5 bullet points, or 1-page executive summary)
+*   **Format:** (Concise summary, key takeaways, section-by-section outline, or critical/analytical summary)
+*   **Focus:** (Main idea, arguments/evidence, data/quotes, or implications/recommendations)
+*   **Audience:** (General readers, stakeholders, researchers, etc.)
+
+If you're unsure, I can begin with:
+
+*   One-sentence overview of the main idea
+*   5 bullet-point key takeaways
+*   A brief outline of sections (with 1-sentence notes per section)

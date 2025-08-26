@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-08-25T21:02:32.628514",
+  "version": "1.0.0",
+  "overall_health": "needs_attention",
+  "components": {
+    "core_resolution": {
+      "status": "healthy",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "issues": [],
+      "performance_ms": 2
+    }
+  },
+  "regression_indicators": {
+    "template_artifacts_detected": false,
+    "ai_model_confusion": true,
+    "loop_variable_failures": false,
+    "cross_step_reference_failures": false,
+    "performance_degradation": false,
+    "details": [
+      "AI confusion in processed_file1.txt: I need the text to"
+    ]
+  },
+  "recommendations": [
+    "\ud83d\udd27 ISSUE: AI models receiving template placeholders instead of resolved content",
+    "   Stream C work needed: Fix tool parameter resolution before AI model calls"
+  ]
+}
