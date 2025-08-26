@@ -509,6 +509,62 @@ class Orchestrator:
         
         # Use unified template resolver for comprehensive template resolution
         if task.parameters and self.unified_template_resolver:
+            # Extract loop variables from task metadata and execution context
+            additional_context = {}
+            
+            # First, get loop variables from execution context
+            for key in ["$item", "$index", "$is_first", "$is_last", "$position", "$remaining", 
+                       "item", "index", "is_first", "is_last", "position", "remaining",
+                       "iteration", "$iteration"]:
+                if key in context:
+                    additional_context[key] = context[key]
+            
+            # Second, get loop variables from task metadata (for_each and while loop children)
+            if task.metadata.get("loop_context"):
+                loop_ctx = task.metadata["loop_context"]
+                # Add all loop context variables
+                additional_context.update(loop_ctx)
+                self.logger.debug(f"Task {task.id}: Added loop context variables from metadata: {list(loop_ctx.keys())}")
+            
+            # Third, handle is_for_each_child metadata format
+            if task.metadata.get("is_for_each_child"):
+                iteration_idx = task.metadata.get("iteration_index", 0)
+                parent_for_each = task.metadata.get("parent_for_each")
+                
+                # Try to calculate is_last by looking at the parent ForEachTask
+                is_last = False
+                if parent_for_each:
+                    # Look for the parent ForEachTask in the pipeline to get total items count
+                    # This is a fallback - the loop_context should have the correct value
+                    try:
+                        # Check if we can find other tasks with the same parent to count total iterations
+                        total_iterations = 1  # Default fallback
+                        for other_task_id, other_task in context.get("all_tasks", {}).items():
+                            if (hasattr(other_task, 'metadata') and 
+                                other_task.metadata.get("parent_for_each") == parent_for_each):
+                                other_iteration = other_task.metadata.get("iteration_index", 0)
+                                total_iterations = max(total_iterations, other_iteration + 1)
+                        is_last = (iteration_idx == total_iterations - 1)
+                    except:
+                        # If we can't calculate, default to False (will be overridden by loop_context if available)
+                        is_last = False
+                
+                additional_context.update({
+                    "$index": iteration_idx,
+                    "index": iteration_idx,
+                    "$is_first": iteration_idx == 0,
+                    "is_first": iteration_idx == 0,
+                    "$is_last": is_last,
+                    "is_last": is_last,
+                })
+                self.logger.debug(f"Task {task.id}: Added for_each loop variables: index={iteration_idx}, is_first={iteration_idx == 0}, is_last={is_last}")
+            
+            # Fourth, get loop variables from unified template resolver's loop context manager
+            loop_variables = self.unified_template_resolver.loop_context_manager.get_accessible_loop_variables()
+            additional_context.update(loop_variables)
+            if loop_variables:
+                self.logger.debug(f"Task {task.id}: Added {len(loop_variables)} loop variables from GlobalLoopContextManager")
+            
             # Collect comprehensive context for template resolution
             template_context = self.unified_template_resolver.collect_context(
                 pipeline_id=context.get("pipeline_id"),
@@ -518,14 +574,7 @@ class Orchestrator:
                 pipeline_parameters=context.get("pipeline_params", {}),
                 step_results=context.get("previous_results", {}),
                 tool_parameters=task.parameters,
-                additional_context={
-                    "$item": context.get("$item"),
-                    "$index": context.get("$index"),
-                    "item": context.get("item"),
-                    "index": context.get("index"),
-                    "iteration": context.get("iteration"),
-                    "$iteration": context.get("$iteration"),
-                }
+                additional_context=additional_context
             )
             
             # Resolve templates in task parameters using unified resolver
@@ -604,23 +653,7 @@ class Orchestrator:
         
         # Add template resolution context if we used unified resolver
         if task.parameters and self.unified_template_resolver:
-            template_context = self.unified_template_resolver.collect_context(
-                pipeline_id=context.get("pipeline_id"),
-                task_id=task.id,
-                tool_name=task.action,
-                pipeline_inputs=context.get("inputs", {}),
-                pipeline_parameters=context.get("pipeline_params", {}),
-                step_results=context.get("previous_results", {}),
-                tool_parameters=task.parameters,
-                additional_context={
-                    "$item": context.get("$item"),
-                    "$index": context.get("$index"),
-                    "item": context.get("item"),
-                    "index": context.get("index"),
-                    "iteration": context.get("iteration"),
-                    "$iteration": context.get("$iteration"),
-                }
-            )
+            # Use the same additional_context we built earlier
             enhanced_context["template_resolution_context"] = template_context
         
         # Execute task using control system
@@ -1734,39 +1767,47 @@ class Orchestrator:
         loop_handler = ForLoopHandler(self.control_flow_resolver, loop_context_manager)
         
         for idx, item in enumerate(resolved_items):
-            # Create comprehensive context for this iteration
-            # Include ALL available data for template rendering
-            loop_context = {
-                **pipeline.context,  # Include all pipeline context (contains parameters)
-                **context.get("pipeline_params", {}),  # Alternative pipeline params location
-                **step_results,  # Include all previous step results directly
-                "$item": item,
-                "$index": idx,
-                "$is_first": idx == 0,
-                "$is_last": idx == len(resolved_items) - 1,
-                # Also register without $ prefix for template compatibility
-                "item": item,
-                "index": idx,
-                "is_first": idx == 0,
-                "is_last": idx == len(resolved_items) - 1,
-                f"${for_each_task.loop_var}": item if for_each_task.loop_var != "$item" else item
-            }
+            # Create and register proper loop context using GlobalLoopContextManager
+            loop_context_vars = loop_context_manager.create_loop_context(
+                step_id=for_each_task.id,
+                item=item,
+                index=idx,
+                items=resolved_items,
+                explicit_loop_name=None  # Use auto-generated name
+            )
             
-            # Also flatten step results for direct access in templates
-            for step_id, result in step_results.items():
-                if step_id not in loop_context:
-                    loop_context[step_id] = result
+            # Push loop context to make it active
+            loop_context_manager.push_loop(loop_context_vars)
             
-            # Add execution metadata
-            from datetime import datetime
-            loop_context["execution"] = {
-                "timestamp": datetime.now().isoformat(),
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "time": datetime.now().strftime("%H:%M:%S"),
-            }
-            
-            # Process each step in the loop body
-            for step_def in for_each_task.loop_steps:
+            try:
+                # Get comprehensive context from the loop context manager
+                loop_template_vars = loop_context_vars.to_template_dict(is_current_loop=True)
+                
+                # Create comprehensive context for this iteration
+                # Include ALL available data for template rendering
+                loop_context = {
+                    **pipeline.context,  # Include all pipeline context (contains parameters)
+                    **context.get("pipeline_params", {}),  # Alternative pipeline params location
+                    **step_results,  # Include all previous step results directly
+                    **loop_template_vars,  # Include all proper loop variables from GlobalLoopContextManager
+                    f"${for_each_task.loop_var}": item if for_each_task.loop_var != "$item" else item
+                }
+                
+                # Also flatten step results for direct access in templates
+                for step_id, result in step_results.items():
+                    if step_id not in loop_context:
+                        loop_context[step_id] = result
+                
+                # Add execution metadata
+                from datetime import datetime
+                loop_context["execution"] = {
+                    "timestamp": datetime.now().isoformat(),
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "time": datetime.now().strftime("%H:%M:%S"),
+                }
+                
+                # Process each step in the loop body
+                for step_def in for_each_task.loop_steps:
                 # Create unique task ID
                 task_id = f"{for_each_task.id}_{idx}_{step_def['id']}"
                 
@@ -1843,6 +1884,10 @@ class Orchestrator:
                 
                 expanded_tasks.append(task)
                 expanded_task_ids.append(task_id)
+                
+            finally:
+                # Pop loop context after processing this iteration
+                loop_context_manager.pop_loop(loop_context_vars.loop_name)
         
         # Add completion task if requested
         if for_each_task.add_completion_task and expanded_tasks:
