@@ -1,0 +1,371 @@
+{
+  "pipeline_name": "simple_data_processing",
+  "overall_score": 0,
+  "files_reviewed": [
+    "examples/outputs/simple_data_processing/README.md",
+    "examples/outputs/simple_data_processing/archive/input_test_output_2025-08-25.csv",
+    "examples/outputs/simple_data_processing/archive/input_test_report_2025-08-25.md",
+    "examples/outputs/simple_data_processing/archive/output_2025-07-29-17-42-14.csv",
+    "examples/outputs/simple_data_processing/archive/output_2025-07-29-211146.csv",
+    "examples/outputs/simple_data_processing/archive/output_2025-07-30-150718.csv",
+    "examples/outputs/simple_data_processing/archive/output_2025-08-22t145956857672.csv",
+    "examples/outputs/simple_data_processing/archive/report_2025-07-29-17-42-14.md",
+    "examples/outputs/simple_data_processing/archive/report_2025-07-29-211146.md",
+    "examples/outputs/simple_data_processing/archive/report_2025-07-30-150718.md",
+    "examples/outputs/simple_data_processing/archive/report_2025-08-22t145956858375.md",
+    "examples/outputs/simple_data_processing/input_processed_data.csv",
+    "examples/outputs/simple_data_processing/input_processed_latest.csv",
+    "examples/outputs/simple_data_processing/input_processing_report.md",
+    "examples/outputs/simple_data_processing/output_2025-08-25t222837814579.csv",
+    "examples/outputs/simple_data_processing/output_2025-08-25t223400987427.csv",
+    "examples/outputs/simple_data_processing/report_2025-08-25t222837815400.md",
+    "examples/outputs/simple_data_processing/report_2025-08-25t223400988162.md"
+  ],
+  "critical_issues": [
+    {
+      "category": "completeness",
+      "severity": "critical",
+      "description": "The content is truncated, indicating incomplete data.",
+      "file_path": "examples/outputs/simple_data_processing/archive/output_2025-07-29-17-42-14.csv",
+      "line_number": null,
+      "suggestion": "Ensure the output is complete and not cut-off by increasing token limits or adjusting the data processing logic.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:55.259279"
+    }
+  ],
+  "major_issues": [
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[simple_data_processing.md]'",
+      "file_path": "examples/outputs/simple_data_processing/README.md",
+      "line_number": 9,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:38.303302"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[filtered_output.csv]'",
+      "file_path": "examples/outputs/simple_data_processing/README.md",
+      "line_number": 14,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:38.303313"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[output_*.csv]'",
+      "file_path": "examples/outputs/simple_data_processing/README.md",
+      "line_number": 19,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:38.303317"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[analysis_report.md]'",
+      "file_path": "examples/outputs/simple_data_processing/README.md",
+      "line_number": 24,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:38.303320"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[report_*.md]'",
+      "file_path": "examples/outputs/simple_data_processing/README.md",
+      "line_number": 30,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:38.303324"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[data_processing.md]'",
+      "file_path": "examples/outputs/simple_data_processing/README.md",
+      "line_number": 77,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:38.303329"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[validation_pipeline.md]'",
+      "file_path": "examples/outputs/simple_data_processing/README.md",
+      "line_number": 78,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:38.303335"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[statistical_analysis.md]'",
+      "file_path": "examples/outputs/simple_data_processing/README.md",
+      "line_number": 79,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:38.303340"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[]'",
+      "file_path": "examples/outputs/simple_data_processing/archive/input_test_output_2025-08-25.csv",
+      "line_number": 1,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:41.703591"
+    },
+    {
+      "category": "content_quality",
+      "severity": "major",
+      "description": "The data field is empty, which may indicate an issue with data retrieval or processing.",
+      "file_path": "examples/outputs/simple_data_processing/archive/input_test_output_2025-08-25.csv",
+      "line_number": null,
+      "suggestion": "Ensure that the data processing step correctly retrieves and processes data before filtering.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:44.956665"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "The content appears to be truncated, as indicated by the comment '# Truncate for token limits'.",
+      "file_path": "examples/outputs/simple_data_processing/archive/input_test_output_2025-08-25.csv",
+      "line_number": null,
+      "suggestion": "Verify that the output is complete and not truncated before finalizing the content.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:44.956683"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[]'",
+      "file_path": "examples/outputs/simple_data_processing/archive/input_test_report_2025-08-25.md",
+      "line_number": 18,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:44.957925"
+    },
+    {
+      "category": "content_quality",
+      "severity": "major",
+      "description": "The filtered data preview shows an empty dataset with both original and filtered counts as zero, which may indicate an issue with the data processing logic or input data.",
+      "file_path": "examples/outputs/simple_data_processing/archive/input_test_report_2025-08-25.md",
+      "line_number": null,
+      "suggestion": "Verify the input data and processing logic to ensure that the filtering criteria are correctly applied and that the input data contains records matching the criteria.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:50.791321"
+    },
+    {
+      "category": "content_quality",
+      "severity": "major",
+      "description": "The content is truncated, indicating incomplete data.",
+      "file_path": "examples/outputs/simple_data_processing/archive/output_2025-07-29-211146.csv",
+      "line_number": null,
+      "suggestion": "Ensure the output is complete and not cut-off by increasing token limits or adjusting data processing logic.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:58.662785"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[]'",
+      "file_path": "examples/outputs/simple_data_processing/archive/output_2025-08-22t145956857672.csv",
+      "line_number": 1,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:02.061326"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[]'",
+      "file_path": "examples/outputs/simple_data_processing/archive/report_2025-08-22t145956858375.md",
+      "line_number": 18,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:16.911000"
+    },
+    {
+      "category": "content_quality",
+      "severity": "major",
+      "description": "The filtered data preview shows an empty data set with both 'original_count' and 'filtered_count' as 0, which suggests that either the input data was empty or the filtering criteria did not match any records.",
+      "file_path": "examples/outputs/simple_data_processing/archive/report_2025-08-22t145956858375.md",
+      "line_number": null,
+      "suggestion": "Verify the input data and filtering criteria to ensure that the report reflects meaningful data processing results.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:21.822088"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[]'",
+      "file_path": "examples/outputs/simple_data_processing/output_2025-08-25t222837814579.csv",
+      "line_number": 1,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:27.979905"
+    },
+    {
+      "category": "content_quality",
+      "severity": "major",
+      "description": "The data array is empty, which may indicate an issue with data retrieval or processing.",
+      "file_path": "examples/outputs/simple_data_processing/output_2025-08-25t222837814579.csv",
+      "line_number": null,
+      "suggestion": "Ensure that the data source is correctly connected and that the filtering criteria are appropriate for the dataset.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:32.120308"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "The content appears to be truncated, as indicated by the comment '# Truncate for token limits'.",
+      "file_path": "examples/outputs/simple_data_processing/output_2025-08-25t222837814579.csv",
+      "line_number": null,
+      "suggestion": "Provide the complete output to ensure full assessment of the data processing results.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:32.120323"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[]'",
+      "file_path": "examples/outputs/simple_data_processing/output_2025-08-25t223400987427.csv",
+      "line_number": 1,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:32.120688"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[]'",
+      "file_path": "examples/outputs/simple_data_processing/report_2025-08-25t222837815400.md",
+      "line_number": 18,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:34.142888"
+    },
+    {
+      "category": "content_quality",
+      "severity": "major",
+      "description": "The filtered data preview shows an empty data set with both original_count and filtered_count as 0, which suggests that the filtering did not process any data.",
+      "file_path": "examples/outputs/simple_data_processing/report_2025-08-25t222837815400.md",
+      "line_number": null,
+      "suggestion": "Ensure that the input data is correctly loaded and that the filtering criteria are applied to a non-empty dataset.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:42.819828"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "The report lacks detailed information about the input data and the context of the processing.",
+      "file_path": "examples/outputs/simple_data_processing/report_2025-08-25t222837815400.md",
+      "line_number": null,
+      "suggestion": "Include a brief description of the input data and the purpose of the filtering to provide context.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:42.819845"
+    },
+    {
+      "category": "completeness",
+      "severity": "major",
+      "description": "Placeholder content detected: '[]'",
+      "file_path": "examples/outputs/simple_data_processing/report_2025-08-25t223400988162.md",
+      "line_number": 18,
+      "suggestion": "Replace placeholder content with actual information",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:42.820484"
+    },
+    {
+      "category": "content_quality",
+      "severity": "major",
+      "description": "The filtered data preview shows an empty data set with both original and filtered counts as zero.",
+      "file_path": "examples/outputs/simple_data_processing/report_2025-08-25t223400988162.md",
+      "line_number": null,
+      "suggestion": "Ensure that the input data file contains records and that the filtering criteria are correctly applied to demonstrate meaningful results.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:46.602520"
+    }
+  ],
+  "minor_issues": [
+    {
+      "category": "completeness",
+      "severity": "minor",
+      "description": "The report lacks detailed insights or analysis on the processing results.",
+      "file_path": "examples/outputs/simple_data_processing/archive/input_test_report_2025-08-25.md",
+      "line_number": null,
+      "suggestion": "Include additional analysis or insights on the filtered data, such as statistics or trends, to provide more value to the report.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:45:50.791327"
+    },
+    {
+      "category": "completeness",
+      "severity": "minor",
+      "description": "The content is truncated, indicating incomplete data.",
+      "file_path": "examples/outputs/simple_data_processing/archive/output_2025-07-30-150718.csv",
+      "line_number": null,
+      "suggestion": "Ensure the full dataset is included in the output file to avoid truncation.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:02.060083"
+    },
+    {
+      "category": "completeness",
+      "severity": "minor",
+      "description": "The report lacks detailed information about the input data, such as the number of records before filtering.",
+      "file_path": "examples/outputs/simple_data_processing/archive/report_2025-08-22t145956858375.md",
+      "line_number": null,
+      "suggestion": "Include a summary of the input data, such as the total number of records and any relevant statistics, to provide context for the filtering results.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:21.822105"
+    },
+    {
+      "category": "professional_standards",
+      "severity": "minor",
+      "description": "The report ends with a truncated sentence, which may indicate incomplete content.",
+      "file_path": "examples/outputs/simple_data_processing/report_2025-08-25t222837815400.md",
+      "line_number": null,
+      "suggestion": "Ensure the report concludes with a complete sentence or summary statement.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:42.819854"
+    },
+    {
+      "category": "completeness",
+      "severity": "minor",
+      "description": "The report lacks detailed insights or analysis on the data processing results.",
+      "file_path": "examples/outputs/simple_data_processing/report_2025-08-25t223400988162.md",
+      "line_number": null,
+      "suggestion": "Include additional analysis or insights on the filtered data, such as statistics or trends, to enhance the report's value.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:46.602532"
+    },
+    {
+      "category": "template_artifact",
+      "severity": "minor",
+      "description": "There is a double slash in the output file path.",
+      "file_path": "examples/outputs/simple_data_processing/report_2025-08-25t223400988162.md",
+      "line_number": null,
+      "suggestion": "Correct the file path to ensure it is properly formatted without redundant slashes.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-26T02:46:46.602541"
+    }
+  ],
+  "recommendations": [
+    "Address 1 critical issues immediately - pipeline not ready for production",
+    "Fix all unrendered template variables before production deployment",
+    "Review and improve content quality, removing conversational tone and debug artifacts",
+    "Ensure all content is complete and replace any placeholder text"
+  ],
+  "production_ready": false,
+  "reviewed_at": "2025-08-26T02:46:46.602645",
+  "reviewer_model": "chatgpt-5",
+  "review_duration_seconds": 68.3021788597107,
+  "total_issues": 33
+}

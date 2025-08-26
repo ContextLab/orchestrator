@@ -4,7 +4,7 @@
 Test text
 
 ## Translated Text
-<orchestrator.core.template_manager.TemplateManager.register_context.<locals>.ResultWrapper object at 0x13f78f4d0>
+<orchestrator.core.template_manager.TemplateManager.register_context.<locals>.ResultWrapper object at 0x136301eb0>
 
 ## Translation Quality Assessment
-<orchestrator.core.template_manager.TemplateManager.register_context.<locals>.ResultWrapper object at 0x13f78f470>
+<orchestrator.core.template_manager.TemplateManager.register_context.<locals>.ResultWrapper object at 0x136302390>
