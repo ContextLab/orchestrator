@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "timestamp": "2025-08-26T09:05:35.378763",
+    "test_mode": "single",
+    "total_tests": 1,
+    "successful_tests": 0,
+    "failed_tests": 1,
+    "success_rate": 0.0,
+    "total_time": 0.0194246768951416,
+    "total_cost": 0.0,
+    "average_quality_score": 70.5
+  },
+  "summary": {
+    "failed_pipelines": [
+      "simple_data_processing"
+    ],
+    "high_quality_pipelines": [],
+    "execution_stats": {
+      "avg_execution_time": 0.01630377769470215,
+      "avg_cost": 0.0,
+      "cost_distribution": {
+        "free": 1,
+        "low": 0,
+        "medium": 0,
+        "high": 0
+      },
+      "time_distribution": {
+        "fast": 1,
+        "medium": 0,
+        "slow": 0
+      }
+    }
+  },
+  "detailed_results": {
+    "simple_data_processing": {
+      "overall_success": false,
+      "quality_score": 70.5,
+      "test_duration": 0.0194246768951416,
+      "execution": {
+        "success": true,
+        "execution_time": 0.01630377769470215,
+        "estimated_cost": 0.0,
+        "api_calls_count": 0,
+        "tokens_used": 0,
+        "error_message": null
+      },
+      "templates": {
+        "resolved_correctly": true,
+        "issues_count": 0,
+        "issues": []
+      },
+      "organization": {
+        "valid": false,
+        "issues_count": 9,
+        "output_files_count": 18
+      },
+      "performance": {
+        "performance_score": 1.0,
+        "regression_detected": false,
+        "metrics": {
+          "execution_time": 0.01630377769470215,
+          "estimated_cost": 0.0,
+          "api_calls": 0,
+          "tokens_used": 0,
+          "memory_usage_mb": 0.0
+        }
+      },
+      "warnings": []
+    }
+  }
+}

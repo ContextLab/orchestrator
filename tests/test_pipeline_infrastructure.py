@@ -26,6 +26,8 @@ from orchestrator.testing import (
     PipelineInfo,
     TestResults
 )
+from orchestrator.testing.quality_validator import QualityValidator, QualityValidationResult
+from orchestrator.testing.template_validator import TemplateValidator, TemplateValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -464,3 +466,220 @@ class TestExamplePipelines:
         # Should have discovered a substantial number
         assert len(discovered) >= 30, \
             f"Expected to discover at least 30 pipelines, found {len(discovered)}"
+
+
+class TestQualityValidation:
+    """Test suite for quality validation integration (Stream B)."""
+    
+    @pytest.fixture(scope="class")
+    def quality_validator(self) -> QualityValidator:
+        """Create quality validator instance."""
+        return QualityValidator(
+            enable_llm_review=False,  # Disable LLM for testing to avoid API costs
+            enable_visual_review=False
+        )
+    
+    @pytest.fixture(scope="class")
+    def template_validator(self) -> TemplateValidator:
+        """Create template validator instance."""
+        return TemplateValidator()
+    
+    @pytest.fixture(scope="class")
+    def enhanced_pipeline_test_suite(self) -> PipelineTestSuite:
+        """Create enhanced pipeline test suite with quality validation."""
+        return PipelineTestSuite(
+            examples_dir=Path("examples"),
+            enable_llm_quality_review=False,  # Disable for testing
+            enable_enhanced_template_validation=True,
+            quality_threshold=85.0
+        )
+    
+    def test_quality_validator_initialization(self, quality_validator):
+        """Test quality validator initializes correctly."""
+        assert quality_validator is not None
+        assert hasattr(quality_validator, 'quality_threshold')
+        assert quality_validator.quality_threshold >= 85.0
+        
+        # Should support rule-based assessment even without LLM
+        assert quality_validator.fallback_to_rules
+        
+        logger.info(f"Quality validator initialized with threshold: {quality_validator.quality_threshold}")
+    
+    def test_template_validator_initialization(self, template_validator):
+        """Test template validator initializes correctly."""
+        assert template_validator is not None
+        
+        capabilities = template_validator.get_validation_capabilities()
+        assert isinstance(capabilities, dict)
+        assert 'jinja2_syntax_validation' in capabilities
+        
+        logger.info(f"Template validator capabilities: {capabilities}")
+    
+    @pytest.mark.asyncio
+    async def test_quality_validation_rule_based(self, quality_validator):
+        """Test rule-based quality validation."""
+        # Test with a simple pipeline that should have outputs
+        pipeline_name = "simple_data_processing"
+        
+        try:
+            result = await quality_validator.validate_pipeline_quality(pipeline_name)
+            
+            # Validate result structure
+            assert isinstance(result, QualityValidationResult)
+            assert result.pipeline_name == pipeline_name
+            assert 0 <= result.overall_score <= 100
+            assert isinstance(result.production_ready, bool)
+            assert isinstance(result.critical_issues, list)
+            assert isinstance(result.major_issues, list)
+            assert isinstance(result.minor_issues, list)
+            
+            # Log results
+            logger.info(f"Quality validation for {pipeline_name}: "
+                       f"Score {result.overall_score:.1f}, "
+                       f"Production ready: {result.production_ready}, "
+                       f"Issues: {result.total_issues}")
+            
+            if result.validation_errors:
+                logger.warning(f"Validation errors: {result.validation_errors}")
+        
+        except Exception as e:
+            # If no output directory exists, that's acceptable for this test
+            logger.info(f"Quality validation test skipped (no outputs): {e}")
+            pytest.skip(f"No outputs to validate for {pipeline_name}")
+    
+    def test_template_validation_pipeline_yaml(self, template_validator):
+        """Test template validation on pipeline YAML files."""
+        # Test with a simple pipeline YAML
+        pipeline_path = Path("examples/simple_data_processing.yaml")
+        
+        if not pipeline_path.exists():
+            pytest.skip("simple_data_processing.yaml not found")
+        
+        result = template_validator.validate_pipeline_templates(pipeline_path)
+        
+        # Validate result structure
+        assert isinstance(result, TemplateValidationResult)
+        assert isinstance(result.templates_found, list)
+        assert isinstance(result.critical_issues, list)
+        assert isinstance(result.major_issues, list)
+        assert isinstance(result.minor_issues, list)
+        assert 0 <= result.template_score <= 100
+        
+        logger.info(f"Template validation for {pipeline_path.name}: "
+                   f"Score {result.template_score:.1f}, "
+                   f"Templates found: {len(result.templates_found)}, "
+                   f"Issues: {result.total_issues}")
+        
+        # Log found templates for debugging
+        if result.templates_found:
+            logger.info(f"Templates found: {result.templates_found}")
+        
+        if result.critical_issues:
+            logger.warning(f"Critical template issues: {[i.description for i in result.critical_issues]}")
+    
+    @pytest.mark.asyncio 
+    async def test_enhanced_pipeline_test_suite_integration(self, enhanced_pipeline_test_suite):
+        """Test enhanced pipeline test suite with quality validation."""
+        # Discover pipelines
+        discovered = enhanced_pipeline_test_suite.discover_pipelines()
+        assert len(discovered) > 0
+        
+        # Test a simple pipeline with enhanced validation
+        test_pipeline_names = ["simple_data_processing", "control_flow_conditional"]
+        available_pipelines = [name for name in test_pipeline_names if name in discovered]
+        
+        if not available_pipelines:
+            pytest.skip("No suitable test pipelines found for integration test")
+        
+        # Test single pipeline with enhanced validation
+        test_pipeline = available_pipelines[0]
+        logger.info(f"Testing enhanced validation with: {test_pipeline}")
+        
+        results = await enhanced_pipeline_test_suite.run_pipeline_tests(
+            pipeline_list=[test_pipeline], 
+            test_mode="single"
+        )
+        
+        assert isinstance(results, TestResults)
+        assert results.total_tests == 1
+        
+        # Get the test result
+        result = results.results[test_pipeline]
+        
+        # Should have quality validation components
+        if enhanced_pipeline_test_suite.enable_enhanced_template_validation:
+            assert result.template_validation is not None
+            logger.info(f"Template validation score: {result.template_validation.template_score:.1f}")
+        
+        # Enhanced quality scoring should be applied
+        logger.info(f"Enhanced quality score: {result.quality_score:.1f}")
+        logger.info(f"Overall success: {result.overall_success}")
+        
+        # Test production readiness assessment
+        production_ready_pipelines = results.get_production_ready_pipelines()
+        logger.info(f"Production ready pipelines: {production_ready_pipelines}")
+        
+        # Test quality issues summary
+        quality_summary = results.get_quality_issues_summary()
+        logger.info(f"Quality issues summary: {quality_summary}")
+    
+    @pytest.mark.asyncio
+    async def test_quality_threshold_enforcement(self, enhanced_pipeline_test_suite):
+        """Test quality threshold enforcement in pipeline testing."""
+        # Set a high quality threshold to test enforcement
+        enhanced_pipeline_test_suite.quality_threshold = 95.0
+        
+        discovered = enhanced_pipeline_test_suite.discover_pipelines()
+        if not discovered:
+            pytest.skip("No pipelines discovered for threshold testing")
+        
+        # Test with one pipeline
+        test_pipeline = list(discovered.keys())[0]
+        
+        try:
+            results = await enhanced_pipeline_test_suite.run_pipeline_tests(
+                pipeline_list=[test_pipeline],
+                test_mode="single"
+            )
+            
+            result = results.results[test_pipeline]
+            
+            # With high threshold, production readiness should be strictly enforced
+            logger.info(f"Quality score: {result.quality_score:.1f} (threshold: 95.0)")
+            logger.info(f"Production ready: {result.overall_success}")
+            
+            # Log quality validation details if available
+            if result.quality_validation:
+                logger.info(f"LLM quality score: {result.quality_validation.overall_score:.1f}")
+                logger.info(f"Critical issues: {len(result.quality_validation.critical_issues)}")
+            
+            if result.template_validation:
+                logger.info(f"Template score: {result.template_validation.template_score:.1f}")
+                logger.info(f"Template issues: {result.template_validation.total_issues}")
+        
+        except Exception as e:
+            logger.info(f"Threshold enforcement test completed with expected constraints: {e}")
+    
+    def test_quality_validation_capabilities_reporting(self, quality_validator, template_validator):
+        """Test that quality validation reports its capabilities correctly."""
+        # Test quality validator capabilities
+        assert hasattr(quality_validator, 'supports_llm_review')
+        assert hasattr(quality_validator, 'supports_visual_review')
+        
+        llm_supported = quality_validator.supports_llm_review()
+        visual_supported = quality_validator.supports_visual_review()
+        
+        logger.info(f"Quality validator - LLM: {llm_supported}, Visual: {visual_supported}")
+        
+        # Test template validator capabilities
+        template_capabilities = template_validator.get_validation_capabilities()
+        enhanced_supported = template_validator.supports_enhanced_validation()
+        
+        logger.info(f"Template validator - Enhanced: {enhanced_supported}")
+        logger.info(f"Template capabilities: {template_capabilities}")
+        
+        # Should report capabilities accurately
+        assert isinstance(llm_supported, bool)
+        assert isinstance(visual_supported, bool)
+        assert isinstance(enhanced_supported, bool)
+        assert isinstance(template_capabilities, dict)

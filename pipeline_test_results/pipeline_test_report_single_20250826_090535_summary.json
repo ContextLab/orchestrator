@@ -1,0 +1,29 @@
+{
+  "test_mode": "single",
+  "timestamp": "2025-08-26T09:05:35.379099",
+  "status": "FAIL",
+  "total_tests": 1,
+  "passed": 0,
+  "failed": 1,
+  "success_rate": 0.0,
+  "duration_seconds": 0.0194246768951416,
+  "total_cost": 0.0,
+  "quality_score": 70.5,
+  "failed_pipelines": [
+    "simple_data_processing"
+  ],
+  "issues": {
+    "template_failures": 0,
+    "organization_failures": 1,
+    "performance_regressions": 0
+  },
+  "thresholds": {
+    "min_success_rate": 80.0,
+    "min_quality_score": 70.0,
+    "max_total_cost": 50.0,
+    "max_duration": 3600
+  },
+  "recommendations": [
+    "Critical: Low success rate indicates systematic issues"
+  ]
+}

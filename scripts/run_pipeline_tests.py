@@ -117,6 +117,34 @@ Examples:
         help="Stop on first failure"
     )
     
+    # Quality validation options (Stream B)
+    parser.add_argument(
+        "--enable-llm-quality",
+        action="store_true",
+        default=False,
+        help="Enable LLM-powered quality assessment (requires API keys)"
+    )
+    
+    parser.add_argument(
+        "--enable-template-validation",
+        action="store_true", 
+        default=True,
+        help="Enable enhanced template validation"
+    )
+    
+    parser.add_argument(
+        "--quality-threshold",
+        type=float,
+        default=85.0,
+        help="Minimum quality score for production readiness (0-100)"
+    )
+    
+    parser.add_argument(
+        "--production-ready-only",
+        action="store_true",
+        help="Only report pipelines that meet production readiness criteria"
+    )
+    
     args = parser.parse_args()
     
     # Configure logging level
@@ -141,11 +169,18 @@ Examples:
             logger.error("No models available. Check API keys and configuration.")
             return 1
         
-        # Initialize test suite
+        # Initialize test suite with quality validation
         logger.info("Initializing pipeline test suite...")
+        logger.info(f"Quality validation - LLM: {args.enable_llm_quality}, "
+                   f"Templates: {args.enable_template_validation}, "
+                   f"Threshold: {args.quality_threshold}")
+        
         test_suite = PipelineTestSuite(
             examples_dir=args.examples_dir,
-            model_registry=model_registry
+            model_registry=model_registry,
+            enable_llm_quality_review=args.enable_llm_quality,
+            enable_enhanced_template_validation=args.enable_template_validation,
+            quality_threshold=args.quality_threshold
         )
         
         # Configure test suite
@@ -217,6 +252,29 @@ Examples:
         logger.info(f"Total time: {results.total_time:.1f}s")
         logger.info(f"Total cost: ${results.total_cost:.4f}")
         logger.info(f"Average quality score: {results.average_quality_score:.1f}")
+        
+        # Quality validation reporting (Stream B)
+        production_ready_pipelines = results.get_production_ready_pipelines()
+        quality_issues = results.get_quality_issues_summary()
+        
+        logger.info(f"Production ready: {len(production_ready_pipelines)}/{results.total_tests}")
+        if quality_issues['critical_issues'] > 0:
+            logger.warning(f"Critical quality issues: {quality_issues['critical_issues']}")
+        if quality_issues['major_issues'] > 0:
+            logger.info(f"Major quality issues: {quality_issues['major_issues']}")
+        if quality_issues['template_artifacts'] > 0:
+            logger.warning(f"Pipelines with template artifacts: {quality_issues['template_artifacts']}")
+        
+        # Production readiness filter
+        if args.production_ready_only:
+            if not production_ready_pipelines:
+                logger.warning("No pipelines meet production readiness criteria")
+            else:
+                logger.info("Production ready pipelines:")
+                for pipeline_name in production_ready_pipelines:
+                    result = results.results[pipeline_name]
+                    score = result.quality_score
+                    logger.info(f"  - {pipeline_name}: Score {score:.1f}")
         
         # Show failed pipelines
         failed_pipelines = results.get_failed_pipelines()
