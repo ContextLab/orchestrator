@@ -186,6 +186,27 @@ class UnifiedTemplateResolver:
         loop_variables = self.loop_context_manager.get_accessible_loop_variables()
         active_loops = dict(self.loop_context_manager.active_loops)
         
+        # Enhance step_results with data from template manager if available
+        enhanced_step_results = dict(step_results or {})
+        
+        # Get additional context from template manager
+        if self.template_manager and hasattr(self.template_manager, 'context'):
+            tm_context = self.template_manager.context
+            
+            # Extract step results from template manager context
+            for key, value in tm_context.items():
+                # Skip internal template manager variables
+                if key.startswith('_') or key in ['timestamp', 'debug_mode']:
+                    continue
+                    
+                # If this looks like a step result and we don't already have it
+                if key not in enhanced_step_results:
+                    enhanced_step_results[key] = value
+                    
+            if self.debug_mode and enhanced_step_results != step_results:
+                added_keys = set(enhanced_step_results.keys()) - set((step_results or {}).keys())
+                logger.debug(f"Enhanced step_results with template manager context: {added_keys}")
+        
         # Build comprehensive context
         context = TemplateResolutionContext(
             pipeline_id=pipeline_id,
@@ -193,8 +214,8 @@ class UnifiedTemplateResolver:
             tool_name=tool_name,
             pipeline_inputs=pipeline_inputs or {},
             pipeline_parameters=pipeline_parameters or {},
-            step_results=step_results or {},
-            previous_results=step_results or {},  # For backward compatibility
+            step_results=enhanced_step_results,
+            previous_results=enhanced_step_results,  # For backward compatibility
             loop_variables=loop_variables,
             active_loops=active_loops,
             tool_parameters=tool_parameters or {},
@@ -204,6 +225,8 @@ class UnifiedTemplateResolver:
         if self.debug_mode:
             logger.debug(f"Collected context for pipeline={pipeline_id}, task={task_id}, tool={tool_name}")
             logger.debug(f"Context keys: {list(context.to_flat_dict().keys())}")
+            if enhanced_step_results:
+                logger.debug(f"Step results keys: {list(enhanced_step_results.keys())}")
         
         return context
     
@@ -270,6 +293,18 @@ class UnifiedTemplateResolver:
         except Exception as e:
             logger.error(f"Template resolution failed: {e}")
             logger.error(f"Data type: {type(data)}, Context: {self._current_context is not None}")
+            
+            # For debugging: show which variables are unresolved
+            if isinstance(data, str) and self.debug_mode:
+                unresolved = self.get_unresolved_variables(data)
+                if unresolved:
+                    logger.error(f"Unresolved variables: {unresolved}")
+                    
+                    # Show what's available in context
+                    if self._current_context:
+                        available_keys = list(self._current_context.to_flat_dict().keys())
+                        logger.error(f"Available context keys: {available_keys}")
+            
             # Return original data if resolution fails
             return data
     
@@ -322,10 +357,39 @@ class UnifiedTemplateResolver:
         else:
             # Fallback validation using template manager
             try:
-                self.template_manager.render(template)
+                # Preprocess $variable syntax first
+                preprocessed = self._preprocess_dollar_variables(template)
+                self.template_manager.render(preprocessed)
                 return []
             except Exception as e:
                 return [str(e)]
+    
+    def get_unresolved_variables(self, template: str) -> List[str]:
+        """Get list of unresolved variables in a template after processing.
+        
+        Args:
+            template: Template string to check
+            
+        Returns:
+            List of variable names that couldn't be resolved
+        """
+        import re
+        
+        # Preprocess $variable syntax
+        preprocessed = self._preprocess_dollar_variables(template)
+        
+        # Try to render and collect any remaining {{ }} patterns
+        try:
+            resolved = self.template_manager.render(preprocessed)
+            # Find any remaining {{ variable }} patterns
+            unresolved_pattern = r'\{\{\s*([^}]+)\s*\}\}'
+            matches = re.findall(unresolved_pattern, resolved)
+            return [match.strip() for match in matches]
+        except Exception as e:
+            # If rendering fails completely, extract all variables from original
+            var_pattern = r'\{\{\s*([^}]+)\s*\}\}'
+            matches = re.findall(var_pattern, preprocessed)
+            return [match.strip() for match in matches]
     
     @contextmanager
     def resolution_context(
