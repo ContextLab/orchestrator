@@ -8,23 +8,22 @@ Is last: False
 None bytes
 
 ## Analysis
-I didn’t receive the text—“None” looks like a placeholder. Please paste the content (or a chunk of it) here, and tell me:
+It looks like the placeholder None didn’t contain any text, so I don’t have the document to analyze.
 
-- Desired summary length (e.g., 1–2 sentences, 150 words, 5 bullets)
-- Target audience and purpose (executive brief, academic abstract, product recap, etc.)
-- Any focus areas (key arguments, data points, action items, contradictions, tone)
+Please paste the text here or attach the file, and let me know:
+- Desired summary length/format (e.g., 1–2 sentences, 5 bullets, detailed brief)
+- Audience/purpose (e.g., executive, technical, general)
+- Any focus areas to emphasize (e.g., findings, methodology, recommendations)
 
-If the text is long, you can send it in parts (up to ~10k characters per message), and I’ll track continuity.
+Once I have the content, I can deliver:
+- One-sentence gist
+- Key points/themes
+- Structure and flow
+- Notable data/quotes
+- Gaps/limitations
+- Actionable takeaways (if applicable)
 
-Possible outputs I can provide:
-- Executive summary and key takeaways
-- Structured outline of sections/arguments
-- Notable data points, names, dates, and quotes
-- Gaps, inconsistencies, or assumptions
-- Tone/sentiment and audience fit
-- Action items and recommendations
-
-Send the text when ready, and I’ll get started.
+If it’s very long, I can summarize in chunks—feel free to send it in parts.
 
 ## Transformed Content
 {'error': 'Model returned empty response'}

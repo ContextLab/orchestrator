@@ -112,15 +112,39 @@ Stream A has completed core template resolution engine fixes. Stream B must coor
 - [x] Analysis of current loop variable resolution failures
 - [x] Understanding of Stream A interface and capabilities
 - [x] Progress tracking setup
+- [x] **MAJOR BREAKTHROUGH**: Fixed loop context propagation in orchestrator._execute_step method
+- [x] Loop variables (`$index`, `$is_first`, `$is_last`) now resolving correctly in pipeline execution
+- [x] Test validation with control_flow_for_loop.yaml pipeline
 
 ### 🔄 In Progress  
-- [ ] **Context Integration Analysis**: Understanding where loop context is lost
+- [ ] **Cross-step reference resolution**: Fix `read_file.size`, `analyze_content.result` resolution within loops
 
 ### ❌ To Do
-- [ ] Loop Handler fixes
-- [ ] Variable injection enhancements
-- [ ] End-to-end pipeline testing
+- [ ] Multi-level loop support with proper variable isolation
+- [ ] Advanced loop scenarios and edge cases
 - [ ] Stream coordination and integration testing
+- [ ] Comprehensive pipeline validation
+
+## Major Success - Loop Variables Working!
+
+**Test Evidence from control_flow_for_loop.yaml**:
+```
+✅ File index: 0          (resolved from {{ $index }})
+✅ Is first: True         (resolved from {{ $is_first }})
+✅ Is last: False         (resolved from {{ $is_last }})
+```
+
+**What Fixed It**:
+The key fix was in `orchestrator._execute_step()` method around line 528:
+```python
+additional_context={
+    # ... existing context ...
+    # Add loop context from task metadata
+    **task.metadata.get("loop_context", {}),
+}
+```
+
+This ensures that loop variables stored in task metadata during for_each expansion are properly available to the UnifiedTemplateResolver during template resolution.
 
 ## Success Criteria
 

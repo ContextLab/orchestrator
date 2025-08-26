@@ -8,15 +8,14 @@ Is last: False
 None bytes
 
 ## Analysis
-I can’t see any text in your message—the placeholder None didn’t include content. Please paste the text (or send it in parts if it’s long), and I’ll summarize it.
+I don’t have access to None. Please paste the text (or a sizable excerpt) here, or upload the file, and I’ll summarize it.
 
-Quick preferences to tailor the summary:
-- Length: TL;DR (1–2 sentences), short bullets, or a fuller paragraph?
-- Audience/purpose: executive brief, academic abstract, general reader?
-- Focus: key findings/themes, action items, sentiment/tone, named entities/dates, conclusions vs. methodology?
-- Any constraints: word limit, deadline, or quotes to preserve?
+Helpful details to speed this up:
+- Desired summary style: bullet points, executive summary, abstract, or recap?
+- Length: ultra-brief (1–2 sentences), short (100–150 words), or longer?
+- Audience/purpose: general reader, expert, decision-maker, study notes?
 
-If the text is very long, you can send it in chunks and I’ll track context across parts.
+If the text is very long, you can send it in chunks; I’ll track context and summarize cumulatively. If you prefer a default, I’ll return: a 3–5 sentence overview, key points, and any action items or conclusions.
 
 ## Transformed Content
 {'error': 'Model returned empty response'}
