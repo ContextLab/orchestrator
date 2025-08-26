@@ -18,6 +18,9 @@ from orchestrator.utils.api_keys_flexible import load_api_keys_optional
 from .pipeline_discovery import PipelineDiscovery, PipelineInfo
 from .quality_validator import QualityValidator, QualityValidationResult
 from .template_validator import TemplateValidator, TemplateValidationResult
+from .performance_monitor import PerformanceMonitor, ExecutionMetrics
+from .regression_detector import RegressionDetector, RegressionAlert
+from .performance_tracker import PerformanceTracker
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +70,12 @@ class PerformanceResult:
     regression_detected: bool = False
     historical_comparison: Dict[str, float] = field(default_factory=dict)
     performance_score: float = 1.0
+    
+    # Enhanced performance data (Stream C)
+    execution_metrics: Optional[ExecutionMetrics] = None
+    regression_alerts: List[RegressionAlert] = field(default_factory=list)
+    baseline_available: bool = False
+    baseline_confidence: float = 0.0
 
 
 @dataclass
@@ -241,7 +250,10 @@ class PipelineTestSuite:
                  orchestrator: Optional[Orchestrator] = None,
                  enable_llm_quality_review: bool = True,
                  enable_enhanced_template_validation: bool = True,
-                 quality_threshold: float = 85.0):
+                 enable_performance_monitoring: bool = True,
+                 enable_regression_detection: bool = True,
+                 quality_threshold: float = 85.0,
+                 performance_storage_path: Optional[Path] = None):
         """
         Initialize pipeline test suite.
         
@@ -251,7 +263,10 @@ class PipelineTestSuite:
             orchestrator: Orchestrator instance for execution
             enable_llm_quality_review: Enable LLM-powered quality assessment
             enable_enhanced_template_validation: Enable advanced template validation
+            enable_performance_monitoring: Enable comprehensive performance tracking
+            enable_regression_detection: Enable performance regression detection
             quality_threshold: Minimum quality score for production readiness
+            performance_storage_path: Path for performance data storage
         """
         self.examples_dir = examples_dir or Path("examples")
         self.model_registry = model_registry or init_models()
@@ -270,6 +285,10 @@ class PipelineTestSuite:
         self.enable_llm_quality_review = enable_llm_quality_review
         self.enable_enhanced_template_validation = enable_enhanced_template_validation
         self.quality_threshold = quality_threshold
+        
+        # Performance monitoring configuration (Stream C)
+        self.enable_performance_monitoring = enable_performance_monitoring
+        self.enable_regression_detection = enable_regression_detection
         
         # Initialize quality validation components
         self.quality_validator: Optional[QualityValidator] = None
@@ -293,12 +312,40 @@ class PipelineTestSuite:
                 logger.warning(f"Failed to initialize template validator: {e}")
                 self.enable_enhanced_template_validation = False
         
+        # Initialize performance monitoring components (Stream C)
+        self.performance_monitor: Optional[PerformanceMonitor] = None
+        self.regression_detector: Optional[RegressionDetector] = None
+        self.performance_tracker: Optional[PerformanceTracker] = None
+        
+        if self.enable_performance_monitoring:
+            try:
+                self.performance_monitor = PerformanceMonitor(
+                    storage_path=performance_storage_path,
+                    enable_detailed_tracking=True
+                )
+                logger.info("Initialized performance monitor")
+                
+                if self.enable_regression_detection:
+                    self.regression_detector = RegressionDetector()
+                    self.performance_tracker = PerformanceTracker(
+                        performance_monitor=self.performance_monitor,
+                        regression_detector=self.regression_detector
+                    )
+                    logger.info("Initialized regression detector and performance tracker")
+                
+            except Exception as e:
+                logger.warning(f"Failed to initialize performance monitoring: {e}")
+                self.enable_performance_monitoring = False
+                self.enable_regression_detection = False
+        
         # Results tracking
         self.execution_history: List[PipelineTestResult] = []
         self.performance_baselines: Dict[str, Dict[str, float]] = {}
         
         logger.info(f"Initialized PipelineTestSuite (Quality: {self.enable_llm_quality_review}, "
-                   f"Templates: {self.enable_enhanced_template_validation})")
+                   f"Templates: {self.enable_enhanced_template_validation}, "
+                   f"Performance: {self.enable_performance_monitoring}, "
+                   f"Regression: {self.enable_regression_detection})")
     
     def discover_pipelines(self) -> Dict[str, PipelineInfo]:
         """
@@ -448,15 +495,20 @@ class PipelineTestSuite:
     
     async def _test_pipeline_execution(self, pipeline_info: PipelineInfo) -> ExecutionResult:
         """
-        Test pipeline execution without errors.
+        Test pipeline execution without errors with integrated performance monitoring.
         
         Args:
             pipeline_info: Pipeline information
             
         Returns:
-            ExecutionResult: Execution result
+            ExecutionResult: Execution result with performance metrics
         """
         start_time = time.time()
+        execution_id = None
+        
+        # Start performance monitoring if enabled
+        if self.enable_performance_monitoring and self.performance_monitor:
+            execution_id = self.performance_monitor.start_execution_monitoring(pipeline_info.name)
         
         try:
             # Get test inputs for this pipeline
@@ -479,6 +531,21 @@ class PipelineTestSuite:
                 
                 execution_time = time.time() - start_time
                 
+                # Stop performance monitoring with success
+                execution_metrics = None
+                if execution_id and self.performance_monitor:
+                    output_metrics = {
+                        'api_calls': self._extract_api_calls_count(outputs),
+                        'tokens_used': self._extract_tokens_used(outputs),
+                        'estimated_cost': self._estimate_cost(outputs),
+                        'output_files': self._extract_output_files(outputs, output_dir),
+                        'quality_score': None  # Will be filled later if quality validation enabled
+                    }
+                    execution_metrics = self.performance_monitor.stop_execution_monitoring(
+                        success=True, 
+                        output_metrics=output_metrics
+                    )
+                
                 return ExecutionResult(
                     success=True,
                     execution_time=execution_time,
@@ -491,6 +558,11 @@ class PipelineTestSuite:
                 
         except asyncio.TimeoutError:
             error = TimeoutError(f"Pipeline execution timed out after {self.timeout_seconds}s")
+            
+            # Stop performance monitoring with failure
+            if execution_id and self.performance_monitor:
+                self.performance_monitor.stop_execution_monitoring(success=False)
+            
             return ExecutionResult(
                 success=False,
                 execution_time=time.time() - start_time,
@@ -498,6 +570,10 @@ class PipelineTestSuite:
                 error_message=str(error)
             )
         except Exception as e:
+            # Stop performance monitoring with failure
+            if execution_id and self.performance_monitor:
+                self.performance_monitor.stop_execution_monitoring(success=False)
+                
             return ExecutionResult(
                 success=False,
                 execution_time=time.time() - start_time,
@@ -612,15 +688,16 @@ class PipelineTestSuite:
                                 pipeline_info: PipelineInfo,
                                 execution_result: ExecutionResult) -> PerformanceResult:
         """
-        Test and monitor performance metrics.
+        Test and monitor performance metrics with advanced regression detection.
         
         Args:
             pipeline_info: Pipeline information
             execution_result: Execution result with performance data
             
         Returns:
-            PerformanceResult: Performance monitoring result
+            PerformanceResult: Enhanced performance monitoring result
         """
+        # Basic metrics for backward compatibility
         metrics = {
             'execution_time': execution_result.execution_time,
             'estimated_cost': execution_result.estimated_cost,
@@ -629,36 +706,102 @@ class PipelineTestSuite:
             'memory_usage_mb': execution_result.memory_usage_mb
         }
         
-        # Get historical data for regression detection
-        historical = self.performance_baselines.get(pipeline_info.name, {})
-        
-        # Detect regression (simple threshold-based)
+        # Enhanced performance analysis if monitoring is enabled
+        execution_metrics = None
+        regression_alerts = []
+        baseline_available = False
+        baseline_confidence = 0.0
         regression_detected = False
-        if historical and execution_result.success:
-            # Check if execution time increased significantly
-            if 'execution_time' in historical:
-                time_increase = (metrics['execution_time'] - historical['execution_time']) / historical['execution_time']
-                if time_increase > 0.5:  # 50% increase threshold
-                    regression_detected = True
+        
+        if self.enable_performance_monitoring and self.performance_monitor:
+            try:
+                # Get recent execution history for regression detection
+                recent_executions = self.performance_monitor.get_execution_history(
+                    pipeline_name=pipeline_info.name,
+                    days_back=7,
+                    include_failed=False
+                )
+                
+                # Try to get or establish baseline
+                baseline = self.performance_monitor.get_baseline(pipeline_info.name)
+                if not baseline and len(recent_executions) >= 5:
+                    baseline = self.performance_monitor.establish_baseline(
+                        pipeline_info.name,
+                        min_samples=3,
+                        days_back=30
+                    )
+                
+                if baseline:
+                    baseline_available = True
+                    baseline_confidence = baseline.baseline_confidence
+                    
+                    # Run regression detection if we have sufficient data
+                    if self.enable_regression_detection and self.regression_detector and recent_executions:
+                        regression_alerts = self.regression_detector.detect_regressions(
+                            pipeline_info.name,
+                            recent_executions[-5:],  # Last 5 executions
+                            baseline,
+                            include_trends=True
+                        )
+                        
+                        # Set regression detected flag if any significant alerts
+                        regression_detected = any(
+                            alert.is_actionable for alert in regression_alerts
+                        )
+                
+                # Get most recent execution metrics if available
+                if recent_executions:
+                    execution_metrics = recent_executions[0]  # Most recent
             
-            # Check if cost increased significantly
-            if 'estimated_cost' in historical and historical['estimated_cost'] > 0:
-                cost_increase = (metrics['estimated_cost'] - historical['estimated_cost']) / historical['estimated_cost']
-                if cost_increase > 0.3:  # 30% increase threshold
-                    regression_detected = True
+            except Exception as e:
+                logger.warning(f"Error in advanced performance analysis for {pipeline_info.name}: {e}")
+        
+        # Fallback to simple regression detection for backward compatibility
+        if not self.enable_performance_monitoring:
+            historical = self.performance_baselines.get(pipeline_info.name, {})
+            
+            if historical and execution_result.success:
+                # Check if execution time increased significantly
+                if 'execution_time' in historical:
+                    time_increase = (metrics['execution_time'] - historical['execution_time']) / historical['execution_time']
+                    if time_increase > 0.5:  # 50% increase threshold
+                        regression_detected = True
+                
+                # Check if cost increased significantly
+                if 'estimated_cost' in historical and historical['estimated_cost'] > 0:
+                    cost_increase = (metrics['estimated_cost'] - historical['estimated_cost']) / historical['estimated_cost']
+                    if cost_increase > 0.3:  # 30% increase threshold
+                        regression_detected = True
+            
+            # Update simple baseline
+            if execution_result.success:
+                self.performance_baselines[pipeline_info.name] = metrics.copy()
         
         # Calculate performance score
         performance_score = self._calculate_performance_score(metrics, pipeline_info)
         
-        # Update baseline if this execution was successful
-        if execution_result.success:
-            self.performance_baselines[pipeline_info.name] = metrics.copy()
+        # Get historical comparison data
+        historical_comparison = {}
+        if self.enable_performance_monitoring and self.performance_monitor:
+            try:
+                performance_summary = self.performance_monitor.get_performance_summary(
+                    pipeline_name=pipeline_info.name,
+                    days_back=30
+                )
+                if pipeline_info.name in performance_summary:
+                    historical_comparison = performance_summary[pipeline_info.name].get('baseline_comparison', {})
+            except Exception as e:
+                logger.warning(f"Failed to get performance summary for {pipeline_info.name}: {e}")
         
         return PerformanceResult(
             metrics=metrics,
             regression_detected=regression_detected,
-            historical_comparison=historical,
-            performance_score=performance_score
+            historical_comparison=historical_comparison,
+            performance_score=performance_score,
+            execution_metrics=execution_metrics,
+            regression_alerts=regression_alerts,
+            baseline_available=baseline_available,
+            baseline_confidence=baseline_confidence
         )
     
     def _get_pipelines_for_mode(self, mode: str) -> List[PipelineInfo]:
@@ -740,6 +883,20 @@ class PipelineTestSuite:
                 return metadata.get('memory_peak_mb', 0.0)
         return 0.0
     
+    def _extract_output_files(self, outputs: Dict[str, Any], output_dir: Path) -> List[str]:
+        """Extract list of output files created during execution."""
+        output_files = []
+        
+        try:
+            if output_dir.exists():
+                for file_path in output_dir.rglob("*"):
+                    if file_path.is_file():
+                        output_files.append(str(file_path))
+        except Exception as e:
+            logger.warning(f"Failed to extract output files: {e}")
+        
+        return output_files
+    
     def _check_output_files_for_templates(self, output_dir: Path) -> List[str]:
         """Check output files for unresolved template artifacts."""
         issues = []
@@ -803,3 +960,140 @@ class PipelineTestSuite:
             score -= 0.1
         
         return max(0.0, score)
+    
+    def get_performance_summary(self, pipeline_names: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        Get comprehensive performance summary using advanced monitoring.
+        
+        Args:
+            pipeline_names: Optional list of pipelines to include
+            
+        Returns:
+            Dict: Performance summary with enhanced metrics
+        """
+        if not self.enable_performance_monitoring or not self.performance_tracker:
+            # Fallback to basic summary
+            return {"error": "Performance monitoring not enabled"}
+        
+        return self.performance_tracker.get_performance_summary(
+            pipeline_names=pipeline_names,
+            analysis_period_days=30
+        )
+    
+    def establish_performance_baselines(self, 
+                                      pipeline_names: Optional[List[str]] = None,
+                                      min_samples: int = 5) -> Dict[str, bool]:
+        """
+        Establish performance baselines for pipelines.
+        
+        Args:
+            pipeline_names: Optional list of pipelines (None for all discovered)
+            min_samples: Minimum samples required for baseline
+            
+        Returns:
+            Dict: Pipeline name to baseline establishment success
+        """
+        if not self.enable_performance_monitoring or not self.performance_monitor:
+            return {"error": "Performance monitoring not enabled"}
+        
+        if pipeline_names is None:
+            if not self.discovered_pipelines:
+                self.discover_pipelines()
+            pipeline_names = list(self.discovered_pipelines.keys())
+        
+        results = {}
+        
+        for pipeline_name in pipeline_names:
+            try:
+                baseline = self.performance_monitor.establish_baseline(
+                    pipeline_name,
+                    min_samples=min_samples,
+                    days_back=30
+                )
+                results[pipeline_name] = baseline is not None
+                
+                if baseline:
+                    logger.info(f"Established baseline for {pipeline_name} "
+                               f"(confidence: {baseline.baseline_confidence:.2f})")
+                else:
+                    logger.warning(f"Failed to establish baseline for {pipeline_name} "
+                                 f"(insufficient data)")
+            
+            except Exception as e:
+                logger.error(f"Error establishing baseline for {pipeline_name}: {e}")
+                results[pipeline_name] = False
+        
+        return results
+    
+    def get_regression_alerts(self, 
+                            pipeline_names: Optional[List[str]] = None,
+                            days_back: int = 7) -> List[RegressionAlert]:
+        """
+        Get active regression alerts for pipelines.
+        
+        Args:
+            pipeline_names: Optional list of pipelines to check
+            days_back: Days to look back for recent executions
+            
+        Returns:
+            List[RegressionAlert]: Active regression alerts
+        """
+        if not self.enable_regression_detection or not self.performance_tracker:
+            return []
+        
+        all_alerts = []
+        
+        if pipeline_names is None:
+            if not self.discovered_pipelines:
+                self.discover_pipelines()
+            pipeline_names = list(self.discovered_pipelines.keys())
+        
+        for pipeline_name in pipeline_names:
+            try:
+                profile = self.performance_tracker.track_pipeline_performance(
+                    pipeline_name, days_back
+                )
+                all_alerts.extend(profile.active_regressions)
+            except Exception as e:
+                logger.warning(f"Failed to get regression alerts for {pipeline_name}: {e}")
+        
+        # Sort by severity and actionability
+        all_alerts.sort(key=lambda a: (
+            a.severity.value in ['critical', 'high'],
+            a.is_actionable,
+            a.confidence
+        ), reverse=True)
+        
+        return all_alerts
+    
+    def generate_performance_report(self, 
+                                  pipeline_name: str,
+                                  output_path: Path,
+                                  include_visualizations: bool = False) -> Dict[str, Any]:
+        """
+        Generate detailed performance report for a pipeline.
+        
+        Args:
+            pipeline_name: Name of the pipeline
+            output_path: Path to save report files
+            include_visualizations: Include performance charts
+            
+        Returns:
+            Dict: Report generation results
+        """
+        if not self.enable_performance_monitoring or not self.performance_tracker:
+            return {"error": "Performance monitoring not enabled"}
+        
+        try:
+            report_data = self.performance_tracker.generate_performance_report(
+                pipeline_name=pipeline_name,
+                output_path=output_path,
+                include_visualizations=include_visualizations
+            )
+            
+            logger.info(f"Generated performance report for {pipeline_name}")
+            return report_data
+        
+        except Exception as e:
+            logger.error(f"Failed to generate performance report for {pipeline_name}: {e}")
+            return {"error": str(e)}

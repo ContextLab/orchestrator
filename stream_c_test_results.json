@@ -1,103 +1,18 @@
 {
-  "stream": "Stream C - Visual Quality Assessment & File Organization",
-  "execution_time_seconds": 0.089385986328125,
-  "total_tests": 12,
-  "passed": 12,
-  "failed": 0,
-  "success_rate_percent": 100.0,
-  "category_results": {
-    "visual_analysis": {
-      "passed": 3,
-      "failed": 0,
-      "total": 3
-    },
-    "organization_validation": {
-      "passed": 3,
-      "failed": 0,
-      "total": 3
-    },
-    "integration_tests": {
-      "passed": 3,
-      "failed": 0,
-      "total": 3
-    },
-    "real_pipeline_tests": {
-      "passed": 3,
-      "failed": 0,
-      "total": 3
-    }
+  "test_results": {
+    "performance_monitor_basic": true,
+    "regression_detector": true,
+    "performance_tracker": true,
+    "pipeline_test_suite_integration": true,
+    "performance_reporter": true,
+    "end_to_end_performance": true
   },
-  "detailed_results": [
-    {
-      "test": "image_quality_analysis_existing",
-      "status": "PASSED",
-      "details": "Analyzed enhanced.png, found 0 issues"
-    },
-    {
-      "test": "nonexistent_file_handling",
-      "status": "PASSED",
-      "details": "Correctly detected non-existent file"
-    },
-    {
-      "test": "chart_quality_analysis",
-      "status": "PASSED",
-      "details": "Analyzed chart scatter_chart_20250821_121516.png, found 0 issues"
-    },
-    {
-      "test": "filename_validation",
-      "status": "PASSED",
-      "details": "Good filename: 0 issues, Bad filename: 2 issues"
-    },
-    {
-      "test": "directory_structure_validation",
-      "status": "PASSED",
-      "details": "Validated simple_data_processing_test, found 0 issues"
-    },
-    {
-      "test": "complete_organization_validation",
-      "status": "PASSED",
-      "details": "Generated review with 0 issues"
-    },
-    {
-      "test": "llm_reviewer_initialization",
-      "status": "PASSED",
-      "details": "Initialized with 2 clients"
-    },
-    {
-      "test": "visual_assessment_prompt",
-      "status": "PASSED",
-      "details": "Generated prompt with 2838 characters"
-    },
-    {
-      "test": "chart_specific_prompt",
-      "status": "PASSED",
-      "details": "Generated chart-specific prompt with required elements"
-    },
-    {
-      "test": "creative_pipeline_validation",
-      "status": "PASSED",
-      "details": "Found 6 total issues, 1 image-related"
-    },
-    {
-      "test": "modular_analysis_validation",
-      "status": "PASSED",
-      "details": "Validated charts directory with 1 issues"
-    },
-    {
-      "test": "simple_data_processing_validation",
-      "status": "PASSED",
-      "details": "Found 5 organization issues out of 5 total"
-    }
-  ],
-  "components_tested": [
-    "VisualContentAnalyzer - Image quality analysis",
-    "EnhancedVisualAssessor - Vision model integration",
-    "ChartQualitySpecialist - Chart-specific assessment",
-    "NamingConventionValidator - File naming standards",
-    "DirectoryStructureValidator - Organization patterns",
-    "FileLocationValidator - Appropriate file placement",
-    "OrganizationQualityValidator - Complete organization review",
-    "LLM Framework Integration - Vision model connectivity"
-  ],
-  "test_status": "PASSED"
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 6,
+    "failed_tests": 0,
+    "pass_rate": 100.0
+  },
+  "timestamp": 1756214669.764586,
+  "report": "\n# Stream C Performance & Regression Testing System - Test Report\n\n## Test Summary\n- **Total Tests:** 6\n- **Passed:** 6\n- **Failed:** 0\n- **Pass Rate:** 100.0%\n\n## Test Results\n\n- **performance_monitor_basic**: \u2713 PASS\n- **regression_detector**: \u2713 PASS\n- **performance_tracker**: \u2713 PASS\n- **pipeline_test_suite_integration**: \u2713 PASS\n- **performance_reporter**: \u2713 PASS\n- **end_to_end_performance**: \u2713 PASS\n\n## System Capabilities Validated\n\n### \u2713 Performance Monitoring\n- Real-time resource usage tracking during pipeline execution\n- Comprehensive metrics collection (CPU, memory, API calls, costs)\n- Historical performance data storage in SQLite database\n- Performance baseline establishment and management\n\n### \u2713 Regression Detection\n- Multi-metric regression analysis (time, cost, memory, quality)\n- Configurable thresholds and sensitivity levels\n- Statistical significance testing\n- Trend analysis and prediction\n- Actionable alert generation with recommendations\n\n### \u2713 Performance Tracking & Analysis\n- Historical performance trend analysis\n- Pipeline performance profiling\n- Health scoring and status assessment\n- Comparative analysis across pipelines\n\n### \u2713 Reporting & Visualization\n- Executive dashboard generation\n- Detailed performance reports (HTML, JSON, Markdown)\n- Regression alert summaries\n- Performance comparison reports\n- Optional visualization charts (when matplotlib available)\n\n### \u2713 Integration\n- Seamless integration with existing PipelineTestSuite\n- Backward compatibility with existing test framework\n- Optional enabling/disabling of performance features\n- API-compatible extensions to existing test results\n\n## Performance System Architecture\n\nThe implemented system consists of:\n\n1. **PerformanceMonitor**: Core monitoring with SQLite storage\n2. **RegressionDetector**: Advanced regression analysis with configurable thresholds\n3. **PerformanceTracker**: Historical analysis and trend detection\n4. **PerformanceReporter**: Comprehensive reporting and dashboard generation\n5. **Enhanced PipelineTestSuite**: Integrated performance testing capabilities\n\n## Next Steps\n\nThe performance monitoring system is now ready for:\n- Integration with CI/CD workflows\n- Production deployment with real pipeline testing\n- Baseline establishment for existing pipelines\n- Continuous performance monitoring and alerting\n\nGenerated: 2025-08-26 09:24:29\n"
 }
