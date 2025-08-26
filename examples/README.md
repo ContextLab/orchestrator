@@ -7,12 +7,12 @@ This directory contains working examples demonstrating the major features of the
 To run any example:
 
 ```bash
-python scripts/run_pipeline.py examples/[example_name].yaml
+python scripts/execution/run_pipeline.py examples/[example_name].yaml
 ```
 
 With inputs:
 ```bash
-python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i another_key="complex value"
+python scripts/execution/run_pipeline.py examples/[example_name].yaml -i key=value -i another_key="complex value"
 ```
 
 ## Complete Pipeline Index (41 Pipelines)
@@ -75,7 +75,7 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
 10. **[simple_data_processing.yaml](simple_data_processing.yaml)** - Simple Data Processing
     - CSV filtering and basic transformations
     - **Docs**: [simple_data_processing.md](../docs/examples/simple_data_processing.md)  
-    - **Outputs**: [filtered_output.csv](outputs/simple_data_processing/filtered_output.csv), [analysis_report.md](outputs/simple_data_processing/analysis_report.md)
+    - **Outputs**: [processed_data.csv](outputs/simple_data_processing/input_processed_data.csv), [analysis_report.md](outputs/simple_data_processing/input_processing_report.md)
 
 11. **[data_processing.yaml](data_processing.yaml)** - Data Processing Pipeline
     - Multi-format data processing with validation
@@ -109,7 +109,7 @@ python scripts/run_pipeline.py examples/[example_name].yaml -i key=value -i anot
     - Parallel batch processing with for-each loops
     - Loop variables and dependency management
     - **Docs**: [control_flow_for_loop.md](../docs/examples/control_flow_for_loop.md)
-    - **Outputs**: [summary.md](outputs/control_flow_for_loop/summary.md)
+    - **Outputs**: [processing_summary.md](outputs/control_flow_for_loop/processing_summary.md)
 
 17. **[control_flow_while_loop.yaml](control_flow_while_loop.yaml)** - Iterative Processing
     - While loop with condition-based termination
@@ -380,8 +380,8 @@ The [simple_data_processing.yaml](simple_data_processing.yaml) pipeline demonstr
 - **Input**: A CSV file with 10 project records containing name, status, value, and date
 - **Processing**: Filters records to include only those with status="active"
 - **Output**: 
-  - [filtered_output.csv](outputs/simple_data_processing/filtered_output.csv) - Contains 5 filtered records (only active projects)
-  - [analysis_report.md](outputs/simple_data_processing/analysis_report.md) - Markdown report with processing summary and data preview
+  - [processed_data.csv](outputs/simple_data_processing/input_processed_data.csv) - Contains 5 filtered records (only active projects)
+  - [analysis_report.md](outputs/simple_data_processing/input_processing_report.md) - Markdown report with processing summary and data preview
 
 This example shows:
 - How to read files using the filesystem tool

@@ -50,7 +50,7 @@ Orchestrator supports multiple AI providers. Configure your API keys using the i
 
 ```bash
 # Interactive API key setup
-python scripts/setup_api_keys.py
+python scripts/utilities/setup_api_keys.py
 
 # Or set environment variables directly
 export OPENAI_API_KEY="your-openai-key"
@@ -373,8 +373,8 @@ The [simple_data_processing.yaml](examples/simple_data_processing.yaml) pipeline
 - Multi-format output generation
 
 **Example outputs:**
-- [Filtered CSV data](examples/outputs/simple_data_processing/filtered_output.csv) - Active projects only
-- [Analysis report](examples/outputs/simple_data_processing/analysis_report.md) - Human-readable summary with data preview
+- [Processed CSV data](examples/outputs/simple_data_processing/input_processed_data.csv) - Active projects with input-specific naming
+- [Analysis report](examples/outputs/simple_data_processing/input_processing_report.md) - Human-readable summary with data preview
 
 Browse more examples in the [examples directory](examples/) including web research, model routing, recursive processing, and more.
 
@@ -462,10 +462,28 @@ orchestrator/
 │   ├── data/             # Example data files
 │   ├── outputs/          # Generated outputs (gitignored)
 │   └── checkpoints/      # Pipeline checkpoints (gitignored)
-├── scripts/               # Utility scripts
-│   ├── run_pipeline.py   # Main pipeline runner
-│   ├── setup_api_keys.py # API key configuration
-│   └── validate_all_pipelines.py # Pipeline validation
+├── scripts/               # Organized utility scripts
+│   ├── execution/        # Pipeline execution scripts
+│   │   ├── run_pipeline.py    # Main pipeline runner
+│   │   └── quick_run_pipelines.py # Batch pipeline execution
+│   ├── validation/       # Pipeline and configuration validation
+│   │   ├── validate_all_pipelines.py # Pipeline validation
+│   │   ├── quick_validate.py    # Fast validation checks
+│   │   └── audit_pipelines.py   # Comprehensive pipeline auditing
+│   ├── testing/          # Pipeline execution testing
+│   │   ├── test_all_real_pipelines.py # Real-world pipeline tests
+│   │   └── test_all_pipelines_with_wrappers.py # Wrapper testing
+│   ├── utilities/        # Repository maintenance and utilities
+│   │   ├── setup_api_keys.py    # API key configuration
+│   │   ├── repository_organizer.py # Repository organization
+│   │   └── generate_sample_data.py # Sample data generation
+│   ├── production/       # Production deployment and monitoring
+│   │   ├── production_deploy.py  # Production deployment
+│   │   ├── performance_monitor.py # Performance monitoring
+│   │   └── dashboard_generator.py # Monitoring dashboard
+│   └── maintenance/      # Output regeneration and verification
+│       ├── regenerate_all_outputs.py # Regenerate pipeline outputs
+│       └── verify_all_outputs.py     # Verify output integrity
 ├── src/orchestrator/      # Source code
 │   ├── core/             # Core components (Pipeline, Task, UnifiedTemplateResolver)
 │   ├── models/           # Model integrations
