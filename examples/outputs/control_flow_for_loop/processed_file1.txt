@@ -1,14 +1,30 @@
 # Processed: file1.txt
 
 File index: 0
-Is first: {{ $is_first }}
-Is last: {{ $is_last }}
+Is first: True
+Is last: False
 
 ## Original Size
-{{ read_file.size }} bytes
+None bytes
 
 ## Analysis
-{{ analyze_content.result }}
+I didn’t receive the text—“None” looks like a placeholder. Please paste the content (or a chunk of it) here, and tell me:
+
+- Desired summary length (e.g., 1–2 sentences, 150 words, 5 bullets)
+- Target audience and purpose (executive brief, academic abstract, product recap, etc.)
+- Any focus areas (key arguments, data points, action items, contradictions, tone)
+
+If the text is long, you can send it in parts (up to ~10k characters per message), and I’ll track continuity.
+
+Possible outputs I can provide:
+- Executive summary and key takeaways
+- Structured outline of sections/arguments
+- Notable data points, names, dates, and quotes
+- Gaps, inconsistencies, or assumptions
+- Tone/sentiment and audience fit
+- Action items and recommendations
+
+Send the text when ready, and I’ll get started.
 
 ## Transformed Content
-{{ transform_content.result }}
+{'error': 'Model returned empty response'}

@@ -1,14 +1,22 @@
 # Processed: file2.txt
 
 File index: 1
-Is first: {{ $is_first }}
-Is last: {{ $is_last }}
+Is first: False
+Is last: False
 
 ## Original Size
-{{ read_file.size }} bytes
+None bytes
 
 ## Analysis
-{{ analyze_content.result }}
+I can’t see any text in your message—the placeholder None didn’t include content. Please paste the text (or send it in parts if it’s long), and I’ll summarize it.
+
+Quick preferences to tailor the summary:
+- Length: TL;DR (1–2 sentences), short bullets, or a fuller paragraph?
+- Audience/purpose: executive brief, academic abstract, general reader?
+- Focus: key findings/themes, action items, sentiment/tone, named entities/dates, conclusions vs. methodology?
+- Any constraints: word limit, deadline, or quotes to preserve?
+
+If the text is very long, you can send it in chunks and I’ll track context across parts.
 
 ## Transformed Content
-{{ transform_content.result }}
+{'error': 'Model returned empty response'}

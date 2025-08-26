@@ -1,14 +1,21 @@
 # Processed: file3.txt
 
 File index: 2
-Is first: {{ $is_first }}
-Is last: {{ $is_last }}
+Is first: False
+Is last: True
 
 ## Original Size
-{{ read_file.size }} bytes
+None bytes
 
 ## Analysis
-{{ analyze_content.result }}
+I didn’t receive the text—your message shows a placeholder (“None”) rather than the actual content. Please paste the text here or upload/provide the file contents, and I’ll summarize it.
+
+To tailor the summary, let me know:
+- Desired length: TL;DR (1–2 sentences), short (3–5 bullets), or detailed (abstract-style).
+- Target audience and purpose (e.g., executive briefing, technical summary, study notes).
+- Any specifics to emphasize (key findings, recommendations, data points, action items) or exclude.
+
+If the text is very long, you can send it in chunks, and I’ll stitch the summaries together.
 
 ## Transformed Content
-{{ transform_content.result }}
+{'error': 'Model returned empty response'}
