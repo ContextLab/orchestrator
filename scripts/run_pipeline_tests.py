@@ -20,7 +20,11 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
 from orchestrator import init_models
-from orchestrator.testing import PipelineTestSuite, TestResults
+from orchestrator.testing import (
+    PipelineTestSuite, TestResults, TestModeManager, TestMode,
+    CIIntegrationManager, create_ci_config_from_environment,
+    ReleaseValidator, determine_release_type_from_version, ReleaseType
+)
 from orchestrator.testing.test_reporter import PipelineTestReporter
 
 # Configure logging
@@ -60,9 +64,9 @@ Examples:
     
     parser.add_argument(
         "--mode",
-        choices=["quick", "core", "full"],
+        choices=["smoke", "quick", "core", "full", "regression"],
         default="quick",
-        help="Test mode: quick (5-10 pipelines), core (15-20 pipelines), full (all pipelines)"
+        help="Test mode: smoke (3 min), quick (8 min), core (25 min), full (90 min), regression (30 min)"
     )
     
     parser.add_argument(
@@ -145,6 +149,44 @@ Examples:
         help="Only report pipelines that meet production readiness criteria"
     )
     
+    # Stream D: CI/CD Integration & Test Modes
+    parser.add_argument(
+        "--time-budget",
+        type=int,
+        help="Time budget in minutes for test execution (enables smart mode selection)"
+    )
+    
+    parser.add_argument(
+        "--ci-mode",
+        action="store_true",
+        help="Enable CI/CD mode with artifact generation and status reporting"
+    )
+    
+    parser.add_argument(
+        "--release-validation",
+        type=str,
+        help="Perform release validation for specified version (e.g., '1.2.3')"
+    )
+    
+    parser.add_argument(
+        "--release-type",
+        choices=["major", "minor", "patch", "hotfix", "prerelease"],
+        help="Override release type for validation (auto-detected from version if not specified)"
+    )
+    
+    parser.add_argument(
+        "--ci-artifacts-dir",
+        type=Path,
+        default=Path("ci_artifacts"),
+        help="Directory for CI/CD artifacts (reports, status files, etc.)"
+    )
+    
+    parser.add_argument(
+        "--smart-selection",
+        action="store_true",
+        help="Enable smart pipeline selection based on historical performance"
+    )
+    
     args = parser.parse_args()
     
     # Configure logging level
@@ -169,19 +211,47 @@ Examples:
             logger.error("No models available. Check API keys and configuration.")
             return 1
         
-        # Initialize test suite with quality validation
+        # Initialize test suite with quality validation and Stream D features
         logger.info("Initializing pipeline test suite...")
         logger.info(f"Quality validation - LLM: {args.enable_llm_quality}, "
                    f"Templates: {args.enable_template_validation}, "
                    f"Threshold: {args.quality_threshold}")
+        
+        # Stream D: Enable performance monitoring and regression detection
+        enable_performance = args.ci_mode or args.release_validation or args.smart_selection
+        enable_regression = args.ci_mode or args.release_validation
         
         test_suite = PipelineTestSuite(
             examples_dir=args.examples_dir,
             model_registry=model_registry,
             enable_llm_quality_review=args.enable_llm_quality,
             enable_enhanced_template_validation=args.enable_template_validation,
-            quality_threshold=args.quality_threshold
+            quality_threshold=args.quality_threshold,
+            enable_performance_monitoring=enable_performance,
+            enable_regression_detection=enable_regression
         )
+        
+        # Stream D: Initialize test mode manager for smart selection
+        mode_manager = None
+        if args.smart_selection or args.time_budget:
+            mode_manager = TestModeManager(test_suite.performance_tracker)
+            logger.info("Initialized test mode manager for smart pipeline selection")
+        
+        # Stream D: Initialize CI/CD integration if requested
+        ci_manager = None
+        if args.ci_mode:
+            ci_config = create_ci_config_from_environment()
+            ci_manager = CIIntegrationManager(ci_config)
+            logger.info(f"Initialized CI/CD integration for {ci_config.system.value}")
+        
+        # Stream D: Initialize release validator if requested
+        release_validator = None
+        if args.release_validation:
+            release_validator = ReleaseValidator(
+                performance_tracker=test_suite.performance_tracker,
+                quality_reviewer=test_suite.quality_validator.quality_reviewer if hasattr(test_suite, 'quality_validator') else None
+            )
+            logger.info(f"Initialized release validator for version {args.release_validation}")
         
         # Configure test suite
         test_suite.timeout_seconds = args.timeout
@@ -225,6 +295,28 @@ Examples:
             
             return 0
         
+        # Stream D: Smart mode selection based on time budget
+        final_mode = args.mode
+        selected_pipelines = None
+        
+        if args.time_budget and mode_manager:
+            # Use time budget to select optimal mode
+            recommended_mode = mode_manager.get_recommended_mode_for_time_budget(args.time_budget)
+            logger.info(f"Time budget: {args.time_budget} minutes")
+            logger.info(f"Recommended mode: {recommended_mode.value} (was: {args.mode})")
+            final_mode = recommended_mode.value
+            
+            # Get optimal pipeline selection
+            available_pipelines = list(discovered.keys())
+            composition = mode_manager.select_optimal_pipeline_suite(
+                recommended_mode, available_pipelines, args.time_budget
+            )
+            selected_pipelines = composition.selected_pipelines
+            
+            logger.info(f"Smart selection: {len(selected_pipelines)} pipelines")
+            logger.info(f"Estimated time: {composition.estimated_total_time_minutes:.1f} minutes")
+            logger.info(f"Coverage: {composition.coverage_percentage:.1f}%")
+        
         # Run tests
         logger.info("Starting pipeline tests...")
         
@@ -236,10 +328,14 @@ Examples:
             
             logger.info(f"Testing single pipeline: {args.pipeline}")
             results = await test_suite.run_pipeline_tests([args.pipeline])
+        elif selected_pipelines:
+            # Use smart selection
+            logger.info(f"Running smart selection: {len(selected_pipelines)} pipelines")
+            results = await test_suite.run_pipeline_tests(selected_pipelines)
         else:
             # Test by mode
-            logger.info(f"Running {args.mode} mode tests...")
-            results = await test_suite.run_pipeline_tests(test_mode=args.mode)
+            logger.info(f"Running {final_mode} mode tests...")
+            results = await test_suite.run_pipeline_tests(test_mode=final_mode)
         
         # Log results summary
         logger.info("=" * 60)
@@ -296,16 +392,92 @@ Examples:
         for report_type, file_path in report_files.items():
             logger.info(f"  - {report_type}: {file_path}")
         
-        # Return appropriate exit code
-        if results.success_rate >= 80:
-            logger.info("Pipeline tests PASSED")
-            return 0
-        elif results.success_rate >= 50:
-            logger.warning("Pipeline tests passed with warnings")
-            return 0 if not args.fail_fast else 1
-        else:
-            logger.error("Pipeline tests FAILED")
-            return 1
+        # Stream D: CI/CD integration and release validation
+        exit_code = 0
+        
+        if ci_manager:
+            logger.info("Processing CI/CD integration...")
+            ci_results, ci_summary = ci_manager.convert_test_results_to_ci_format(results)
+            
+            # Generate CI artifacts
+            ci_artifacts = ci_manager.generate_ci_artifacts(
+                ci_results, ci_summary, 
+                additional_data={
+                    "mode": final_mode,
+                    "time_budget": args.time_budget,
+                    "smart_selection": bool(selected_pipelines)
+                }
+            )
+            
+            logger.info(f"Generated {len(ci_artifacts)} CI artifacts")
+            for artifact in ci_artifacts:
+                logger.info(f"  - {artifact}")
+            
+            # Set CI exit code
+            exit_code = ci_manager.determine_exit_code(ci_summary)
+            
+            logger.info(f"CI/CD Status: {'PASSED' if ci_summary.quality_gate_passed else 'FAILED'}")
+            logger.info(f"Release Ready: {'YES' if ci_summary.release_ready else 'NO'}")
+        
+        # Stream D: Release validation
+        if args.release_validation and release_validator:
+            logger.info(f"Performing release validation for version {args.release_validation}...")
+            
+            # Determine release type
+            if args.release_type:
+                release_type = ReleaseType(args.release_type)
+            else:
+                release_type = determine_release_type_from_version(args.release_validation)
+            
+            logger.info(f"Release type: {release_type.value}")
+            
+            # Validate release readiness
+            validation_result = release_validator.validate_release_readiness(
+                results, release_type
+            )
+            
+            logger.info("=" * 60)
+            logger.info("RELEASE VALIDATION RESULTS")
+            logger.info("=" * 60)
+            logger.info(f"Validation Level: {validation_result.validation_level.value}")
+            logger.info(f"Overall Score: {validation_result.overall_score:.1f}/100")
+            logger.info(f"Validation Passed: {'✅ YES' if validation_result.validation_passed else '❌ NO'}")
+            logger.info(f"Release Ready: {'✅ YES' if validation_result.release_ready else '❌ NO'}")
+            
+            if validation_result.blocking_issues:
+                logger.error("Blocking Issues:")
+                for issue in validation_result.blocking_issues:
+                    logger.error(f"  - {issue}")
+            
+            if validation_result.warning_issues:
+                logger.warning("Warning Issues:")
+                for issue in validation_result.warning_issues:
+                    logger.warning(f"  - {issue}")
+            
+            if validation_result.recommendations:
+                logger.info("Recommendations:")
+                for rec in validation_result.recommendations:
+                    logger.info(f"  - {rec}")
+            
+            # Override exit code for release validation
+            if not validation_result.validation_passed:
+                exit_code = 1
+            elif not validation_result.release_ready:
+                exit_code = 2 if not args.fail_fast else 1
+        
+        # Default exit code logic if no CI/CD or release validation
+        if not ci_manager and not args.release_validation:
+            if results.success_rate >= 80:
+                logger.info("Pipeline tests PASSED")
+                exit_code = 0
+            elif results.success_rate >= 50:
+                logger.warning("Pipeline tests passed with warnings")
+                exit_code = 0 if not args.fail_fast else 1
+            else:
+                logger.error("Pipeline tests FAILED")
+                exit_code = 1
+        
+        return exit_code
     
     except KeyboardInterrupt:
         logger.info("Tests interrupted by user")

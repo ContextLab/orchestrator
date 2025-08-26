@@ -1,0 +1,309 @@
+name: Pipeline Tests
+
+on:
+  push:
+    branches: [ main, develop, 'release/*' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode to run'
+        required: false
+        default: 'core'
+        type: choice
+        options:
+          - smoke
+          - quick
+          - core  
+          - full
+          - regression
+      time_budget:
+        description: 'Time budget in minutes'
+        required: false
+        default: '30'
+        type: string
+      enable_release_validation:
+        description: 'Enable release validation'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  pipeline-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.11']
+        include:
+          # Core tests on multiple platforms for releases
+          - os: windows-latest
+            python-version: '3.11'
+            test-mode: core
+            condition: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
+          - os: macos-latest
+            python-version: '3.11'
+            test-mode: core
+            condition: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
+    
+    # Conditional execution for multi-platform tests
+    if: >
+      matrix.condition == null || 
+      (matrix.condition != null && 
+       (github.ref == 'refs/heads/main' || 
+        startsWith(github.ref, 'refs/heads/release/')))
+
+    env:
+      # Test configuration
+      PIPELINE_TEST_MODE: ${{ inputs.test_mode || 'core' }}
+      PIPELINE_TIME_BUDGET: ${{ inputs.time_budget || '30' }}
+      ENABLE_RELEASE_VALIDATION: ${{ inputs.enable_release_validation || 'false' }}
+      
+      # CI/CD settings
+      CI_MODE: true
+      SMART_SELECTION: true
+      MAX_COST_DOLLARS: 5.0
+      
+      # API keys for testing
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        
+        # Install optional dependencies for enhanced features
+        pip install psutil matplotlib pandas || echo "Optional dependencies not available"
+
+    - name: Determine test configuration
+      id: config
+      run: |
+        # Determine test mode based on trigger and branch
+        if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          TEST_MODE="core"
+          TIME_BUDGET="45"
+        elif [ "${{ github.event_name }}" = "pull_request" ]; then
+          TEST_MODE="quick" 
+          TIME_BUDGET="15"
+        elif [ "${{ github.event_name }}" = "schedule" ]; then
+          TEST_MODE="full"
+          TIME_BUDGET="120"
+        elif [[ "${{ github.ref }}" =~ refs/heads/release/.* ]]; then
+          TEST_MODE="core"
+          TIME_BUDGET="60"
+          echo "ENABLE_RELEASE_VALIDATION=true" >> $GITHUB_OUTPUT
+        else
+          TEST_MODE="${{ inputs.test_mode || 'core' }}"
+          TIME_BUDGET="${{ inputs.time_budget || '30' }}"
+        fi
+        
+        echo "test_mode=$TEST_MODE" >> $GITHUB_OUTPUT
+        echo "time_budget=$TIME_BUDGET" >> $GITHUB_OUTPUT
+        
+        # Extract version for release validation
+        if [[ "${{ github.ref }}" =~ refs/heads/release/(.*) ]]; then
+          VERSION="${BASH_REMATCH[1]}"
+          echo "release_version=$VERSION" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "Configuration: mode=$TEST_MODE, time_budget=${TIME_BUDGET}min"
+
+    - name: Run pipeline tests
+      id: tests
+      run: |
+        # Build command with appropriate flags
+        CMD="python scripts/run_pipeline_tests.py"
+        CMD="$CMD --mode ${{ steps.config.outputs.test_mode }}"
+        CMD="$CMD --time-budget ${{ steps.config.outputs.time_budget }}"
+        CMD="$CMD --ci-mode"
+        CMD="$CMD --smart-selection"
+        CMD="$CMD --enable-llm-quality"
+        CMD="$CMD --enable-template-validation" 
+        CMD="$CMD --verbose"
+        CMD="$CMD --ci-artifacts-dir ci_artifacts"
+        
+        # Add release validation if enabled
+        if [ "${{ steps.config.outputs.release_version }}" != "" ] || [ "${{ env.ENABLE_RELEASE_VALIDATION }}" = "true" ]; then
+          if [ "${{ steps.config.outputs.release_version }}" != "" ]; then
+            CMD="$CMD --release-validation ${{ steps.config.outputs.release_version }}"
+          else
+            CMD="$CMD --release-validation 1.0.0"  # Default version for validation
+          fi
+        fi
+        
+        echo "Executing: $CMD"
+        $CMD
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pipeline-test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: |
+          ci_artifacts/
+          pipeline_test_results/
+        retention-days: 30
+
+    - name: Upload test results
+      if: always()
+      uses: dorny/test-reporter@v1
+      with:
+        name: Pipeline Tests (${{ matrix.os }})
+        path: 'ci_artifacts/junit_*.xml'
+        reporter: java-junit
+        fail-on-error: false
+
+    - name: Comment PR with test results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Look for test summary file
+          const artifactsDir = 'ci_artifacts';
+          let summaryContent = 'Pipeline test results not available.';
+          
+          if (fs.existsSync(artifactsDir)) {
+            const files = fs.readdirSync(artifactsDir);
+            const summaryFile = files.find(f => f.includes('test_summary') && f.endsWith('.md'));
+            
+            if (summaryFile) {
+              const summaryPath = path.join(artifactsDir, summaryFile);
+              summaryContent = fs.readFileSync(summaryPath, 'utf8');
+            }
+          }
+          
+          // Create or update comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.login === 'github-actions[bot]' && 
+            comment.body.includes('Pipeline Tests Results')
+          );
+          
+          const commentBody = `## 🧪 Pipeline Tests Results
+          
+          **Trigger**: ${context.eventName}
+          **Test Mode**: ${{ steps.config.outputs.test_mode }}
+          **Time Budget**: ${{ steps.config.outputs.time_budget }} minutes
+          **OS**: ${{ matrix.os }}
+          **Python**: ${{ matrix.python-version }}
+          
+          <details>
+          <summary>📊 Detailed Results</summary>
+          
+          ${summaryContent}
+          
+          </details>
+          
+          ---
+          *This comment is automatically updated by the pipeline tests workflow.*`;
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: commentBody
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+          }
+
+    - name: Set job summary
+      if: always()
+      run: |
+        echo "## 🧪 Pipeline Tests Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Test Mode**: ${{ steps.config.outputs.test_mode }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Time Budget**: ${{ steps.config.outputs.time_budget }} minutes" >> $GITHUB_STEP_SUMMARY
+        echo "**Platform**: ${{ matrix.os }} / Python ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Include test summary if available
+        if [ -f "ci_artifacts/test_summary_*.md" ]; then
+          echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+          cat ci_artifacts/test_summary_*.md >> $GITHUB_STEP_SUMMARY
+        fi
+
+  # Aggregate results job
+  aggregate-results:
+    runs-on: ubuntu-latest
+    needs: pipeline-tests
+    if: always()
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: all-artifacts
+
+    - name: Aggregate test results
+      run: |
+        echo "## 🎯 Overall Pipeline Tests Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Count successful and failed jobs
+        SUCCESS_COUNT=0
+        FAILURE_COUNT=0
+        
+        for result in ${{ toJson(needs.pipeline-tests.outputs) }}; do
+          if [[ "$result" == "success" ]]; then
+            ((SUCCESS_COUNT++))
+          else
+            ((FAILURE_COUNT++))
+          fi
+        done
+        
+        TOTAL_JOBS=$((SUCCESS_COUNT + FAILURE_COUNT))
+        
+        if [ $FAILURE_COUNT -eq 0 ]; then
+          echo "### ✅ All Tests Passed!" >> $GITHUB_STEP_SUMMARY
+          echo "**Success Rate**: 100% ($SUCCESS_COUNT/$TOTAL_JOBS)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### ⚠️ Some Tests Failed" >> $GITHUB_STEP_SUMMARY  
+          echo "**Success Rate**: $(( (SUCCESS_COUNT * 100) / TOTAL_JOBS ))% ($SUCCESS_COUNT/$TOTAL_JOBS)" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed Jobs**: $FAILURE_COUNT" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        
+        # List artifacts
+        if [ -d "all-artifacts" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📎 Generated Artifacts" >> $GITHUB_STEP_SUMMARY
+          find all-artifacts -name "*.json" -o -name "*.xml" -o -name "*.md" | while read file; do
+            echo "- \`$(basename "$file")\`" >> $GITHUB_STEP_SUMMARY
+          done
+        fi
