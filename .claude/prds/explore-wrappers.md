@@ -1,8 +1,10 @@
 ---
 name: explore-wrappers
 description: Evaluate and integrate external tools to replace custom orchestrator implementations
-status: backlog
+status: completed
 created: 2025-08-25T03:04:30Z
+updated: 2025-08-25T17:07:00Z
+completed: 2025-08-25T17:07:00Z
 ---
 
 # PRD: explore-wrappers

@@ -5,7 +5,8 @@ created: 2025-08-22T13:27:39Z
 progress: 100%
 prd: .claude/prds/pipeline-fixes.md
 github: https://github.com/ContextLab/orchestrator/issues/234
-updated: 2025-08-23T02:49:08Z
+updated: 2025-08-25T17:09:25Z
+completed: 2025-08-25T17:09:25Z
 ---
 
 # Epic: pipeline-fixes

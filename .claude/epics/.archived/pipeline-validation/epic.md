@@ -1,8 +1,10 @@
 ---
 name: pipeline-validation
-status: backlog
+status: completed
 created: 2025-08-25T13:21:04Z
-progress: 0%
+updated: 2025-08-25T17:04:39Z
+completed: 2025-08-25T17:04:39Z
+progress: 100%
 prd: .claude/prds/pipeline-validation.md
 github: https://github.com/ContextLab/orchestrator/issues/254
 ---

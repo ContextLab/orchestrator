@@ -1,206 +1,233 @@
 ---
 name: validate-all-example-pipelines-with-manual-checks
 status: backlog
-created: 2025-08-23T03:25:00Z
+created: 2025-08-25T18:35:00Z
 progress: 0%
 prd: .claude/prds/validate-all-example-pipelines-with-manual-checks.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/ContextLab/orchestrator/issues/274
 ---
 
-# Epic: validate-all-example-pipelines-with-manual-checks
+# Epic: Comprehensive Example Pipeline Validation & Enhancement
 
 ## Overview
+Comprehensive initiative to fix template resolution system, validate all 37 example pipelines with LLM quality review, create tutorial documentation, and establish automated quality assurance. Addresses critical GitHub issues #223, #172-182, #186, #214, and #2.
 
-Implement a comprehensive validation framework that combines automated pipeline execution with systematic manual quality review. This builds upon the existing `validate_all_pipelines.py` script by adding structured quality assessment, visual output verification, and detailed issue tracking to ensure all 41 example pipelines produce high-quality, professional outputs.
+## Critical Problem Areas
 
-## Architecture Decisions
+### 1. **Template Resolution System Failure** (GitHub #223 - BLOCKS EVERYTHING)
+Template variables unavailable in loop contexts, filesystem operations failing, structured data not exposed properly. **This is the root cause of most pipeline failures.**
 
-### Key Technical Decisions
-- **Extend Existing Validator**: Build upon `scripts/validate_all_pipelines.py` rather than creating new infrastructure
-- **Markdown-Based Checklists**: Use simple markdown files for manual review checklists (no complex UI needed)
-- **Filesystem Organization**: Leverage `examples/outputs/` structure for systematic output capture
-- **JSON Quality Reports**: Store quality scores and issues in structured JSON for easy processing
-- **Screenshot via OS Tools**: Use system screenshot utilities for visual capture (no custom implementation)
+### 2. **Individual Pipeline Quality Issues** (GitHub #172-182, #186)
+11 example pipelines with specific validation failures: unrendered templates, debug artifacts, poor quality outputs that fail to demonstrate toolbox capabilities.
 
-### Technology Choices
-- **Python**: Continue with existing Python infrastructure
-- **Markdown**: Human-readable checklists and reports
-- **JSON**: Machine-readable validation results
-- **Git**: Track validation history through commits
+### 3. **Repository Organization Chaos** (GitHub #2)
+Temporary files scattered throughout repository, inconsistent data file locations, debug scripts in wrong places creating unprofessional structure.
 
-### Design Patterns
-- **Pipeline Pattern**: Sequential validation workflow with clear stages
-- **Observer Pattern**: Quality scoring system observes multiple dimensions
-- **Template Pattern**: Reusable checklist templates for different pipeline types
+### 4. **Missing Tutorial Documentation** (GitHub #214)
+No comprehensive tutorials for examples, preventing effective user learning and pipeline remixing.
 
-## Technical Approach
+### 5. **No Quality Assurance Infrastructure**
+No automated validation, no LLM review of content quality, no regression testing framework.
 
-### Validation Components
+## Comprehensive Solution Approach
 
-1. **Enhanced Execution Runner**
-   - Extend `validate_all_pipelines.py` with quality scoring
-   - Add structured output capture to organized directories
-   - Implement parallel execution for faster validation
-   - Generate initial quality assessment
+### Phase 1: Core Infrastructure (Week 1)
+**Fix the foundation that enables everything else**
 
-2. **Quality Assessment System**
-   - JSON-based scoring schema (0-100 scale)
-   - Five quality dimensions with weighted scores
-   - Issue categorization (Critical/Major/Minor)
-   - Automated detection of common problems
+1. **Template Resolution System Overhaul** (GitHub #223)
+   - Unified template resolution layer - templates resolved BEFORE tool execution
+   - Loop context support - template variables available in ALL loop contexts  
+   - Structured data exposure - proper exposure of data structures to templates
+   - Filesystem operation templates - template resolution in file operations
 
-3. **Manual Review Tools**
-   - Markdown checklist templates per pipeline category
-   - Side-by-side output comparison scripts
-   - Screenshot capture integration
-   - Issue annotation system
+2. **Repository Cleanup & Organization** (GitHub #2)
+   - Remove ALL temporary (.tmp, debug_, temp_) files
+   - Consolidate data files: `examples/data/`, `examples/outputs/<pipeline>/`, `examples/test_data/`
+   - Organize scripts and documentation consistently
 
-4. **Reporting Infrastructure**
-   - Aggregated quality dashboard (markdown)
-   - Per-pipeline validation reports
-   - Historical trend tracking via Git
-   - Issue prioritization matrix
+### Phase 2: Quality Infrastructure (Week 2)
+**Build automated quality assurance system**
 
-### Backend Services
-- No new API endpoints required
-- Leverage existing orchestrator execution
-- Use filesystem for state management
-- Git for version control and history
+3. **LLM-Powered Quality Review System**
+   - Integration with existing credential management (.env, GitHub secrets)
+   - Claude Sonnet 4 or ChatGPT-5 with vision capabilities
+   - Comprehensive quality checks: location validation, naming conventions, template rendering, content quality, debug artifacts, production quality, visual validation
 
-### Infrastructure
-- Local execution environment
-- Filesystem-based storage
-- No deployment changes needed
-- Optional CI/CD integration later
+4. **Automated Testing Infrastructure**
+   - Integration with existing test framework
+   - Pipeline execution validation
+   - Output location and naming validation
+   - Regression testing framework
 
-## Implementation Strategy
+### Phase 3: Pipeline Validation (Week 2-3)
+**Systematic validation of all 37 pipelines**
 
-### Development Phases
-1. **Foundation**: Enhance existing validator with quality framework
-2. **Automation**: Implement batch execution and output capture
-3. **Assessment**: Add quality scoring and issue detection
-4. **Review Tools**: Create manual validation utilities
-5. **Reporting**: Build comprehensive reporting system
+5. **Individual Pipeline Validation** (37 pipelines)
+   - Execute each pipeline with appropriate inputs
+   - LLM quality review of all outputs
+   - Fix template resolution issues
+   - Address toolbox functionality gaps
+   - Verify production-quality results
+
+### Phase 4: Documentation & Tutorials (Week 3)
+**Create comprehensive learning materials**
+
+6. **Tutorial Creation System** (GitHub #214)
+   - Pipeline-specific tutorials explaining syntax and rationale
+   - Use case descriptions and customization guides
+   - Remixing instructions for building new pipelines
+   - Feature coverage matrix ensuring all major toolbox features demonstrated
+
+## Technical Architecture
+
+### LLM Quality Review Integration
+```python
+# Uses existing toolbox credential management
+class PipelineValidator:
+    def __init__(self):
+        self.llm_client = self._initialize_llm_client()  # From existing .env/secrets
+        
+    def validate_pipeline(self, pipeline_name: str) -> ValidationResult:
+        # 1. Execute pipeline
+        execution_result = self._execute_pipeline(pipeline_name)
+        
+        # 2. LLM quality review with vision
+        quality_review = self._llm_quality_review(pipeline_name)
+        
+        return ValidationResult(execution_result, quality_review)
+```
+
+### Quality Review Criteria
+**CRITICAL ISSUES (must be fixed):**
+- Unrendered templates: `{{variable_name}}` artifacts
+- Debug/conversational text: "Certainly!", "Here's the..."
+- Incomplete content: cut-off text, partial responses
+- Incorrect locations: files not in `examples/outputs/{pipeline_name}/`
+- Generic naming: "output.csv" instead of input-specific names
+- Poor quality content: inaccurate, hallucinated, incomplete information
+
+**PRODUCTION QUALITY ASSESSMENT:**
+- Professional formatting and presentation
+- Accurate and complete content
+- Clear demonstration of intended functionality
+- Visual outputs (images/charts) render correctly with professional quality
+
+### Repository Organization Target
+```
+examples/
+├── data/                          # Shared input data
+├── outputs/                       # Pipeline-specific outputs
+│   ├── simple_data_processing/
+│   ├── research_minimal/
+│   └── .../<pipeline-name>/
+├── test_data/                     # Test-specific data
+├── tutorials/                     # Pipeline tutorials
+│   ├── simple_data_processing.md
+│   └── ...
+├── templates/                     # Shared templates
+└── config/                        # Shared configuration
+```
+
+## Task Structure
+
+### 001: Template Resolution System Fix (GitHub #223)
+**CRITICAL - BLOCKS ALL OTHER WORK**
+- Fix template variables in loop contexts
+- Enable filesystem operation templates
+- Implement structured data exposure
+- Create unified template resolution layer
+
+### 002: Repository Cleanup & Organization (GitHub #2)
+- Remove all temporary/debug files
+- Consolidate data file locations
+- Organize scripts and documentation
+- Establish clean repository structure
+
+### 003: LLM Quality Review Infrastructure
+- Implement automated LLM-powered quality assessment
+- Integration with existing credential management
+- Build comprehensive quality check framework
+- Create vision-enabled review for visual outputs
+
+### 004: Pipeline Testing Infrastructure
+- Integrate with existing test framework
+- Build automated pipeline execution validation
+- Implement output location/naming checks
+- Create regression testing capabilities
+
+### 005: Individual Pipeline Validation (Batch 1)
+**Data Processing & Research Pipelines (16 pipelines)**
+- Execute and validate with LLM review
+- Fix template resolution issues
+- Address quality problems
+- Ensure production-grade outputs
+
+### 006: Individual Pipeline Validation (Batch 2)
+**Control Flow, Creative & Integration Pipelines (21 pipelines)**
+- Complete validation of remaining pipelines
+- Focus on advanced features and visual outputs
+- Address complex template scenarios
+- Verify all toolbox capabilities demonstrated
+
+### 007: Tutorial Documentation System (GitHub #214)
+- Create comprehensive tutorials for all 37 pipelines
+- Build feature coverage matrix
+- Establish progressive learning path
+- Enable effective pipeline remixing
+
+### 008: Quality Assurance Integration
+- Integrate pipeline tests with CI/CD
+- Establish automated quality monitoring
+- Create regression detection system
+- Build continuous improvement feedback loop
+
+## Success Criteria
+
+### Infrastructure Success
+- ✅ **Template Resolution**: 100% of variables resolve in all contexts (fixes GitHub #223)
+- ✅ **Repository Clean**: No temporary/debug files, organized structure (fixes GitHub #2)  
+- ✅ **Test Integration**: Automated pipeline validation in existing test framework
+- ✅ **Quality System**: LLM-powered quality review operational
+
+### Pipeline Quality Success
+- ✅ **Execution Rate**: 100% of 37 pipelines execute without errors
+- ✅ **LLM Quality Score**: 95%+ outputs rated production-quality by LLM review
+- ✅ **Template Cleanliness**: 0 unrendered templates or debug artifacts  
+- ✅ **Output Standards**: 100% compliance with location/naming conventions
+- ✅ **Feature Coverage**: All major toolbox features demonstrated
+
+### User Experience Success
+- ✅ **Tutorial Completeness**: Comprehensive tutorials for all 37 pipelines
+- ✅ **Learning Path**: Clear progression from basic to advanced
+- ✅ **Remixing Capability**: Users can successfully combine examples
+- ✅ **Quality Consistency**: Automated monitoring maintains high standards
+
+## Dependencies & Risk Mitigation
+
+### Critical Dependencies
+- **GitHub #223 (Template Resolution)**: MUST be fixed first - blocks everything
+- **Existing Credential System**: For LLM API integration
+- **Current Test Framework**: For pipeline test integration
 
 ### Risk Mitigation
-- Start with automated checks to reduce manual effort
-- Use clear rubrics to minimize subjectivity
-- Implement incremental validation for efficiency
-- Store all outputs for reproducibility
+- **Template Complexity**: Systematic approach with comprehensive testing
+- **LLM API Dependencies**: Multiple model support, retry logic, offline fallbacks
+- **Large Scope**: Phased implementation, automated tooling, clear priorities
+- **Quality Subjectivity**: Detailed prompts, multiple validation approaches
 
-### Testing Approach
-- Validate framework with subset of pipelines first
-- Test quality scoring consistency
-- Verify report generation accuracy
-- Ensure no regression in existing functionality
+## Expected Impact
 
-## Task Breakdown Preview
+### Immediate (3 weeks)
+- Template resolution system fully operational
+- All 37 pipelines producing production-quality outputs
+- Clean, organized repository structure
+- Comprehensive tutorial documentation
+- Automated quality assurance system
 
-Simplified task structure (maximum 10 tasks):
+### Long-term
+- **User Experience**: Dramatically improved learning and onboarding
+- **Development Guidance**: Examples drive toolbox improvement priorities
+- **Platform Credibility**: Professional examples showcase true capabilities
+- **Maintenance Efficiency**: Automated quality monitoring prevents regression
 
-- [ ] Task 1: Enhance validator script with quality scoring system
-- [ ] Task 2: Implement structured output capture and organization
-- [ ] Task 3: Create quality assessment rubrics and scoring logic
-- [ ] Task 4: Build markdown checklist templates for manual review
-- [ ] Task 5: Add automated issue detection for common problems
-- [ ] Task 6: Develop comparison tools for output validation
-- [ ] Task 7: Implement comprehensive reporting system
-- [ ] Task 8: Execute full validation cycle on all pipelines
-- [ ] Task 9: Document findings and create issue remediation plan
-- [ ] Task 10: Create validation playbook and maintenance guide
-
-## Dependencies
-
-### External Dependencies
-- Python 3.8+ environment
-- API access for model execution
-- Git for version control
-- OS screenshot utilities
-
-### Internal Dependencies
-- Existing orchestrator codebase
-- `scripts/validate_all_pipelines.py`
-- OutputSanitizer and validation framework
-- Example pipelines and test data
-
-### Prerequisite Work
-- Pipeline fixes epic (#234) - COMPLETED
-- All 41 example pipelines documented - COMPLETED
-- Validation infrastructure established - COMPLETED
-
-## Success Criteria (Technical)
-
-### Performance Benchmarks
-- Full validation completes in <2 hours
-- Individual pipeline validation <5 minutes
-- Report generation <30 seconds
-- Parallel execution reduces time by 50%
-
-### Quality Gates
-- 100% pipeline execution coverage
-- 95% achieve quality score >80
-- Zero critical issues in production examples
-- All outputs professionally formatted
-
-### Acceptance Criteria
-- All pipelines validated with quality scores
-- Manual review checklists completed
-- Issues documented and prioritized
-- Reports generated and archived
-- Validation process documented
-
-## Estimated Effort
-
-### Overall Timeline
-- **Total Duration**: 1 week implementation + ongoing validation
-- **Initial Setup**: 3-4 days
-- **First Full Validation**: 1-2 days
-- **Documentation**: 1 day
-
-### Resource Requirements
-- 1 engineer for framework development (40 hours)
-- Manual validation time (4 hours/cycle)
-- API credits for testing (~$50/cycle)
-
-### Critical Path Items
-1. Quality scoring system (enables all assessment)
-2. Output capture organization (required for review)
-3. Checklist templates (needed for manual validation)
-4. Report generation (delivers value)
-
-## Simplifications from PRD
-
-### Leveraging Existing Tools
-- Use existing `validate_all_pipelines.py` as foundation
-- Filesystem-based storage instead of database
-- Markdown reports instead of web dashboard
-- System tools for screenshots
-
-### Scope Reductions
-- No custom UI (use markdown and filesystem)
-- No automated visual testing
-- No real-time monitoring
-- Manual process acceptable initially
-
-### Future Enhancements
-- CI/CD integration can be added later
-- Web dashboard as separate project
-- Automated visual testing with AI
-- Performance benchmarking framework
-
-## Tasks Created
-- [ ] 001.md - Enhance validator script with quality scoring system (parallel: true)
-- [ ] 002.md - Implement structured output capture and organization (parallel: true)
-- [ ] 003.md - Create quality assessment rubrics and scoring logic (parallel: false, depends on 001)
-- [ ] 004.md - Build markdown checklist templates for manual review (parallel: true, depends on 003)
-- [ ] 005.md - Add automated issue detection for common problems (parallel: true, depends on 001)
-- [ ] 006.md - Develop comparison tools for output validation (parallel: true, depends on 002)
-- [ ] 007.md - Implement comprehensive reporting system (parallel: false, depends on 001, 003, 005)
-- [ ] 008.md - Execute full validation cycle on all pipelines (parallel: false, depends on all)
-- [ ] 009.md - Document findings and create issue remediation plan (parallel: false, depends on 008)
-- [ ] 010.md - Create validation playbook and maintenance guide (parallel: false, depends on 008, 009)
-
-Total tasks: 10
-Parallel tasks: 5
-Sequential tasks: 5
-Estimated total effort: 76 hours
+This comprehensive approach transforms the example ecosystem from a collection of potentially broken demos into a professional showcase that effectively teaches the toolbox and guides its development.
