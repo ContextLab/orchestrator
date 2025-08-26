@@ -252,9 +252,12 @@ class UnifiedTemplateResolver:
             logger.warning("No template resolution context available")
             return data
         
+        # Pre-process templates to convert $variable syntax to valid Jinja2
+        preprocessed_data = self._preprocess_dollar_variables(data)
+        
         # Use template manager's deep render for comprehensive resolution
         try:
-            resolved = self.template_manager.deep_render(data)
+            resolved = self.template_manager.deep_render(preprocessed_data)
             
             if self.debug_mode:
                 if isinstance(data, str) and data != resolved:
@@ -401,6 +404,43 @@ class UnifiedTemplateResolver:
             }
         
         return info
+    
+    def _preprocess_dollar_variables(self, data: Any) -> Any:
+        """Preprocess templates to convert $variable syntax to valid Jinja2.
+        
+        Converts {{ $variable }} to {{ variable }} since Jinja2 doesn't support
+        variables starting with $.
+        
+        Args:
+            data: Data that may contain $variable templates
+            
+        Returns:
+            Data with $variable syntax converted to valid Jinja2
+        """
+        import re
+        
+        if isinstance(data, str):
+            # Replace {{ $variable }} with {{ variable }}
+            # This regex captures $variable patterns inside {{ }} blocks
+            pattern = r'\{\{\s*\$([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}'
+            result = re.sub(pattern, r'{{ \1 }}', data)
+            
+            # Also handle $variable in {% %} blocks (for loops, conditions, etc.)
+            pattern_control = r'\{%\s*([^%]*)\$([a-zA-Z_][a-zA-Z0-9_]*)([^%]*)\s*%\}'
+            result = re.sub(pattern_control, r'{% \1\2\3 %}', result)
+            
+            if self.debug_mode and result != data:
+                logger.debug(f"Preprocessed $variables: '{data[:100]}...' -> '{result[:100]}...'")
+            
+            return result
+        elif isinstance(data, dict):
+            return {key: self._preprocess_dollar_variables(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [self._preprocess_dollar_variables(item) for item in data]
+        elif isinstance(data, tuple):
+            return tuple(self._preprocess_dollar_variables(item) for item in data)
+        else:
+            return data
     
     def _compare_dicts(self, dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, tuple]:
         """Compare two dictionaries and return differences.
