@@ -53,7 +53,9 @@
       "Bash(python:*)",
       "Bash(gh issue edit:*)",
       "WebFetch(domain:docs.langchain.com)",
-      "WebFetch(domain:microsoft.github.io)"
+      "WebFetch(domain:microsoft.github.io)",
+      "WebFetch(domain:api.anthropic.com)",
+      "WebFetch(domain:)"
     ]
   }
 }
