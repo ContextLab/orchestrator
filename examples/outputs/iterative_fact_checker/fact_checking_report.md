@@ -7,19 +7,19 @@
 ## Processing Summary
 - **Total Iterations**: {{ fact_check_loop.iteration_count | default(1) }}
 - **Quality Threshold**: {{ parameters.quality_threshold * 100 }}%
-- **Final Quality Score**: {% if fact_check_loop.iterations %}{{ fact_check_loop.iterations[-1].extract_claims.percentage_referenced }}%{% else %}N/A{% endif %}
+- **Final Quality Score**: {% if fact_check_loop.iterations %}{{ (fact_check_loop.iterations[-1].extract_claims.result | from_json).percentage_referenced }}%{% else %}N/A{% endif %}
 
 ## Iteration Details
 {% for iteration in fact_check_loop.iterations %}
 ### Iteration {{ loop.index }}
-- Claims analyzed: {{ iteration.extract_claims.total_claims }}
-- Claims with references: {{ iteration.extract_claims.claims_with_references }}
-- Percentage referenced: {{ iteration.extract_claims.percentage_referenced }}%
+- Claims analyzed: {{ (iteration.extract_claims.result | from_json).total_claims }}
+- Claims with references: {{ (iteration.extract_claims.result | from_json).claims_with_references }}
+- Percentage referenced: {{ (iteration.extract_claims.result | from_json).percentage_referenced }}%
 - New citations added: {{ iteration.find_citations.result | length | default(0) }}
 {% endfor %}
 
 ## Final Status
-{% if fact_check_loop.iterations and fact_check_loop.iterations[-1].extract_claims.percentage_referenced >= parameters.quality_threshold * 100 %}
+{% if fact_check_loop.iterations and (fact_check_loop.iterations[-1].extract_claims.result | from_json).percentage_referenced >= parameters.quality_threshold * 100 %}
 ✅ **Quality threshold met**: All or most claims now have proper references.
 {% else %}
 ⚠️ **Maximum iterations reached**: Some claims may still lack references.
