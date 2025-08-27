@@ -1,0 +1,54 @@
+{
+  "pipeline_name": "test_simple_pipeline",
+  "overall_score": 69,
+  "files_reviewed": [
+    "examples/outputs/test_simple_pipeline/test_data.csv",
+    "examples/outputs/test_simple_pipeline/charts/bar_chart_20250827_094757.png",
+    "examples/outputs/test_simple_pipeline/charts/pie_chart_20250827_094757.png"
+  ],
+  "critical_issues": [
+    {
+      "category": "completeness",
+      "severity": "critical",
+      "description": "The content is truncated, indicating incomplete data.",
+      "file_path": "examples/outputs/test_simple_pipeline/test_data.csv",
+      "line_number": null,
+      "suggestion": "Ensure the data is fully captured and not cut off.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-27T13:50:31.047402"
+    }
+  ],
+  "major_issues": [],
+  "minor_issues": [
+    {
+      "category": "completeness",
+      "severity": "minor",
+      "description": "Content appears very brief - may be incomplete",
+      "file_path": "examples/outputs/test_simple_pipeline/test_data.csv",
+      "line_number": null,
+      "suggestion": "Verify that all expected content is present and complete",
+      "confidence": 1.0,
+      "detected_at": "2025-08-27T13:50:26.490463"
+    },
+    {
+      "category": "visual_quality",
+      "severity": "minor",
+      "description": "X-axis labels are slightly rotated, which may affect readability.",
+      "file_path": "examples/outputs/test_simple_pipeline/charts/bar_chart_20250827_094757.png",
+      "line_number": null,
+      "suggestion": "Consider adjusting the rotation of the x-axis labels for better readability.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-27T13:50:38.069871"
+    }
+  ],
+  "recommendations": [
+    "Address 1 critical issues immediately - pipeline not ready for production",
+    "Ensure all content is complete and replace any placeholder text",
+    "Improve visual content quality, ensuring charts have proper labels and professional appearance"
+  ],
+  "production_ready": false,
+  "reviewed_at": "2025-08-27T13:50:42.964868",
+  "reviewer_model": "chatgpt-5",
+  "review_duration_seconds": 16.475480794906616,
+  "total_issues": 3
+}

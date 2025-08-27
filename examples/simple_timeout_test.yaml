@@ -11,5 +11,6 @@ steps:
         print("Starting sleep...")
         time.sleep(5)
         print("Finished sleeping")
-        return {"status": "completed"}
+        result = {"status": "completed"}
+        print(f"Result: {result}")
     timeout: 2  # This should timeout after 2 seconds

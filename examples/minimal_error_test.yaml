@@ -1,0 +1,38 @@
+# Minimal Error Handling Test
+# Test basic error handling with simple operations that we know will work
+
+name: minimal_error_test
+description: "Minimal test to demonstrate basic error handling patterns"
+
+steps:
+  # Test 1: Simple successful operation
+  - id: success_test
+    action: "Generate simple test data"
+    parameters:
+      prompt: "Generate the number 42"
+      model: <AUTO>
+
+  # Test 2: Python operation that should succeed 
+  - id: python_success
+    action: "Run simple Python code"
+    tool: python-executor
+    parameters:
+      code: |
+        print("This should work fine")
+        result = {"status": "success", "value": 42}
+        print(f"Result: {result}")
+    
+  # Test 3: File operation with potential error
+  - id: file_write_test
+    action: "Write test file"
+    tool: filesystem
+    parameters:
+      action: write
+      path: "{{ output_path }}/test_output.txt"
+      content: "Error handling test successful"
+    on_error: "Failed to write file"
+
+outputs:
+  test_result: "{{success_test.result}}"
+  python_result: "{{python_success.result}}"
+  file_result: "{{file_write_test.result}}"
