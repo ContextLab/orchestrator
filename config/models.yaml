@@ -119,11 +119,126 @@ models:
       - reasoning
     size: 32b
 
-  # HuggingFace models (temporarily disabled for Issue #157 testing)
-  # Re-enable after fixing authentication and model compatibility issues
-  # - source: huggingface
-  #   name: meta-llama/Llama-3.2-11B-Vision-Instruct
-  #   ...rest of HuggingFace models commented out for API testing
+  # HuggingFace models (downloaded on first use)
+  # Top instruct models
+  - source: huggingface
+    name: meta-llama/Llama-3.2-11B-Vision-Instruct
+    expertise:
+      - general
+      - vision
+      - multimodal
+    size: 11b
+    
+  - source: huggingface
+    name: meta-llama/Llama-3.1-8B-Instruct
+    expertise:
+      - general
+      - reasoning
+      - multilingual
+    size: 8b
+    
+  - source: huggingface
+    name: Qwen/Qwen2.5-1.5B-Instruct
+    expertise:
+      - general
+      - multilingual
+      - fast
+    size: 1.5b
+    
+  - source: huggingface
+    name: Qwen/Qwen2-VL-7B-Instruct
+    expertise:
+      - general
+      - vision
+      - multimodal
+    size: 7b
+    
+  - source: huggingface
+    name: tencent/Hunyuan-A13B-Instruct
+    expertise:
+      - general
+      - reasoning
+      - math
+      - science
+    size: 13b
+    
+  - source: huggingface
+    name: microsoft/Phi-3.5-mini-instruct
+    expertise:
+      - reasoning
+      - code
+      - compact
+    size: 3.8b
+    
+  - source: huggingface
+    name: SmolLM-1.7B-Instruct
+    expertise:
+      - general
+      - compact
+      - fast
+    size: 1.7b
+    
+  - source: huggingface
+    name: stabilityai/stable-code-instruct-3b
+    expertise:
+      - code
+      - programming
+      - compact
+    size: 3b
+    
+  # Top coding models
+  - source: huggingface
+    name: Qwen/Qwen2.5-Coder-32B-Instruct
+    expertise:
+      - code
+      - programming
+      - reasoning
+    size: 32b
+    
+  - source: huggingface
+    name: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+    expertise:
+      - reasoning
+      - code
+      - math
+    size: 32b
+    
+  - source: huggingface
+    name: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+    expertise:
+      - reasoning
+      - code
+      - compact
+    size: 1.5b
+    
+  - source: huggingface
+    name: Qwen/Qwen2.5-Coder-7B-Instruct
+    expertise:
+      - code
+      - programming
+    size: 7b
+    
+  - source: huggingface
+    name: codellama/CodeLlama-7b-Instruct-hf
+    expertise:
+      - code
+      - programming
+    size: 7b
+    
+  - source: huggingface
+    name: bigcode/starcoder2-15b
+    expertise:
+      - code
+      - programming
+    size: 15b
+    
+  - source: huggingface
+    name: WizardLM/WizardCoder-Python-34B-V1.0
+    expertise:
+      - code
+      - python
+      - programming
+    size: 34b
 
   # OpenAI models (require OPENAI_API_KEY)
   # GPT-5 Series (Latest - Released Jan 2025)

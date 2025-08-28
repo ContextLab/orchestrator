@@ -401,12 +401,9 @@ class OpenAIModel(Model):
             if "gpt-5" in self.model_name.lower():
                 # GPT-5 models require max_completion_tokens instead of max_tokens
                 api_params["max_completion_tokens"] = max_tokens
-                # GPT-5 models only support default temperature (1.0)
-                if temperature != 1.0:
-                    # Don't set temperature at all for non-default values
-                    pass
-                else:
-                    api_params["temperature"] = temperature
+                # GPT-5 models only support default temperature (1.0), but we should always set it
+                # Setting temperature to 1.0 for consistency even if different value requested
+                api_params["temperature"] = 1.0
             else:
                 api_params["max_tokens"] = max_tokens
                 api_params["temperature"] = temperature
@@ -461,9 +458,8 @@ class OpenAIModel(Model):
             
             # Handle model-specific parameters
             if "gpt-5" in self.model_name.lower():
-                # GPT-5 models only support default temperature
-                if temperature == 1.0:
-                    api_params["temperature"] = temperature
+                # GPT-5 models only support default temperature (1.0)
+                api_params["temperature"] = 1.0
                 # For max_tokens in kwargs
                 if "max_tokens" in kwargs:
                     api_params["max_completion_tokens"] = kwargs.pop("max_tokens")

@@ -1188,25 +1188,79 @@ Just return the optimized prompt, nothing else."""
             }
     
     async def _handle_generate_text(self, task: Task, context: Dict[str, Any]) -> Any:
-        """Handle text generation using AI models (alias for analyze_text)."""
-        # Generate text is essentially the same as analyze_text
-        # Just with a different default prompt structure
+        """Handle text generation using AI models."""
+        # Use the model-based control system for direct text generation
+        # This bypasses the analyze_text handler which adds "Data:" formatting
         params = task.parameters.copy()
         
-        # If no analysis_type specified, set it to generation
-        if "analysis_type" not in params:
-            params["analysis_type"] = "text_generation"
+        # Get the prompt directly from parameters
+        if "prompt" not in params:
+            raise ValueError(f"Task '{task.id}' with action 'generate_text' requires a 'prompt' parameter")
         
-        # Create task for analyze_text handler
-        analyze_task = Task(
-            id=task.id,
-            name=task.name if hasattr(task, 'name') else task.id,
-            action="analyze_text",
-            parameters=params,
-            dependencies=task.dependencies
-        )
+        prompt = params["prompt"]
         
-        return await self._handle_analyze_text(analyze_task, context)
+        # Get model from parameters or select appropriate model
+        model_spec = params.get("model")
+        model = None
+        
+        if model_spec:
+            if isinstance(model_spec, str) and not model_spec.startswith("<AUTO"):
+                # Direct model specification
+                model = self.model_registry.get_model(model_spec)
+            elif isinstance(model_spec, str) and model_spec.startswith("<AUTO"):
+                # AUTO tag - let model registry select
+                requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
+                model = await self.model_registry.select_model(requirements)
+        else:
+            # No model specified, select appropriate model
+            requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
+            model = await self.model_registry.select_model(requirements)
+        
+        if not model:
+            return {
+                "success": False,
+                "error": "No suitable model found for text generation"
+            }
+        
+        try:
+            # Call model directly for generation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Calling model {model.name if hasattr(model, 'name') else str(model)} for generate_text")
+            
+            response = await model.generate(
+                prompt=prompt,
+                max_tokens=params.get("max_tokens", 1000),
+                temperature=params.get("temperature", 0.7)
+            )
+            
+            logger.info(f"Model response length: {len(response) if response else 0} chars")
+            if not response:
+                logger.warning("Model returned empty response!")
+                logger.warning(f"Prompt was: {prompt[:500]}")
+                return {
+                    "action": "generate_text",
+                    "result": {"error": "Model returned empty response"},
+                    "model_used": model.name if hasattr(model, 'name') else str(model),
+                    "success": False
+                }
+            
+            return {
+                "action": "generate_text",
+                "result": response,
+                "model_used": model.name if hasattr(model, 'name') else str(model),
+                "success": True
+            }
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in text generation: {str(e)}")
+            return {
+                "action": "generate_text",
+                "success": False,
+                "error": str(e)
+            }
     
     async def _handle_mcp_server(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle MCP server operations."""
