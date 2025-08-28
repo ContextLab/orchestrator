@@ -98,6 +98,10 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Use provided template resolver or create new one
         # Issue #287: Support RecursiveTemplateResolver for advanced loop patterns  
         self.hybrid_template_resolver = template_resolver or UnifiedTemplateResolver(debug_mode=True)
+        
+        # Add instance ID tracking for debugging (Issue #290 fix)
+        import uuid
+        self.hybrid_template_resolver.template_manager.instance_id = f"tm_{uuid.uuid4().hex[:8]}"
 
         # Initialize tools
         self.filesystem_tool = FileSystemTool()
@@ -359,7 +363,7 @@ class HybridControlSystem(ModelBasedControlSystem):
                    if k not in ["pipeline_id", "pipeline_inputs", "pipeline_params", "previous_results", "_template_manager"]
                    and not k.startswith("_")},
                 # Explicitly include critical template objects that might be missing
-                "execution": context.get("execution", {}),
+                "execution": self._get_execution_metadata(context),
                 "parameters": self._extract_pipeline_parameters(pipeline_inputs, context),
             }
         )
@@ -378,6 +382,28 @@ class HybridControlSystem(ModelBasedControlSystem):
             logger.warning(f"❌ Execution object missing or empty")
         
         return template_context
+    
+    def _get_execution_metadata(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Get execution metadata for templates."""
+        from datetime import datetime
+        
+        # Try to get existing execution metadata
+        existing_execution = context.get("execution", {})
+        if isinstance(existing_execution, dict) and existing_execution:
+            # If we have execution metadata with timestamp, use it
+            if "timestamp" in existing_execution:
+                return existing_execution
+        
+        # Generate new execution metadata
+        now = datetime.now()
+        return {
+            "timestamp": now.strftime("%Y-%m-%dT%H:%M:%S"),
+            "date": now.strftime("%Y-%m-%d"),
+            "time": now.strftime("%H:%M:%S"),
+            "iso_timestamp": now.isoformat(),
+            "pipeline_id": context.get("pipeline_id", "unknown"),
+            "execution_id": context.get("execution_id", "unknown"),
+        }
     
     def _extract_pipeline_parameters(self, pipeline_inputs: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """Extract original pipeline parameters for template access."""
@@ -462,6 +488,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             # This is the template manager that has the correct context registered
             resolved_params["_template_manager"] = self.hybrid_template_resolver.template_manager
             
+            # Log instance being passed for debugging (Issue #290 fix)
+            logger.info(f"Passing template_manager instance {getattr(self.hybrid_template_resolver.template_manager, 'instance_id', 'unknown')}")
+            
             # Also pass loop context mapping if available
             if "_loop_context_mapping" in context:
                 resolved_params["_loop_context_mapping"] = context["_loop_context_mapping"]
@@ -497,6 +526,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             # Pass the UnifiedTemplateResolver's template manager with proper context
             # This is the template manager that has the correct context registered
             resolved_params["_template_manager"] = self.hybrid_template_resolver.template_manager
+            
+            # Log instance being passed for debugging (Issue #290 fix)
+            logger.info(f"Passing template_manager instance {getattr(self.hybrid_template_resolver.template_manager, 'instance_id', 'unknown')}")
             
             # Also pass loop context mapping if available
             if "_loop_context_mapping" in context:

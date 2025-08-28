@@ -215,6 +215,30 @@ class FileSystemTool(Tool):
             "success": True,
         }
 
+    def _re_register_context(self, template_manager, resolution_context):
+        """Re-register context in template manager from resolution context."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            from ..core.template_manager import TemplateManager
+            if isinstance(template_manager, TemplateManager) and resolution_context:
+                # Get flat context from resolution context
+                if hasattr(resolution_context, 'to_flat_dict'):
+                    flat_context = resolution_context.to_flat_dict()
+                else:
+                    flat_context = resolution_context
+                
+                # Re-register all context variables
+                for key, value in flat_context.items():
+                    template_manager.register_context(key, value)
+                
+                logger.info(f"Re-registered {len(flat_context)} context variables in template manager")
+                return True
+        except Exception as e:
+            logger.warning(f"Failed to re-register context: {e}")
+            return False
+
     async def _write_file(self, path: str, content: str, _template_manager=None, _unified_resolver=None, _resolution_context=None) -> Dict[str, Any]:
         """Write content to file with optional runtime template rendering."""
         path_obj = Path(path)
@@ -228,6 +252,19 @@ class FileSystemTool(Tool):
         logger.info(f"FileSystemTool._write_file called with path={path}")
         logger.info(f"Template manager provided: {_template_manager is not None}")
         logger.info(f"Content has templates: {isinstance(content, str) and ('{{' in content or '{%' in content)}")
+        
+        # CRITICAL FIX: BEFORE calling deep_render, verify template manager has context
+        if _template_manager and hasattr(_template_manager, 'context'):
+            if not _template_manager.context or len(_template_manager.context) == 0:
+                logger.warning("Template manager context empty, attempting re-registration")
+                # Re-register from resolution context if available
+                if _resolution_context:
+                    success = self._re_register_context(_template_manager, _resolution_context)
+                    if success:
+                        logger.info(f"Successfully re-registered context. Template manager now has {len(_template_manager.context)} context items")
+                    else:
+                        logger.error("Failed to re-register context from resolution context")
+        
         if _template_manager:
             # Log available context
             from ..core.template_manager import TemplateManager

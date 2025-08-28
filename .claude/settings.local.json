@@ -59,7 +59,8 @@
       "Bash(git pull:*)",
       "Read(/usr/bin/**)",
       "Read(/usr/bin/**)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(gh issue create:*)"
     ]
   }
 }
