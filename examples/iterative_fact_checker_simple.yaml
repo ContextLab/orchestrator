@@ -25,7 +25,7 @@ steps:
     
   # Single iteration of fact-checking (can be run multiple times manually)
   - id: extract_claims
-    action: generate-structured
+    action: generate_text
     dependencies:
       - load_document
     parameters:
@@ -33,32 +33,25 @@ steps:
         Analyze this document and extract all factual claims and their references.
         
         Document:
-        {{ load_document.content }}
+        {{ load_document.result.content }}
         
-        For each claim:
-        1. Extract the claim text
-        2. Note if it has a reference/citation
-        3. If it has a reference, extract the reference details
-      schema:
-        type: object
-        properties:
-          claims:
-            type: array
-            items:
-              type: object
-              properties:
-                text:
-                  type: string
-                has_reference:
-                  type: boolean
-                reference_url:
-                  type: string
-          total_claims:
-            type: integer
-          claims_with_references:
-            type: integer
-          percentage_referenced:
-            type: number
+        Please analyze the document and provide:
+        1. A list of all factual claims found
+        2. For each claim, indicate if it has a reference/citation 
+        3. Count the total number of claims
+        4. Count how many have references
+        5. Calculate the percentage with references
+        
+        Format your response as JSON:
+        {
+          "claims": [
+            {"text": "claim text here", "has_reference": true/false, "reference_url": "url if available"},
+            ...
+          ],
+          "total_claims": number,
+          "claims_with_references": number,
+          "percentage_referenced": number
+        }
       model: "claude-sonnet-4-20250514"
       max_tokens: 3000
   
@@ -71,15 +64,9 @@ steps:
       prompt: |
         Find reliable sources and citations for these unreferenced claims from the document:
         
-        {% if extract_claims.claims %}
-        {% for claim in extract_claims.claims %}
-        {% if not claim.has_reference %}
-        - {{ claim.text }}
-        {% endif %}
-        {% endfor %}
-        {% else %}
-        No claims data available.
-        {% endif %}
+        Claims analysis result: {{ extract_claims.result }}
+        
+        Please find citations for any claims that don't have references yet.
         
         For each claim, provide:
         1. A reliable source URL (use real, authoritative sources like NASA, NOAA, IPCC, Nature, Science, etc.)
@@ -102,9 +89,9 @@ steps:
         Update this document by adding citations for all unreferenced claims.
         
         Original document:
-        {{ load_document.content }}
+        {{ load_document.result.content }}
         
-        Claims analysis showing {{ extract_claims.total_claims }} total claims with {{ extract_claims.claims_with_references }} already referenced.
+        Claims analysis result: {{ extract_claims.result }}
         
         New citations to add:
         {{ find_citations.result }}
@@ -146,25 +133,11 @@ steps:
         - **Date Processed**: {{ timestamp }}
         
         ## Analysis Summary
-        - **Total Claims**: {{ extract_claims.total_claims }}
-        - **Claims with References (before)**: {{ extract_claims.claims_with_references }}
-        - **Percentage Referenced (before)**: {{ extract_claims.percentage_referenced }}%
+        Claims Analysis Result: {{ extract_claims.result }}
         - **Quality Threshold**: {{ parameters.quality_threshold * 100 }}%
         
-        ## Claims Identified
-        {% if extract_claims.claims %}
-        {% for claim in extract_claims.claims %}
-        {{ loop.index }}. {{ claim.text }}
-           - Has reference: {{ claim.has_reference }}
-        {% endfor %}
-        {% endif %}
-        
         ## Status
-        {% if extract_claims.percentage_referenced >= parameters.quality_threshold * 100 %}
-        ✅ **Document meets quality threshold**
-        {% else %}
-        ⚠️ **Document below quality threshold - references added**
-        {% endif %}
+        Document processed and references updated as needed.
         
         ## Output
         - Updated document: `{{ parameters.input_document | basename | regex_replace('\\.md$', '') }}_fact_checked.md`
@@ -175,5 +148,5 @@ steps:
 outputs:
   updated_document: "{{ save_document.path }}"
   report: "{{ generate_report.path }}"
-  claims_count: "{{ extract_claims.total_claims }}"
-  reference_percentage: "{{ extract_claims.percentage_referenced }}%"
+  claims_analysis: "{{ extract_claims.result }}"
+  citations_found: "{{ find_citations.result }}"
