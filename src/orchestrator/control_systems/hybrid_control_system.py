@@ -319,10 +319,21 @@ class HybridControlSystem(ModelBasedControlSystem):
             logger.info(f"Initialized runtime resolution for pipeline {pipeline_id}")
         
         # Collect comprehensive template context
+        # Extract pipeline inputs from context (they're merged directly in orchestrator)
+        pipeline_inputs = {k: v for k, v in context.items() 
+                         if k not in ["pipeline_id", "pipeline_metadata", "pipeline_context", 
+                                    "execution_id", "checkpoint_enabled", "max_retries", "start_time",
+                                    "previous_results", "_loop_context_mapping", "$item", "$index", 
+                                    "item", "index", "iteration", "$iteration", "_template_manager",
+                                    "pipeline_params", "template_manager", "unified_template_resolver",
+                                    "template_resolution_context", "task_id", "current_level", 
+                                    "resource_allocation"]}
+        
+        
         template_context = self.hybrid_template_resolver.collect_context(
             pipeline_id=context.get("pipeline_id"),
             task_id=context.get("task_id"),
-            pipeline_inputs=context.get("pipeline_inputs", {}),
+            pipeline_inputs=pipeline_inputs,
             pipeline_parameters=context.get("pipeline_params", {}),
             step_results=context.get("previous_results", {}),
             additional_context={

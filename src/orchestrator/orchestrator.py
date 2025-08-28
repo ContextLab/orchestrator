@@ -539,11 +539,18 @@ class Orchestrator:
                     self.logger.info(f"STREAM_C_DEBUG: Task {task.id} is not a for_each_child")
             
             # Collect comprehensive context for template resolution
+            # Extract pipeline inputs from context (they're merged directly at line 259)
+            pipeline_inputs = {k: v for k, v in context.items() 
+                             if k not in ['pipeline_id', 'pipeline_metadata', 'pipeline_context', 
+                                        'execution_id', 'checkpoint_enabled', 'max_retries', 'start_time',
+                                        'previous_results', '_loop_context_mapping', '$item', '$index', 
+                                        'item', 'index', 'iteration', '$iteration']}
+            
             template_context = self.unified_template_resolver.collect_context(
                 pipeline_id=context.get("pipeline_id"),
                 task_id=task.id,
                 tool_name=task.action,
-                pipeline_inputs=context.get("inputs", {}),
+                pipeline_inputs=pipeline_inputs,
                 pipeline_parameters=context.get("pipeline_params", {}),
                 step_results=enhanced_step_results,
                 tool_parameters=task.parameters,
@@ -651,11 +658,18 @@ class Orchestrator:
                         # Also ensure it's available with the full task ID
                         final_step_results[full_task_id] = result
             
+            # Extract pipeline inputs from context (they're merged directly at line 259)
+            pipeline_inputs = {k: v for k, v in context.items() 
+                             if k not in ['pipeline_id', 'pipeline_metadata', 'pipeline_context', 
+                                        'execution_id', 'checkpoint_enabled', 'max_retries', 'start_time',
+                                        'previous_results', '_loop_context_mapping', '$item', '$index', 
+                                        'item', 'index', 'iteration', '$iteration']}
+            
             template_context = self.unified_template_resolver.collect_context(
                 pipeline_id=context.get("pipeline_id"),
                 task_id=task.id,
                 tool_name=task.action,
-                pipeline_inputs=context.get("inputs", {}),
+                pipeline_inputs=pipeline_inputs,
                 pipeline_parameters=context.get("pipeline_params", {}),
                 step_results=final_step_results,
                 tool_parameters=task.parameters,
@@ -2163,14 +2177,18 @@ class Orchestrator:
 
         Args:
             yaml_content: YAML pipeline definition
-            context: Template context variables
+            context: Template context variables (pipeline inputs)
             **kwargs: Additional execution parameters
 
         Returns:
             Execution results
         """
-        # Compile YAML to pipeline
+        # Compile YAML to pipeline  
         pipeline = await self.yaml_compiler.compile(yaml_content, context)
+
+        # Merge inputs into pipeline context (critical for template resolution)
+        if context:
+            pipeline.context.update(context)
 
         # Execute pipeline
         return await self.execute_pipeline(pipeline, **kwargs)
