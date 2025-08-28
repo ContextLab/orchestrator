@@ -495,8 +495,9 @@ class ModelRegistry:
             Reordered list with preferred providers first
         """
         provider_priority = {
-            'openai': 1,
-            'anthropic': 2,
+            # Temporarily prioritize Anthropic over OpenAI due to GPT-5 models not being available yet
+            'anthropic': 1,
+            'openai': 2,  
             'google': 3,
             'huggingface': 4,
             'ollama': 5,
