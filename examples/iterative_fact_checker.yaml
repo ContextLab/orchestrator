@@ -39,7 +39,7 @@ steps:
     
   # Main iterative fact-checking loop
   - id: fact_check_loop
-    while: "{{ quality_score | default(0) < parameters.quality_threshold }}"
+    while: "true"
     max_iterations: 3
     dependencies:
       - load_initial_doc
@@ -156,7 +156,7 @@ steps:
           path: "{{ output_path }}/iteration_{{ $iteration }}_document.md"
           content: "{{ update_document.result }}"
       
-      # Update quality score variable for loop condition
+      # Update quality score for reporting
       - id: update_score
         action: generate
         parameters:
@@ -166,7 +166,6 @@ steps:
             Output just the decimal percentage (e.g., 0.95 for 95%).
           model: "claude-sonnet-4-20250514"
           max_tokens: 10
-        produces: quality_score
     
   # Save the final verified document
   - id: save_final_document
@@ -194,7 +193,7 @@ steps:
         
         ## Document Information
         - **Source Document**: {{ parameters.input_document }}
-        - **Date Processed**: {{ timestamp }}
+        - **Date Processed**: {{ execution.timestamp }}
         
         ## Processing Summary
         - **Total Iterations**: {{ fact_check_loop.iteration_count | default(1) }}

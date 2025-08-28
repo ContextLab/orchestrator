@@ -56,7 +56,10 @@
       "WebFetch(domain:microsoft.github.io)",
       "WebFetch(domain:api.anthropic.com)",
       "WebFetch(domain:)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Read(/usr/bin/**)",
+      "Read(/usr/bin/**)",
+      "Bash(wait)"
     ]
   }
 }

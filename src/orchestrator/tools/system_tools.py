@@ -257,12 +257,14 @@ class FileSystemTool(Tool):
                         # Debug: Check what's actually in the template manager context
                         logger.info(f"Template manager has {len(_template_manager.context)} context items")
                         
-                        # Log key context items for debugging
-                        important_keys = ['$item', 'item', 'input_text', 'translate', 'validate_translation', '$iteration', 'iteration', 'parameters']
+                        # Log key context items for debugging - focus on parameters and execution
+                        important_keys = ['parameters', 'execution', 'input_document', 'output_path']
                         for key in important_keys:
                             if key in _template_manager.context:
                                 value = _template_manager.context[key]
-                                if isinstance(value, str):
+                                if isinstance(value, dict) and key in ['parameters', 'execution']:
+                                    logger.info(f"  ✓ {key} = {dict(value)} (dict with {len(value)} keys)")
+                                elif isinstance(value, str):
                                     logger.info(f"  ✓ {key} = '{value[:50]}...' (str)")
                                 else:
                                     logger.info(f"  ✓ {key} = {type(value).__name__}")

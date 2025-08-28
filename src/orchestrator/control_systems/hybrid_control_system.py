@@ -330,6 +330,11 @@ class HybridControlSystem(ModelBasedControlSystem):
                                     "template_resolution_context", "task_id", "current_level", 
                                     "resource_allocation"]}
         
+        # CRITICAL FIX: Merge pipeline parameter values into pipeline_inputs 
+        # This allows templates like {{ parameters.input_document }} and {{ input_document }} to work
+        if "pipeline_params" in context and isinstance(context["pipeline_params"], dict):
+            pipeline_inputs.update(context["pipeline_params"])
+        
         
         template_context = self.hybrid_template_resolver.collect_context(
             pipeline_id=context.get("pipeline_id"),
@@ -349,15 +354,64 @@ class HybridControlSystem(ModelBasedControlSystem):
                 "$is_last": context.get("$is_last"),
                 "$iteration": context.get("$iteration"),
                 "$loop_state": context.get("$loop_state"),
-                # Add other context variables
+                # Add other context variables including execution metadata and parameters
                 **{k: v for k, v in context.items() 
                    if k not in ["pipeline_id", "pipeline_inputs", "pipeline_params", "previous_results", "_template_manager"]
-                   and not k.startswith("_")}
+                   and not k.startswith("_")},
+                # Explicitly include critical template objects that might be missing
+                "execution": context.get("execution", {}),
+                "parameters": self._extract_pipeline_parameters(pipeline_inputs, context),
             }
         )
         
         logger.info(f"Prepared template context with {len(template_context.to_flat_dict())} variables")
+        
+        # DEBUG: Quick check that critical template objects are there
+        flat_context = template_context.to_flat_dict()
+        if "parameters" in flat_context and flat_context['parameters']:
+            logger.info(f"✅ Parameters object available with {len(flat_context['parameters'])} items")
+        else:
+            logger.warning(f"❌ Parameters object missing or empty")
+        if "execution" in flat_context and flat_context['execution']:
+            logger.info(f"✅ Execution object available") 
+        else:
+            logger.warning(f"❌ Execution object missing or empty")
+        
         return template_context
+    
+    def _extract_pipeline_parameters(self, pipeline_inputs: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract original pipeline parameters for template access."""
+        # Look for original pipeline parameters - they typically include user inputs
+        # and are NOT auto-generated values like task results, execution metadata, etc.
+        
+        # First check if we have explicit parameters from context
+        if "parameters" in context and isinstance(context["parameters"], dict) and context["parameters"]:
+            return context["parameters"]
+        
+        if "pipeline_params" in context and isinstance(context["pipeline_params"], dict) and context["pipeline_params"]:
+            return context["pipeline_params"]
+        
+        # Extract likely parameters from pipeline_inputs 
+        # These are typically the user-provided parameters defined in the YAML
+        parameter_candidates = {}
+        
+        # Common pipeline parameter names (adjust as needed)
+        likely_param_keys = {
+            'input_document', 'output_path', 'quality_threshold', 'max_iterations',
+            'input_file', 'output_file', 'model', 'temperature', 'max_tokens',
+            'source_file', 'target_file', 'batch_size', 'threshold', 'iterations'
+        }
+        
+        for key, value in pipeline_inputs.items():
+            # Skip auto-generated values
+            if (key in likely_param_keys or 
+                # Include simple string/number values that look like user parameters
+                (isinstance(value, (str, int, float, bool)) and 
+                 not key.startswith('_') and 
+                 key not in ['execution_id', 'pipeline_id', 'task_id', 'current_level', 'timestamp'])):
+                parameter_candidates[key] = value
+        
+        return parameter_candidates
     
     def _get_runtime_resolution_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Get context from runtime resolution system if available."""
@@ -404,11 +458,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             resolved_params["_unified_resolver"] = self.hybrid_template_resolver
             resolved_params["_resolution_context"] = template_context
             
-            # Pass template manager if available for legacy compatibility
-            if "_template_manager" in context:
-                resolved_params["_template_manager"] = context["_template_manager"]
-            elif "template_manager" in context:
-                resolved_params["_template_manager"] = context["template_manager"]
+            # Pass the UnifiedTemplateResolver's template manager with proper context
+            # This is the template manager that has the correct context registered
+            resolved_params["_template_manager"] = self.hybrid_template_resolver.template_manager
             
             # Also pass loop context mapping if available
             if "_loop_context_mapping" in context:
@@ -442,11 +494,9 @@ class HybridControlSystem(ModelBasedControlSystem):
             resolved_params["_unified_resolver"] = self.hybrid_template_resolver
             resolved_params["_resolution_context"] = template_context
             
-            # Pass template manager if available for legacy compatibility
-            if "_template_manager" in context:
-                resolved_params["_template_manager"] = context["_template_manager"]
-            elif "template_manager" in context:
-                resolved_params["_template_manager"] = context["template_manager"]
+            # Pass the UnifiedTemplateResolver's template manager with proper context
+            # This is the template manager that has the correct context registered
+            resolved_params["_template_manager"] = self.hybrid_template_resolver.template_manager
             
             # Also pass loop context mapping if available
             if "_loop_context_mapping" in context:
