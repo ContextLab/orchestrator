@@ -35,7 +35,7 @@ class OpenAIModel(Model):
             "capabilities": ModelCapabilities(
                 supported_tasks=[
                     "generate", "analyze", "transform", "code", "reasoning",
-                    "vision", "multimodal", "complex_reasoning"
+                    "vision", "multimodal", "complex_reasoning", "summarize"
                 ],
                 context_window=256000,
                 supports_function_calling=True,
@@ -68,7 +68,7 @@ class OpenAIModel(Model):
         "gpt-5-mini": {
             "capabilities": ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "code", "reasoning"
+                    "generate", "analyze", "transform", "code", "reasoning", "summarize"
                 ],
                 context_window=128000,
                 supports_function_calling=True,
@@ -101,7 +101,7 @@ class OpenAIModel(Model):
         "gpt-5-nano": {
             "capabilities": ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "simple_tasks"
+                    "generate", "analyze", "transform", "simple_tasks", "summarize"
                 ],
                 context_window=32000,
                 supports_function_calling=True,
@@ -139,6 +139,7 @@ class OpenAIModel(Model):
                     "transform",
                     "code",
                     "reasoning",
+                    "summarize",
                 ],
                 context_window=8192,
                 supports_function_calling=True,
@@ -177,6 +178,7 @@ class OpenAIModel(Model):
                     "code",
                     "reasoning",
                     "vision",
+                    "summarize",
                 ],
                 context_window=128000,
                 supports_function_calling=True,
@@ -208,7 +210,7 @@ class OpenAIModel(Model):
         },
         "gpt-3.5-turbo": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "analyze", "transform", "code"],
+                supported_tasks=["generate", "analyze", "transform", "code", "summarize"],
                 context_window=16384,
                 supports_function_calling=True,
                 supports_structured_output=True,

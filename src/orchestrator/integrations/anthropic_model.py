@@ -38,6 +38,7 @@ class AnthropicModel(Model):
                     "code",
                     "reasoning",
                     "vision",
+                    "summarize",
                 ],
                 context_window=200000,
                 supports_function_calling=True,
@@ -72,6 +73,7 @@ class AnthropicModel(Model):
                     "code",
                     "reasoning",
                     "vision",
+                    "summarize",
                 ],
                 context_window=200000,
                 supports_function_calling=True,
@@ -99,7 +101,7 @@ class AnthropicModel(Model):
         },
         "claude-3-haiku-20240307": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "analyze", "transform", "code"],
+                supported_tasks=["generate", "analyze", "transform", "code", "summarize"],
                 context_window=200000,
                 supports_function_calling=True,
                 supports_structured_output=True,

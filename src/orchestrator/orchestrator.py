@@ -513,7 +513,7 @@ class Orchestrator:
             enhanced_step_results = dict(context.get("previous_results", {}))
             
             # For loop tasks, add results from sibling tasks in the same iteration using loop context mapping
-            if "_loop_context_mapping" in context and task.metadata.get("is_for_each_child"):
+            if "_loop_context_mapping" in context and (task.metadata.get("is_for_each_child") or task.metadata.get("is_while_loop_child")):
                 loop_context_mapping = context["_loop_context_mapping"]
                 available_results = list(context.get("previous_results", {}).keys())
                 self.logger.info(f"STREAM_C_DEBUG: Enhancing step_results for loop task {task.id}")
@@ -535,8 +535,8 @@ class Orchestrator:
             else:
                 if "_loop_context_mapping" not in context:
                     self.logger.info(f"STREAM_C_DEBUG: No loop context mapping for task {task.id}")
-                if not task.metadata.get("is_for_each_child"):
-                    self.logger.info(f"STREAM_C_DEBUG: Task {task.id} is not a for_each_child")
+                if not (task.metadata.get("is_for_each_child") or task.metadata.get("is_while_loop_child")):
+                    self.logger.info(f"STREAM_C_DEBUG: Task {task.id} is not a for_each_child or while_loop_child")
             
             # Collect comprehensive context for template resolution
             # Extract pipeline inputs from context (they're merged directly at line 259)
@@ -646,7 +646,7 @@ class Orchestrator:
             final_step_results = dict(context.get("previous_results", {}))
             
             # For loop tasks, add results from sibling tasks in the same iteration using loop context mapping
-            if "_loop_context_mapping" in context and task.metadata.get("is_for_each_child"):
+            if "_loop_context_mapping" in context and (task.metadata.get("is_for_each_child") or task.metadata.get("is_while_loop_child")):
                 loop_context_mapping = context["_loop_context_mapping"]
                 
                 # Add results using both full task IDs and short names for cross-step references
