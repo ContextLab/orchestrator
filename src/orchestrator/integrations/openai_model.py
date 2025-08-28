@@ -35,7 +35,7 @@ class OpenAIModel(Model):
             "capabilities": ModelCapabilities(
                 supported_tasks=[
                     "generate", "analyze", "transform", "code", "reasoning",
-                    "vision", "multimodal", "complex_reasoning", "summarize"
+                    "vision", "multimodal", "complex_reasoning", "summarize", "extract"
                 ],
                 context_window=256000,
                 supports_function_calling=True,
@@ -68,7 +68,7 @@ class OpenAIModel(Model):
         "gpt-5-mini": {
             "capabilities": ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "code", "reasoning", "summarize"
+                    "generate", "analyze", "transform", "code", "reasoning", "summarize", "extract"
                 ],
                 context_window=128000,
                 supports_function_calling=True,
@@ -101,7 +101,7 @@ class OpenAIModel(Model):
         "gpt-5-nano": {
             "capabilities": ModelCapabilities(
                 supported_tasks=[
-                    "generate", "analyze", "transform", "simple_tasks", "summarize"
+                    "generate", "analyze", "transform", "simple_tasks", "summarize", "extract"
                 ],
                 context_window=32000,
                 supports_function_calling=True,
