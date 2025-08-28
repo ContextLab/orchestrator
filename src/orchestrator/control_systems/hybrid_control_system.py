@@ -57,6 +57,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         model_registry: ModelRegistry,
         name: str = "hybrid-control-system",
         config: Optional[Dict[str, Any]] = None,
+        template_resolver: Optional[UnifiedTemplateResolver] = None,
     ) -> None:
         """Initialize hybrid control system."""
         # Initialize parent with extended capabilities
@@ -94,9 +95,9 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         super().__init__(model_registry, name, config)
 
-        # Initialize unified template resolver (in addition to the parent's resolver)
-        # This gives us more control for hybrid-specific template handling
-        self.hybrid_template_resolver = UnifiedTemplateResolver(debug_mode=True)
+        # Use provided template resolver or create new one
+        # Issue #287: Support RecursiveTemplateResolver for advanced loop patterns  
+        self.hybrid_template_resolver = template_resolver or UnifiedTemplateResolver(debug_mode=True)
 
         # Initialize tools
         self.filesystem_tool = FileSystemTool()
