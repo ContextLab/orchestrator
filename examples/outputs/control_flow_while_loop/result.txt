@@ -1,5 +1,0 @@
-# Number Guessing Results
-
-Target number: 42
-Total attempts: 0
-Success: False

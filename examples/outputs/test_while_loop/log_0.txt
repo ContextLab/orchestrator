@@ -1,0 +1,3 @@
+Iteration: {{ counting_loop.iteration }}
+Counter was: {{ read_counter.content }}
+Counter now: {{ (read_counter.content | int) + 1 }}
