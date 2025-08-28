@@ -1171,7 +1171,11 @@ class Orchestrator:
                 else:
                     # Mark loop as completed
                     if task.status == TaskStatus.PENDING:
-                        task.complete({"iterations": current_iteration, "status": "completed"})
+                        task.complete({
+                            "iterations": current_iteration, 
+                            "status": "completed",
+                            "completed": True  # Also provide completed as boolean for template compatibility
+                        })
                         self.logger.info(
                             f"While loop {loop_id} completed after {current_iteration} iterations"
                         )
