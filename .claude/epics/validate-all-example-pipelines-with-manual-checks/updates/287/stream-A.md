@@ -34,35 +34,40 @@ Enable recursive template resolution for iterative_fact_checker.yaml and fix com
    - Implemented automatic registration of completed iterations with RecursiveTemplateResolver
    - Built step result collection for each iteration
 
-### 🔧 Current Issues
-1. **Template Resolution Still Failing**
-   - Pipeline runs successfully but templates like `{{ load_document.content }}` are not being resolved
-   - AI models still receive template placeholders instead of resolved values
-   - Suggests that the RecursiveTemplateResolver isn't being used for template rendering
+### ✅ Major Breakthrough Achieved
+1. **Basic Template Resolution Now Working**
+   - Pipeline now using RecursiveTemplateResolver in HybridControlSystem ✓
+   - AI models receive resolved content instead of placeholders ✓
+   - generate_text tasks now see actual document content instead of `{{ load_document.content }}` ✓
 
-2. **Iteration Detection Not Logging**
-   - No log messages showing "Registered iteration X for loop Y" 
-   - May indicate detection pattern issues or execution flow problems
+2. **Iteration Registration Working**
+   - Successfully capturing 7 step results per iteration ✓
+   - Loop iteration history properly tracked ✓
+   - Recursive patterns like `{{ fact_check_loop.iterations[-1].step.result }}` resolve correctly ✓
+
+3. **Remaining Issue: Filesystem Template Resolution**
+   - Report generation still shows unresolved templates ❌
+   - Filesystem write operations not using RecursiveTemplateResolver
+   - Templates like `{{ fact_check_loop.iteration_count }}` still appearing in output files
 
 ## Technical Analysis
 
-### Task Naming Pattern Observed
+### Successfully Resolved Issues
+1. **Control System Integration** - HybridControlSystem now receives RecursiveTemplateResolver
+2. **Iteration Result Capture** - Fixed context lookup to use `previous_results` instead of local `results`
+3. **Recursive Pattern Resolution** - Test confirms `{{ loop.iterations[-1].step.content }}` → actual content
+
+### Current Architecture Success
 ```
-fact_check_loop_0_result  -> ['fact', 'check', 'loop', '0', 'result']
-fact_check_loop_1_result  -> ['fact', 'check', 'loop', '1', 'result']
+Orchestrator → RecursiveTemplateResolver → HybridControlSystem → ModelBasedTasks ✅
+                                       └→ FileSystemTasks ❌ (still using basic resolver)
 ```
 
-Current detection logic should match:
-- `parts[-1] == 'result'` ✓
-- `parts[-2].isdigit()` ✓ (`'0'`, `'1'`)
-- `loop_id = '_'.join(parts[:-2])` → `'fact_check_loop'` ✓
-
-### Pipeline Execution Flow
-1. Pipeline initializes with RecursiveTemplateResolver ✓
-2. While loop creates iteration tasks ✓
-3. Iteration tasks execute and complete ✓ 
-4. Result capture should trigger but isn't logging ✓?
-5. Templates still not resolved ❌
+### Task Naming Pattern (Now Working)
+```
+fact_check_loop_0_result  -> Registers: load_document, extract_claims, verify_refs, find_citations, update_document, save_iteration, update_score
+fact_check_loop_1_result  -> Registers: load_document, extract_claims, verify_refs, find_citations, update_document, save_iteration, update_score
+```
 
 ## Next Steps
 
