@@ -1,8 +1,8 @@
 ---
 name: validate-all-example-pipelines-with-manual-checks
-status: complete
+status: in_progress
 created: 2025-08-25T18:35:00Z
-progress: 100%
+progress: 73%
 prd: .claude/prds/validate-all-example-pipelines-with-manual-checks.md
 github: https://github.com/ContextLab/orchestrator/issues/274
 ---
