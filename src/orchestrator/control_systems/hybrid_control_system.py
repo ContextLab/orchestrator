@@ -401,8 +401,14 @@ class HybridControlSystem(ModelBasedControlSystem):
             )
             
             # Pass the unified resolver components to the tool for runtime rendering
-            resolved_params["unified_template_resolver"] = self.hybrid_template_resolver
-            resolved_params["template_resolution_context"] = template_context
+            resolved_params["_unified_resolver"] = self.hybrid_template_resolver
+            resolved_params["_resolution_context"] = template_context
+            
+            # Pass template manager if available for legacy compatibility
+            if "_template_manager" in context:
+                resolved_params["_template_manager"] = context["_template_manager"]
+            elif "template_manager" in context:
+                resolved_params["_template_manager"] = context["template_manager"]
             
             # Also pass loop context mapping if available
             if "_loop_context_mapping" in context:
@@ -433,8 +439,14 @@ class HybridControlSystem(ModelBasedControlSystem):
             )
             
             # Pass the unified resolver components to the tool for runtime rendering
-            resolved_params["unified_template_resolver"] = self.hybrid_template_resolver
-            resolved_params["template_resolution_context"] = template_context
+            resolved_params["_unified_resolver"] = self.hybrid_template_resolver
+            resolved_params["_resolution_context"] = template_context
+            
+            # Pass template manager if available for legacy compatibility
+            if "_template_manager" in context:
+                resolved_params["_template_manager"] = context["_template_manager"]
+            elif "template_manager" in context:
+                resolved_params["_template_manager"] = context["template_manager"]
             
             # Also pass loop context mapping if available
             if "_loop_context_mapping" in context:
