@@ -15,7 +15,12 @@ Tasks:
 - #287: Advanced Infrastructure Pipeline Development - https://github.com/ContextLab/orchestrator/issues/287
 - #288: Remaining Pipeline Completion & Testing - https://github.com/ContextLab/orchestrator/issues/288
 
-Synced: 2025-08-28T17:15:00Z
+## Active Template Resolution Tasks (NEW)
+- #289: Deep Template Context Debugging & Root Cause Analysis - https://github.com/ContextLab/orchestrator/issues/289 (IN PROGRESS)
+- #290: Template Resolution Architecture Overhaul - https://github.com/ContextLab/orchestrator/issues/290 (IN PROGRESS)  
+- #291: Final Epic Validation & Production Readiness - https://github.com/ContextLab/orchestrator/issues/291 (PENDING)
+
+Synced: 2025-08-29T01:12:24Z
 
 ## ⚠️ CORRECTED STATUS: Epic Reopened for Critical Work
 
