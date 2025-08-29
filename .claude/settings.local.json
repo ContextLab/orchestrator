@@ -60,7 +60,10 @@
       "Read(/usr/bin/**)",
       "Read(/usr/bin/**)",
       "Bash(wait)",
-      "Bash(gh issue create:*)"
+      "Bash(gh issue create:*)",
+      "Bash(source:*)",
+      "Bash(pip3 install:*)",
+      "Bash(pip install:*)"
     ]
   }
 }
