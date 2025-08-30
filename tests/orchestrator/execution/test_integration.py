@@ -1,461 +1,399 @@
 """
-Integration tests for Variable & State Management with existing runtime systems.
-
-Tests the bridge integration between the new variable management system
-and the existing PipelineExecutionState from the runtime module.
+Tests for comprehensive execution integration.
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
+import asyncio
+from unittest.mock import Mock, AsyncMock
 
 from src.orchestrator.execution.integration import (
-    ExecutionStateBridge,
-    VariableManagerAdapter
-)
-from src.orchestrator.execution.variables import (
-    VariableManager,
-    VariableScope,
-    VariableType
+    ComprehensiveExecutionManager,
+    create_comprehensive_execution_manager
 )
 from src.orchestrator.execution.state import ExecutionContext, ExecutionStatus
-from src.orchestrator.runtime.execution_state import PipelineExecutionState
+from src.orchestrator.execution.variables import VariableManager, VariableScope, VariableType
+from src.orchestrator.execution.progress import ProgressTracker, ProgressEventType
+from src.orchestrator.execution.recovery import RecoveryManager, RecoveryStrategy
 
 
-class TestExecutionStateBridge:
-    """Tests for ExecutionStateBridge integration."""
+class TestComprehensiveExecutionManager:
+    """Test comprehensive execution manager integration."""
     
     @pytest.fixture
-    def execution_context(self):
-        """Create execution context for testing."""
-        return ExecutionContext("test_execution", "test_pipeline")
+    def execution_manager(self):
+        """Create test execution manager."""
+        return ComprehensiveExecutionManager("test_exec", "test_pipeline")
     
-    @pytest.fixture
-    def pipeline_state(self):
-        """Create pipeline execution state for testing."""
-        return PipelineExecutionState("test_pipeline")
-    
-    @pytest.fixture
-    def bridge(self, execution_context, pipeline_state):
-        """Create bridge between execution context and pipeline state."""
-        return ExecutionStateBridge(execution_context, pipeline_state)
-    
-    def test_bridge_initialization(self, execution_context, pipeline_state):
-        """Test bridge initialization."""
-        bridge = ExecutionStateBridge(execution_context)
-        assert bridge.execution_context == execution_context
-        assert bridge.pipeline_state is None
+    def test_execution_manager_creation(self):
+        """Test creating execution manager."""
+        manager = ComprehensiveExecutionManager("test_exec", "test_pipeline")
         
-        bridge_with_state = ExecutionStateBridge(execution_context, pipeline_state)
-        assert bridge_with_state.pipeline_state == pipeline_state
+        assert manager.execution_id == "test_exec"
+        assert manager.pipeline_id == "test_pipeline"
+        assert isinstance(manager.execution_context, ExecutionContext)
+        assert isinstance(manager.variable_manager, VariableManager)
+        assert isinstance(manager.progress_tracker, ProgressTracker)
+        assert isinstance(manager.recovery_manager, RecoveryManager)
     
-    def test_set_pipeline_state(self, execution_context, pipeline_state):
-        """Test setting pipeline state after initialization."""
-        bridge = ExecutionStateBridge(execution_context)
-        bridge.set_pipeline_state(pipeline_state)
-        assert bridge.pipeline_state == pipeline_state
-    
-    def test_sync_to_pipeline_state(self, bridge):
-        """Test syncing variables from ExecutionContext to PipelineExecutionState."""
-        # Set variables in execution context
-        bridge.execution_context.variable_manager.set_variable(
-            "config_var", "config_value",
-            var_type=VariableType.CONFIGURATION
-        )
-        bridge.execution_context.variable_manager.set_variable(
-            "output_var", "output_value",
-            var_type=VariableType.OUTPUT,
-            source_step="test_step"
+    def test_execution_manager_with_existing_components(self):
+        """Test creating execution manager with existing components."""
+        execution_context = ExecutionContext("test_exec", "test_pipeline")
+        progress_tracker = ProgressTracker(execution_context)
+        recovery_manager = RecoveryManager(execution_context, progress_tracker)
+        
+        manager = ComprehensiveExecutionManager(
+            execution_id="test_exec",
+            pipeline_id="test_pipeline",
+            execution_context=execution_context,
+            progress_tracker=progress_tracker,
+            recovery_manager=recovery_manager
         )
         
-        # Sync to pipeline state
-        bridge.sync_to_pipeline_state()
-        
-        # Verify variables were synced
-        context = bridge.pipeline_state.get_available_context()
-        assert "config_var" in context
-        assert context["config_var"] == "config_value"
-        assert "test_step" in bridge.pipeline_state.global_context["results"]
-        assert bridge.pipeline_state.global_context["results"]["test_step"] == "output_value"
+        assert manager.execution_context == execution_context
+        assert manager.progress_tracker == progress_tracker
+        assert manager.recovery_manager == recovery_manager
     
-    def test_sync_from_pipeline_state(self, bridge):
-        """Test syncing variables from PipelineExecutionState to ExecutionContext."""
-        # Set variables in pipeline state
-        bridge.pipeline_state.register_variable("pipeline_var", "pipeline_value")
-        bridge.pipeline_state.register_result("task1", {"result": "task_result"})
-        
-        # Sync from pipeline state
-        bridge.sync_from_pipeline_state()
-        
-        # Verify variables were synced
-        assert bridge.execution_context.variable_manager.get_variable("pipeline_var") == "pipeline_value"
-        assert bridge.execution_context.variable_manager.get_variable("task1") == {"result": "task_result"}
-        
-        # Check variable metadata
-        pipeline_var_meta = bridge.execution_context.variable_manager.get_variable_metadata("pipeline_var")
-        assert pipeline_var_meta.var_type == VariableType.CONFIGURATION
-        
-        task_meta = bridge.execution_context.variable_manager.get_variable_metadata("task1")
-        assert task_meta.var_type == VariableType.OUTPUT
-    
-    def test_register_variable(self, bridge):
-        """Test registering variables in both systems."""
-        bridge.register_variable(
-            "bridge_var", "bridge_value",
-            var_type=VariableType.INTERMEDIATE,
-            source_step="bridge_step"
-        )
-        
-        # Check new system
-        assert bridge.execution_context.variable_manager.get_variable("bridge_var") == "bridge_value"
-        meta = bridge.execution_context.variable_manager.get_variable_metadata("bridge_var")
-        assert meta.var_type == VariableType.INTERMEDIATE
-        assert meta.source_step == "bridge_step"
-        
-        # Check legacy system
-        context = bridge.pipeline_state.get_available_context()
-        assert "bridge_var" in context
-        assert context["bridge_var"] == "bridge_value"
-    
-    def test_register_step_result(self, bridge):
-        """Test registering step results in both systems."""
-        bridge.register_step_result("test_step", {"result": "success", "value": 42})
-        
-        # Check new system
-        result = bridge.execution_context.variable_manager.get_variable("test_step")
-        assert result == {"result": "success", "value": 42}
-        
-        meta = bridge.execution_context.variable_manager.get_variable_metadata("test_step")
-        assert meta.var_type == VariableType.OUTPUT
-        assert meta.source_step == "test_step"
-        
-        # Check execution context step tracking
-        assert bridge.execution_context.metrics.steps_completed == 1
-        
-        # Check legacy system
-        assert "test_step" in bridge.pipeline_state.global_context["results"]
-        assert bridge.pipeline_state.global_context["results"]["test_step"] == {"result": "success", "value": 42}
-        assert "test_step" in bridge.pipeline_state.executed_tasks
-    
-    def test_step_lifecycle(self, bridge):
-        """Test complete step lifecycle through bridge."""
-        # Start step
-        bridge.start_step("lifecycle_step")
-        
-        # Check new system
-        assert bridge.execution_context.current_step_id == "lifecycle_step"
-        
-        # Check legacy system
-        assert "lifecycle_step" in bridge.pipeline_state.pending_tasks
-        
-        # Complete step successfully
-        bridge.register_step_result("lifecycle_step", "success")
-        
-        # Check final state
-        assert bridge.execution_context.current_step_id is None
-        assert bridge.execution_context.metrics.steps_completed == 1
-        assert "lifecycle_step" not in bridge.pipeline_state.pending_tasks
-        assert "lifecycle_step" in bridge.pipeline_state.executed_tasks
-    
-    def test_step_failure(self, bridge):
-        """Test step failure handling."""
-        bridge.start_step("failing_step")
-        bridge.fail_step("failing_step", "Test error message")
-        
-        # Check new system
-        assert bridge.execution_context.metrics.steps_failed == 1
-        
-        # Check legacy system
-        assert "failing_step" in bridge.pipeline_state.failed_tasks
-        assert bridge.pipeline_state.failed_tasks["failing_step"] == "Test error message"
-        assert "failing_step" not in bridge.pipeline_state.pending_tasks
-    
-    def test_get_variable_fallback(self, bridge):
-        """Test variable retrieval with fallback."""
-        # Set variable only in new system
-        bridge.execution_context.variable_manager.set_variable("new_var", "new_value")
-        
-        # Set variable only in legacy system
-        bridge.pipeline_state.register_variable("legacy_var", "legacy_value")
-        
-        # Test retrieval
-        assert bridge.get_variable("new_var") == "new_value"
-        assert bridge.get_variable("legacy_var") == "legacy_value"
-        assert bridge.get_variable("nonexistent", "default") == "default"
-    
-    def test_has_variable_check(self, bridge):
-        """Test variable existence check across systems."""
-        # Set variables in different systems
-        bridge.execution_context.variable_manager.set_variable("new_var", "new_value")
-        bridge.pipeline_state.register_variable("legacy_var", "legacy_value")
-        
-        # Test existence checks
-        assert bridge.has_variable("new_var") is True
-        assert bridge.has_variable("legacy_var") is True
-        assert bridge.has_variable("nonexistent") is False
-    
-    def test_export_combined_state(self, bridge):
-        """Test exporting combined state from both systems."""
-        # Set up state in both systems
-        bridge.execution_context.variable_manager.set_variable("new_var", "new_value")
-        bridge.pipeline_state.register_variable("legacy_var", "legacy_value")
-        bridge.execution_context.start_execution()
-        
-        # Export combined state
-        combined_state = bridge.export_combined_state()
-        
-        # Verify structure
-        assert "execution_context" in combined_state
-        assert "pipeline_state" in combined_state
-        assert "bridge_metadata" in combined_state
-        
-        # Verify metadata
-        metadata = combined_state["bridge_metadata"]
-        assert metadata["pipeline_id"] == "test_pipeline"
-        assert metadata["execution_id"] == "test_execution"
-        
-        # Verify context data
-        assert combined_state["execution_context"]["execution_id"] == "test_execution"
-        assert combined_state["pipeline_state"]["pipeline_id"] == "test_pipeline"
-    
-    def test_bidirectional_synchronization(self, execution_context):
-        """Test automatic bidirectional synchronization."""
-        pipeline_state = PipelineExecutionState("test_pipeline")
-        pipeline_state.register_variable("initial_var", "initial_value")
-        
-        # Create bridge with existing pipeline state
-        bridge = ExecutionStateBridge(execution_context, pipeline_state)
-        
-        # Initial sync should have occurred
-        assert bridge.execution_context.variable_manager.get_variable("initial_var") == "initial_value"
-        
-        # Test ongoing synchronization via event handlers
-        bridge.execution_context.variable_manager.set_variable("new_var", "new_value")
-        
-        # Should be synchronized to pipeline state
-        context = bridge.pipeline_state.get_available_context()
-        assert "new_var" in context
-
-
-class TestVariableManagerAdapter:
-    """Tests for VariableManagerAdapter."""
-    
-    @pytest.fixture
-    def variable_manager(self):
-        """Create variable manager for testing."""
-        return VariableManager("test_pipeline")
-    
-    @pytest.fixture
-    def adapter(self, variable_manager):
-        """Create adapter for testing."""
-        return VariableManagerAdapter(variable_manager)
-    
-    def test_dict_like_interface(self, adapter):
-        """Test dict-like interface methods."""
-        # Test set/get
-        adapter.set("key1", "value1")
-        assert adapter.get("key1") == "value1"
-        assert adapter.get("nonexistent", "default") == "default"
-        
-        # Test bracket notation
-        adapter["key2"] = "value2"
-        assert adapter["key2"] == "value2"
-        
-        # Test KeyError for missing key
-        with pytest.raises(KeyError):
-            _ = adapter["nonexistent"]
-        
-        # Test contains
-        assert "key1" in adapter
-        assert "key2" in adapter
-        assert "nonexistent" not in adapter
-    
-    def test_iteration_methods(self, adapter):
-        """Test iteration methods."""
-        adapter.set("key1", "value1")
-        adapter.set("key2", "value2")
-        adapter.set("key3", "value3")
-        
-        # Test keys()
-        keys = list(adapter.keys())
-        assert len(keys) == 3
-        assert "key1" in keys
-        assert "key2" in keys
-        assert "key3" in keys
-        
-        # Test values()
-        values = list(adapter.values())
-        assert len(values) == 3
-        assert "value1" in values
-        assert "value2" in values
-        assert "value3" in values
-        
-        # Test items()
-        items = list(adapter.items())
-        assert len(items) == 3
-        assert ("key1", "value1") in items
-        assert ("key2", "value2") in items
-        assert ("key3", "value3") in items
-    
-    def test_update_method(self, adapter):
-        """Test update method."""
-        update_data = {
-            "update1": "value1",
-            "update2": "value2",
-            "update3": "value3"
-        }
-        
-        adapter.update(update_data)
-        
-        # Verify all values were set
-        for key, value in update_data.items():
-            assert adapter.get(key) == value
-    
-    def test_adapter_variable_manager_integration(self, variable_manager, adapter):
-        """Test adapter integration with underlying variable manager."""
-        # Set through adapter
-        adapter.set("adapter_var", "adapter_value")
-        
-        # Verify in underlying manager
-        assert variable_manager.get_variable("adapter_var") == "adapter_value"
-        
-        # Set through manager
-        variable_manager.set_variable("manager_var", "manager_value")
-        
-        # Verify through adapter
-        assert adapter.get("manager_var") == "manager_value"
-
-
-class TestIntegrationScenarios:
-    """Integration tests for complex bridge scenarios."""
-    
-    def test_pipeline_execution_with_bridge(self):
-        """Test complete pipeline execution using bridge integration."""
-        # Set up systems
-        execution_context = ExecutionContext("integration_exec", "integration_pipeline")
-        pipeline_state = PipelineExecutionState("integration_pipeline")
-        bridge = ExecutionStateBridge(execution_context, pipeline_state)
-        
+    def test_execution_lifecycle(self, execution_manager):
+        """Test complete execution lifecycle."""
         # Start execution
-        execution_context.start_execution()
+        execution_manager.start_execution(total_steps=3)
         
-        # Set initial configuration through bridge
-        bridge.register_variable(
-            "max_retries", 3,
-            var_type=VariableType.CONFIGURATION
-        )
-        bridge.register_variable(
-            "timeout_seconds", 30,
-            var_type=VariableType.CONFIGURATION
-        )
+        assert execution_manager.execution_context.status == ExecutionStatus.RUNNING
+        assert execution_manager.execution_context.total_steps == 3
         
-        # Execute steps through bridge
-        bridge.start_step("data_preparation")
-        bridge.register_step_result("data_preparation", {"processed_items": 100})
-        
-        bridge.start_step("data_analysis")
-        # Get previous step result
-        prep_result = bridge.get_variable("data_preparation")
-        analysis_result = {"analyzed_items": prep_result["processed_items"], "score": 0.85}
-        bridge.register_step_result("data_analysis", analysis_result)
-        
-        bridge.start_step("report_generation")
-        analysis_data = bridge.get_variable("data_analysis")
-        report = f"Analysis complete: {analysis_data['analyzed_items']} items with score {analysis_data['score']}"
-        bridge.register_step_result("report_generation", report)
+        # Check progress tracking was started
+        execution_progress = execution_manager.progress_tracker.get_execution_progress("test_exec")
+        assert execution_progress is not None
+        assert execution_progress.total_steps == 3
         
         # Complete execution
-        execution_context.complete_execution(success=True)
+        execution_manager.complete_execution(success=True)
         
-        # Verify both systems have consistent state
-        assert execution_context.status == ExecutionStatus.COMPLETED
-        assert execution_context.metrics.steps_completed == 3
-        assert execution_context.metrics.steps_failed == 0
-        
-        # Check pipeline state
-        assert len(pipeline_state.executed_tasks) == 3
-        assert "data_preparation" in pipeline_state.executed_tasks
-        assert "data_analysis" in pipeline_state.executed_tasks
-        assert "report_generation" in pipeline_state.executed_tasks
-        
-        # Check final result consistency
-        exec_report = execution_context.variable_manager.get_variable("report_generation")
-        pipeline_report = pipeline_state.global_context["results"]["report_generation"]
-        assert exec_report == pipeline_report
-        assert "100 items with score 0.85" in exec_report
+        assert execution_manager.execution_context.status == ExecutionStatus.COMPLETED
     
-    def test_error_recovery_with_bridge(self):
-        """Test error recovery scenario using bridge."""
-        execution_context = ExecutionContext("recovery_exec", "recovery_pipeline")
-        pipeline_state = PipelineExecutionState("recovery_pipeline")
-        bridge = ExecutionStateBridge(execution_context, pipeline_state)
+    def test_step_lifecycle(self, execution_manager):
+        """Test step execution lifecycle."""
+        execution_manager.start_execution(total_steps=1)
         
-        execution_context.start_execution()
+        # Start step
+        execution_manager.start_step("step1", "Test Step")
         
-        # Execute successful steps
-        bridge.start_step("step1")
-        bridge.register_step_result("step1", "success1")
+        # Check step tracking
+        step_progress = execution_manager.progress_tracker.get_step_progress("test_exec", "step1")
+        assert step_progress is not None
+        assert step_progress.step_name == "Test Step"
         
-        bridge.start_step("step2")
-        bridge.register_step_result("step2", "success2")
+        # Complete step
+        execution_manager.complete_step("step1", success=True)
+        
+        # Check completion
+        step_progress = execution_manager.progress_tracker.get_step_progress("test_exec", "step1")
+        assert step_progress.progress_percentage == 100.0
+    
+    def test_step_error_handling(self, execution_manager):
+        """Test step error handling."""
+        execution_manager.start_execution(total_steps=1)
+        execution_manager.start_step("step1", "Test Step")
+        
+        # Handle error
+        error = ValueError("Test error")
+        recovery_plan = execution_manager.handle_step_error("step1", "Test Step", error)
+        
+        assert recovery_plan is not None
+        assert recovery_plan.strategy in [
+            RecoveryStrategy.RETRY,
+            RecoveryStrategy.RETRY_WITH_BACKOFF,
+            RecoveryStrategy.FAIL_FAST
+        ]
+        
+        # Check error was recorded
+        error_history = execution_manager.recovery_manager.get_error_history()
+        assert len(error_history) == 1
+        assert error_history[0].step_id == "step1"
+    
+    def test_step_progress_update(self, execution_manager):
+        """Test step progress updates."""
+        execution_manager.start_execution(total_steps=1)
+        execution_manager.start_step("step1", "Test Step")
+        
+        # Update progress
+        execution_manager.update_step_progress("step1", 50.0, "Half done")
+        
+        # Check progress tracker
+        step_progress = execution_manager.progress_tracker.get_step_progress("test_exec", "step1")
+        assert step_progress.progress_percentage == 50.0
+        
+        # Check variable was set
+        progress_var = execution_manager.variable_manager.get_variable("progress.step1.percentage")
+        assert progress_var == 50.0
+    
+    def test_checkpoint_integration(self, execution_manager):
+        """Test checkpoint integration."""
+        execution_manager.start_execution(total_steps=1)
         
         # Create checkpoint
-        checkpoint = execution_context.create_checkpoint("before_failure")
+        checkpoint = execution_manager.create_checkpoint("test_checkpoint")
         
-        # Simulate step failure
-        bridge.start_step("failing_step")
-        bridge.fail_step("failing_step", "Simulated failure")
+        assert checkpoint is not None
+        assert len(execution_manager.execution_context.checkpoints) >= 1
         
-        # Verify failure state
-        assert execution_context.metrics.steps_failed == 1
-        assert "failing_step" in pipeline_state.failed_tasks
+        # Restore checkpoint
+        success = execution_manager.restore_checkpoint(checkpoint.id)
+        assert success is True
+    
+    def test_execution_status(self, execution_manager):
+        """Test comprehensive execution status."""
+        execution_manager.start_execution(total_steps=2)
+        execution_manager.start_step("step1", "Test Step 1")
+        execution_manager.complete_step("step1", success=True)
         
-        # Restore from checkpoint
-        success = execution_context.restore_checkpoint(checkpoint.id)
+        status = execution_manager.get_execution_status()
+        
+        assert status["execution_id"] == "test_exec"
+        assert status["pipeline_id"] == "test_pipeline"
+        assert status["status"] == "running"
+        assert status["progress"]["completed_steps"] == 1
+        assert status["progress"]["total_steps"] == 2
+        assert "recovery" in status
+        assert "metrics" in status
+    
+    def test_cleanup(self, execution_manager):
+        """Test cleanup functionality."""
+        execution_manager.start_execution(total_steps=1)
+        execution_manager.start_step("step1", "Test Step")
+        
+        # Generate some data
+        execution_manager.handle_step_error("step1", "Test Step", ValueError("Error"))
+        
+        # Cleanup
+        execution_manager.cleanup()
+        
+        # Check components are cleaned up
+        execution_progress = execution_manager.progress_tracker.get_execution_progress("test_exec")
+        assert execution_progress is None
+        
+        error_history = execution_manager.recovery_manager.get_error_history()
+        assert len(error_history) == 0
+
+
+@pytest.mark.asyncio
+class TestComprehensiveExecutionManagerAsync:
+    """Test asynchronous operations with comprehensive execution manager."""
+    
+    @pytest.fixture
+    def execution_manager(self):
+        """Create test execution manager."""
+        return ComprehensiveExecutionManager("test_exec", "test_pipeline")
+    
+    async def test_execute_step_with_recovery_success(self, execution_manager):
+        """Test successful step execution with recovery."""
+        execution_manager.start_execution(total_steps=1)
+        
+        async def step_executor():
+            return "success"
+        
+        success = await execution_manager.execute_step_with_recovery(
+            "step1", "Test Step", step_executor
+        )
+        
         assert success is True
         
-        # Re-sync state after restore
-        bridge.sync_to_pipeline_state()
-        
-        # Verify restored state
-        assert bridge.get_variable("step1") == "success1"
-        assert bridge.get_variable("step2") == "success2"
-        assert execution_context.metrics.steps_completed == 2  # From checkpoint
+        # Check step was completed successfully
+        step_progress = execution_manager.progress_tracker.get_step_progress("test_exec", "step1")
+        assert step_progress.progress_percentage == 100.0
     
-    def test_nested_context_with_bridge(self):
-        """Test nested execution contexts with bridge integration."""
-        parent_context = ExecutionContext("parent_exec", "main_pipeline")
-        parent_pipeline = PipelineExecutionState("main_pipeline")
-        parent_bridge = ExecutionStateBridge(parent_context, parent_pipeline)
+    async def test_execute_step_with_recovery_failure(self, execution_manager):
+        """Test step execution failure with recovery."""
+        execution_manager.start_execution(total_steps=1)
         
-        parent_context.start_execution()
-        parent_bridge.register_variable("shared_config", {"parallel": True})
+        async def failing_executor():
+            raise ValueError("Persistent error")
         
-        # Create nested context for sub-pipeline
-        child_context = parent_context.create_nested_context("sub_pipeline")
-        child_pipeline = PipelineExecutionState("sub_pipeline")
-        child_bridge = ExecutionStateBridge(child_context, child_pipeline)
+        success = await execution_manager.execute_step_with_recovery(
+            "step1", "Test Step", failing_executor
+        )
         
-        child_context.start_execution()
+        # Should fail after exhausting recovery attempts
+        assert success is False
         
-        # Child pipeline execution
-        child_bridge.start_step("child_step1")
-        child_bridge.register_step_result("child_step1", "child_result")
+        # Check error was handled
+        error_history = execution_manager.recovery_manager.get_error_history()
+        assert len(error_history) >= 1
+    
+    async def test_execute_step_with_retry_recovery(self, execution_manager):
+        """Test step execution with successful retry recovery."""
+        execution_manager.start_execution(total_steps=1)
         
-        child_context.complete_execution(success=True)
+        # Set up a custom recovery plan for network errors
+        from src.orchestrator.execution.recovery import ErrorCategory, RecoveryPlan, RetryConfig
         
-        # Parent continues execution
-        parent_bridge.start_step("parent_final_step")
-        parent_bridge.register_step_result("parent_final_step", "parent_result")
+        retry_plan = RecoveryPlan(
+            strategy=RecoveryStrategy.RETRY,
+            retry_config=RetryConfig(max_attempts=3, initial_delay=0.01)
+        )
+        execution_manager.recovery_manager.set_recovery_plan("step1", retry_plan)
         
-        parent_context.complete_execution(success=True)
+        attempt_count = 0
         
-        # Verify both contexts completed successfully
-        assert parent_context.status == ExecutionStatus.COMPLETED
-        assert child_context.status == ExecutionStatus.COMPLETED
+        async def executor_with_retry():
+            nonlocal attempt_count
+            attempt_count += 1
+            if attempt_count < 3:
+                raise ConnectionError("Network error")
+            return "success"
         
-        # Verify nested context relationship
-        assert "sub_pipeline" in parent_context.nested_contexts
-        assert child_context.parent_context == parent_context
+        success = await execution_manager.execute_step_with_recovery(
+            "step1", "Test Step", executor_with_retry
+        )
+        
+        assert success is True
+        assert attempt_count == 3
+    
+    async def test_concurrent_step_execution(self, execution_manager):
+        """Test concurrent step execution with recovery."""
+        execution_manager.start_execution(total_steps=3)
+        
+        async def step_executor(step_id: str, delay: float, should_fail: bool = False):
+            await asyncio.sleep(delay)
+            if should_fail:
+                raise ValueError(f"Error in {step_id}")
+            return f"Result from {step_id}"
+        
+        # Execute steps concurrently
+        results = await asyncio.gather(
+            execution_manager.execute_step_with_recovery(
+                "step1", "Step 1", lambda: step_executor("step1", 0.01)
+            ),
+            execution_manager.execute_step_with_recovery(
+                "step2", "Step 2", lambda: step_executor("step2", 0.02, should_fail=True)
+            ),
+            execution_manager.execute_step_with_recovery(
+                "step3", "Step 3", lambda: step_executor("step3", 0.01)
+            ),
+            return_exceptions=True
+        )
+        
+        # Step 1 and 3 should succeed, step 2 should fail
+        assert results[0] is True
+        assert results[1] is False  # Failed step
+        assert results[2] is True
+    
+    async def test_progress_event_integration(self, execution_manager):
+        """Test progress event integration."""
+        events = []
+        
+        def event_handler(event):
+            events.append(event)
+        
+        execution_manager.progress_tracker.add_event_handler(event_handler)
+        
+        execution_manager.start_execution(total_steps=1)
+        
+        async def step_executor():
+            return "success"
+        
+        await execution_manager.execute_step_with_recovery(
+            "step1", "Test Step", step_executor
+        )
+        
+        # Should have received various events
+        event_types = [event.event_type for event in events]
+        assert ProgressEventType.EXECUTION_STARTED in event_types
+        assert ProgressEventType.STEP_STARTED in event_types
+        assert ProgressEventType.STEP_COMPLETED in event_types
+
+
+class TestExecutionManagerFactory:
+    """Test execution manager factory functions."""
+    
+    def test_create_comprehensive_execution_manager(self):
+        """Test creating execution manager with factory."""
+        manager = create_comprehensive_execution_manager("test_exec", "test_pipeline")
+        
+        assert isinstance(manager, ComprehensiveExecutionManager)
+        assert manager.execution_id == "test_exec"
+        assert manager.pipeline_id == "test_pipeline"
+    
+    def test_factory_creates_integrated_components(self):
+        """Test that factory creates properly integrated components."""
+        manager = create_comprehensive_execution_manager("test_exec", "test_pipeline")
+        
+        # All components should be properly connected
+        assert manager.progress_tracker.execution_context == manager.execution_context
+        assert manager.progress_tracker.variable_manager == manager.variable_manager
+        assert manager.recovery_manager.execution_context == manager.execution_context
+        assert manager.recovery_manager.progress_tracker == manager.progress_tracker
+
+
+class TestIntegrationWithExistingSystems:
+    """Test integration with existing runtime systems."""
+    
+    def test_variable_integration(self):
+        """Test variable manager integration."""
+        manager = ComprehensiveExecutionManager("test_exec", "test_pipeline")
+        
+        # Set variables through manager
+        manager.variable_manager.set_variable(
+            "test_var", 
+            "test_value",
+            scope=VariableScope.GLOBAL,
+            var_type=VariableType.CONFIGURATION
+        )
+        
+        # Check variable is accessible
+        value = manager.variable_manager.get_variable("test_var")
+        assert value == "test_value"
+    
+    def test_checkpoint_restore_integration(self):
+        """Test checkpoint restore with all systems."""
+        manager = ComprehensiveExecutionManager("test_exec", "test_pipeline")
+        manager.start_execution(total_steps=2)
+        
+        # Execute first step
+        manager.start_step("step1", "Step 1")
+        manager.variable_manager.set_variable("step1_result", "completed")
+        manager.complete_step("step1", success=True)
+        
+        # Create checkpoint after first step
+        checkpoint = manager.create_checkpoint("after_step1")
+        
+        # Execute and fail second step
+        manager.start_step("step2", "Step 2")
+        manager.variable_manager.set_variable("step2_result", "in_progress")
+        
+        # Restore to checkpoint
+        success = manager.restore_checkpoint(checkpoint.id)
+        assert success is True
+        
+        # Check that variables were restored
+        step1_result = manager.variable_manager.get_variable("step1_result")
+        step2_result = manager.variable_manager.get_variable("step2_result")
+        
+        assert step1_result == "completed"
+        assert step2_result is None  # Should not exist after restore
+    
+    def test_error_recovery_with_checkpoints(self):
+        """Test error recovery using checkpoints."""
+        manager = ComprehensiveExecutionManager("test_exec", "test_pipeline")
+        manager.start_execution(total_steps=1)
+        
+        # Create initial checkpoint
+        initial_checkpoint = manager.create_checkpoint("initial_state")
+        
+        # Set up rollback recovery plan
+        from src.orchestrator.execution.recovery import RecoveryPlan
+        rollback_plan = RecoveryPlan(
+            strategy=RecoveryStrategy.ROLLBACK,
+            target_checkpoint=initial_checkpoint.id
+        )
+        manager.recovery_manager.set_recovery_plan("step1", rollback_plan)
+        
+        # Handle error
+        error = Exception("Critical error")
+        recovery_plan = manager.handle_step_error("step1", "Test Step", error)
+        
+        assert recovery_plan.strategy == RecoveryStrategy.ROLLBACK
+        assert recovery_plan.target_checkpoint == initial_checkpoint.id
 
 
 if __name__ == "__main__":
