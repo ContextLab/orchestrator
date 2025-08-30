@@ -243,6 +243,43 @@ class TemplateRenderer:
                 if match:
                     return value if value else match.group(1)
             return value if value else ""
+        elif filter_expr.startswith("regex_replace("):
+            # Handle regex_replace filter: regex_replace('pattern', 'replacement')
+            match = re.match(r'regex_replace\(["\']([^"\']*)["\'],\s*["\']([^"\']*)["\']', filter_expr)
+            if match:
+                pattern = match.group(1)
+                replacement = match.group(2)
+                try:
+                    return re.sub(pattern, replacement, str(value))
+                except Exception:
+                    return str(value)  # Return original if regex fails
+        elif filter_expr == "basename":
+            # Handle basename filter - extract filename from path
+            import os
+            return os.path.basename(str(value))
+        elif filter_expr == "slugify":
+            # Handle slugify filter - convert string to URL-safe slug
+            import re
+            slug = re.sub(r'[^\w\s-]', '', str(value).lower())
+            slug = re.sub(r'[\s_-]+', '_', slug)
+            return slug.strip('_')
+        elif filter_expr.startswith("regex_search("):
+            # Handle regex_search filter: regex_search('pattern')
+            match = re.match(r'regex_search\(["\']([^"\']*)["\']', filter_expr)
+            if match:
+                pattern = match.group(1)
+                try:
+                    search_result = re.search(pattern, str(value))
+                    return search_result.group(0) if search_result else ""
+                except Exception:
+                    return ""
+        elif filter_expr == "from_json":
+            # Handle from_json filter - parse JSON string
+            try:
+                import json
+                return json.loads(str(value))
+            except Exception:
+                return str(value)
 
         return value
 

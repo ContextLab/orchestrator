@@ -101,7 +101,7 @@ class TemplateManager:
         
         # Set up Jinja2 environment with custom filters and undefined handling
         self.env = Environment(
-            undefined=ChainableUndefined,
+            undefined=StrictUndefined,
             trim_blocks=True,
             lstrip_blocks=True
         )

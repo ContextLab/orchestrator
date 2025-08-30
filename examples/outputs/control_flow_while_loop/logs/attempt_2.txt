@@ -1,4 +1,4 @@
 Iteration: 2
-Previous guess: 32
-New guess: 37
+Previous guess: None
+New guess: None
 Target: 42

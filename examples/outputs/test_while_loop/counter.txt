@@ -1,0 +1,1 @@
+{{ (read_counter.content | int) + 1 }}

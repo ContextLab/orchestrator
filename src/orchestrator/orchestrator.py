@@ -17,6 +17,7 @@ from .core.resource_allocator import ResourceAllocator
 from .core.task import Task, TaskStatus
 from .core.template_manager import TemplateManager
 from .core.unified_template_resolver import UnifiedTemplateResolver
+from .core.recursive_template_resolver import RecursiveTemplateResolver
 from .executor.parallel_executor import ParallelExecutor
 from .models.model_registry import ModelRegistry
 from .models.registry_singleton import get_model_registry
@@ -56,6 +57,7 @@ class Orchestrator:
         parallel_executor: Optional[ParallelExecutor] = None,
         template_manager: Optional[TemplateManager] = None,
         unified_template_resolver: Optional[UnifiedTemplateResolver] = None,
+        use_recursive_template_resolver: bool = True,
         max_concurrent_tasks: int = 10,
         debug_templates: bool = False,
         use_langgraph_state: bool = False,
@@ -81,6 +83,7 @@ class Orchestrator:
             parallel_executor: Parallel executor for concurrent execution
             template_manager: Template manager for deferred rendering
             unified_template_resolver: Unified template resolver for comprehensive template resolution
+            use_recursive_template_resolver: Use RecursiveTemplateResolver for advanced loop patterns
             max_concurrent_tasks: Maximum concurrent tasks
             debug_templates: Enable debug mode for template rendering
             use_langgraph_state: Use new LangGraph-based state management
@@ -93,22 +96,10 @@ class Orchestrator:
             max_recovery_attempts: Maximum number of recovery attempts
         """
         self.model_registry = model_registry or get_model_registry()
-
-        # Use a proper control system if none provided
-        if control_system is None:
-            # We need models to create a real control system
-            if not self.model_registry.models:
-                raise RuntimeError(
-                    "No control system provided and no models available. "
-                    "Initialize models first with init_models() or provide a control system."
-                )
-
-            from .control_systems.hybrid_control_system import HybridControlSystem
-
-            control_system = HybridControlSystem(self.model_registry)
-
-        self.control_system = control_system
         
+        # Logger - Initialize early so it can be used throughout initialization
+        self.logger = logging.getLogger(__name__)
+
         # Initialize state management - either LangGraph or legacy
         self.use_langgraph_state = use_langgraph_state
         if use_langgraph_state:
@@ -132,11 +123,40 @@ class Orchestrator:
         # Initialize template manager
         self.template_manager = template_manager or TemplateManager(debug_mode=debug_templates)
         
-        # Initialize unified template resolver
-        self.unified_template_resolver = unified_template_resolver or UnifiedTemplateResolver(
-            template_manager=self.template_manager,
-            debug_mode=debug_templates
-        )
+        # Initialize unified template resolver (with recursive support if enabled)
+        if use_recursive_template_resolver and unified_template_resolver is None:
+            self.unified_template_resolver = RecursiveTemplateResolver(
+                template_manager=self.template_manager,
+                debug_mode=debug_templates
+            )
+            self.logger.info("Initialized RecursiveTemplateResolver for advanced loop iteration access")
+        else:
+            self.unified_template_resolver = unified_template_resolver or UnifiedTemplateResolver(
+                template_manager=self.template_manager,
+                debug_mode=debug_templates
+            )
+            if use_recursive_template_resolver:
+                self.logger.warning("use_recursive_template_resolver=True but unified_template_resolver provided - using provided resolver")
+        
+        # Initialize control system after template resolver is ready
+        if control_system is None:
+            # We need models to create a real control system
+            if not self.model_registry.models:
+                raise RuntimeError(
+                    "No control system provided and no models available. "
+                    "Initialize models first with init_models() or provide a control system."
+                )
+
+            from .control_systems.hybrid_control_system import HybridControlSystem
+
+            # Pass the RecursiveTemplateResolver to the control system for advanced loop patterns
+            control_system = HybridControlSystem(
+                self.model_registry, 
+                template_resolver=self.unified_template_resolver
+            )
+            self.logger.info(f"Created HybridControlSystem with {type(self.unified_template_resolver).__name__}")
+
+        self.control_system = control_system
         
         # No default models - must be explicitly initialized
         # Use ControlFlowCompiler to handle for_each, while, and conditionals
@@ -212,9 +232,6 @@ class Orchestrator:
                 self.logger.info(f"Automatic checkpointing enabled with {checkpoint_frequency} frequency")
         else:
             self.durable_executor = None
-
-        # Logger
-        self.logger = logging.getLogger(__name__)
 
     async def execute_pipeline(
         self,
@@ -513,7 +530,7 @@ class Orchestrator:
             enhanced_step_results = dict(context.get("previous_results", {}))
             
             # For loop tasks, add results from sibling tasks in the same iteration using loop context mapping
-            if "_loop_context_mapping" in context and task.metadata.get("is_for_each_child"):
+            if "_loop_context_mapping" in context and (task.metadata.get("is_for_each_child") or task.metadata.get("is_while_loop_child")):
                 loop_context_mapping = context["_loop_context_mapping"]
                 available_results = list(context.get("previous_results", {}).keys())
                 self.logger.info(f"STREAM_C_DEBUG: Enhancing step_results for loop task {task.id}")
@@ -535,15 +552,22 @@ class Orchestrator:
             else:
                 if "_loop_context_mapping" not in context:
                     self.logger.info(f"STREAM_C_DEBUG: No loop context mapping for task {task.id}")
-                if not task.metadata.get("is_for_each_child"):
-                    self.logger.info(f"STREAM_C_DEBUG: Task {task.id} is not a for_each_child")
+                if not (task.metadata.get("is_for_each_child") or task.metadata.get("is_while_loop_child")):
+                    self.logger.info(f"STREAM_C_DEBUG: Task {task.id} is not a for_each_child or while_loop_child")
             
             # Collect comprehensive context for template resolution
+            # Extract pipeline inputs from context (they're merged directly at line 259)
+            pipeline_inputs = {k: v for k, v in context.items() 
+                             if k not in ['pipeline_id', 'pipeline_metadata', 'pipeline_context', 
+                                        'execution_id', 'checkpoint_enabled', 'max_retries', 'start_time',
+                                        'previous_results', '_loop_context_mapping', '$item', '$index', 
+                                        'item', 'index', 'iteration', '$iteration']}
+            
             template_context = self.unified_template_resolver.collect_context(
                 pipeline_id=context.get("pipeline_id"),
                 task_id=task.id,
                 tool_name=task.action,
-                pipeline_inputs=context.get("inputs", {}),
+                pipeline_inputs=pipeline_inputs,
                 pipeline_parameters=context.get("pipeline_params", {}),
                 step_results=enhanced_step_results,
                 tool_parameters=task.parameters,
@@ -639,7 +663,7 @@ class Orchestrator:
             final_step_results = dict(context.get("previous_results", {}))
             
             # For loop tasks, add results from sibling tasks in the same iteration using loop context mapping
-            if "_loop_context_mapping" in context and task.metadata.get("is_for_each_child"):
+            if "_loop_context_mapping" in context and (task.metadata.get("is_for_each_child") or task.metadata.get("is_while_loop_child")):
                 loop_context_mapping = context["_loop_context_mapping"]
                 
                 # Add results using both full task IDs and short names for cross-step references
@@ -651,11 +675,18 @@ class Orchestrator:
                         # Also ensure it's available with the full task ID
                         final_step_results[full_task_id] = result
             
+            # Extract pipeline inputs from context (they're merged directly at line 259)
+            pipeline_inputs = {k: v for k, v in context.items() 
+                             if k not in ['pipeline_id', 'pipeline_metadata', 'pipeline_context', 
+                                        'execution_id', 'checkpoint_enabled', 'max_retries', 'start_time',
+                                        'previous_results', '_loop_context_mapping', '$item', '$index', 
+                                        'item', 'index', 'iteration', '$iteration']}
+            
             template_context = self.unified_template_resolver.collect_context(
                 pipeline_id=context.get("pipeline_id"),
                 task_id=task.id,
                 tool_name=task.action,
-                pipeline_inputs=context.get("inputs", {}),
+                pipeline_inputs=pipeline_inputs,
                 pipeline_parameters=context.get("pipeline_params", {}),
                 step_results=final_step_results,
                 tool_parameters=task.parameters,
@@ -1157,7 +1188,11 @@ class Orchestrator:
                 else:
                     # Mark loop as completed
                     if task.status == TaskStatus.PENDING:
-                        task.complete({"iterations": current_iteration, "status": "completed"})
+                        task.complete({
+                            "iterations": current_iteration, 
+                            "status": "completed",
+                            "completed": True  # Also provide completed as boolean for template compatibility
+                        })
                         self.logger.info(
                             f"While loop {loop_id} completed after {current_iteration} iterations"
                         )
@@ -1571,6 +1606,50 @@ class Orchestrator:
                         
                         # Register result immediately with template manager so subsequent tasks can use it
                         self.template_manager.register_context(task_id, result)
+                        
+                        # Issue #287: Register with RecursiveTemplateResolver for advanced loop iteration access
+                        if isinstance(self.unified_template_resolver, RecursiveTemplateResolver):
+                            self.logger.debug(f"RECURSIVE_DEBUG: Checking task {task_id} for iteration result pattern")
+                            
+                            if task_id.endswith('_result') and '_' in task_id:
+                                self.logger.debug(f"RECURSIVE_DEBUG: Task {task_id} matches _result pattern")
+                                # This looks like a loop iteration result task (format: loop_id_iteration_result)
+                                parts = task_id.split('_')
+                                self.logger.debug(f"RECURSIVE_DEBUG: Split into parts: {parts}")
+                                
+                                if len(parts) >= 3 and parts[-1] == 'result' and parts[-2].isdigit():
+                                    loop_id = '_'.join(parts[:-2])
+                                    iteration = int(parts[-2])
+                                    self.logger.debug(f"RECURSIVE_DEBUG: Detected loop_id={loop_id}, iteration={iteration}")
+                                    
+                                    # Collect all results for this iteration
+                                    iteration_results = {}
+                                    iteration_prefix = f"{loop_id}_{iteration}_"
+                                    self.logger.debug(f"RECURSIVE_DEBUG: Looking for tasks with prefix: {iteration_prefix}")
+                                    
+                                    # Look through the execution context for previous results
+                                    all_results = context.get("previous_results", {})
+                                    self.logger.debug(f"RECURSIVE_DEBUG: Available previous results: {list(all_results.keys())}")
+                                    
+                                    for result_id, result_data in all_results.items():
+                                        if result_id.startswith(iteration_prefix) and not result_id.endswith('_result'):
+                                            # Extract step name (remove loop_id_iteration_ prefix)
+                                            step_name = result_id[len(iteration_prefix):]
+                                            iteration_results[step_name] = result_data
+                                            self.logger.debug(f"RECURSIVE_DEBUG: Added step {step_name} to iteration results")
+                                    
+                                    # Register the complete iteration with the recursive resolver
+                                    if iteration_results:
+                                        self.unified_template_resolver.register_loop_iteration(
+                                            loop_id, iteration, iteration_results
+                                        )
+                                        self.logger.info(f"Registered iteration {iteration} for loop {loop_id} with {len(iteration_results)} step results")
+                                    else:
+                                        self.logger.warning(f"RECURSIVE_DEBUG: No iteration results found for {loop_id} iteration {iteration}")
+                                else:
+                                    self.logger.debug(f"RECURSIVE_DEBUG: Task {task_id} doesn't match iteration pattern")
+                            else:
+                                self.logger.debug(f"RECURSIVE_DEBUG: Task {task_id} doesn't end with _result")
                         
                         # For loop iteration tasks, also register under the original unprefixed name
                         task = pipeline.get_task(task_id)
@@ -2163,14 +2242,18 @@ class Orchestrator:
 
         Args:
             yaml_content: YAML pipeline definition
-            context: Template context variables
+            context: Template context variables (pipeline inputs)
             **kwargs: Additional execution parameters
 
         Returns:
             Execution results
         """
-        # Compile YAML to pipeline
+        # Compile YAML to pipeline  
         pipeline = await self.yaml_compiler.compile(yaml_content, context)
+
+        # Merge inputs into pipeline context (critical for template resolution)
+        if context:
+            pipeline.context.update(context)
 
         # Execute pipeline
         return await self.execute_pipeline(pipeline, **kwargs)

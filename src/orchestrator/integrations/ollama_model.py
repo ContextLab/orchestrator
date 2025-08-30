@@ -30,7 +30,7 @@ class OllamaModel(Model):
     MODEL_CONFIGS = {
         "gemma2:27b": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "chat", "reasoning", "code", "analyze", "transform"],
+                supported_tasks=["generate", "chat", "reasoning", "code", "analyze", "transform", "summarize", "extract"],
                 context_window=8192,
                 supports_function_calling=False,
                 supports_structured_output=True,
@@ -59,7 +59,7 @@ class OllamaModel(Model):
         },
         "gemma2:9b": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "chat", "reasoning", "code", "analyze", "transform"],
+                supported_tasks=["generate", "chat", "reasoning", "code", "analyze", "transform", "summarize", "extract"],
                 context_window=8192,
                 supports_function_calling=False,
                 supports_structured_output=True,
@@ -88,7 +88,7 @@ class OllamaModel(Model):
         },
         "llama3.2:3b": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "chat", "reasoning", "analyze", "transform"],
+                supported_tasks=["generate", "chat", "reasoning", "analyze", "transform", "summarize", "extract"],
                 context_window=4096,
                 supports_function_calling=False,
                 supports_structured_output=True,
@@ -117,7 +117,7 @@ class OllamaModel(Model):
         },
         "llama3.2:1b": {
             "capabilities": ModelCapabilities(
-                supported_tasks=["generate", "chat", "analyze", "transform"],
+                supported_tasks=["generate", "chat", "analyze", "transform", "summarize", "extract"],
                 context_window=4096,
                 supports_function_calling=False,
                 supports_structured_output=True,
@@ -172,7 +172,7 @@ class OllamaModel(Model):
             model_name,
             {
                 "capabilities": ModelCapabilities(
-                    supported_tasks=["generate", "chat", "analyze", "transform"],
+                    supported_tasks=["generate", "chat", "analyze", "transform", "summarize", "extract"],
                     context_window=4096,
                     supports_function_calling=False,
                     supports_structured_output=True,

@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 import httpx
 import requests
 from bs4 import BeautifulSoup
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 
 from .base import Tool
 

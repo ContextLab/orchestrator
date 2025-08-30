@@ -1,24 +1,30 @@
 # GitHub Issue Mapping
 
-Epic: #274 - https://github.com/ContextLab/orchestrator/issues/274
+Epic: #292 - https://github.com/ContextLab/orchestrator/issues/292
 
 Tasks:
-- #275: Template Resolution System Fix (GitHub #223 - CRITICAL) - https://github.com/ContextLab/orchestrator/issues/275
-- #276: Repository Cleanup & Organization (GitHub #2) - https://github.com/ContextLab/orchestrator/issues/276
-- #277: LLM Quality Review Infrastructure - https://github.com/ContextLab/orchestrator/issues/277
-- #281: Pipeline Testing Infrastructure - https://github.com/ContextLab/orchestrator/issues/281
-- #282: Pipeline Validation Batch 1 - Previously Resolved Pipelines (GitHub #154-171) - https://github.com/ContextLab/orchestrator/issues/282
-- #283: Pipeline Validation Batch 2 - Remaining Pipelines (GitHub #172-182, #186) - https://github.com/ContextLab/orchestrator/issues/283
-- #284: Tutorial Documentation System (GitHub #214) - https://github.com/ContextLab/orchestrator/issues/284
-- #285: Quality Assurance Integration & Automation - https://github.com/ContextLab/orchestrator/issues/285
+- #275-analysis:  - https://github.com/ContextLab/orchestrator/issues/275-analysis
+- #276-analysis:  - https://github.com/ContextLab/orchestrator/issues/276-analysis
+- #277-analysis:  - https://github.com/ContextLab/orchestrator/issues/277-analysis
+- #281-analysis:  - https://github.com/ContextLab/orchestrator/issues/281-analysis
+- #281-completion-summary:  - https://github.com/ContextLab/orchestrator/issues/281-completion-summary
+- #283-completion-summary:  - https://github.com/ContextLab/orchestrator/issues/283-completion-summary
+- #286-analysis:  - https://github.com/ContextLab/orchestrator/issues/286-analysis
+- #287-analysis:  - https://github.com/ContextLab/orchestrator/issues/287-analysis
+- #288-analysis:  - https://github.com/ContextLab/orchestrator/issues/288-analysis
+- #293:  - https://github.com/ContextLab/orchestrator/issues/293
+- #294:  - https://github.com/ContextLab/orchestrator/issues/294
+- #295:  - https://github.com/ContextLab/orchestrator/issues/295
+- #296:  - https://github.com/ContextLab/orchestrator/issues/296
+- #297:  - https://github.com/ContextLab/orchestrator/issues/297
+- #298:  - https://github.com/ContextLab/orchestrator/issues/298
+- #299:  - https://github.com/ContextLab/orchestrator/issues/299
+- #300:  - https://github.com/ContextLab/orchestrator/issues/300
+- #301:  - https://github.com/ContextLab/orchestrator/issues/301
+- #302:  - https://github.com/ContextLab/orchestrator/issues/302
+- #303:  - https://github.com/ContextLab/orchestrator/issues/303
+- #304:  - https://github.com/ContextLab/orchestrator/issues/304
+- #305: {pipeline_name} - https://github.com/ContextLab/orchestrator/issues/305
+- #306:  - https://github.com/ContextLab/orchestrator/issues/306
 
-Updated: 2025-08-26T09:45:00Z
-
-## Recent Completions
-- Issue #277: LLM Quality Review Infrastructure - COMPLETE ✅ (all 4 streams)
-- Issue #281: Pipeline Testing Infrastructure - COMPLETE ✅ (all 4 streams) - JUST COMPLETED
-
-## Current Status
-- Epic Progress: 75% complete (4/8 issues complete)
-- Next Ready: Issue #282 (Pipeline Validation Batch 1) - dependencies met
-- Infrastructure Phase: COMPLETE - Ready for pipeline validation phase
+Synced: 2025-08-29T12:42:50Z

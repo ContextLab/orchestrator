@@ -3,7 +3,7 @@
   "errors": [],
   "warnings": [],
   "rows_validated": 0,
-  "timestamp": "2025-08-22 14:51:19.436626",
-  "input_file": "data/sample.csv",
+  "timestamp": "2025-08-28 00:28:05.009272",
+  "input_file": "sales_data.csv",
   "validation_mode": "strict"
 }

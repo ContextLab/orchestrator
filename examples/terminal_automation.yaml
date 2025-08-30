@@ -46,22 +46,22 @@ steps:
         
         ## Python Environment
         ```
-        {{ check_python.stdout }}
+        {{ check_python.result.stdout }}
         ```
         
         ## Installed Packages
         ```
-        {{ check_packages.stdout | default('No data science packages found') }}
+        {{ check_packages.result.stdout | default('No data science packages found') }}
         ```
         
         ## System Details
         ```
-        {{ system_info.stdout }}
+        {{ system_info.result.stdout }}
         ```
         
         ## Disk Usage
         ```
-        {{ disk_usage.stdout }}
+        {{ disk_usage.result.stdout }}
         ```
         
         Generated on: {{ execution.timestamp }}

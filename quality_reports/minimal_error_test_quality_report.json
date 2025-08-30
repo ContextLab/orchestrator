@@ -1,0 +1,41 @@
+{
+  "pipeline_name": "minimal_error_test",
+  "overall_score": 72,
+  "files_reviewed": [
+    "examples/outputs/minimal_error_test/test_output.txt"
+  ],
+  "critical_issues": [
+    {
+      "category": "completeness",
+      "severity": "critical",
+      "description": "The content is truncated and incomplete.",
+      "file_path": "examples/outputs/minimal_error_test/test_output.txt",
+      "line_number": null,
+      "suggestion": "Ensure the full content is generated and included in the output.",
+      "confidence": 1.0,
+      "detected_at": "2025-08-27T13:51:07.294870"
+    }
+  ],
+  "major_issues": [],
+  "minor_issues": [
+    {
+      "category": "completeness",
+      "severity": "minor",
+      "description": "Content appears very brief - may be incomplete",
+      "file_path": "examples/outputs/minimal_error_test/test_output.txt",
+      "line_number": null,
+      "suggestion": "Verify that all expected content is present and complete",
+      "confidence": 1.0,
+      "detected_at": "2025-08-27T13:51:02.920043"
+    }
+  ],
+  "recommendations": [
+    "Address 1 critical issues immediately - pipeline not ready for production",
+    "Ensure all content is complete and replace any placeholder text"
+  ],
+  "production_ready": false,
+  "reviewed_at": "2025-08-27T13:51:07.294900",
+  "reviewer_model": "chatgpt-5",
+  "review_duration_seconds": 4.376564979553223,
+  "total_issues": 2
+}

@@ -1,10 +1,11 @@
 ---
 name: validate-all-example-pipelines-with-manual-checks
-status: backlog
+status: in_progress
 created: 2025-08-25T18:35:00Z
-progress: 0%
+progress: 8%
 prd: .claude/prds/validate-all-example-pipelines-with-manual-checks.md
-github: https://github.com/ContextLab/orchestrator/issues/274
+github: https://github.com/ContextLab/orchestrator/issues/292
+updated: 2025-08-29T21:34:56Z
 ---
 
 # Epic: Comprehensive Example Pipeline Validation & Enhancement

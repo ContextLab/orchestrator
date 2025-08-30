@@ -39,7 +39,7 @@ steps:
     
   # Main iterative fact-checking loop
   - id: fact_check_loop
-    while: "{{ quality_score | default(0) < parameters.quality_threshold }}"
+    while: "true"
     max_iterations: 3
     dependencies:
       - load_initial_doc
@@ -49,16 +49,11 @@ steps:
         tool: filesystem
         action: read
         parameters:
-          path: |
-            {% if $iteration == 1 %}
-            {{ parameters.input_document }}
-            {% else %}
-            {{ output_path }}/iteration_{{ $iteration - 1 }}_document.md
-            {% endif %}
+          path: "{{ parameters.input_document }}"
     
       # Extract all claims and existing references
       - id: extract_claims
-        action: generate-structured
+        action: generate
         parameters:
           prompt: |
             Analyze this document and extract all factual claims and their references.
@@ -66,30 +61,26 @@ steps:
             Document:
             {{ load_document.content }}
             
-            For each claim:
-            1. Extract the claim text
-            2. Note if it has a reference/citation
-            3. If it has a reference, extract the reference details
-          schema:
-            type: object
-            properties:
-              claims:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    text:
-                      type: string
-                    has_reference:
-                      type: boolean
-                    reference_url:
-                      type: string
-              total_claims:
-                type: integer
-              claims_with_references:
-                type: integer
-              percentage_referenced:
-                type: number
+            For each claim, provide:
+            1. The claim text
+            2. Whether it has a reference/citation (true/false)
+            3. If it has a reference, extract the reference URL
+            
+            Please respond in the following JSON format:
+            {
+              "claims": [
+                {
+                  "text": "claim text here",
+                  "has_reference": true/false,
+                  "reference_url": "URL if available"
+                }
+              ],
+              "total_claims": number,
+              "claims_with_references": number,
+              "percentage_referenced": decimal_percentage
+            }
+            
+            Return ONLY the JSON, no other text.
           model: "claude-sonnet-4-20250514"
           max_tokens: 2000
     
@@ -99,7 +90,7 @@ steps:
         parameters:
           prompt: |
             Verify which of these reference URLs are valid and accessible:
-            {% for claim in extract_claims.claims %}
+            {% for claim in (extract_claims.result | from_json).claims %}
             {% if claim.has_reference and claim.reference_url %}
             - {{ claim.reference_url }}
             {% endif %}
@@ -116,7 +107,7 @@ steps:
           prompt: |
             Find reliable sources and citations for these unreferenced claims:
             
-            {% for claim in extract_claims.claims %}
+            {% for claim in (extract_claims.result | from_json).claims %}
             {% if not claim.has_reference %}
             - {{ claim.text }}
             {% endif %}
@@ -165,17 +156,16 @@ steps:
           path: "{{ output_path }}/iteration_{{ $iteration }}_document.md"
           content: "{{ update_document.result }}"
       
-      # Update quality score variable for loop condition
+      # Update quality score for reporting
       - id: update_score
         action: generate
         parameters:
           prompt: |
-            The document now has {{ extract_claims.claims_with_references }} out of {{ extract_claims.total_claims }} claims with references.
-            This is {{ extract_claims.percentage_referenced }}% referenced.
+            The document now has {{ (extract_claims.result | from_json).claims_with_references }} out of {{ (extract_claims.result | from_json).total_claims }} claims with references.
+            This is {{ (extract_claims.result | from_json).percentage_referenced }}% referenced.
             Output just the decimal percentage (e.g., 0.95 for 95%).
           model: "claude-sonnet-4-20250514"
           max_tokens: 10
-        produces: quality_score
     
   # Save the final verified document
   - id: save_final_document
@@ -203,24 +193,24 @@ steps:
         
         ## Document Information
         - **Source Document**: {{ parameters.input_document }}
-        - **Date Processed**: {{ timestamp }}
+        - **Date Processed**: {{ execution.timestamp }}
         
         ## Processing Summary
         - **Total Iterations**: {{ fact_check_loop.iteration_count | default(1) }}
         - **Quality Threshold**: {{ parameters.quality_threshold * 100 }}%
-        - **Final Quality Score**: {% if fact_check_loop.iterations %}{{ fact_check_loop.iterations[-1].extract_claims.percentage_referenced }}%{% else %}N/A{% endif %}
+        - **Final Quality Score**: {% if fact_check_loop.iterations %}{{ (fact_check_loop.iterations[-1].extract_claims.result | from_json).percentage_referenced }}%{% else %}N/A{% endif %}
         
         ## Iteration Details
         {% for iteration in fact_check_loop.iterations %}
         ### Iteration {{ loop.index }}
-        - Claims analyzed: {{ iteration.extract_claims.total_claims }}
-        - Claims with references: {{ iteration.extract_claims.claims_with_references }}
-        - Percentage referenced: {{ iteration.extract_claims.percentage_referenced }}%
+        - Claims analyzed: {{ (iteration.extract_claims.result | from_json).total_claims }}
+        - Claims with references: {{ (iteration.extract_claims.result | from_json).claims_with_references }}
+        - Percentage referenced: {{ (iteration.extract_claims.result | from_json).percentage_referenced }}%
         - New citations added: {{ iteration.find_citations.result | length | default(0) }}
         {% endfor %}
         
         ## Final Status
-        {% if fact_check_loop.iterations and fact_check_loop.iterations[-1].extract_claims.percentage_referenced >= parameters.quality_threshold * 100 %}
+        {% if fact_check_loop.iterations and (fact_check_loop.iterations[-1].extract_claims.result | from_json).percentage_referenced >= parameters.quality_threshold * 100 %}
         ✅ **Quality threshold met**: All or most claims now have proper references.
         {% else %}
         ⚠️ **Maximum iterations reached**: Some claims may still lack references.
@@ -239,4 +229,4 @@ outputs:
   verified_document: "{{ save_final_document.path }}"
   report: "{{ generate_report.path }}"
   iterations_performed: "{{ fact_check_loop.iteration_count | default(0) }}"
-  final_quality: "{% if fact_check_loop.iterations %}{{ fact_check_loop.iterations[-1].extract_claims.percentage_referenced }}%{% else %}N/A{% endif %}"
+  final_quality: "{% if fact_check_loop.iterations %}{{ (fact_check_loop.iterations[-1].extract_claims.result | from_json).percentage_referenced }}%{% else %}N/A{% endif %}"

@@ -1,0 +1,54 @@
+# Basic Error Handling Examples - Compatible with current schema
+# Simple examples demonstrating basic error handling patterns
+
+name: simple_error_handling_basic
+version: 1.0.0
+description: "Basic error handling examples that work with current schema"
+
+inputs:
+  api_url:
+    type: string
+    default: "https://jsonplaceholder.typicode.com"
+    description: "API endpoint for testing"
+
+steps:
+  # Basic error handling with simple fallback string
+  - id: api_call_with_fallback
+    action: "Fetch data from API"
+    parameters:
+      url: "{{api_url}}/posts/1"
+    on_error: "Use cached data when API fails"
+
+  # File handling with recovery
+  - id: file_processing
+    action: "Read and process data file"
+    parameters:
+      file_path: "./data/nonexistent_input.json"
+    on_error: "Create default data file if missing"
+
+  # Test with timeout
+  - id: timeout_test
+    action: "Test operation with timeout"
+    tool: python-executor
+    parameters:
+      code: |
+        import time
+        print("Starting operation...")
+        time.sleep(1)  # Short operation that should succeed
+        print("Operation completed")
+        result = {"status": "success", "data": "test_data"}
+        print(f"Result: {result}")
+    timeout: 5
+    on_error: "Handle timeout gracefully"
+
+  # Test robust operation
+  - id: robust_operation
+    action: "Perform robust data operation"
+    parameters:
+      source: "{{api_url}}/posts"
+    on_error: "Log error and continue with defaults"
+
+outputs:
+  api_data: "{{api_call_with_fallback.result}}"
+  processed_data: "{{robust_operation.result}}"
+  timeout_result: "{{timeout_test.result}}"

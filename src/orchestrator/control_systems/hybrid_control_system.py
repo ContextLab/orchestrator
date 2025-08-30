@@ -57,6 +57,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         model_registry: ModelRegistry,
         name: str = "hybrid-control-system",
         config: Optional[Dict[str, Any]] = None,
+        template_resolver: Optional[UnifiedTemplateResolver] = None,
     ) -> None:
         """Initialize hybrid control system."""
         # Initialize parent with extended capabilities
@@ -94,9 +95,13 @@ class HybridControlSystem(ModelBasedControlSystem):
 
         super().__init__(model_registry, name, config)
 
-        # Initialize unified template resolver (in addition to the parent's resolver)
-        # This gives us more control for hybrid-specific template handling
-        self.hybrid_template_resolver = UnifiedTemplateResolver(debug_mode=True)
+        # Use provided template resolver or create new one
+        # Issue #287: Support RecursiveTemplateResolver for advanced loop patterns  
+        self.hybrid_template_resolver = template_resolver or UnifiedTemplateResolver(debug_mode=True)
+        
+        # Add instance ID tracking for debugging (Issue #290 fix)
+        import uuid
+        self.hybrid_template_resolver.template_manager.instance_id = f"tm_{uuid.uuid4().hex[:8]}"
 
         # Initialize tools
         self.filesystem_tool = FileSystemTool()
@@ -319,10 +324,26 @@ class HybridControlSystem(ModelBasedControlSystem):
             logger.info(f"Initialized runtime resolution for pipeline {pipeline_id}")
         
         # Collect comprehensive template context
+        # Extract pipeline inputs from context (they're merged directly in orchestrator)
+        pipeline_inputs = {k: v for k, v in context.items() 
+                         if k not in ["pipeline_id", "pipeline_metadata", "pipeline_context", 
+                                    "execution_id", "checkpoint_enabled", "max_retries", "start_time",
+                                    "previous_results", "_loop_context_mapping", "$item", "$index", 
+                                    "item", "index", "iteration", "$iteration", "_template_manager",
+                                    "pipeline_params", "template_manager", "unified_template_resolver",
+                                    "template_resolution_context", "task_id", "current_level", 
+                                    "resource_allocation"]}
+        
+        # CRITICAL FIX: Merge pipeline parameter values into pipeline_inputs 
+        # This allows templates like {{ parameters.input_document }} and {{ input_document }} to work
+        if "pipeline_params" in context and isinstance(context["pipeline_params"], dict):
+            pipeline_inputs.update(context["pipeline_params"])
+        
+        
         template_context = self.hybrid_template_resolver.collect_context(
             pipeline_id=context.get("pipeline_id"),
             task_id=context.get("task_id"),
-            pipeline_inputs=context.get("pipeline_inputs", {}),
+            pipeline_inputs=pipeline_inputs,
             pipeline_parameters=context.get("pipeline_params", {}),
             step_results=context.get("previous_results", {}),
             additional_context={
@@ -337,15 +358,86 @@ class HybridControlSystem(ModelBasedControlSystem):
                 "$is_last": context.get("$is_last"),
                 "$iteration": context.get("$iteration"),
                 "$loop_state": context.get("$loop_state"),
-                # Add other context variables
+                # Add other context variables including execution metadata and parameters
                 **{k: v for k, v in context.items() 
                    if k not in ["pipeline_id", "pipeline_inputs", "pipeline_params", "previous_results", "_template_manager"]
-                   and not k.startswith("_")}
+                   and not k.startswith("_")},
+                # Explicitly include critical template objects that might be missing
+                "execution": self._get_execution_metadata(context),
+                "parameters": self._extract_pipeline_parameters(pipeline_inputs, context),
             }
         )
         
         logger.info(f"Prepared template context with {len(template_context.to_flat_dict())} variables")
+        
+        # DEBUG: Quick check that critical template objects are there
+        flat_context = template_context.to_flat_dict()
+        if "parameters" in flat_context and flat_context['parameters']:
+            logger.info(f"✅ Parameters object available with {len(flat_context['parameters'])} items")
+        else:
+            logger.warning(f"❌ Parameters object missing or empty")
+        if "execution" in flat_context and flat_context['execution']:
+            logger.info(f"✅ Execution object available") 
+        else:
+            logger.warning(f"❌ Execution object missing or empty")
+        
         return template_context
+    
+    def _get_execution_metadata(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Get execution metadata for templates."""
+        from datetime import datetime
+        
+        # Try to get existing execution metadata
+        existing_execution = context.get("execution", {})
+        if isinstance(existing_execution, dict) and existing_execution:
+            # If we have execution metadata with timestamp, use it
+            if "timestamp" in existing_execution:
+                return existing_execution
+        
+        # Generate new execution metadata
+        now = datetime.now()
+        return {
+            "timestamp": now.strftime("%Y-%m-%dT%H:%M:%S"),
+            "date": now.strftime("%Y-%m-%d"),
+            "time": now.strftime("%H:%M:%S"),
+            "iso_timestamp": now.isoformat(),
+            "pipeline_id": context.get("pipeline_id", "unknown"),
+            "execution_id": context.get("execution_id", "unknown"),
+        }
+    
+    def _extract_pipeline_parameters(self, pipeline_inputs: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract original pipeline parameters for template access."""
+        # Look for original pipeline parameters - they typically include user inputs
+        # and are NOT auto-generated values like task results, execution metadata, etc.
+        
+        # First check if we have explicit parameters from context
+        if "parameters" in context and isinstance(context["parameters"], dict) and context["parameters"]:
+            return context["parameters"]
+        
+        if "pipeline_params" in context and isinstance(context["pipeline_params"], dict) and context["pipeline_params"]:
+            return context["pipeline_params"]
+        
+        # Extract likely parameters from pipeline_inputs 
+        # These are typically the user-provided parameters defined in the YAML
+        parameter_candidates = {}
+        
+        # Common pipeline parameter names (adjust as needed)
+        likely_param_keys = {
+            'input_document', 'output_path', 'quality_threshold', 'max_iterations',
+            'input_file', 'output_file', 'model', 'temperature', 'max_tokens',
+            'source_file', 'target_file', 'batch_size', 'threshold', 'iterations'
+        }
+        
+        for key, value in pipeline_inputs.items():
+            # Skip auto-generated values
+            if (key in likely_param_keys or 
+                # Include simple string/number values that look like user parameters
+                (isinstance(value, (str, int, float, bool)) and 
+                 not key.startswith('_') and 
+                 key not in ['execution_id', 'pipeline_id', 'task_id', 'current_level', 'timestamp'])):
+                parameter_candidates[key] = value
+        
+        return parameter_candidates
     
     def _get_runtime_resolution_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Get context from runtime resolution system if available."""
@@ -389,8 +481,15 @@ class HybridControlSystem(ModelBasedControlSystem):
             )
             
             # Pass the unified resolver components to the tool for runtime rendering
-            resolved_params["unified_template_resolver"] = self.hybrid_template_resolver
-            resolved_params["template_resolution_context"] = template_context
+            resolved_params["_unified_resolver"] = self.hybrid_template_resolver
+            resolved_params["_resolution_context"] = template_context
+            
+            # Pass the UnifiedTemplateResolver's template manager with proper context
+            # This is the template manager that has the correct context registered
+            resolved_params["_template_manager"] = self.hybrid_template_resolver.template_manager
+            
+            # Log instance being passed for debugging (Issue #290 fix)
+            logger.info(f"Passing template_manager instance {getattr(self.hybrid_template_resolver.template_manager, 'instance_id', 'unknown')}")
             
             # Also pass loop context mapping if available
             if "_loop_context_mapping" in context:
@@ -421,8 +520,15 @@ class HybridControlSystem(ModelBasedControlSystem):
             )
             
             # Pass the unified resolver components to the tool for runtime rendering
-            resolved_params["unified_template_resolver"] = self.hybrid_template_resolver
-            resolved_params["template_resolution_context"] = template_context
+            resolved_params["_unified_resolver"] = self.hybrid_template_resolver
+            resolved_params["_resolution_context"] = template_context
+            
+            # Pass the UnifiedTemplateResolver's template manager with proper context
+            # This is the template manager that has the correct context registered
+            resolved_params["_template_manager"] = self.hybrid_template_resolver.template_manager
+            
+            # Log instance being passed for debugging (Issue #290 fix)
+            logger.info(f"Passing template_manager instance {getattr(self.hybrid_template_resolver.template_manager, 'instance_id', 'unknown')}")
             
             # Also pass loop context mapping if available
             if "_loop_context_mapping" in context:
@@ -1177,25 +1283,79 @@ Just return the optimized prompt, nothing else."""
             }
     
     async def _handle_generate_text(self, task: Task, context: Dict[str, Any]) -> Any:
-        """Handle text generation using AI models (alias for analyze_text)."""
-        # Generate text is essentially the same as analyze_text
-        # Just with a different default prompt structure
+        """Handle text generation using AI models."""
+        # Use the model-based control system for direct text generation
+        # This bypasses the analyze_text handler which adds "Data:" formatting
         params = task.parameters.copy()
         
-        # If no analysis_type specified, set it to generation
-        if "analysis_type" not in params:
-            params["analysis_type"] = "text_generation"
+        # Get the prompt directly from parameters
+        if "prompt" not in params:
+            raise ValueError(f"Task '{task.id}' with action 'generate_text' requires a 'prompt' parameter")
         
-        # Create task for analyze_text handler
-        analyze_task = Task(
-            id=task.id,
-            name=task.name if hasattr(task, 'name') else task.id,
-            action="analyze_text",
-            parameters=params,
-            dependencies=task.dependencies
-        )
+        prompt = params["prompt"]
         
-        return await self._handle_analyze_text(analyze_task, context)
+        # Get model from parameters or select appropriate model
+        model_spec = params.get("model")
+        model = None
+        
+        if model_spec:
+            if isinstance(model_spec, str) and not model_spec.startswith("<AUTO"):
+                # Direct model specification
+                model = self.model_registry.get_model(model_spec)
+            elif isinstance(model_spec, str) and model_spec.startswith("<AUTO"):
+                # AUTO tag - let model registry select
+                requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
+                model = await self.model_registry.select_model(requirements)
+        else:
+            # No model specified, select appropriate model
+            requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
+            model = await self.model_registry.select_model(requirements)
+        
+        if not model:
+            return {
+                "success": False,
+                "error": "No suitable model found for text generation"
+            }
+        
+        try:
+            # Call model directly for generation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Calling model {model.name if hasattr(model, 'name') else str(model)} for generate_text")
+            
+            response = await model.generate(
+                prompt=prompt,
+                max_tokens=params.get("max_tokens", 1000),
+                temperature=params.get("temperature", 0.7)
+            )
+            
+            logger.info(f"Model response length: {len(response) if response else 0} chars")
+            if not response:
+                logger.warning("Model returned empty response!")
+                logger.warning(f"Prompt was: {prompt[:500]}")
+                return {
+                    "action": "generate_text",
+                    "result": {"error": "Model returned empty response"},
+                    "model_used": model.name if hasattr(model, 'name') else str(model),
+                    "success": False
+                }
+            
+            return {
+                "action": "generate_text",
+                "result": response,
+                "model_used": model.name if hasattr(model, 'name') else str(model),
+                "success": True
+            }
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in text generation: {str(e)}")
+            return {
+                "action": "generate_text",
+                "success": False,
+                "error": str(e)
+            }
     
     async def _handle_mcp_server(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle MCP server operations."""
