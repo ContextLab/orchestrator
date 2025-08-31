@@ -28,9 +28,10 @@ except ImportError:
     CompiledStateGraph = None
     MemorySaver = None
 
-from ..foundation.interfaces import ExecutionEngineInterface, FoundationConfig
-from ..foundation.pipeline_spec import PipelineSpecification, PipelineStep
-from ..foundation.result import PipelineResult, StepResult
+from ..foundation._compatibility import (
+    ExecutionEngineInterface, FoundationConfig, PipelineSpecification, 
+    PipelineStep, PipelineResult, StepResult
+)
 
 
 logger = logging.getLogger(__name__)

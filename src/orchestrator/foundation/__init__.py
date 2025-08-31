@@ -1,59 +1,49 @@
 """
-Foundation package for the refactored orchestrator architecture.
+Compatibility module for foundation components.
 
-This package contains the core interfaces and abstract classes that define
-the foundational architecture for the new orchestrator system.
+This module provides backward compatibility during the migration to the new architecture.
+All foundation components have been migrated to the execution and api modules.
 """
 
-from .interfaces import (
-    PipelineCompilerInterface,
+# Import compatibility layer for backward compatibility
+from ._compatibility import (
     ExecutionEngineInterface,
-    ModelManagerInterface,
-    ToolRegistryInterface,
-    QualityControlInterface,
+    FoundationConfig,
+    PipelineSpecification,
+    PipelineStep,
+    PipelineResult,
+    StepResult,
 )
-from .pipeline_spec import PipelineSpecification, PipelineHeader, PipelineStep
-from .result import PipelineResult, StepResult
 
-# Optional imports for state graph components
+# Legacy interfaces for backward compatibility
 try:
-    from .state_graph import StateGraphCompiler, StateGraphExecutor
-    _has_state_graph = True
+    from .interfaces import (
+        PipelineCompilerInterface,
+        ModelManagerInterface,
+        ToolRegistryInterface,
+        QualityControlInterface,
+    )
 except ImportError:
-    StateGraphCompiler = None
-    StateGraphExecutor = None
-    _has_state_graph = False
+    # Provide stubs if files don't exist
+    class PipelineCompilerInterface:
+        pass
+    class ModelManagerInterface:
+        pass
+    class ToolRegistryInterface:
+        pass
+    class QualityControlInterface:
+        pass
 
-# Configuration data class
-try:
-    from .config import FoundationConfig
-except ImportError:
-    # Create a simple FoundationConfig if not found elsewhere
-    from dataclasses import dataclass
-    from typing import Optional
-    
-    @dataclass
-    class FoundationConfig:
-        """Foundation configuration with default values."""
-        default_model: Optional[str] = None
-        model_selection_strategy: str = "balanced"
-        max_concurrent_steps: int = 5
-        enable_quality_checks: bool = True
-        enable_persistence: bool = False
-
+# Re-export for backward compatibility
 __all__ = [
-    "PipelineCompilerInterface",
-    "ExecutionEngineInterface", 
-    "ModelManagerInterface",
-    "ToolRegistryInterface",
-    "QualityControlInterface",
+    "ExecutionEngineInterface",
+    "FoundationConfig", 
     "PipelineSpecification",
-    "PipelineHeader",
     "PipelineStep",
     "PipelineResult",
     "StepResult",
-    "FoundationConfig",
+    "PipelineCompilerInterface",
+    "ModelManagerInterface",
+    "ToolRegistryInterface", 
+    "QualityControlInterface",
 ]
-
-if _has_state_graph:
-    __all__.extend(["StateGraphCompiler", "StateGraphExecutor"])

@@ -33,6 +33,20 @@ from .control_flow import (
 )
 from .engine.control_flow_engine import ControlFlowEngine
 
+# New API components (optional import to avoid breaking existing code)
+try:
+    from .api import (
+        PipelineAPI,
+        AdvancedPipelineCompiler,
+        PipelineExecutor,
+        create_pipeline_api,
+        create_advanced_pipeline_compiler,
+        create_pipeline_executor,
+    )
+    _has_api_components = True
+except ImportError:
+    _has_api_components = False
+
 # Error hierarchy
 from .core.exceptions import (
     OrchestratorError,
@@ -576,3 +590,14 @@ __all__ = [
     "ControlFlowAutoResolver",
     "ControlFlowEngine",
 ]
+
+# Add API components to exports if available
+if _has_api_components:
+    __all__.extend([
+        "PipelineAPI",
+        "AdvancedPipelineCompiler", 
+        "PipelineExecutor",
+        "create_pipeline_api",
+        "create_advanced_pipeline_compiler",
+        "create_pipeline_executor",
+    ])
