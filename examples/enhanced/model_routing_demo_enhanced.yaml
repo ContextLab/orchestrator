@@ -1,0 +1,172 @@
+id: model-routing-demo
+name: model-routing-demonstration
+description: Demonstrates intelligent model routing capabilities
+version: 1.0.0
+inputs:
+  task_budget: 10.0
+  priority: balanced
+steps:
+- id: assess_requirements
+  tool: multi-model-routing
+  action: execute
+  parameters:
+    action: route
+    tasks:
+    - task: Summarize this document in 2-3 sentences
+      context: 'Artificial intelligence continues to revolutionize industries worldwide.
+
+        From healthcare to finance, AI applications are becoming increasingly sophisticated.
+
+        Machine learning models can now process vast amounts of data in real-time,
+
+        enabling predictive analytics and automated decision-making at unprecedented
+        scales.
+
+        '
+    - task: Write a Python function to calculate fibonacci numbers
+      context: Should be efficient and handle large inputs
+    - task: Analyze sales data trends
+      context: Q4 2024 sales data showing 15% growth
+    routing_strategy: '{{ priority }}'
+    constraints:
+      total_budget: '{{ task_budget }}'
+      max_latency: 30.0
+- id: summarize_document
+  action: generate_text
+  parameters:
+    prompt: 'Provide a concise 2-3 sentence summary of this document. Focus on the
+      key points only:
+
+
+      Artificial intelligence continues to revolutionize industries worldwide.
+
+      From healthcare to finance, AI applications are becoming increasingly sophisticated.
+
+      Machine learning models can now process vast amounts of data in real-time,
+
+      enabling predictive analytics and automated decision-making at unprecedented
+      scales.
+
+      '
+    model: '{{ assess_requirements.recommendations[0].model }}'
+  dependencies:
+  - assess_requirements
+- id: generate_code
+  action: generate_text
+  parameters:
+    prompt: 'Write a complete, production-ready Python function to calculate fibonacci
+      numbers.
+
+      Requirements:
+
+      - Use efficient algorithm (memoization or iterative)
+
+      - Include proper type hints
+
+      - Add comprehensive docstring
+
+      - Handle edge cases (negative numbers, zero, large inputs)
+
+      - Return the code only, no explanations
+
+      '
+    model: '{{ assess_requirements.recommendations[0].model }}'
+  dependencies:
+  - assess_requirements
+- id: analyze_data
+  action: analyze_text
+  parameters:
+    text: 'Q4 2024 Sales Report:
+
+      - Total Revenue: $2.5M (15% growth YoY)
+
+      - Units Sold: 15,000 (12% growth YoY)
+
+      - Average Order Value: $167 (3% growth YoY)
+
+      - Top Product Categories: Electronics (45%), Home & Garden (30%), Clothing (25%)
+
+      '
+    analysis_type: trends
+    prompt: 'Analyze the sales data trends and provide exactly 3 key insights. For
+      each insight, include: the finding, why it matters, and a specific action. Be
+      concise and data-driven. No conversational text.'
+    model: '{{ assess_requirements.recommendations[2].model }}'
+  dependencies:
+  - assess_requirements
+- id: batch_processing
+  tool: multi-model-routing
+  action: execute
+  parameters:
+    action: optimize_batch
+    tasks:
+    - 'Translate to Spanish (provide translation only): Hello World'
+    - 'Translate to French (provide translation only): Good morning'
+    - 'Translate to German (provide translation only): Thank you'
+    - 'Translate to Italian (provide translation only): Goodbye'
+    optimization_goal: minimize_cost
+    constraints:
+      max_budget_per_task: 0.05
+  dependencies:
+  - analyze_data
+- id: routing_report
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output_path }}/{{ priority }}_routing_analysis.md'
+    content: "# Model Routing Results\n\n## Configuration\n- Budget: ${{ task_budget\
+      \ }}\n- Priority: {{ priority }}\n\n## Task Routing\n\n### Document Summary\n\
+      - Assigned Model: {{ assess_requirements.recommendations[0].model }}\n- Estimated\
+      \ Cost: ${{ assess_requirements.recommendations[0].estimated_cost }}\n- Result:\
+      \ {{ summarize_document.result }}\n\n### Code Generation\n- Assigned Model:\
+      \ {{ assess_requirements.recommendations[1].model }}\n- Estimated Cost: ${{\
+      \ assess_requirements.recommendations[1].estimated_cost }}\n- Code Generated:\
+      \ \n```python\n{{ generate_code.result | replace('```python', '') | replace('```',\
+      \ '') | truncate(500) }}\n```\n\n### Data Analysis\n- Assigned Model: {{ assess_requirements.recommendations[2].model\
+      \ }}\n- Estimated Cost: ${{ assess_requirements.recommendations[2].estimated_cost\
+      \ }}\n- Insights: {{ analyze_data.result }}\n\n## Batch Translation Optimization\n\
+      - Optimization Goal: {{ batch_processing.optimization_goal | default('minimize_cost')\
+      \ }}\n- Total Tasks: {{ batch_processing.results | length }}\n- Models Used:\
+      \ {{ batch_processing.models_used | join(', ') }}\n- Total Cost: ${{ batch_processing.total_cost\
+      \ }}\n- Average Cost per Task: ${{ (batch_processing.total_cost / (batch_processing.results\
+      \ | length)) | round(4) }}\n\n### Translation Results:\n1. Spanish: {{ batch_processing.results[0]\
+      \ | truncate(100) }}\n2. French: {{ batch_processing.results[1] | truncate(100)\
+      \ }}\n3. German: {{ batch_processing.results[2] | truncate(100) }}\n4. Italian:\
+      \ {{ batch_processing.results[3] | truncate(100) }}\n\n## Summary\n- Total Pipeline\
+      \ Cost: ${{ assess_requirements.total_estimated_cost + batch_processing.total_cost\
+      \ }}\n- Budget Remaining: ${{ task_budget - (assess_requirements.total_estimated_cost\
+      \ + batch_processing.total_cost) }}\n- Optimization Achieved: {{ priority }}\
+      \ routing successfully implemented\n"
+  dependencies:
+  - batch_processing
+outputs:
+  routing_report: '{{ routing_report.path }}'
+  total_cost: '{{ assess_requirements.total_estimated_cost | default(0) + batch_processing.total_cost
+    | default(0) }}'
+  models_used: '{{ (assess_requirements.models_selected | default([])) + (batch_processing.models_used
+    | default([])) }}'
+  report_path: '{{ routing_report.path }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  routing_report:
+    description: 'Enhanced output: routing_report'
+    value: '{{ routing_report.path }}'
+    type: auto-detect
+  total_cost:
+    description: 'Enhanced output: total_cost'
+    value: '{{ assess_requirements.total_estimated_cost | default(0) + batch_processing.total_cost
+      | default(0) }}'
+    type: auto-detect
+  models_used:
+    description: 'Enhanced output: models_used'
+    value: '{{ (assess_requirements.models_selected | default([])) + (batch_processing.models_used
+      | default([])) }}'
+    type: auto-detect
+  report_path:
+    description: 'Enhanced output: report_path'
+    value: '{{ routing_report.path }}'
+    type: auto-detect

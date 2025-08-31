@@ -1,0 +1,161 @@
+id: control-flow-while-loop
+name: Iterative Number Guessing
+description: Generate numbers until we reach a target
+version: 1.0.0
+parameters:
+  target_number: &id001
+    type: integer
+    default: 42
+    description: Target number to reach
+  max_attempts: &id002
+    type: integer
+    default: 10
+    description: Maximum attempts
+steps:
+- id: initialize
+  action: generate_text
+  parameters:
+    prompt: Starting number guessing game. Target is {{ target_number }}
+    model: <AUTO task="summarize">Select a model for initialization</AUTO>
+    max_tokens: 50
+- id: init_state
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/control_flow_while_loop/state/current_guess.txt
+    content: '0'
+  dependencies:
+  - initialize
+- id: guessing_loop
+  while: 'true'
+  max_iterations: '{{ max_attempts }}'
+  steps:
+  - id: read_guess
+    tool: filesystem
+    action: read
+    parameters:
+      path: examples/outputs/control_flow_while_loop/state/current_guess.txt
+  - id: generate_guess
+    action: generate_text
+    parameters:
+      prompt: 'We''re trying to guess the number {{ target_number }}.
+
+        Current guess: {{ read_guess.content }}
+
+        Iteration: {{ guessing_loop.iteration }}
+
+
+        What number should we guess next? Reply with just a number between 1 and 100.
+
+        '
+      model: <AUTO task="generate">Select a model for number generation</AUTO>
+      max_tokens: 10
+    dependencies:
+    - read_guess
+  - id: extract_number
+    action: analyze_text
+    parameters:
+      text: 'Generated guess: {{ generate_guess.result | regex_search(''[0-9]+'')
+        | default(''25'') }}'
+      model: <AUTO task="analyze">Select a model for number extraction</AUTO>
+      analysis_type: extract_number
+    dependencies:
+    - generate_guess
+  - id: update_state
+    tool: filesystem
+    action: write
+    parameters:
+      path: examples/outputs/control_flow_while_loop/state/current_guess.txt
+      content: '{{ generate_guess.result | regex_search(''[0-9]+'') | default(''25'')
+        }}'
+    dependencies:
+    - extract_number
+  - id: log_attempt
+    tool: filesystem
+    action: write
+    parameters:
+      path: examples/outputs/control_flow_while_loop/logs/attempt_{{ guessing_loop.iteration
+        }}.txt
+      content: 'Iteration: {{ guessing_loop.iteration }}
+
+        Previous guess: {{ read_guess.content }}
+
+        New guess: {{ generate_guess.result | regex_search(''[0-9]+'') | default(''25'')
+        }}
+
+        Target: {{ target_number }}
+
+        '
+    dependencies:
+    - update_state
+  - id: check_result
+    action: analyze_text
+    parameters:
+      text: '{{ generate_guess.result | regex_search(''[0-9]+'') | default(''25'')
+        }}'
+      model: <AUTO task="analyze">Select a model for comparison</AUTO>
+      analysis_type: compare_to_target
+      target: '{{ target_number }}'
+    dependencies:
+    - log_attempt
+  - id: update_loop_state
+    action: generate_text
+    parameters:
+      prompt: 'Attempt {{ guessing_loop.iteration }} complete. Found target: {{ check_result.matches_target
+        | default(false) }}'
+      model: <AUTO task="summarize">Select a model for status update</AUTO>
+      max_tokens: 20
+    dependencies:
+    - check_result
+  dependencies:
+  - init_state
+- id: final_result
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/control_flow_while_loop/result.txt
+    content: '# Number Guessing Results
+
+
+      Target number: {{ target_number }}
+
+      Total attempts: {{ guessing_loop.iterations | default(0) }}
+
+      Success: {{ guessing_loop.completed | default(false) }}
+
+      '
+  dependencies:
+  - guessing_loop
+outputs:
+  target: '{{ target_number }}'
+  attempts: '{{ guessing_loop.iterations | default(0) }}'
+  result_file: '{{ final_result.filepath }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  target_number:
+    type: string
+    default: *id001
+    description: 'Parameter: target_number'
+    required: false
+  max_attempts:
+    type: string
+    default: *id002
+    description: 'Parameter: max_attempts'
+    required: false
+enhanced_outputs:
+  target:
+    description: 'Enhanced output: target'
+    value: '{{ target_number }}'
+    type: auto-detect
+  attempts:
+    description: 'Enhanced output: attempts'
+    value: '{{ guessing_loop.iterations | default(0) }}'
+    type: auto-detect
+  result_file:
+    description: 'Enhanced output: result_file'
+    value: '{{ final_result.filepath }}'
+    type: auto-detect

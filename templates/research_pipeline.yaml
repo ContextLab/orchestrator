@@ -1,0 +1,115 @@
+# Research Pipeline Template
+# Demonstrates research workflow with backward compatibility
+
+id: research-template
+name: Research Pipeline Template
+description: Template for research and analysis tasks
+
+# Classic parameters (still supported)
+parameters:
+  topic: "artificial intelligence"
+  max_sources: 10
+  
+# Enhanced inputs (optional new feature)
+inputs:
+  topic:
+    type: string
+    required: true
+    description: "Research topic"
+  depth:
+    type: string
+    default: "standard"
+    choices: ["quick", "standard", "comprehensive"]
+  output_format:
+    type: string
+    default: "markdown"
+    choices: ["markdown", "pdf", "html"]
+
+steps:
+  # Initial research step
+  - id: initial_research
+    action: generate_text
+    parameters:
+      prompt: |
+        Create a research plan for: {{ topic }}
+        Include:
+        1. Key questions to investigate
+        2. Important subtopics
+        3. Potential sources
+      model: <AUTO>
+      
+  # Web search (classic format)
+  - id: web_search
+    tool: web-search
+    action: search
+    parameters:
+      query: "{{ topic }} latest research"
+      max_results: "{{ max_sources }}"
+    dependencies:
+      - initial_research
+      
+  # Process results with optional conditional logic
+  - id: analyze_results
+    action: analyze_text
+    condition: "{{ web_search.results | length > 0 }}"  # New conditional feature
+    parameters:
+      text: |
+        Research results for {{ topic }}:
+        {% for result in web_search.results %}
+        {{ loop.index }}. {{ result.title }}
+        {{ result.snippet }}
+        {% endfor %}
+      prompt: "Extract key insights and findings from these search results"
+      model: <AUTO task="analysis">  # Enhanced model selection
+    dependencies:
+      - web_search
+      
+  # Generate final report
+  - id: create_report
+    action: generate_text
+    parameters:
+      prompt: |
+        Create a {{ depth }} research report on {{ topic }} based on:
+        
+        Research Plan: {{ initial_research.result }}
+        
+        {% if analyze_results %}
+        Key Findings: {{ analyze_results.result }}
+        {% endif %}
+        
+        Format the report as {{ output_format }}.
+      model: <AUTO task="writing">
+      temperature: 0.3
+      max_tokens: 2000
+    dependencies:
+      - analyze_results
+      
+  # Save report (backward compatible)
+  - id: save_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "reports/{{ topic | slugify }}_report.{{ output_format }}"
+      content: "{{ create_report.result }}"
+    dependencies:
+      - create_report
+
+# Classic outputs format
+outputs:
+  report_path: "{{ save_report.path }}"
+  sources_found: "{{ web_search.results | length }}"
+  
+# Optional: Enhanced outputs (new feature)  
+enhanced_outputs:
+  summary:
+    description: "Research report content"
+    value: "{{ create_report.result }}"
+    type: "text"
+  metadata:
+    description: "Research metadata"
+    value:
+      topic: "{{ topic }}"
+      depth: "{{ depth }}"
+      sources: "{{ web_search.results | length }}"
+      format: "{{ output_format }}"
+    type: "object"

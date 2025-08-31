@@ -1,0 +1,65 @@
+name: simple_error_handling_basic
+version: 1.0.0
+description: Basic error handling examples that work with current schema
+inputs:
+  api_url:
+    type: string
+    default: https://jsonplaceholder.typicode.com
+    description: API endpoint for testing
+steps:
+- id: api_call_with_fallback
+  action: Fetch data from API
+  parameters:
+    url: '{{api_url}}/posts/1'
+  on_error: Use cached data when API fails
+- id: file_processing
+  action: Read and process data file
+  parameters:
+    file_path: ./data/nonexistent_input.json
+  on_error: Create default data file if missing
+- id: timeout_test
+  action: Test operation with timeout
+  tool: python-executor
+  parameters:
+    code: 'import time
+
+      print("Starting operation...")
+
+      time.sleep(1)  # Short operation that should succeed
+
+      print("Operation completed")
+
+      result = {"status": "success", "data": "test_data"}
+
+      print(f"Result: {result}")
+
+      '
+  timeout: 5
+  on_error: Handle timeout gracefully
+- id: robust_operation
+  action: Perform robust data operation
+  parameters:
+    source: '{{api_url}}/posts'
+  on_error: Log error and continue with defaults
+outputs:
+  api_data: '{{api_call_with_fallback.result}}'
+  processed_data: '{{robust_operation.result}}'
+  timeout_result: '{{timeout_test.result}}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  api_data:
+    description: 'Enhanced output: api_data'
+    value: '{{api_call_with_fallback.result}}'
+    type: auto-detect
+  processed_data:
+    description: 'Enhanced output: processed_data'
+    value: '{{robust_operation.result}}'
+    type: auto-detect
+  timeout_result:
+    description: 'Enhanced output: timeout_result'
+    value: '{{timeout_test.result}}'
+    type: auto-detect

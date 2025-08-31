@@ -1,0 +1,156 @@
+# Data Processing Pipeline Template  
+# Template for data analysis and processing workflows
+
+id: data-processing-template
+name: Data Processing Pipeline Template
+description: Template for data analysis and transformation tasks
+
+# Backward compatible parameters
+parameters:
+  input_file: "data/input.csv"
+  analysis_type: "statistical"
+  
+# New enhanced input definitions (optional)
+inputs:
+  input_file:
+    type: string
+    required: true
+    description: "Path to input data file"
+  analysis_types:
+    type: array
+    default: ["statistical", "visualization"]
+    description: "Types of analysis to perform"
+  output_dir:
+    type: string
+    default: "output"
+    description: "Output directory for results"
+
+steps:
+  # Load and validate data
+  - id: load_data
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ input_file }}"
+      
+  - id: validate_data
+    action: analyze_text
+    parameters:
+      text: "{{ load_data.content[:1000] }}"  # Preview first 1000 chars
+      prompt: |
+        Analyze this data file and report:
+        1. Data format (CSV, JSON, etc.)
+        2. Estimated number of records
+        3. Column structure
+        4. Data quality issues
+        5. Recommended analysis approaches
+      model: <AUTO task="analysis">
+    dependencies:
+      - load_data
+      
+  # Conditional statistical analysis
+  - id: statistical_analysis
+    action: analyze_text
+    condition: "'statistical' in analysis_types"  # New conditional logic
+    parameters:
+      text: "{{ load_data.content }}"
+      prompt: |
+        Perform statistical analysis on this dataset:
+        {{ validate_data.result }}
+        
+        Provide:
+        - Summary statistics
+        - Data distributions
+        - Correlations
+        - Outlier detection
+        - Key insights
+      model: <AUTO domain="analysis">
+    dependencies:
+      - validate_data
+      
+  # Create visualizations if requested
+  - id: create_visualizations
+    tool: visualization
+    action: create_charts
+    condition: "'visualization' in analysis_types"
+    parameters:
+      data_source: "{{ input_file }}"
+      chart_types: ["histogram", "scatter", "bar"]
+      output_dir: "{{ output_dir }}/charts"
+      title: "Data Analysis Charts"
+    dependencies:
+      - validate_data
+      
+  # Generate insights with new enhanced model selection
+  - id: generate_insights
+    action: generate_text
+    parameters:
+      prompt: |
+        Based on this data analysis:
+        
+        Data Validation: {{ validate_data.result }}
+        
+        {% if statistical_analysis %}
+        Statistical Analysis: {{ statistical_analysis.result }}
+        {% endif %}
+        
+        {% if create_visualizations %}
+        Visualizations created: {{ create_visualizations.charts | length }} charts
+        {% endif %}
+        
+        Generate actionable insights and recommendations.
+      model: <AUTO task="synthesis">  # New task-specific model selection
+      temperature: 0.2
+    dependencies:
+      - statistical_analysis
+      - create_visualizations
+      
+  # Export results
+  - id: export_results
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ output_dir }}/analysis_report.md"
+      content: |
+        # Data Analysis Report
+        
+        ## Data Summary
+        {{ validate_data.result }}
+        
+        ## Analysis Results  
+        {{ generate_insights.result }}
+        
+        {% if statistical_analysis %}
+        ## Statistical Analysis
+        {{ statistical_analysis.result }}
+        {% endif %}
+        
+        {% if create_visualizations %}
+        ## Visualizations
+        Charts saved to: {{ create_visualizations.output_dir }}
+        {% endif %}
+        
+        Generated: {{ current_timestamp }}
+    dependencies:
+      - generate_insights
+
+# Classic outputs (backward compatible)
+outputs:
+  report_path: "{{ export_results.path }}"
+  insights: "{{ generate_insights.result }}"
+  
+# Enhanced outputs (new feature)
+enhanced_outputs:
+  analysis_summary:
+    description: "Complete analysis results"
+    value:
+      data_summary: "{{ validate_data.result }}"
+      insights: "{{ generate_insights.result }}"
+      statistical: "{{ statistical_analysis.result if statistical_analysis else null }}"
+    type: "object"
+  artifacts:
+    description: "Generated files and charts"
+    value:
+      report: "{{ export_results.path }}"
+      charts: "{{ create_visualizations.output_dir if create_visualizations else null }}"
+    type: "object"

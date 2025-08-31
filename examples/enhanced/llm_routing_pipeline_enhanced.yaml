@@ -1,0 +1,96 @@
+id: llm_routing_pipeline
+name: Smart LLM Routing Pipeline
+description: Automatically selects the best model and optimizes prompts for tasks
+version: 1.0.0
+parameters:
+  task: &id001
+    type: string
+    default: Write a comprehensive analysis of renewable energy trends
+  optimization_goals: &id002
+    type: array
+    default:
+    - clarity
+    - brevity
+    - model_specific
+  routing_strategy: &id003
+    type: string
+    default: capability_based
+steps:
+- id: analyze_task
+  tool: task-delegation
+  action: execute
+  parameters:
+    task: '{{ parameters.task }}'
+    cost_weight: 0.3
+    quality_weight: 0.7
+- id: optimize_prompt
+  tool: prompt-optimization
+  action: execute
+  parameters:
+    prompt: '{{ parameters.task }}'
+    model: '{{ analyze_task.selected_model }}'
+    optimization_goals: '{{ parameters.optimization_goals }}'
+    preserve_intent: true
+  dependencies:
+  - analyze_task
+- id: route_request
+  tool: multi-model-routing
+  action: execute
+  parameters:
+    request: '{{ optimize_prompt.optimized_prompt }}'
+    models: '{{ analyze_task.fallback_models | default([analyze_task.selected_model])
+      }}'
+    strategy: '{{ parameters.routing_strategy }}'
+    max_concurrent: 10
+  dependencies:
+  - optimize_prompt
+- id: save_report
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/llm_routing_pipeline/{{ parameters.task[:50] | slugify
+      }}_report.md
+    content: "# LLM Task Routing and Optimization Report\n\n## Task Analysis\n- **Original\
+      \ Task**: {{ parameters.task }}\n- **Task Type**: {{ analyze_task.task_analysis.task_type\
+      \ }}\n- **Complexity**: {{ analyze_task.task_analysis.complexity }}\n\n## Model\
+      \ Selection\n- **Selected Model**: {{ analyze_task.selected_model }}\n- **Score**:\
+      \ {{ analyze_task.score }}\n- **Reasons**: {{ analyze_task.reasons | join(',\
+      \ ') }}\n- **Estimated Cost**: ${{ analyze_task.estimated_cost | round(3) }}\n\
+      - **Estimated Latency**: {{ analyze_task.estimated_latency }}s\n\n## Prompt\
+      \ Optimization\n- **Original Length**: {{ optimize_prompt.metrics.original_tokens\
+      \ }} tokens\n- **Optimized Length**: {{ optimize_prompt.metrics.optimized_tokens\
+      \ }} tokens\n- **Reduction**: {{ optimize_prompt.metrics.reduction_percentage\
+      \ | round(1) }}%\n- **Applied Optimizations**: {{ optimize_prompt.applied_optimizations\
+      \ | join(', ') if optimize_prompt.applied_optimizations else 'None' }}\n\n###\
+      \ Optimized Prompt\n```\n{{ optimize_prompt.optimized_prompt }}\n```\n\n## Routing\
+      \ Decision\n- **Final Model**: {{ route_request.selected_model }}\n- **Strategy**:\
+      \ {{ route_request.strategy }}\n- **Routing Reason**: {{ route_request.routing_reason\
+      \ }}\n- **Current Load**: {{ route_request.current_load }}\n\n## Recommendations\n\
+      {% for rec in optimize_prompt.recommendations %}\n- {{ rec }}\n{% endfor %}\n\
+      \n## Alternative Models\n{% for score in analyze_task.all_scores if score.model\
+      \ != analyze_task.selected_model %}\n{% if loop.index <= 3 %}\n- **{{ score.model\
+      \ }}** (Score: {{ score.score }})\n  - {{ score.reasons | join(', ') }}\n{%\
+      \ endif %}\n{% endfor %}\n"
+  dependencies:
+  - route_request
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  task:
+    type: string
+    default: *id001
+    description: 'Parameter: task'
+    required: false
+  optimization_goals:
+    type: string
+    default: *id002
+    description: 'Parameter: optimization_goals'
+    required: false
+  routing_strategy:
+    type: string
+    default: *id003
+    description: 'Parameter: routing_strategy'
+    required: false

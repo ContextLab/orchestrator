@@ -1,0 +1,157 @@
+id: research-report-pipeline
+name: Write Research Report
+description: Generate a comprehensive research report with fact-checking and quality
+  control
+inputs:
+  topic:
+    type: string
+    description: Topic for the research report
+    required: true
+  instructions:
+    type: string
+    description: Additional instructions for report generation
+    required: true
+outputs:
+  pdf: &id001
+    type: string
+    value: <AUTO>come up with an appropriate filename for the final report</AUTO>
+  tex: &id002
+    type: string
+    value: '{{ outputs.pdf[:-4] }}.tex'
+steps:
+- id: web-search
+  action: '<AUTO>search the web for <AUTO>construct an appropriate web query about
+    {{ topic }}, using these additional instructions: {{ instructions }}</AUTO></AUTO>'
+  tool: headless-browser
+  produces: <AUTO>markdown file with detailed notes on each relevant result with annotated
+    links to original sources; other relevant files like images, code, data, etc.,
+    that can be saved locally</AUTO>
+  location: ./searches/{{ outputs.pdf }}/
+  requires_model:
+    min_size: 7B
+    expertise: medium
+- id: compile-search-results
+  depends_on:
+  - web-search
+  action: <AUTO>create a markdown file collating the content from {{ web-search.result
+    }} into a single cohesive document. maintain annotated links back to original
+    sources.</AUTO>
+  produces: markdown-file
+  location: ./searches/{{ outputs.pdf }}/compiled_results.md
+  requires_model:
+    min_size: 10B
+    expertise: medium-high
+- id: quality-check-compilation
+  depends_on:
+  - compile-search-results
+  requires_model:
+    min_size: 7B
+    expertise: medium
+  create_parallel_queue:
+    true: '<AUTO>create a list of every source in this document: {{ compile-search-results.result
+      }}</AUTO>'
+    tool: headless-browser
+    task:
+      action_loop:
+      - action: <AUTO>verify the authenticity of this source ({{ $item }}) by following
+          the web link and ensuring it is accurately described in {{ compile-search-results.result
+          }}</AUTO>
+        id: verify-source
+        produces: <AUTO>'true' if reference was verified, '<AUTO>corrected reference</AUTO>'
+          if reference could be fixed with minor edits, or 'false' if reference seems
+          to be hallucinated</AUTO>
+      - action: <AUTO>if {{ verify-source.result }} is 'false', update {{ compile-search-results.result
+          }} to remove the reference. if {{ verify-source.result }} has a corrected
+          reference, update {{ compile-search-results.result }} to use the corrected
+          reference.</AUTO>
+        id: update-sources
+      until: <AUTO>all sources have been verified (or removed, if incorrect)</AUTO>
+  produces: markdown-file
+  location: ./searches/{{ outputs.pdf }}/compiled_results_corrected.md
+- id: draft-report
+  depends_on:
+  - quality-check-compilation
+  action: <AUTO>{{ file:report_draft_prompt.md }}</AUTO>
+  produces: markdown-file
+  location: ./searches/{{ outputs.pdf }}/draft_report.md
+  requires_model:
+    min_size: 20B
+    expertise: high
+- id: quality-check-assumptions
+  depends_on:
+  - draft-report
+  requires_model:
+    min_size: 20B
+    expertise: high
+  create_parallel_queue:
+    true: '<AUTO>create a comprehensive list of every non-trivial claim made in this
+      document (include, for each claim, any sources or supporting evidence provided
+      in the document): {{ draft-report.result }}</AUTO>'
+    tool: headless-browser
+    task:
+      action_loop:
+      - action: <AUTO>verify the accuracy of this claim ({{ $item }}) by (a) doing
+          a web search and (b) using logical reasoning and deductive inference *based
+          only on the provided claim, sources, and supporting evidence. be sure to
+          manually follow every source link to verify accuracy.</AUTO>
+        id: claim-check
+        produces: <AUTO>'true' if claim was verified, '<AUTO>corrected claim</AUTO>'
+          if claim could be fixed with minor edits, or 'false' if claim seems to be
+          hallucinated</AUTO>
+      - action: <AUTO>if {{ claim-check.result }} is 'false', update {{ draft-report.result
+          }} to remove the claim. if {{ claim-check.result }} has a corrected claim,
+          update {{ draft-report.result }} to use the corrected claim.</AUTO>
+        id: update-claims
+      until: <AUTO>all claims have been verified (or removed, if inaccurate)</AUTO>
+  produces: markdown-file
+  location: ./searches/{{ outputs.pdf }}/draft_report_corrected.md
+- id: quality-check-full-report
+  depends_on:
+  - quality-check-assumptions
+  requires_model:
+    min_size: 40B
+    expertise: very-high
+  action: '<AUTO>do a thorough pass through this document. without adding *any* new
+    claims or references, revise the document to improve (a) clarity, (b) logical
+    flow, (c) grammar, and (d) writing quality: {{ quality-check-assumptions.result
+    }}</AUTO>'
+  produces: markdown-file
+  location: ./searches/{{ outputs.pdf }}/draft_report_final.md
+- id: compile-pdf
+  depends_on:
+  - quality-check-full-report
+  action: execute_command
+  parameters:
+    command: pandoc -o {{ location }} {{ quality-check-full-report.location }}
+  tool: terminal
+  location: ./searches/{{ outputs.pdf }}/report.pdf
+  requires_model: none
+  produces: pdf
+  on_error: debug-compilation
+- id: debug-compilation
+  requires_model:
+    min_size: 40B
+    expertise: very-high
+  action_loop:
+  - action: <AUTO>carefully check the output logs in the current directory to see
+      why compiling the pdf failed; use bash commands to update the document and/or
+      run other bash commands as needed until {{ compile-pdf.location }} is a valid
+      pdf.</AUTO>
+    tool: terminal
+  until: <AUTO>{{ compile-pdf.location }} is a valid pdf</AUTO>
+  produces: pdf
+  location: ./searches/{{ outputs.pdf }}/report.pdf
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  pdf:
+    description: 'Enhanced output: pdf'
+    value: *id001
+    type: auto-detect
+  tex:
+    description: 'Enhanced output: tex'
+    value: *id002
+    type: auto-detect

@@ -1,0 +1,261 @@
+id: modular_analysis
+name: Modular Analysis Pipeline
+description: Main pipeline that orchestrates multiple analysis sub-pipelines
+version: 1.0.0
+parameters:
+  dataset: &id001
+    type: string
+    default: input/dataset.csv
+  analysis_types: &id002
+    type: array
+    default:
+    - statistical
+    - sentiment
+    - trend
+  output_format: &id003
+    type: string
+    default: pdf
+steps:
+- id: load_data
+  tool: filesystem
+  action: read
+  parameters:
+    path: examples/outputs/modular_analysis/{{ parameters.dataset }}
+- id: data_preprocessing
+  tool: pipeline-executor
+  action: execute
+  parameters:
+    pipeline: "id: data_preprocessing_sub\nname: Data Preprocessing Sub-Pipeline\n\
+      steps:\n  - id: clean_data\n    tool: data-processing\n    action: clean\n \
+      \   parameters:\n      data: \"{{ inputs.raw_data }}\"\n      remove_duplicates:\
+      \ true\n      handle_missing: \"interpolate\"\n  \n  - id: normalize_data\n\
+      \    tool: data-processing\n    action: transform\n    parameters:\n      data:\
+      \ \"{{ clean_data.result }}\"\n      operation:\n        type: \"normalize\"\
+      \n        method: \"min-max\"\n\noutputs:\n  processed_data: \"{{ normalize_data.result\
+      \ }}\"\n"
+    inputs:
+      raw_data: '{{ load_data.content }}'
+    wait_for_completion: true
+  dependencies:
+  - load_data
+- id: statistical_analysis
+  tool: pipeline-executor
+  action: execute
+  parameters:
+    pipeline: examples/sub_pipelines/statistical_analysis.yaml
+    inputs:
+      data: '{{ data_preprocessing.outputs.processed_data }}'
+      confidence_level: 0.95
+    output_mapping:
+      statistics: statistical_results
+      summary: statistical_summary
+  dependencies:
+  - data_preprocessing
+  condition: '''statistical'' in {{ parameters.analysis_types }}'
+- id: sentiment_analysis
+  tool: pipeline-executor
+  action: execute
+  parameters:
+    pipeline: examples/sub_pipelines/sentiment_analysis.yaml
+    inputs:
+      data: '{{ data_preprocessing.outputs.processed_data }}'
+      text_column: comments
+    output_mapping:
+      sentiment_scores: sentiment_results
+      overall_sentiment: sentiment_summary
+  dependencies:
+  - data_preprocessing
+  condition: '''sentiment'' in {{ parameters.analysis_types }}'
+- id: trend_analysis
+  tool: pipeline-executor
+  action: execute
+  parameters:
+    pipeline: examples/sub_pipelines/trend_analysis.yaml
+    inputs:
+      data: '{{ data_preprocessing.outputs.processed_data }}'
+      time_column: timestamp
+      value_columns:
+      - sales
+      - revenue
+    output_mapping:
+      trends: trend_results
+      forecasts: trend_forecasts
+  dependencies:
+  - data_preprocessing
+  condition: '''trend'' in {{ parameters.analysis_types }}'
+- id: combine_results
+  tool: data-processing
+  action: merge
+  parameters:
+    datasets:
+    - name: statistical
+      data: '{{ statistical_analysis.outputs.statistical_results | default({}) }}'
+    - name: sentiment
+      data: '{{ sentiment_analysis.outputs.sentiment_results | default({}) }}'
+    - name: trend
+      data: '{{ trend_analysis.outputs.trend_results | default({}) }}'
+    merge_strategy: combine
+  dependencies:
+  - statistical_analysis
+  - sentiment_analysis
+  - trend_analysis
+- id: generate_visualizations
+  tool: pipeline-executor
+  action: execute
+  parameters:
+    pipeline: "id: visualization_sub\nname: Visualization Generation\nsteps:\n  -\
+      \ id: create_charts\n    tool: visualization\n    action: create_charts\n  \
+      \  parameters:\n      data: \"{{ inputs.analysis_results }}\"\n      chart_types:\
+      \ <AUTO>Based on the data structure, select appropriate visualizations</AUTO>\n\
+      \      \n  - id: create_dashboard\n    tool: visualization\n    action: create_dashboard\n\
+      \    parameters:\n      charts: \"{{ create_charts.charts }}\"\n      layout:\
+      \ \"grid\"\n      title: \"Analysis Dashboard\"\n\noutputs:\n  dashboard_url:\
+      \ \"{{ create_dashboard.url }}\"\n  chart_files: \"{{ create_charts.files }}\"\
+      \n"
+    inputs:
+      analysis_results: '{{ combine_results.result }}'
+    error_handling: continue
+    retry_count: 2
+  dependencies:
+  - combine_results
+- id: compile_report
+  tool: report-generator
+  action: generate
+  parameters:
+    title: Comprehensive Analysis Report
+    sections:
+    - title: Executive Summary
+      content: <AUTO>Summarize key findings from all analyses</AUTO>
+    - title: Data Overview
+      content: 'Dataset: {{ parameters.dataset }}
+
+        Preprocessing steps applied: cleaning, normalization
+
+        Analysis types performed: {{ parameters.analysis_types | join('', '') }}
+
+        '
+    - title: Statistical Analysis
+      content: '{{ statistical_analysis.outputs.statistical_summary | default(''Not
+        performed'') }}'
+      condition: '''statistical'' in {{ parameters.analysis_types }}'
+    - title: Sentiment Analysis
+      content: '{{ sentiment_analysis.outputs.sentiment_summary | default(''Not performed'')
+        }}'
+      condition: '''sentiment'' in {{ parameters.analysis_types }}'
+    - title: Trend Analysis
+      content: '## Identified Trends
+
+        {{ trend_analysis.outputs.trend_results | json }}
+
+
+        ## Forecasts
+
+        {{ trend_analysis.outputs.trend_forecasts | json }}
+
+        '
+      condition: '''trend'' in {{ parameters.analysis_types }}'
+    - title: Visualizations
+      content: 'Dashboard available at: {{ generate_visualizations.outputs.dashboard_url
+        }}
+
+        Generated charts: {{ generate_visualizations.outputs.chart_files | length
+        }} files
+
+        '
+    include_visualizations: true
+    visualization_files: '{{ generate_visualizations.outputs.chart_files }}'
+  dependencies:
+  - generate_visualizations
+- id: export_report
+  tool: pdf-compiler
+  action: compile
+  parameters:
+    content: '{{ compile_report.report }}'
+    output_path: examples/outputs/modular_analysis/output/analysis_report.{{ parameters.output_format
+      }}
+    format: '{{ parameters.output_format }}'
+    include_toc: true
+    include_timestamp: true
+  dependencies:
+  - compile_report
+- id: cleanup_temp_files
+  tool: filesystem
+  action: delete
+  parameters:
+    paths:
+    - temp/*.tmp
+    - cache/*.cache
+    recursive: false
+  dependencies:
+  - export_report
+  condition: '{{ export_report.success }}'
+- id: save_results
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/modular_analysis/results_{{ execution.timestamp | slugify
+      }}.md
+    content: '# Modular Analysis Pipeline Results
+
+
+      **Date:** {{ execution.timestamp }}
+
+      **Pipeline ID:** modular_analysis
+
+
+      ## Execution Summary
+
+
+      Pipeline completed successfully.
+
+
+      ---
+
+      *Generated by Modular Analysis Pipeline*
+
+      '
+  dependencies:
+  - cleanup_temp_files
+outputs:
+  report_path: examples/outputs/modular_analysis/{{ export_report.output_path }}
+  dashboard_url: '{{ generate_visualizations.outputs.dashboard_url }}'
+  analysis_summary: '{{ compile_report.summary }}'
+  processing_time: '{{ execution_time }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  dataset:
+    type: string
+    default: *id001
+    description: 'Parameter: dataset'
+    required: false
+  analysis_types:
+    type: string
+    default: *id002
+    description: 'Parameter: analysis_types'
+    required: false
+  output_format:
+    type: string
+    default: *id003
+    description: 'Parameter: output_format'
+    required: false
+enhanced_outputs:
+  report_path:
+    description: 'Enhanced output: report_path'
+    value: examples/outputs/modular_analysis/{{ export_report.output_path }}
+    type: auto-detect
+  dashboard_url:
+    description: 'Enhanced output: dashboard_url'
+    value: '{{ generate_visualizations.outputs.dashboard_url }}'
+    type: auto-detect
+  analysis_summary:
+    description: 'Enhanced output: analysis_summary'
+    value: '{{ compile_report.summary }}'
+    type: auto-detect
+  processing_time:
+    description: 'Enhanced output: processing_time'
+    value: '{{ execution_time }}'
+    type: auto-detect

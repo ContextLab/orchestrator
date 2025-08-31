@@ -1,0 +1,311 @@
+id: control-flow-advanced
+name: Multi-Stage Text Processing
+description: Process text through multiple stages with conditional paths
+version: 1.0.0
+parameters:
+  input_text: &id001
+    type: string
+    description: Text to process
+    default: This is a sample text for processing.
+  languages: &id002
+    type: array
+    default:
+    - es
+    - fr
+    - de
+    description: Languages to translate to
+  quality_threshold: &id003
+    type: number
+    default: 0.7
+    description: Quality threshold for translations
+  output: &id004
+    type: string
+    default: examples/outputs/control_flow_advanced
+    description: Output directory for results
+steps:
+- id: analyze_text
+  action: analyze_text
+  parameters:
+    text: '{{ input_text }}'
+    model: ollama:llama3.2:1b
+    analysis_type: comprehensive
+- id: check_quality
+  action: generate_text
+  parameters:
+    prompt: 'Based on this text analysis, determine if the text quality is below {{
+      quality_threshold }} (out of 1.0) and needs improvement:
+
+
+      Analysis: {{ analyze_text }}
+
+
+      Respond with either "improve" or "acceptable" based on the quality assessment.
+
+      '
+    model: ollama:llama3.2:1b
+    max_tokens: 50
+  dependencies:
+  - analyze_text
+- id: enhance_text
+  action: generate_text
+  if: '{{ ''improve'' in check_quality }}'
+  parameters:
+    prompt: 'Improve the following text to make it clearer and more professional.
+      Output ONLY the improved version, no explanations:
+
+
+      Original text: {{ input_text }}
+
+      '
+    model: ollama:llama3.2:1b
+    max_tokens: 500
+  dependencies:
+  - check_quality
+- id: select_text
+  action: generate_text
+  parameters:
+    prompt: '{% if check_quality and ''improve'' in check_quality and enhance_text
+      %}
+
+      Output ONLY this text without any changes or additions:
+
+      {{ enhance_text }}
+
+      {% else %}
+
+      Output ONLY this text without any changes or additions:
+
+      {{ input_text }}
+
+      {% endif %}
+
+      '
+    model: ollama:llama3.2:1b
+    max_tokens: 600
+  dependencies:
+  - enhance_text
+  - check_quality
+- id: translate_text
+  for_each: '{{ languages }}'
+  max_parallel: 2
+  steps:
+  - id: translate
+    action: generate_text
+    parameters:
+      prompt: 'Translate the following text to {{ $item }}. Provide ONLY the direct
+        translation, no explanations or commentary:
+
+
+        Text to translate: "{{ input_text }}"
+
+        '
+      model: ollama:llama3.2:1b
+      max_tokens: 600
+  - id: validate_translation
+    action: generate_text
+    parameters:
+      prompt: 'Assess the quality of this translation from English to {{ $item }}:
+
+
+        Original English: "{{ input_text }}"
+
+        Translation: "{{ translate }}"
+
+
+        Evaluate the translation for:
+
+        1. Accuracy - Does it convey the same meaning as the original?
+
+        2. Fluency - Is it natural and grammatically correct in {{ $item }}?
+
+        3. Completeness - Are all concepts from the original included?
+
+
+        Provide a brief quality assessment and rate it as: excellent, good, acceptable,
+        or poor.
+
+        '
+      model: ollama:llama3.2:1b
+      max_tokens: 1500
+    dependencies:
+    - translate
+  - id: save_translation
+    tool: filesystem
+    action: write
+    parameters:
+      path: '{{ output }}/translations/{{ input_text[:50] | slugify }}_{{ $item }}.md'
+      content: '# Translation to {{ item | upper }}
+
+
+        ## Original Text
+
+        {{ input_text }}
+
+
+        ## Translated Text
+
+        {{ translate }}
+
+
+        ## Translation Quality Assessment
+
+        {{ validate_translation }}
+
+        '
+    dependencies:
+    - validate_translation
+  dependencies:
+  - select_text
+- id: create_brief_summary
+  action: generate_text
+  if: '{{ languages | length <= 2 }}'
+  parameters:
+    prompt: 'Create a brief summary of the translation process.
+
+      Original text: {{ input_text }}
+
+      Languages: {{ languages }}
+
+      '
+    model: ollama:llama3.2:1b
+    max_tokens: 100
+  dependencies:
+  - translate_text
+- id: create_detailed_summary
+  action: generate_text
+  if: '{{ languages | length > 2 }}'
+  parameters:
+    prompt: 'Create a detailed summary of the multi-language translation process.
+
+      Original text: {{ input_text }}
+
+      Languages: {{ languages }}
+
+      Analysis: {{ analyze_text }}
+
+      '
+    model: ollama:llama3.2:1b
+    max_tokens: 200
+  dependencies:
+  - translate_text
+- id: check_translation_count
+  action: generate_text
+  parameters:
+    prompt: 'Count how many languages were successfully translated.
+
+      Languages attempted: {{ languages }}
+
+      Brief summary: {{ create_brief_summary | default(''N/A'') }}
+
+      Detailed summary: {{ create_detailed_summary | default(''N/A'') }}
+
+      Return just a number.
+
+      '
+    model: ollama:llama3.2:1b
+    max_tokens: 10
+  dependencies:
+  - create_brief_summary
+  - create_detailed_summary
+- id: create_report
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output }}/{{ input_text[:50] | slugify }}_report.md'
+    content: '# Multi-Stage Text Processing Report
+
+
+      ## Original Text
+
+      {{ input_text }}
+
+
+      ## Analysis
+
+      {{ analyze_text }}
+
+
+      ## Quality Check Result
+
+      {{ check_quality }}
+
+
+      ## Enhancement Status
+
+      {% if enhance_text %}Enhanced version was created{% else %}Original text was
+      sufficient{% endif %}
+
+
+      ## Final Text Used for Translation
+
+      {% if select_text %}{{ select_text }}{% else %}{{ input_text }}{% endif %}
+
+
+      ## Translations
+
+      Attempted translations to: {{ languages | join('', '') }}
+
+
+      Check the {{ output }}/translations/ directory for successful translations.
+
+      '
+  dependencies:
+  - translate_text
+outputs:
+  analysis: '{{ analyze_text }}'
+  quality_check: '{{ check_quality }}'
+  enhanced: '{{ enhance_text | default(''N/A'') }}'
+  final_text: '{{ select_text }}'
+  translation_count: '{{ check_translation_count }}'
+  report_file: '{{ output }}/{{ input_text[:50] | slugify }}_report.md'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  input_text:
+    type: string
+    default: *id001
+    description: 'Parameter: input_text'
+    required: false
+  languages:
+    type: string
+    default: *id002
+    description: 'Parameter: languages'
+    required: false
+  quality_threshold:
+    type: string
+    default: *id003
+    description: 'Parameter: quality_threshold'
+    required: false
+  output:
+    type: string
+    default: *id004
+    description: 'Parameter: output'
+    required: false
+enhanced_outputs:
+  analysis:
+    description: 'Enhanced output: analysis'
+    value: '{{ analyze_text }}'
+    type: auto-detect
+  quality_check:
+    description: 'Enhanced output: quality_check'
+    value: '{{ check_quality }}'
+    type: auto-detect
+  enhanced:
+    description: 'Enhanced output: enhanced'
+    value: '{{ enhance_text | default(''N/A'') }}'
+    type: auto-detect
+  final_text:
+    description: 'Enhanced output: final_text'
+    value: '{{ select_text }}'
+    type: auto-detect
+  translation_count:
+    description: 'Enhanced output: translation_count'
+    value: '{{ check_translation_count }}'
+    type: auto-detect
+  report_file:
+    description: 'Enhanced output: report_file'
+    value: '{{ output }}/{{ input_text[:50] | slugify }}_report.md'
+    type: auto-detect

@@ -1,0 +1,80 @@
+name: simple_error_handling
+version: 1.0.0
+description: Simple examples of error handling for common scenarios
+inputs:
+  api_url:
+    type: string
+    default: https://jsonplaceholder.typicode.com
+    description: API endpoint for testing
+steps:
+- id: api_call_with_fallback
+  action: Fetch data from API
+  parameters:
+    url: '{{api_url}}/posts/1'
+  on_error: Use cached data when API fails
+- id: api_call_with_retry
+  action: Fetch user data
+  parameters:
+    url: '{{api_url}}/users/1'
+  on_error:
+    handler_action: Retry API call with exponential backoff
+    error_types:
+    - ConnectionError
+    - TimeoutError
+    retry_with_handler: true
+    max_handler_retries: 3
+- id: file_processing
+  action: Read and process data file
+  parameters:
+    file_path: ./data/input.json
+  on_error:
+    handler_action: Create default data file
+    error_types:
+    - FileNotFoundError
+    retry_with_handler: true
+- id: robust_operation
+  action: Perform robust data operation
+  parameters:
+    source: '{{api_url}}/posts'
+  on_error:
+  - handler_action: Retry on network error
+    error_types:
+    - ConnectionError
+    - TimeoutError
+    retry_with_handler: true
+    max_handler_retries: 2
+    priority: 1
+  - handler_action: Use default data on data error
+    error_types:
+    - ValueError
+    - KeyError
+    fallback_value:
+      posts: []
+    priority: 2
+  - handler_action: Log unexpected error
+    error_types:
+    - '*'
+    continue_on_handler_failure: true
+    priority: 10
+outputs:
+  api_data: '{{api_call_with_fallback.result}}'
+  user_data: '{{api_call_with_retry.result}}'
+  processed_data: '{{robust_operation.result}}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  api_data:
+    description: 'Enhanced output: api_data'
+    value: '{{api_call_with_fallback.result}}'
+    type: auto-detect
+  user_data:
+    description: 'Enhanced output: user_data'
+    value: '{{api_call_with_retry.result}}'
+    type: auto-detect
+  processed_data:
+    description: 'Enhanced output: processed_data'
+    value: '{{robust_operation.result}}'
+    type: auto-detect

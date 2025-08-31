@@ -1,0 +1,178 @@
+id: code-optimization
+name: Code Optimization Pipeline
+description: Analyze and optimize code for performance and best practices
+parameters:
+  code_file: &id001
+    type: string
+    required: true
+    description: Path to the code file to optimize
+  language: &id002
+    type: string
+    default: python
+    description: Programming language
+steps:
+- id: read_code
+  tool: filesystem
+  action: read
+  parameters:
+    path: '{{code_file}}'
+- id: analyze_code
+  action: analyze_text
+  parameters:
+    text: 'Analyze this {{language}} code for optimization opportunities:
+
+
+      ```{{language}}
+
+      {{read_code.content}}
+
+      ```
+
+
+      Identify:
+
+      1. Performance bottlenecks
+
+      2. Code quality issues
+
+      3. Best practice violations
+
+      '
+    model: <AUTO task="analyze">Select model best suited for code analysis</AUTO>
+    analysis_type: code_quality
+  dependencies:
+  - read_code
+- id: optimize_code
+  action: generate_text
+  parameters:
+    prompt: "Based on this analysis:\n{{analyze_code.result}}\n\nProvide an optimized\
+      \ version of the {{language}} code that addresses the identified issues.\n\n\
+      IMPORTANT: \n- Return ONLY valid {{language}} code syntax\n- Use {{language}}-specific\
+      \ best practices and conventions\n- Do not include any markdown formatting or\
+      \ explanations\n- Do not include ```{{language}}``` or any markdown blocks\n\
+      - The output must be pure, executable {{language}} code\n\nLanguage: {{language}}\n"
+    model: <AUTO task="generate">Select model for code generation</AUTO>
+    max_tokens: 2000
+  dependencies:
+  - analyze_code
+- id: clean_optimized_code
+  action: generate_text
+  parameters:
+    prompt: 'Extract ONLY the {{language}} code from the following text, removing
+      any markdown formatting or explanations:
+
+
+      {{optimize_code.result}}
+
+
+      Return ONLY the pure {{language}} code without any ```{{language}}``` blocks,
+      explanations, or formatting.
+
+      The output must be valid, executable {{language}} code with proper {{language}}
+      syntax.
+
+
+      Target Language: {{language}}
+
+      '
+    model: <AUTO task="extract">Select model for code extraction</AUTO>
+    max_tokens: 2000
+  dependencies:
+  - optimize_code
+- id: save_optimized_code
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/code_optimization/optimized_{{code_file | basename}}
+    content: '{{clean_optimized_code.result}}'
+  dependencies:
+  - clean_optimized_code
+- id: save_analysis_report
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/code_optimization/code_optimization_report_{{ execution.timestamp
+      | slugify }}.md
+    content: '# Code Optimization Report
+
+
+      **File:** {{code_file}}
+
+      **Language:** {{language}}
+
+      **Date:** {{ execution.timestamp | date(''%Y-%m-%d %H:%M:%S'') }}
+
+
+      ## Analysis Results
+
+
+      {{analyze_code.result}}
+
+
+      ## Optimization Summary
+
+
+      The optimized code has been saved to: examples/outputs/code_optimization/optimized_{{code_file
+      | basename}}
+
+
+      ## Original vs Optimized
+
+
+      ### Original Code Issues Identified:
+
+      See analysis above for detailed breakdown.
+
+
+      ### Optimized Code Benefits:
+
+      - Improved performance through algorithmic optimizations
+
+      - Enhanced code quality and maintainability
+
+      - Better error handling and validation
+
+      - Adherence to best practices and conventions
+
+      '
+  dependencies:
+  - analyze_code
+  - optimize_code
+outputs:
+  analysis: '{{analyze_code.result}}'
+  optimized_code: '{{clean_optimized_code.result}}'
+  optimized_file: optimized_{{code_file | basename}}
+  report_file: '{{save_analysis_report.filepath}}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  code_file:
+    type: string
+    default: *id001
+    description: 'Parameter: code_file'
+    required: false
+  language:
+    type: string
+    default: *id002
+    description: 'Parameter: language'
+    required: false
+enhanced_outputs:
+  analysis:
+    description: 'Enhanced output: analysis'
+    value: '{{analyze_code.result}}'
+    type: auto-detect
+  optimized_code:
+    description: 'Enhanced output: optimized_code'
+    value: '{{clean_optimized_code.result}}'
+    type: auto-detect
+  optimized_file:
+    description: 'Enhanced output: optimized_file'
+    value: optimized_{{code_file | basename}}
+    type: auto-detect
+  report_file:
+    description: 'Enhanced output: report_file'
+    value: '{{save_analysis_report.filepath}}'
+    type: auto-detect

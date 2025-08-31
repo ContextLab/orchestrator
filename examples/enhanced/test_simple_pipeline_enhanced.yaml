@@ -1,0 +1,60 @@
+id: simple_test
+name: Simple Test Pipeline
+description: Test basic functionality
+steps:
+- id: generate_data
+  action: generate_text
+  parameters:
+    prompt: 'Generate a CSV with 3 rows: id,value,category
+
+      1,100,A
+
+      2,200,B
+
+      3,150,A'
+    model: <AUTO task="generation">Best model for text generation</AUTO>
+- id: save_data
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output_path }}/test_data.csv'
+    content: 'id,value,category
+
+      1,100,A
+
+      2,200,B
+
+      3,150,A'
+- id: create_chart
+  tool: visualization
+  action: create_charts
+  parameters:
+    data:
+    - id: 1
+      value: 100
+      category: A
+    - id: 2
+      value: 200
+      category: B
+    - id: 3
+      value: 150
+      category: A
+    chart_types:
+    - bar
+    - pie
+    output_dir: '{{ output_path }}/charts'
+    title: Test Chart
+  dependencies:
+  - save_data
+outputs:
+  charts: '{{ create_chart.charts }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  charts:
+    description: 'Enhanced output: charts'
+    value: '{{ create_chart.charts }}'
+    type: auto-detect

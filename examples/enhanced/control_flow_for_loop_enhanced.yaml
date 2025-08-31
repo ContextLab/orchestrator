@@ -1,0 +1,150 @@
+id: control-flow-for-loop
+name: Batch File Processing
+description: Process multiple files in parallel
+version: 1.0.0
+parameters:
+  file_list: &id001
+    type: array
+    default:
+    - file1.txt
+    - file2.txt
+    - file3.txt
+    description: List of files to process
+  output_dir: &id002
+    type: string
+    default: examples/outputs/control_flow_for_loop
+    description: Output directory
+steps:
+- id: create_output_dir
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output_dir }}/.gitkeep'
+    content: '# Output directory for batch processing'
+- id: process_files
+  for_each: '{{ file_list }}'
+  max_parallel: 2
+  steps:
+  - id: read_file
+    tool: filesystem
+    action: read
+    parameters:
+      path: data/{{ $item }}
+  - id: analyze_content
+    action: analyze_text
+    parameters:
+      text: '{{ read_file.content }}'
+      model: <AUTO task="analyze">Select a model for text analysis</AUTO>
+      analysis_type: summary
+    dependencies:
+    - read_file
+  - id: transform_content
+    action: generate_text
+    parameters:
+      prompt: 'Transform the following text to be more concise:
+
+
+        {{ read_file.content }}
+
+
+        Key points from analysis: {{ analyze_content.result }}
+
+        '
+      model: <AUTO task="generate">Select a model for text generation</AUTO>
+      max_tokens: 300
+    dependencies:
+    - analyze_content
+  - id: save_file
+    tool: filesystem
+    action: write
+    parameters:
+      path: '{{ output_dir }}/processed_{{ $item }}'
+      content: '# Processed: {{ $item }}
+
+
+        File index: {{ $index }}
+
+        Is first: {{ $is_first }}
+
+        Is last: {{ $is_last }}
+
+
+        ## Original Size
+
+        {{ read_file.size }} bytes
+
+
+        ## Analysis
+
+        {{ analyze_content.result }}
+
+
+        ## Transformed Content
+
+        {{ transform_content.result }}
+
+        '
+    dependencies:
+    - transform_content
+  dependencies:
+  - create_output_dir
+- id: create_summary
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output_dir }}/summary.md'
+    content: '# Batch Processing Summary
+
+
+      Total files processed: {{ file_list | length }}
+
+
+      ## Files
+
+      {% for file in file_list %}
+
+      - {{ file }}
+
+      {% endfor %}
+
+
+      ## Results
+
+      All files have been processed and saved to {{ output_dir }}/
+
+      '
+  dependencies:
+  - process_files
+outputs:
+  processed_files: '{{ file_list | length }}'
+  output_directory: '{{ output_dir }}'
+  summary_file: '{{ create_summary.filepath }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  file_list:
+    type: string
+    default: *id001
+    description: 'Parameter: file_list'
+    required: false
+  output_dir:
+    type: string
+    default: *id002
+    description: 'Parameter: output_dir'
+    required: false
+enhanced_outputs:
+  processed_files:
+    description: 'Enhanced output: processed_files'
+    value: '{{ file_list | length }}'
+    type: auto-detect
+  output_directory:
+    description: 'Enhanced output: output_directory'
+    value: '{{ output_dir }}'
+    type: auto-detect
+  summary_file:
+    description: 'Enhanced output: summary_file'
+    value: '{{ create_summary.filepath }}'
+    type: auto-detect

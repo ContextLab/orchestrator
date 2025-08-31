@@ -1,0 +1,48 @@
+# Basic Pipeline Template
+# 100% backward compatible with existing orchestrator pipelines
+
+id: basic-template
+name: Basic Pipeline Template  
+description: Template for simple pipeline tasks
+
+# Classic parameter format (backward compatible)
+parameters:
+  input_text: "Default input text"
+  model_name: "auto"
+  
+# Optional: Enhanced input definitions (new feature)
+inputs:
+  input_text:
+    type: string
+    required: true
+    description: "Text to process"
+  output_format:
+    type: string
+    default: "json"
+    choices: ["json", "text", "markdown"]
+    description: "Output format"
+
+steps:
+  # Basic text processing step
+  - id: process_text
+    action: analyze_text
+    parameters:
+      text: "{{ input_text }}"
+      prompt: "Analyze this text and provide insights"
+      model: <AUTO>  # Classic AUTO tag
+      analysis_type: "general"
+    
+  # Save results  
+  - id: save_results
+    tool: filesystem
+    action: write
+    parameters:
+      path: "output/results.{{ output_format }}"
+      content: "{{ process_text.result }}"
+    dependencies:
+      - process_text
+
+# Classic outputs (backward compatible)
+outputs:
+  result: "{{ process_text.result }}"
+  output_file: "{{ save_results.path }}"

@@ -1,0 +1,211 @@
+# Migration Showcase Pipeline
+# Demonstrates new architecture capabilities while maintaining backward compatibility
+
+id: migration-showcase
+name: "Migration Showcase: Old & New Features"
+description: |
+  This pipeline demonstrates how existing functionality works unchanged
+  while showcasing new architecture capabilities that users can optionally adopt.
+
+# BACKWARD COMPATIBLE: Old parameter format still works
+parameters:
+  topic: "machine learning applications"
+  output_format: "pdf"
+  
+# NEW FEATURE: Enhanced input definitions (optional upgrade)
+inputs:
+  research_depth:
+    type: string
+    default: "standard"
+    choices: ["quick", "standard", "comprehensive"]
+    description: "Depth of research analysis"
+  include_charts:
+    type: boolean
+    default: true
+    description: "Include data visualizations"
+
+steps:
+  # BACKWARD COMPATIBLE: Classic step definition
+  - id: initial_research
+    action: analyze_text
+    parameters:
+      text: "Research {{ topic }} comprehensively"
+      prompt: |
+        Create a research outline for {{ topic }} with:
+        1. Key areas to explore
+        2. Important questions to answer
+        3. Relevant data sources
+      model: <AUTO>  # Classic AUTO tag still works
+      
+  # NEW FEATURE: Conditional execution (optional)
+  - id: detailed_analysis
+    action: generate_text
+    condition: "{{ research_depth == 'comprehensive' }}"  # New conditional
+    parameters:
+      prompt: |
+        Based on this outline: {{ initial_research.result }}
+        
+        Provide detailed analysis of each area for {{ topic }}
+      model: <AUTO task="analysis">Enhanced model selection</AUTO>  # New enhanced AUTO
+    dependencies:
+      - initial_research
+      
+  # BACKWARD COMPATIBLE: Parallel execution with foreach
+  - id: gather_data
+    tool: web-search
+    action: search
+    foreach: "{{ initial_research.result.key_areas[:3] }}"  # Classic foreach
+    parameters:
+      query: "{{ topic }} {{ item }}"
+      max_results: 5
+    dependencies:
+      - initial_research
+      
+  # NEW FEATURE: Enhanced error handling
+  - id: process_data
+    action: analyze_text
+    foreach: "{{ gather_data.results }}"
+    on_failure: continue  # New error handling option
+    retry: 2  # New retry option
+    parameters:
+      text: |
+        Search results for {{ item.query }}:
+        {% for result in item.results %}
+        - {{ result.title }}: {{ result.snippet }}
+        {% endfor %}
+      analysis_type: "data_extraction"
+      model: <AUTO domain="research">Best model for research tasks</AUTO>  # New domain-specific
+    dependencies:
+      - gather_data
+      
+  # BACKWARD COMPATIBLE: Traditional tool usage
+  - id: create_visualization
+    tool: visualization
+    action: create_charts
+    condition: "{{ include_charts }}"  # New conditional capability
+    parameters:
+      data: "{{ process_data.results | extract_metrics }}"
+      chart_types: ["bar", "line", "pie"]
+      title: "{{ topic | title }} Analysis"
+      output_dir: "charts"
+    dependencies:
+      - process_data
+      
+  # NEW FEATURE: Advanced control flow - while loop
+  - id: iterative_refinement
+    action: generate_text
+    while: "{{ loop.index < 3 and refinement_needed }}"  # New while loop
+    parameters:
+      prompt: |
+        Iteration {{ loop.index }}: Refine this analysis of {{ topic }}:
+        {{ detailed_analysis.result if detailed_analysis else initial_research.result }}
+        
+        Focus on areas that need more detail.
+      model: <AUTO>
+      temperature: 0.3
+    dependencies:
+      - detailed_analysis
+      
+  # BACKWARD COMPATIBLE: File operations
+  - id: save_intermediate
+    tool: filesystem
+    action: write
+    parameters:
+      path: "intermediate/{{ topic | slugify }}_research.json"
+      content: |
+        {
+          "topic": "{{ topic }}",
+          "research_depth": "{{ research_depth }}",
+          "initial_research": {{ initial_research.result | tojson }},
+          "data_points": {{ process_data.results | length }},
+          "refinement_iterations": {{ iterative_refinement.iterations | default(0) }}
+        }
+    dependencies:
+      - process_data
+      - iterative_refinement
+      
+  # NEW FEATURE: Dynamic flow based on conditions
+  - id: dynamic_summary
+    action: generate_text
+    parameters:
+      prompt: |
+        {% if research_depth == 'comprehensive' %}
+        Create a comprehensive research report on {{ topic }} including:
+        - Executive summary
+        - Detailed findings: {{ detailed_analysis.result }}
+        - Data analysis: {{ process_data.results | summarize }}
+        - Refined insights: {{ iterative_refinement.result }}
+        {% if include_charts %}
+        - Reference visualizations in: {{ create_visualization.output_dir }}
+        {% endif %}
+        {% else %}
+        Create a standard research summary on {{ topic }} including:
+        - Key findings: {{ initial_research.result }}
+        - Supporting data: {{ process_data.results | summarize }}
+        {% endif %}
+        
+        Format as {{ output_format.upper() }}.
+      model: <AUTO task="writing">Best model for comprehensive writing</AUTO>
+      max_tokens: 2000
+    dependencies:
+      - save_intermediate
+      
+  # BACKWARD COMPATIBLE: Output generation
+  - id: generate_final_report
+    tool: report-generator
+    action: generate
+    parameters:
+      title: "{{ topic | title }} Research Report"
+      format: "{{ output_format }}"
+      content: "{{ dynamic_summary.result }}"
+      metadata:
+        generated_by: "Orchestrator Migration Showcase"
+        research_depth: "{{ research_depth }}"
+        include_charts: "{{ include_charts }}"
+        timestamp: "{{ current_timestamp }}"
+    dependencies:
+      - dynamic_summary
+
+# BACKWARD COMPATIBLE: Classic outputs definition
+outputs:
+  report_path: "{{ generate_final_report.filepath }}"
+  data_points_collected: "{{ process_data.results | length }}"
+
+# NEW FEATURE: Enhanced outputs with metadata (optional)
+enhanced_outputs:
+  summary:
+    description: "Complete research analysis"
+    value: "{{ dynamic_summary.result }}"
+    type: "text"
+  metrics:
+    description: "Research process metrics"
+    value:
+      depth: "{{ research_depth }}"
+      iterations: "{{ iterative_refinement.iterations | default(0) }}"
+      data_sources: "{{ gather_data.results | length }}"
+      success_rate: "{{ process_data.success_rate | default(1.0) }}"
+    type: "object"
+  artifacts:
+    description: "Generated artifacts"
+    value:
+      report: "{{ generate_final_report.filepath }}"
+      charts: "{{ create_visualization.output_dir if include_charts else null }}"
+      intermediate: "{{ save_intermediate.path }}"
+    type: "object"
+
+# NEW FEATURE: Pipeline metadata (optional)
+metadata:
+  version: "2.0.0"  
+  compatibility: "1.0.0"  # Backward compatible with 1.0.0 format
+  features_used:
+    - "conditional_execution"
+    - "enhanced_model_selection" 
+    - "iterative_processing"
+    - "dynamic_content_generation"
+    - "error_handling"
+  migration_notes: |
+    This pipeline demonstrates both classic and new features:
+    - All existing functionality works unchanged
+    - New features are opt-in and backward compatible
+    - Enhanced error handling and model selection available
+    - Advanced control flow capabilities added

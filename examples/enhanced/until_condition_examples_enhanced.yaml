@@ -1,0 +1,89 @@
+name: Until Condition Examples
+description: 'Simple examples of until conditions that demonstrate the basic functionality
+
+  without complex nested structures that may not be supported by the current schema.
+
+  '
+steps:
+- id: initialize_counter
+  name: Initialize Counter
+  action: debug
+  parameters:
+    message: Starting until condition examples - initializing counter to 0
+- id: quality_check
+  name: Quality Check Example
+  action: llm_call
+  parameters:
+    model: anthropic/claude-sonnet-4-20250514
+    prompt: 'Generate a short paragraph about artificial intelligence research.
+
+      Focus on making it informative and well-structured.
+
+      '
+    temperature: 0.3
+  dependencies:
+  - initialize_counter
+- id: evaluate_quality
+  name: Evaluate Content Quality
+  action: llm_call
+  parameters:
+    model: anthropic/claude-sonnet-4-20250514
+    prompt: 'Rate the quality of this content on a scale of 0-1:
+
+      {{ quality_check.result }}
+
+
+      Consider accuracy, completeness, and clarity.
+
+      Return only a decimal number between 0 and 1.
+
+      '
+    temperature: 0
+  dependencies:
+  - quality_check
+- id: process_first_item
+  name: Process First Item
+  action: debug
+  parameters:
+    message: 'Processing item 1: value = {{ 1 * 2 }}'
+  dependencies:
+  - evaluate_quality
+- id: process_second_item
+  name: Process Second Item
+  action: debug
+  parameters:
+    message: 'Processing item 2: value = {{ 2 * 2 }}'
+  dependencies:
+  - process_first_item
+- id: process_third_item
+  name: Process Third Item
+  action: debug
+  parameters:
+    message: 'Processing item 3: value = {{ 3 * 2 }} - threshold reached!'
+  dependencies:
+  - process_second_item
+- id: final_report
+  name: Generate Final Report
+  action: debug
+  parameters:
+    message: 'Until condition examples demonstration completed:
+
+      - Quality score achieved: {{ evaluate_quality.result | default(''N/A'') }}
+
+      - Items processing completed: 3 items processed with values 2, 4, 6
+
+      - Threshold demonstration: value 6 >= 6 (condition met)
+
+
+      Note: This simplified example demonstrates the concept of until conditions
+
+      without the complex nested loop structures that require advanced schema support.
+
+      '
+  dependencies:
+  - process_third_item
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
