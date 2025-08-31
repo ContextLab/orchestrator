@@ -9,11 +9,15 @@ Main Components:
 - PipelineAPI: Primary interface for pipeline compilation and execution
 - AdvancedPipelineCompiler: Specialized compilation with enhanced YAML integration
 - PipelineExecutor: Advanced execution with monitoring and control
-- Exception classes: Structured error handling for API operations
+- Comprehensive error handling: Structured error handling with recovery mechanisms
+- Type definitions: Complete type system for API operations
 - Convenience functions: Quick access helpers for common operations
 
 Example usage:
-    >>> from orchestrator.api import PipelineAPI, AdvancedPipelineCompiler, PipelineExecutor
+    >>> from orchestrator.api import (
+    ...     PipelineAPI, AdvancedPipelineCompiler, PipelineExecutor,
+    ...     CompilationRequest, ExecutionRequest, APIErrorHandler
+    ... )
     >>> 
     >>> # Basic API usage
     >>> api = create_pipeline_api(development_mode=True)
@@ -29,6 +33,15 @@ Example usage:
     >>> execution = await executor.execute_with_monitoring(pipeline, context)
     >>> async for status in executor.monitor_execution(execution.execution_id):
     ...     print(f"Progress: {status['progress_percentage']:.1f}%")
+    ...
+    >>> # Error handling with recovery
+    >>> error_handler = create_api_error_handler()
+    >>> try:
+    ...     pipeline = await api.compile_pipeline(yaml_content)
+    ... except Exception as e:
+    ...     api_error = error_handler.handle_error(e, operation="compilation")
+    ...     print(f"Error: {api_error.message}")
+    ...     print(f"Recovery: {api_error.recovery_guidance.user_actions}")
 """
 
 from .core import (
@@ -50,6 +63,59 @@ from .execution import (
     ExecutionControlError,
     create_pipeline_executor,
 )
+from .errors import (
+    OrchestratorAPIError,
+    PipelineCompilationError,
+    YAMLValidationError,
+    TemplateProcessingError,
+    PipelineExecutionError as APIExecutionError,
+    ExecutionTimeoutError,
+    StepExecutionError,
+    APIConfigurationError,
+    ModelRegistryError,
+    ResourceError,
+    NetworkError,
+    UserInputError,
+    APIErrorHandler,
+    APIErrorCategory,
+    RecoveryGuidance,
+    APIErrorContext,
+    create_api_error_handler,
+    handle_api_exception,
+)
+from .types import (
+    APIOperation,
+    ValidationLevel,
+    CompilationMode,
+    ExecutionMode,
+    CompilationRequest,
+    ExecutionRequest,
+    APIResponse,
+    CompilationResult,
+    ExecutionResult,
+    ExecutionStatusInfo,
+    ProgressUpdate,
+    APIConfiguration,
+    PipelineCompilerProtocol,
+    ExecutionManagerProtocol,
+    ProgressMonitorProtocol,
+    ProgressCallback,
+    StatusCallback,
+    ErrorCallback,
+    CompletionCallback,
+    PipelineCompilationDict,
+    PipelineExecutionDict,
+    ExecutionStatusDict,
+    ValidationResult,
+    ResourceUsage,
+    StepSummary,
+    APIEndpoint,
+    API_DOCUMENTATION,
+    PipelineCompilationResponse,
+    PipelineExecutionResponse,
+    ExecutionStatusResponse,
+    ProgressUpdateResponse,
+)
 
 # Version information
 __version__ = "2.0.0"
@@ -60,7 +126,7 @@ __all__ = [
     # Main API class
     "PipelineAPI",
     
-    # Exception classes
+    # Core Exception classes
     "PipelineAPIError",
     "CompilationError", 
     "ExecutionError",
@@ -79,6 +145,69 @@ __all__ = [
     "PipelineExecutionError",
     "ExecutionControlError",
     "create_pipeline_executor",
+    
+    # Comprehensive Error Handling
+    "OrchestratorAPIError",
+    "PipelineCompilationError",
+    "YAMLValidationError",
+    "TemplateProcessingError",
+    "APIExecutionError",
+    "ExecutionTimeoutError",
+    "StepExecutionError",
+    "APIConfigurationError",
+    "ModelRegistryError",
+    "ResourceError",
+    "NetworkError",
+    "UserInputError",
+    "APIErrorHandler",
+    "APIErrorCategory",
+    "RecoveryGuidance",
+    "APIErrorContext",
+    "create_api_error_handler",
+    "handle_api_exception",
+    
+    # Type Definitions
+    "APIOperation",
+    "ValidationLevel",
+    "CompilationMode",
+    "ExecutionMode",
+    "CompilationRequest",
+    "ExecutionRequest",
+    "APIResponse",
+    "CompilationResult",
+    "ExecutionResult",
+    "ExecutionStatusInfo",
+    "ProgressUpdate",
+    "APIConfiguration",
+    
+    # Protocol Types
+    "PipelineCompilerProtocol",
+    "ExecutionManagerProtocol",
+    "ProgressMonitorProtocol",
+    
+    # Callback Types
+    "ProgressCallback",
+    "StatusCallback",
+    "ErrorCallback",
+    "CompletionCallback",
+    
+    # Typed Dictionary Types
+    "PipelineCompilationDict",
+    "PipelineExecutionDict",
+    "ExecutionStatusDict",
+    "ValidationResult",
+    "ResourceUsage",
+    "StepSummary",
+    
+    # Documentation Types
+    "APIEndpoint",
+    "API_DOCUMENTATION",
+    
+    # Response Types
+    "PipelineCompilationResponse",
+    "PipelineExecutionResponse",
+    "ExecutionStatusResponse",
+    "ProgressUpdateResponse",
     
     # Version info
     "__version__",
