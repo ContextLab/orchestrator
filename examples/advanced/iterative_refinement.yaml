@@ -1,0 +1,351 @@
+id: iterative-refinement-advanced
+name: "Advanced Iterative Refinement"
+description: |
+  Demonstrates sophisticated iterative processing with quality assessment,
+  adaptive refinement, and convergence detection for content optimization.
+
+parameters:
+  content_topic:
+    type: string
+    required: true
+    description: "Topic for content creation and refinement"
+  target_quality:
+    type: float
+    default: 8.5
+    description: "Target quality score (1-10)"
+  max_iterations:
+    type: integer
+    default: 5
+    description: "Maximum refinement iterations"
+  refinement_focus:
+    type: string
+    default: "comprehensive"
+    choices: ["clarity", "depth", "accuracy", "engagement", "comprehensive"]
+    description: "Primary focus for refinement"
+
+# Dynamic variables for iteration tracking
+variables:
+  current_quality: 0.0
+  iteration_count: 0
+  refinement_needed: true
+  improvement_trend: []
+
+steps:
+  # Create initial content
+  - id: create_initial_content
+    action: generate_text
+    parameters:
+      prompt: |
+        Create initial {{ refinement_focus }} content about "{{ content_topic }}".
+        
+        Focus on:
+        {% if refinement_focus == 'clarity' %}
+        - Clear, concise explanations
+        - Logical structure and flow
+        - Accessible language
+        {% elif refinement_focus == 'depth' %}
+        - Comprehensive coverage
+        - Detailed analysis
+        - Multiple perspectives
+        {% elif refinement_focus == 'accuracy' %}
+        - Factual precision
+        - Verified information
+        - Proper citations
+        {% elif refinement_focus == 'engagement' %}
+        - Compelling narrative
+        - Reader engagement
+        - Interactive elements
+        {% else %}
+        - Balanced coverage of all aspects
+        - High-quality comprehensive treatment
+        {% endif %}
+        
+        Target length: 400-600 words
+      model: <AUTO task="content_creation">Select model for initial content creation</AUTO>
+      max_tokens: 700
+
+  # Quality assessment iteration loop
+  - id: assess_quality
+    action: analyze_text
+    while: "{{ variables.iteration_count < max_iterations and variables.refinement_needed }}"
+    parameters:
+      text: |
+        {% if loop.index == 1 %}
+        {{ create_initial_content.result }}
+        {% else %}
+        {{ refine_content.result }}
+        {% endif %}
+      prompt: |
+        Assess content quality for "{{ content_topic }}" (iteration {{ loop.index }}):
+        
+        Rate on scale 1-10 for:
+        1. **Clarity** - Easy to understand
+        2. **Depth** - Comprehensive coverage  
+        3. **Accuracy** - Factual correctness
+        4. **Engagement** - Reader interest
+        5. **Structure** - Organization and flow
+        6. **Relevance** - Topic alignment
+        
+        Primary focus: {{ refinement_focus }}
+        
+        Provide:
+        - Individual scores for each criterion
+        - Overall quality score (weighted average)
+        - Specific improvement areas
+        - Strengths to preserve
+        
+        Format as JSON with scores and detailed feedback.
+      model: <AUTO task="quality_assessment">Select model specialized in quality evaluation</AUTO>
+      response_format: "json_object"
+    dependencies:
+      - create_initial_content
+
+  # Update variables based on assessment
+  - id: update_iteration_state
+    action: calculate
+    while: "{{ variables.iteration_count < max_iterations }}"
+    parameters:
+      operation: "update_variables"
+      inputs:
+        assessment: "{{ assess_quality.result | from_json }}"
+        iteration: "{{ loop.index }}"
+        target: "{{ target_quality }}"
+    dependencies:
+      - assess_quality
+
+  # Content refinement based on assessment
+  - id: refine_content
+    action: generate_text
+    while: "{{ variables.iteration_count < max_iterations and variables.refinement_needed }}"
+    condition: "{{ (assess_quality.result | from_json).overall_score < target_quality }}"
+    parameters:
+      prompt: |
+        Refine this content based on quality assessment (iteration {{ loop.index + 1 }}):
+        
+        **Current Content:**
+        {% if loop.index == 1 %}
+        {{ create_initial_content.result }}
+        {% else %}
+        {{ refine_content.result }}
+        {% endif %}
+        
+        **Quality Assessment:**
+        {{ assess_quality.result | from_json | tojson(indent=2) }}
+        
+        **Target Quality:** {{ target_quality }}
+        **Current Score:** {{ (assess_quality.result | from_json).overall_score }}
+        
+        **Refinement Instructions:**
+        Focus on improving areas scoring below {{ target_quality }}:
+        {% set assessment = assess_quality.result | from_json %}
+        {% for criterion, score in assessment.individual_scores.items() %}
+        {% if score < target_quality %}
+        - **{{ criterion }}**: Currently {{ score }}, needs improvement
+        {% endif %}
+        {% endfor %}
+        
+        Specific feedback to address:
+        {{ assessment.improvement_areas | join('\n- ') }}
+        
+        Preserve strengths:
+        {{ assessment.strengths | join('\n- ') }}
+        
+        Generate improved version maintaining similar length.
+      model: <AUTO task="content_refinement">Select model optimized for content improvement</AUTO>
+      max_tokens: 800
+    dependencies:
+      - assess_quality
+
+  # Convergence analysis
+  - id: analyze_convergence
+    action: analyze_text
+    parameters:
+      text: |
+        Iteration history:
+        {% for assessment in assess_quality.results %}
+        Iteration {{ loop.index }}: {{ (assessment.result | from_json).overall_score }}
+        {% endfor %}
+        
+        Target quality: {{ target_quality }}
+        Max iterations: {{ max_iterations }}
+        Refinement focus: {{ refinement_focus }}
+      prompt: |
+        Analyze the iterative refinement convergence:
+        
+        1. **Progress Tracking**: How quality scores changed over iterations
+        2. **Convergence Pattern**: Rate of improvement or diminishing returns
+        3. **Success Assessment**: Whether target quality was achieved
+        4. **Efficiency Analysis**: Optimal number of iterations for this type of content
+        5. **Recommendations**: Suggested parameters for similar future refinements
+        
+        Provide insights about the refinement process effectiveness.
+      model: <AUTO task="analysis">Select model for convergence analysis</AUTO>
+      max_tokens: 500
+    dependencies:
+      - assess_quality
+
+  # Generate final optimized content
+  - id: finalize_content
+    action: generate_text
+    parameters:
+      prompt: |
+        Create final optimized version incorporating all refinements:
+        
+        **Original Content:**
+        {{ create_initial_content.result }}
+        
+        **Refined Versions:**
+        {% for refinement in refine_content.results %}
+        Version {{ loop.index }}: {{ refinement.result }}
+        {% endfor %}
+        
+        **Quality Assessments:**
+        {% for assessment in assess_quality.results %}
+        Iteration {{ loop.index }}: Score {{ (assessment.result | from_json).overall_score }}
+        {% endfor %}
+        
+        **Target Quality:** {{ target_quality }}
+        **Focus:** {{ refinement_focus }}
+        
+        **Convergence Analysis:**
+        {{ analyze_convergence.result }}
+        
+        Create the best possible version combining insights from all iterations.
+        Aim to exceed the target quality of {{ target_quality }}.
+      model: <AUTO task="optimization">Select model for final content optimization</AUTO>
+      max_tokens: 900
+    dependencies:
+      - analyze_convergence
+
+  # Quality verification of final content
+  - id: final_quality_check
+    action: analyze_text
+    parameters:
+      text: "{{ finalize_content.result }}"
+      prompt: |
+        Perform final quality verification for "{{ content_topic }}":
+        
+        Assess against original requirements:
+        - Primary focus: {{ refinement_focus }}
+        - Target quality: {{ target_quality }}
+        - Iteration limit: {{ max_iterations }}
+        
+        Provide:
+        1. Final quality scores (all criteria)
+        2. Target achievement assessment
+        3. Improvement summary vs. original
+        4. Remaining opportunities (if any)
+        5. Overall success rating
+        
+        Format as comprehensive quality report.
+      model: <AUTO task="final_verification">Select model for comprehensive quality verification</AUTO>
+      response_format: "json_object"
+    dependencies:
+      - finalize_content
+
+  # Save detailed iteration history
+  - id: save_iteration_history
+    tool: filesystem
+    action: write
+    parameters:
+      path: "iterative_refinement_{{ content_topic | slugify }}_history.json"
+      content: |
+        {
+          "metadata": {
+            "topic": "{{ content_topic }}",
+            "target_quality": {{ target_quality }},
+            "max_iterations": {{ max_iterations }},
+            "refinement_focus": "{{ refinement_focus }}",
+            "processed_at": "{{ current_timestamp }}"
+          },
+          "initial_content": {{ create_initial_content.result | tojson }},
+          "iteration_history": [
+            {% for i in range(assess_quality.results | length) %}
+            {
+              "iteration": {{ i + 1 }},
+              "quality_assessment": {{ assess_quality.results[i].result }},
+              {% if i < refine_content.results | length %}
+              "refined_content": {{ refine_content.results[i].result | tojson }},
+              {% endif %}
+              "quality_score": {{ (assess_quality.results[i].result | from_json).overall_score }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ],
+          "convergence_analysis": {{ analyze_convergence.result | tojson }},
+          "final_content": {{ finalize_content.result | tojson }},
+          "final_quality_check": {{ final_quality_check.result }}
+        }
+    dependencies:
+      - final_quality_check
+
+  # Create summary report
+  - id: create_summary_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "iterative_refinement_{{ content_topic | slugify }}_summary.md"
+      content: |
+        # Iterative Refinement Summary: {{ content_topic | title }}
+        
+        **Date:** {{ current_timestamp }}
+        **Focus:** {{ refinement_focus | title }}
+        **Target Quality:** {{ target_quality }}/10
+        **Iterations Performed:** {{ assess_quality.results | length }}
+        
+        ## Final Content
+        {{ finalize_content.result }}
+        
+        ## Quality Progress
+        {% for assessment in assess_quality.results %}
+        - **Iteration {{ loop.index }}:** {{ (assessment.result | from_json).overall_score }}/10
+        {% endfor %}
+        
+        ## Final Quality Assessment
+        {{ final_quality_check.result | from_json | tojson(indent=2) }}
+        
+        ## Convergence Analysis
+        {{ analyze_convergence.result }}
+        
+        ## Process Summary
+        - **Started with:** Initial content creation
+        - **Iterations performed:** {{ assess_quality.results | length }}/{{ max_iterations }}
+        - **Target achieved:** {{ "✅ Yes" if (final_quality_check.result | from_json).overall_score >= target_quality else "❌ No" }}
+        - **Final quality score:** {{ (final_quality_check.result | from_json).overall_score }}/10
+        - **Primary improvements:** {{ refinement_focus | title }} optimization
+        
+        ---
+        *Generated by Advanced Iterative Refinement Pipeline*
+    dependencies:
+      - final_quality_check
+
+outputs:
+  final_content: "{{ finalize_content.result }}"
+  iterations_performed: "{{ assess_quality.results | length }}"
+  target_achieved: "{{ (final_quality_check.result | from_json).overall_score >= target_quality }}"
+  final_quality_score: "{{ (final_quality_check.result | from_json).overall_score }}"
+  initial_score: "{{ (assess_quality.results[0].result | from_json).overall_score }}"
+  improvement_delta: "{{ (final_quality_check.result | from_json).overall_score - (assess_quality.results[0].result | from_json).overall_score }}"
+  history_file: "{{ save_iteration_history.path }}"
+  summary_file: "{{ create_summary_report.path }}"
+
+metadata:
+  category: "advanced"
+  complexity: "expert" 
+  estimated_runtime: "5-20 minutes (depends on iterations needed)"
+  requirements:
+    - "text generation model"
+    - "text analysis capabilities"
+    - "filesystem tool"
+  use_cases:
+    - "Content optimization"
+    - "Document refinement"
+    - "Quality-driven content creation"
+    - "Iterative writing assistance"
+    - "Performance optimization workflows"
+  demonstrates:
+    - "While loop with quality convergence"
+    - "Dynamic variable updates"
+    - "Quality assessment and scoring"
+    - "Iterative refinement patterns"
+    - "Convergence analysis"
+    - "Adaptive stopping conditions"

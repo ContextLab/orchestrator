@@ -1,0 +1,387 @@
+id: cross-platform-compatibility
+name: "Cross-Platform Compatibility Demo"
+description: |
+  Demonstrates how to create pipelines that work seamlessly across different
+  platforms (macOS, Linux, Windows) with automatic platform detection and
+  appropriate tool/command selection.
+
+parameters:
+  target_platforms:
+    type: array
+    default: ["macos", "linux", "windows"]
+    description: "Platforms to test compatibility for"
+  test_mode:
+    type: string
+    default: "comprehensive"
+    choices: ["basic", "comprehensive", "stress_test"]
+    description: "Level of compatibility testing"
+
+# Platform detection and setup
+steps:
+  - id: detect_platform
+    action: generate_text
+    parameters:
+      prompt: |
+        Detect current platform and system information:
+        
+        Use system environment variables and characteristics to determine:
+        1. Operating system (macOS, Linux, Windows)
+        2. Architecture (x86_64, arm64, etc.)
+        3. Available shells and interpreters
+        4. File system characteristics
+        5. Path separator conventions
+        
+        Provide platform detection summary.
+      model: <AUTO task="system_analysis">System detection model</AUTO>
+      max_tokens: 300
+
+  # Cross-platform file operations
+  - id: test_file_operations
+    tool: filesystem
+    action: write
+    parameters:
+      # Use forward slashes - work on all platforms
+      path: "platform_test/compatibility_test.txt"
+      content: |
+        Cross-Platform Compatibility Test
+        Generated on: {{ current_timestamp }}
+        Platform info: {{ detect_platform.result }}
+        
+        Testing file operations across platforms:
+        - File creation: ✓
+        - Directory creation: ✓  
+        - Path handling: ✓
+      create_directories: true
+    dependencies:
+      - detect_platform
+
+  # Platform-specific shell commands
+  - id: platform_shell_commands
+    tool: terminal
+    action: execute
+    foreach: "{{ target_platforms }}"
+    condition: "{{ item in ['macos', 'linux', 'windows'] }}"
+    parameters:
+      # Cross-platform command selection
+      command: |
+        {% if item == 'windows' %}
+        dir platform_test && echo "Windows command executed"
+        {% else %}
+        ls -la platform_test/ && echo "Unix command executed"  
+        {% endif %}
+      shell: |
+        {% if item == 'windows' %}cmd{% else %}bash{% endif %}
+      timeout: 30
+    on_failure: continue
+    dependencies:
+      - test_file_operations
+
+  # Python path handling across platforms
+  - id: python_compatibility_test
+    action: generate_code
+    parameters:
+      language: "python"
+      prompt: |
+        Generate Python code that works across all platforms for:
+        1. File path handling (use pathlib)
+        2. Environment variable access
+        3. Process execution
+        4. Temporary file creation
+        5. Cross-platform configuration
+        
+        Focus on best practices for {{ target_platforms | join(", ") }}.
+      model: <AUTO task="cross_platform_coding">Cross-platform development model</AUTO>
+    dependencies:
+      - platform_shell_commands
+
+  # Test environment variable handling
+  - id: environment_compatibility
+    action: analyze_text
+    parameters:
+      text: |
+        Environment compatibility testing:
+        
+        Platform targets: {{ target_platforms }}
+        Test mode: {{ test_mode }}
+        
+        Common environment variables:
+        - PATH: Cross-platform executable search
+        - HOME/USERPROFILE: User directory  
+        - TEMP/TMP: Temporary directory
+        - OS/OSTYPE: Operating system identification
+      prompt: |
+        Analyze environment variable compatibility across platforms:
+        
+        1. **Standard Variables**: Which env vars work across platforms?
+        2. **Platform Differences**: Key differences to handle
+        3. **Best Practices**: Recommendations for cross-platform env var usage
+        4. **Fallback Strategies**: What to do when variables are missing
+        5. **Security Considerations**: Safe handling across platforms
+        
+        Focus on practical compatibility guidelines.
+      model: <AUTO task="environment_analysis">Environment compatibility analysis</AUTO>
+    dependencies:
+      - python_compatibility_test
+
+  # Network and service compatibility
+  - id: network_service_compatibility
+    tool: http-client
+    action: get
+    parameters:
+      url: "https://httpbin.org/get"
+      headers:
+        User-Agent: "Orchestrator Cross-Platform Test"
+      params:
+        platform: "{{ target_platforms | join(',') }}"
+        test_mode: "{{ test_mode }}"
+    timeout: 30
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - environment_compatibility
+
+  # Package manager compatibility
+  - id: package_manager_analysis
+    action: generate_text
+    parameters:
+      prompt: |
+        Analyze package manager compatibility across platforms:
+        
+        Target platforms: {{ target_platforms }}
+        
+        Package managers by platform:
+        - macOS: Homebrew, MacPorts, pip
+        - Linux: apt, yum, dnf, pacman, snap, pip
+        - Windows: Chocolatey, Scoop, winget, pip
+        
+        Generate cross-platform package installation strategies:
+        1. Detection scripts for each platform
+        2. Fallback installation methods
+        3. Common packages across platforms
+        4. Platform-specific dependencies
+        5. Version compatibility considerations
+      model: <AUTO task="package_management">Package management expert model</AUTO>
+      max_tokens: 600
+    dependencies:
+      - network_service_compatibility
+
+  # Performance characteristics by platform
+  - id: performance_comparison
+    action: analyze_text
+    condition: "{{ test_mode in ['comprehensive', 'stress_test'] }}"
+    parameters:
+      text: |
+        Performance testing results:
+        
+        Platform detection: {{ detect_platform.result }}
+        File operations: {{ test_file_operations.status }}
+        Shell commands: {{ platform_shell_commands.results | length }} tests
+        Python compatibility: {{ python_compatibility_test.result[:200] }}...
+        Network connectivity: {{ network_service_compatibility.status }}
+      prompt: |
+        Analyze cross-platform performance characteristics:
+        
+        1. **Execution Speed**: Relative performance across platforms
+        2. **Resource Usage**: Memory and CPU differences
+        3. **I/O Performance**: File and network operation speeds
+        4. **Concurrency**: Multi-threading and parallel processing
+        5. **Reliability**: Error rates and stability
+        6. **Optimization**: Platform-specific performance tuning
+        
+        Provide platform performance comparison and recommendations.
+      model: <AUTO task="performance_analysis">Performance analysis model</AUTO>
+      max_tokens: 800
+    dependencies:
+      - package_manager_analysis
+
+  # Security considerations across platforms
+  - id: security_analysis
+    action: analyze_text
+    condition: "{{ test_mode == 'comprehensive' or test_mode == 'stress_test' }}"
+    parameters:
+      text: |
+        Cross-platform security analysis for:
+        {{ target_platforms | join(", ") }}
+        
+        Security considerations:
+        - File permissions and access control
+        - Environment variable security
+        - Process execution safety
+        - Network security protocols
+        - Credential management
+      prompt: |
+        Analyze cross-platform security considerations:
+        
+        1. **File System Security**: Permissions across platforms
+        2. **Process Security**: Safe command execution
+        3. **Network Security**: HTTPS and certificate handling
+        4. **Credential Management**: Secure secret storage
+        5. **Sandboxing**: Process isolation techniques
+        6. **Audit Logging**: Security event tracking
+        
+        Provide security best practices for cross-platform deployments.
+      model: <AUTO task="security_analysis">Security analysis model</AUTO>
+      max_tokens: 700
+    dependencies:
+      - performance_comparison
+
+  # Generate compatibility report
+  - id: generate_compatibility_report
+    tool: report-generator
+    action: create
+    parameters:
+      title: "Cross-Platform Compatibility Report"
+      format: "markdown"
+      content: |
+        # Cross-Platform Compatibility Report
+        
+        **Test Date:** {{ current_timestamp }}
+        **Target Platforms:** {{ target_platforms | join(", ") }}
+        **Test Mode:** {{ test_mode | title }}
+        
+        ## Platform Detection
+        {{ detect_platform.result }}
+        
+        ## Compatibility Test Results
+        
+        ### File Operations
+        - **Status:** {{ "✅ Success" if test_file_operations.status == "completed" else "❌ Failed" }}
+        - **Test File:** {{ test_file_operations.path }}
+        
+        ### Shell Commands
+        {% for result in platform_shell_commands.results %}
+        - **{{ target_platforms[loop.index0] | title }}:** {{ "✅ Success" if result.status == "completed" else "❌ Failed" }}
+        {% endfor %}
+        
+        ### Python Compatibility
+        ```python
+        {{ python_compatibility_test.result }}
+        ```
+        
+        ### Environment Variables
+        {{ environment_compatibility.result }}
+        
+        ### Network Connectivity
+        - **Status:** {{ "✅ Success" if network_service_compatibility.status == "completed" else "❌ Failed" }}
+        {% if network_service_compatibility.status == "completed" %}
+        - **Response:** {{ network_service_compatibility.response.url }}
+        {% endif %}
+        
+        ### Package Management
+        {{ package_manager_analysis.result }}
+        
+        {% if performance_comparison.status == "completed" %}
+        ### Performance Analysis
+        {{ performance_comparison.result }}
+        {% endif %}
+        
+        {% if security_analysis.status == "completed" %}
+        ### Security Considerations
+        {{ security_analysis.result }}
+        {% endif %}
+        
+        ## Compatibility Summary
+        
+        ### Supported Features by Platform
+        {% for platform in target_platforms %}
+        #### {{ platform | title }}
+        - File operations: {{ "✅" if test_file_operations.status == "completed" else "❌" }}
+        - Shell commands: {% set shell_result = platform_shell_commands.results | selectattr('platform', 'equalto', platform) | first %}{{ "✅" if shell_result and shell_result.status == "completed" else "❌" }}
+        - Python compatibility: {{ "✅" if python_compatibility_test.status == "completed" else "❌" }}
+        - Network access: {{ "✅" if network_service_compatibility.status == "completed" else "❌" }}
+        {% endfor %}
+        
+        ## Recommendations
+        
+        1. **Cross-Platform Best Practices:**
+           - Use forward slashes for paths (Python pathlib handles conversion)
+           - Test environment variables with fallbacks
+           - Use platform-agnostic libraries where possible
+           - Implement proper error handling for platform differences
+        
+        2. **Development Guidelines:**
+           - Test on multiple platforms during development
+           - Use containerization for consistent environments
+           - Document platform-specific requirements
+           - Implement feature detection rather than platform detection
+        
+        3. **Deployment Considerations:**
+           - Plan for different package managers
+           - Consider performance characteristics by platform
+           - Implement platform-specific optimizations
+           - Monitor platform-specific error patterns
+      metadata:
+        platforms_tested: "{{ target_platforms }}"
+        test_mode: "{{ test_mode }}"
+        success_rate: "{{ (
+          (1 if test_file_operations.status == 'completed' else 0) +
+          (platform_shell_commands.results | selectattr('status', 'equalto', 'completed') | list | length) +
+          (1 if python_compatibility_test.status == 'completed' else 0) +
+          (1 if network_service_compatibility.status == 'completed' else 0)
+        ) / (3 + target_platforms | length) }}"
+    dependencies:
+      - security_analysis
+
+  # Clean up test files
+  - id: cleanup_test_files
+    tool: filesystem
+    action: delete
+    parameters:
+      path: "platform_test/"
+      recursive: true
+    on_failure: continue
+    dependencies:
+      - generate_compatibility_report
+
+outputs:
+  platforms_tested: "{{ target_platforms }}"
+  test_mode_used: "{{ test_mode }}"
+  compatibility_success_rate: "{{ (
+    (1 if test_file_operations.status == 'completed' else 0) +
+    (platform_shell_commands.results | selectattr('status', 'equalto', 'completed') | list | length) +
+    (1 if python_compatibility_test.status == 'completed' else 0) +
+    (1 if network_service_compatibility.status == 'completed' else 0)
+  ) / (3 + target_platforms | length) }}"
+  
+  test_results:
+    file_operations: "{{ test_file_operations.status }}"
+    shell_commands: "{{ platform_shell_commands.results | map(attribute='status') | list }}"
+    python_compatibility: "{{ python_compatibility_test.status }}"
+    network_connectivity: "{{ network_service_compatibility.status }}"
+    performance_tested: "{{ performance_comparison.status == 'completed' if performance_comparison.status is defined else false }}"
+    security_analyzed: "{{ security_analysis.status == 'completed' if security_analysis.status is defined else false }}"
+  
+  compatibility_report_file: "{{ generate_compatibility_report.file_path }}"
+  python_code_sample: "{{ python_compatibility_test.result }}"
+
+metadata:
+  category: "platform"
+  complexity: "advanced"
+  estimated_runtime: "3-8 minutes (depends on test mode)"
+  requirements:
+    - "filesystem tool"
+    - "terminal tool"
+    - "http-client tool"
+    - "report-generator tool"
+    - "text generation model"
+  
+  use_cases:
+    - "Cross-platform compatibility testing"
+    - "Platform-specific deployment validation"
+    - "Environment compatibility assessment"
+    - "Performance comparison across platforms"
+    - "Security analysis for multi-platform deployments"
+  
+  demonstrates:
+    - "Automatic platform detection"
+    - "Conditional platform-specific logic"
+    - "Cross-platform file and path handling"
+    - "Platform-appropriate shell command selection"
+    - "Network and service compatibility testing"
+    - "Performance and security analysis"
+  
+  platform_support:
+    primary: ["macOS", "Linux", "Windows"]
+    tested_architectures: ["x86_64", "arm64"]
+    shell_support: ["bash", "zsh", "cmd", "PowerShell"]
+    python_versions: ["3.8+"]

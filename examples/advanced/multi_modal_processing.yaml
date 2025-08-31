@@ -1,0 +1,430 @@
+id: multi-modal-processing-advanced
+name: "Advanced Multi-Modal Processing"
+description: |
+  Demonstrates sophisticated multi-modal AI workflows combining text, images, 
+  audio, and data processing with intelligent content routing and synthesis.
+
+parameters:
+  content_sources:
+    type: object
+    default:
+      text_url: "https://example.com/article.txt"
+      image_url: "https://example.com/diagram.jpg" 
+      audio_file: "examples/data/sample_audio.wav"
+      data_file: "examples/data/sample_data.csv"
+    description: "Multi-modal content sources"
+  analysis_depth:
+    type: string
+    default: "comprehensive"
+    choices: ["basic", "detailed", "comprehensive"]
+    description: "Depth of cross-modal analysis"
+  output_format:
+    type: string
+    default: "interactive_report"
+    choices: ["summary", "detailed_report", "interactive_report", "presentation"]
+    description: "Final output format"
+
+steps:
+  # Multi-modal content ingestion
+  - id: ingest_text_content
+    tool: web-scraper
+    action: extract_text
+    parameters:
+      url: "{{ content_sources.text_url }}"
+      clean_html: true
+      extract_metadata: true
+    on_failure: skip
+
+  - id: ingest_image_content
+    tool: vision
+    action: analyze_image
+    parameters:
+      image_url: "{{ content_sources.image_url }}"
+      analysis_type: "comprehensive"
+      extract_text: true
+      describe_visuals: true
+      identify_objects: true
+    on_failure: skip
+
+  - id: ingest_audio_content
+    tool: speech-to-text
+    action: transcribe
+    parameters:
+      audio_file: "{{ content_sources.audio_file }}"
+      language: "auto-detect"
+      include_timestamps: true
+      extract_emotions: true
+    on_failure: skip
+
+  - id: ingest_data_content
+    tool: data-processor
+    action: analyze_dataset
+    parameters:
+      file_path: "{{ content_sources.data_file }}"
+      analysis_type: "statistical_summary"
+      generate_insights: true
+    on_failure: skip
+
+  # Content validation and quality assessment
+  - id: validate_ingested_content
+    action: analyze_text
+    parameters:
+      text: |
+        Multi-modal content validation:
+        
+        Text content: {{ "Available" if ingest_text_content.status == "completed" else "Failed/Skipped" }}
+        {% if ingest_text_content.status == "completed" %}
+        Length: {{ ingest_text_content.content | length }} characters
+        {% endif %}
+        
+        Image content: {{ "Available" if ingest_image_content.status == "completed" else "Failed/Skipped" }}
+        {% if ingest_image_content.status == "completed" %}
+        Description: {{ ingest_image_content.description[:100] }}...
+        {% endif %}
+        
+        Audio content: {{ "Available" if ingest_audio_content.status == "completed" else "Failed/Skipped" }}
+        {% if ingest_audio_content.status == "completed" %}
+        Duration: {{ ingest_audio_content.duration }} seconds
+        {% endif %}
+        
+        Data content: {{ "Available" if ingest_data_content.status == "completed" else "Failed/Skipped" }}
+        {% if ingest_data_content.status == "completed" %}
+        Rows: {{ ingest_data_content.row_count }}
+        {% endif %}
+      prompt: |
+        Assess multi-modal content quality and plan analysis approach:
+        
+        1. **Content Completeness**: What modalities are available?
+        2. **Quality Assessment**: Rate quality of each content type
+        3. **Coherence Check**: Do the different modalities relate to the same topic?
+        4. **Analysis Strategy**: Recommended approach for {{ analysis_depth }} analysis
+        5. **Potential Challenges**: Integration complexity and potential issues
+        
+        Provide structured assessment and processing recommendations.
+      model: <AUTO task="multi_modal_analysis">Select model with multi-modal capabilities</AUTO>
+      response_format: "json_object"
+    dependencies:
+      - ingest_text_content
+      - ingest_image_content  
+      - ingest_audio_content
+      - ingest_data_content
+
+  # Individual modality analysis
+  - id: analyze_text_modality
+    action: analyze_text
+    condition: "{{ ingest_text_content.status == 'completed' }}"
+    parameters:
+      text: "{{ ingest_text_content.content }}"
+      prompt: |
+        Comprehensive text analysis for multi-modal integration:
+        
+        {% if analysis_depth == 'basic' %}
+        1. Main themes and topics
+        2. Key facts and claims
+        3. Sentiment and tone
+        {% elif analysis_depth == 'detailed' %}
+        1. Detailed theme analysis with evidence
+        2. Argument structure and logic
+        3. Factual claims extraction
+        4. Sentiment and emotional analysis
+        5. Writing style and expertise assessment
+        {% else %}
+        1. Comprehensive thematic analysis
+        2. Argument mapping and logical structure
+        3. Factual claim verification requirements
+        4. Multi-dimensional sentiment analysis
+        5. Author expertise and credibility indicators
+        6. Cross-referencing opportunities for other modalities
+        {% endif %}
+        
+        Focus on elements that can be validated or enhanced by other modalities.
+      model: <AUTO task="text_analysis">Select model for comprehensive text analysis</AUTO>
+      max_tokens: "{{ 300 if analysis_depth == 'basic' else 600 if analysis_depth == 'detailed' else 900 }}"
+    dependencies:
+      - validate_ingested_content
+
+  - id: analyze_visual_modality
+    action: analyze_text
+    condition: "{{ ingest_image_content.status == 'completed' }}"
+    parameters:
+      text: |
+        Image analysis results: {{ ingest_image_content.result | tojson }}
+        
+        Visual elements identified: {{ ingest_image_content.objects | join(", ") }}
+        Text extracted: {{ ingest_image_content.extracted_text }}
+        Visual description: {{ ingest_image_content.description }}
+      prompt: |
+        Analyze visual content for multi-modal synthesis:
+        
+        {% if analysis_depth == 'basic' %}
+        1. Key visual elements and their significance
+        2. Text-image relationships
+        3. Information unique to visual modality
+        {% elif analysis_depth == 'detailed' %}
+        1. Detailed visual element analysis
+        2. Symbolic and metaphorical content
+        3. Information architecture and design patterns
+        4. Text-visual integration assessment
+        5. Accessibility and clarity evaluation
+        {% else %}
+        1. Comprehensive visual content analysis
+        2. Semiotic and symbolic interpretation
+        3. Information design effectiveness
+        4. Cross-modal validation opportunities
+        5. Visual argument and persuasion elements
+        6. Cultural and contextual considerations
+        {% endif %}
+        
+        Identify how visual elements support or contradict other modalities.
+      model: <AUTO task="visual_analysis">Select model for visual content analysis</AUTO>
+      max_tokens: "{{ 300 if analysis_depth == 'basic' else 600 if analysis_depth == 'detailed' else 900 }}"
+    dependencies:
+      - validate_ingested_content
+
+  - id: analyze_audio_modality
+    action: analyze_text
+    condition: "{{ ingest_audio_content.status == 'completed' }}"
+    parameters:
+      text: |
+        Audio transcription: {{ ingest_audio_content.transcription }}
+        Emotional indicators: {{ ingest_audio_content.emotions | tojson }}
+        Speaker characteristics: {{ ingest_audio_content.speaker_info | tojson }}
+        Timestamps: {{ ingest_audio_content.timestamps | tojson }}
+      prompt: |
+        Analyze audio content for multi-modal synthesis:
+        
+        {% if analysis_depth == 'basic' %}
+        1. Content themes from transcription
+        2. Emotional tone and delivery
+        3. Information unique to audio modality
+        {% elif analysis_depth == 'detailed' %}
+        1. Detailed content analysis from transcription
+        2. Prosodic and paralinguistic features
+        3. Speaker credibility and authority indicators
+        4. Emotional progression and emphasis patterns
+        5. Audio-text comparison and validation
+        {% else %}
+        1. Comprehensive linguistic and paralinguistic analysis
+        2. Rhetorical strategies and persuasive techniques
+        3. Speaker expertise and authenticity assessment
+        4. Emotional intelligence and audience awareness
+        5. Cross-modal consistency validation
+        6. Contextual and situational analysis
+        {% endif %}
+        
+        Focus on elements that enhance or conflict with other modalities.
+      model: <AUTO task="audio_analysis">Select model for audio content analysis</AUTO>
+      max_tokens: "{{ 300 if analysis_depth == 'basic' else 600 if analysis_depth == 'detailed' else 900 }}"
+    dependencies:
+      - validate_ingested_content
+
+  - id: analyze_data_modality
+    action: analyze_text
+    condition: "{{ ingest_data_content.status == 'completed' }}"
+    parameters:
+      text: |
+        Dataset summary: {{ ingest_data_content.summary | tojson }}
+        Statistical insights: {{ ingest_data_content.insights | tojson }}
+        Data quality metrics: {{ ingest_data_content.quality_metrics | tojson }}
+      prompt: |
+        Analyze structured data for multi-modal synthesis:
+        
+        {% if analysis_depth == 'basic' %}
+        1. Key statistical findings
+        2. Data patterns and trends
+        3. Quantitative support for other modalities
+        {% elif analysis_depth == 'detailed' %}
+        1. Comprehensive statistical analysis
+        2. Pattern recognition and anomaly detection
+        3. Correlation and causation indicators
+        4. Data quality and reliability assessment
+        5. Quantitative validation opportunities
+        {% else %}
+        1. Advanced statistical and analytical insights
+        2. Predictive patterns and trend analysis  
+        3. Multi-dimensional correlation analysis
+        4. Data integrity and methodology evaluation
+        5. Cross-modal fact-checking opportunities
+        6. Quantitative storytelling elements
+        {% endif %}
+        
+        Identify how data supports, challenges, or enhances other modalities.
+      model: <AUTO task="data_analysis">Select model for statistical data analysis</AUTO>
+      max_tokens: "{{ 300 if analysis_depth == 'basic' else 600 if analysis_depth == 'detailed' else 900 }}"
+    dependencies:
+      - validate_ingested_content
+
+  # Cross-modal synthesis and integration
+  - id: cross_modal_synthesis
+    action: generate_text
+    parameters:
+      prompt: |
+        Perform cross-modal synthesis and integration:
+        
+        **Available Modalities:**
+        {% if analyze_text_modality.status == "completed" %}
+        - Text Analysis: {{ analyze_text_modality.result[:200] }}...
+        {% endif %}
+        {% if analyze_visual_modality.status == "completed" %}
+        - Visual Analysis: {{ analyze_visual_modality.result[:200] }}...
+        {% endif %}
+        {% if analyze_audio_modality.status == "completed" %}
+        - Audio Analysis: {{ analyze_audio_modality.result[:200] }}...
+        {% endif %}
+        {% if analyze_data_modality.status == "completed" %}
+        - Data Analysis: {{ analyze_data_modality.result[:200] }}...
+        {% endif %}
+        
+        **Validation Assessment:**
+        {{ validate_ingested_content.result | from_json | tojson(indent=2) }}
+        
+        **Synthesis Tasks:**
+        1. **Coherence Analysis**: How well do the modalities align and support each other?
+        2. **Contradiction Detection**: Identify any conflicts between modalities
+        3. **Complementary Insights**: What unique value does each modality provide?
+        4. **Integrated Understanding**: Synthesized insights from all modalities
+        5. **Confidence Assessment**: Reliability of findings based on multi-modal validation
+        
+        {% if analysis_depth == 'comprehensive' %}
+        6. **Meta-Analysis**: Quality and completeness of multi-modal approach
+        7. **Methodological Assessment**: Strengths and limitations of analysis
+        {% endif %}
+        
+        Create comprehensive cross-modal analysis report.
+      model: <AUTO task="synthesis">Select model optimized for complex synthesis</AUTO>
+      max_tokens: "{{ 600 if analysis_depth == 'basic' else 1000 if analysis_depth == 'detailed' else 1400 }}"
+    dependencies:
+      - validate_ingested_content
+
+  # Generate output based on requested format
+  - id: generate_final_output
+    action: generate_text
+    parameters:
+      prompt: |
+        Generate final {{ output_format }} based on multi-modal analysis:
+        
+        **Cross-Modal Synthesis:**
+        {{ cross_modal_synthesis.result }}
+        
+        **Individual Analyses:**
+        {% if analyze_text_modality.status == "completed" %}
+        Text: {{ analyze_text_modality.result }}
+        {% endif %}
+        {% if analyze_visual_modality.status == "completed" %}
+        Visual: {{ analyze_visual_modality.result }}
+        {% endif %}
+        {% if analyze_audio_modality.status == "completed" %}
+        Audio: {{ analyze_audio_modality.result }}
+        {% endif %}
+        {% if analyze_data_modality.status == "completed" %}
+        Data: {{ analyze_data_modality.result }}
+        {% endif %}
+        
+        **Format Requirements:**
+        {% if output_format == 'summary' %}
+        Create concise executive summary (300-500 words) highlighting key multi-modal insights
+        {% elif output_format == 'detailed_report' %}
+        Generate comprehensive report with sections for each modality and synthesis
+        {% elif output_format == 'interactive_report' %}
+        Create interactive report format with cross-references and navigable sections
+        {% elif output_format == 'presentation' %}
+        Structure as presentation with clear slides and visual flow
+        {% endif %}
+        
+        Focus on the unique value of multi-modal analysis vs single-modality approaches.
+      model: <AUTO task="content_generation">Select model for professional content generation</AUTO>
+      max_tokens: "{{ 500 if output_format == 'summary' else 1200 if output_format == 'detailed_report' else 1000 }}"
+    dependencies:
+      - cross_modal_synthesis
+
+  # Save comprehensive results
+  - id: save_multi_modal_results
+    tool: filesystem
+    action: write
+    parameters:
+      path: "multi_modal_analysis_{{ analysis_depth }}_{{ output_format }}.json"
+      content: |
+        {
+          "metadata": {
+            "analysis_depth": "{{ analysis_depth }}",
+            "output_format": "{{ output_format }}",
+            "processed_at": "{{ current_timestamp }}",
+            "modalities_processed": [
+              {% if ingest_text_content.status == "completed" %}"text",{% endif %}
+              {% if ingest_image_content.status == "completed" %}"image",{% endif %}
+              {% if ingest_audio_content.status == "completed" %}"audio",{% endif %}
+              {% if ingest_data_content.status == "completed" %}"data"{% endif %}
+            ]
+          },
+          "content_sources": {{ content_sources | tojson }},
+          "ingestion_results": {
+            {% if ingest_text_content.status == "completed" %}
+            "text": {{ ingest_text_content.result | tojson }},
+            {% endif %}
+            {% if ingest_image_content.status == "completed" %}
+            "image": {{ ingest_image_content.result | tojson }},
+            {% endif %}
+            {% if ingest_audio_content.status == "completed" %}
+            "audio": {{ ingest_audio_content.result | tojson }},
+            {% endif %}
+            {% if ingest_data_content.status == "completed" %}
+            "data": {{ ingest_data_content.result | tojson }}
+            {% endif %}
+          },
+          "validation_assessment": {{ validate_ingested_content.result }},
+          "individual_analyses": {
+            {% if analyze_text_modality.status == "completed" %}
+            "text": {{ analyze_text_modality.result | tojson }},
+            {% endif %}
+            {% if analyze_visual_modality.status == "completed" %}
+            "visual": {{ analyze_visual_modality.result | tojson }},
+            {% endif %}
+            {% if analyze_audio_modality.status == "completed" %}
+            "audio": {{ analyze_audio_modality.result | tojson }},
+            {% endif %}
+            {% if analyze_data_modality.status == "completed" %}
+            "data": {{ analyze_data_modality.result | tojson }}
+            {% endif %}
+          },
+          "cross_modal_synthesis": {{ cross_modal_synthesis.result | tojson }},
+          "final_output": {{ generate_final_output.result | tojson }}
+        }
+    dependencies:
+      - generate_final_output
+
+outputs:
+  modalities_processed: [
+    {% if ingest_text_content.status == "completed" %}"text",{% endif %}
+    {% if ingest_image_content.status == "completed" %}"image",{% endif %}  
+    {% if ingest_audio_content.status == "completed" %}"audio",{% endif %}
+    {% if ingest_data_content.status == "completed" %}"data"{% endif %}
+  ]
+  analysis_depth_used: "{{ analysis_depth }}"
+  output_format_used: "{{ output_format }}"
+  cross_modal_insights: "{{ cross_modal_synthesis.result }}"
+  final_output: "{{ generate_final_output.result }}"
+  results_file: "{{ save_multi_modal_results.path }}"
+
+metadata:
+  category: "advanced"
+  complexity: "expert"
+  estimated_runtime: "5-25 minutes (depends on content size and modalities)"
+  requirements:
+    - "multi-modal AI model capabilities"
+    - "web scraper tool"
+    - "vision analysis tool"
+    - "speech-to-text tool"
+    - "data processor tool"
+    - "filesystem tool"
+  use_cases:
+    - "Comprehensive content analysis"
+    - "Multi-source fact checking"
+    - "Rich media research"
+    - "Cross-modal validation"
+    - "Complex information synthesis"
+  demonstrates:
+    - "Multi-modal content ingestion"
+    - "Graceful failure handling with skip"
+    - "Conditional processing based on availability"
+    - "Cross-modal synthesis patterns"
+    - "Dynamic output formatting"

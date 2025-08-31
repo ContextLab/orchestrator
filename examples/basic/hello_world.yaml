@@ -1,0 +1,37 @@
+id: hello-world
+name: "Hello World"
+description: |
+  The simplest possible pipeline - just generates text using AI.
+  Perfect for testing your orchestrator installation.
+
+# Simple parameter structure
+parameters:
+  name:
+    type: string
+    default: "World"
+    description: "Name to greet"
+
+# Single step pipeline  
+steps:
+  - id: greet
+    action: generate_text
+    parameters:
+      prompt: "Generate a friendly greeting message for '{{ name }}'"
+      model: <AUTO>Simple text generation</AUTO>
+      max_tokens: 100
+      temperature: 0.7
+
+# Simple output
+outputs:
+  message: "{{ greet.result }}"
+
+# Metadata for documentation
+metadata:
+  category: "basic"
+  complexity: "beginner"
+  estimated_runtime: "< 30 seconds"
+  requirements: ["text generation model"]
+  use_cases: 
+    - "Testing orchestrator installation"
+    - "Learning basic pipeline syntax"
+    - "Template parameter usage"

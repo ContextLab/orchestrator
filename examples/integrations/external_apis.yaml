@@ -1,0 +1,457 @@
+id: external-apis-integration
+name: "External API Integration"
+description: |
+  Demonstrates integration with various external APIs and services,
+  including authentication, rate limiting, error handling, and data transformation.
+
+parameters:
+  research_topic:
+    type: string
+    required: true
+    description: "Topic to research across multiple API sources"
+  data_sources:
+    type: array
+    default: ["news", "academic", "social", "financial"]
+    description: "Types of data sources to query"
+  max_results_per_source:
+    type: integer
+    default: 10
+    description: "Maximum results per API source"
+  include_sentiment:
+    type: boolean
+    default: true
+    description: "Include sentiment analysis"
+
+# API configuration (would be loaded from secure config in production)
+config:
+  apis:
+    news_api:
+      base_url: "https://newsapi.org/v2"
+      rate_limit: 100  # requests per hour
+      timeout: 30
+    academic_api:
+      base_url: "https://api.semanticscholar.org/graph/v1"
+      rate_limit: 100
+      timeout: 45
+    social_api:
+      base_url: "https://api.reddit.com"
+      rate_limit: 60
+      timeout: 30
+    financial_api:
+      base_url: "https://api.marketstack.com/v1"
+      rate_limit: 1000
+      timeout: 30
+
+steps:
+  # Initialize API authentication and setup
+  - id: setup_api_authentication
+    action: generate_text
+    parameters:
+      prompt: |
+        Initialize API authentication setup for research on: {{ research_topic }}
+        
+        Data sources requested: {{ data_sources | join(", ") }}
+        Max results per source: {{ max_results_per_source }}
+        
+        Create authentication plan and rate limiting strategy.
+      model: <AUTO>Planning model</AUTO>
+      max_tokens: 200
+
+  # News API integration
+  - id: fetch_news_data
+    tool: http-client
+    action: get
+    condition: "{{ 'news' in data_sources }}"
+    parameters:
+      url: "{{ config.apis.news_api.base_url }}/everything"
+      headers:
+        User-Agent: "Orchestrator Research Bot 1.0"
+        Authorization: "Bearer {{ env.NEWS_API_KEY }}"
+      params:
+        q: "{{ research_topic }}"
+        pageSize: "{{ max_results_per_source }}"
+        sortBy: "relevancy"
+        language: "en"
+      timeout: "{{ config.apis.news_api.timeout }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - setup_api_authentication
+
+  # Academic/research API integration
+  - id: fetch_academic_data
+    tool: http-client
+    action: get
+    condition: "{{ 'academic' in data_sources }}"
+    parameters:
+      url: "{{ config.apis.academic_api.base_url }}/paper/search"
+      params:
+        query: "{{ research_topic }}"
+        limit: "{{ max_results_per_source }}"
+        fields: "title,abstract,authors,year,citationCount,url"
+      timeout: "{{ config.apis.academic_api.timeout }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - setup_api_authentication
+
+  # Social media API integration (Reddit as example)
+  - id: fetch_social_data
+    tool: http-client
+    action: get
+    condition: "{{ 'social' in data_sources }}"
+    parameters:
+      url: "{{ config.apis.social_api.base_url }}/search.json"
+      headers:
+        User-Agent: "Orchestrator Research Bot 1.0"
+      params:
+        q: "{{ research_topic }}"
+        limit: "{{ max_results_per_source }}"
+        sort: "relevance"
+        type: "link"
+      timeout: "{{ config.apis.social_api.timeout }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - setup_api_authentication
+
+  # Financial data API (if relevant to topic)
+  - id: fetch_financial_data
+    tool: http-client
+    action: get
+    condition: "{{ 'financial' in data_sources and ('stock' in research_topic.lower() or 'market' in research_topic.lower() or 'economy' in research_topic.lower()) }}"
+    parameters:
+      url: "{{ config.apis.financial_api.base_url }}/news"
+      headers:
+        Authorization: "Bearer {{ env.MARKET_STACK_API_KEY }}"
+      params:
+        keywords: "{{ research_topic }}"
+        limit: "{{ max_results_per_source }}"
+        sort: "published_desc"
+      timeout: "{{ config.apis.financial_api.timeout }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - setup_api_authentication
+
+  # Data validation and cleaning
+  - id: validate_api_responses
+    action: analyze_text
+    parameters:
+      text: |
+        API Response Validation:
+        
+        {% if fetch_news_data.status == "completed" %}
+        News API: {{ fetch_news_data.response.articles | length }} articles retrieved
+        Status: {{ fetch_news_data.status_code }}
+        {% else %}
+        News API: Failed or skipped ({{ fetch_news_data.error if fetch_news_data.error else 'Not requested' }})
+        {% endif %}
+        
+        {% if fetch_academic_data.status == "completed" %}
+        Academic API: {{ fetch_academic_data.response.data | length }} papers retrieved  
+        Status: {{ fetch_academic_data.status_code }}
+        {% else %}
+        Academic API: Failed or skipped ({{ fetch_academic_data.error if fetch_academic_data.error else 'Not requested' }})
+        {% endif %}
+        
+        {% if fetch_social_data.status == "completed" %}
+        Social API: {{ fetch_social_data.response.data.children | length }} posts retrieved
+        Status: {{ fetch_social_data.status_code }}
+        {% else %}
+        Social API: Failed or skipped ({{ fetch_social_data.error if fetch_social_data.error else 'Not requested' }})
+        {% endif %}
+        
+        {% if fetch_financial_data.status == "completed" %}
+        Financial API: {{ fetch_financial_data.response.data | length }} items retrieved
+        Status: {{ fetch_financial_data.status_code }}
+        {% else %}
+        Financial API: Failed or skipped ({{ fetch_financial_data.error if fetch_financial_data.error else 'Not requested' }})
+        {% endif %}
+      prompt: |
+        Validate API response data quality and provide:
+        
+        1. **Data Quality Assessment**: Rate the completeness and quality of each source
+        2. **Error Analysis**: Identify and categorize any API failures
+        3. **Coverage Assessment**: Evaluate how well the data covers the research topic
+        4. **Bias Detection**: Identify potential biases in source selection
+        5. **Integration Recommendations**: Suggest how to best combine the data sources
+        
+        Focus on actionable insights for data synthesis.
+      model: <AUTO task="data_validation">Select model for API response validation</AUTO>
+      response_format: "json_object"
+    dependencies:
+      - fetch_news_data
+      - fetch_academic_data
+      - fetch_social_data
+      - fetch_financial_data
+
+  # Transform and normalize data from different APIs
+  - id: normalize_api_data
+    action: generate_text
+    parameters:
+      prompt: |
+        Transform and normalize data from multiple API sources:
+        
+        **News Data:**
+        {% if fetch_news_data.status == "completed" %}
+        {% for article in fetch_news_data.response.articles[:3] %}
+        - Title: {{ article.title }}
+        - Source: {{ article.source.name }}
+        - Published: {{ article.publishedAt }}
+        - Summary: {{ article.description[:100] }}...
+        {% endfor %}
+        {% endif %}
+        
+        **Academic Data:**
+        {% if fetch_academic_data.status == "completed" %}
+        {% for paper in fetch_academic_data.response.data[:3] %}
+        - Title: {{ paper.title }}
+        - Authors: {{ paper.authors | map(attribute='name') | join(', ') }}
+        - Year: {{ paper.year }}
+        - Citations: {{ paper.citationCount }}
+        {% endfor %}
+        {% endif %}
+        
+        **Social Data:**
+        {% if fetch_social_data.status == "completed" %}
+        {% for post in fetch_social_data.response.data.children[:3] %}
+        - Title: {{ post.data.title }}
+        - Score: {{ post.data.score }}
+        - Comments: {{ post.data.num_comments }}
+        {% endfor %}
+        {% endif %}
+        
+        **Financial Data:**
+        {% if fetch_financial_data.status == "completed" %}
+        {% for item in fetch_financial_data.response.data[:3] %}
+        - Title: {{ item.title }}
+        - Published: {{ item.published_at }}
+        - Source: {{ item.source }}
+        {% endfor %}
+        {% endif %}
+        
+        Create normalized data structure with:
+        1. Unified schema for all sources
+        2. Standardized metadata fields
+        3. Content categorization
+        4. Quality scoring per item
+        5. Source credibility assessment
+        
+        Return structured JSON with normalized data.
+      model: <AUTO task="data_transformation">Select model for data normalization</AUTO>
+      response_format: "json_object"
+      max_tokens: 800
+    dependencies:
+      - validate_api_responses
+
+  # Optional: Sentiment analysis across all sources
+  - id: analyze_sentiment
+    action: analyze_text
+    condition: "{{ include_sentiment }}"
+    parameters:
+      text: "{{ normalize_api_data.result | from_json | tojson }}"
+      prompt: |
+        Perform sentiment analysis across all data sources for "{{ research_topic }}":
+        
+        Normalized data: {{ normalize_api_data.result | from_json | tojson(indent=2) }}
+        
+        Analyze:
+        1. **Overall Sentiment**: General sentiment across all sources
+        2. **Source-Specific Sentiment**: Sentiment by data source type
+        3. **Temporal Trends**: How sentiment changes over time (if timestamps available)
+        4. **Topic Aspects**: Sentiment on different aspects of the topic
+        5. **Sentiment Distribution**: Range and intensity of sentiments
+        
+        Provide detailed sentiment analysis report.
+      model: <AUTO task="sentiment_analysis">Select model specialized in sentiment analysis</AUTO>
+      max_tokens: 600
+    dependencies:
+      - normalize_api_data
+
+  # Rate limiting and API usage tracking
+  - id: track_api_usage
+    action: calculate
+    parameters:
+      operation: "api_usage_summary"
+      inputs:
+        news_calls: "{{ 1 if fetch_news_data.status == 'completed' else 0 }}"
+        academic_calls: "{{ 1 if fetch_academic_data.status == 'completed' else 0 }}"
+        social_calls: "{{ 1 if fetch_social_data.status == 'completed' else 0 }}"
+        financial_calls: "{{ 1 if fetch_financial_data.status == 'completed' else 0 }}"
+        rate_limits:
+          news: "{{ config.apis.news_api.rate_limit }}"
+          academic: "{{ config.apis.academic_api.rate_limit }}"
+          social: "{{ config.apis.social_api.rate_limit }}"  
+          financial: "{{ config.apis.financial_api.rate_limit }}"
+    dependencies:
+      - normalize_api_data
+
+  # Synthesize multi-source analysis
+  - id: synthesize_multi_source_analysis
+    action: generate_text
+    parameters:
+      prompt: |
+        Create comprehensive multi-source analysis for "{{ research_topic }}":
+        
+        **Data Validation Results:**
+        {{ validate_api_responses.result | from_json | tojson(indent=2) }}
+        
+        **Normalized Data:**
+        {{ normalize_api_data.result | from_json | tojson(indent=2) }}
+        
+        {% if analyze_sentiment.status == "completed" %}
+        **Sentiment Analysis:**
+        {{ analyze_sentiment.result }}
+        {% endif %}
+        
+        **API Usage Summary:**
+        {{ track_api_usage.result | tojson(indent=2) }}
+        
+        Provide comprehensive analysis including:
+        1. **Key Findings**: Main insights across all sources
+        2. **Source Comparison**: How different sources present the topic
+        3. **Data Quality Assessment**: Reliability and completeness by source
+        4. **Synthesis**: Integrated understanding from multiple perspectives
+        5. **Gaps and Limitations**: What's missing from the analysis
+        6. **Recommendations**: Actionable insights and next steps
+        
+        Focus on insights unique to multi-source integration.
+      model: <AUTO task="synthesis">Select model for comprehensive multi-source synthesis</AUTO>
+      max_tokens: 1000
+    dependencies:
+      - track_api_usage
+
+  # Store results with external database integration
+  - id: store_research_results
+    tool: database
+    action: insert
+    parameters:
+      table: "research_analyses"
+      data:
+        topic: "{{ research_topic }}"
+        data_sources: "{{ data_sources }}"
+        results_summary: "{{ synthesize_multi_source_analysis.result }}"
+        normalized_data: "{{ normalize_api_data.result }}"
+        sentiment_analysis: "{{ analyze_sentiment.result if analyze_sentiment.status == 'completed' else null }}"
+        api_usage: "{{ track_api_usage.result }}"
+        validation_results: "{{ validate_api_responses.result }}"
+        created_at: "{{ current_timestamp }}"
+        success_rate: "{{ (
+          (1 if fetch_news_data.status == 'completed' else 0) +
+          (1 if fetch_academic_data.status == 'completed' else 0) +
+          (1 if fetch_social_data.status == 'completed' else 0) +
+          (1 if fetch_financial_data.status == 'completed' else 0)
+        ) / data_sources | length }}"
+    on_failure: continue
+    dependencies:
+      - synthesize_multi_source_analysis
+
+  # Generate integration report
+  - id: generate_integration_report
+    tool: report-generator
+    action: create
+    parameters:
+      title: "Multi-Source API Integration Report: {{ research_topic }}"
+      format: "markdown"
+      content: |
+        # API Integration Analysis: {{ research_topic | title }}
+        
+        **Generated:** {{ current_timestamp }}
+        **Data Sources:** {{ data_sources | join(", ") }}
+        **Results per Source:** {{ max_results_per_source }}
+        
+        ## Executive Summary
+        {{ synthesize_multi_source_analysis.result }}
+        
+        ## API Integration Results
+        
+        {% if fetch_news_data.status == "completed" %}
+        ### News API Results
+        - **Status:** ✅ Success
+        - **Articles:** {{ fetch_news_data.response.articles | length }}
+        - **Rate Limit Used:** 1/{{ config.apis.news_api.rate_limit }} per hour
+        {% endif %}
+        
+        {% if fetch_academic_data.status == "completed" %}
+        ### Academic API Results  
+        - **Status:** ✅ Success
+        - **Papers:** {{ fetch_academic_data.response.data | length }}
+        - **Rate Limit Used:** 1/{{ config.apis.academic_api.rate_limit }} per hour
+        {% endif %}
+        
+        {% if fetch_social_data.status == "completed" %}
+        ### Social Media API Results
+        - **Status:** ✅ Success  
+        - **Posts:** {{ fetch_social_data.response.data.children | length }}
+        - **Rate Limit Used:** 1/{{ config.apis.social_api.rate_limit }} per hour
+        {% endif %}
+        
+        {% if fetch_financial_data.status == "completed" %}
+        ### Financial API Results
+        - **Status:** ✅ Success
+        - **Items:** {{ fetch_financial_data.response.data | length }}
+        - **Rate Limit Used:** 1/{{ config.apis.financial_api.rate_limit }} per hour
+        {% endif %}
+        
+        ## Data Quality Assessment
+        {{ validate_api_responses.result | from_json | tojson(indent=2) }}
+        
+        {% if analyze_sentiment.status == "completed" %}
+        ## Sentiment Analysis
+        {{ analyze_sentiment.result }}
+        {% endif %}
+        
+        ## Normalized Data Structure
+        ```json
+        {{ normalize_api_data.result | from_json | tojson(indent=2) }}
+        ```
+        
+        ## API Usage Summary
+        {{ track_api_usage.result | tojson(indent=2) }}
+        
+        ---
+        *Generated by External API Integration Pipeline*
+    dependencies:
+      - store_research_results
+
+outputs:
+  topic_researched: "{{ research_topic }}"
+  data_sources_used: "{{ data_sources }}"
+  successful_api_calls: "{{ 
+    (1 if fetch_news_data.status == 'completed' else 0) +
+    (1 if fetch_academic_data.status == 'completed' else 0) +
+    (1 if fetch_social_data.status == 'completed' else 0) +
+    (1 if fetch_financial_data.status == 'completed' else 0)
+  }}"
+  total_api_calls: "{{ data_sources | length }}"
+  success_rate: "{{ outputs.successful_api_calls / outputs.total_api_calls }}"
+  synthesis_report: "{{ synthesize_multi_source_analysis.result }}"
+  normalized_data: "{{ normalize_api_data.result }}"
+  sentiment_analysis: "{{ analyze_sentiment.result if analyze_sentiment.status == 'completed' else null }}"
+  report_file: "{{ generate_integration_report.file_path }}"
+  database_stored: "{{ store_research_results.status == 'completed' }}"
+
+metadata:
+  category: "integration"
+  complexity: "advanced"
+  estimated_runtime: "5-10 minutes (depends on API response times)"
+  requirements:
+    - "HTTP client tool"
+    - "Database tool (optional)"
+    - "Report generator tool"
+    - "External API keys configured"
+    - "Text generation and analysis models"
+  use_cases:
+    - "Multi-source research aggregation"
+    - "Cross-platform data integration"
+    - "API-driven market research"
+    - "Content aggregation systems"
+    - "Real-time data monitoring"
+  demonstrates:
+    - "Multiple external API integration"
+    - "Authentication and rate limiting"
+    - "Error handling and retry logic"
+    - "Data normalization across sources"
+    - "Response validation and quality assessment"
+    - "Database storage integration"

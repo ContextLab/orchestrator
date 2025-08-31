@@ -1,0 +1,84 @@
+id: text-analysis-basic
+name: "Basic Text Analysis"
+description: |
+  Analyze a piece of text for sentiment, key themes, and word count.
+  Demonstrates basic text processing and structured output.
+
+parameters:
+  text:
+    type: string
+    required: true
+    description: "Text to analyze"
+  analysis_type:
+    type: string
+    default: "comprehensive"
+    choices: ["sentiment", "themes", "comprehensive"]
+    description: "Type of analysis to perform"
+
+steps:
+  - id: analyze_text
+    action: analyze_text
+    parameters:
+      text: "{{ text }}"
+      prompt: |
+        Analyze the following text:
+        "{{ text }}"
+        
+        {% if analysis_type == 'sentiment' %}
+        Provide sentiment analysis with:
+        - Overall sentiment (positive/negative/neutral)
+        - Confidence score (0-1)
+        - Key emotional indicators
+        {% elif analysis_type == 'themes' %}
+        Identify key themes:
+        - Main topics (3-5 themes)
+        - Supporting evidence for each theme
+        - Theme importance ranking
+        {% else %}
+        Provide comprehensive analysis including:
+        - Sentiment analysis
+        - Key themes and topics  
+        - Writing style and tone
+        - Key phrases or terminology
+        - Overall summary
+        {% endif %}
+        
+        Return structured JSON format.
+      model: <AUTO task="analysis">Select best model for text analysis</AUTO>
+      response_format: "json_object"
+      
+  - id: word_count
+    action: count_words
+    parameters:
+      text: "{{ text }}"
+      
+  - id: generate_summary
+    action: generate_text
+    parameters:
+      prompt: |
+        Based on this analysis: {{ analyze_text.result | from_json }}
+        And word count: {{ word_count.count }}
+        
+        Create a brief summary of the analysis findings in plain English.
+        Focus on the most important insights.
+      model: <AUTO task="summarize">Select model optimized for summarization</AUTO>
+      max_tokens: 200
+    dependencies:
+      - analyze_text
+      - word_count
+
+outputs:
+  analysis: "{{ analyze_text.result }}"
+  word_count: "{{ word_count.count }}"
+  summary: "{{ generate_summary.result }}"
+
+metadata:
+  category: "basic"
+  complexity: "beginner"
+  estimated_runtime: "1-2 minutes"
+  requirements: ["text generation model"]
+  use_cases:
+    - "Content analysis"
+    - "Document review"
+    - "Social media monitoring"
+    - "Feedback analysis"

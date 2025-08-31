@@ -1,0 +1,140 @@
+id: data-transformation-basic
+name: "Basic Data Transformation"
+description: |
+  Transform and process structured data using AI and templates.
+  Demonstrates data manipulation, filtering, and format conversion.
+
+parameters:
+  input_format:
+    type: string
+    default: "csv"
+    choices: ["csv", "json", "yaml"]
+    description: "Format of input data"
+  transformation_type:
+    type: string
+    default: "clean"
+    choices: ["clean", "summarize", "categorize"]
+    description: "Type of transformation to apply"
+
+# Sample data for demonstration
+data:
+  sample_records:
+    - name: "John Smith"
+      age: 28
+      department: "Engineering" 
+      performance: 4.2
+      notes: "Strong technical skills, good team player"
+    - name: "Sarah Johnson"
+      age: 35
+      department: "Marketing"
+      performance: 4.7
+      notes: "Excellent leadership, creative problem solver"
+    - name: "Mike Chen"
+      age: 42
+      department: "Engineering"
+      performance: 3.8
+      notes: "Reliable developer, needs improvement in communication"
+
+steps:
+  - id: validate_data
+    action: analyze_text
+    parameters:
+      text: "{{ data.sample_records | tojson }}"
+      prompt: |
+        Validate this data structure and check for:
+        1. Data completeness (missing fields)
+        2. Data quality issues
+        3. Consistency problems
+        4. Suggested improvements
+        
+        Return structured analysis.
+      model: <AUTO task="data_analysis">Select model for data validation</AUTO>
+      response_format: "json_object"
+      
+  - id: transform_data
+    action: generate_text
+    parameters:
+      prompt: |
+        Transform this data according to {{ transformation_type }} operation:
+        
+        Data: {{ data.sample_records | tojson }}
+        Validation: {{ validate_data.result | from_json }}
+        
+        {% if transformation_type == 'clean' %}
+        Clean and standardize the data:
+        - Fix formatting issues
+        - Standardize field values
+        - Remove inconsistencies
+        {% elif transformation_type == 'summarize' %}
+        Create summary statistics:
+        - Average performance by department
+        - Age distribution
+        - Key insights from notes
+        {% else %}
+        Categorize records:
+        - Performance tiers (high/medium/low)
+        - Department groupings
+        - Age categories
+        {% endif %}
+        
+        Return results as structured data.
+      model: <AUTO task="data_processing">Select model for data transformation</AUTO>
+      response_format: "json_object"
+    dependencies:
+      - validate_data
+      
+  - id: generate_report
+    action: generate_text
+    parameters:
+      prompt: |
+        Create a data transformation report based on:
+        
+        Original data: {{ data.sample_records | length }} records
+        Validation results: {{ validate_data.result | from_json }}
+        Transformation: {{ transform_data.result | from_json }}
+        
+        Include:
+        1. Summary of changes made
+        2. Data quality improvements
+        3. Key findings or insights
+        4. Recommendations for next steps
+      model: <AUTO task="reporting">Select model for clear reporting</AUTO>
+      max_tokens: 400
+    dependencies:
+      - transform_data
+      
+  - id: export_results
+    tool: filesystem
+    action: write
+    parameters:
+      path: "transformed_data_{{ transformation_type }}.json"
+      content: |
+        {
+          "metadata": {
+            "original_records": {{ data.sample_records | length }},
+            "transformation_type": "{{ transformation_type }}",
+            "processed_at": "{{ current_timestamp }}"
+          },
+          "validation": {{ validate_data.result }},
+          "transformed_data": {{ transform_data.result }},
+          "summary_report": {{ generate_report.result | tojson }}
+        }
+    dependencies:
+      - generate_report
+
+outputs:
+  validation_results: "{{ validate_data.result }}"
+  transformed_data: "{{ transform_data.result }}"
+  report: "{{ generate_report.result }}"
+  output_file: "{{ export_results.path }}"
+
+metadata:
+  category: "basic"
+  complexity: "intermediate" 
+  estimated_runtime: "2-3 minutes"
+  requirements: ["text generation model", "filesystem tool"]
+  use_cases:
+    - "Data cleaning and validation"
+    - "Report generation from datasets"
+    - "Data quality assessment"
+    - "Format conversion and standardization"
