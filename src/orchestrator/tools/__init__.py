@@ -46,6 +46,38 @@ from .discovery import (
     ToolMatch
 )
 
+# Setup and installation system - Issue #312 Stream B
+from .setup import (
+    SetupSystem,
+    PlatformDetector,
+    ConfigurationManager,
+    SetupConfiguration,
+    PlatformInfo,
+    InstallationResult,
+    Platform,
+    PackageManager,
+    setup_system,
+    get_setup_system,
+    setup_tool,
+    setup_tools,
+    check_tool_availability
+)
+
+from .installers import (
+    PackageInstaller,
+    PipInstaller,
+    CondaInstaller,
+    NpmInstaller,
+    AptInstaller,
+    HomebrewInstaller,
+    ChocolateyInstaller,
+    WingetInstaller,
+    PackageInstallerFactory,
+    ConcurrentInstaller,
+    PackageInfo,
+    InstallationEnvironment
+)
+
 __all__ = [
     # Base tools and registry
     "Tool",
@@ -93,4 +125,33 @@ __all__ = [
     # Discovery engine
     "ToolDiscoveryEngine",
     "ToolMatch",
+    
+    # Setup and installation system - Issue #312 Stream B
+    "SetupSystem",
+    "PlatformDetector",
+    "ConfigurationManager",
+    "SetupConfiguration",
+    "PlatformInfo",
+    "InstallationResult",
+    "Platform",
+    "PackageManager",
+    "setup_system",
+    "get_setup_system",
+    "setup_tool",
+    "setup_tools",
+    "check_tool_availability",
+    
+    # Package installers
+    "PackageInstaller",
+    "PipInstaller",
+    "CondaInstaller",
+    "NpmInstaller",
+    "AptInstaller",
+    "HomebrewInstaller",
+    "ChocolateyInstaller",
+    "WingetInstaller",
+    "PackageInstallerFactory",
+    "ConcurrentInstaller",
+    "PackageInfo",
+    "InstallationEnvironment",
 ]
