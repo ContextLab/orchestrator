@@ -150,7 +150,16 @@
       "Read(/Users/jmanning/epic-complete-refactor/**)",
       "Read(/Users/jmanning/epic-complete-refactor/**)",
       "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/**)",
-      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/**)"
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/core/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/models/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/models/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/models/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/models/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/models/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/models/**)",
+      "Read(/Users/jmanning/epic-complete-refactor/src/orchestrator/models/**)"
     ],
     "deny": [],
     "ask": []
