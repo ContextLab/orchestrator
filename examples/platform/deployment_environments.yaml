@@ -1,0 +1,539 @@
+id: deployment-environments
+name: "Deployment Environment Optimization"
+description: |
+  Demonstrates how to optimize pipelines for different deployment environments
+  including local development, CI/CD, containers, cloud, and edge computing.
+
+parameters:
+  environment_type:
+    type: string
+    default: "development"
+    choices: ["development", "ci_cd", "container", "cloud", "edge", "production"]
+    description: "Target deployment environment"
+  resource_constraints:
+    type: object
+    default:
+      memory_limit: "4GB"
+      cpu_limit: "2"
+      timeout: "300"
+    description: "Resource constraints for the environment"
+  optimization_focus:
+    type: string
+    default: "balanced"
+    choices: ["speed", "memory", "reliability", "cost", "balanced"]
+    description: "Primary optimization target"
+
+# Environment detection and configuration
+steps:
+  - id: detect_environment
+    action: generate_text
+    parameters:
+      prompt: |
+        Analyze deployment environment characteristics:
+        
+        Environment type: {{ environment_type }}
+        Resource constraints: {{ resource_constraints | tojson }}
+        Optimization focus: {{ optimization_focus }}
+        
+        Detect and analyze:
+        1. Available system resources
+        2. Network connectivity characteristics
+        3. Storage capabilities and limitations
+        4. Security requirements and constraints
+        5. Monitoring and logging capabilities
+        6. Scalability requirements
+        
+        Provide environment analysis and configuration recommendations.
+      model: <AUTO task="environment_analysis">Environment analysis model</AUTO>
+      max_tokens: 400
+
+  # Development environment optimizations
+  - id: development_optimizations
+    action: generate_text
+    condition: "{{ environment_type == 'development' }}"
+    parameters:
+      prompt: |
+        Configure pipeline for development environment:
+        
+        Development characteristics:
+        - Fast iteration cycles needed
+        - Debugging and testing priority
+        - Resource usage less critical
+        - Local model preferences
+        - Quick feedback loops
+        
+        Optimization focus: {{ optimization_focus }}
+        Resource constraints: {{ resource_constraints | tojson }}
+        
+        Provide development-specific optimizations:
+        1. Model selection for fast local testing
+        2. Caching strategies for rapid iteration
+        3. Debug output and logging configuration
+        4. Local tool preferences
+        5. Development workflow integration
+      model: <AUTO task="development_config">Development environment model</AUTO>
+      max_tokens: 500
+    dependencies:
+      - detect_environment
+
+  # CI/CD environment optimizations  
+  - id: cicd_optimizations
+    action: generate_text
+    condition: "{{ environment_type == 'ci_cd' }}"
+    parameters:
+      prompt: |
+        Configure pipeline for CI/CD environment:
+        
+        CI/CD characteristics:
+        - Automated execution
+        - Time constraints (build timeouts)
+        - Reproducible results required
+        - Limited resource availability
+        - Integration with build systems
+        
+        Optimization focus: {{ optimization_focus }}
+        Resource constraints: {{ resource_constraints | tojson }}
+        
+        Provide CI/CD-specific optimizations:
+        1. Lightweight model selection
+        2. Parallel execution strategies
+        3. Caching and artifact management
+        4. Error handling for automated systems
+        5. Integration with CI/CD tools
+        6. Test result reporting
+      model: <AUTO task="cicd_config">CI/CD optimization model</AUTO>
+      max_tokens: 600
+    dependencies:
+      - detect_environment
+
+  # Container environment optimizations
+  - id: container_optimizations
+    action: generate_text
+    condition: "{{ environment_type == 'container' }}"
+    parameters:
+      prompt: |
+        Configure pipeline for containerized deployment:
+        
+        Container characteristics:
+        - Isolated execution environment
+        - Resource limits enforced
+        - Immutable infrastructure
+        - Service mesh networking
+        - Orchestration system integration
+        
+        Optimization focus: {{ optimization_focus }}
+        Resource constraints: {{ resource_constraints | tojson }}
+        
+        Provide container-specific optimizations:
+        1. Resource-efficient model selection
+        2. Container health checks
+        3. Volume and storage management
+        4. Network service discovery
+        5. Logging and monitoring integration
+        6. Graceful shutdown handling
+        7. Multi-stage build optimization
+      model: <AUTO task="container_config">Container deployment model</AUTO>
+      max_tokens: 700
+    dependencies:
+      - detect_environment
+
+  # Cloud environment optimizations
+  - id: cloud_optimizations
+    action: generate_text
+    condition: "{{ environment_type == 'cloud' }}"
+    parameters:
+      prompt: |
+        Configure pipeline for cloud deployment:
+        
+        Cloud characteristics:
+        - Scalable compute resources
+        - Pay-per-use pricing model
+        - High availability requirements
+        - Global distribution capabilities
+        - Managed service integration
+        
+        Optimization focus: {{ optimization_focus }}
+        Resource constraints: {{ resource_constraints | tojson }}
+        
+        Provide cloud-specific optimizations:
+        1. Auto-scaling configuration
+        2. Cost-optimized resource selection
+        3. Multi-region deployment strategies
+        4. Cloud-native service integration
+        5. Serverless function optimization
+        6. Data locality and transfer optimization
+        7. Cloud monitoring and alerting
+        8. Disaster recovery planning
+      model: <AUTO task="cloud_config">Cloud deployment model</AUTO>
+      max_tokens: 800
+    dependencies:
+      - detect_environment
+
+  # Edge computing optimizations
+  - id: edge_optimizations
+    action: generate_text
+    condition: "{{ environment_type == 'edge' }}"
+    parameters:
+      prompt: |
+        Configure pipeline for edge computing deployment:
+        
+        Edge characteristics:
+        - Limited computational resources
+        - Intermittent connectivity
+        - Low latency requirements
+        - Local data processing needs
+        - Autonomous operation capability
+        
+        Optimization focus: {{ optimization_focus }}
+        Resource constraints: {{ resource_constraints | tojson }}
+        
+        Provide edge-specific optimizations:
+        1. Lightweight model selection
+        2. Offline operation capabilities
+        3. Local caching strategies
+        4. Bandwidth-efficient processing
+        5. Edge-to-cloud synchronization
+        6. Power consumption optimization
+        7. Local storage management
+        8. Network resilience patterns
+      model: <AUTO task="edge_config">Edge computing model</AUTO>
+      max_tokens: 700
+    dependencies:
+      - detect_environment
+
+  # Production environment optimizations
+  - id: production_optimizations
+    action: generate_text  
+    condition: "{{ environment_type == 'production' }}"
+    parameters:
+      prompt: |
+        Configure pipeline for production deployment:
+        
+        Production characteristics:
+        - High reliability requirements
+        - Performance and scalability critical
+        - Security and compliance needs
+        - 24/7 operation expectations
+        - SLA and monitoring requirements
+        
+        Optimization focus: {{ optimization_focus }}
+        Resource constraints: {{ resource_constraints | tojson }}
+        
+        Provide production-specific optimizations:
+        1. High-availability configuration
+        2. Performance monitoring and alerting
+        3. Security hardening measures
+        4. Backup and recovery procedures
+        5. Load balancing and scaling
+        6. Compliance and audit logging
+        7. Circuit breaker patterns
+        8. Graceful degradation strategies
+      model: <AUTO task="production_config">Production deployment model</AUTO>
+      max_tokens: 800
+    dependencies:
+      - detect_environment
+
+  # Resource allocation optimization
+  - id: optimize_resource_allocation
+    action: analyze_text
+    parameters:
+      text: |
+        Environment optimizations:
+        {{ development_optimizations.result if development_optimizations.status == "completed" }}
+        {{ cicd_optimizations.result if cicd_optimizations.status == "completed" }}
+        {{ container_optimizations.result if container_optimizations.status == "completed" }}
+        {{ cloud_optimizations.result if cloud_optimizations.status == "completed" }}
+        {{ edge_optimizations.result if edge_optimizations.status == "completed" }}
+        {{ production_optimizations.result if production_optimizations.status == "completed" }}
+      prompt: |
+        Optimize resource allocation for {{ environment_type }} environment:
+        
+        Target optimization: {{ optimization_focus }}
+        Resource constraints: {{ resource_constraints | tojson }}
+        
+        Analyze and provide:
+        1. **Memory Optimization**: Efficient memory usage strategies
+        2. **CPU Optimization**: Processing efficiency recommendations
+        3. **Network Optimization**: Bandwidth and latency optimizations
+        4. **Storage Optimization**: Disk usage and I/O efficiency
+        5. **Concurrency Optimization**: Parallel processing recommendations
+        6. **Caching Strategy**: Appropriate caching levels and policies
+        
+        Focus on {{ optimization_focus }} optimization while respecting constraints.
+      model: <AUTO task="resource_optimization">Resource optimization model</AUTO>
+      max_tokens: 600
+    dependencies:
+      - development_optimizations
+      - cicd_optimizations
+      - container_optimizations
+      - cloud_optimizations
+      - edge_optimizations
+      - production_optimizations
+
+  # Performance benchmarking
+  - id: performance_benchmark
+    action: generate_text
+    parameters:
+      prompt: |
+        Create performance benchmark for {{ environment_type }} deployment:
+        
+        Environment analysis: {{ detect_environment.result }}
+        Resource optimizations: {{ optimize_resource_allocation.result }}
+        
+        Define performance benchmarks:
+        1. **Execution Speed**: Expected pipeline execution times
+        2. **Throughput**: Requests/operations per time unit
+        3. **Resource Usage**: CPU, memory, and storage utilization
+        4. **Scalability**: Performance under load
+        5. **Reliability**: Error rates and availability metrics
+        6. **Cost Efficiency**: Resource cost per operation
+        
+        Provide specific benchmarks and monitoring metrics for {{ environment_type }}.
+      model: <AUTO task="performance_benchmarking">Performance benchmarking model</AUTO>
+      max_tokens: 600
+    dependencies:
+      - optimize_resource_allocation
+
+  # Configuration generation
+  - id: generate_deployment_config
+    action: generate_code
+    parameters:
+      language: "yaml"
+      prompt: |
+        Generate deployment configuration for {{ environment_type }} environment:
+        
+        Environment requirements:
+        {{ detect_environment.result }}
+        
+        Optimization recommendations:
+        {{ optimize_resource_allocation.result }}
+        
+        Performance benchmarks:
+        {{ performance_benchmark.result }}
+        
+        Generate comprehensive deployment configuration including:
+        1. Resource limits and requests
+        2. Environment variables
+        3. Health checks and monitoring
+        4. Security configuration
+        5. Networking and service discovery
+        6. Logging and observability
+        7. Backup and recovery settings
+        8. Auto-scaling policies
+        
+        Format as deployment-ready YAML configuration.
+      model: <AUTO task="config_generation">Configuration generation model</AUTO>
+      max_tokens: 800
+    dependencies:
+      - performance_benchmark
+
+  # Monitoring and alerting setup
+  - id: monitoring_alerting_setup
+    action: generate_text
+    parameters:
+      prompt: |
+        Design monitoring and alerting for {{ environment_type }} deployment:
+        
+        Environment characteristics: {{ detect_environment.result }}
+        Performance benchmarks: {{ performance_benchmark.result }}
+        
+        Design comprehensive monitoring including:
+        1. **Health Metrics**: Pipeline execution health indicators
+        2. **Performance Metrics**: Speed, throughput, and efficiency
+        3. **Resource Metrics**: CPU, memory, network, and storage usage
+        4. **Error Metrics**: Failure rates and error categorization
+        5. **Business Metrics**: Pipeline success and output quality
+        6. **Alert Definitions**: Threshold-based and anomaly detection
+        7. **Dashboard Design**: Real-time visualization requirements
+        8. **Escalation Policies**: Alert routing and notification rules
+        
+        Focus on {{ environment_type }}-specific monitoring needs.
+      model: <AUTO task="monitoring_design">Monitoring and alerting model</AUTO>
+      max_tokens: 700
+    dependencies:
+      - generate_deployment_config
+
+  # Security configuration
+  - id: security_configuration
+    action: generate_text
+    parameters:
+      prompt: |
+        Configure security for {{ environment_type }} deployment:
+        
+        Environment analysis: {{ detect_environment.result }}
+        Deployment config: {{ generate_deployment_config.result | truncate(500) }}
+        
+        Design security configuration including:
+        1. **Authentication**: User and service authentication
+        2. **Authorization**: Role-based access control
+        3. **Encryption**: Data at rest and in transit
+        4. **Network Security**: Firewall and VPN configuration
+        5. **Secret Management**: API keys and credential handling
+        6. **Audit Logging**: Security event tracking
+        7. **Compliance**: Regulatory requirement adherence
+        8. **Vulnerability Management**: Security scanning and updates
+        
+        Provide {{ environment_type }}-specific security recommendations.
+      model: <AUTO task="security_config">Security configuration model</AUTO>
+      max_tokens: 700
+    dependencies:
+      - monitoring_alerting_setup
+
+  # Generate comprehensive deployment guide
+  - id: generate_deployment_guide
+    tool: report-generator
+    action: create
+    parameters:
+      title: "{{ environment_type | title }} Deployment Guide"
+      format: "markdown"
+      content: |
+        # {{ environment_type | title }} Environment Deployment Guide
+        
+        **Generated:** {{ current_timestamp }}
+        **Environment:** {{ environment_type | title }}
+        **Optimization Focus:** {{ optimization_focus | title }}
+        **Resource Constraints:** {{ resource_constraints | tojson }}
+        
+        ## Environment Analysis
+        {{ detect_environment.result }}
+        
+        {% if development_optimizations.status == "completed" %}
+        ## Development Environment Optimizations
+        {{ development_optimizations.result }}
+        {% endif %}
+        
+        {% if cicd_optimizations.status == "completed" %}
+        ## CI/CD Environment Optimizations
+        {{ cicd_optimizations.result }}
+        {% endif %}
+        
+        {% if container_optimizations.status == "completed" %}
+        ## Container Environment Optimizations  
+        {{ container_optimizations.result }}
+        {% endif %}
+        
+        {% if cloud_optimizations.status == "completed" %}
+        ## Cloud Environment Optimizations
+        {{ cloud_optimizations.result }}
+        {% endif %}
+        
+        {% if edge_optimizations.status == "completed" %}
+        ## Edge Computing Optimizations
+        {{ edge_optimizations.result }}
+        {% endif %}
+        
+        {% if production_optimizations.status == "completed" %}
+        ## Production Environment Optimizations
+        {{ production_optimizations.result }}
+        {% endif %}
+        
+        ## Resource Allocation Optimization
+        {{ optimize_resource_allocation.result }}
+        
+        ## Performance Benchmarks
+        {{ performance_benchmark.result }}
+        
+        ## Deployment Configuration
+        ```yaml
+        {{ generate_deployment_config.result }}
+        ```
+        
+        ## Monitoring and Alerting
+        {{ monitoring_alerting_setup.result }}
+        
+        ## Security Configuration
+        {{ security_configuration.result }}
+        
+        ## Quick Start Guide
+        
+        ### Prerequisites
+        - System resources: {{ resource_constraints | tojson }}
+        - Environment type: {{ environment_type }}
+        - Optimization target: {{ optimization_focus }}
+        
+        ### Deployment Steps
+        1. **Environment Setup**: Prepare {{ environment_type }} environment
+        2. **Configuration**: Apply generated configuration
+        3. **Security**: Implement security measures
+        4. **Monitoring**: Set up monitoring and alerting
+        5. **Testing**: Validate deployment with benchmarks
+        6. **Production**: Deploy and monitor
+        
+        ### Troubleshooting
+        - Check resource constraints and availability
+        - Validate configuration parameters
+        - Monitor performance metrics
+        - Review security settings
+        - Verify network connectivity
+        
+        ### Performance Tuning
+        - Adjust resource allocation based on monitoring
+        - Optimize for {{ optimization_focus }}
+        - Scale resources as needed
+        - Fine-tune configuration parameters
+      metadata:
+        environment_type: "{{ environment_type }}"
+        optimization_focus: "{{ optimization_focus }}"
+        resource_constraints: "{{ resource_constraints }}"
+        configuration_generated: true
+        monitoring_configured: true
+        security_configured: true
+    dependencies:
+      - security_configuration
+
+outputs:
+  environment_type: "{{ environment_type }}"
+  optimization_focus: "{{ optimization_focus }}"
+  resource_constraints: "{{ resource_constraints }}"
+  
+  configuration_results:
+    environment_detected: "{{ detect_environment.status == 'completed' }}"
+    optimizations_generated: "{{ 
+      (development_optimizations.status == 'completed' if development_optimizations.status is defined else false) or
+      (cicd_optimizations.status == 'completed' if cicd_optimizations.status is defined else false) or
+      (container_optimizations.status == 'completed' if container_optimizations.status is defined else false) or
+      (cloud_optimizations.status == 'completed' if cloud_optimizations.status is defined else false) or
+      (edge_optimizations.status == 'completed' if edge_optimizations.status is defined else false) or
+      (production_optimizations.status == 'completed' if production_optimizations.status is defined else false)
+    }}"
+    resource_optimization: "{{ optimize_resource_allocation.status == 'completed' }}"
+    performance_benchmarked: "{{ performance_benchmark.status == 'completed' }}"
+    deployment_config_generated: "{{ generate_deployment_config.status == 'completed' }}"
+    monitoring_configured: "{{ monitoring_alerting_setup.status == 'completed' }}"
+    security_configured: "{{ security_configuration.status == 'completed' }}"
+  
+  deployment_guide_file: "{{ generate_deployment_guide.file_path }}"
+  deployment_config: "{{ generate_deployment_config.result }}"
+
+metadata:
+  category: "platform"
+  complexity: "expert"
+  estimated_runtime: "5-12 minutes (depends on environment complexity)"
+  requirements:
+    - "text generation model"
+    - "code generation capabilities"
+    - "report generator tool"
+  
+  use_cases:
+    - "Environment-specific deployment optimization"
+    - "Resource allocation planning"
+    - "Performance benchmarking and tuning"
+    - "Security configuration for different environments"
+    - "Monitoring and alerting setup"
+    - "Development to production migration"
+  
+  demonstrates:
+    - "Environment-specific conditional logic"
+    - "Resource constraint handling"
+    - "Performance optimization strategies"
+    - "Security configuration generation"
+    - "Monitoring and alerting design"
+    - "Comprehensive deployment planning"
+  
+  supported_environments:
+    - "development: Local development setup"
+    - "ci_cd: Continuous integration/deployment"
+    - "container: Docker/Kubernetes deployment"
+    - "cloud: AWS/Azure/GCP deployment"
+    - "edge: Edge computing deployment"
+    - "production: High-availability production"

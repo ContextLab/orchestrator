@@ -1,0 +1,295 @@
+id: web-research-pipeline
+name: web-research-pipeline
+description: Comprehensive web research automation
+version: 1.0.0
+inputs:
+  research_topic: artificial intelligence in healthcare
+  max_sources: 10
+  output_format: pdf
+  research_depth: comprehensive
+  output_path: examples/outputs/web_research_pipeline
+steps:
+- id: initial_search
+  tool: web-search
+  action: search
+  parameters:
+    query: '{{ research_topic }} latest developments 2024'
+    max_results: '{{ max_sources }}'
+    region: us-en
+    safesearch: moderate
+- id: identify_themes
+  action: analyze_text
+  parameters:
+    text: 'Search results for "{{ research_topic }}":
+
+      {% for result in initial_search.results %}
+
+      {{ loop.index }}. {{ result.title }}
+
+      {{ result.snippet }}
+
+      URL: {{ result.url }}
+
+
+      {% endfor %}
+
+      '
+    analysis_type: theme_extraction
+    prompt: 'Analyze these search results and extract:
+
+      1. Main themes (5-7 key topics)
+
+      2. Key organizations mentioned
+
+      3. Trending subtopics
+
+
+      Format as JSON with fields: main_themes, key_organizations, trending_subtopics
+
+      '
+    model: <AUTO>Choose a model for theme extraction</AUTO>
+- id: themed_searches
+  tool: web-search
+  action: search
+  condition: '{{ research_depth in [''standard'', ''comprehensive''] }}'
+  parallel: true
+  foreach: '{{ identify_themes.result.trending_subtopics[:3] }}'
+  parameters:
+    query: '{{ research_topic }} {{ item }}'
+    max_results: 5
+- id: fetch_content
+  tool: headless-browser
+  action: extract
+  foreach: '{{ initial_search.results[:5] }}'
+  parameters:
+    url: '{{ item.url }}'
+    extract_main_content: true
+    include_metadata: true
+    timeout: 10000
+  on_failure: continue
+- id: analyze_sources
+  action: analyze_text
+  foreach: '{{ fetch_content.results }}'
+  parameters:
+    text: '{{ item.content | truncate(5000) }}'
+    analysis_type: research_extraction
+    prompt: 'Analyze this source about {{ research_topic }} and extract:
+
+      1. Key findings (main points, discoveries, conclusions)
+
+      2. Data points (statistics, metrics with context)
+
+      3. Credibility score (0-1 based on sources, citations, authority)
+
+      4. Relevant quotes (2-3 most important)
+
+
+      Format as JSON with fields:
+
+      - key_findings: array of strings
+
+      - data_points: array of {metric, value, context}
+
+      - credibility_score: number 0-1
+
+      - relevant_quotes: array of strings
+
+      '
+    model: <AUTO>Choose a model for research extraction</AUTO>
+- id: validate_findings
+  action: analyze_text
+  condition: '{{ research_depth == ''comprehensive'' }}'
+  parameters:
+    text: 'Research findings from multiple sources:
+
+      {% for analysis in analyze_sources.results %}
+
+      Source {{ loop.index }}:
+
+      {{ analysis.result | json_encode }}
+
+      {% endfor %}
+
+      '
+    analysis_type: fact_checking
+    prompt: 'Cross-reference these research findings:
+
+      1. Identify corroborated facts (mentioned in multiple sources)
+
+      2. Flag any conflicting information
+
+      3. Rate overall confidence in findings (high/medium/low)
+
+      4. Note any gaps or missing information
+
+      '
+    model: <AUTO>Choose a model for fact checking</AUTO>
+- id: research_summary
+  action: generate_text
+  parameters:
+    prompt: "Create a comprehensive research summary on \"{{ research_topic }}\" based\
+      \ on these findings:\n\nMain themes: {{ identify_themes.result.main_themes |\
+      \ join(', ') }}\n\nKey findings from sources:\n{% for analysis in analyze_sources.results\
+      \ %}\n{% for finding in analysis.result.key_findings %}\n- {{ finding }}\n{%\
+      \ endfor %}\n{% endfor %}\n\nInclude sections for:\n1. Executive Summary\n2.\
+      \ Current State of {{ research_topic }}\n3. Key Players and Organizations  \n\
+      4. Recent Developments\n5. Data and Statistics\n6. Future Outlook\n7. Recommendations\n"
+    model: <AUTO>Choose a model for comprehensive writing</AUTO>
+    temperature: 0.3
+    max_tokens: 2000
+- id: create_bibliography
+  tool: report-generator
+  action: generate
+  parameters:
+    title: References
+    format: markdown
+    content: "# Bibliography\n\n## Primary Sources\n{% for result in initial_search.results[:max_sources]\
+      \ %}\n{{ loop.index }}. {{ result.title }}\n   - URL: {{ result.url }}\n   -\
+      \ Accessed: {{ current_date }}\n   - Relevance: {{ result.relevance_score }}\n\
+      {% endfor %}\n\n## Additional Sources\n{% for search in themed_searches.results\
+      \ %}\n### {{ search.query }}\n{% for result in search.results %}\n- {{ result.title\
+      \ }} ({{ result.url }})\n{% endfor %}\n{% endfor %}\n"
+- id: generate_report
+  tool: report-generator
+  action: generate
+  parameters:
+    title: 'Research Report: {{ research_topic | title }}'
+    format: '{{ output_format }}'
+    template: '# Research Report: {{ research_topic | title }}
+
+
+      **Date:** {{ current_date }}
+
+      **Research Depth:** {{ research_depth }}
+
+      **Sources Analyzed:** {{ analyze_sources.results | length }}
+
+
+      ---
+
+
+      {{ research_summary.result }}
+
+
+      ---
+
+
+      ## Detailed Findings by Source
+
+
+      {% for analysis in analyze_sources.results %}
+
+      ### Source {{ loop.index }}
+
+
+      **Credibility Score:** {{ analysis.result.credibility_score }}/1.0
+
+
+      **Key Findings:**
+
+      {% for finding in analysis.result.key_findings %}
+
+      - {{ finding }}
+
+      {% endfor %}
+
+
+      **Notable Quotes:**
+
+      {% for quote in analysis.result.relevant_quotes[:2] %}
+
+      > "{{ quote }}"
+
+      {% endfor %}
+
+
+      {% endfor %}
+
+
+      ---
+
+
+      {{ create_bibliography.content }}
+
+
+      ---
+
+
+      ## Appendix: Research Methodology
+
+
+      This report was generated using automated web research with the following approach:
+
+      1. Initial broad search for "{{ research_topic }}"
+
+      2. Theme identification and focused searches
+
+      3. Content extraction and analysis
+
+      4. Cross-referencing and validation
+
+      5. Synthesis and report generation
+
+      '
+    metadata:
+      author: Orchestrator Research Pipeline
+      keywords: '{{ identify_themes.result.main_themes | join('', '') }}'
+      research_date: '{{ current_date }}'
+- id: executive_brief
+  action: generate_text
+  condition: '{{ output_format == ''pdf'' }}'
+  parameters:
+    prompt: 'Create a one-page executive brief for "{{ research_topic }}" with:
+
+      - 3 key takeaways
+
+      - 2 critical statistics
+
+      - 1 main recommendation
+
+
+      Base it on: {{ research_summary.result | truncate(1000) }}
+
+      '
+    model: <AUTO>Choose a model for concise summaries</AUTO>
+    max_tokens: 500
+- id: save_report
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output_path }}/research_{{ research_topic | slugify }}.md'
+    content: '{{ generate_report.content }}'
+  dependencies:
+  - generate_report
+outputs:
+  report_path: '{{ generate_report.filepath }}'
+  sources_analyzed: '{{ analyze_sources.results | length }}'
+  key_themes: '{{ identify_themes.result.main_themes }}'
+  executive_brief: '{{ executive_brief.result if executive_brief else ''N/A'' }}'
+  total_sources_found: '{{ initial_search.total_results }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  report_path:
+    description: 'Enhanced output: report_path'
+    value: '{{ generate_report.filepath }}'
+    type: auto-detect
+  sources_analyzed:
+    description: 'Enhanced output: sources_analyzed'
+    value: '{{ analyze_sources.results | length }}'
+    type: auto-detect
+  key_themes:
+    description: 'Enhanced output: key_themes'
+    value: '{{ identify_themes.result.main_themes }}'
+    type: auto-detect
+  executive_brief:
+    description: 'Enhanced output: executive_brief'
+    value: '{{ executive_brief.result if executive_brief else ''N/A'' }}'
+    type: auto-detect
+  total_sources_found:
+    description: 'Enhanced output: total_sources_found'
+    value: '{{ initial_search.total_results }}'
+    type: auto-detect

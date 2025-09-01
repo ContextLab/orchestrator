@@ -1,0 +1,301 @@
+# Legacy to Refactored Migration Example
+# This demonstrates how existing (legacy) pipelines work unchanged in the new architecture,
+# while showing optional enhancements users can adopt incrementally.
+
+id: legacy-to-refactored-migration
+name: "Legacy to Refactored Migration Demo"
+description: |
+  Side-by-side comparison showing how legacy pipeline patterns work unchanged
+  in the refactored architecture, alongside optional modern enhancements.
+
+# === LEGACY SECTION (100% Compatible) ===
+# Everything below works exactly as before - no changes needed
+
+# OLD: Simple parameter definition (still works)
+parameters:
+  research_topic: "quantum computing"
+  analysis_depth: "standard"
+  output_format: "markdown"
+
+# OLD: Basic steps with simple structure (still works)
+steps:
+  # Classic step definition - no changes needed
+  - id: initial_research
+    action: generate_text
+    parameters:
+      prompt: "Research {{ research_topic }} and create an outline"
+      model: <AUTO>  # Basic AUTO tag still works
+      max_tokens: 500
+      
+  # Classic web search - unchanged syntax
+  - id: web_search
+    tool: web-search
+    action: search
+    parameters:
+      query: "{{ research_topic }}"
+      max_results: 5
+    dependencies:
+      - initial_research
+      
+  # Classic foreach loop - same as before
+  - id: analyze_sources
+    action: analyze_text
+    foreach: "{{ web_search.results }}"
+    parameters:
+      text: "{{ item.title }} - {{ item.snippet }}"
+      prompt: "Analyze this source about {{ research_topic }}"
+      model: <AUTO>
+    dependencies:
+      - web_search
+      
+  # Classic conditional - unchanged
+  - id: detailed_analysis
+    action: generate_text
+    condition: "{{ analysis_depth == 'detailed' }}"
+    parameters:
+      prompt: "Provide detailed analysis of {{ research_topic }}"
+      model: <AUTO>
+      max_tokens: 1000
+    dependencies:
+      - analyze_sources
+      
+  # Classic file output - same syntax
+  - id: save_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "legacy_report_{{ research_topic | slugify }}.{{ output_format }}"
+      content: |
+        # Research Report: {{ research_topic }}
+        
+        ## Initial Research
+        {{ initial_research.result }}
+        
+        ## Source Analysis
+        {% for analysis in analyze_sources.results %}
+        {{ analysis.result }}
+        {% endfor %}
+        
+        {% if detailed_analysis.result %}
+        ## Detailed Analysis
+        {{ detailed_analysis.result }}
+        {% endif %}
+    dependencies:
+      - detailed_analysis
+
+# OLD: Simple outputs (still works)
+outputs:
+  report_file: "{{ save_report.path }}"
+  sources_analyzed: "{{ analyze_sources.results | length }}"
+  analysis_depth_used: "{{ analysis_depth }}"
+
+# === ENHANCED SECTION (Optional Upgrades) ===
+# Users can optionally add these modern features for better functionality
+
+# NEW: Enhanced input definitions (optional upgrade)
+enhanced_inputs:
+  research_focus:
+    type: string
+    default: "comprehensive"
+    choices: ["overview", "technical", "comprehensive"]
+    description: "Focus area for research analysis"
+    required: false
+  quality_threshold:
+    type: float
+    default: 7.5
+    min: 1.0
+    max: 10.0
+    description: "Minimum quality score for analysis"
+  include_citations:
+    type: boolean
+    default: true
+    description: "Include source citations in output"
+
+# NEW: Enhanced steps using modern features (coexists with legacy steps)
+enhanced_steps:
+  # Enhanced model selection with context
+  - id: enhanced_research
+    action: generate_text
+    condition: "{{ enhanced_inputs.research_focus is defined }}"
+    parameters:
+      prompt: |
+        Research {{ research_topic }} with focus on {{ enhanced_inputs.research_focus }}:
+        
+        Based on initial research: {{ initial_research.result }}
+        
+        Provide {{ enhanced_inputs.research_focus }} analysis.
+      model: <AUTO task="research" domain="{{ enhanced_inputs.research_focus }}">Enhanced model selection</AUTO>
+      max_tokens: 800
+      temperature: 0.3
+    dependencies:
+      - initial_research
+      
+  # Quality-driven iterative processing  
+  - id: quality_check
+    action: analyze_text
+    condition: "{{ enhanced_inputs.quality_threshold is defined }}"
+    parameters:
+      text: "{{ enhanced_research.result if enhanced_research.status == 'completed' else analyze_sources.results | join(' ') }}"
+      prompt: |
+        Rate the quality of this research analysis on a scale of 1-10:
+        - Accuracy and factual correctness
+        - Comprehensiveness
+        - Clarity and organization
+        - Source credibility
+        
+        Target quality: {{ enhanced_inputs.quality_threshold }}
+        
+        Provide score and improvement suggestions.
+      model: <AUTO task="quality_assessment">Quality evaluation model</AUTO>
+      response_format: "json_object"
+    dependencies:
+      - enhanced_research
+      
+  # Advanced error handling and retry
+  - id: improved_web_search
+    tool: web-search
+    action: search
+    parameters:
+      query: "{{ research_topic }} {{ enhanced_inputs.research_focus }}"
+      max_results: 10
+      filter_duplicates: true
+      quality_threshold: 0.7
+    retry: 3
+    timeout: 60
+    on_failure: continue
+    dependencies:
+      - enhanced_research
+      
+  # Parallel processing with modern controls
+  - id: parallel_source_analysis
+    action: analyze_text
+    foreach: "{{ improved_web_search.results }}"
+    parallel: true
+    max_concurrent: 3
+    parameters:
+      text: |
+        Title: {{ item.title }}
+        Content: {{ item.snippet }}
+        URL: {{ item.url }}
+        Published: {{ item.published_date }}
+      prompt: |
+        Analyze this source for research on {{ research_topic }}:
+        
+        Focus: {{ enhanced_inputs.research_focus }}
+        Quality threshold: {{ enhanced_inputs.quality_threshold }}
+        
+        Provide:
+        1. Relevance score (1-10)
+        2. Credibility assessment  
+        3. Key insights
+        4. Potential bias indicators
+      model: <AUTO task="source_analysis" quality="high">Source evaluation model</AUTO>
+      response_format: "json_object"
+    dependencies:
+      - improved_web_search
+
+# NEW: Enhanced outputs with rich metadata
+enhanced_outputs:
+  comprehensive_report:
+    description: "Enhanced research report with quality metrics"
+    value: |
+      # Enhanced Research Report: {{ research_topic | title }}
+      
+      **Research Focus:** {{ enhanced_inputs.research_focus if enhanced_inputs.research_focus is defined else "Standard" }}
+      **Quality Threshold:** {{ enhanced_inputs.quality_threshold if enhanced_inputs.quality_threshold is defined else "Not specified" }}
+      **Generated:** {{ current_timestamp }}
+      
+      ## Executive Summary
+      {{ enhanced_research.result if enhanced_research.status == 'completed' else initial_research.result }}
+      
+      {% if quality_check.status == 'completed' %}
+      ## Quality Assessment
+      {{ quality_check.result | from_json | tojson(indent=2) }}
+      {% endif %}
+      
+      ## Source Analysis
+      {% if parallel_source_analysis.status == 'completed' %}
+      {% for analysis in parallel_source_analysis.results %}
+      ### Source {{ loop.index }}: {{ improved_web_search.results[loop.index0].title }}
+      **URL:** {{ improved_web_search.results[loop.index0].url }}
+      **Analysis:** {{ analysis.result | from_json | tojson(indent=2) }}
+      {% endfor %}
+      {% else %}
+      {% for analysis in analyze_sources.results %}
+      {{ analysis.result }}
+      {% endfor %}
+      {% endif %}
+      
+      {% if enhanced_inputs.include_citations %}
+      ## Citations
+      {% for source in (improved_web_search.results if improved_web_search.status == 'completed' else web_search.results) %}
+      {{ loop.index }}. {{ source.title }}. Retrieved from {{ source.url }}
+      {% endfor %}
+      {% endif %}
+    type: "markdown"
+    
+  processing_metrics:
+    description: "Pipeline execution metrics and performance data"
+    value:
+      execution_mode: "{{ 'enhanced' if enhanced_research.status == 'completed' else 'legacy' }}"
+      sources_processed: "{{ (improved_web_search.results if improved_web_search.status == 'completed' else web_search.results) | length }}"
+      parallel_processing_used: "{{ parallel_source_analysis.status == 'completed' }}"
+      quality_check_performed: "{{ quality_check.status == 'completed' }}"
+      quality_score: "{{ (quality_check.result | from_json).overall_score if quality_check.status == 'completed' else null }}"
+      research_focus: "{{ enhanced_inputs.research_focus if enhanced_inputs.research_focus is defined else 'standard' }}"
+      citations_included: "{{ enhanced_inputs.include_citations if enhanced_inputs.include_citations is defined else true }}"
+    type: "object"
+
+# NEW: Pipeline metadata for better management
+metadata:
+  version: "2.0.0"
+  compatibility_version: "1.0.0"  # Fully compatible with 1.0.0 format
+  migration_status: "demonstration"
+  features_demonstrated:
+    legacy_features:
+      - "basic_parameters"
+      - "simple_steps"
+      - "classic_conditionals"
+      - "basic_foreach_loops"
+      - "simple_outputs"
+    enhanced_features:
+      - "enhanced_inputs_with_validation"
+      - "contextual_model_selection"
+      - "quality_driven_processing"
+      - "parallel_execution_controls"
+      - "advanced_error_handling"
+      - "rich_output_metadata"
+  
+  migration_notes: |
+    This pipeline demonstrates perfect backward compatibility:
+    
+    LEGACY BEHAVIOR (No Changes Required):
+    - All existing YAML syntax works unchanged
+    - Original step definitions function identically
+    - Classic AUTO tags continue to work
+    - Simple parameters and outputs preserved
+    - Existing conditional and loop patterns supported
+    
+    OPTIONAL ENHANCEMENTS (Can Add Incrementally):
+    - Enhanced input definitions with validation
+    - Contextual model selection with task optimization
+    - Quality-driven processing with scoring
+    - Parallel execution with concurrency controls
+    - Advanced error handling and retry logic
+    - Rich output formats with structured metadata
+    
+    MIGRATION STRATEGY:
+    1. Run existing pipelines unchanged (they work perfectly)
+    2. Add enhanced features gradually as needed
+    3. Use both legacy and enhanced patterns together
+    4. No breaking changes - ever
+  
+  upgrade_recommendations:
+    immediate: []  # Nothing required immediately
+    short_term:
+      - "Add enhanced_inputs for better parameter validation"
+      - "Use contextual AUTO tags for better model selection"
+    long_term:
+      - "Consider parallel processing for performance gains"
+      - "Add quality checks for mission-critical workflows"
+      - "Implement structured outputs for better integration"

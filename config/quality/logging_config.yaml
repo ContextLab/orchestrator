@@ -1,0 +1,347 @@
+# Orchestrator Quality Control Logging Configuration
+# 
+# This configuration file defines comprehensive logging settings for the
+# quality control system including structured logging, monitoring integration,
+# and alerting rules.
+
+# Global logging settings
+logging:
+  version: 1
+  disable_existing_loggers: false
+  
+  # Log level configuration
+  default_level: INFO
+  levels:
+    orchestrator.quality: INFO
+    orchestrator.quality.validation: DEBUG
+    orchestrator.quality.logging: DEBUG
+    orchestrator.quality.monitoring: INFO
+  
+  # Structured logging configuration
+  structured:
+    enabled: true
+    format: json
+    include_timestamp: true
+    include_context: true
+    include_performance_metrics: true
+    include_quality_metrics: true
+    include_stack_trace: true
+
+# Log output configuration
+outputs:
+  # Console output for development and debugging
+  console:
+    enabled: true
+    level: INFO
+    format: structured
+    colorize: true
+    include_recommendations: true
+    quality_level_filter: null  # null = all levels
+    event_type_filter: []       # empty = all event types
+  
+  # File output for persistent logging
+  files:
+    # Main quality log file (structured JSON)
+    quality_structured:
+      enabled: true
+      path: "logs/quality/structured.json"
+      level: DEBUG
+      format: json
+      rotation:
+        max_bytes: 104857600  # 100MB
+        backup_count: 10
+        compress: true
+        rotate_on_quality_events: true
+        quality_event_threshold: 1000
+        time_based: daily
+    
+    # Human-readable quality log
+    quality_readable:
+      enabled: true
+      path: "logs/quality/readable.log"
+      level: INFO
+      format: text
+      rotation:
+        max_bytes: 52428800   # 50MB
+        backup_count: 5
+        compress: true
+    
+    # Performance metrics log
+    performance:
+      enabled: true
+      path: "logs/quality/performance.json"
+      level: DEBUG
+      format: json
+      filter_categories: ["performance", "execution"]
+      rotation:
+        max_bytes: 52428800   # 50MB
+        backup_count: 5
+        compress: true
+    
+    # Audit trail log
+    audit:
+      enabled: true
+      path: "logs/quality/audit.log"
+      level: AUDIT
+      format: json
+      filter_categories: ["audit", "security", "user_action"]
+      rotation:
+        max_bytes: 20971520   # 20MB
+        backup_count: 20      # Keep more audit logs
+        compress: true
+  
+  # Asynchronous logging configuration
+  async:
+    enabled: true
+    queue_size: 10000
+    num_workers: 2
+    batch_size: 100
+    flush_interval: 1.0
+
+# External monitoring system configuration
+monitoring:
+  enabled: true
+  
+  # Monitoring backends
+  backends:
+    # Prometheus integration
+    prometheus:
+      enabled: true
+      type: prometheus
+      pushgateway_url: "http://localhost:9091"
+      job_name: "orchestrator_quality"
+      instance_id: null  # Auto-detect hostname
+      basic_auth: null   # [username, password] if needed
+      timeout: 10.0
+      metrics:
+        histogram_enabled: true
+        counter_enabled: true
+        gauge_enabled: true
+    
+    # Webhook for custom integrations
+    webhook:
+      enabled: false
+      type: webhook
+      webhook_url: "https://your-monitoring-system.com/webhook"
+      headers:
+        Authorization: "Bearer your-token-here"
+      timeout: 10.0
+      retry_count: 3
+      retry_delay: 1.0
+    
+    # Elasticsearch for log aggregation
+    elasticsearch:
+      enabled: false
+      type: elasticsearch
+      elasticsearch_url: "http://localhost:9200"
+      index_name: "orchestrator-quality"
+      username: null
+      password: null
+      timeout: 10.0
+  
+  # Metrics collection settings
+  metrics:
+    collection_interval: 60.0      # seconds
+    buffer_size: 1000
+    flush_interval: 5.0
+    
+    # Custom metrics configuration
+    custom_metrics:
+      - name: "orchestrator_quality_score"
+        type: "gauge"
+        help: "Current quality score for pipeline executions"
+        labels: ["pipeline_id", "execution_id", "component"]
+      
+      - name: "orchestrator_validation_duration"
+        type: "histogram"
+        help: "Duration of validation operations"
+        buckets: [0.1, 0.5, 1.0, 2.5, 5.0, 10.0]
+        labels: ["validation_type", "rule_category"]
+      
+      - name: "orchestrator_rule_violations_total"
+        type: "counter"
+        help: "Total number of quality rule violations"
+        labels: ["rule_name", "severity", "category"]
+
+# Alerting configuration
+alerting:
+  enabled: true
+  
+  # Alert evaluation settings
+  evaluation:
+    interval: 30.0           # seconds
+    history_retention: 3600  # seconds (1 hour)
+    cooldown_default: 300    # seconds (5 minutes)
+  
+  # Alert rules
+  rules:
+    # Quality score alerts
+    - name: "low_quality_score"
+      description: "Quality score has fallen below acceptable threshold"
+      condition: "avg(orchestrator_quality_score) < threshold"
+      severity: "WARNING"
+      threshold: 0.8
+      window_seconds: 300
+      cooldown_seconds: 600
+      remediation_url: "https://docs.example.com/quality-troubleshooting"
+      tags:
+        component: "quality_control"
+        category: "performance"
+    
+    - name: "critical_quality_score"
+      description: "Quality score has fallen to critical levels"
+      condition: "avg(orchestrator_quality_score) < threshold"
+      severity: "CRITICAL"
+      threshold: 0.5
+      window_seconds: 180
+      cooldown_seconds: 300
+      tags:
+        component: "quality_control"
+        category: "critical"
+    
+    # Validation failure alerts
+    - name: "high_validation_failure_rate"
+      description: "High rate of validation failures detected"
+      condition: "rate(orchestrator_rule_violations_total) > threshold"
+      severity: "WARNING"
+      threshold: 10.0  # violations per minute
+      window_seconds: 300
+      cooldown_seconds: 900
+      tags:
+        component: "validation"
+        category: "reliability"
+    
+    # Performance alerts
+    - name: "slow_validation_performance"
+      description: "Validation operations are taking longer than expected"
+      condition: "p95(orchestrator_validation_duration) > threshold"
+      severity: "WARNING"
+      threshold: 5.0  # seconds
+      window_seconds: 600
+      cooldown_seconds: 1200
+      tags:
+        component: "validation"
+        category: "performance"
+    
+    # System health alerts
+    - name: "logging_queue_overflow"
+      description: "Logging queue is experiencing overflow"
+      condition: "rate(orchestrator_logging_queue_drops) > threshold"
+      severity: "ERROR"
+      threshold: 1.0  # drops per minute
+      window_seconds: 120
+      cooldown_seconds: 300
+      tags:
+        component: "logging"
+        category: "system_health"
+
+# Quality event configuration
+quality_events:
+  # Event processing settings
+  processing:
+    buffer_size: 5000
+    batch_processing: true
+    batch_size: 50
+    processing_interval: 2.0
+  
+  # Event categorization and filtering
+  categories:
+    validation:
+      enabled: true
+      log_level: INFO
+      include_recommendations: true
+      include_remediation: true
+    
+    performance:
+      enabled: true
+      log_level: DEBUG
+      track_trends: true
+      alert_on_degradation: true
+    
+    security:
+      enabled: true
+      log_level: WARNING
+      audit_trail: true
+      immediate_alert: true
+    
+    user_action:
+      enabled: true
+      log_level: AUDIT
+      include_context: true
+      track_patterns: true
+
+# Integration settings with existing systems
+integration:
+  # Validation system integration
+  validation:
+    enabled: true
+    log_all_results: true
+    log_level_mapping:
+      PASS: INFO
+      WARNING: WARNING
+      FAIL: ERROR
+      CRITICAL: CRITICAL
+    
+    # Quality events to generate
+    generate_events:
+      - validation_started
+      - validation_completed
+      - rule_violation_detected
+      - quality_threshold_breach
+      - remediation_suggested
+  
+  # Execution engine integration
+  execution:
+    enabled: true
+    track_performance: true
+    log_state_changes: true
+    include_context: true
+    
+    # Execution events to track
+    track_events:
+      - pipeline_started
+      - step_completed
+      - error_occurred
+      - performance_milestone
+      - resource_usage_spike
+
+# Development and debugging settings
+development:
+  # Enhanced debugging for development
+  debug_mode: false
+  verbose_logging: false
+  log_internal_errors: true
+  
+  # Performance profiling
+  profiling:
+    enabled: false
+    sample_rate: 0.1
+    include_call_stacks: false
+    
+  # Testing configuration
+  testing:
+    mock_external_systems: false
+    log_test_events: true
+    validate_config: true
+
+# Security and privacy settings
+security:
+  # Data sanitization
+  sanitize_logs: true
+  redact_patterns:
+    - "password"
+    - "token" 
+    - "secret"
+    - "key"
+    - "credential"
+  
+  # Access control
+  log_access_control: true
+  audit_log_access: true
+  
+  # Data retention
+  retention:
+    default_days: 90
+    audit_days: 365
+    performance_days: 30
+    debug_days: 7

@@ -1,0 +1,49 @@
+name: minimal_error_test
+description: Minimal test to demonstrate basic error handling patterns
+steps:
+- id: success_test
+  action: Generate simple test data
+  parameters:
+    prompt: Generate the number 42
+    model: <AUTO task="general">Best model for general tasks</AUTO>
+- id: python_success
+  action: Run simple Python code
+  tool: python-executor
+  parameters:
+    code: 'print("This should work fine")
+
+      result = {"status": "success", "value": 42}
+
+      print(f"Result: {result}")
+
+      '
+- id: file_write_test
+  action: Write test file
+  tool: filesystem
+  parameters:
+    action: write
+    path: '{{ output_path }}/test_output.txt'
+    content: Error handling test successful
+  on_error: Failed to write file
+outputs:
+  test_result: '{{success_test.result}}'
+  python_result: '{{python_success.result}}'
+  file_result: '{{file_write_test.result}}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  test_result:
+    description: 'Enhanced output: test_result'
+    value: '{{success_test.result}}'
+    type: auto-detect
+  python_result:
+    description: 'Enhanced output: python_result'
+    value: '{{python_success.result}}'
+    type: auto-detect
+  file_result:
+    description: 'Enhanced output: file_result'
+    value: '{{file_write_test.result}}'
+    type: auto-detect

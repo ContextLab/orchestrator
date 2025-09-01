@@ -1,0 +1,64 @@
+name: Enhanced Until Conditions Demo
+description: Demonstrates structured until condition evaluation with performance tracking
+pipeline:
+  inputs:
+  - name: target_quality
+    default: 0.8
+  - name: max_attempts
+    default: 5
+  steps:
+  - id: initialize_metrics
+    action: debug
+    parameters:
+      message: 'Starting enhanced until condition demo with target quality: {{ target_quality
+        }}'
+  - id: quality_improvement_loop
+    while: 'true'
+    until: <AUTO>Quality score is {{ quality_score }}. Is this >= {{ target_quality
+      }}? Answer 'true' or 'false'.</AUTO>
+    max_iterations: '{{ max_attempts }}'
+    loop_name: quality_loop
+    steps:
+    - id: simulate_quality_work
+      action: debug
+      parameters:
+        message: 'Iteration {{ $iteration }}: Current quality score: {{ quality_score
+          | default(''0.2'') }}'
+    - id: update_quality_score
+      action: debug
+      parameters:
+        message: Improving quality from {{ quality_score | default('0.2') }} to {{
+          ($iteration + 1) * 0.25 }}
+        quality_score: '{{ ($iteration + 1) * 0.25 }}'
+    - id: check_progress
+      action: debug
+      parameters:
+        message: 'Loop {{ quality_loop.loop_name }} iteration {{ $iteration }} complete.
+          Quality: {{ quality_score }}'
+  - id: final_report
+    action: debug
+    parameters:
+      message: Quality improvement loop completed. Final quality score achieved.
+    dependencies:
+    - quality_improvement_loop
+outputs:
+- &id001
+  name: completion_status
+  value: Enhanced until conditions demo completed successfully
+- &id002
+  name: final_iteration_count
+  value: '{{ quality_loop.iteration }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  output_1:
+    description: Enhanced output 1
+    value: *id001
+    type: auto-detect
+  output_2:
+    description: Enhanced output 2
+    value: *id002
+    type: auto-detect

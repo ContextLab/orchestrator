@@ -1,0 +1,337 @@
+# Quality Control Thresholds Configuration
+#
+# This configuration defines quality thresholds for alerting, analytics, and
+# dashboard visualizations. Thresholds are used by the reporting system to
+# trigger alerts, generate insights, and provide quality scoring.
+
+# Global quality thresholds
+quality_thresholds:
+  # Overall quality score thresholds (0-100)
+  quality_score:
+    excellent: 90.0      # Green indicator
+    good: 75.0          # Yellow indicator  
+    fair: 60.0          # Orange indicator
+    poor: 40.0          # Red indicator
+    critical: 25.0      # Critical alert threshold
+  
+  # Validation success rate thresholds (0.0-1.0)
+  success_rate:
+    excellent: 0.98     # 98% success rate
+    good: 0.95          # 95% success rate
+    warning: 0.90       # 90% warning threshold
+    critical: 0.75      # 75% critical threshold
+    
+  # Violation rate thresholds (violations per validation session)
+  violation_rate:
+    low: 0.05           # 5% violation rate is acceptable
+    moderate: 0.10      # 10% violation rate warning
+    high: 0.20          # 20% violation rate error
+    critical: 0.35      # 35% violation rate critical
+    
+  # Performance thresholds
+  performance:
+    # Validation execution time (milliseconds)
+    execution_time_ms:
+      fast: 1000        # Under 1 second is fast
+      acceptable: 5000  # Under 5 seconds is acceptable  
+      slow: 15000       # Over 15 seconds is slow
+      critical: 30000   # Over 30 seconds is critical
+    
+    # Memory usage (MB)
+    memory_usage_mb:
+      low: 256          # Under 256MB is low
+      normal: 512       # Under 512MB is normal
+      high: 1024        # Under 1GB is high
+      critical: 2048    # Over 2GB is critical
+
+# Severity-specific thresholds
+severity_thresholds:
+  critical:
+    # Critical violations per session
+    max_critical_violations: 1
+    # Critical quality score threshold
+    min_quality_score: 25.0
+    # Critical success rate threshold
+    min_success_rate: 0.50
+    
+  error:
+    # Error violations per session  
+    max_error_violations: 5
+    # Error quality score threshold
+    min_quality_score: 40.0
+    # Error success rate threshold
+    min_success_rate: 0.75
+    
+  warning:
+    # Warning violations per session
+    max_warning_violations: 10
+    # Warning quality score threshold
+    min_quality_score: 60.0
+    # Warning success rate threshold
+    min_success_rate: 0.85
+    
+  info:
+    # Info violations per session (high tolerance)
+    max_info_violations: 50
+    # Info quality score threshold
+    min_quality_score: 75.0
+
+# Category-specific thresholds
+category_thresholds:
+  content:
+    # Content-related quality thresholds
+    min_quality_score: 70.0
+    max_violations_per_session: 15
+    performance_threshold_ms: 10000
+    
+  format:
+    # Format validation thresholds
+    min_quality_score: 85.0
+    max_violations_per_session: 5  
+    performance_threshold_ms: 5000
+    
+  structure:
+    # Structure validation thresholds
+    min_quality_score: 90.0
+    max_violations_per_session: 3
+    performance_threshold_ms: 3000
+    
+  security:
+    # Security validation thresholds (strict)
+    min_quality_score: 95.0
+    max_violations_per_session: 1
+    performance_threshold_ms: 8000
+    
+  compliance:
+    # Compliance validation thresholds (strict)
+    min_quality_score: 95.0
+    max_violations_per_session: 2
+    performance_threshold_ms: 10000
+    
+  performance:
+    # Performance validation thresholds
+    min_quality_score: 80.0
+    max_violations_per_session: 8
+    performance_threshold_ms: 2000
+
+# Rule-specific thresholds  
+rule_thresholds:
+  file_size_limit:
+    # File size validation thresholds
+    warning_threshold: 0.8    # 80% of max size
+    error_threshold: 0.95     # 95% of max size
+    max_execution_time_ms: 1000
+    
+  content_quality:
+    # Content quality thresholds
+    min_score_warning: 70.0
+    min_score_error: 50.0
+    max_execution_time_ms: 15000
+    
+  content_format:
+    # Content format thresholds  
+    min_score_warning: 85.0
+    min_score_error: 70.0
+    max_execution_time_ms: 5000
+    
+  performance_metrics:
+    # Performance metrics thresholds
+    max_memory_warning_mb: 1024
+    max_memory_error_mb: 2048
+    max_time_warning_ms: 10000
+    max_time_error_ms: 30000
+
+# Trend analysis thresholds
+trend_thresholds:
+  # Percentage change thresholds for trend detection
+  significant_change_percent: 10.0    # 10% change is significant
+  major_change_percent: 25.0          # 25% change is major
+  critical_change_percent: 50.0       # 50% change is critical
+  
+  # Time windows for trend analysis (hours)
+  short_term_window: 1    # 1 hour for immediate trends
+  medium_term_window: 24  # 24 hours for daily trends  
+  long_term_window: 168   # 1 week for weekly trends
+  
+  # Confidence thresholds for trend reporting
+  min_trend_confidence: 0.7           # 70% confidence minimum
+  high_confidence_threshold: 0.9      # 90% confidence for high confidence
+  
+  # Volatility thresholds (standard deviation / mean)
+  low_volatility: 0.1                 # 10% volatility is low
+  moderate_volatility: 0.3            # 30% volatility is moderate
+  high_volatility: 0.5                # 50% volatility is high
+
+# Alerting thresholds
+alert_thresholds:
+  # Rate limiting
+  max_alerts_per_hour: 10
+  max_alerts_per_day: 50
+  
+  # Cooldown periods (seconds)
+  info_cooldown: 300        # 5 minutes
+  warning_cooldown: 600     # 10 minutes
+  error_cooldown: 900       # 15 minutes
+  critical_cooldown: 1800   # 30 minutes
+  
+  # Escalation thresholds
+  escalation_after_alerts: 3          # Escalate after 3 alerts
+  escalation_time_window_minutes: 60  # Within 1 hour
+  
+  # Suppression thresholds
+  auto_suppress_after_count: 20       # Auto-suppress after 20 alerts
+  auto_suppress_duration_hours: 4     # Suppress for 4 hours
+
+# Dashboard visualization thresholds
+dashboard_thresholds:
+  # Color coding thresholds for visualizations
+  gauge_colors:
+    red_threshold: 40.0     # Below 40% is red
+    yellow_threshold: 75.0  # Below 75% is yellow  
+    green_threshold: 90.0   # Above 90% is green
+    
+  # Chart display thresholds
+  max_data_points: 1000     # Maximum points to display on charts
+  max_table_rows: 100       # Maximum rows in data tables
+  
+  # Refresh intervals (seconds)
+  fast_refresh: 10          # Fast refresh for critical metrics
+  normal_refresh: 30        # Normal refresh interval
+  slow_refresh: 300         # Slow refresh for historical data
+  
+  # Widget thresholds
+  max_alerts_display: 20    # Maximum alerts to display
+  max_insights_display: 10  # Maximum insights to display
+  max_trends_display: 15    # Maximum trends to display
+
+# Environment-specific threshold overrides
+environment_overrides:
+  development:
+    # Relaxed thresholds for development
+    quality_thresholds:
+      quality_score:
+        good: 60.0          # Lower bar for development
+        fair: 45.0
+        critical: 20.0
+    violation_rate:
+      moderate: 0.20        # Allow more violations in dev
+      high: 0.35
+      critical: 0.50
+    alert_thresholds:
+      max_alerts_per_hour: 20  # More alerts allowed in dev
+      
+  staging:
+    # Moderate thresholds for staging  
+    quality_thresholds:
+      quality_score:
+        good: 70.0          # Moderate bar for staging
+        fair: 55.0
+        critical: 30.0
+    violation_rate:
+      moderate: 0.15        # Moderate violations in staging
+      high: 0.25
+      critical: 0.40
+      
+  production:
+    # Strict thresholds for production
+    quality_thresholds:
+      quality_score:
+        excellent: 95.0     # Higher bar for production
+        good: 85.0
+        fair: 70.0
+        critical: 40.0
+    violation_rate:
+      low: 0.03             # Stricter violation rates
+      moderate: 0.05
+      high: 0.10
+      critical: 0.20
+    alert_thresholds:
+      max_alerts_per_hour: 5   # Fewer alerts in production
+      escalation_after_alerts: 2  # Faster escalation
+
+# Pipeline-specific threshold overrides
+pipeline_overrides:
+  data_processing:
+    # Data processing pipelines may have different requirements
+    performance:
+      execution_time_ms:
+        acceptable: 30000   # Allow longer execution for data processing
+        slow: 60000
+        critical: 120000
+    quality_thresholds:
+      quality_score:
+        good: 80.0          # Higher quality bar for data
+        
+  model_training:
+    # Model training pipelines have different performance characteristics
+    performance:
+      execution_time_ms:
+        acceptable: 300000  # 5 minutes acceptable for training
+        slow: 1800000       # 30 minutes is slow
+        critical: 3600000   # 1 hour is critical
+      memory_usage_mb:
+        normal: 4096        # 4GB normal for model training
+        high: 8192          # 8GB is high
+        critical: 16384     # 16GB is critical
+        
+  documentation:
+    # Documentation pipelines focus on content quality
+    category_thresholds:
+      content:
+        min_quality_score: 85.0    # High content quality required
+        max_violations_per_session: 5
+      structure:
+        min_quality_score: 90.0    # Well-structured docs required
+        
+  api_integration:
+    # API integration pipelines focus on reliability
+    quality_thresholds:
+      success_rate:
+        excellent: 0.999    # 99.9% success rate target
+        good: 0.995         # 99.5% success rate minimum
+        warning: 0.99       # 99% warning threshold
+        critical: 0.95      # 95% critical threshold
+
+# Notification channel thresholds
+notification_thresholds:
+  email:
+    # Email notification thresholds
+    min_severity: "warning"           # Only warning and above via email
+    max_notifications_per_hour: 5    # Rate limit email notifications
+    
+  slack:
+    # Slack notification thresholds  
+    min_severity: "error"             # Only error and above via Slack
+    max_notifications_per_hour: 10   # Rate limit Slack notifications
+    
+  sms:
+    # SMS notification thresholds (critical only)
+    min_severity: "critical"          # Only critical via SMS
+    max_notifications_per_day: 5     # Strict rate limiting for SMS
+    
+  webhook:
+    # Webhook notification thresholds
+    min_severity: "info"              # All severities via webhook
+    max_notifications_per_hour: 50   # Higher rate limit for webhooks
+    
+  dashboard:
+    # Dashboard notification thresholds
+    min_severity: "info"              # Show all severities on dashboard
+    max_notifications_displayed: 100 # Limit dashboard display
+
+# Integration thresholds
+integration_thresholds:
+  # Metrics collector integration
+  metrics_collection:
+    max_collection_errors_per_hour: 10     # Alert if collection failing
+    max_collection_duration_ms: 5000       # Alert if collection too slow
+    
+  # Analytics integration
+  analytics_processing:
+    max_analysis_duration_minutes: 30      # Alert if analysis too slow
+    min_data_points_for_trends: 10         # Minimum data for trend analysis
+    
+  # External monitoring integration
+  external_monitoring:
+    heartbeat_interval_minutes: 5          # Send heartbeat every 5 minutes
+    max_missed_heartbeats: 3               # Alert after 3 missed heartbeats

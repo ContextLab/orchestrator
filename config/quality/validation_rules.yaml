@@ -1,0 +1,199 @@
+# Default Validation Rules Configuration
+# 
+# This configuration defines the default quality control rules for pipeline
+# output validation. Rules can be enabled/disabled and configured with
+# custom parameters to meet specific quality requirements.
+
+validation_config:
+  # Global validation settings
+  quality_threshold: 75.0  # Minimum quality score (0-100)
+  enable_real_time: true
+  max_workers: 4
+  timeout_seconds: 60.0
+
+# Rule configurations
+rules:
+  # File Size Validation
+  - rule_id: "file_size_limit"
+    enabled: true
+    config:
+      max_size_mb: 100  # Maximum file size in MB
+      
+  # Content Format Validation
+  - rule_id: "content_format"
+    enabled: true
+    config:
+      # Automatically detect format based on file extension
+      # Can be overridden per pipeline step
+      
+  # Content Quality Validation
+  - rule_id: "content_quality"
+    enabled: true
+    config:
+      min_length: 10  # Minimum content length
+      max_length: 1000000  # Maximum content length (1MB text)
+      prohibited_patterns:
+        - "TODO:"  # Catch unfinished work
+        - "FIXME:"  # Catch known issues
+        - "XXX:"   # Catch placeholder comments
+        - "password\\s*=\\s*['\"][^'\"]*['\"]"  # Catch hardcoded passwords
+        - "api_?key\\s*=\\s*['\"][^'\"]*['\"]"   # Catch API keys
+      required_patterns: []  # Can be configured per pipeline
+      
+  # Performance Validation
+  - rule_id: "performance_metrics"
+    enabled: true
+    config:
+      max_execution_time_seconds: 300  # 5 minutes
+      max_memory_mb: 1024  # 1GB
+
+# Category-specific configurations
+category_configs:
+  content:
+    # Content-related validation settings
+    strict_mode: false
+    allow_empty_files: false
+    
+  format:
+    # Format validation settings
+    auto_detect_mime_type: true
+    strict_schema_validation: false
+    
+  size:
+    # Size validation settings
+    warn_threshold_mb: 50  # Warn at 50MB
+    error_threshold_mb: 100  # Error at 100MB
+    
+  structure:
+    # Structure validation settings
+    validate_directory_structure: true
+    enforce_naming_conventions: false
+    
+  performance:
+    # Performance validation settings
+    enable_resource_monitoring: true
+    memory_warning_threshold_mb: 512
+    time_warning_threshold_seconds: 60
+    
+  security:
+    # Security validation settings
+    scan_for_secrets: true
+    check_file_permissions: true
+    validate_input_sanitization: false
+    
+  compliance:
+    # Compliance validation settings
+    enforce_metadata_standards: false
+    require_documentation: false
+
+# Rule profiles for different environments
+profiles:
+  development:
+    # Relaxed rules for development
+    rules:
+      - rule_id: "file_size_limit"
+        config:
+          max_size_mb: 500  # More lenient for dev
+      - rule_id: "content_quality"
+        config:
+          prohibited_patterns:
+            - "password\\s*=\\s*['\"][^'\"]*['\"]"  # Still check for secrets
+          
+  staging:
+    # Moderate rules for staging
+    rules:
+      - rule_id: "file_size_limit"
+        config:
+          max_size_mb: 200
+      - rule_id: "content_quality"
+        config:
+          prohibited_patterns:
+            - "TODO:"
+            - "FIXME:"
+            - "password\\s*=\\s*['\"][^'\"]*['\"]"
+            - "api_?key\\s*=\\s*['\"][^'\"]*['\"]"
+            
+  production:
+    # Strict rules for production
+    quality_threshold: 90.0
+    rules:
+      - rule_id: "file_size_limit"
+        config:
+          max_size_mb: 100
+      - rule_id: "content_quality"
+        config:
+          prohibited_patterns:
+            - "TODO:"
+            - "FIXME:"
+            - "XXX:"
+            - "password\\s*=\\s*['\"][^'\"]*['\"]"
+            - "api_?key\\s*=\\s*['\"][^'\"]*['\"]"
+            - "console\\.log\\("  # No debug logging in production
+            - "print\\("         # No debug prints in production
+      - rule_id: "performance_metrics"
+        config:
+          max_execution_time_seconds: 120  # Stricter time limits
+          max_memory_mb: 512
+
+# Pipeline-specific rule overrides
+pipeline_overrides:
+  # Example: Data processing pipelines might need larger file sizes
+  data_processing:
+    rules:
+      - rule_id: "file_size_limit"
+        config:
+          max_size_mb: 1000  # 1GB for data files
+          
+  # Example: Documentation pipelines might need different content rules
+  documentation:
+    rules:
+      - rule_id: "content_quality"
+        config:
+          required_patterns:
+            - "# .+"  # Require headers in markdown
+          prohibited_patterns:
+            - "TODO:"  # Still no TODOs in docs
+            
+  # Example: Model training pipelines
+  model_training:
+    rules:
+      - rule_id: "performance_metrics"
+        config:
+          max_execution_time_seconds: 3600  # Allow 1 hour for training
+          max_memory_mb: 8192  # 8GB for large models
+
+# Notification and alerting configuration
+notifications:
+  # Quality threshold alerts
+  quality_alerts:
+    enabled: true
+    threshold: 70.0  # Alert when quality drops below this
+    
+  # Critical violation alerts
+  critical_alerts:
+    enabled: true
+    
+  # Performance alerts
+  performance_alerts:
+    enabled: true
+    memory_threshold_mb: 2048
+    time_threshold_seconds: 300
+
+# Integration settings
+integrations:
+  # Stream C reporting integration
+  stream_c_reporting:
+    enabled: true
+    metrics_export_interval_seconds: 30
+    detailed_violation_logging: true
+    
+  # Execution engine integration
+  execution_engine:
+    auto_register_contexts: true
+    validate_on_step_completion: true
+    validate_on_execution_completion: true
+    
+  # Progress tracking integration
+  progress_tracking:
+    enabled: true
+    report_validation_progress: true

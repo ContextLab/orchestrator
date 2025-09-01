@@ -1,0 +1,116 @@
+id: file_inclusion_demo
+name: File Inclusion Demo Pipeline
+version: 1.0.0
+description: 'Demonstrates file inclusion capabilities for external content.
+
+
+  This pipeline shows how to:
+
+  - Include prompts from external files
+
+  - Include configuration from JSON files
+
+  - Include markdown instructions
+
+  - Use both {{ file:path }} and << path >> syntax
+
+  '
+inputs:
+  research_topic:
+    type: string
+    description: Topic to research
+    default: artificial intelligence ethics
+  output_format:
+    type: string
+    description: Format for the final report
+    default: markdown
+parameters:
+  max_search_results: 10
+steps:
+- id: load_system_prompt
+  name: Load System Prompt
+  action: llm_call
+  parameters:
+    model: anthropic/claude-sonnet-4-20250514
+    prompt: '{{ file:prompts/research_system_prompt.txt }}
+
+
+      Research Topic: {{ research_topic }}
+
+
+      Please provide an initial research plan for this topic.
+
+      '
+- id: conduct_web_search
+  name: Conduct Web Search
+  action: web_search
+  depends_on: load_system_prompt
+  parameters:
+    query: '{{ load_system_prompt.result }}'
+    max_results: '{{ max_search_results }}'
+- id: analyze_results
+  name: Analyze Search Results
+  action: llm_call
+  depends_on: conduct_web_search
+  parameters:
+    model: anthropic/claude-sonnet-4-20250514
+    prompt: '<< prompts/analysis_instructions.md >>
+
+
+      Research Topic: {{ research_topic }}
+
+      Search Results: {{ conduct_web_search.result }}
+
+
+      Please analyze these search results according to the instructions above.
+
+      '
+- id: generate_report
+  name: Generate Final Report
+  action: llm_call
+  depends_on: analyze_results
+  parameters:
+    model: anthropic/claude-sonnet-4-20250514
+    prompt: '{{ file:prompts/report_template.md }}
+
+
+      Topic: {{ research_topic }}
+
+      Analysis: {{ analyze_results.result }}
+
+      Format: {{ output_format }}
+
+
+      Generate a comprehensive report using the template above.
+
+
+      Additional formatting guidelines:
+
+      << templates/formatting_guidelines.txt >>
+
+      '
+- id: save_report
+  name: Save Report to File
+  action: filesystem
+  depends_on: generate_report
+  parameters:
+    action: write
+    path: outputs/{{ research_topic | slugify }}_report.{{ output_format }}
+    content: '# Research Report: {{ research_topic }}
+
+      Generated on: {{ timestamp }}
+
+
+      {{ generate_report.result }}
+
+
+      ---
+
+      Report generated using file inclusion pipeline
+
+      Configuration: {{ file:config/report_config.json }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility

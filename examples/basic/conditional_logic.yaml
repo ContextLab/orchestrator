@@ -1,0 +1,189 @@
+id: conditional-logic-basic
+name: "Basic Conditional Logic"
+description: |
+  Demonstrates conditional execution, branching logic, and dynamic workflows.
+  Shows how pipelines can adapt based on parameters and intermediate results.
+
+parameters:
+  user_type:
+    type: string
+    default: "standard"
+    choices: ["admin", "standard", "guest"]
+    description: "User permission level"
+  include_analytics:
+    type: boolean
+    default: true
+    description: "Whether to include detailed analytics"
+  content_length:
+    type: string
+    default: "medium"
+    choices: ["short", "medium", "long"]
+    description: "Desired content length"
+
+steps:
+  # Always runs - basic setup
+  - id: setup
+    action: generate_text
+    parameters:
+      prompt: |
+        Initialize content generation for:
+        - User type: {{ user_type }}
+        - Analytics: {{ include_analytics }}
+        - Length: {{ content_length }}
+        
+        Create a brief setup message and determine access level.
+      model: <AUTO>Basic text generation</AUTO>
+      max_tokens: 100
+
+  # Conditional - only for admin users
+  - id: admin_content
+    action: generate_text
+    condition: "{{ user_type == 'admin' }}"
+    parameters:
+      prompt: |
+        Generate admin-specific content about system management.
+        Include technical details and administrative guidance.
+        Length: {{ content_length }}
+      model: <AUTO task="technical">Select model for technical content</AUTO>
+      max_tokens: >-
+        {%- if content_length == 'short' -%}200
+        {%- elif content_length == 'medium' -%}400
+        {%- else -%}600
+        {%- endif %}
+    dependencies:
+      - setup
+
+  # Conditional - for standard users
+  - id: standard_content
+    action: generate_text
+    condition: "{{ user_type == 'standard' }}"
+    parameters:
+      prompt: |
+        Generate user-friendly content about using the system.
+        Focus on practical tips and common workflows.
+        Length: {{ content_length }}
+      model: <AUTO task="user_docs">Select model for user documentation</AUTO>
+      max_tokens: >-
+        {%- if content_length == 'short' -%}150
+        {%- elif content_length == 'medium' -%}300
+        {%- else -%}500
+        {%- endif %}
+    dependencies:
+      - setup
+
+  # Conditional - for guests (limited access)
+  - id: guest_content
+    action: generate_text
+    condition: "{{ user_type == 'guest' }}"
+    parameters:
+      prompt: |
+        Generate basic introduction content for guests.
+        Keep it simple and welcoming, focus on getting started.
+        Length: {{ content_length }}
+      model: <AUTO>Simple content generation</AUTO>
+      max_tokens: >-
+        {%- if content_length == 'short' -%}100
+        {%- elif content_length == 'medium' -%}200
+        {%- else -%}300
+        {%- endif %}
+    dependencies:
+      - setup
+
+  # Optional analytics step
+  - id: generate_analytics
+    action: analyze_text
+    condition: "{{ include_analytics }}"
+    parameters:
+      text: |
+        Setup: {{ setup.result }}
+        {% if admin_content -%}Admin content: {{ admin_content.result }}{% endif %}
+        {% if standard_content -%}Standard content: {{ standard_content.result }}{% endif %}
+        {% if guest_content -%}Guest content: {{ guest_content.result }}{% endif %}
+      prompt: |
+        Analyze the generated content and provide:
+        1. Word count and readability metrics
+        2. Content appropriateness for {{ user_type }} user
+        3. Quality assessment
+        4. Suggestions for improvement
+      model: <AUTO task="analytics">Select model for content analysis</AUTO>
+    dependencies:
+      - setup
+      # Note: Other dependencies handled by conditions
+
+  # Dynamic final step - combines results
+  - id: finalize_output
+    action: generate_text
+    parameters:
+      prompt: |
+        Create final output combining:
+        - Setup: {{ setup.result }}
+        {% if admin_content -%}- Admin content: {{ admin_content.result }}{% endif %}
+        {% if standard_content -%}- Standard content: {{ standard_content.result }}{% endif %}
+        {% if guest_content -%}- Guest content: {{ guest_content.result }}{% endif %}
+        {% if generate_analytics -%}- Analytics: {{ generate_analytics.result }}{% endif %}
+        
+        Format appropriately for {{ user_type }} user with {{ content_length }} length preference.
+      model: <AUTO task="formatting">Select model for output formatting</AUTO>
+      max_tokens: 200
+    dependencies:
+      - setup
+      # Other dependencies handled by conditions
+
+  # Always save results (but content varies by conditions)
+  - id: save_output
+    tool: filesystem
+    action: write
+    parameters:
+      path: "conditional_output_{{ user_type }}_{{ content_length }}.md"
+      content: |
+        # Conditional Logic Demo - {{ user_type | title }} User
+        
+        **Generated:** {{ current_timestamp }}
+        **User Type:** {{ user_type }}
+        **Content Length:** {{ content_length }}
+        **Analytics Included:** {{ include_analytics }}
+        
+        ## Generated Content
+        {{ finalize_output.result }}
+        
+        {% if generate_analytics %}
+        ## Analytics
+        {{ generate_analytics.result }}
+        {% endif %}
+        
+        ## Processing Summary
+        - Setup completed: ✅
+        {% if admin_content -%}- Admin content: ✅{% else -%}- Admin content: ❌ (not {{ user_type }}){% endif %}
+        {% if standard_content -%}- Standard content: ✅{% else -%}- Standard content: ❌ (not {{ user_type }}){% endif %}
+        {% if guest_content -%}- Guest content: ✅{% else -%}- Guest content: ❌ (not {{ user_type }}){% endif %}
+        {% if generate_analytics -%}- Analytics: ✅{% else -%}- Analytics: ❌ (disabled){% endif %}
+    dependencies:
+      - finalize_output
+
+outputs:
+  user_type: "{{ user_type }}"
+  content_generated: |
+    {%- if admin_content -%}admin
+    {%- elif standard_content -%}standard  
+    {%- elif guest_content -%}guest
+    {%- else -%}none
+    {%- endif %}
+  analytics_included: "{{ include_analytics }}"
+  output_file: "{{ save_output.path }}"
+  final_content: "{{ finalize_output.result }}"
+
+metadata:
+  category: "basic"
+  complexity: "intermediate"
+  estimated_runtime: "2-4 minutes"
+  requirements: ["text generation model", "filesystem tool"]
+  use_cases:
+    - "User-specific content generation"
+    - "Dynamic workflow adaptation"
+    - "Conditional processing pipelines"
+    - "Personalized report generation"
+  demonstrates:
+    - "Conditional step execution"
+    - "Dynamic parameter usage"
+    - "Template-based token limits"
+    - "Multi-path workflow design"

@@ -1,0 +1,26 @@
+name: simple_timeout_test
+description: Simple test for timeout functionality
+steps:
+- id: test_timeout
+  action: Sleep for 5 seconds to test timeout
+  tool: python-executor
+  parameters:
+    code: 'import time
+
+      print("Starting sleep...")
+
+      time.sleep(5)
+
+      print("Finished sleeping")
+
+      result = {"status": "completed"}
+
+      print(f"Result: {result}")
+
+      '
+  timeout: 2
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility

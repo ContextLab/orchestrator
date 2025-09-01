@@ -1,0 +1,149 @@
+id: control-flow-conditional
+name: Conditional File Processing
+description: Process files differently based on their size
+version: 1.0.0
+parameters:
+  input_file: &id001
+    type: string
+    default: data/sample.txt
+    description: File to process
+  size_threshold: &id002
+    type: integer
+    default: 1000
+    description: Size threshold in bytes
+steps:
+- id: read_file
+  tool: filesystem
+  action: read
+  parameters:
+    path: '{{ input_file }}'
+- id: check_size
+  action: generate_text
+  parameters:
+    prompt: Provide a technical analysis of a file that is {{ read_file.size }} bytes
+      in size. Return only factual information about this file size without conversational
+      language.
+    model: <AUTO task="analyze">Select a model for analysis</AUTO>
+    max_tokens: 50
+  dependencies:
+  - read_file
+- id: compress_large
+  action: generate_text
+  condition: '{{ read_file.size > size_threshold }}'
+  parameters:
+    prompt: "Analyze the following text and provide exactly 3 bullet points summarizing\
+      \ it.\n\nIMPORTANT: \n- Start each bullet with \u2022 \n- Each bullet must contain\
+      \ actual content (never empty)\n- If the text is just repeated characters, describe\
+      \ it precisely (e.g., \"\u2022 Contains exactly 2000 instances of the character\
+      \ 'A'\")\n- Be factual and specific about counts and patterns\n- No introductory\
+      \ phrases or conclusions\n\nText to summarize ({{ read_file.size }} bytes):\n\
+      {{ read_file.content }}\n"
+    model: <AUTO task="summarize">Select a model for text summarization</AUTO>
+    max_tokens: 200
+  dependencies:
+  - check_size
+- id: expand_small
+  action: generate_text
+  condition: '{{ read_file.size <= size_threshold and read_file.size > 0 }}'
+  parameters:
+    prompt: "Expand the following text with additional relevant details and context.\n\
+      \nRULES:\n- Start directly with the expanded content\n- No conversational phrases\
+      \ like \"Let's\", \"Okay\", \"Here's\", etc.\n- IMPORTANT: If the text is ONLY\
+      \ repeated single characters (like \"XXXX\" or \"AAAA\"), you MUST:\n  1. Describe\
+      \ what this repetitive pattern represents in testing contexts\n  2. Explain\
+      \ why files with repeated characters are used in software testing\n  3. Discuss\
+      \ the significance of the specific byte count ({{ read_file.size }} bytes)\n\
+      \  4. Never just output the repeated characters themselves\n- Be accurate about\
+      \ sizes ({{ read_file.size }} bytes, not kilobytes)\n- For any repetitive content,\
+      \ provide meaningful technical analysis\n- Write in professional, informative\
+      \ style\n- Minimum 200 words of actual expanded content\n\nText to expand ({{\
+      \ read_file.size }} bytes):\n{{ read_file.content }}\n"
+    model: <AUTO task="generate">Select a model for text generation</AUTO>
+    max_tokens: 500
+  dependencies:
+  - check_size
+- id: handle_empty
+  action: generate_text
+  condition: '{{ read_file.size == 0 }}'
+  parameters:
+    prompt: 'Output exactly the following text with no modifications, additions, or
+      code:
+
+      The input file was empty. No content to process.
+
+      '
+    model: <AUTO task="generate">Select a minimal model</AUTO>
+    max_tokens: 50
+  dependencies:
+  - check_size
+- id: save_result
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/control_flow_conditional/processed_{{ input_file | basename
+      | replace('.txt', '') }}.md
+    content: '# Processed File
+
+
+      Original size: {{ read_file.size }} bytes
+
+      Processing type: {% if read_file.size == 0 %}Empty file{% elif read_file.size
+      > size_threshold %}Compressed{% else %}Expanded{% endif %}
+
+
+
+      ## Result
+
+
+      {% if handle_empty.status is not defined or handle_empty.status != ''skipped''
+      %}{{ handle_empty }}{% elif compress_large.status is not defined or compress_large.status
+      != ''skipped'' %}{{ compress_large }}{% elif expand_small.status is not defined
+      or expand_small.status != ''skipped'' %}{{ expand_small }}{% else %}No content
+      processed.{% endif %}
+
+      '
+  dependencies:
+  - compress_large
+  - expand_small
+  - handle_empty
+outputs:
+  original_size: '{{ read_file.size }}'
+  processed_content: '{% if handle_empty.status is not defined or handle_empty.status
+    != ''skipped'' %}{{ handle_empty }}{% elif compress_large.status is not defined
+    or compress_large.status != ''skipped'' %}{{ compress_large }}{% elif expand_small.status
+    is not defined or expand_small.status != ''skipped'' %}{{ expand_small }}{% else
+    %}No content processed.{% endif %}'
+  output_file: '{{ save_result.path }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  input_file:
+    type: string
+    default: *id001
+    description: 'Parameter: input_file'
+    required: false
+  size_threshold:
+    type: string
+    default: *id002
+    description: 'Parameter: size_threshold'
+    required: false
+enhanced_outputs:
+  original_size:
+    description: 'Enhanced output: original_size'
+    value: '{{ read_file.size }}'
+    type: auto-detect
+  processed_content:
+    description: 'Enhanced output: processed_content'
+    value: '{% if handle_empty.status is not defined or handle_empty.status != ''skipped''
+      %}{{ handle_empty }}{% elif compress_large.status is not defined or compress_large.status
+      != ''skipped'' %}{{ compress_large }}{% elif expand_small.status is not defined
+      or expand_small.status != ''skipped'' %}{{ expand_small }}{% else %}No content
+      processed.{% endif %}'
+    type: auto-detect
+  output_file:
+    description: 'Enhanced output: output_file'
+    value: '{{ save_result.path }}'
+    type: auto-detect

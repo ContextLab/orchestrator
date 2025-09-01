@@ -1,0 +1,62 @@
+id: validation_pipeline
+name: Data Validation Pipeline
+description: Validate data against schemas and extract structured information
+version: 1.0.0
+steps:
+- id: read_config
+  tool: filesystem
+  action: read
+  parameters:
+    path: examples/outputs/validation_pipeline/config/validation_schema.json
+- id: read_data
+  tool: filesystem
+  action: read
+  parameters:
+    path: examples/outputs/validation_pipeline/data/user_data.json
+- id: validate_data
+  tool: validation
+  action: validate
+  parameters:
+    data: '{{ read_data.content | from_json }}'
+    schema: '{{ read_config.content | from_json }}'
+    mode: strict
+  dependencies:
+  - read_config
+  - read_data
+- id: extract_info
+  tool: validation
+  action: extract_structured
+  parameters:
+    text: 'John Doe, age 30, email: john@example.com, phone: +1-555-0123'
+    schema:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          pattern: ^\+?[1-9]\d{1,14}$
+      required:
+      - name
+      - email
+    model: gpt-4o-mini
+- id: save_report
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/validation_pipeline/reports/validation_report.json
+    content: "{\n  \"validation_result\": {{ validate_data | to_json }},\n  \"extracted_data\"\
+      : {{ extract_info | to_json }},\n  \"timestamp\": \"{{ now() }}\"\n}\n"
+  dependencies:
+  - validate_data
+  - extract_info
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility

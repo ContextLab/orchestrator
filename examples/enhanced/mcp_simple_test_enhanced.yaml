@@ -1,0 +1,85 @@
+id: mcp_simple_test
+name: Simple MCP Test
+description: Basic test of MCP server with DuckDuckGo search
+version: 1.0.0
+parameters:
+  search_query: &id001
+    type: string
+    default: Python programming
+steps:
+- id: connect
+  tool: mcp-server
+  action: execute
+  parameters:
+    action: connect
+    server_name: duckduckgo
+    server_config:
+      command: python
+      args:
+      - src/orchestrator/tools/mcp_servers/duckduckgo_server.py
+      env: {}
+- id: list_tools
+  tool: mcp-server
+  action: execute
+  parameters:
+    action: list_tools
+    server_name: duckduckgo
+  dependencies:
+  - connect
+- id: search
+  tool: mcp-server
+  action: execute
+  parameters:
+    action: execute_tool
+    server_name: duckduckgo
+    tool_name: search
+    tool_params:
+      query: '{{ parameters.search_query }}'
+      max_results: 3
+  dependencies:
+  - list_tools
+- id: save_results
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/mcp_simple_test/{{ parameters.search_query[:20] | slugify
+      }}_results.json
+    content: '{{ search.result | tojson(indent=2) }}'
+  dependencies:
+  - search
+- id: disconnect
+  tool: mcp-server
+  action: execute
+  parameters:
+    action: disconnect
+    server_name: duckduckgo
+  dependencies:
+  - save_results
+outputs:
+  connected: '{{ connect.connected }}'
+  tools_count: '{{ list_tools.tools | length if list_tools.tools else 0 }}'
+  search_results: '{{ search.result }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  search_query:
+    type: string
+    default: *id001
+    description: 'Parameter: search_query'
+    required: false
+enhanced_outputs:
+  connected:
+    description: 'Enhanced output: connected'
+    value: '{{ connect.connected }}'
+    type: auto-detect
+  tools_count:
+    description: 'Enhanced output: tools_count'
+    value: '{{ list_tools.tools | length if list_tools.tools else 0 }}'
+    type: auto-detect
+  search_results:
+    description: 'Enhanced output: search_results'
+    value: '{{ search.result }}'
+    type: auto-detect

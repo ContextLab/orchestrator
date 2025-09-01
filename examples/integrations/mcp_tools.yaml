@@ -1,0 +1,332 @@
+id: mcp-tools-integration
+name: "MCP Tools Integration"
+description: |
+  Demonstrates comprehensive Model Context Protocol (MCP) tool integration
+  with automatic tool detection, server management, and multi-tool workflows.
+
+parameters:
+  project_directory:
+    type: string
+    default: "examples/test_project"
+    description: "Directory to analyze and work with"
+  analysis_scope:
+    type: string
+    default: "comprehensive"
+    choices: ["basic", "comprehensive", "security_focused"]
+    description: "Scope of analysis to perform"
+  auto_fix:
+    type: boolean
+    default: false
+    description: "Automatically apply suggested fixes"
+
+# This pipeline uses multiple MCP tools that are auto-detected
+steps:
+  # File system analysis
+  - id: analyze_project_structure
+    tool: filesystem
+    action: list_directory
+    parameters:
+      path: "{{ project_directory }}"
+      recursive: true
+      include_hidden: false
+
+  - id: read_key_files
+    tool: filesystem
+    action: read
+    foreach: "{{ analyze_project_structure.files[:10] }}"  # Limit to first 10 files
+    condition: "{{ item.name.endswith(('.py', '.js', '.yaml', '.json', '.md')) }}"
+    parameters:
+      path: "{{ item.path }}"
+    dependencies:
+      - analyze_project_structure
+
+  # Code analysis using MCP code analysis tools
+  - id: analyze_code_quality
+    tool: code-analyzer
+    action: analyze
+    parameters:
+      project_path: "{{ project_directory }}"
+      analysis_type: "{{ analysis_scope }}"
+      include_metrics: true
+      check_dependencies: true
+    dependencies:
+      - read_key_files
+
+  # Git repository analysis (if applicable)
+  - id: analyze_git_history
+    tool: git
+    action: log
+    parameters:
+      repository_path: "{{ project_directory }}"
+      max_commits: 20
+      include_stats: true
+    on_failure: skip
+    dependencies:
+      - analyze_project_structure
+
+  # Web research for dependency security (if security_focused)
+  - id: research_dependency_security
+    tool: web-search
+    action: search
+    condition: "{{ analysis_scope == 'security_focused' }}"
+    foreach: "{{ analyze_code_quality.dependencies[:5] }}"  # Top 5 dependencies
+    parameters:
+      query: "{{ item }} security vulnerabilities recent"
+      max_results: 3
+    dependencies:
+      - analyze_code_quality
+
+  # Memory/database operations for findings storage
+  - id: store_analysis_findings
+    tool: memory
+    action: store
+    parameters:
+      key: "project_analysis_{{ project_directory | slugify }}"
+      value:
+        project_structure: "{{ analyze_project_structure.result }}"
+        code_quality: "{{ analyze_code_quality.result }}"
+        git_history: "{{ analyze_git_history.result if analyze_git_history.status == 'completed' else null }}"
+        security_research: "{{ research_dependency_security.results if research_dependency_security.status == 'completed' else null }}"
+        analysis_scope: "{{ analysis_scope }}"
+        timestamp: "{{ current_timestamp }}"
+    dependencies:
+      - analyze_code_quality
+
+  # AI-powered synthesis of tool results
+  - id: synthesize_findings
+    action: generate_text
+    parameters:
+      prompt: |
+        Analyze and synthesize project findings from multiple MCP tools:
+        
+        **Project Structure:**
+        Files analyzed: {{ read_key_files.results | length }}
+        Total files: {{ analyze_project_structure.files | length }}
+        Directory: {{ project_directory }}
+        
+        **Code Quality Analysis:**
+        {{ analyze_code_quality.result | tojson(indent=2) }}
+        
+        {% if analyze_git_history.status == "completed" %}
+        **Git History Analysis:**
+        Commits analyzed: {{ analyze_git_history.commits | length }}
+        Recent activity: {{ analyze_git_history.summary }}
+        {% endif %}
+        
+        {% if research_dependency_security.status == "completed" %}
+        **Security Research:**
+        Dependencies researched: {{ research_dependency_security.results | length }}
+        Security findings:
+        {% for research in research_dependency_security.results %}
+        - {{ research.query }}: {{ research.results | length }} security reports found
+        {% endfor %}
+        {% endif %}
+        
+        **Analysis Scope:** {{ analysis_scope }}
+        
+        Provide comprehensive project assessment including:
+        1. Overall project health and quality
+        2. Key strengths and areas for improvement
+        3. Security considerations (if applicable)
+        4. Recommended next steps
+        5. Priority issues to address
+        
+        {% if auto_fix %}
+        6. Specific actionable fixes that could be automated
+        {% endif %}
+      model: <AUTO task="synthesis">Select model for comprehensive analysis synthesis</AUTO>
+      max_tokens: 800
+    dependencies:
+      - store_analysis_findings
+
+  # Generate improvement suggestions
+  - id: generate_improvements
+    action: generate_text
+    parameters:
+      prompt: |
+        Based on the synthesis: {{ synthesize_findings.result }}
+        
+        Generate specific, actionable improvement recommendations:
+        
+        {% if analysis_scope == 'basic' %}
+        Focus on:
+        1. Code organization improvements
+        2. Documentation enhancements
+        3. Basic best practices
+        {% elif analysis_scope == 'comprehensive' %}
+        Focus on:
+        1. Code quality improvements
+        2. Architecture recommendations  
+        3. Performance optimizations
+        4. Maintainability enhancements
+        5. Testing strategy
+        {% else %}
+        Focus on:
+        1. Security vulnerabilities
+        2. Dependency security issues
+        3. Access control improvements
+        4. Data protection measures
+        5. Security testing recommendations
+        {% endif %}
+        
+        {% if auto_fix %}
+        For each recommendation, indicate:
+        - Automation feasibility (High/Medium/Low)
+        - Required MCP tools
+        - Estimated impact
+        {% endif %}
+        
+        Prioritize recommendations by impact and effort.
+      model: <AUTO task="recommendations">Select model for generating actionable recommendations</AUTO>
+      max_tokens: 600
+    dependencies:
+      - synthesize_findings
+
+  # Optional: Apply automatic fixes
+  - id: apply_automatic_fixes
+    tool: filesystem
+    action: write_batch
+    condition: "{{ auto_fix }}"
+    parameters:
+      operations: "{{ generate_improvements.result | extract_auto_fixes }}"
+    dependencies:
+      - generate_improvements
+
+  # Terminal/shell operations for additional analysis
+  - id: run_project_tests
+    tool: terminal
+    action: execute
+    parameters:
+      command: |
+        cd {{ project_directory }} && \
+        if [ -f "package.json" ]; then npm test; \
+        elif [ -f "requirements.txt" ]; then python -m pytest; \
+        elif [ -f "Cargo.toml" ]; then cargo test; \
+        else echo "No recognized test framework found"; fi
+      timeout: 60
+    on_failure: continue
+    dependencies:
+      - synthesize_findings
+
+  # Browser automation for additional research (if needed)
+  - id: research_best_practices
+    tool: browser
+    action: navigate_and_extract
+    condition: "{{ analysis_scope == 'comprehensive' }}"
+    parameters:
+      url: "https://best-practices-guide.example.com"
+      extract_selectors:
+        - ".best-practice"
+        - ".code-example"
+      max_pages: 3
+    on_failure: skip
+    dependencies:
+      - generate_improvements
+
+  # Update memory with final results
+  - id: update_analysis_results
+    tool: memory
+    action: update
+    parameters:
+      key: "project_analysis_{{ project_directory | slugify }}"
+      updates:
+        final_synthesis: "{{ synthesize_findings.result }}"
+        recommendations: "{{ generate_improvements.result }}"
+        test_results: "{{ run_project_tests.result if run_project_tests.status == 'completed' else null }}"
+        fixes_applied: "{{ auto_fix and apply_automatic_fixes.status == 'completed' }}"
+        best_practices_research: "{{ research_best_practices.result if research_best_practices.status == 'completed' else null }}"
+        completion_timestamp: "{{ current_timestamp }}"
+    dependencies:
+      - generate_improvements
+
+  # Generate comprehensive report
+  - id: generate_final_report
+    tool: report-generator
+    action: create
+    parameters:
+      title: "Project Analysis Report: {{ project_directory | basename }}"
+      format: "html"
+      sections:
+        - title: "Executive Summary"
+          content: "{{ synthesize_findings.result }}"
+        - title: "Detailed Findings"
+          content: |
+            ## Code Quality Analysis
+            {{ analyze_code_quality.result | tojson(indent=2) }}
+            
+            {% if analyze_git_history.status == "completed" %}
+            ## Git History
+            {{ analyze_git_history.summary }}
+            {% endif %}
+            
+            {% if research_dependency_security.status == "completed" %}
+            ## Security Research
+            {% for research in research_dependency_security.results %}
+            ### {{ research.query }}
+            {% for result in research.results %}
+            - [{{ result.title }}]({{ result.url }})
+            {% endfor %}
+            {% endfor %}
+            {% endif %}
+        - title: "Recommendations"
+          content: "{{ generate_improvements.result }}"
+        - title: "Test Results"
+          content: "{{ run_project_tests.result if run_project_tests.status == 'completed' else 'No tests run' }}"
+      metadata:
+        analysis_scope: "{{ analysis_scope }}"
+        tools_used: [
+          "filesystem",
+          "code-analyzer", 
+          {% if analyze_git_history.status == "completed" %}"git",{% endif %}
+          {% if research_dependency_security.status == "completed" %}"web-search",{% endif %}
+          "memory",
+          {% if run_project_tests.status == "completed" %}"terminal",{% endif %}
+          {% if research_best_practices.status == "completed" %}"browser",{% endif %}
+          "report-generator"
+        ]
+    dependencies:
+      - update_analysis_results
+
+outputs:
+  project_analyzed: "{{ project_directory }}"
+  analysis_scope: "{{ analysis_scope }}"
+  files_analyzed: "{{ read_key_files.results | length }}"
+  total_files: "{{ analyze_project_structure.files | length }}"
+  tools_used: [
+    "filesystem",
+    "code-analyzer",
+    {% if analyze_git_history.status == "completed" %}"git",{% endif %}
+    {% if research_dependency_security.status == "completed" %}"web-search",{% endif %}
+    "memory",
+    {% if run_project_tests.status == "completed" %}"terminal",{% endif %}
+    {% if research_best_practices.status == "completed" %}"browser",{% endif %}
+    "report-generator"
+  ]
+  synthesis: "{{ synthesize_findings.result }}"
+  recommendations: "{{ generate_improvements.result }}"
+  fixes_applied: "{{ auto_fix and apply_automatic_fixes.status == 'completed' }}"
+  report_file: "{{ generate_final_report.file_path }}"
+  memory_key: "project_analysis_{{ project_directory | slugify }}"
+
+metadata:
+  category: "integration"
+  complexity: "advanced"
+  estimated_runtime: "5-15 minutes (depends on project size)"
+  requirements:
+    - "MCP server running"
+    - "Multiple MCP tools available"
+    - "Text generation model"
+    - "File system access"
+  use_cases:
+    - "Project code analysis"
+    - "Automated code review"
+    - "Security assessment"
+    - "Best practices compliance"
+    - "Technical debt analysis"
+  demonstrates:
+    - "Multi-tool MCP integration"
+    - "Automatic tool detection"
+    - "Conditional tool usage"
+    - "Error handling for missing tools"
+    - "State management with memory tools"
+    - "Cross-tool result synthesis"

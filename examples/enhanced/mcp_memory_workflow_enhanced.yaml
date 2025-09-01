@@ -1,0 +1,177 @@
+id: mcp_memory_workflow
+name: MCP Memory Context Management
+description: Use MCP memory to maintain context across pipeline steps
+version: 1.0.0
+parameters:
+  user_name: &id001
+    type: string
+    default: User
+  task_description: &id002
+    type: string
+    default: Analyze sales data and create visualizations
+  output_path: &id003
+    type: string
+    default: examples/outputs/mcp_memory_workflow
+steps:
+- id: init_context
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: store
+    namespace: conversation
+    key: user_profile
+    value:
+      name: '{{ user_name }}'
+      task: '{{ task_description }}'
+      started_at: '{{ execution[''timestamp''] }}'
+    ttl: 7200
+- id: store_task_steps
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: store
+    namespace: conversation
+    key: task_steps
+    value:
+    - Load and validate data
+    - Perform statistical analysis
+    - Create visualizations
+    - Generate report
+    ttl: 7200
+  dependencies:
+  - init_context
+- id: process_step_1
+  tool: task-delegation
+  action: execute
+  parameters:
+    task: 'Identify specific data sources for: {{ task_description }}'
+    requirements:
+      capabilities:
+      - data-analysis
+  dependencies:
+  - store_task_steps
+- id: update_progress
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: store
+    namespace: conversation
+    key: progress
+    value:
+      current_step: 1
+      completed_steps:
+      - Data loading plan created
+      next_action: Execute data loading
+    ttl: 7200
+  dependencies:
+  - process_step_1
+- id: get_full_context
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: list
+    namespace: conversation
+  dependencies:
+  - update_progress
+- id: build_context_summary
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output_path }}/{{ user_name | slugify }}_context_summary.md'
+    content: '# Context Summary
+
+
+      **Generated on:** {{ execution[''timestamp''] }}
+
+
+      ## Current Context State
+
+
+      **Namespace**: conversation
+
+      **Active Keys**: {{ get_full_context[''keys''] | join('', '') }}
+
+
+      ### Details:
+
+      {% for key in get_full_context[''keys''] %}
+
+      - **{{ key }}**: Stored in memory
+
+      {% endfor %}
+
+      '
+  dependencies:
+  - get_full_context
+- id: export_memory
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output_path }}/{{ user_name | slugify }}_memory_export.json'
+    content: "{\n  \"namespace\": \"conversation\",\n  \"exported_at\": \"{{ execution['timestamp']\
+      \ }}\",\n  \"keys\": {{ get_full_context['keys'] | tojson }},\n  \"metadata\"\
+      : {\n    \"user\": \"{{ user_name }}\",\n    \"task\": \"{{ task_description\
+      \ }}\"\n  }\n}\n"
+  dependencies:
+  - get_full_context
+- id: check_expiration
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: retrieve
+    namespace: conversation
+    key: user_profile
+  dependencies:
+  - export_memory
+- id: cleanup_memory
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: clear
+    namespace: temporary_workspace
+  dependencies:
+  - export_memory
+  condition: 'false'
+outputs:
+  context_keys: '{{ get_full_context[''keys''] | tojson }}'
+  user_profile_found: '{{ check_expiration[''found''] }}'
+  memory_export_path: '{{ output_path }}/{{ user_name | slugify }}_memory_export.json'
+  context_summary_path: '{{ output_path }}/{{ user_name | slugify }}_context_summary.md'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  user_name:
+    type: string
+    default: *id001
+    description: 'Parameter: user_name'
+    required: false
+  task_description:
+    type: string
+    default: *id002
+    description: 'Parameter: task_description'
+    required: false
+  output_path:
+    type: string
+    default: *id003
+    description: 'Parameter: output_path'
+    required: false
+enhanced_outputs:
+  context_keys:
+    description: 'Enhanced output: context_keys'
+    value: '{{ get_full_context[''keys''] | tojson }}'
+    type: auto-detect
+  user_profile_found:
+    description: 'Enhanced output: user_profile_found'
+    value: '{{ check_expiration[''found''] }}'
+    type: auto-detect
+  memory_export_path:
+    description: 'Enhanced output: memory_export_path'
+    value: '{{ output_path }}/{{ user_name | slugify }}_memory_export.json'
+    type: auto-detect
+  context_summary_path:
+    description: 'Enhanced output: context_summary_path'
+    value: '{{ output_path }}/{{ user_name | slugify }}_context_summary.md'
+    type: auto-detect

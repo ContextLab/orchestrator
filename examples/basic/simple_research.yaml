@@ -1,0 +1,107 @@
+id: simple-research
+name: "Simple Research Pipeline"
+description: |
+  Basic research workflow that searches for information and creates a summary.
+  Perfect introduction to multi-step pipelines with dependencies.
+
+parameters:
+  topic:
+    type: string  
+    required: true
+    description: "Research topic to investigate"
+  max_sources:
+    type: integer
+    default: 3
+    description: "Maximum number of sources to search"
+
+steps:
+  - id: search_topic
+    tool: web-search
+    action: search
+    parameters:
+      query: "{{ topic }}"
+      max_results: "{{ max_sources }}"
+      
+  - id: analyze_sources
+    action: analyze_text
+    parameters:
+      text: |
+        Search results for "{{ topic }}":
+        {% for result in search_topic.results %}
+        {{ loop.index }}. {{ result.title }}
+           {{ result.snippet }}
+           Source: {{ result.url }}
+        {% endfor %}
+      prompt: |
+        Analyze these search results about "{{ topic }}" and provide:
+        1. Key facts and findings
+        2. Main themes or trends
+        3. Notable sources or authorities
+        4. Any conflicting information
+        
+        Focus on factual, verifiable information only.
+      model: <AUTO task="research">Select model optimized for research analysis</AUTO>
+      max_tokens: 500
+    dependencies:
+      - search_topic
+      
+  - id: create_summary
+    action: generate_text 
+    parameters:
+      prompt: |
+        Create a concise research summary about "{{ topic }}" based on:
+        
+        Analysis: {{ analyze_sources.result }}
+        
+        Sources found: {{ search_topic.results | length }}
+        
+        Provide:
+        - 2-3 sentence overview
+        - 3-5 key points
+        - Conclusion
+        
+        Keep it factual and cite that information comes from web search.
+      model: <AUTO task="summarize">Select model for clear summarization</AUTO>
+      max_tokens: 300
+    dependencies:
+      - analyze_sources
+
+  - id: save_research
+    tool: filesystem
+    action: write
+    parameters:
+      path: "research_{{ topic | slugify }}.md"
+      content: |
+        # Research Summary: {{ topic }}
+        
+        **Generated:** {{ current_timestamp }}
+        **Sources:** {{ search_topic.results | length }} web sources
+        
+        ## Summary
+        {{ create_summary.result }}
+        
+        ## Detailed Analysis  
+        {{ analyze_sources.result }}
+        
+        ## Sources
+        {% for result in search_topic.results %}
+        {{ loop.index }}. [{{ result.title }}]({{ result.url }})
+        {% endfor %}
+    dependencies:
+      - create_summary
+
+outputs:
+  summary: "{{ create_summary.result }}"
+  sources_count: "{{ search_topic.results | length }}"
+  output_file: "{{ save_research.path }}"
+
+metadata:
+  category: "basic"
+  complexity: "intermediate"
+  estimated_runtime: "2-3 minutes"
+  requirements: ["web search tool", "filesystem tool", "text generation model"]
+  use_cases:
+    - "Quick research on any topic"
+    - "Fact gathering for reports"
+    - "Educational research"
+    - "Background information collection"

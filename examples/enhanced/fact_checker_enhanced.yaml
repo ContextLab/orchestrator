@@ -1,0 +1,233 @@
+id: intelligent-fact-checker
+name: Intelligent Fact-Checker
+description: Verifies claims and sources using AUTO tag list generation and runtime
+  parallel processing
+version: 3.0.0
+inputs:
+  document_source:
+    type: string
+    description: Path to document file or URL to analyze
+    required: true
+  strictness:
+    type: string
+    description: How strict should fact-checking be (lenient/moderate/strict)
+    default: moderate
+  output_path:
+    type: string
+    description: Path where fact-check report should be saved
+    required: false
+outputs:
+  fact_check_report: &id001
+    type: string
+    value: '{{ output_path | default(''examples/outputs/fact_checker/fact_check_report.md'')
+      }}'
+steps:
+- id: load_document
+  tool: filesystem
+  action: read
+  parameters:
+    path: '{{ document_source }}'
+  produces: text
+- id: extract_sources_list
+  dependencies:
+  - load_document
+  action: generate-structured
+  parameters:
+    prompt: 'Analyze this document and extract all sources, citations, and references.
+
+
+      Document content:
+
+      {{ load_document.result }}
+
+
+      Extract each source with its name, URL, and type (journal/report/website/other).
+
+      '
+    schema:
+      type: object
+      properties:
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              url:
+                type: string
+              type:
+                type: string
+                enum:
+                - journal
+                - report
+                - website
+                - other
+      required:
+      - sources
+    max_completion_tokens: 1000
+    model: claude-sonnet-4-20250514
+  produces: json
+- id: extract_claims_list
+  dependencies:
+  - load_document
+  action: generate-structured
+  parameters:
+    prompt: 'Extract all verifiable factual claims from this document.
+
+
+      Document content:
+
+      {{ load_document.result }}
+
+
+      List each claim as a clear, concise statement that can be fact-checked.
+
+      '
+    schema:
+      type: object
+      properties:
+        claims:
+          type: array
+          items:
+            type: string
+      required:
+      - claims
+    max_completion_tokens: 1000
+    model: claude-sonnet-4-20250514
+  produces: json
+- id: verify_sources
+  for_each: <AUTO>list of sources to verify</AUTO>
+  max_parallel: 2
+  add_completion_task: true
+  steps:
+  - id: verify_source
+    action: generate-text
+    parameters:
+      prompt: 'Verify this source for authenticity and accuracy:
+
+        Name: {{ item.name }}
+
+        URL: {{ item.url }}
+
+        Type: {{ item.type }}
+
+
+        Check:
+
+        1. Is the source real and accessible?
+
+        2. Is it correctly cited?
+
+        3. Is it a reputable source for its type?
+
+
+        Provide structured analysis:
+
+        - SOURCE: {{ item.name }} ({{ item.url }})
+
+        - STATUS: Valid/Invalid/Questionable
+
+        - CREDIBILITY: High/Medium/Low
+
+        - NOTES: Brief observations
+
+        '
+      max_completion_tokens: 300
+      model: claude-sonnet-4-20250514
+  dependencies:
+  - extract_sources_list
+- id: verify_claims
+  for_each: <AUTO>claims that need fact-checking</AUTO>
+  max_parallel: 3
+  add_completion_task: true
+  steps:
+  - id: verify_claim
+    action: generate-text
+    parameters:
+      prompt: 'Verify this specific claim: {{ item }}
+
+        Claim number: {{ index }}
+
+
+        Using sources from document for verification.
+
+
+        Provide professional fact-checking analysis:
+
+        - CLAIM {{ index }}: {{ item }}
+
+        - SUPPORT: Yes/Partial/No
+
+        - RELIABILITY: High/Medium/Low
+
+        - EVIDENCE: Brief summary of supporting/contradicting evidence
+
+        - STATUS: Verified/Unverified/Disputed
+
+        '
+      max_completion_tokens: 400
+      model: claude-sonnet-4-20250514
+  dependencies:
+  - extract_claims_list
+- id: generate_report
+  dependencies:
+  - verify_sources
+  - verify_claims
+  - extract_sources_list
+  - extract_claims_list
+  action: generate-text
+  parameters:
+    prompt: "Generate a professional fact-checking report for the article \"{{ document_source\
+      \ }}\".\n\nYou have:\n1. Extracted sources: {{ extract_sources_list.result.sources\
+      \ | length }} sources identified\n2. Extracted claims: {{ extract_claims_list.result.claims\
+      \ | length }} claims identified  \n3. Source verifications completed\n4. Claim\
+      \ verifications completed\n\nCreate a comprehensive fact-checking report with\
+      \ these sections:\n\n## Executive Summary\n- Brief overview of the article's\
+      \ topic and main assertions\n- Overall credibility assessment (High/Medium/Low)\n\
+      - Number of verified vs unverified claims\n\n## Source Analysis\n- Credibility\
+      \ of cited sources\n- Any missing or questionable citations\n- Balance between\
+      \ peer-reviewed and industry sources\n\n## Claim Verification\nFor each major\
+      \ claim:\n- Statement of the claim\n- Verification status (Verified/Partially\
+      \ Verified/Unverified/False)\n- Supporting or contradicting evidence\n- Confidence\
+      \ level\n\n## Red Flags and Concerns\n- Any misleading statements\n- Unsupported\
+      \ assertions\n- Potential biases\n\n## Conclusion\n- Overall assessment of article\
+      \ accuracy\n- Recommendations for readers\n- Areas requiring further investigation\n\
+      \nFocus on providing actionable fact-checking insights about the healthcare\
+      \ AI article's claims and sources.\nBe specific about which claims are well-supported\
+      \ and which require scrutiny.\n"
+    max_completion_tokens: 2000
+    model: claude-sonnet-4-20250514
+  produces: text
+- id: save_report
+  dependencies:
+  - generate_report
+  tool: filesystem
+  action: write
+  parameters:
+    path: '{{ output_path | default(''examples/outputs/fact_checker/fact_check_report.md'')
+      }}'
+    content: '# Fact-Checking Report
+
+
+      **Document:** {{ document_source }}
+
+      **Analysis Date:** {{ execution.timestamp }}
+
+      **Verification Standard:** {{ strictness }}
+
+
+      ---
+
+
+      {{ generate_report.result }}'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+enhanced_outputs:
+  fact_check_report:
+    description: 'Enhanced output: fact_check_report'
+    value: *id001
+    type: auto-detect

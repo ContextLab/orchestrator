@@ -1,0 +1,130 @@
+id: mcp_integration
+name: MCP Integration Pipeline
+description: Connect to MCP servers and utilize their capabilities
+version: 1.0.0
+parameters:
+  search_query: &id001
+    type: string
+    default: AI orchestration frameworks
+steps:
+- id: connect_mcp
+  tool: mcp-server
+  action: execute
+  parameters:
+    action: connect
+    server_name: duckduckgo-search
+    server_config:
+      command: python
+      args:
+      - src/orchestrator/tools/mcp_servers/duckduckgo_server.py
+      env: {}
+- id: list_tools
+  tool: mcp-server
+  action: execute
+  parameters:
+    action: list_tools
+    server_name: duckduckgo-search
+  dependencies:
+  - connect_mcp
+- id: store_context
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: store
+    namespace: search_session
+    key: query
+    value: '{{ parameters.search_query }}'
+    ttl: 3600
+  dependencies:
+  - connect_mcp
+- id: search_web
+  tool: mcp-server
+  action: execute
+  parameters:
+    action: execute_tool
+    server_name: duckduckgo-search
+    tool_name: search
+    tool_params:
+      query: '{{ parameters.search_query }}'
+      max_results: 5
+  dependencies:
+  - list_tools
+- id: store_results
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: store
+    namespace: search_session
+    key: results
+    value: '{{ search_web.result }}'
+    ttl: 3600
+  dependencies:
+  - search_web
+- id: list_memory
+  tool: mcp-memory
+  action: execute
+  parameters:
+    action: list
+    namespace: search_session
+  dependencies:
+  - store_results
+- id: save_results
+  tool: filesystem
+  action: write
+  parameters:
+    path: examples/outputs/mcp_integration/{{ parameters.search_query[:25] | slugify
+      }}_results.json
+    content: '{{ {''query'': parameters.search_query, ''timestamp'': execution.timestamp,
+      ''results'': search_web.result.results if search_web.result else [], ''total'':
+      search_web.result.total if search_web.result else 0, ''memory_keys'': list_memory.keys
+      if list_memory.keys else []} | tojson(indent=2) }}'
+  dependencies:
+  - list_memory
+- id: disconnect_mcp
+  tool: mcp-server
+  action: execute
+  parameters:
+    action: disconnect
+    server_name: duckduckgo-search
+  dependencies:
+  - save_results
+outputs:
+  connected: '{{ connect_mcp.connected }}'
+  tools_available: '{{ list_tools.tools | length if list_tools.tools else 0 }}'
+  search_results: '{{ search_web.result if search_web.result else {} }}'
+  results_saved: '{{ save_results.success }}'
+  output_file: examples/outputs/mcp_integration/{{ parameters.search_query[:25] |
+    slugify }}_results.json
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  search_query:
+    type: string
+    default: *id001
+    description: 'Parameter: search_query'
+    required: false
+enhanced_outputs:
+  connected:
+    description: 'Enhanced output: connected'
+    value: '{{ connect_mcp.connected }}'
+    type: auto-detect
+  tools_available:
+    description: 'Enhanced output: tools_available'
+    value: '{{ list_tools.tools | length if list_tools.tools else 0 }}'
+    type: auto-detect
+  search_results:
+    description: 'Enhanced output: search_results'
+    value: '{{ search_web.result if search_web.result else {} }}'
+    type: auto-detect
+  results_saved:
+    description: 'Enhanced output: results_saved'
+    value: '{{ save_results.success }}'
+    type: auto-detect
+  output_file:
+    description: 'Enhanced output: output_file'
+    value: examples/outputs/mcp_integration/{{ parameters.search_query[:25] | slugify
+      }}_results.json
+    type: auto-detect

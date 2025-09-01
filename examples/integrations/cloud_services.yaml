@@ -1,0 +1,484 @@
+id: cloud-services-integration
+name: "Cloud Services Integration"
+description: |
+  Demonstrates integration with major cloud platforms (AWS, Azure, GCP)
+  for storage, compute, AI services, and serverless functions.
+
+parameters:
+  cloud_provider:
+    type: string
+    default: "aws"
+    choices: ["aws", "azure", "gcp", "multi_cloud"]
+    description: "Primary cloud provider to use"
+  operation_type:
+    type: string
+    default: "ai_pipeline"
+    choices: ["storage", "compute", "ai_pipeline", "data_processing"]
+    description: "Type of cloud operation to perform"
+  data_file:
+    type: string
+    default: "examples/data/sample_data.json"
+    description: "Local data file to process in cloud"
+  
+# Cloud service configurations
+config:
+  aws:
+    region: "us-east-1"
+    services:
+      s3: "orchestrator-examples-bucket"
+      lambda: "orchestrator-processor"
+      bedrock: "anthropic.claude-v2"
+      comprehend: "sentiment-analysis"
+  azure:
+    region: "East US"
+    services:
+      storage: "orchestratorexamples"
+      functions: "orchestrator-processor"
+      cognitive: "text-analytics"
+      openai: "gpt-35-turbo"
+  gcp:
+    region: "us-central1"
+    services:
+      storage: "orchestrator-examples"
+      functions: "orchestrator-processor"
+      ai_platform: "text-bison"
+      language_ai: "sentiment"
+
+steps:
+  # Initialize cloud authentication
+  - id: setup_cloud_authentication
+    action: generate_text
+    parameters:
+      prompt: |
+        Initialize cloud authentication for {{ cloud_provider }} provider:
+        Operation: {{ operation_type }}
+        Data file: {{ data_file }}
+        
+        Create authentication and service setup plan.
+      model: <AUTO>Planning model</AUTO>
+      max_tokens: 200
+
+  # AWS Integration Path
+  - id: aws_s3_upload
+    tool: aws-s3
+    action: upload
+    condition: "{{ cloud_provider in ['aws', 'multi_cloud'] }}"
+    parameters:
+      bucket: "{{ config.aws.services.s3 }}"
+      key: "input/{{ data_file | basename }}"
+      local_file: "{{ data_file }}"
+      region: "{{ config.aws.region }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - setup_cloud_authentication
+
+  - id: aws_lambda_process
+    tool: aws-lambda
+    action: invoke
+    condition: "{{ cloud_provider in ['aws', 'multi_cloud'] and operation_type != 'storage' }}"
+    parameters:
+      function_name: "{{ config.aws.services.lambda }}"
+      payload:
+        bucket: "{{ config.aws.services.s3 }}"
+        key: "input/{{ data_file | basename }}"
+        operation: "{{ operation_type }}"
+      region: "{{ config.aws.region }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - aws_s3_upload
+
+  - id: aws_bedrock_ai
+    tool: aws-bedrock
+    action: invoke_model
+    condition: "{{ cloud_provider in ['aws', 'multi_cloud'] and operation_type == 'ai_pipeline' }}"
+    parameters:
+      model_id: "{{ config.aws.services.bedrock }}"
+      input:
+        prompt: |
+          Analyze this data from cloud storage:
+          Bucket: {{ config.aws.services.s3 }}
+          Key: input/{{ data_file | basename }}
+          
+          Provide comprehensive analysis including:
+          1. Data structure and quality
+          2. Key insights and patterns
+          3. Recommendations for further processing
+        max_tokens: 500
+      region: "{{ config.aws.region }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - aws_s3_upload
+
+  - id: aws_comprehend_analysis
+    tool: aws-comprehend
+    action: analyze_sentiment
+    condition: "{{ cloud_provider in ['aws', 'multi_cloud'] and 'text' in operation_type }}"
+    parameters:
+      text: "{{ aws_bedrock_ai.result if aws_bedrock_ai.status == 'completed' else 'Sample text for sentiment analysis' }}"
+      language_code: "en"
+      region: "{{ config.aws.region }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - aws_bedrock_ai
+
+  # Azure Integration Path  
+  - id: azure_storage_upload
+    tool: azure-storage
+    action: upload_blob
+    condition: "{{ cloud_provider in ['azure', 'multi_cloud'] }}"
+    parameters:
+      account_name: "{{ config.azure.services.storage }}"
+      container_name: "input"
+      blob_name: "{{ data_file | basename }}"
+      local_file: "{{ data_file }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - setup_cloud_authentication
+
+  - id: azure_function_process
+    tool: azure-functions
+    action: invoke
+    condition: "{{ cloud_provider in ['azure', 'multi_cloud'] and operation_type != 'storage' }}"
+    parameters:
+      function_app: "{{ config.azure.services.functions }}"
+      function_name: "data-processor"
+      data:
+        storage_account: "{{ config.azure.services.storage }}"
+        container: "input"
+        blob: "{{ data_file | basename }}"
+        operation: "{{ operation_type }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - azure_storage_upload
+
+  - id: azure_openai_analysis
+    tool: azure-openai
+    action: chat_completion
+    condition: "{{ cloud_provider in ['azure', 'multi_cloud'] and operation_type == 'ai_pipeline' }}"
+    parameters:
+      deployment_name: "{{ config.azure.services.openai }}"
+      messages:
+        - role: "user"
+          content: |
+            Analyze data from Azure storage:
+            Account: {{ config.azure.services.storage }}
+            Container: input
+            Blob: {{ data_file | basename }}
+            
+            Provide detailed analysis and insights.
+      max_tokens: 500
+      temperature: 0.3
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - azure_storage_upload
+
+  - id: azure_cognitive_analysis
+    tool: azure-cognitive
+    action: analyze_text
+    condition: "{{ cloud_provider in ['azure', 'multi_cloud'] }}"
+    parameters:
+      service: "{{ config.azure.services.cognitive }}"
+      text: "{{ azure_openai_analysis.result if azure_openai_analysis.status == 'completed' else 'Sample text for analysis' }}"
+      features: ["sentiment", "key_phrases", "entities"]
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - azure_openai_analysis
+
+  # Google Cloud Integration Path
+  - id: gcp_storage_upload
+    tool: gcp-storage
+    action: upload
+    condition: "{{ cloud_provider in ['gcp', 'multi_cloud'] }}"
+    parameters:
+      bucket: "{{ config.gcp.services.storage }}"
+      object_name: "input/{{ data_file | basename }}"
+      local_file: "{{ data_file }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - setup_cloud_authentication
+
+  - id: gcp_function_process
+    tool: gcp-functions
+    action: call
+    condition: "{{ cloud_provider in ['gcp', 'multi_cloud'] and operation_type != 'storage' }}"
+    parameters:
+      function_name: "{{ config.gcp.services.functions }}"
+      region: "{{ config.gcp.region }}"
+      data:
+        bucket: "{{ config.gcp.services.storage }}"
+        object: "input/{{ data_file | basename }}"
+        operation: "{{ operation_type }}"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - gcp_storage_upload
+
+  - id: gcp_ai_analysis
+    tool: gcp-vertex-ai
+    action: predict
+    condition: "{{ cloud_provider in ['gcp', 'multi_cloud'] and operation_type == 'ai_pipeline' }}"
+    parameters:
+      model: "{{ config.gcp.services.ai_platform }}"
+      region: "{{ config.gcp.region }}"
+      instances:
+        - prompt: |
+            Analyze data from Google Cloud Storage:
+            Bucket: {{ config.gcp.services.storage }}
+            Object: input/{{ data_file | basename }}
+            
+            Provide comprehensive analysis and recommendations.
+      parameters:
+        max_output_tokens: 500
+        temperature: 0.3
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - gcp_storage_upload
+
+  - id: gcp_language_analysis
+    tool: gcp-language-ai
+    action: analyze_sentiment
+    condition: "{{ cloud_provider in ['gcp', 'multi_cloud'] }}"
+    parameters:
+      text: "{{ gcp_ai_analysis.result if gcp_ai_analysis.status == 'completed' else 'Sample text for analysis' }}"
+      document_type: "PLAIN_TEXT"
+    retry: 2
+    on_failure: continue
+    dependencies:
+      - gcp_ai_analysis
+
+  # Cross-cloud comparison and synthesis
+  - id: compare_cloud_results
+    action: analyze_text
+    condition: "{{ cloud_provider == 'multi_cloud' }}"
+    parameters:
+      text: |
+        Multi-cloud processing results comparison:
+        
+        **AWS Results:**
+        {% if aws_bedrock_ai.status == "completed" %}
+        - Bedrock Analysis: {{ aws_bedrock_ai.result[:200] }}...
+        {% endif %}
+        {% if aws_comprehend_analysis.status == "completed" %}
+        - Comprehend Sentiment: {{ aws_comprehend_analysis.sentiment }}
+        {% endif %}
+        
+        **Azure Results:**
+        {% if azure_openai_analysis.status == "completed" %}
+        - OpenAI Analysis: {{ azure_openai_analysis.result[:200] }}...
+        {% endif %}
+        {% if azure_cognitive_analysis.status == "completed" %}
+        - Cognitive Services: {{ azure_cognitive_analysis.sentiment }}
+        {% endif %}
+        
+        **GCP Results:**
+        {% if gcp_ai_analysis.status == "completed" %}
+        - Vertex AI Analysis: {{ gcp_ai_analysis.result[:200] }}...
+        {% endif %}
+        {% if gcp_language_analysis.status == "completed" %}
+        - Language AI: {{ gcp_language_analysis.sentiment }}
+        {% endif %}
+      prompt: |
+        Compare and analyze multi-cloud processing results:
+        
+        1. **Performance Comparison**: Speed and efficiency across providers
+        2. **Quality Assessment**: Accuracy and depth of AI analysis
+        3. **Feature Comparison**: Unique capabilities of each platform
+        4. **Cost Analysis**: Estimated costs and value proposition
+        5. **Reliability**: Success rates and error handling
+        6. **Integration Ease**: Development and deployment considerations
+        
+        Provide comprehensive multi-cloud analysis report.
+      model: <AUTO task="cloud_analysis">Select model for cloud service comparison</AUTO>
+      max_tokens: 800
+    dependencies:
+      - aws_bedrock_ai
+      - azure_openai_analysis
+      - gcp_ai_analysis
+
+  # Aggregate cloud results
+  - id: synthesize_cloud_results
+    action: generate_text
+    parameters:
+      prompt: |
+        Synthesize cloud processing results for {{ operation_type }}:
+        
+        **Provider:** {{ cloud_provider }}
+        **Data File:** {{ data_file }}
+        
+        {% if cloud_provider == 'aws' or cloud_provider == 'multi_cloud' %}
+        **AWS Results:**
+        {% if aws_s3_upload.status == "completed" %}✅ S3 Upload: Success{% endif %}
+        {% if aws_lambda_process.status == "completed" %}✅ Lambda Process: {{ aws_lambda_process.status }}{% endif %}
+        {% if aws_bedrock_ai.status == "completed" %}✅ Bedrock AI: {{ aws_bedrock_ai.result[:100] }}...{% endif %}
+        {% if aws_comprehend_analysis.status == "completed" %}✅ Comprehend: {{ aws_comprehend_analysis.sentiment }}{% endif %}
+        {% endif %}
+        
+        {% if cloud_provider == 'azure' or cloud_provider == 'multi_cloud' %}
+        **Azure Results:**
+        {% if azure_storage_upload.status == "completed" %}✅ Storage Upload: Success{% endif %}
+        {% if azure_function_process.status == "completed" %}✅ Function Process: {{ azure_function_process.status }}{% endif %}
+        {% if azure_openai_analysis.status == "completed" %}✅ OpenAI: {{ azure_openai_analysis.result[:100] }}...{% endif %}
+        {% if azure_cognitive_analysis.status == "completed" %}✅ Cognitive: {{ azure_cognitive_analysis.sentiment }}{% endif %}
+        {% endif %}
+        
+        {% if cloud_provider == 'gcp' or cloud_provider == 'multi_cloud' %}
+        **GCP Results:**
+        {% if gcp_storage_upload.status == "completed" %}✅ Storage Upload: Success{% endif %}
+        {% if gcp_function_process.status == "completed" %}✅ Function Process: {{ gcp_function_process.status }}{% endif %}
+        {% if gcp_ai_analysis.status == "completed" %}✅ Vertex AI: {{ gcp_ai_analysis.result[:100] }}...{% endif %}
+        {% if gcp_language_analysis.status == "completed" %}✅ Language AI: {{ gcp_language_analysis.sentiment }}{% endif %}
+        {% endif %}
+        
+        {% if compare_cloud_results.status == "completed" %}
+        **Multi-Cloud Comparison:**
+        {{ compare_cloud_results.result }}
+        {% endif %}
+        
+        Provide comprehensive summary including:
+        1. Overall success rate across cloud services
+        2. Key insights from cloud AI analysis
+        3. Performance and reliability assessment
+        4. Recommendations for cloud service selection
+        5. Cost-benefit analysis
+        6. Next steps for optimization
+      model: <AUTO task="synthesis">Select model for cloud results synthesis</AUTO>
+      max_tokens: 900
+    dependencies:
+      - compare_cloud_results
+
+  # Save cloud results with metadata
+  - id: save_cloud_results
+    tool: filesystem
+    action: write
+    parameters:
+      path: "cloud_integration_{{ cloud_provider }}_{{ operation_type }}_results.json"
+      content: |
+        {
+          "metadata": {
+            "cloud_provider": "{{ cloud_provider }}",
+            "operation_type": "{{ operation_type }}",
+            "data_file": "{{ data_file }}",
+            "processed_at": "{{ current_timestamp }}"
+          },
+          "aws_results": {
+            {% if aws_s3_upload.status == "completed" %}
+            "s3_upload": {
+              "status": "{{ aws_s3_upload.status }}",
+              "bucket": "{{ config.aws.services.s3 }}",
+              "key": "input/{{ data_file | basename }}"
+            },
+            {% endif %}
+            {% if aws_lambda_process.status == "completed" %}
+            "lambda_process": {{ aws_lambda_process.result | tojson }},
+            {% endif %}
+            {% if aws_bedrock_ai.status == "completed" %}
+            "bedrock_analysis": {{ aws_bedrock_ai.result | tojson }},
+            {% endif %}
+            {% if aws_comprehend_analysis.status == "completed" %}
+            "comprehend_analysis": {{ aws_comprehend_analysis.result | tojson }}
+            {% endif %}
+          },
+          "azure_results": {
+            {% if azure_storage_upload.status == "completed" %}
+            "storage_upload": {
+              "status": "{{ azure_storage_upload.status }}",
+              "account": "{{ config.azure.services.storage }}",
+              "container": "input"
+            },
+            {% endif %}
+            {% if azure_function_process.status == "completed" %}
+            "function_process": {{ azure_function_process.result | tojson }},
+            {% endif %}
+            {% if azure_openai_analysis.status == "completed" %}
+            "openai_analysis": {{ azure_openai_analysis.result | tojson }},
+            {% endif %}
+            {% if azure_cognitive_analysis.status == "completed" %}
+            "cognitive_analysis": {{ azure_cognitive_analysis.result | tojson }}
+            {% endif %}
+          },
+          "gcp_results": {
+            {% if gcp_storage_upload.status == "completed" %}
+            "storage_upload": {
+              "status": "{{ gcp_storage_upload.status }}",
+              "bucket": "{{ config.gcp.services.storage }}",
+              "object": "input/{{ data_file | basename }}"
+            },
+            {% endif %}
+            {% if gcp_function_process.status == "completed" %}
+            "function_process": {{ gcp_function_process.result | tojson }},
+            {% endif %}
+            {% if gcp_ai_analysis.status == "completed" %}
+            "ai_analysis": {{ gcp_ai_analysis.result | tojson }},
+            {% endif %}
+            {% if gcp_language_analysis.status == "completed" %}
+            "language_analysis": {{ gcp_language_analysis.result | tojson }}
+            {% endif %}
+          },
+          {% if compare_cloud_results.status == "completed" %}
+          "multi_cloud_comparison": {{ compare_cloud_results.result | tojson }},
+          {% endif %}
+          "synthesis": {{ synthesize_cloud_results.result | tojson }}
+        }
+    dependencies:
+      - synthesize_cloud_results
+
+outputs:
+  cloud_provider_used: "{{ cloud_provider }}"
+  operation_type: "{{ operation_type }}"
+  data_file_processed: "{{ data_file }}"
+  services_used: [
+    {% if cloud_provider in ['aws', 'multi_cloud'] %}
+      {% if aws_s3_upload.status == "completed" %}"aws-s3",{% endif %}
+      {% if aws_lambda_process.status == "completed" %}"aws-lambda",{% endif %}
+      {% if aws_bedrock_ai.status == "completed" %}"aws-bedrock",{% endif %}
+      {% if aws_comprehend_analysis.status == "completed" %}"aws-comprehend",{% endif %}
+    {% endif %}
+    {% if cloud_provider in ['azure', 'multi_cloud'] %}
+      {% if azure_storage_upload.status == "completed" %}"azure-storage",{% endif %}
+      {% if azure_function_process.status == "completed" %}"azure-functions",{% endif %}
+      {% if azure_openai_analysis.status == "completed" %}"azure-openai",{% endif %}
+      {% if azure_cognitive_analysis.status == "completed" %}"azure-cognitive",{% endif %}
+    {% endif %}
+    {% if cloud_provider in ['gcp', 'multi_cloud'] %}
+      {% if gcp_storage_upload.status == "completed" %}"gcp-storage",{% endif %}
+      {% if gcp_function_process.status == "completed" %}"gcp-functions",{% endif %}
+      {% if gcp_ai_analysis.status == "completed" %}"gcp-vertex-ai",{% endif %}
+      {% if gcp_language_analysis.status == "completed" %}"gcp-language-ai"{% endif %}
+    {% endif %}
+  ]
+  synthesis_report: "{{ synthesize_cloud_results.result }}"
+  multi_cloud_comparison: "{{ compare_cloud_results.result if compare_cloud_results.status == 'completed' else null }}"
+  results_file: "{{ save_cloud_results.path }}"
+
+metadata:
+  category: "integration"
+  complexity: "expert"
+  estimated_runtime: "5-20 minutes (depends on cloud service response times)"
+  requirements:
+    - "Cloud provider SDK tools (aws, azure, gcp)"
+    - "Cloud service authentication configured"
+    - "Text generation and analysis models"
+    - "Filesystem tool"
+  use_cases:
+    - "Multi-cloud data processing"
+    - "Cloud AI service comparison"
+    - "Serverless pipeline orchestration"
+    - "Cloud storage and compute integration"
+    - "Hybrid cloud workflows"
+  demonstrates:
+    - "Multi-cloud service integration"
+    - "Cloud authentication handling"
+    - "Serverless function invocation"
+    - "Cloud AI service utilization"
+    - "Cross-cloud result comparison"
+    - "Cloud cost and performance analysis"

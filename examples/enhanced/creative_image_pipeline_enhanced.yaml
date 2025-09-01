@@ -1,0 +1,265 @@
+id: creative_image_pipeline
+name: Creative Image Generation Pipeline
+description: Generate and analyze images based on creative prompts
+version: 1.0.0
+parameters:
+  base_prompt: &id001
+    type: string
+    default: A serene landscape with mountains and a lake
+  num_variations: &id002
+    type: integer
+    default: 3
+  art_styles: &id003
+    type: array
+    default:
+    - photorealistic
+    - impressionist
+    - cyberpunk
+  output_path: &id004
+    type: string
+    default: examples/outputs/creative_image_pipeline
+steps:
+- id: generate_folder_name
+  action: generate
+  parameters:
+    prompt: 'Convert this image prompt into a short, descriptive folder name (no spaces,
+      use underscores):
+
+      "{{ base_prompt }}"
+
+
+      Return ONLY the folder name, max 30 characters, lowercase.
+
+      Example: "sunset_over_mountains"
+
+      '
+    topic: AUTO
+- id: generate_base_image
+  action: execute
+  tool: image-generation
+  parameters:
+    prompt: '{{ base_prompt }}'
+    size: 1024x1024
+    style: high quality, detailed
+    output_format: file
+    output_path: '{{ output_path }}/{{ generate_folder_name }}'
+    filename: base.png
+  dependencies:
+  - generate_folder_name
+- id: analyze_base
+  action: execute
+  tool: image-analysis
+  parameters:
+    image: '{{ generate_base_image.images[0].path }}'
+    analysis_type: describe
+    detail_level: high
+    output_format: json
+  dependencies:
+  - generate_base_image
+- id: generate_style_variation_1
+  action: execute
+  tool: image-generation
+  parameters:
+    prompt: '{{ base_prompt }}, {{ art_styles[0] }} style'
+    size: 1024x1024
+    style: '{{ art_styles[0] }}'
+    output_format: file
+    output_path: '{{ output_path }}/{{ generate_folder_name }}'
+    filename: '{{ art_styles[0] }}.png'
+  dependencies:
+  - analyze_base
+- id: generate_style_variation_2
+  action: execute
+  tool: image-generation
+  parameters:
+    prompt: '{{ base_prompt }}, {{ art_styles[1] }} style'
+    size: 1024x1024
+    style: '{{ art_styles[1] }}'
+    output_format: file
+    output_path: '{{ output_path }}/{{ generate_folder_name }}'
+    filename: '{{ art_styles[1] }}.png'
+  dependencies:
+  - analyze_base
+- id: generate_style_variation_3
+  action: execute
+  tool: image-generation
+  parameters:
+    prompt: '{{ base_prompt }}, {{ art_styles[2] }} style'
+    size: 1024x1024
+    style: '{{ art_styles[2] }}'
+    output_format: file
+    output_path: '{{ output_path }}/{{ generate_folder_name }}'
+    filename: '{{ art_styles[2] }}.png'
+  dependencies:
+  - analyze_base
+- id: enhance_prompt
+  action: execute
+  tool: prompt-optimization
+  parameters:
+    prompt: '{{ base_prompt }}'
+    task: image-generation
+    optimization_goal: artistic_quality
+    include_style_suggestions: true
+  dependencies:
+  - analyze_base
+- id: generate_enhanced
+  action: execute
+  tool: image-generation
+  parameters:
+    prompt: '{{ enhance_prompt.optimized_prompt }}'
+    size: 1024x1024
+    num_images: 1
+    output_format: file
+    output_path: '{{ output_path }}/{{ generate_folder_name }}'
+    filename: enhanced.png
+  dependencies:
+  - enhance_prompt
+- id: analyze_enhanced_1
+  action: execute
+  tool: image-analysis
+  parameters:
+    image: '{{ generate_enhanced.images[0].path }}'
+    analysis_type: classify
+    output_format: structured
+    detail_level: medium
+  dependencies:
+  - generate_enhanced
+  condition: '{{ generate_enhanced.images | length > 0 }}'
+- id: count_images
+  action: execute
+  tool: filesystem
+  parameters:
+    action: list
+    path: '{{ output_path }}/{{ generate_folder_name }}'
+    pattern: '*.png'
+  dependencies:
+  - generate_enhanced
+  - analyze_enhanced_1
+- id: create_gallery_report
+  action: generate
+  parameters:
+    prompt: 'Generate ONLY the following markdown content without any code blocks,
+      explanations, or additional text:
+
+
+      # Creative Image Generation Results
+
+
+      ## Original Prompt
+
+      "{{ base_prompt }}"
+
+
+      ## Output Folder
+
+      `{{ output_path }}/{{ generate_folder_name }}/`
+
+
+      ## Base Image Analysis
+
+      {{ analyze_base.analysis.result }}
+
+
+      ## Style Variations Generated
+
+      {% for style in art_styles %}
+
+      - {{ style }} style
+
+      {% endfor %}
+
+
+      ## Enhanced Prompt
+
+      - Original: "{{ base_prompt }}"
+
+      - Enhanced: "{{ enhance_prompt.optimized_prompt }}"
+
+
+      ## Generated Images
+
+
+      | Image | Description |
+
+      |-------|-------------|
+
+      | ![Base](base.png) | Original prompt rendering |
+
+      {% for style in art_styles %}
+
+      | ![{{ style|capitalize }}]({{ style }}.png) | {{ style|capitalize }} style
+      variation |
+
+      {% endfor %}
+
+      | ![Enhanced](enhanced.png) | AI-enhanced prompt rendering |
+
+
+      **Total images generated:** {{ count_images.count }}
+
+      '
+    topic: AUTO
+  dependencies:
+  - count_images
+- id: save_gallery_report
+  action: execute
+  tool: filesystem
+  parameters:
+    action: write
+    path: '{{ output_path }}/{{ generate_folder_name }}/README.md'
+    content: '{{ create_gallery_report }}'
+  dependencies:
+  - create_gallery_report
+outputs:
+  output_folder: '{{ output_path }}/{{ generate_folder_name }}'
+  base_image: '{{ generate_base_image.images[0] }}'
+  enhanced_prompt: '{{ enhance_prompt.optimized_prompt }}'
+  total_generated: '{{ count_images.count }}'
+  gallery_report: '{{ output_path }}/{{ generate_folder_name }}/README.md'
+metadata:
+  version: 2.0.0
+  compatibility: 1.0.0
+  migration_notes: Enhanced with new architecture features while maintaining backward
+    compatibility
+inputs:
+  base_prompt:
+    type: string
+    default: *id001
+    description: 'Parameter: base_prompt'
+    required: false
+  num_variations:
+    type: string
+    default: *id002
+    description: 'Parameter: num_variations'
+    required: false
+  art_styles:
+    type: string
+    default: *id003
+    description: 'Parameter: art_styles'
+    required: false
+  output_path:
+    type: string
+    default: *id004
+    description: 'Parameter: output_path'
+    required: false
+enhanced_outputs:
+  output_folder:
+    description: 'Enhanced output: output_folder'
+    value: '{{ output_path }}/{{ generate_folder_name }}'
+    type: auto-detect
+  base_image:
+    description: 'Enhanced output: base_image'
+    value: '{{ generate_base_image.images[0] }}'
+    type: auto-detect
+  enhanced_prompt:
+    description: 'Enhanced output: enhanced_prompt'
+    value: '{{ enhance_prompt.optimized_prompt }}'
+    type: auto-detect
+  total_generated:
+    description: 'Enhanced output: total_generated'
+    value: '{{ count_images.count }}'
+    type: auto-detect
+  gallery_report:
+    description: 'Enhanced output: gallery_report'
+    value: '{{ output_path }}/{{ generate_folder_name }}/README.md'
+    type: auto-detect

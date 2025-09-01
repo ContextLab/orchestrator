@@ -1,0 +1,307 @@
+id: parallel-processing-advanced
+name: "Advanced Parallel Processing"
+description: |
+  Demonstrates sophisticated parallel processing patterns with dynamic scaling,
+  error handling, and result aggregation across multiple concurrent workflows.
+
+parameters:
+  analysis_topics:
+    type: array
+    default: ["artificial intelligence", "climate change", "quantum computing", "renewable energy"]
+    description: "List of topics to analyze in parallel"
+  concurrent_limit:
+    type: integer
+    default: 3
+    description: "Maximum concurrent processes"
+  deep_analysis:
+    type: boolean
+    default: true
+    description: "Enable deep analysis with multiple perspectives"
+
+# Configuration for parallel processing
+config:
+  max_concurrent: "{{ concurrent_limit }}"
+  retry_failed_tasks: true
+  aggregate_results: true
+
+steps:
+  # Initialize parallel processing coordination
+  - id: setup_coordination
+    action: generate_text
+    parameters:
+      prompt: |
+        Initialize parallel analysis for {{ analysis_topics | length }} topics:
+        {{ analysis_topics | join(", ") }}
+        
+        Create coordination plan with:
+        - Processing order optimization
+        - Resource allocation strategy  
+        - Expected timeline
+        
+        Concurrent limit: {{ concurrent_limit }}
+      model: <AUTO task="planning">Select model for coordination planning</AUTO>
+      max_tokens: 300
+
+  # Parallel research phase - each topic processed concurrently
+  - id: parallel_research
+    tool: web-search
+    action: search
+    foreach: "{{ analysis_topics }}"
+    parallel: true
+    max_concurrent: "{{ concurrent_limit }}"
+    parameters:
+      query: "{{ item }} latest developments research"
+      max_results: 5
+    dependencies:
+      - setup_coordination
+      
+  # Parallel analysis - process search results concurrently  
+  - id: parallel_analysis
+    action: analyze_text
+    foreach: "{{ parallel_research.results }}"
+    parallel: true
+    max_concurrent: "{{ concurrent_limit }}"
+    retry: 2
+    on_failure: continue
+    parameters:
+      text: |
+        Research results for "{{ item.query }}":
+        {% for result in item.results %}
+        {{ loop.index }}. {{ result.title }}
+           {{ result.snippet }}
+           Source: {{ result.url }}
+        {% endfor %}
+      prompt: |
+        Analyze research on "{{ item.query }}" and provide:
+        
+        {% if deep_analysis %}
+        ## Deep Analysis
+        1. Current state and key developments
+        2. Emerging trends and patterns
+        3. Future implications and potential
+        4. Challenges and limitations
+        5. Key players and organizations
+        6. Research gaps and opportunities
+        {% else %}
+        ## Standard Analysis  
+        1. Key findings and developments
+        2. Main trends identified
+        3. Notable implications
+        {% endif %}
+        
+        Focus on recent, credible information.
+      model: <AUTO task="research_analysis">Select specialized research model</AUTO>
+      max_tokens: "{{ 800 if deep_analysis else 400 }}"
+    dependencies:
+      - parallel_research
+
+  # Optional: Parallel validation for deep analysis
+  - id: cross_validate_findings
+    action: generate_text
+    condition: "{{ deep_analysis }}"
+    foreach: "{{ parallel_analysis.results }}"
+    parallel: true
+    max_concurrent: 2
+    parameters:
+      prompt: |
+        Cross-validate these research findings:
+        {{ item.result }}
+        
+        Check for:
+        1. Internal consistency
+        2. Logical contradictions  
+        3. Missing perspectives
+        4. Bias indicators
+        5. Reliability assessment
+        
+        Provide validation score (1-10) and concerns.
+      model: <AUTO task="validation">Select model for critical analysis</AUTO>
+      max_tokens: 300
+    dependencies:
+      - parallel_analysis
+
+  # Aggregate results from parallel processing
+  - id: aggregate_results
+    action: analyze_text
+    parameters:
+      text: |
+        Parallel processing results:
+        
+        Topics analyzed: {{ parallel_analysis.results | length }}
+        {% for result in parallel_analysis.results %}
+        
+        Topic: {{ analysis_topics[loop.index0] }}
+        Analysis: {{ result.result }}
+        {% if cross_validate_findings %}
+        Validation: {{ cross_validate_findings.results[loop.index0].result }}
+        {% endif %}
+        {% endfor %}
+      prompt: |
+        Aggregate and synthesize parallel analysis results:
+        
+        1. **Cross-Topic Patterns**: Common themes across all topics
+        2. **Comparative Analysis**: How topics relate and contrast
+        3. **Synthesis**: Integrated insights from all analyses
+        4. **Quality Assessment**: Overall reliability and completeness
+        {% if deep_analysis %}
+        5. **Strategic Implications**: High-level strategic insights
+        6. **Interconnections**: How topics influence each other
+        {% endif %}
+        
+        Create comprehensive meta-analysis.
+      model: <AUTO task="synthesis">Select model for synthesis and integration</AUTO>
+      max_tokens: "{{ 1200 if deep_analysis else 600 }}"
+    dependencies:
+      - parallel_analysis
+
+  # Performance analysis of parallel execution
+  - id: analyze_performance
+    action: generate_text
+    parameters:
+      prompt: |
+        Analyze parallel processing performance:
+        
+        - Topics processed: {{ analysis_topics | length }}
+        - Concurrent limit: {{ concurrent_limit }}
+        - Deep analysis: {{ deep_analysis }}
+        - Total steps completed: {{ parallel_analysis.results | length + parallel_research.results | length }}
+        {% if cross_validate_findings %}
+        - Validation steps: {{ cross_validate_findings.results | length }}
+        {% endif %}
+        
+        Provide:
+        1. Efficiency assessment
+        2. Bottleneck identification
+        3. Scalability recommendations  
+        4. Resource utilization analysis
+      model: <AUTO task="performance">Select model for performance analysis</AUTO>
+      max_tokens: 400
+    dependencies:
+      - aggregate_results
+
+  # Generate comprehensive report
+  - id: generate_comprehensive_report
+    action: generate_text
+    parameters:
+      prompt: |
+        Create comprehensive parallel processing report:
+        
+        **Processing Summary:**
+        {{ setup_coordination.result }}
+        
+        **Performance Analysis:**
+        {{ analyze_performance.result }}
+        
+        **Aggregated Findings:**
+        {{ aggregate_results.result }}
+        
+        Format as professional analysis report with executive summary.
+      model: <AUTO task="reporting">Select model optimized for report generation</AUTO>
+      max_tokens: 800
+    dependencies:
+      - analyze_performance
+
+  # Save detailed results
+  - id: save_results
+    tool: filesystem
+    action: write
+    parameters:
+      path: "parallel_analysis_{{ analysis_topics | length }}_topics.json"
+      content: |
+        {
+          "metadata": {
+            "topics_count": {{ analysis_topics | length }},
+            "concurrent_limit": {{ concurrent_limit }},
+            "deep_analysis": {{ deep_analysis }},
+            "processed_at": "{{ current_timestamp }}"
+          },
+          "topics_analyzed": {{ analysis_topics | tojson }},
+          "coordination_plan": {{ setup_coordination.result | tojson }},
+          "individual_analyses": [
+            {% for result in parallel_analysis.results %}
+            {
+              "topic": "{{ analysis_topics[loop.index0] }}",
+              "analysis": {{ result.result | tojson }},
+              "sources_count": {{ parallel_research.results[loop.index0].results | length }}
+              {% if cross_validate_findings %}
+              ,"validation": {{ cross_validate_findings.results[loop.index0].result | tojson }}
+              {% endif %}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ],
+          "aggregated_insights": {{ aggregate_results.result | tojson }},
+          "performance_analysis": {{ analyze_performance.result | tojson }},
+          "comprehensive_report": {{ generate_comprehensive_report.result | tojson }}
+        }
+    dependencies:
+      - generate_comprehensive_report
+
+  # Create executive summary document
+  - id: create_executive_summary
+    tool: filesystem
+    action: write
+    parameters:
+      path: "parallel_analysis_executive_summary.md"
+      content: |
+        # Parallel Analysis Executive Summary
+        
+        **Date:** {{ current_timestamp }}  
+        **Topics Analyzed:** {{ analysis_topics | length }}
+        **Processing Mode:** {{ "Deep Analysis" if deep_analysis else "Standard Analysis" }}
+        **Concurrent Limit:** {{ concurrent_limit }}
+        
+        ## Executive Summary
+        {{ generate_comprehensive_report.result }}
+        
+        ## Processing Performance
+        {{ analyze_performance.result }}
+        
+        ## Key Cross-Topic Insights
+        {{ aggregate_results.result }}
+        
+        ## Individual Topic Analyses
+        {% for topic in analysis_topics %}
+        ### {{ loop.index }}. {{ topic | title }}
+        {{ parallel_analysis.results[loop.index0].result }}
+        
+        **Sources:** {{ parallel_research.results[loop.index0].results | length }} web sources
+        {% if cross_validate_findings %}
+        **Validation:** {{ cross_validate_findings.results[loop.index0].result }}
+        {% endif %}
+        {% endfor %}
+        
+        ---
+        *Generated by Advanced Parallel Processing Pipeline*
+    dependencies:
+      - generate_comprehensive_report
+
+outputs:
+  topics_processed: "{{ analysis_topics | length }}"
+  concurrent_limit_used: "{{ concurrent_limit }}"
+  aggregated_insights: "{{ aggregate_results.result }}"
+  performance_metrics: "{{ analyze_performance.result }}"
+  detailed_results_file: "{{ save_results.path }}"
+  executive_summary_file: "{{ create_executive_summary.path }}"
+  processing_successful: "{{ parallel_analysis.results | selectattr('status', 'equalto', 'completed') | list | length == analysis_topics | length }}"
+
+metadata:
+  category: "advanced"
+  complexity: "expert"
+  estimated_runtime: "5-15 minutes (depends on topic count and depth)"
+  requirements: 
+    - "text generation model"
+    - "web search tool"
+    - "filesystem tool"
+  use_cases:
+    - "Multi-topic research analysis"
+    - "Competitive intelligence"
+    - "Market research across segments"
+    - "Academic literature review"
+    - "Trend analysis across domains"
+  demonstrates:
+    - "Parallel foreach processing"
+    - "Concurrent execution limits"
+    - "Error handling in parallel workflows"
+    - "Result aggregation patterns"
+    - "Performance monitoring"
+    - "Dynamic scaling based on parameters"
