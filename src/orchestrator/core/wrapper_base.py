@@ -120,6 +120,25 @@ class WrapperResult(Generic[T]):
 
 
 @dataclass
+class BaseWrapperConfig:
+    """Base configuration class for wrapper implementations."""
+    
+    # Basic configuration
+    enabled: bool = True
+    timeout_seconds: float = 30.0
+    retry_count: int = 3
+    retry_delay_seconds: float = 1.0
+    
+    # Feature flags
+    use_fallback: bool = True
+    enable_monitoring: bool = True
+    enable_caching: bool = False
+    
+    # Custom configuration
+    custom_config: Optional[Dict[str, Any]] = None
+
+
+@dataclass
 class WrapperContext:
     """
     Context information passed to wrapper operations.
