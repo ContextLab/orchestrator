@@ -27,7 +27,7 @@ from .wrapper_base import (
     WrapperException, WrapperCapability, WrapperStatus
 )
 from .feature_flags import FeatureFlagManager, FeatureFlag, FeatureFlagScope
-from .wrapper_monitoring import WrapperMonitoring, OperationMetrics, WrapperHealthStatus
+from .wrapper_monitoring import WrapperMonitoring, WrapperOperationMetrics as OperationMetrics, WrapperHealthStatus
 from .wrapper_config import ConfigurationManager
 
 logger = logging.getLogger(__name__)

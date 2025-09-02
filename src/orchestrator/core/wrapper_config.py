@@ -244,3 +244,22 @@ class ExternalToolConfig(BaseWrapperConfig):
 def create_external_tool_config(**kwargs) -> ExternalToolConfig:
     """Create an external tool configuration."""
     return ExternalToolConfig(**kwargs)
+
+
+class ConfigurationManager:
+    """Configuration manager for wrapper configurations."""
+    
+    def __init__(self):
+        self.configurations: Dict[str, BaseWrapperConfig] = {}
+    
+    def register_config(self, name: str, config: BaseWrapperConfig) -> None:
+        """Register a configuration."""
+        self.configurations[name] = config
+    
+    def get_config(self, name: str) -> Optional[BaseWrapperConfig]:
+        """Get a configuration by name."""
+        return self.configurations.get(name)
+    
+    def list_configs(self) -> List[str]:
+        """List all configuration names."""
+        return list(self.configurations.keys())
