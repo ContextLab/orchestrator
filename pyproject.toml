@@ -65,6 +65,11 @@ dependencies = [
     "imageio-ffmpeg>=0.4.9",
     # Additional dependencies
     "six>=1.16.0",
+    # Google AI for generative models
+    "google-generativeai>=0.3.0",
+    # Data visualization 
+    "seaborn>=0.11.0",
+    "matplotlib>=3.5.0",
     # RouteLLM for intelligent model routing and cost optimization
     "routellm[serve,eval]>=0.1.0",
 ]
