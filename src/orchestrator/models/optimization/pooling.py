@@ -14,6 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class PoolConfig:
+    """Configuration for connection pool."""
+    
+    min_connections: int = 1
+    max_connections: int = 10
+    connection_timeout: float = 30.0
+    idle_timeout: float = 300.0
+    max_retries: int = 3
+
+
+@dataclass
 class PoolStats:
     """Statistics for connection pool performance."""
     

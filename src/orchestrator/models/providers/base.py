@@ -263,3 +263,8 @@ class ModelProvider(ABC):
             f"models={len(self.available_models)}"
             f")"
         )
+
+
+# Aliases for backward compatibility
+ModelCapability = ModelCapabilities
+ModelInfo = Model

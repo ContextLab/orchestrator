@@ -16,6 +16,16 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class CacheConfig:
+    """Configuration for model response cache."""
+    
+    max_size: int = 1000
+    ttl_seconds: float = 3600.0
+    enable_compression: bool = True
+    cleanup_interval_seconds: float = 300.0
+
+
+@dataclass
 class CacheStats:
     """Statistics for cache performance."""
     
@@ -398,3 +408,7 @@ class ModelResponseCache:
     def __str__(self) -> str:
         """String representation of cache."""
         return f"ModelResponseCache(size={len(self._cache)}/{self.max_size}, hit_rate={self._stats.hit_rate:.2f})"
+
+
+# Alias for backward compatibility
+ModelCache = ModelResponseCache

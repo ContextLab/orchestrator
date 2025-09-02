@@ -748,3 +748,11 @@ class FallbackStrategy(SelectionStrategy):
         if self.strategies:
             return self.strategies[0].score_model(model, requirements)
         return 0.0
+
+
+# Aliases for backward compatibility
+SelectionCriteria = TaskRequirements
+CostOptimizedStrategy = CostAwareStrategy
+PerformanceOptimizedStrategy = PerformanceBasedStrategy
+BalancedStrategy = WeightedStrategy
+TaskSpecificStrategy = TaskBasedStrategy

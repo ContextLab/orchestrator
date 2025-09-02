@@ -7,10 +7,21 @@ import time
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 from collections import defaultdict
+from enum import Enum
 import random
 
 from ..core.model import Model
 from .model_registry import ModelRegistry, NoEligibleModelsError
+
+
+class LoadBalancingStrategy(Enum):
+    """Load balancing strategies for model selection."""
+    
+    ROUND_ROBIN = "round_robin"
+    LEAST_CONNECTIONS = "least_connections"
+    WEIGHTED = "weighted"
+    RANDOM = "random"
+    LEAST_LATENCY = "least_latency"
 
 
 @dataclass

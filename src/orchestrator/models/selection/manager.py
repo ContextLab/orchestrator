@@ -677,3 +677,7 @@ class ModelManager:
     def __str__(self) -> str:
         """String representation of manager."""
         return f"ModelManager(strategy={self.selection_strategy.name}, models={len(self._active_models)})"
+
+
+# Alias for backward compatibility
+ModelSelectionManager = ModelManager

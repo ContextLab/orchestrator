@@ -1832,3 +1832,7 @@ class YAMLCompiler:
             self.validation_report.print_report(format_type, use_colors=use_colors)
         else:
             logger.warning("No validation report available to print")
+
+
+# Alias for backward compatibility
+IntegratedYAMLCompiler = YAMLCompiler
