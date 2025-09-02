@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 import subprocess
 import json
+import os
 
 temp_dir = tempfile.mkdtemp(prefix="debug_iteration_")
 print(f"Testing in: {temp_dir}")
@@ -46,7 +47,7 @@ result = subprocess.run(
     ["python", "scripts/run_pipeline.py", str(pipeline_file), "-o", temp_dir],
     capture_output=True,
     text=True,
-    cwd="/Users/jmanning/orchestrator"
+    cwd=os.getcwd()
 )
 
 print("\n=== RESULTS ===")
