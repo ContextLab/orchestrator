@@ -112,7 +112,16 @@ class TestBaseWrapper:
     @pytest.fixture
     def feature_flags(self):
         """Create feature flag manager."""
-        return FeatureFlagManager()
+        manager = FeatureFlagManager()
+        # Register the feature flag needed for tests
+        flag = FeatureFlag(
+            name="test_wrapper_enabled",
+            scope=FeatureFlagScope.WRAPPER,
+            enabled=True,
+            description="Enable test wrapper for testing"
+        )
+        manager.register_flag(flag)
+        return manager
     
     @pytest.fixture
     def monitoring(self):
@@ -287,7 +296,7 @@ class TestConfigurationManager:
     @pytest.fixture
     def config_manager(self, temp_config_dir):
         """Create configuration manager."""
-        return ConfigurationManager(temp_config_dir, environment="test")
+        return ConfigurationManager()
     
     def test_config_type_registration(self, config_manager):
         """Test configuration type registration."""
