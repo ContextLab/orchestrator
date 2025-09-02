@@ -22,9 +22,9 @@ def main():
     for var in required_vars:
         value = os.environ.get(var)
         if value:
-            print(f"✅ {var}: {'*' * 20} (set)")
+            print(f"[OK] {var}: {'*' * 20} (set)")
         else:
-            print(f"❌ {var}: Not set")
+            print(f"[MISSING] {var}: Not set")
     
     # Check for key files
     print("\n=== Key Files Check ===")
@@ -40,19 +40,19 @@ def main():
     for file_path in key_files:
         path = Path(file_path)
         if path.exists():
-            print(f"✅ {file_path}: exists")
+            print(f"[OK] {file_path}: exists")
         else:
-            print(f"❌ {file_path}: missing")
+            print(f"[MISSING] {file_path}: missing")
     
     # Check Python package installation
     print("\n=== Package Installation Check ===")
     try:
         import orchestrator
-        print("✅ orchestrator package: importable")
+        print("[OK] orchestrator package: importable")
         print(f"   Version: {getattr(orchestrator, '__version__', 'unknown')}")
         print(f"   Location: {orchestrator.__file__}")
     except ImportError as e:
-        print(f"❌ orchestrator package: {e}")
+        print(f"[ERROR] orchestrator package: {e}")
     
     # Test basic functionality
     print("\n=== Basic Functionality Test ===")
@@ -60,9 +60,9 @@ def main():
         # Try importing core components
         from orchestrator.api import compile
         from orchestrator.core.pipeline import Pipeline
-        print("✅ Core components: importable")
+        print("[OK] Core components: importable")
     except ImportError as e:
-        print(f"❌ Core components: {e}")
+        print(f"[ERROR] Core components: {e}")
     
     print("\n=== CI Environment Debug Complete ===")
     return 0
