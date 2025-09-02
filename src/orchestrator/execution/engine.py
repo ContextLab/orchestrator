@@ -33,6 +33,7 @@ from ..foundation._compatibility import (
     PipelineStep, PipelineResult, StepResult
 )
 from ..models.registry import ModelRegistry
+from ..core.model import Model
 from .model_selector import ExecutionModelSelector, RuntimeModelContext
 
 
