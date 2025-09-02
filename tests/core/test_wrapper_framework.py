@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest.mock import Mock, AsyncMock, patch
+from dataclasses import dataclass
 
 # Import wrapper framework components
 from src.orchestrator.core.wrapper_base import (
@@ -22,8 +23,9 @@ from src.orchestrator.core.wrapper_base import (
 from src.orchestrator.core.feature_flags import (
     FeatureFlagManager, FeatureFlag, FeatureFlagScope, FeatureFlagStrategy
 )
+from src.orchestrator.core.wrapper_base import BaseWrapperConfig
 from src.orchestrator.core.wrapper_config import (
-    BaseWrapperConfig, ConfigurationManager, ConfigField, ConfigSource
+    ConfigurationManager, ConfigField, ConfigSource
 )
 from src.orchestrator.core.wrapper_monitoring import (
     WrapperMonitoring, OperationMetrics, WrapperHealthStatus, AlertSeverity, Alert
@@ -36,6 +38,7 @@ from src.orchestrator.core.wrapper_testing import (
 
 # Test configuration classes
 
+@dataclass
 class TestWrapperConfig(BaseWrapperConfig):
     """Test configuration for wrapper testing."""
     
@@ -59,8 +62,8 @@ class TestWrapperConfig(BaseWrapperConfig):
 class TestWrapper(BaseWrapper[str, TestWrapperConfig]):
     """Test wrapper implementation."""
     
-    def __init__(self, name: str, config: TestWrapperConfig, **kwargs):
-        super().__init__(name, config, **kwargs)
+    def __init__(self, name: str, config: TestWrapperConfig, feature_flags=None, monitoring=None):
+        super().__init__(name, config, feature_flags, monitoring)
         self.operation_count = 0
     
     async def _execute_wrapper_operation(self, context: WrapperContext, *args, **kwargs) -> str:
