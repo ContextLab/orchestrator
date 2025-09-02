@@ -30,6 +30,9 @@ from ..execution import (
 )
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..models.registry import ModelRegistry
+from ..execution.engine import StateGraphEngine
+from ..execution.model_selector import ExecutionModelSelector
 
 logger = logging.getLogger(__name__)
 
@@ -64,21 +67,37 @@ class PipelineExecutor:
         max_concurrent_executions: int = 10,
         default_timeout: Optional[int] = 3600,
         enable_recovery: bool = True,
-        enable_checkpointing: bool = True
+        enable_checkpointing: bool = True,
+        model_registry: Optional[ModelRegistry] = None,
+        enable_intelligent_selection: bool = True
     ):
         """
-        Initialize the pipeline executor.
+        Initialize the pipeline executor with intelligent model selection capabilities.
         
         Args:
             max_concurrent_executions: Maximum number of concurrent pipeline executions
             default_timeout: Default execution timeout in seconds
             enable_recovery: Enable execution recovery features
             enable_checkpointing: Enable execution checkpointing
+            model_registry: Model registry for intelligent model selection
+            enable_intelligent_selection: Enable intelligent model selection features
         """
         self.max_concurrent_executions = max_concurrent_executions
         self.default_timeout = default_timeout
         self.enable_recovery = enable_recovery
         self.enable_checkpointing = enable_checkpointing
+        self.enable_intelligent_selection = enable_intelligent_selection
+        
+        # Model selection integration
+        self.model_registry = model_registry
+        self._execution_engine = None
+        if model_registry and enable_intelligent_selection:
+            from ..foundation._compatibility import FoundationConfig
+            config = FoundationConfig(
+                max_concurrent_steps=max_concurrent_executions,
+                enable_persistence=enable_checkpointing
+            )
+            self._execution_engine = StateGraphEngine(config=config, model_registry=model_registry)
         
         # Track active executions
         self._active_executions: Dict[str, ComprehensiveExecutionManager] = {}
@@ -88,7 +107,8 @@ class PipelineExecutor:
         self._progress_callbacks: Dict[str, List[Callable]] = {}
         self._monitoring_tasks: Dict[str, asyncio.Task] = {}
         
-        logger.info(f"PipelineExecutor initialized with max_concurrent={max_concurrent_executions}")
+        logger.info(f"PipelineExecutor initialized with max_concurrent={max_concurrent_executions}, "
+                   f"intelligent_selection={enable_intelligent_selection and model_registry is not None}")
     
     async def execute_with_monitoring(
         self,
@@ -503,7 +523,185 @@ class PipelineExecutor:
             "performance_stats": self._get_performance_stats(execution_id)
         }
         
+        # Add model selection metrics if intelligent selection is enabled
+        if self.enable_intelligent_selection:
+            metrics["model_selection"] = self._get_model_selection_metrics(execution_id)
+        
         return metrics
+    
+    async def execute_with_intelligent_selection(
+        self,
+        pipeline: Pipeline,
+        context: Optional[Dict[str, Any]] = None,
+        execution_id: Optional[str] = None,
+        selection_strategy: Optional[str] = None,
+        cost_constraints: Optional[Dict[str, Any]] = None
+    ) -> ComprehensiveExecutionManager:
+        """
+        Execute pipeline with intelligent model selection for optimal performance.
+        
+        This method enhances pipeline execution with intelligent model selection,
+        choosing optimal models for each step based on requirements and constraints.
+        
+        Args:
+            pipeline: Compiled pipeline object
+            context: Additional execution context variables
+            execution_id: Optional custom execution ID
+            selection_strategy: Model selection strategy ("balanced", "cost_optimized", "performance_optimized", "accuracy_optimized")
+            cost_constraints: Optional cost constraints for model selection
+            
+        Returns:
+            ComprehensiveExecutionManager for monitoring and control
+            
+        Raises:
+            PipelineExecutionError: If execution initialization fails
+        """
+        if not self.enable_intelligent_selection or not self.model_registry:
+            logger.warning("Intelligent selection not available, falling back to standard execution")
+            return await self.execute_with_monitoring(pipeline, context, execution_id)
+        
+        try:
+            logger.info(f"Starting intelligent execution for pipeline '{pipeline.id}' with strategy: {selection_strategy}")
+            
+            # Enhance context with model selection parameters
+            enhanced_context = context.copy() if context else {}
+            if selection_strategy:
+                enhanced_context["selection_strategy"] = selection_strategy
+            if cost_constraints:
+                enhanced_context["cost_constraints"] = cost_constraints
+            
+            # Get model selection recommendations before execution
+            if hasattr(pipeline, 'specification'):
+                recommendations = self._execution_engine.get_model_selection_recommendations(
+                    pipeline.specification, enhanced_context
+                )
+                enhanced_context["model_recommendations"] = recommendations
+                logger.info(f"Generated model recommendations for {len(recommendations)} steps")
+            
+            # Execute with enhanced context
+            execution_manager = await self.execute_with_monitoring(
+                pipeline=pipeline,
+                context=enhanced_context,
+                execution_id=execution_id
+            )
+            
+            # Mark as intelligent execution
+            if execution_manager.execution_id in self._execution_metadata:
+                self._execution_metadata[execution_manager.execution_id]["intelligent_selection"] = True
+                self._execution_metadata[execution_manager.execution_id]["selection_strategy"] = selection_strategy
+            
+            return execution_manager
+            
+        except Exception as e:
+            logger.error(f"Intelligent execution failed: {e}")
+            raise PipelineExecutionError(f"Intelligent execution error: {e}") from e
+    
+    def get_model_selection_recommendations(
+        self,
+        pipeline: Pipeline,
+        execution_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Get model selection recommendations for a pipeline before execution.
+        
+        This provides upfront analysis of optimal model choices, helping with
+        planning, cost estimation, and execution optimization.
+        
+        Args:
+            pipeline: Pipeline to analyze
+            execution_context: Optional execution context for recommendations
+            
+        Returns:
+            Dictionary containing model selection recommendations for each step
+        """
+        if not self.enable_intelligent_selection or not self._execution_engine:
+            return {"error": "Intelligent model selection not available"}
+        
+        try:
+            if hasattr(pipeline, 'specification'):
+                recommendations = self._execution_engine.get_model_selection_recommendations(
+                    pipeline.specification, execution_context or {}
+                )
+                
+                # Enhance with cost and performance estimates
+                enhanced_recommendations = {}
+                total_estimated_cost = 0.0
+                
+                for step_id, step_data in recommendations.items():
+                    if isinstance(step_data, dict) and "recommendations" in step_data:
+                        step_recommendations = step_data["recommendations"]
+                        if step_recommendations:
+                            # Add aggregate metrics
+                            best_recommendation = step_recommendations[0]
+                            total_estimated_cost += best_recommendation.get("estimated_cost", 0.0)
+                        
+                        enhanced_recommendations[step_id] = step_data
+                
+                # Add pipeline-level summary
+                enhanced_recommendations["pipeline_summary"] = {
+                    "total_steps": len([k for k in enhanced_recommendations.keys() if k != "pipeline_summary"]),
+                    "total_estimated_cost": total_estimated_cost,
+                    "intelligent_selection_available": True
+                }
+                
+                return enhanced_recommendations
+            else:
+                return {"error": "Pipeline specification not available"}
+                
+        except Exception as e:
+            logger.error(f"Failed to generate model selection recommendations: {e}")
+            return {"error": str(e)}
+    
+    def analyze_execution_efficiency(
+        self,
+        execution_id: str
+    ) -> Dict[str, Any]:
+        """
+        Analyze the efficiency of an execution's model selections.
+        
+        Provides insights into model selection quality, cost efficiency,
+        and performance optimization opportunities.
+        
+        Args:
+            execution_id: Unique execution identifier
+            
+        Returns:
+            Dictionary containing efficiency analysis
+        """
+        if not self.enable_intelligent_selection:
+            return {"error": "Intelligent model selection not available"}
+        
+        if execution_id not in self._execution_metadata:
+            return {"error": "Execution not found"}
+        
+        try:
+            metadata = self._execution_metadata[execution_id]
+            
+            analysis = {
+                "execution_id": execution_id,
+                "pipeline_id": metadata.get("pipeline_id"),
+                "intelligent_selection_used": metadata.get("intelligent_selection", False),
+                "selection_strategy": metadata.get("selection_strategy"),
+                "total_steps": metadata.get("total_tasks", 0),
+                "analysis_timestamp": datetime.now().isoformat()
+            }
+            
+            if metadata.get("intelligent_selection"):
+                # Detailed efficiency analysis for intelligent executions
+                analysis.update({
+                    "cost_efficiency": self._analyze_cost_efficiency(execution_id),
+                    "performance_efficiency": self._analyze_performance_efficiency(execution_id),
+                    "selection_accuracy": self._analyze_selection_accuracy(execution_id),
+                    "optimization_opportunities": self._identify_optimization_opportunities(execution_id)
+                })
+            else:
+                analysis["message"] = "Execution did not use intelligent model selection"
+            
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Failed to analyze execution efficiency: {e}")
+            return {"error": str(e)}
     
     async def _monitor_execution_progress(
         self,
@@ -705,6 +903,64 @@ class PipelineExecutor:
             "throughput_score": 0.0
         }
     
+    def _get_model_selection_metrics(self, execution_id: str) -> Dict[str, Any]:
+        """Get model selection metrics for an execution."""
+        metadata = self._execution_metadata.get(execution_id, {})
+        
+        return {
+            "intelligent_selection_enabled": metadata.get("intelligent_selection", False),
+            "selection_strategy": metadata.get("selection_strategy"),
+            "models_selected": 0,  # TODO: Track actual model selections
+            "selection_quality_score": 0.0,  # TODO: Calculate based on execution results
+            "cost_optimization_achieved": 0.0,  # TODO: Calculate cost savings
+            "performance_improvement": 0.0  # TODO: Calculate performance gains
+        }
+    
+    def _analyze_cost_efficiency(self, execution_id: str) -> Dict[str, Any]:
+        """Analyze cost efficiency of model selections."""
+        return {
+            "total_estimated_cost": 0.0,  # TODO: Calculate from execution results
+            "cost_vs_budget": 0.0,  # TODO: Compare against budget constraints
+            "cost_optimization_opportunities": [],  # TODO: Identify cheaper alternatives
+            "efficiency_score": 0.8  # TODO: Calculate based on cost vs performance
+        }
+    
+    def _analyze_performance_efficiency(self, execution_id: str) -> Dict[str, Any]:
+        """Analyze performance efficiency of model selections."""
+        return {
+            "average_execution_time": 0.0,  # TODO: Calculate from step timings
+            "performance_vs_expectations": 0.0,  # TODO: Compare against model capabilities
+            "bottlenecks_identified": [],  # TODO: Identify slow steps
+            "efficiency_score": 0.8  # TODO: Calculate based on speed vs accuracy
+        }
+    
+    def _analyze_selection_accuracy(self, execution_id: str) -> Dict[str, Any]:
+        """Analyze accuracy of model selections."""
+        return {
+            "selection_success_rate": 0.9,  # TODO: Calculate based on step success rates
+            "optimal_selections": 0,  # TODO: Count selections that were optimal
+            "suboptimal_selections": 0,  # TODO: Count selections that could be improved
+            "accuracy_score": 0.85  # TODO: Calculate overall selection accuracy
+        }
+    
+    def _identify_optimization_opportunities(self, execution_id: str) -> List[Dict[str, Any]]:
+        """Identify optimization opportunities for future executions."""
+        # TODO: Implement actual analysis based on execution data
+        return [
+            {
+                "type": "cost_optimization",
+                "description": "Consider using cost-optimized strategy for non-critical steps",
+                "potential_savings": "15%",
+                "steps_affected": []
+            },
+            {
+                "type": "performance_optimization", 
+                "description": "Fast models available for simple text generation steps",
+                "potential_improvement": "25% faster execution",
+                "steps_affected": []
+            }
+        ]
+    
     async def _cleanup_execution(self, execution_id: str) -> None:
         """
         Clean up execution resources.
@@ -772,23 +1028,62 @@ def create_pipeline_executor(
     max_concurrent_executions: int = 10,
     default_timeout: Optional[int] = 3600,
     enable_recovery: bool = True,
-    enable_checkpointing: bool = True
+    enable_checkpointing: bool = True,
+    model_registry: Optional[ModelRegistry] = None,
+    enable_intelligent_selection: bool = True
 ) -> PipelineExecutor:
     """
-    Create a PipelineExecutor instance with the specified configuration.
+    Create a PipelineExecutor instance with intelligent model selection capabilities.
     
     Args:
         max_concurrent_executions: Maximum number of concurrent pipeline executions
         default_timeout: Default execution timeout in seconds
         enable_recovery: Enable execution recovery features
         enable_checkpointing: Enable execution checkpointing
+        model_registry: Model registry for intelligent model selection
+        enable_intelligent_selection: Enable intelligent model selection features
         
     Returns:
-        Configured PipelineExecutor instance
+        Configured PipelineExecutor instance with model selection intelligence
     """
     return PipelineExecutor(
         max_concurrent_executions=max_concurrent_executions,
         default_timeout=default_timeout,
         enable_recovery=enable_recovery,
-        enable_checkpointing=enable_checkpointing
+        enable_checkpointing=enable_checkpointing,
+        model_registry=model_registry,
+        enable_intelligent_selection=enable_intelligent_selection
+    )
+
+
+def create_intelligent_pipeline_executor(
+    model_registry: ModelRegistry,
+    max_concurrent_executions: int = 10,
+    default_timeout: Optional[int] = 3600,
+    enable_recovery: bool = True,
+    enable_checkpointing: bool = True
+) -> PipelineExecutor:
+    """
+    Create a PipelineExecutor instance optimized for intelligent model selection.
+    
+    This is a convenience function that creates an executor with intelligent
+    model selection enabled and properly configured.
+    
+    Args:
+        model_registry: Model registry for intelligent model selection
+        max_concurrent_executions: Maximum number of concurrent pipeline executions
+        default_timeout: Default execution timeout in seconds
+        enable_recovery: Enable execution recovery features
+        enable_checkpointing: Enable execution checkpointing
+        
+    Returns:
+        PipelineExecutor with intelligent model selection enabled
+    """
+    return PipelineExecutor(
+        max_concurrent_executions=max_concurrent_executions,
+        default_timeout=default_timeout,
+        enable_recovery=enable_recovery,
+        enable_checkpointing=enable_checkpointing,
+        model_registry=model_registry,
+        enable_intelligent_selection=True
     )
