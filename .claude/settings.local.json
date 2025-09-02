@@ -274,7 +274,8 @@
       "Bash(done)",
       "Bash(for:*)",
       "Bash(do gh issue close $issue --comment \"no longer valid after refactor (#307)\")",
-      "Bash(do echo \"Closing issue $issue...\")"
+      "Bash(do echo \"Closing issue $issue...\")",
+      "WebFetch(domain:httpbin.org)"
     ],
     "deny": [],
     "ask": []
