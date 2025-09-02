@@ -81,6 +81,18 @@ class FoundationConfig:
 
 
 @dataclass
+class PipelineHeader:
+    """Compatibility class for pipeline headers."""
+    name: str
+    version: str
+    description: Optional[str] = None
+    author: Optional[str] = None
+    created: Optional[datetime] = None
+    tags: Optional[List[str]] = None
+    dependencies: Optional[List[str]] = None
+
+
+@dataclass
 class StepResult:
     """Compatibility class for step execution results."""
     

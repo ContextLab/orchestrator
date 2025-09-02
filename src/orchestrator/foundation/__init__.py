@@ -9,6 +9,7 @@ All foundation components have been migrated to the execution and api modules.
 from ._compatibility import (
     ExecutionEngineInterface,
     FoundationConfig,
+    PipelineHeader,
     PipelineSpecification,
     PipelineStep,
     PipelineResult,
@@ -37,7 +38,8 @@ except ImportError:
 # Re-export for backward compatibility
 __all__ = [
     "ExecutionEngineInterface",
-    "FoundationConfig", 
+    "FoundationConfig",
+    "PipelineHeader", 
     "PipelineSpecification",
     "PipelineStep",
     "PipelineResult",
