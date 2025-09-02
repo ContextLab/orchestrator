@@ -410,7 +410,7 @@ steps:
             {{{{ read_file.content }}}}
             
             ## Metadata
-            Processing timestamp: {{{{ $index }}}
+            Processing timestamp: {{{{ $index }}}}
             Total files: {{{{ file_list | length }}}}
         dependencies:
           - read_file

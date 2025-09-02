@@ -722,3 +722,32 @@ class WrapperMonitoring:
             # Sort by timestamp
             metrics.sort(key=lambda x: x['timestamp'])
             return metrics
+
+
+# Backward compatibility aliases
+OperationMetrics = WrapperOperationMetrics
+
+
+# Import AlertSeverity from existing performance monitor
+try:
+    from ..analytics.performance_monitor import AlertSeverity
+except ImportError:
+    # Fallback definition if performance monitor not available
+    class AlertSeverity(Enum):
+        LOW = "low"
+        MEDIUM = "medium"
+        HIGH = "high"
+        CRITICAL = "critical"
+
+
+@dataclass
+class Alert:
+    """Alert for wrapper monitoring events."""
+    
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    severity: AlertSeverity = AlertSeverity.WARNING
+    message: str = ""
+    component: str = ""
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+    resolved: bool = False
+    metadata: Dict[str, Any] = field(default_factory=dict)

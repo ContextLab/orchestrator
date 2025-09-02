@@ -665,7 +665,7 @@ description: "Pipeline with no steps"
             pipeline_path = self.create_test_pipeline(empty_pipeline, f"empty_{i}.yaml")
             
             yaml_content = pipeline_path.read_text()
-        result = await self.executor.execute_yaml(yaml_content)
+            result = await self.executor.execute_yaml(yaml_content)
             
             # Should handle empty pipelines gracefully
             assert result.status in ["success", "error", "failed"]

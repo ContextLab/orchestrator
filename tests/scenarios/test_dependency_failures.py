@@ -335,7 +335,7 @@ steps:
                 pipeline_path = self.create_test_pipeline(case["pipeline"], f"{case['name']}.yaml")
                 
                 yaml_content = pipeline_path.read_text()
-            result = await self.executor.execute_yaml(yaml_content)
+                result = await self.executor.execute_yaml(yaml_content)
                 
                 # Should fail due to missing environment variable
                 assert result.status in ["error", "failed"], f"{case['name']}: Should fail with missing env var"

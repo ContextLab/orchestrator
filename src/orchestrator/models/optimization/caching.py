@@ -8,9 +8,10 @@ import logging
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
-from ..selection.strategies import SelectionResult
+if TYPE_CHECKING:
+    from ..selection.strategies import SelectionResult
 
 logger = logging.getLogger(__name__)
 
