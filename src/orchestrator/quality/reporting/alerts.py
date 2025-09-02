@@ -28,8 +28,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union, Set
 import smtplib
 import requests
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from .metrics import QualityMetricsCollector, TimeSeriesMetric, QualityMetric, MetricType
 from .analytics import QualityAnalytics, QualityInsight, TrendAnalysis, InsightType
@@ -450,12 +450,12 @@ Timestamp: {datetime.fromtimestamp(metric.timestamp, tz=timezone.utc).isoformat(
             return False
         
         try:
-            msg = MimeMultipart()
+            msg = MIMEMultipart()
             msg['From'] = self._email_config['from_address']
             msg['To'] = ', '.join(self._email_config['to_addresses'])
             msg['Subject'] = f"[{alert.severity.value.upper()}] {alert.title}"
             
-            msg.attach(MimeText(alert.message, 'plain'))
+            msg.attach(MIMEText(alert.message, 'plain'))
             
             with smtplib.SMTP(self._email_config['smtp_server'], self._email_config['smtp_port']) as server:
                 if self._email_config.get('use_tls'):
