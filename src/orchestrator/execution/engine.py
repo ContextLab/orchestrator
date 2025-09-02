@@ -32,6 +32,8 @@ from ..foundation._compatibility import (
     ExecutionEngineInterface, FoundationConfig, PipelineSpecification, 
     PipelineStep, PipelineResult, StepResult
 )
+from ..models.registry import ModelRegistry
+from .model_selector import ExecutionModelSelector, RuntimeModelContext
 
 
 logger = logging.getLogger(__name__)
@@ -114,7 +116,7 @@ class StateGraphEngine(ExecutionEngineInterface):
     and comprehensive progress tracking.
     """
     
-    def __init__(self, config: FoundationConfig = None):
+    def __init__(self, config: FoundationConfig = None, model_registry: ModelRegistry = None):
         """Initialize the execution engine."""
         self.config = config or FoundationConfig()
         self.logger = logging.getLogger(__name__)
@@ -129,11 +131,22 @@ class StateGraphEngine(ExecutionEngineInterface):
             max_workers=self.config.max_concurrent_steps
         )
         
+        # Model selection integration
+        self._model_registry = model_registry
+        self._model_selector = None
+        if model_registry:
+            self._model_selector = ExecutionModelSelector(
+                model_registry=model_registry,
+                enable_adaptive_selection=getattr(config, 'enable_adaptive_selection', True),
+                enable_expert_assignments=getattr(config, 'enable_expert_assignments', True),
+                enable_cost_optimization=getattr(config, 'enable_cost_optimization', True)
+            )
+        
         # State management for coordination with other streams
         self._variable_manager = None  # To be set by Stream B
         self._progress_tracker = None  # To be set by Stream C
         
-        self.logger.info(f"StateGraphEngine initialized with config: {self.config}")
+        self.logger.info(f"StateGraphEngine initialized with config: {self.config}, model_selector: {self._model_selector is not None}")
     
     def set_variable_manager(self, manager: Any) -> None:
         """Set variable manager from Stream B."""
@@ -464,10 +477,10 @@ class StateGraphEngine(ExecutionEngineInterface):
         context: Dict[str, Any]
     ) -> StepResult:
         """
-        Execute a single step with the current execution context.
+        Execute a single step with intelligent model selection and execution.
         
-        This is where the actual step logic would be executed.
-        For now, this is a placeholder that other streams can build upon.
+        This method now integrates with the model selection intelligence
+        to choose optimal models at runtime based on step requirements.
         """
         spec = context.get("spec")
         if not spec:
@@ -478,24 +491,33 @@ class StateGraphEngine(ExecutionEngineInterface):
             raise ExecutionError(f"Step {step_id} not found in specification")
         
         start_time = time.time()
+        selected_model = None
         
         try:
-            # This is where the actual step execution would happen
-            # Stream B will implement the tool/model execution logic
-            # Stream C will implement progress tracking
+            # 1. Intelligent model selection
+            if self._model_selector:
+                selected_model = await self._select_optimal_model_for_step(step, spec, state)
+                self.logger.info(f"Selected model for step {step_id}: {selected_model.provider}:{selected_model.name}")
+            else:
+                self.logger.warning(f"No model selector available for step {step_id}, using default behavior")
             
-            # For now, simulate step execution
-            self.logger.info(f"Simulating execution of step: {step.name}")
-            
-            # Simulate processing time
-            await asyncio.sleep(0.1)
-            
-            # Create mock output based on step variables
-            output = {}
-            for var_name, description in step.variables.items():
-                output[var_name] = f"Generated {description} for {step.name}"
+            # 2. Execute step with selected model
+            output = await self._execute_step_with_model(step, selected_model, state, context)
             
             execution_time = time.time() - start_time
+            
+            # 3. Evaluate model selection quality for adaptive learning
+            if self._model_selector and selected_model:
+                execution_result = {
+                    "status": "success",
+                    "execution_time": execution_time,
+                    "timestamp": start_time,
+                    "output": output,
+                    "errors": []
+                }
+                await self._model_selector.evaluate_selection_quality(
+                    step_id, selected_model, execution_result
+                )
             
             return StepResult(
                 step_id=step_id,
@@ -505,18 +527,38 @@ class StateGraphEngine(ExecutionEngineInterface):
                 metadata={
                     "step_name": step.name,
                     "tools_used": step.tools,
-                    "model": step.model
+                    "model": f"{selected_model.provider}:{selected_model.name}" if selected_model else step.model,
+                    "selection_strategy": getattr(selected_model, "selection_strategy", "default") if selected_model else "none"
                 }
             )
             
         except Exception as e:
             execution_time = time.time() - start_time
+            
+            # Record failure for adaptive learning
+            if self._model_selector and selected_model:
+                execution_result = {
+                    "status": "failure",
+                    "execution_time": execution_time,
+                    "timestamp": start_time,
+                    "output": {},
+                    "errors": [str(e)]
+                }
+                await self._model_selector.evaluate_selection_quality(
+                    step_id, selected_model, execution_result
+                )
+            
             return StepResult(
                 step_id=step_id,
                 status="failure",
                 output={},
                 error=str(e),
-                execution_time=execution_time
+                execution_time=execution_time,
+                metadata={
+                    "step_name": step.name,
+                    "model": f"{selected_model.provider}:{selected_model.name}" if selected_model else step.model,
+                    "error_type": type(e).__name__
+                }
             )
     
     async def _execute_graph(
@@ -620,6 +662,180 @@ class StateGraphEngine(ExecutionEngineInterface):
                 "errors": final_state["errors"]
             }
         )
+    
+    async def _select_optimal_model_for_step(
+        self,
+        step: PipelineStep,
+        spec: PipelineSpecification, 
+        state: ExecutionState
+    ) -> Optional[Model]:
+        """
+        Select optimal model for a step using intelligent model selection.
+        
+        Args:
+            step: Pipeline step to select model for
+            spec: Full pipeline specification for context
+            state: Current execution state
+            
+        Returns:
+            Selected model or None if selection fails
+        """
+        try:
+            # Build runtime context for model selection
+            runtime_context = RuntimeModelContext(
+                step=step,
+                pipeline_spec=spec,
+                execution_state=state,
+                available_variables=state.get("variables", {}),
+                step_history=state.get("step_outputs", {})
+            )
+            
+            # Extract expert assignments if available from pipeline spec
+            if hasattr(spec, 'experts') and spec.experts:
+                runtime_context.expert_assignments = spec.experts
+            
+            # Extract cost constraints from pipeline or execution state
+            if hasattr(spec, 'selection_schema') and hasattr(spec.selection_schema, 'cost_limit'):
+                runtime_context.cost_constraints = {
+                    "max_cost_per_request": spec.selection_schema.cost_limit,
+                    "budget_utilization": self._calculate_budget_utilization(state)
+                }
+            
+            # Extract performance requirements
+            if hasattr(spec, 'selection_schema'):
+                schema = spec.selection_schema
+                runtime_context.performance_requirements = {
+                    "max_latency_ms": getattr(schema, 'max_latency_ms', None),
+                    "min_accuracy": getattr(schema, 'min_accuracy', None)
+                }
+            
+            # Get selection strategy from pipeline schema
+            strategy = None
+            if hasattr(spec, 'selection_schema') and hasattr(spec.selection_schema, 'strategy'):
+                strategy = spec.selection_schema.strategy
+            
+            # Select optimal model
+            selected_model = await self._model_selector.select_model_for_step(
+                runtime_context, strategy
+            )
+            
+            return selected_model
+            
+        except Exception as e:
+            self.logger.error(f"Failed to select model for step {step.id}: {e}")
+            return None
+    
+    async def _execute_step_with_model(
+        self,
+        step: PipelineStep,
+        selected_model: Optional[Model],
+        state: ExecutionState,
+        context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Execute a step with the selected model.
+        
+        This is where the actual step execution logic would be implemented.
+        For now, this provides enhanced simulation with model-specific behavior.
+        
+        Args:
+            step: Pipeline step to execute
+            selected_model: Selected model for execution
+            state: Current execution state
+            context: Execution context
+            
+        Returns:
+            Step execution output
+        """
+        # TODO: This will be implemented by Stream B (tool/model execution)
+        # For now, provide enhanced simulation that considers the selected model
+        
+        self.logger.info(f"Executing step '{step.name}' with model: {selected_model.provider}:{selected_model.name if selected_model else 'default'}")
+        
+        # Simulate model-specific execution behavior
+        if selected_model:
+            # Simulate execution time based on model speed
+            speed_multiplier = {"fast": 0.5, "medium": 1.0, "slow": 2.0}.get(
+                selected_model.capabilities.speed_rating, 1.0
+            )
+            await asyncio.sleep(0.1 * speed_multiplier)
+            
+            # Simulate success rate based on model accuracy
+            import random
+            success_probability = selected_model.capabilities.accuracy_score
+            if random.random() > success_probability:
+                raise ExecutionError(f"Simulated execution failure (accuracy: {success_probability})")
+        else:
+            # Default simulation
+            await asyncio.sleep(0.1)
+        
+        # Generate output based on step variables and model capabilities
+        output = {}
+        for var_name, description in step.variables.items():
+            if selected_model:
+                # Enhance output based on model capabilities
+                if selected_model.capabilities.code_specialized and "code" in description.lower():
+                    output[var_name] = f"[CODE] Enhanced {description} for {step.name} using {selected_model.name}"
+                elif selected_model.capabilities.vision_capable and "image" in description.lower():
+                    output[var_name] = f"[VISION] Enhanced {description} for {step.name} using {selected_model.name}"
+                else:
+                    output[var_name] = f"Enhanced {description} for {step.name} using {selected_model.name}"
+            else:
+                output[var_name] = f"Generated {description} for {step.name}"
+        
+        return output
+    
+    def _calculate_budget_utilization(self, state: ExecutionState) -> float:
+        """
+        Calculate budget utilization for cost-aware model selection.
+        
+        Args:
+            state: Current execution state
+            
+        Returns:
+            Budget utilization ratio (0.0 to 1.0)
+        """
+        # TODO: Implement actual budget tracking
+        # For now, simulate based on execution progress
+        total_steps = len(state.get("step_start_times", {}))
+        completed_steps = len(state.get("completed_steps", []))
+        
+        if total_steps == 0:
+            return 0.0
+        
+        # Simple estimation - budget utilization grows with step completion
+        return min(1.0, completed_steps / total_steps * 0.8)
+    
+    def get_model_selection_recommendations(
+        self, 
+        spec: PipelineSpecification,
+        execution_context: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Get model selection recommendations for the entire pipeline.
+        
+        Args:
+            spec: Pipeline specification
+            execution_context: Optional execution context
+            
+        Returns:
+            Dictionary with recommendations for each step
+        """
+        if not self._model_selector:
+            return {"error": "Model selector not available"}
+        
+        try:
+            # Use asyncio.run for synchronous interface
+            import asyncio
+            recommendations = asyncio.run(
+                self._model_selector.get_selection_recommendations(
+                    spec, execution_context or {}
+                )
+            )
+            return recommendations
+        except Exception as e:
+            self.logger.error(f"Failed to get model selection recommendations: {e}")
+            return {"error": str(e)}
     
     def _cleanup_execution(self, execution_id: str):
         """Cleanup execution state and resources."""
