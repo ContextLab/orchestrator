@@ -12,16 +12,24 @@ import pytest
 import asyncio
 import yaml
 
-from orchestrator.orchestrator import Orchestrator
+from src.orchestrator.orchestrator import Orchestrator
 
 
 @pytest.fixture
-def orchestrator():
+async def orchestrator():
     """Create orchestrator instance."""
-    from orchestrator.models.model_registry import ModelRegistry
+    from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+    from src.orchestrator.models.registry import ModelRegistry
+    
+    # Create a minimal registry and control system to avoid initialization error
     registry = ModelRegistry()
-    registry.discover_models()
-    return Orchestrator()
+    control_system = HybridControlSystem(model_registry=registry)
+    
+    orchestrator = Orchestrator(
+        model_registry=registry,
+        control_system=control_system
+    )
+    return orchestrator
 
 
 @pytest.fixture
