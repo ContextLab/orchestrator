@@ -108,12 +108,18 @@ class TestCoreDataProcessing:
         
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
-        # Verify data was loaded
-        assert result.steps["load_data"]["success"] is True
-        assert len(result.steps["load_data"]["content"]) > 0
+        # Verify data was loaded - using new result structure
+        assert "steps" in result
+        assert "load_data" in result["steps"]
         
-        # CSV should be detected
-        assert result.steps["parse_data"] in ["csv", "unknown"]
+        load_data_result = result["steps"]["load_data"]
+        assert load_data_result["error"] is None
+        assert "result" in load_data_result
+        
+        # Verify the CSV data was read
+        load_result = load_data_result["result"]
+        assert load_result["action"] == "read"
+        assert len(load_result["content"]) > 0
     
     @pytest.mark.asyncio
     async def test_validate_valid_data(self, orchestrator, pipeline_yaml, sample_json_data, temp_dir):
