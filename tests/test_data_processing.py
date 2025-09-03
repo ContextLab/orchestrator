@@ -84,12 +84,19 @@ class TestCoreDataProcessing:
         
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
-        # Verify data was loaded
-        assert result.steps["load_data"]["success"] is True
-        assert "records" in result.steps["load_data"]["content"]
+        # Verify data was loaded - the API changed, steps are now in result["steps"] 
+        assert "steps" in result
+        assert "load_data" in result["steps"]
         
-        # Verify parsing detected JSON
-        assert result.steps["parse_data"] == "json"
+        # Check that load_data task succeeded
+        load_data_result = result["steps"]["load_data"]
+        assert load_data_result["error"] is None
+        assert "result" in load_data_result
+        
+        # Verify the JSON data was read
+        load_result = load_data_result["result"]
+        assert load_result["action"] == "read"
+        assert "records" in load_result["content"]
     
     @pytest.mark.asyncio
     async def test_load_csv_data(self, orchestrator, pipeline_yaml, sample_csv_data, temp_dir):

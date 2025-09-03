@@ -269,6 +269,27 @@ class ModelRegistry:
             "providers": provider_info,
         }
     
+    async def select_model(self, requirements: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Select best model for given requirements.
+        
+        Args:
+            requirements: Model selection requirements (optional)
+            
+        Returns:
+            Model name from available models
+            
+        Raises:
+            ValueError: If no models available
+        """
+        available_models = self.available_models
+        if not available_models:
+            raise ValueError("No models available for selection")
+        
+        # Simple selection - return first available model
+        # In the future this could use sophisticated selection logic
+        return list(available_models.keys())[0]
+    
     def list_models(self, provider_name: Optional[str] = None) -> Dict[str, Any]:
         """
         List available models with details.

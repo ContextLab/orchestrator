@@ -105,6 +105,30 @@ class TestProvider:
             supports_structured_output=True
         )
     
+    def get_model_requirements(self, model_name: str):
+        """Get requirements for test model."""
+        if not self.supports_model(model_name):
+            raise ValueError(f"Model '{model_name}' not supported")
+        return ModelRequirements(
+            memory_gb=0.1,
+            cpu_cores=1
+        )
+    
+    def get_model_cost(self, model_name: str):
+        """Get cost for test model.""" 
+        if not self.supports_model(model_name):
+            raise ValueError(f"Model '{model_name}' not supported")
+        return ModelCost(is_free=True)
+    
+    def get_provider_info(self):
+        """Get provider info for test provider."""
+        return {
+            "name": self.name,
+            "type": "test",
+            "models": len(self._models),
+            "initialized": self.is_initialized
+        }
+    
     async def get_model(self, model_name: str, **kwargs) -> TestModel:
         """Get model instance."""
         return self._models[model_name]
