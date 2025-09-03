@@ -22,8 +22,8 @@ from dataclasses import dataclass
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from orchestrator.models.registry import ModelRegistry
-from orchestrator.models.selection.strategies import (
+from src.orchestrator.models.registry import ModelRegistry
+from src.orchestrator.models.selection.strategies import (
     CostOptimizedStrategy, 
     PerformanceOptimizedStrategy,
     BalancedStrategy,
@@ -31,11 +31,11 @@ from orchestrator.models.selection.strategies import (
     SelectionCriteria,
     SelectionResult
 )
-from orchestrator.models.selection.manager import ModelSelectionManager
-from orchestrator.models.providers.openai_provider import OpenAIProvider
-from orchestrator.models.providers.anthropic_provider import AnthropicProvider
-from orchestrator.models.providers.local_provider import LocalProvider
-from orchestrator.models.providers.base import ModelCapability, ModelInfo
+from src.orchestrator.models.selection.manager import ModelSelectionManager
+from src.orchestrator.models.providers.openai_provider import OpenAIProvider
+from src.orchestrator.models.providers.anthropic_provider import AnthropicProvider
+from src.orchestrator.models.providers.local_provider import LocalProvider
+from src.orchestrator.models.providers.base import ModelCapability, ModelInfo
 
 
 @dataclass

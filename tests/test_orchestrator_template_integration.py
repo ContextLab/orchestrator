@@ -2,12 +2,12 @@
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from orchestrator.core.task import Task
-from orchestrator.core.pipeline import Pipeline
-from orchestrator.core.template_manager import TemplateManager
-from orchestrator.orchestrator import Orchestrator
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.core.model import ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
+from src.orchestrator.core.task import Task
+from src.orchestrator.core.pipeline import Pipeline
+from src.orchestrator.core.template_manager import TemplateManager
+from src.orchestrator.orchestrator import Orchestrator
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.model import ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
 
 
 class MockModel:

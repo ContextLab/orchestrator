@@ -10,12 +10,12 @@ import json
 import csv
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from orchestrator.core.template_resolver import (
+from src.orchestrator.core.template_resolver import (
     TemplateResolver, 
     TemplateFormat,
     POML_AVAILABLE
 )
-from orchestrator.core.output_tracker import OutputTracker
+from src.orchestrator.core.output_tracker import OutputTracker
 
 def create_test_data_files():
     """Create temporary test files for data integration."""

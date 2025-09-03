@@ -200,7 +200,7 @@ class TestCoreDataProcessing:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Check aggregation was performed
-        transform = result.steps["transform_data"]
+        transform = result["steps"]["transform_data"]
         assert transform["success"] is True
         
         # The aggregation should sum the value field
@@ -219,7 +219,7 @@ class TestCoreDataProcessing:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Check file was saved
-        save_result = result.steps["save_results"]
+        save_result = result["steps"]["save_results"]
         assert save_result["success"] is True
         
         # Verify file exists
@@ -243,7 +243,7 @@ class TestCoreDataProcessing:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Check report was generated
-        report_result = result.steps["save_report"]
+        report_result = result["steps"]["save_report"]
         assert report_result["success"] is True
         
         # Verify report file exists
@@ -270,11 +270,11 @@ class TestCoreDataProcessing:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # All steps should complete successfully
-        assert result.steps["load_data"]["success"] is True
-        assert result.steps["validate_data"]["success"] is True
-        assert result.steps["transform_data"]["success"] is True
-        assert result.steps["save_results"]["success"] is True
-        assert result.steps["save_report"]["success"] is True
+        assert result["steps"]["load_data"]["success"] is True
+        assert result["steps"]["validate_data"]["success"] is True
+        assert result["steps"]["transform_data"]["success"] is True
+        assert result["steps"]["save_results"]["success"] is True
+        assert result["steps"]["save_report"]["success"] is True
         
         # Output files should exist
         assert (Path(temp_dir) / "processed_data.json").exists()
@@ -300,7 +300,7 @@ class TestEdgeCases:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Pipeline should handle empty data gracefully
-        assert result.steps["load_data"]["success"] is True
+        assert result["steps"]["load_data"]["success"] is True
     
     @pytest.mark.asyncio
     async def test_malformed_json(self, orchestrator, pipeline_yaml, temp_dir):
@@ -318,7 +318,7 @@ class TestEdgeCases:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should load the file but fail validation
-        assert result.steps["load_data"]["success"] is True
+        assert result["steps"]["load_data"]["success"] is True
     
     @pytest.mark.asyncio
     async def test_missing_fields(self, orchestrator, pipeline_yaml, temp_dir):
@@ -341,7 +341,7 @@ class TestEdgeCases:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should process with lenient validation
-        assert result.steps["validate_data"]["mode"] == "lenient"
+        assert result["steps"]["validate_data"]["mode"] == "lenient"
     
     @pytest.mark.asyncio
     async def test_large_dataset(self, orchestrator, pipeline_yaml, temp_dir):
@@ -365,8 +365,8 @@ class TestEdgeCases:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should handle large dataset
-        assert result.steps["load_data"]["success"] is True
-        assert result.steps["transform_data"]["success"] is True
+        assert result["steps"]["load_data"]["success"] is True
+        assert result["steps"]["transform_data"]["success"] is True
     
     @pytest.mark.asyncio
     async def test_special_characters(self, orchestrator, pipeline_yaml, temp_dir):
@@ -390,8 +390,8 @@ class TestEdgeCases:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should handle special characters
-        assert result.steps["load_data"]["success"] is True
-        assert result.steps["save_results"]["success"] is True
+        assert result["steps"]["load_data"]["success"] is True
+        assert result["steps"]["save_results"]["success"] is True
     
     @pytest.mark.asyncio
     async def test_nested_json_structure(self, orchestrator, pipeline_yaml, temp_dir):
@@ -426,8 +426,8 @@ class TestEdgeCases:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should handle nested structures
-        assert result.steps["load_data"]["success"] is True
-        assert result.steps["validate_data"]["success"] is True
+        assert result["steps"]["load_data"]["success"] is True
+        assert result["steps"]["validate_data"]["success"] is True
     
     @pytest.mark.asyncio
     async def test_csv_with_headers(self, orchestrator, pipeline_yaml, temp_dir):
@@ -447,7 +447,7 @@ class TestEdgeCases:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should process CSV
-        assert result.steps["load_data"]["success"] is True
+        assert result["steps"]["load_data"]["success"] is True
     
     @pytest.mark.asyncio
     async def test_mixed_data_types(self, orchestrator, pipeline_yaml, temp_dir):
@@ -471,7 +471,7 @@ class TestEdgeCases:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should handle mixed types with lenient validation
-        assert result.steps["validate_data"]["mode"] == "lenient"
+        assert result["steps"]["validate_data"]["mode"] == "lenient"
 
 
 class TestErrorHandling:
@@ -488,7 +488,7 @@ class TestErrorHandling:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should fail at load_data step
-        assert result.steps["load_data"]["success"] is False
+        assert result["steps"]["load_data"]["success"] is False
     
     @pytest.mark.asyncio
     async def test_invalid_output_path(self, orchestrator, pipeline_yaml, sample_json_data):
@@ -502,7 +502,7 @@ class TestErrorHandling:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # The filesystem tool should create directories as needed
-        assert result.steps["save_results"]["success"] is True
+        assert result["steps"]["save_results"]["success"] is True
     
     @pytest.mark.asyncio
     async def test_invalid_schema(self, orchestrator, temp_dir):

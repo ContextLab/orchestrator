@@ -30,8 +30,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 try:
     from orchestrator import Orchestrator, init_models
-    from orchestrator.compiler.yaml_compiler import YAMLCompiler
-    from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+    from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+    from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 except ImportError as e:
     logger.warning(f"Could not import orchestrator modules: {e}")
 

@@ -1,6 +1,6 @@
 """Test the AUTO tag parser with complex YAML cases."""
 
-from orchestrator.compiler.auto_tag_yaml_parser import (
+from src.orchestrator.compiler.auto_tag_yaml_parser import (
     AutoTagYAMLParser,
     parse_yaml_with_auto_tags)
 

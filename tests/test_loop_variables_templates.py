@@ -12,7 +12,7 @@ import json
 import yaml
 from typing import Dict, Any
 
-from orchestrator.orchestrator import Orchestrator
+from src.orchestrator.orchestrator import Orchestrator
 
 
 class TestWhileLoopVariableTemplates:

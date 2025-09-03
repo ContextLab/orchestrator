@@ -4,12 +4,12 @@ import pytest
 import asyncio
 from unittest.mock import AsyncMock
 
-from orchestrator.core.parallel_queue_task import ParallelQueueTask, ParallelQueueStatus, ParallelSubtask
-from orchestrator.core.parallel_loop_context import ParallelQueueContext, ParallelLoopContextManager
-from orchestrator.control_flow.parallel_queue_handler import ParallelQueueHandler, ParallelResourceManager
-from orchestrator.compiler.yaml_compiler import YAMLCompiler
-from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.parallel_queue_task import ParallelQueueTask, ParallelQueueStatus, ParallelSubtask
+from src.orchestrator.core.parallel_loop_context import ParallelQueueContext, ParallelLoopContextManager
+from src.orchestrator.control_flow.parallel_queue_handler import ParallelQueueHandler, ParallelResourceManager
+from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
+from src.orchestrator.models.model_registry import ModelRegistry
 
 
 class TestParallelQueueTask:

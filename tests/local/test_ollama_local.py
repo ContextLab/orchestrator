@@ -42,7 +42,7 @@ class TestOllamaIntegration:
     @pytest.mark.asyncio
     async def test_ollama_model_creation(self):
         """Test creating Ollama model."""
-        from orchestrator.integrations.ollama_model import OllamaModel
+        from src.orchestrator.integrations.ollama_model import OllamaModel
 
         # Use first available model
         model_name = available_models[0] if available_models else "llama3.2:1b"
@@ -55,7 +55,7 @@ class TestOllamaIntegration:
     @pytest.mark.asyncio
     async def test_ollama_generation(self):
         """Test Ollama text generation."""
-        from orchestrator.integrations.ollama_model import OllamaModel
+        from src.orchestrator.integrations.ollama_model import OllamaModel
 
         model_name = available_models[0] if available_models else "llama3.2:1b"
         model = OllamaModel(model_name=model_name)
@@ -67,7 +67,7 @@ class TestOllamaIntegration:
     @pytest.mark.asyncio
     async def test_ollama_health_check(self):
         """Test Ollama health check."""
-        from orchestrator.integrations.ollama_model import OllamaModel
+        from src.orchestrator.integrations.ollama_model import OllamaModel
 
         model_name = available_models[0] if available_models else "llama3.2:1b"
         model = OllamaModel(model_name=model_name)
@@ -78,8 +78,8 @@ class TestOllamaIntegration:
     @pytest.mark.asyncio
     async def test_ambiguity_resolver_with_ollama(self):
         """Test ambiguity resolver with Ollama model."""
-        from orchestrator.integrations.ollama_model import OllamaModel
-        from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        from src.orchestrator.integrations.ollama_model import OllamaModel
+        from src.orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
 
         model_name = available_models[0] if available_models else "llama3.2:1b"
         model = OllamaModel(model_name=model_name)
@@ -93,9 +93,9 @@ class TestOllamaIntegration:
     @pytest.mark.asyncio
     async def test_auto_model_detection(self):
         """Test automatic Ollama model detection."""
-        from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
-        from orchestrator.integrations.ollama_model import OllamaModel
-        from orchestrator.models.model_registry import ModelRegistry
+        from src.orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        from src.orchestrator.integrations.ollama_model import OllamaModel
+        from src.orchestrator.models.model_registry import ModelRegistry
 
         # Create a model registry and register an Ollama model
         registry = ModelRegistry()
@@ -124,7 +124,7 @@ async def test_performance_comparison():
     if len(available_models) < 2:
         pytest.skip("Need at least 2 models for comparison")
 
-    from orchestrator.integrations.ollama_model import OllamaModel
+    from src.orchestrator.integrations.ollama_model import OllamaModel
     import time
 
     results = {}

@@ -1,8 +1,8 @@
 """Tests for Phase 1: Core declarative engine implementation."""
 
 import pytest
-from orchestrator.engine import DeclarativePipelineEngine
-from orchestrator.engine.pipeline_spec import PipelineSpec, TaskSpec
+from src.orchestrator.engine import DeclarativePipelineEngine
+from src.orchestrator.engine.pipeline_spec import PipelineSpec, TaskSpec
 
 
 class TestDeclarativeEngine:

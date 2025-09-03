@@ -15,16 +15,16 @@ import requests
 from PIL import Image
 import io
 
-from orchestrator.orchestrator import Orchestrator
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.models.openai_model import OpenAIModel
+from src.orchestrator.orchestrator import Orchestrator
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.models.openai_model import OpenAIModel
 
 
 @pytest.fixture
 def orchestrator():
     """Create orchestrator instance with image generation models."""
     # Get the global model registry
-    from orchestrator.models.registry_singleton import get_model_registry
+    from src.orchestrator.models.registry_singleton import get_model_registry
     registry = get_model_registry()
     
     # Register DALL-E 3 model

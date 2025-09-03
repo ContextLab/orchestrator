@@ -4,7 +4,7 @@ Real tests for enhanced ModelCost functionality including budget periods and cos
 """
 
 import pytest
-from orchestrator.core.model import ModelCost
+from src.orchestrator.core.model import ModelCost
 
 
 class TestEnhancedModelCost:

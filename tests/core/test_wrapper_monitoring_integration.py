@@ -10,8 +10,8 @@ import asyncio
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from orchestrator.core.wrapper_config import ExternalToolConfig, ConfigValidationError
-from orchestrator.core.wrapper_monitoring import WrapperMonitoring, WrapperOperationStatus
+from src.orchestrator.core.wrapper_config import ExternalToolConfig, ConfigValidationError
+from src.orchestrator.core.wrapper_monitoring import WrapperMonitoring, WrapperOperationStatus
 
 
 class TestWrapperConfigurationIntegration:

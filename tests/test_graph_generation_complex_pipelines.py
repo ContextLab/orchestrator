@@ -19,8 +19,8 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, List
 
-from orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
-from orchestrator.core.exceptions import GraphGenerationError, CircularDependencyError
+from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
+from src.orchestrator.core.exceptions import GraphGenerationError, CircularDependencyError
 
 
 class TestComplexPipelineGeneration:

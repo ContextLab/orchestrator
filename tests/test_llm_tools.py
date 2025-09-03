@@ -5,13 +5,13 @@ import asyncio
 import sys
 sys.path.insert(0, 'src')
 
-from orchestrator.tools.llm_tools import (
+from src.orchestrator.tools.llm_tools import (
     TaskDelegationTool,
     MultiModelRoutingTool,
     PromptOptimizationTool
 )
 from orchestrator import init_models
-from orchestrator.models import get_model_registry
+from src.orchestrator.models import get_model_registry
 
 async def test_tools():
     """Test the LLM tools with real API calls."""

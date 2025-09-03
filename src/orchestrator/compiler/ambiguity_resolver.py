@@ -92,9 +92,11 @@ class AmbiguityResolver:
             # Lazy initialize model if needed
             if not self.model and self.model_registry:
                 try:
-                    self.model = await self.model_registry.select_model(
+                    model_name = await self.model_registry.select_model(
                         {"tasks": ["generate"]}
                     )
+                    if model_name:
+                        self.model = await self.model_registry.get_model(model_name)
                 except Exception:
                     # If selection fails, just get the first available
                     available_models = self.model_registry.list_models()
@@ -125,9 +127,11 @@ class AmbiguityResolver:
         # Lazy initialize model if needed
         if not self.model and self.model_registry:
             try:
-                self.model = await self.model_registry.select_model(
+                model_name = await self.model_registry.select_model(
                     {"tasks": ["generate"]}
                 )
+                if model_name:
+                    self.model = await self.model_registry.get_model(model_name)
             except Exception:
                 # If selection fails, just get the first available
                 available_models = self.model_registry.list_models()

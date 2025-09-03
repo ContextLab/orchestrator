@@ -13,8 +13,8 @@ async def test_yaml_compilation():
     try:
         # Step 1: Test YAML compiler creation
         print("1️⃣ Creating YAML compiler...")
-        from orchestrator.compiler.yaml_compiler import YAMLCompiler
-        from orchestrator.integrations.ollama_model import OllamaModel
+        from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+        from src.orchestrator.integrations.ollama_model import OllamaModel
 
         model = OllamaModel(model_name="llama3.2:1b")
         compiler = YAMLCompiler()

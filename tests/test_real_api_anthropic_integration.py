@@ -6,10 +6,10 @@ Tests the enhanced model requirements specification with actual Anthropic API in
 import pytest
 import os
 from unittest.mock import patch
-from orchestrator.models.anthropic_model import AnthropicModel
-from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.core.model import ModelCapabilities, ModelCost
+from src.orchestrator.models.anthropic_model import AnthropicModel
+from src.orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.model import ModelCapabilities, ModelCost
 
 
 class TestRealAnthropicIntegration:

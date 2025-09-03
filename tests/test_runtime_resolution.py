@@ -16,7 +16,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from orchestrator.runtime import RuntimeResolutionIntegration
+from src.orchestrator.runtime import RuntimeResolutionIntegration
 
 
 def load_pipeline_config(yaml_path: str):

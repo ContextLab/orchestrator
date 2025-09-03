@@ -961,12 +961,13 @@ class HybridControlSystem(ModelBasedControlSystem):
         goal = task.parameters.get("optimization_goal", "quality")
         
         # Use the model to enhance the prompt
-        model = await self.model_registry.select_model({"tasks": ["generate"]})
-        if not model:
+        model_name = await self.model_registry.select_model({"tasks": ["generate"]})
+        if not model_name:
             return {
                 "success": False,
                 "error": "No model available for prompt optimization"
             }
+        model = await self.model_registry.get_model(model_name)
         
         optimization_prompt = f"""Optimize this prompt for {task_type}:
 Original prompt: "{prompt}"
@@ -1126,8 +1127,9 @@ Just return the optimized prompt, nothing else."""
                         if match:
                             # Use a model to resolve the AUTO tag
                             auto_prompt = match.group(1)
-                            model = await self.model_registry.select_model({"tasks": ["generate"]})
-                            if model:
+                            model_name = await self.model_registry.select_model({"tasks": ["generate"]})
+                            if model_name:
+                                model = await self.model_registry.get_model(model_name)
                                 response = await model.generate(
                                     f"{auto_prompt}\nBased on the task: '{params.get('task', '')}'\nRespond with only: simple, moderate, or complex"
                                 )
@@ -1196,10 +1198,11 @@ Just return the optimized prompt, nothing else."""
                     "tasks": ["analyze", "generate"],
                     "context_window": len(prompt.encode()) // 4  # Rough token estimate
                 }
-                model = await self.model_registry.select_model(requirements)
+                model_name = await self.model_registry.select_model(requirements)
+                model = await self.model_registry.get_model(model_name)
             else:
                 # Get specific model
-                model = self.model_registry.get_model(model_spec)
+                model = await self.model_registry.get_model(model_spec)
         else:
             # Fallback to creating a model directly
             from ..models.openai_model import OpenAIModel
@@ -1301,15 +1304,17 @@ Just return the optimized prompt, nothing else."""
         if model_spec:
             if isinstance(model_spec, str) and not model_spec.startswith("<AUTO"):
                 # Direct model specification
-                model = self.model_registry.get_model(model_spec)
+                model = await self.model_registry.get_model(model_spec)
             elif isinstance(model_spec, str) and model_spec.startswith("<AUTO"):
                 # AUTO tag - let model registry select
                 requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
-                model = await self.model_registry.select_model(requirements)
+                model_name = await self.model_registry.select_model(requirements)
+                model = await self.model_registry.get_model(model_name)
         else:
             # No model specified, select appropriate model
             requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
-            model = await self.model_registry.select_model(requirements)
+            model_name = await self.model_registry.select_model(requirements)
+            model = await self.model_registry.get_model(model_name)
         
         if not model:
             return {

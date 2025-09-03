@@ -26,18 +26,18 @@ from dataclasses import dataclass
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 # Performance optimization imports
-from orchestrator.models.optimization.caching import ModelCache, CacheConfig
-from orchestrator.models.optimization.pooling import ConnectionPool, PoolConfig
-from orchestrator.models.load_balancer import LoadBalancer, LoadBalancingStrategy
+from src.orchestrator.models.optimization.caching import ModelCache, CacheConfig
+from src.orchestrator.models.optimization.pooling import ConnectionPool, PoolConfig
+from src.orchestrator.models.load_balancer import LoadBalancer, LoadBalancingStrategy
 
 # Model system imports
-from orchestrator.models.registry import ModelRegistry
-from orchestrator.models.providers.openai_provider import OpenAIProvider
-from orchestrator.models.providers.anthropic_provider import AnthropicProvider
-from orchestrator.models.providers.local_provider import LocalProvider
-from orchestrator.models.providers.base import ModelCapability
-from orchestrator.models.selection.manager import ModelSelectionManager
-from orchestrator.models.selection.strategies import SelectionCriteria
+from src.orchestrator.models.registry import ModelRegistry
+from src.orchestrator.models.providers.openai_provider import OpenAIProvider
+from src.orchestrator.models.providers.anthropic_provider import AnthropicProvider
+from src.orchestrator.models.providers.local_provider import LocalProvider
+from src.orchestrator.models.providers.base import ModelCapability
+from src.orchestrator.models.selection.manager import ModelSelectionManager
+from src.orchestrator.models.selection.strategies import SelectionCriteria
 
 
 @dataclass

@@ -8,15 +8,15 @@ from typing import Any, Dict, List
 
 import pytest
 
-from orchestrator.core.action_loop_task import ActionLoopTask
-from orchestrator.core.action_loop_context import ActionResult, EnhancedLoopContext
-from orchestrator.control_flow.action_loop_handler import ActionLoopHandler
-from orchestrator.tools.base import default_registry
-from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
-from orchestrator.core.template_manager import TemplateManager
-from orchestrator.models import get_model_registry
-from orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
-from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from src.orchestrator.core.action_loop_task import ActionLoopTask
+from src.orchestrator.core.action_loop_context import ActionResult, EnhancedLoopContext
+from src.orchestrator.control_flow.action_loop_handler import ActionLoopHandler
+from src.orchestrator.tools.base import default_registry
+from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
+from src.orchestrator.core.template_manager import TemplateManager
+from src.orchestrator.models import get_model_registry
+from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
+from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
 
 class TestActionLoopTask:

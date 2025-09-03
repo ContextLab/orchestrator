@@ -17,8 +17,8 @@ import shutil
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from orchestrator.orchestrator import Orchestrator
-from orchestrator.models.registry_singleton import get_model_registry
+from src.orchestrator.orchestrator import Orchestrator
+from src.orchestrator.models.registry_singleton import get_model_registry
 
 
 async def test_control_flow_advanced():
@@ -47,8 +47,8 @@ async def test_control_flow_advanced():
     print("\n2. Initializing orchestrator with runtime resolution...")
     
     # Create a basic control system for testing
-    from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
-    from orchestrator.models.registry_singleton import get_model_registry
+    from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+    from src.orchestrator.models.registry_singleton import get_model_registry
     
     registry = get_model_registry()
     control_system = HybridControlSystem(registry)

@@ -11,8 +11,8 @@ import tempfile
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from orchestrator.orchestrator import Orchestrator
-from orchestrator.core.pipeline import Pipeline
+from src.orchestrator.orchestrator import Orchestrator
+from src.orchestrator.core.pipeline import Pipeline
 
 
 def create_pipeline_from_yaml(yaml_content):

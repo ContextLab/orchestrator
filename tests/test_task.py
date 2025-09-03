@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task, TaskStatus
 
 
 class TestTask:

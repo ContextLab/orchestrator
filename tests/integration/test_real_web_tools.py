@@ -8,7 +8,7 @@ This script shows how to use the updated web tools with real web search and cont
 import asyncio
 
 # Add the src directory to the path
-from orchestrator.tools.web_tools import HeadlessBrowserTool, WebSearchTool
+from src.orchestrator.tools.web_tools import HeadlessBrowserTool, WebSearchTool
 
 
 async def load_config():

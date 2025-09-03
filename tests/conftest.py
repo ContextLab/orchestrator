@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from orchestrator import init_models
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.models.model_registry import ModelRegistry
 
 
 @pytest.fixture(scope="session")

@@ -2,7 +2,7 @@
 
 import pytest
 
-from orchestrator.compiler.ambiguity_resolver import (
+from src.orchestrator.compiler.ambiguity_resolver import (
     AmbiguityResolutionError,
     AmbiguityResolver)
 from orchestrator import init_models

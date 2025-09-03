@@ -15,11 +15,11 @@ from datetime import datetime
 from pathlib import Path
 
 # Add parent directory to path
-from orchestrator.orchestrator import Orchestrator
-from orchestrator.core.control_system import ControlSystem
-from orchestrator.core.task import Task, TaskStatus
-from orchestrator.core.model import Model, ModelCapabilities
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.orchestrator import Orchestrator
+from src.orchestrator.core.control_system import ControlSystem
+from src.orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.model import Model, ModelCapabilities
+from src.orchestrator.models.model_registry import ModelRegistry
 
 
 class RealDataControlSystem(ControlSystem):
@@ -698,7 +698,7 @@ class RealAutoResolver(Model):
         )
 
         # Try to get a real model from the registry
-        from orchestrator.models.model_registry import ModelRegistry
+        from src.orchestrator.models.model_registry import ModelRegistry
 
         self.registry = ModelRegistry()
         self.actual_model = None

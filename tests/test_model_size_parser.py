@@ -4,7 +4,7 @@ Real tests without mocks for model size parsing functionality.
 """
 
 import pytest
-from orchestrator.utils.model_utils import (
+from src.orchestrator.utils.model_utils import (
     parse_model_size,
     compare_model_sizes,
     validate_size_string

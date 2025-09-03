@@ -18,12 +18,12 @@ import asyncio
 import yaml
 from typing import Dict, Any
 
-from orchestrator.graph_generation.enhanced_yaml_processor import (
+from src.orchestrator.graph_generation.enhanced_yaml_processor import (
     EnhancedYAMLProcessor, EnhancedPipeline, EnhancedStep, 
     TypeSafeInput, TypeSafeOutput, StepType, DataType
 )
-from orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
-from orchestrator.core.exceptions import YAMLCompilerError, ValidationError
+from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
+from src.orchestrator.core.exceptions import YAMLCompilerError, ValidationError
 
 
 class TestEnhancedYAMLProcessor:

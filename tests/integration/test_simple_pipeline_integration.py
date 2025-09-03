@@ -6,9 +6,9 @@ This test creates a minimal pipeline to verify the integration works correctly.
 import pytest
 
 from orchestrator import Orchestrator, Task, Pipeline, init_models
-from orchestrator.control_systems.model_based_control_system import (
+from src.orchestrator.control_systems.model_based_control_system import (
     ModelBasedControlSystem)
-from orchestrator.utils.api_keys_flexible import load_api_keys_optional
+from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
 pytestmark = pytest.mark.integration

@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 
-from orchestrator.testing import (
+from src.orchestrator.testing import (
     TestMode, TestModeManager, TestSuiteComposition,
     CIIntegrationManager, CIConfiguration, CISystem, TestStatus,
     ReleaseValidator, ReleaseType, ValidationLevel, ValidationResult,
@@ -157,7 +157,7 @@ class TestCIIntegrationManager:
     @pytest.fixture
     def mock_test_results(self):
         """Create mock test results."""
-        from orchestrator.testing import TestResults, PipelineTestResult, ExecutionResult
+        from src.orchestrator.testing import TestResults, PipelineTestResult, ExecutionResult
         
         # Mock individual pipeline results
         results = {}
@@ -281,7 +281,7 @@ class TestReleaseValidator:
     @pytest.fixture
     def mock_test_results(self):
         """Create mock test results for validation."""
-        from orchestrator.testing import TestResults, PipelineTestResult, ExecutionResult
+        from src.orchestrator.testing import TestResults, PipelineTestResult, ExecutionResult
         
         results = {}
         for pipeline in ["simple_data_processing", "control_flow_conditional"]:
@@ -516,7 +516,7 @@ class TestIntegrationScenarios:
     @pytest.fixture
     def complete_setup(self):
         """Setup complete testing environment."""
-        from orchestrator.testing import TestInputManager, PipelineDiscovery
+        from src.orchestrator.testing import TestInputManager, PipelineDiscovery
         
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create minimal test environment
@@ -557,7 +557,7 @@ class TestIntegrationScenarios:
         # This test would ideally run the complete workflow
         # For now, we'll test the integration points
         
-        from orchestrator.testing import TestModeManager
+        from src.orchestrator.testing import TestModeManager
         
         # Test mode selection
         mode_manager = TestModeManager()
@@ -572,7 +572,7 @@ class TestIntegrationScenarios:
         assert composition.estimated_total_time_minutes <= 5
         
         # CI integration
-        from orchestrator.testing import CIConfiguration, CIIntegrationManager, CISystem
+        from src.orchestrator.testing import CIConfiguration, CIIntegrationManager, CISystem
         
         ci_config = CIConfiguration(
             system=CISystem.GITHUB_ACTIONS,
@@ -586,7 +586,7 @@ class TestIntegrationScenarios:
     
     def test_release_validation_workflow(self):
         """Test release validation workflow."""
-        from orchestrator.testing import (
+        from src.orchestrator.testing import (
             determine_release_type_from_version,
             ReleaseValidator, ReleaseType
         )
@@ -608,7 +608,7 @@ class TestIntegrationScenarios:
     
     def test_production_automation_workflow(self):
         """Test production automation workflow."""
-        from orchestrator.testing import (
+        from src.orchestrator.testing import (
             create_default_production_schedules,
             ScheduleType
         )
@@ -634,7 +634,7 @@ if __name__ == "__main__":
     print(f"✅ TestModeManager initialized with {len(manager._mode_configs)} modes")
     
     # Test CI integration
-    from orchestrator.testing import create_ci_config_from_environment
+    from src.orchestrator.testing import create_ci_config_from_environment
     ci_config = create_ci_config_from_environment()
     print(f"✅ CI configuration detected: {ci_config.system.value}")
     

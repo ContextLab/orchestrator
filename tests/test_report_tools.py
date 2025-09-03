@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from orchestrator.tools.report_tools import PDFCompilerTool, ReportGeneratorTool
+from src.orchestrator.tools.report_tools import PDFCompilerTool, ReportGeneratorTool
 
 
 class TestReportGeneratorTool:

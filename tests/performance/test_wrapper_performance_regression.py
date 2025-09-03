@@ -25,9 +25,9 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from orchestrator import Orchestrator, init_models
-from orchestrator.models import get_model_registry
-from orchestrator.compiler.yaml_compiler import YAMLCompiler
-from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from src.orchestrator.models import get_model_registry
+from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
 logger = logging.getLogger(__name__)
 

@@ -83,7 +83,14 @@ class TestProvider:
     def __init__(self, name: str = "test-provider"):
         self.name = name
         self.is_initialized = True
-        self._models = {"test-model": TestModel()}
+        # Include common model names that tests might expect
+        test_model = TestModel()
+        self._models = {
+            "test-model": test_model,
+            "openai/gpt-3.5-turbo": test_model,
+            "openai/gpt-4": test_model,
+            "anthropic/claude-3": test_model,
+        }
     
     @property 
     def available_models(self) -> List[str]:

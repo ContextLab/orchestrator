@@ -2,7 +2,7 @@
 
 import pytest
 import logging
-from orchestrator.compiler.structured_ambiguity_resolver import (
+from src.orchestrator.compiler.structured_ambiguity_resolver import (
     StructuredAmbiguityResolver)
 from orchestrator import init_models
 

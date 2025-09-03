@@ -16,11 +16,11 @@ import os
 
 # Add parent directory to path
 import orchestrator as orc
-from orchestrator.tools.mcp_server import default_tool_detector
-from orchestrator.tools.base import default_registry
+from src.orchestrator.tools.mcp_server import default_tool_detector
+from src.orchestrator.tools.base import default_registry
 
 # Import the tool integrated control system
-from orchestrator.control_systems import ToolIntegratedControlSystem
+from src.orchestrator.control_systems import ToolIntegratedControlSystem
 
 
 async def test_input_agnostic_pipeline():

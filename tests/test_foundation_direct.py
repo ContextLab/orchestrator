@@ -16,20 +16,20 @@ def test_foundation_direct():
     
     try:
         # Import foundation components
-        from orchestrator.foundation.interfaces import (
+        from src.orchestrator.foundation.interfaces import (
             PipelineCompilerInterface,
             ExecutionEngineInterface,
             ModelManagerInterface,
             ToolRegistryInterface,
             QualityControlInterface,
         )
-        from orchestrator.foundation.pipeline_spec import (
+        from src.orchestrator.foundation.pipeline_spec import (
             PipelineSpecification,
             PipelineHeader,
             PipelineStep
         )
-        from orchestrator.foundation.result import StepResult, PipelineResult
-        from orchestrator.foundation import FoundationConfig
+        from src.orchestrator.foundation.result import StepResult, PipelineResult
+        from src.orchestrator.foundation import FoundationConfig
         
         print("✅ Foundation interfaces imported successfully")
         

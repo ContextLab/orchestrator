@@ -5,10 +5,10 @@ Comprehensive test demonstrating all enhanced functionality working together.
 
 import pytest
 from unittest.mock import MagicMock
-from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
-from orchestrator.compiler.schema_validator import SchemaValidator
+from src.orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
+from src.orchestrator.compiler.schema_validator import SchemaValidator
 
 
 class TestIssue194Integration:

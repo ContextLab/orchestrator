@@ -11,12 +11,12 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from orchestrator.runtime.execution_state import (
+from src.orchestrator.runtime.execution_state import (
     PipelineExecutionState,
     UnresolvedItem,
     ItemStatus
 )
-from orchestrator.runtime.dependency_resolver import (
+from src.orchestrator.runtime.dependency_resolver import (
     DependencyResolver,
     ResolutionResult
 )
@@ -182,7 +182,7 @@ class TestTemplateResolution:
         resolver = DependencyResolver(state)
         
         # Add loop context
-        from orchestrator.runtime.execution_state import LoopContext
+        from src.orchestrator.runtime.execution_state import LoopContext
         loop_ctx = LoopContext(
             loop_id="test_loop",
             iteration=2,

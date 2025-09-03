@@ -7,10 +7,10 @@ import tempfile
 import yaml
 
 # Don't use src. prefix - it creates duplicate module paths
-from orchestrator.tools.pipeline_recursion_tools import (
+from src.orchestrator.tools.pipeline_recursion_tools import (
     PipelineExecutorTool,
     RecursionControlTool)
-from orchestrator.models.registry_singleton import get_model_registry
+from src.orchestrator.models.registry_singleton import get_model_registry
 
 
 @pytest.fixture(autouse=True)

@@ -3,8 +3,8 @@
 import pytest
 import asyncio
 from typing import Dict, Any, List
-from orchestrator.tools.llm_tools import MultiModelRoutingTool
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.tools.llm_tools import MultiModelRoutingTool
+from src.orchestrator.models.model_registry import ModelRegistry
 
 
 class TestModelRouting:
@@ -18,7 +18,7 @@ class TestModelRouting:
     @pytest.fixture
     async def model_registry(self):
         """Create a model registry with real models."""
-        from orchestrator.models.model_registry import ModelRegistry
+        from src.orchestrator.models.model_registry import ModelRegistry
         
         registry = ModelRegistry()
         await registry.load_models()

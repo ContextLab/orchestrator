@@ -10,8 +10,8 @@ import pytest
 import yaml
 
 from orchestrator import Orchestrator, init_models
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.utils.api_keys_flexible import load_api_keys_optional
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
 @pytest.fixture(scope="session")

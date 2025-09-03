@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from orchestrator.core.template_resolver import (
+from src.orchestrator.core.template_resolver import (
     TemplateResolver, 
     TemplateFormat, 
     TemplateFormatDetector, 
@@ -15,8 +15,8 @@ from orchestrator.core.template_resolver import (
     POMLIntegrationError,
     POML_AVAILABLE
 )
-from orchestrator.core.output_tracker import OutputTracker
-from orchestrator.core.output_metadata import OutputReference
+from src.orchestrator.core.output_tracker import OutputTracker
+from src.orchestrator.core.output_metadata import OutputReference
 
 def test_format_detection():
     """Test automatic template format detection."""

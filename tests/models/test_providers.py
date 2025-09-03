@@ -19,14 +19,14 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from orchestrator.models.providers.base import ModelProvider, ProviderError, ProviderConfig
-from orchestrator.models.providers.openai_provider import OpenAIProvider
-from orchestrator.models.providers.anthropic_provider import AnthropicProvider
-from orchestrator.models.providers.local_provider import LocalProvider
-from orchestrator.models.registry import ModelRegistry
-from orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelRequirements
-from orchestrator.integrations.ollama_model import OllamaModel
-from orchestrator.integrations.huggingface_model import HuggingFaceModel
+from src.orchestrator.models.providers.base import ModelProvider, ProviderError, ProviderConfig
+from src.orchestrator.models.providers.openai_provider import OpenAIProvider
+from src.orchestrator.models.providers.anthropic_provider import AnthropicProvider
+from src.orchestrator.models.providers.local_provider import LocalProvider
+from src.orchestrator.models.registry import ModelRegistry
+from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelRequirements
+from src.orchestrator.integrations.ollama_model import OllamaModel
+from src.orchestrator.integrations.huggingface_model import HuggingFaceModel
 
 
 class TestProviderAbstractions:

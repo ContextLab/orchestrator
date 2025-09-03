@@ -24,13 +24,13 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from orchestrator import Orchestrator, init_models
-from orchestrator.models import get_model_registry
-from orchestrator.compiler.yaml_compiler import YAMLCompiler
-from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
-from orchestrator.core.wrapper_testing import WrapperTestHarness, TestScenario, TestResult
-from orchestrator.core.wrapper_base import BaseWrapper, BaseWrapperConfig
-from orchestrator.core.feature_flags import FeatureFlagManager
-from orchestrator.core.wrapper_monitoring import WrapperMonitoring
+from src.orchestrator.models import get_model_registry
+from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from src.orchestrator.core.wrapper_testing import WrapperTestHarness, TestScenario, TestResult
+from src.orchestrator.core.wrapper_base import BaseWrapper, BaseWrapperConfig
+from src.orchestrator.core.feature_flags import FeatureFlagManager
+from src.orchestrator.core.wrapper_monitoring import WrapperMonitoring
 
 logger = logging.getLogger(__name__)
 
@@ -272,7 +272,7 @@ class PipelineWrapperValidator:
         # Create feature flag manager
         feature_flags = FeatureFlagManager()
         for feature in wrapper_config.enabled_features:
-            from orchestrator.core.feature_flags import FeatureFlag
+            from src.orchestrator.core.feature_flags import FeatureFlag
             flag = FeatureFlag(name=feature, enabled=True)
             feature_flags.register_flag(flag)
         
@@ -436,7 +436,7 @@ class PipelineWrapperValidator:
     def _collect_performance_metrics(
         self, orchestrator: Orchestrator, execution_time: float
     ) -> Dict[str, Any]:
-        """Collect performance metrics from orchestrator."""
+        """Collect performance metrics from src.orchestrator."""
         metrics = {
             "execution_time_ms": execution_time,
             "total_api_calls": getattr(orchestrator, '_api_call_count', 0),
@@ -453,7 +453,7 @@ class PipelineWrapperValidator:
     def _collect_cost_metrics(
         self, orchestrator: Orchestrator, wrapper_config: WrapperConfiguration
     ) -> Dict[str, float]:
-        """Collect cost metrics from orchestrator."""
+        """Collect cost metrics from src.orchestrator."""
         metrics = {}
         
         if hasattr(orchestrator, 'cost_tracker'):

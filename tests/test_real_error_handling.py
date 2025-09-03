@@ -13,13 +13,13 @@ from typing import Any, Dict
 
 import pytest
 
-from orchestrator.core.error_handling import ErrorContext, ErrorHandler, ErrorHandlerResult
-from orchestrator.core.error_handler_registry import ErrorHandlerRegistry
-from orchestrator.execution.error_handler_executor import ErrorHandlerExecutor
-from orchestrator.engine.pipeline_spec import TaskSpec
-from orchestrator.engine.task_executor import UniversalTaskExecutor
-from orchestrator.compiler.yaml_compiler import YAMLCompiler
-from orchestrator.compiler.error_handler_schema import ErrorHandlerSchemaValidator
+from src.orchestrator.core.error_handling import ErrorContext, ErrorHandler, ErrorHandlerResult
+from src.orchestrator.core.error_handler_registry import ErrorHandlerRegistry
+from src.orchestrator.execution.error_handler_executor import ErrorHandlerExecutor
+from src.orchestrator.engine.pipeline_spec import TaskSpec
+from src.orchestrator.engine.task_executor import UniversalTaskExecutor
+from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+from src.orchestrator.compiler.error_handler_schema import ErrorHandlerSchemaValidator
 
 
 class MockTaskExecutor:

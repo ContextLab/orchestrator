@@ -3,12 +3,12 @@
 import asyncio
 import os
 import pytest
-from orchestrator.tools.llm_tools import (
+from src.orchestrator.tools.llm_tools import (
     TaskDelegationTool,
     MultiModelRoutingTool,
     PromptOptimizationTool
 )
-from orchestrator.models import get_model_registry
+from src.orchestrator.models import get_model_registry
 from orchestrator import init_models
 
 class TestLLMToolsIntegration:

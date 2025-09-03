@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from orchestrator.core.template_migration_tools import (
+from src.orchestrator.core.template_migration_tools import (
     TemplateMigrationAnalyzer,
     TemplateMigrationEngine,
     MigrationStrategy,

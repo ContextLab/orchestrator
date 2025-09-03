@@ -6,9 +6,9 @@ import sys
 import traceback
 import json
 
-from orchestrator.orchestrator import Orchestrator
-from orchestrator.core.control_system import ControlSystem
-from orchestrator.core.task import Task
+from src.orchestrator.orchestrator import Orchestrator
+from src.orchestrator.core.control_system import ControlSystem
+from src.orchestrator.core.task import Task
 
 
 class RealModelControlSystem(ControlSystem):
@@ -68,7 +68,7 @@ class RealModelControlSystem(ControlSystem):
 
         # Use real web search if available
         try:
-            from orchestrator.tools.web_tools import DuckDuckGoSearchBackend
+            from src.orchestrator.tools.web_tools import DuckDuckGoSearchBackend
 
             search_tool = DuckDuckGoSearchBackend()
             search_results = await search_tool.search(query, max_results=5)
@@ -297,7 +297,7 @@ def get_available_model():
     """Get the best available model for testing."""
     # Check if Ollama is available
     try:
-        from orchestrator.integrations.ollama_model import OllamaModel
+        from src.orchestrator.integrations.ollama_model import OllamaModel
 
         if OllamaModel.check_ollama_installation():
             for model_name in ["gemma2:27b", "gemma2:9b", "llama3.2:3b", "llama3.2:1b"]:
@@ -314,7 +314,7 @@ def get_available_model():
 
     # Fallback to HuggingFace
     try:
-        from orchestrator.integrations.huggingface_model import HuggingFaceModel
+        from src.orchestrator.integrations.huggingface_model import HuggingFaceModel
 
         for model_name in ["TinyLlama/TinyLlama-1.1B-Chat-v1.0", "distilgpt2"]:
             try:
@@ -355,7 +355,7 @@ async def test_real_auto_resolution():
         print(f"✅ Model generation successful: {result[:100]}...")
 
         # Test AUTO resolution scenarios
-        from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        from src.orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
 
         resolver = AmbiguityResolver(model=model)
 
@@ -479,7 +479,7 @@ async def test_model_availability():
     # Check Ollama models
     print("\n🦙 Checking Ollama models:")
     try:
-        from orchestrator.integrations.ollama_model import OllamaModel
+        from src.orchestrator.integrations.ollama_model import OllamaModel
 
         if OllamaModel.check_ollama_installation():
             print("✅ Ollama CLI is installed")
@@ -508,7 +508,7 @@ async def test_model_availability():
     # Check HuggingFace models
     print("\n🤗 Checking HuggingFace models:")
     try:
-        from orchestrator.integrations.huggingface_model import HuggingFaceModel
+        from src.orchestrator.integrations.huggingface_model import HuggingFaceModel
 
         test_models = ["TinyLlama/TinyLlama-1.1B-Chat-v1.0", "distilgpt2"]
         for model_name in test_models:

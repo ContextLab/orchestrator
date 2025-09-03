@@ -7,7 +7,7 @@ import importlib
 import tempfile
 import os
 
-from orchestrator.utils.auto_install import (
+from src.orchestrator.utils.auto_install import (
     is_package_installed,
     install_package,
     ensure_packages,

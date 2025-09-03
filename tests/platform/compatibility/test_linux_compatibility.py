@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirna
 
 try:
     from orchestrator import Orchestrator, init_models
-    from orchestrator.compiler.yaml_compiler import YAMLCompiler
+    from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 except ImportError as e:
     logger.warning(f"Could not import orchestrator modules: {e}")
 

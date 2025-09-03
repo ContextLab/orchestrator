@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime
-from orchestrator.core.template_manager import TemplateManager, DeferredTemplate, ChainableUndefined
+from src.orchestrator.core.template_manager import TemplateManager, DeferredTemplate, ChainableUndefined
 
 
 class TestTemplateManager:

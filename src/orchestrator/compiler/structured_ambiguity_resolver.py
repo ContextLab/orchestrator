@@ -128,18 +128,22 @@ class StructuredAmbiguityResolver(AmbiguityResolver):
                     "supports_structured_output": True,
                 }
                 try:
-                    self.model = await self.model_registry.select_model(requirements)
-                    logger.info(
-                        f"Selected model with structured output support: {self.model.name}"
-                    )
+                    model_name = await self.model_registry.select_model(requirements)
+                    if model_name:
+                        self.model = await self.model_registry.get_model(model_name)
+                        logger.info(
+                            f"Selected model with structured output support: {self.model.name}"
+                        )
                     logger.debug(f"Model capabilities: {self.model.capabilities}")
                 except Exception as e:
                     logger.warning(f"No model with structured output found: {e}")
                     # Fall back to any model that can generate
-                    self.model = await self.model_registry.select_model(
+                    model_name = await self.model_registry.select_model(
                         {"tasks": ["generate"]}
                     )
-                    logger.info(f"Selected fallback model: {self.model.name}")
+                    if model_name:
+                        self.model = await self.model_registry.get_model(model_name)
+                        logger.info(f"Selected fallback model: {self.model.name}")
                     logger.debug(f"Model capabilities: {self.model.capabilities}")
 
             if not self.model:

@@ -18,7 +18,7 @@ import pytest
 import yaml
 
 from orchestrator import Orchestrator
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.models.model_registry import ModelRegistry
 from tests.pipeline_tests.test_base import (
     BasePipelineTest,
     PipelineExecutionResult,
@@ -876,7 +876,7 @@ outputs:
 async def model_test_instance():
     """Create ModelPipelineTests instance for pytest."""
     from orchestrator import Orchestrator
-    from orchestrator.models.model_registry import ModelRegistry
+    from src.orchestrator.models.model_registry import ModelRegistry
     
     orchestrator = Orchestrator()
     model_registry = ModelRegistry()
@@ -926,7 +926,7 @@ if __name__ == "__main__":
     
     # Setup test environment
     from orchestrator import Orchestrator
-    from orchestrator.models.model_registry import ModelRegistry
+    from src.orchestrator.models.model_registry import ModelRegistry
     
     async def main():
         """Main test execution function."""

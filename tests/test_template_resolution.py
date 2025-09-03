@@ -1,7 +1,7 @@
 """Tests for template resolution in AUTO tags."""
 
 import pytest
-from orchestrator.compiler.yaml_compiler import YAMLCompiler
+from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from orchestrator import init_models
 
 

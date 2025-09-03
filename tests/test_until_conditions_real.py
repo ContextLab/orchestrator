@@ -9,13 +9,13 @@ import os
 import pytest
 from typing import Dict, Any
 
-from orchestrator.core.pipeline import Pipeline
-from orchestrator.core.task import Task
-from orchestrator.control_flow.loops import WhileLoopHandler
-from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.auto_resolution.model_caller import ModelCaller
-from orchestrator.core.loop_context import GlobalLoopContextManager
+from src.orchestrator.core.pipeline import Pipeline
+from src.orchestrator.core.task import Task
+from src.orchestrator.control_flow.loops import WhileLoopHandler
+from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.auto_resolution.model_caller import ModelCaller
+from src.orchestrator.core.loop_context import GlobalLoopContextManager
 
 
 # Skip these tests if no API keys are available

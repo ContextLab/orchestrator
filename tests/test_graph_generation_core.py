@@ -9,10 +9,10 @@ import pytest
 import asyncio
 from typing import Dict, Any
 
-from orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
-from orchestrator.graph_generation.syntax_parser import DeclarativeSyntaxParser
-from orchestrator.graph_generation.dependency_resolver import EnhancedDependencyResolver
-from orchestrator.graph_generation.types import (
+from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
+from src.orchestrator.graph_generation.syntax_parser import DeclarativeSyntaxParser
+from src.orchestrator.graph_generation.dependency_resolver import EnhancedDependencyResolver
+from src.orchestrator.graph_generation.types import (
     ParsedPipeline, ParsedStep, InputSchema, OutputSchema, StepType, DependencyType
 )
 

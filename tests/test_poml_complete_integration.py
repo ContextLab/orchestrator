@@ -10,9 +10,9 @@ import tempfile
 import csv
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from orchestrator.core.template_resolver import TemplateResolver, TemplateFormat
-from orchestrator.core.output_tracker import OutputTracker
-from orchestrator.core.template_migration_tools import (
+from src.orchestrator.core.template_resolver import TemplateResolver, TemplateFormat
+from src.orchestrator.core.output_tracker import OutputTracker
+from src.orchestrator.core.template_migration_tools import (
     analyze_template, migrate_template, MigrationStrategy
 )
 

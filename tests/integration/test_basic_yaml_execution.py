@@ -7,10 +7,10 @@ with real models, making actual API calls to generate content.
 import pytest
 
 from orchestrator import Orchestrator, init_models
-from orchestrator.compiler import YAMLCompiler
-from orchestrator.control_systems.model_based_control_system import (
+from src.orchestrator.compiler import YAMLCompiler
+from src.orchestrator.control_systems.model_based_control_system import (
     ModelBasedControlSystem)
-from orchestrator.utils.api_keys_flexible import load_api_keys_optional
+from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 
 pytestmark = pytest.mark.integration

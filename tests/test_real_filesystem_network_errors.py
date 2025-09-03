@@ -14,9 +14,9 @@ from typing import Any, Dict
 
 import pytest
 
-from orchestrator.core.error_handling import ErrorHandler
-from orchestrator.execution.error_handler_executor import ErrorHandlerExecutor
-from orchestrator.engine.pipeline_spec import TaskSpec
+from src.orchestrator.core.error_handling import ErrorHandler
+from src.orchestrator.execution.error_handler_executor import ErrorHandlerExecutor
+from src.orchestrator.engine.pipeline_spec import TaskSpec
 
 
 class RealFilesystemTaskExecutor:

@@ -25,7 +25,7 @@ from src.orchestrator.core.loop_context import GlobalLoopContextManager, LoopCon
 from src.orchestrator.orchestrator import Orchestrator
 from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from orchestrator import init_models
-from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
 
 class TestTemplateResolutionIntegration:

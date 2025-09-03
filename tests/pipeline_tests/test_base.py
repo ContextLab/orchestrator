@@ -14,8 +14,8 @@ import pytest
 import yaml
 
 from orchestrator import Orchestrator
-from orchestrator.core.exceptions import OrchestratorError
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.exceptions import OrchestratorError
+from src.orchestrator.models.model_registry import ModelRegistry
 
 
 @dataclass

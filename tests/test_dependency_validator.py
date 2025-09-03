@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from orchestrator.validation.dependency_validator import (
+from src.orchestrator.validation.dependency_validator import (
     DependencyValidator,
     DependencyIssue,
     DependencyValidationResult,

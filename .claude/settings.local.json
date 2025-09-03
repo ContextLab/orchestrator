@@ -275,7 +275,13 @@
       "Bash(for:*)",
       "Bash(do gh issue close $issue --comment \"no longer valid after refactor (#307)\")",
       "Bash(do echo \"Closing issue $issue...\")",
-      "WebFetch(domain:httpbin.org)"
+      "WebFetch(domain:httpbin.org)",
+      "WebFetch(domain:)",
+      "Read(/usr/local/bin/**)",
+      "Read(/usr/bin/**)",
+      "Read(/usr/local/bin/**)",
+      "Read(/opt/homebrew/bin/**)",
+      "Read(/opt/homebrew/bin/**)"
     ],
     "deny": [],
     "ask": []

@@ -4,11 +4,11 @@ import time
 
 import pytest
 
-from orchestrator.core.pipeline import (
+from src.orchestrator.core.pipeline import (
     CircularDependencyError,
     InvalidDependencyError,
     Pipeline)
-from orchestrator.core.task import Task, TaskStatus
+from src.orchestrator.core.task import Task, TaskStatus
 
 
 class TestPipeline:

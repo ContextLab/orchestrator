@@ -74,7 +74,7 @@ steps:
 
     # Initialize model registry for control flow
     from orchestrator import init_models
-    from orchestrator.models.registry_singleton import get_model_registry
+    from src.orchestrator.models.registry_singleton import get_model_registry
     
     init_models()
     model_registry = get_model_registry()
@@ -131,7 +131,7 @@ steps:
 
     # Initialize model registry for control flow
     from orchestrator import init_models
-    from orchestrator.models.registry_singleton import get_model_registry
+    from src.orchestrator.models.registry_singleton import get_model_registry
     
     init_models()
     model_registry = get_model_registry()
@@ -209,7 +209,7 @@ steps:
 
     # Initialize model registry for control flow
     from orchestrator import init_models
-    from orchestrator.models.registry_singleton import get_model_registry
+    from src.orchestrator.models.registry_singleton import get_model_registry
     
     init_models()
     model_registry = get_model_registry()
@@ -302,7 +302,7 @@ steps:
 
     # Initialize model registry for control flow
     from orchestrator import init_models
-    from orchestrator.models.registry_singleton import get_model_registry
+    from src.orchestrator.models.registry_singleton import get_model_registry
     
     init_models()
     model_registry = get_model_registry()

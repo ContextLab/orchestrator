@@ -4,10 +4,10 @@
 import asyncio
 import sys
 
-from orchestrator.orchestrator import Orchestrator
-from orchestrator.core.control_system import ControlSystem
-from orchestrator.core.task import Task
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.orchestrator import Orchestrator
+from src.orchestrator.core.control_system import ControlSystem
+from src.orchestrator.core.task import Task
+from src.orchestrator.models.model_registry import ModelRegistry
 
 
 class SimpleControlSystem(ControlSystem):
@@ -114,7 +114,7 @@ async def test_auto_resolution():
         if not model:
             # Try Ollama directly
             try:
-                from orchestrator.integrations.ollama_model import OllamaModel
+                from src.orchestrator.integrations.ollama_model import OllamaModel
 
                 model = OllamaModel(model_name="llama3.2:1b")
                 if model._is_available:
@@ -128,7 +128,7 @@ async def test_auto_resolution():
                 return False
 
         # Test direct AUTO resolution
-        from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        from src.orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
 
         resolver = AmbiguityResolver(model=model)
 
@@ -206,7 +206,7 @@ steps:
         if not model:
             # Try Ollama directly
             try:
-                from orchestrator.integrations.ollama_model import OllamaModel
+                from src.orchestrator.integrations.ollama_model import OllamaModel
 
                 model = OllamaModel(model_name="llama3.2:1b")
                 if not model._is_available:

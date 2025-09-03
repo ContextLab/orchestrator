@@ -4,8 +4,8 @@ from concurrent.futures import ProcessPoolExecutor
 
 import pytest
 
-from orchestrator.core.task import Task
-from orchestrator.executor.parallel_executor import (
+from src.orchestrator.core.task import Task
+from src.orchestrator.executor.parallel_executor import (
     ExecutionConfig,
     ExecutionMode,
     WorkerPool)

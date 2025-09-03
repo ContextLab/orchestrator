@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, '/Users/jmanning/orchestrator/src')
 
-from orchestrator.orchestrator import Orchestrator
+from src.orchestrator.orchestrator import Orchestrator
 from orchestrator import init_models
 
 

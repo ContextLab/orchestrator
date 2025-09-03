@@ -7,10 +7,10 @@ import pytest
 import subprocess
 import time
 from unittest.mock import patch, MagicMock
-from orchestrator.integrations.ollama_model import OllamaModel
-from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.core.model import ModelCapabilities, ModelCost
+from src.orchestrator.integrations.ollama_model import OllamaModel
+from src.orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.model import ModelCapabilities, ModelCost
 
 
 def is_ollama_running():
@@ -351,7 +351,7 @@ class TestRealOllamaIntegration:
 
     def test_ollama_model_size_parsing_integration(self):
         """Test model size parsing with Ollama model names."""
-        from orchestrator.utils.model_utils import parse_model_size
+        from src.orchestrator.utils.model_utils import parse_model_size
         
         # Test Ollama model names with size information
         test_cases = [

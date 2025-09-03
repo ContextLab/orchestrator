@@ -273,7 +273,7 @@ class TestAutoTagExamples:
 
     def test_auto_tag_in_yaml(self):
         """Test AUTO tag usage in YAML."""
-        from orchestrator.compiler.auto_tag_yaml_parser import parse_yaml_with_auto_tags
+        from src.orchestrator.compiler.auto_tag_yaml_parser import parse_yaml_with_auto_tags
 
         yaml_content = """id: auto_tag_example
 name: AUTO Tag Example
@@ -397,7 +397,7 @@ class TestDesignDocCodeSnippets:
 
     def test_task_abstraction_interface(self):
         """Test that Task abstraction interface is correctly implemented."""
-        from orchestrator.core.task import Task, TaskStatus
+        from src.orchestrator.core.task import Task, TaskStatus
 
         # Create a task instance
         task = Task(
@@ -420,7 +420,7 @@ class TestDesignDocCodeSnippets:
 
     def test_pipeline_abstraction_interface(self):
         """Test that Pipeline abstraction interface is correctly implemented."""
-        from orchestrator.core.pipeline import Pipeline
+        from src.orchestrator.core.pipeline import Pipeline
 
         # Verify Pipeline class exists and has expected methods
         assert hasattr(Pipeline, "add_task")
@@ -429,7 +429,7 @@ class TestDesignDocCodeSnippets:
 
     def test_model_interface(self):
         """Test that Model interface is correctly implemented."""
-        from orchestrator.core.model import Model, ModelCapabilities
+        from src.orchestrator.core.model import Model, ModelCapabilities
 
         # Verify Model class has required methods
         assert hasattr(Model, "generate")
@@ -447,7 +447,7 @@ class TestDesignDocCodeSnippets:
 
     def test_yaml_compiler_interface(self):
         """Test that YAMLCompiler interface is correctly implemented."""
-        from orchestrator.compiler.yaml_compiler import YAMLCompiler
+        from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 
         # Verify YAMLCompiler has expected methods
         assert hasattr(YAMLCompiler, "compile")
@@ -458,7 +458,7 @@ class TestDesignDocCodeSnippets:
 
     def test_error_handling_hierarchy(self):
         """Test error handling class hierarchy from design."""
-        from orchestrator.core.exceptions import (
+        from src.orchestrator.core.exceptions import (
             OrchestratorError,
             PipelineError,
             TaskError,

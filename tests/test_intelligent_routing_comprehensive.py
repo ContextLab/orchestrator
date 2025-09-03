@@ -7,13 +7,13 @@ import time
 import json
 import pytest
 
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
-from orchestrator.models.load_balancer import LoadBalancer, ModelPoolConfig
-from orchestrator.models.domain_router import DomainRouter
-from orchestrator.models.openai_model import OpenAIModel
-from orchestrator.integrations.ollama_model import OllamaModel
-from orchestrator.models.anthropic_model import AnthropicModel
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
+from src.orchestrator.models.load_balancer import LoadBalancer, ModelPoolConfig
+from src.orchestrator.models.domain_router import DomainRouter
+from src.orchestrator.models.openai_model import OpenAIModel
+from src.orchestrator.integrations.ollama_model import OllamaModel
+from src.orchestrator.models.anthropic_model import AnthropicModel
 
 
 async def setup_comprehensive_registry():

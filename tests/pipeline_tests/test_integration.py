@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 from orchestrator import Orchestrator
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.models.model_registry import ModelRegistry
 from tests.pipeline_tests.test_base import (
     BasePipelineTest, 
     PipelineExecutionResult,

@@ -7,13 +7,13 @@ import pytest
 import time
 import asyncio
 from unittest.mock import patch, MagicMock
-from orchestrator.models.advanced_caching import (
+from src.orchestrator.models.advanced_caching import (
     CacheEvictionPolicy, CacheEntry, AdvancedCache,
     ModelSelectionCache, CapabilityAnalysisCache, 
     PredictiveCacheWarmer, CacheManager, background_cache_maintenance
 )
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.core.model import Model, ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.model import Model, ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
 
 
 class TestModel(Model):

@@ -4,9 +4,9 @@ import pytest
 import sys
 from unittest.mock import patch, MagicMock
 
-from orchestrator.compiler.schema_validator import SchemaValidator
-from orchestrator.compiler.yaml_compiler import YAMLCompiler
-from orchestrator.core.exceptions import SchemaValidationError, YAMLCompilerError
+from src.orchestrator.compiler.schema_validator import SchemaValidator
+from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+from src.orchestrator.core.exceptions import SchemaValidationError, YAMLCompilerError
 
 
 class TestSchemaValidatorIntegration:

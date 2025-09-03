@@ -4,10 +4,10 @@
 import os
 import pytest
 
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.models.domain_router import DomainRouter, DomainConfig
-from orchestrator.models.openai_model import OpenAIModel
-from orchestrator.integrations.ollama_model import OllamaModel
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.models.domain_router import DomainRouter, DomainConfig
+from src.orchestrator.models.openai_model import OpenAIModel
+from src.orchestrator.integrations.ollama_model import OllamaModel
 
 
 async def setup_registry():

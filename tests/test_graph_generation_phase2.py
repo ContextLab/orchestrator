@@ -13,11 +13,11 @@ import asyncio
 from unittest.mock import Mock, patch
 
 # Import the enhanced components
-from orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
-from orchestrator.graph_generation.parallel_detector import ParallelExecutionDetector
-from orchestrator.graph_generation.control_flow_analyzer import ControlFlowAnalyzer
-from orchestrator.graph_generation.state_graph_constructor import StateGraphConstructor
-from orchestrator.graph_generation.types import (
+from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
+from src.orchestrator.graph_generation.parallel_detector import ParallelExecutionDetector
+from src.orchestrator.graph_generation.control_flow_analyzer import ControlFlowAnalyzer
+from src.orchestrator.graph_generation.state_graph_constructor import StateGraphConstructor
+from src.orchestrator.graph_generation.types import (
     ParsedStep, ParsedPipeline, DependencyGraph, ParallelGroup, 
     ControlFlowMap, DataFlowSchema, StepType, ParallelizationType
 )

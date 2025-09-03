@@ -3,9 +3,9 @@
 import pytest
 from datetime import datetime
 
-from orchestrator.compiler.template_renderer import TemplateRenderer
-from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
-from orchestrator.models import get_model_registry
+from src.orchestrator.compiler.template_renderer import TemplateRenderer
+from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from src.orchestrator.models import get_model_registry
 
 
 class TestTemplateRendering:

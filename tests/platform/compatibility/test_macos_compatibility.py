@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from orchestrator import Orchestrator, init_models
-from orchestrator.compiler.yaml_compiler import YAMLCompiler
+from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 
 
 class MacOSCompatibilityTester:

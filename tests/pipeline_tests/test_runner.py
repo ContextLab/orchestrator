@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import yaml
 
 from orchestrator import Orchestrator
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.models.model_registry import ModelRegistry
 
 from .test_base import BasePipelineTest, PipelineExecutionResult, PipelineTestConfiguration
 

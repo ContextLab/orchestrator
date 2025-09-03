@@ -4,8 +4,8 @@
 import asyncio
 import sys
 
-from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
-from orchestrator.integrations.ollama_model import OllamaModel
+from src.orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+from src.orchestrator.integrations.ollama_model import OllamaModel
 
 
 async def test_auto_resolution():

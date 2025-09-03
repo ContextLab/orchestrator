@@ -8,13 +8,13 @@ import gc
 import time
 import threading
 from unittest.mock import patch, MagicMock
-from orchestrator.models.memory_optimization import (
+from src.orchestrator.models.memory_optimization import (
     MemoryProfile, MemoryEfficientModelStorage, MemoryMonitor, 
     MemoryOptimizedRegistry, estimate_model_memory_usage, 
     optimize_model_registry_memory
 )
-from orchestrator.models.model_registry import ModelRegistry
-from orchestrator.core.model import Model, ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
+from src.orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.model import Model, ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
 
 
 class TestModel(Model):

@@ -11,14 +11,14 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, MagicMock
 from flask import Flask
 
-from orchestrator.analytics.performance_monitor import PerformanceMonitor
-from orchestrator.core.wrapper_monitoring import (
+from src.orchestrator.analytics.performance_monitor import PerformanceMonitor
+from src.orchestrator.core.wrapper_monitoring import (
     WrapperMonitoring, 
     WrapperHealthStatus, 
     WrapperOperationMetrics,
     WrapperOperationStatus
 )
-from orchestrator.web.monitoring_dashboard import MonitoringDashboard, create_monitoring_dashboard
+from src.orchestrator.web.monitoring_dashboard import MonitoringDashboard, create_monitoring_dashboard
 
 
 class TestMonitoringDashboard:

@@ -16,11 +16,11 @@ from pathlib import Path
 import pytest
 
 from orchestrator import init_models, Orchestrator
-from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
-from orchestrator.tools.web_tools import HeadlessBrowserTool, WebSearchTool
-from orchestrator.tools.system_tools import TerminalTool, FileSystemTool
-from orchestrator.tools.data_tools import DataProcessingTool
-from orchestrator.tools.report_tools import ReportGeneratorTool, PDFCompilerTool
+from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from src.orchestrator.tools.web_tools import HeadlessBrowserTool, WebSearchTool
+from src.orchestrator.tools.system_tools import TerminalTool, FileSystemTool
+from src.orchestrator.tools.data_tools import DataProcessingTool
+from src.orchestrator.tools.report_tools import ReportGeneratorTool, PDFCompilerTool
 
 
 pytestmark = pytest.mark.integration

@@ -14,12 +14,12 @@ import asyncio
 import time
 from typing import Dict, Any, List
 
-from orchestrator.core.parallel_queue_task import ParallelQueueTask, ParallelQueueStatus
-from orchestrator.control_flow.parallel_queue_handler import ParallelQueueHandler
-from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
-from orchestrator.control_flow.enhanced_condition_evaluator import EnhancedConditionEvaluator
-from orchestrator.core.loop_context import GlobalLoopContextManager
-from orchestrator.models.model_registry import ModelRegistry
+from src.orchestrator.core.parallel_queue_task import ParallelQueueTask, ParallelQueueStatus
+from src.orchestrator.control_flow.parallel_queue_handler import ParallelQueueHandler
+from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
+from src.orchestrator.control_flow.enhanced_condition_evaluator import EnhancedConditionEvaluator
+from src.orchestrator.core.loop_context import GlobalLoopContextManager
+from src.orchestrator.models.model_registry import ModelRegistry
 
 
 class TestParallelQueuePhase2:
@@ -318,7 +318,7 @@ class TestParallelQueueRealYAMLIntegration:
     @pytest.mark.asyncio
     async def test_end_to_end_yaml_compilation_and_execution(self):
         """Test complete pipeline from YAML to real execution."""
-        from orchestrator.compiler.yaml_compiler import YAMLCompiler
+        from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
         
         yaml_content = """
         name: Phase 2 Real Integration Test
