@@ -18,18 +18,8 @@ from src.orchestrator.orchestrator import Orchestrator
 @pytest.fixture
 async def orchestrator():
     """Create orchestrator instance."""
-    from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
-    from src.orchestrator.models.registry import ModelRegistry
-    
-    # Create a minimal registry and control system to avoid initialization error
-    registry = ModelRegistry()
-    control_system = HybridControlSystem(model_registry=registry)
-    
-    orchestrator = Orchestrator(
-        model_registry=registry,
-        control_system=control_system
-    )
-    return orchestrator
+    from tests.test_infrastructure import create_test_orchestrator
+    return create_test_orchestrator()
 
 
 @pytest.fixture
@@ -92,7 +82,7 @@ class TestCoreDataProcessing:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Verify data was loaded
         assert result.steps["load_data"]["success"] is True
@@ -109,7 +99,7 @@ class TestCoreDataProcessing:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Verify data was loaded
         assert result.steps["load_data"]["success"] is True
@@ -126,7 +116,7 @@ class TestCoreDataProcessing:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Check validation passed
         validation = result.steps["validate_data"]
@@ -153,7 +143,7 @@ class TestCoreDataProcessing:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Validation should report errors
         validation = result.steps["validate_data"]
@@ -168,7 +158,7 @@ class TestCoreDataProcessing:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Check transformation was applied
         transform = result.steps["transform_data"]
@@ -185,7 +175,7 @@ class TestCoreDataProcessing:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Check aggregation was performed
         transform = result.steps["transform_data"]
@@ -204,7 +194,7 @@ class TestCoreDataProcessing:
             "output_format": "json"
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Check file was saved
         save_result = result.steps["save_results"]
@@ -228,7 +218,7 @@ class TestCoreDataProcessing:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Check report was generated
         report_result = result.steps["save_report"]
@@ -255,7 +245,7 @@ class TestCoreDataProcessing:
             "output_format": "json"
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # All steps should complete successfully
         assert result.steps["load_data"]["success"] is True
@@ -285,7 +275,7 @@ class TestEdgeCases:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Pipeline should handle empty data gracefully
         assert result.steps["load_data"]["success"] is True
@@ -303,7 +293,7 @@ class TestEdgeCases:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should load the file but fail validation
         assert result.steps["load_data"]["success"] is True
@@ -326,7 +316,7 @@ class TestEdgeCases:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should process with lenient validation
         assert result.steps["validate_data"]["mode"] == "lenient"
@@ -350,7 +340,7 @@ class TestEdgeCases:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should handle large dataset
         assert result.steps["load_data"]["success"] is True
@@ -375,7 +365,7 @@ class TestEdgeCases:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should handle special characters
         assert result.steps["load_data"]["success"] is True
@@ -411,7 +401,7 @@ class TestEdgeCases:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should handle nested structures
         assert result.steps["load_data"]["success"] is True
@@ -432,7 +422,7 @@ class TestEdgeCases:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should process CSV
         assert result.steps["load_data"]["success"] is True
@@ -456,7 +446,7 @@ class TestEdgeCases:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should handle mixed types with lenient validation
         assert result.steps["validate_data"]["mode"] == "lenient"
@@ -473,7 +463,7 @@ class TestErrorHandling:
             "output_path": temp_dir
         }
         
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should fail at load_data step
         assert result.steps["load_data"]["success"] is False
@@ -487,7 +477,7 @@ class TestErrorHandling:
         }
         
         # Should create the directory or handle the error
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # The filesystem tool should create directories as needed
         assert result.steps["save_results"]["success"] is True
@@ -559,7 +549,7 @@ class TestErrorHandling:
         }
         
         # Should complete within timeout
-        result = await orchestrator.run(pipeline_yaml, inputs)
+        result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should either complete or timeout gracefully
         assert "load_data" in result.steps
