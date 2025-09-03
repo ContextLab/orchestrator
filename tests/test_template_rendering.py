@@ -7,6 +7,8 @@ from src.orchestrator.compiler.template_renderer import TemplateRenderer
 from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 from src.orchestrator.models import get_model_registry
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestTemplateRendering:
     """Test template rendering functionality."""

@@ -7,6 +7,8 @@ import os
 from src.orchestrator.models.anthropic_model import AnthropicModel
 from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestLangChainAnthropicIntegration:
     """Real integration tests for LangChain-enhanced Anthropic models."""

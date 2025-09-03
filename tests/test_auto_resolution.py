@@ -5,6 +5,8 @@ import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 
 from src.orchestrator.auto_resolution import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     AutoTagContext,
     AutoTagResolution,
     AutoTagConfig,

@@ -11,6 +11,8 @@ from unittest.mock import patch
 from typing import List, Dict
 
 from src.orchestrator.intelligence.intelligent_model_selector import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     IntelligentModelSelector,
     ModelRequirements,
     ModelScore,

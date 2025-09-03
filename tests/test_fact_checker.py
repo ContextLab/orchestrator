@@ -3,6 +3,7 @@
 import asyncio
 import os
 import pytest
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from pathlib import Path
 
 from orchestrator import Orchestrator, init_models
@@ -33,7 +34,7 @@ The speed of light in vacuum is approximately 299,792,458 meters per second.
         
         try:
             # Run the fact-checker pipeline
-            orchestrator = Orchestrator()
+            orchestrator = create_test_orchestrator()
             pipeline_path = Path("examples/iterative_fact_checker_simple.yaml")
             
             if not pipeline_path.exists():
@@ -94,7 +95,7 @@ The speed of light in vacuum is approximately 299,792,458 meters per second.
         if not climate_doc.exists():
             pytest.skip("Climate test document not found")
         
-        orchestrator = Orchestrator()
+        orchestrator = create_test_orchestrator()
         pipeline_path = Path("examples/iterative_fact_checker_simple.yaml")
         
         if not pipeline_path.exists():
@@ -147,7 +148,7 @@ Fact two with citation [1].
         test_path.write_text(test_doc)
         
         try:
-            orchestrator = Orchestrator()
+            orchestrator = create_test_orchestrator()
             pipeline_path = Path("examples/iterative_fact_checker_simple.yaml")
             
             if not pipeline_path.exists():

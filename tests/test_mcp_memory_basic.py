@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from src.orchestrator.tools.mcp_tools import MCPMemoryTool
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestMCPMemoryBasic:
     """Test basic MCP memory operations without mocks."""

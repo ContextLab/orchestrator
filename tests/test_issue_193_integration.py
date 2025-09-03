@@ -22,6 +22,8 @@ from src.orchestrator.engine.pipeline_spec import TaskSpec, PipelineSpec
 from src.orchestrator.tools.output_visualization import OutputVisualizer
 from src.orchestrator.validation.output_validator import OutputValidator
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestOutputMetadataCore:
     """Test core output metadata functionality with real file operations."""

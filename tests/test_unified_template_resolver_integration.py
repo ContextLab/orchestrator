@@ -13,6 +13,8 @@ from src.orchestrator.control_systems.tool_integrated_control_system import Tool
 from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 from src.orchestrator.models.model_registry import ModelRegistry
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 async def test_model_based_system():
     """Test template resolution in ModelBasedControlSystem."""

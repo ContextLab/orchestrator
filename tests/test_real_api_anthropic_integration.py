@@ -11,6 +11,8 @@ from src.orchestrator.models.model_selector import ModelSelector, ModelSelection
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.core.model import ModelCapabilities, ModelCost
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestRealAnthropicIntegration:
     """Test enhanced model requirements with real Anthropic models."""

@@ -18,6 +18,8 @@ from src.orchestrator.models import get_model_registry
 from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
 from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestActionLoopTask:
     """Test ActionLoopTask model with real validation and functionality."""

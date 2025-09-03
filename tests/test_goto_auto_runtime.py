@@ -9,6 +9,8 @@ from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestGotoAutoRuntime:
     """Test cases for runtime resolution of AUTO tags in goto fields."""

@@ -9,6 +9,8 @@ from orchestrator import Orchestrator
 from src.orchestrator.models.openai_model import OpenAIModel
 from src.orchestrator.integrations.ollama_model import OllamaModel
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 async def setup_orchestrator():
     """Set up orchestrator with real models."""
@@ -50,7 +52,7 @@ async def setup_orchestrator():
         raise RuntimeError("No models available for testing")
 
     # Create orchestrator with initialized registry
-    orchestrator = Orchestrator()
+    orchestrator = create_test_orchestrator()
     orchestrator.model_registry = registry
 
     return orchestrator, models_registered

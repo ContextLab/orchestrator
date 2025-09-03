@@ -8,6 +8,8 @@ from src.orchestrator.compiler.schema_validator import SchemaValidator
 from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from src.orchestrator.core.exceptions import SchemaValidationError, YAMLCompilerError
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestSchemaValidatorIntegration:
     """Test dependency validation integration in SchemaValidator."""

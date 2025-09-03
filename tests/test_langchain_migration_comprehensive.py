@@ -11,6 +11,8 @@ from src.orchestrator.models.langchain_adapter import LangChainModelAdapter
 from src.orchestrator.utils.auto_install import PACKAGE_MAPPINGS
 from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestLangChainMigrationComprehensive:
     """Comprehensive tests for LangChain provider migration."""

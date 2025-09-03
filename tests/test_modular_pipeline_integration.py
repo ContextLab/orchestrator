@@ -15,6 +15,8 @@ from src.orchestrator.orchestrator import Orchestrator
 from src.orchestrator.models.registry_singleton import get_model_registry
 from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestModularPipelineIntegration:
     """Test the complete modular analysis pipeline with real components."""

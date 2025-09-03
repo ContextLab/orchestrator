@@ -14,6 +14,8 @@ from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 
 from src.orchestrator.testing import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     TestMode, TestModeManager, TestSuiteComposition,
     CIIntegrationManager, CIConfiguration, CISystem, TestStatus,
     ReleaseValidator, ReleaseType, ValidationLevel, ValidationResult,

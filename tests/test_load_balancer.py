@@ -12,6 +12,8 @@ from src.orchestrator.models.load_balancer import LoadBalancer, ModelPoolConfig
 from src.orchestrator.models.openai_model import OpenAIModel
 from src.orchestrator.integrations.ollama_model import OllamaModel
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 @pytest.fixture
 async def registry():

@@ -7,6 +7,8 @@ import pytest
 
 from src.orchestrator.tools.report_tools import PDFCompilerTool, ReportGeneratorTool
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestReportGeneratorTool:
     """Test suite for ReportGeneratorTool."""

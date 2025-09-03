@@ -18,6 +18,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.orchestrator.runtime import RuntimeResolutionIntegration
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 def load_pipeline_config(yaml_path: str):
     """Load pipeline configuration from YAML."""

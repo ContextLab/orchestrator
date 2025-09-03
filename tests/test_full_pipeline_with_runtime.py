@@ -20,6 +20,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from src.orchestrator.orchestrator import Orchestrator
 from src.orchestrator.models.registry_singleton import get_model_registry
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 async def test_control_flow_advanced():
     """Test the control_flow_advanced pipeline with runtime resolution."""
@@ -54,10 +56,7 @@ async def test_control_flow_advanced():
     control_system = HybridControlSystem(registry)
     
     # Create orchestrator with control system
-    orchestrator = Orchestrator(
-        control_system=control_system,
-        debug_templates=True  # Enable template debugging
-    )
+    orchestrator = create_test_orchestrator()
     
     # Prepare context with test input
     context = {

@@ -13,13 +13,15 @@ import json
 sys.path.insert(0, '/Users/jmanning/orchestrator/src')
 
 from src.orchestrator.orchestrator import Orchestrator
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from orchestrator import init_models
 
 
 @pytest.fixture
-def orchestrator():
-    """Create orchestrator instance with real models."""
-    return Orchestrator(model_registry=init_models())
+async def orchestrator():
+    """Create test orchestrator instance."""
+    return create_test_orchestrator()
 
 
 @pytest.fixture

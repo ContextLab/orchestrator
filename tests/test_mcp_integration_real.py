@@ -17,6 +17,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.orchestrator.tools.mcp_tools import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     MCPServerTool,
     MCPMemoryTool,
     MCPResourceTool
@@ -276,7 +278,7 @@ class TestRealPipelineExecution:
         try:
             # Initialize orchestrator
             model_registry = init_models()
-            orchestrator = Orchestrator(model_registry=model_registry)
+            orchestrator = create_test_orchestrator()
             
             # Load pipeline
             pipeline_path = Path(__file__).parent.parent / "examples/mcp_integration_pipeline.yaml"

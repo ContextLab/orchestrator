@@ -22,6 +22,8 @@ from typing import Dict, Any, List
 from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
 from src.orchestrator.core.exceptions import GraphGenerationError, CircularDependencyError
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestComplexPipelineGeneration:
     """Test automatic graph generation with real complex pipeline examples."""

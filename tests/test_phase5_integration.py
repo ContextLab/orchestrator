@@ -17,6 +17,8 @@ from src.orchestrator.core.enhanced_pipeline import EnhancedPipeline, create_enh
 from src.orchestrator.core.pipeline import Pipeline
 from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestEnhancedYAMLCompilerIntegration:
     """Test integration of EnhancedYAMLCompiler with AutomaticGraphGenerator."""

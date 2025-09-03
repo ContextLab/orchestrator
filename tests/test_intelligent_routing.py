@@ -11,6 +11,8 @@ from src.orchestrator.models.anthropic_model import AnthropicModel
 from src.orchestrator.integrations.ollama_model import OllamaModel
 from src.orchestrator.core.model import ModelCost
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 async def setup_test_registry() -> ModelRegistry:
     """Set up a model registry with test models."""

@@ -14,6 +14,8 @@ from typing import Dict, Any
 
 from src.orchestrator.orchestrator import Orchestrator
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestWhileLoopVariableTemplates:
     """Test while loop variables are available in templates."""

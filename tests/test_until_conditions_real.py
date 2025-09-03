@@ -17,6 +17,8 @@ from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.auto_resolution.model_caller import ModelCaller
 from src.orchestrator.core.loop_context import GlobalLoopContextManager
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 # Skip these tests if no API keys are available
 pytestmark = pytest.mark.skipif(

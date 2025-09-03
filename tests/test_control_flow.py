@@ -10,6 +10,8 @@ from src.orchestrator.engine.control_flow_engine import ControlFlowEngine
 from src.orchestrator.core.task import Task
 from src.orchestrator.core.pipeline import Pipeline
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestControlFlowAutoResolver:
     """Test AUTO tag resolution for control flow using real models."""

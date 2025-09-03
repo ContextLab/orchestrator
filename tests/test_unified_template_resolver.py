@@ -2,6 +2,8 @@
 
 import pytest
 from src.orchestrator.core.unified_template_resolver import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     UnifiedTemplateResolver, 
     TemplateResolutionContext
 )

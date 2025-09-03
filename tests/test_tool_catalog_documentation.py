@@ -17,7 +17,7 @@ async def setup_orchestrator():
     model_registry = init_models()
 
     # Create orchestrator
-    orchestrator = Orchestrator(model_registry=model_registry)
+    orchestrator = create_test_orchestrator()
     return orchestrator
 
 

@@ -16,6 +16,8 @@ from src.orchestrator.execution.error_handler_executor import ErrorHandlerExecut
 from src.orchestrator.engine.pipeline_spec import TaskSpec
 from src.orchestrator.engine.task_executor import UniversalTaskExecutor
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class RealAPITaskExecutor:
     """Task executor that makes real API calls for testing error handling."""

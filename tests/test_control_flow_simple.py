@@ -6,6 +6,8 @@ from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
 from src.orchestrator.core.task import Task
 from src.orchestrator import init_models
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 async def test_simple_condition():
     """Test simple conditional compilation."""

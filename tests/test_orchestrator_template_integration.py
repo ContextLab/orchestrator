@@ -9,6 +9,8 @@ from src.orchestrator.orchestrator import Orchestrator
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.core.model import ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class MockModel:
     """Mock model for testing."""

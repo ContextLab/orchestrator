@@ -21,6 +21,8 @@ from src.orchestrator.models import get_model_registry
 from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestPipelineTemplateValidation:
     """Test template resolution with real example pipelines."""
@@ -33,7 +35,7 @@ class TestPipelineTemplateValidation:
             pytest.skip("No models available for testing")
         
         control_system = HybridControlSystem(model_registry)
-        orchestrator = Orchestrator(model_registry=model_registry, control_system=control_system)
+        orchestrator = create_test_orchestrator()
         return orchestrator
     
     @pytest.fixture

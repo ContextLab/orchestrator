@@ -13,7 +13,7 @@ async def setup_orchestrator():
     """Set up orchestrator with real models."""
     print("Initializing models...")
     model_registry = init_models()
-    orchestrator = Orchestrator(model_registry=model_registry)
+    orchestrator = create_test_orchestrator()
     return orchestrator
 
 

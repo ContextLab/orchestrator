@@ -19,6 +19,8 @@ from src.orchestrator.tools.web_tools import WebSearchTool, HeadlessBrowserTool
 from src.orchestrator.tools.data_tools import DataProcessingTool
 from src.orchestrator.core.cache import MemoryCache
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class ResearchAssistant:
     """
@@ -54,7 +56,7 @@ class ResearchAssistant:
         orc.init_models()
 
         # Initialize orchestrator
-        self.orchestrator = Orchestrator(state_manager=self.state_manager)
+        self.orchestrator = create_test_orchestrator()
 
         # Register additional models if needed
         self._register_models()

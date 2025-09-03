@@ -2,6 +2,8 @@
 
 import pytest
 from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from orchestrator import init_models
 
 

@@ -19,6 +19,8 @@ from src.orchestrator.orchestrator import Orchestrator
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.models.openai_model import OpenAIModel
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 @pytest.fixture
 def orchestrator():

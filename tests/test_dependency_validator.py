@@ -4,6 +4,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from src.orchestrator.validation.dependency_validator import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     DependencyValidator,
     DependencyIssue,
     DependencyValidationResult,

@@ -21,6 +21,8 @@ from src.orchestrator.engine.task_executor import UniversalTaskExecutor
 from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
 from src.orchestrator.compiler.error_handler_schema import ErrorHandlerSchemaValidator
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class MockTaskExecutor:
     """Minimal task executor for testing error handling."""

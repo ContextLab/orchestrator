@@ -25,6 +25,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from src.orchestrator.tools.auto_debugger import AutoDebuggerTool, AutoDebuggerInput
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestAutoDebuggerRealWorld:
     """Real-world test suite for AutoDebugger tool."""

@@ -1,14 +1,9 @@
 # Processed File
 
-Original size: 52 bytes
-Processing type: Expanded
+Original size: {{ read_file.size }} bytes
+Processing type: {% if read_file.size == 0 %}Empty file{% elif read_file.size > size_threshold %}Compressed{% else %}Expanded{% endif %}
+
 
 ## Result
 
-The provided text, “Test with émojis 🎉 and spëcial çharacters: @#$%^&*()”, represents a critical component within robust software testing methodologies, specifically focusing on character encoding and data integrity validation. The deliberate inclusion of diverse characters, including emojis, accented characters, and a range of special symbols, serves a multifaceted purpose extending beyond simple user interface observation. This practice is a cornerstone of testing applications designed for global audiences or those interacting with user-generated content.
-
-The use of "émojis 🎉" highlights the importance of Unicode character support.  Unicode is a universal character encoding standard, allowing a single character to represent characters from various languages and scripts.  Testing with emojis confirms the application’s ability to correctly render these visually rich symbols across different operating systems and browsers. The visual representation of the emoji confirms that the application’s font rendering engine is functioning as expected, and that the character encoding is properly translating the Unicode code point into a graphical representation.  The specific emoji (🎉) represents a celebratory visual element, often used to gauge the application's responsiveness to visually-driven input.
-
-Furthermore, the inclusion of "spëcial çharacters: @#$%^&*()" emphasizes the necessity of verifying correct data transmission and storage. The ‘ç’ character, a common representation of ‘c’ with an acute accent, reveals the application's adherence to specific character encodings, such as Latin-1 or UTF-8.  The presence of special characters like the dollar sign, hash, percent, caret, asterisk, and parentheses are frequently utilized in programming, data validation, and potentially in user input fields. Testing with these characters validates that the application handles these symbols without corruption or unexpected behavior.
-
-The byte count of 52 bytes is significant.  This exact size dictates the amount of data being analyzed during the test.  In a testing environment, this size is often used to simulate a minimal data packet or a small file.  Using a precisely measured byte count allows testers to verify that the application correctly handles data transfer, storage, and retrieval.  It’s common practice to create test files of a specific size – like 52 bytes – to isolate and identify potential issues related to data handling, such as buffer overflows or incorrect character encoding conversions during data transmission.  This controlled size provides a measurable benchmark for evaluating the integrity of the application’s data processing capabilities.  It’s crucial to maintain this consistent size throughout
+{% if handle_empty.status is not defined or handle_empty.status != 'skipped' %}{{ handle_empty }}{% elif compress_large.status is not defined or compress_large.status != 'skipped' %}{{ compress_large }}{% elif expand_small.status is not defined or expand_small.status != 'skipped' %}{{ expand_small }}{% else %}No content processed.{% endif %}

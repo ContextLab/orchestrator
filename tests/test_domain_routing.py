@@ -9,6 +9,8 @@ from src.orchestrator.models.domain_router import DomainRouter, DomainConfig
 from src.orchestrator.models.openai_model import OpenAIModel
 from src.orchestrator.integrations.ollama_model import OllamaModel
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 async def setup_registry():
     """Set up model registry with domain capabilities."""

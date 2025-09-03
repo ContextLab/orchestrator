@@ -8,6 +8,8 @@ import yaml
 
 # Don't use src. prefix - it creates duplicate module paths
 from src.orchestrator.tools.pipeline_recursion_tools import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     PipelineExecutorTool,
     RecursionControlTool)
 from src.orchestrator.models.registry_singleton import get_model_registry

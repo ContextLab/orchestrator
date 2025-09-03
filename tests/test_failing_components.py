@@ -5,6 +5,8 @@ from typing import Any, Dict, List
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.core.control_system import ControlSystem
 from src.orchestrator.core.resource_allocator import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     ResourceAllocator,
     ResourceType,
     ResourceQuota)

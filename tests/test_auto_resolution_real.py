@@ -16,6 +16,8 @@ from src.orchestrator.auto_resolution.resolution_executor import ResolutionExecu
 from src.orchestrator.auto_resolution.action_determiner import ActionDeterminer
 from src.orchestrator.auto_resolution.nested_handler import NestedAutoTagHandler
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 # Skip these tests if no API keys are available
 pytestmark = pytest.mark.skipif(

@@ -4,6 +4,8 @@ import pytest
 from datetime import datetime
 from src.orchestrator.core.template_manager import TemplateManager, DeferredTemplate, ChainableUndefined
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestTemplateManager:
     """Test the TemplateManager class."""

@@ -7,6 +7,8 @@ import pytest
 # Import the task module directly to ensure coverage measurement
 from src.orchestrator.core.task import Task, TaskStatus
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestTaskStatus:
     """Test TaskStatus enum."""

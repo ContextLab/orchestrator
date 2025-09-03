@@ -14,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from src.orchestrator.orchestrator import Orchestrator
 from src.orchestrator.core.pipeline import Pipeline
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 def create_pipeline_from_yaml(yaml_content):
     """Helper to create pipeline from YAML string"""
@@ -62,7 +64,7 @@ steps:
     
     # Create pipeline and orchestrator
     pipeline = create_pipeline_from_yaml(yaml_content)
-    orchestrator = Orchestrator()
+    orchestrator = create_test_orchestrator()
     
     # Execute with parameters
     result = await orchestrator.execute(
@@ -125,7 +127,7 @@ steps:
 """
     
     pipeline = create_pipeline_from_yaml(yaml_content)
-    orchestrator = Orchestrator()
+    orchestrator = create_test_orchestrator()
     
     result = await orchestrator.execute(
         pipeline,
@@ -186,7 +188,7 @@ steps:
 """
     
     pipeline = create_pipeline_from_yaml(yaml_content)
-    orchestrator = Orchestrator()
+    orchestrator = create_test_orchestrator()
     
     result = await orchestrator.execute(pipeline)
     
@@ -245,7 +247,7 @@ steps:
 """
     
     pipeline = create_pipeline_from_yaml(yaml_content)
-    orchestrator = Orchestrator()
+    orchestrator = create_test_orchestrator()
     
     result = await orchestrator.execute(
         pipeline,

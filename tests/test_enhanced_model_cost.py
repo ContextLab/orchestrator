@@ -6,6 +6,8 @@ Real tests for enhanced ModelCost functionality including budget periods and cos
 import pytest
 from src.orchestrator.core.model import ModelCost
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestEnhancedModelCost:
     """Test enhanced model cost calculation methods."""

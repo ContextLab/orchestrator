@@ -9,6 +9,8 @@ from src.orchestrator.control_flow.condition_models import LoopCondition, Condit
 from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
 from src.orchestrator.models.model_registry import ModelRegistry
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestConditionParser:
     """Test the condition parser for dependency analysis."""

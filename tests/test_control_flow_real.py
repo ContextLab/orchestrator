@@ -9,6 +9,8 @@ from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
 from src.orchestrator.control_flow.conditional import ConditionalHandler
 from src.orchestrator.core.task import Task
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class RealTestTool(Tool):
     """Real test tool that actually executes."""

@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from src.orchestrator.core.template_resolver import TemplateResolver, TemplateFormat
 from src.orchestrator.core.output_tracker import OutputTracker
 from src.orchestrator.core.template_migration_tools import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     analyze_template, migrate_template, MigrationStrategy
 )
 

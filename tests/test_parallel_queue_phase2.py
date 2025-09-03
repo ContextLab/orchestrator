@@ -21,6 +21,8 @@ from src.orchestrator.control_flow.enhanced_condition_evaluator import EnhancedC
 from src.orchestrator.core.loop_context import GlobalLoopContextManager
 from src.orchestrator.models.model_registry import ModelRegistry
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestParallelQueuePhase2:
     """Test Phase 2 - Real API Integration with NO MOCKS."""

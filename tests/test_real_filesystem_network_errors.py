@@ -18,6 +18,8 @@ from src.orchestrator.core.error_handling import ErrorHandler
 from src.orchestrator.execution.error_handler_executor import ErrorHandlerExecutor
 from src.orchestrator.engine.pipeline_spec import TaskSpec
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class RealFilesystemTaskExecutor:
     """Task executor that performs real filesystem operations."""

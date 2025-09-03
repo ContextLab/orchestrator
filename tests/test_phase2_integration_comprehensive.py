@@ -7,6 +7,8 @@ from unittest.mock import patch, MagicMock
 from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.utils.service_manager import SERVICE_MANAGERS
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestPhase2ComprehensiveIntegration:
     """Test complete Phase 2 integration as specified in Issues #202 and #199."""

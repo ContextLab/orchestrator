@@ -1,6 +1,8 @@
 """Test the AUTO tag parser with complex YAML cases."""
 
 from src.orchestrator.compiler.auto_tag_yaml_parser import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     AutoTagYAMLParser,
     parse_yaml_with_auto_tags)
 

@@ -785,7 +785,7 @@ class TestYAMLPipelineIntegration:
         
         assert result.header.name == "integration_test"
         assert len(result.steps) == 1
-        assert result.steps[0].id == "step1"
+        assert result["steps"][0].id == "step1"
         
         # Test validation
         validation_errors = await mock_compiler.validate(result)

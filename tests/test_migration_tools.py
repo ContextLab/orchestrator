@@ -8,6 +8,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.orchestrator.core.template_migration_tools import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     TemplateMigrationAnalyzer,
     TemplateMigrationEngine,
     MigrationStrategy,

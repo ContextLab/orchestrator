@@ -15,6 +15,8 @@ from src.orchestrator.models.openai_model import OpenAIModel
 from src.orchestrator.integrations.ollama_model import OllamaModel
 from src.orchestrator.models.anthropic_model import AnthropicModel
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 async def setup_comprehensive_registry():
     """Set up registry with all available models."""

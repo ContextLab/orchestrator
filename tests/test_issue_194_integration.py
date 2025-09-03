@@ -10,6 +10,8 @@ from src.orchestrator.models.model_registry import ModelRegistry
 from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
 from src.orchestrator.compiler.schema_validator import SchemaValidator
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+
 
 class TestIssue194Integration:
     """Integration tests demonstrating the complete enhanced model requirements system."""

@@ -6,6 +6,8 @@ import pytest
 from typing import Dict, Any
 
 from src.orchestrator.models import (
+
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     UnifiedModelRegistry,
     create_registry_from_env,
     create_default_configuration,
