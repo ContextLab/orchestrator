@@ -179,6 +179,20 @@ class LangGraphAdapter(ControlSystem):
         """Register a LangGraph workflow."""
         self.workflows[workflow.name] = workflow
 
+    async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
+        """
+        Execute a task using LangGraph workflow execution.
+
+        Args:
+            task: Task to execute
+            context: Execution context
+
+        Returns:
+            Task execution result
+        """
+        # Delegate to the execution control system (ModelBasedControlSystem)
+        return await self.execution_control._execute_task_impl(task, context)
+
     def create_workflow_from_pipeline(self, pipeline: Pipeline) -> LangGraphWorkflow:
         """Create a LangGraph workflow from an Orchestrator pipeline."""
         workflow = LangGraphWorkflow(pipeline.id)

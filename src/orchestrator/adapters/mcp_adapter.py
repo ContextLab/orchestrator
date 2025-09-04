@@ -395,6 +395,20 @@ class MCPAdapter(ControlSystem):
         self.model_registry = model_registry or get_model_registry()
         self.ai_control = ModelBasedControlSystem(self.model_registry)
 
+    async def _execute_task_impl(self, task: Task, context: Dict[str, Any]) -> Any:
+        """
+        Execute a task using MCP integration with AI models.
+
+        Args:
+            task: Task to execute
+            context: Execution context
+
+        Returns:
+            Task execution result
+        """
+        # Use the existing execute_task method that handles MCP integration
+        return await self.execute_task(task, context)
+
     async def add_server(self, server_name: str, server_url: str) -> bool:
         """Add and connect to an MCP server."""
         client = MCPClient(server_url)
