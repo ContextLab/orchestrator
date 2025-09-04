@@ -496,3 +496,8 @@ def run_systematic_test_analysis():
     print(report)
     
     return failures_by_category
+
+
+# Aliases for backward compatibility
+TestModel = MockTestModel  
+TestProvider = MockTestProvider
