@@ -356,7 +356,7 @@ steps:
             
             if "generate" in results:
                 result = results["generate"]
-                if result["status"] == "completed":
+                if result["success"] == True:
                     self.log_result("Pipeline Execution", True,
                                   f"Generated content: {result['content'][:50]}...")
                     return True

@@ -498,7 +498,7 @@ steps:
             # Verify generation task
             assert "generate" in results
             generate_result = results["generate"]
-            assert generate_result["status"] == "completed"
+            assert generate_result["success"] == True
             assert "content" in generate_result
             assert len(generate_result["content"]) > 0
             
@@ -508,7 +508,7 @@ steps:
             # Verify analysis task
             if "analyze" in results:
                 analyze_result = results["analyze"]
-                if analyze_result["status"] == "completed":
+                if analyze_result["success"] == True:
                     assert "analysis" in analyze_result
                     assert len(analyze_result["analysis"]) > 0
                     
@@ -558,7 +558,7 @@ steps:
                     result = results[task_id]
                     print(f"{task_id}: {result['status']}")
                     
-                    if result["status"] == "completed":
+                    if result["success"] == True:
                         if "content" in result:
                             print(f"  Content length: {len(result['content'])}")
                         if "analysis" in result:
@@ -601,7 +601,7 @@ steps:
             
             for task_id, result in results.items():
                 print(f"{task_id}: {result['status']}")
-                if result["status"] == "failed":
+                if result["success"] == False:
                     print(f"  Error: {result.get('error', 'Unknown error')}")
             
         except Exception as e:

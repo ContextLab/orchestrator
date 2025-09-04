@@ -4,9 +4,9 @@ import pytest
 import asyncio
 from unittest.mock import Mock
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.actions.condition_evaluator import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     BooleanEvaluator,
     ComparisonEvaluator,
     LogicalEvaluator,
@@ -403,9 +403,9 @@ class TestConditionEvaluatorIntegration:
         evaluator = BooleanEvaluator()
         result = await evaluator.execute(condition="true")
         
-        assert result["status"] == "success"
-        assert result["result"] is True
-        assert result["condition"] == "true"
+        assert result["success"] == True
+        assert result["result"]["result"] is True
+        assert result["result"]["condition"] == "true"
     
     @pytest.mark.asyncio 
     async def test_execute_impl_error(self):
@@ -413,8 +413,8 @@ class TestConditionEvaluatorIntegration:
         evaluator = BooleanEvaluator()
         result = await evaluator.execute(condition="invalid !@#")
         
-        assert result["status"] == "error"
-        assert result["result"] is False
+        assert result["success"] == False
+        assert result["result"] is None
         assert "error" in result
     
     @pytest.mark.asyncio
@@ -427,8 +427,8 @@ class TestConditionEvaluatorIntegration:
             threshold=5
         )
         
-        assert result["status"] == "success"
-        assert result["result"] is True
+        assert result["success"] == True
+        assert result["result"]["result"] is True
 
 
 if __name__ == "__main__":

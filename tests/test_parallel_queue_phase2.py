@@ -185,7 +185,7 @@ class TestParallelQueuePhase2:
         # Verify proper result structure
         assert len(result["results"]) == 2
         for item_result in result["results"]:
-            assert item_result["status"] == "completed"
+            assert item_result["success"] == True
             assert "item" in item_result
             assert item_result["item"] in ["valid_item", "another_valid"]
             assert "result" in item_result

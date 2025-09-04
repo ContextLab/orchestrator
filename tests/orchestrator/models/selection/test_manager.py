@@ -247,7 +247,7 @@ class TestModelManager:
         assert "status" in health_result
         assert "timestamp" in health_result
         assert "total_models" in health_result
-        assert health_result["status"] == "completed"
+        assert health_result["success"] == True
     
     @pytest.mark.asyncio
     async def test_optimize_performance(self, model_manager):

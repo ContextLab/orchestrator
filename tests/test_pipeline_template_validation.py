@@ -34,7 +34,7 @@ class TestPipelineTemplateValidation:
         if not model_registry or not model_registry.models:
             pytest.skip("No models available for testing")
         
-        control_system = HybridControlSystem(model_registry)
+        control_system = HybridControlSystem(model_registry=model_registry)
         orchestrator = create_test_orchestrator()
         return orchestrator
     
@@ -400,7 +400,7 @@ class TestMultiplePipelineValidation:
         if not model_registry or not model_registry.models:
             pytest.skip("No models available for testing")
         
-        control_system = HybridControlSystem(model_registry)
+        control_system = HybridControlSystem(model_registry=model_registry)
         return Orchestrator(model_registry=model_registry, control_system=control_system)
     
     def get_priority_pipelines(self) -> List[str]:
@@ -507,7 +507,7 @@ class TestMultiplePipelineValidation:
         
         print(f"\nDetailed Results:")
         for pipeline_name, result in results_summary.items():
-            status_icon = "✅" if result["status"] == "executed" and not result["issues"] else "⚠️" if result["status"] == "executed" else "❌"
+            status_icon = "✅" if result["success"] == True and not result["issues"] else "⚠️" if result["success"] == True else "❌"
             print(f"{status_icon} {pipeline_name}: {result['status']}")
             if result["issues"]:
                 for issue in result["issues"]:

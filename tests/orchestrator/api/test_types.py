@@ -453,7 +453,7 @@ class TestStatusTypes:
         result = status.to_dict()
         
         assert result["execution_id"] == "exec_dict_test"
-        assert result["status"] == "completed"
+        assert result["success"] == True
         assert result["started_at"] == start_time.isoformat()
         assert result["completed_at"] == completed_time.isoformat()
         assert result["duration_seconds"] == 120.0
