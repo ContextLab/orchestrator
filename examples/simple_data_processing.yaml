@@ -22,7 +22,7 @@ steps:
     tool: data-processing
     action: filter
     parameters:
-      data: "{{ read_data.content }}"
+      data: "{{ read_data.result.content }}"
       format: "csv"
       operation:
         criteria:

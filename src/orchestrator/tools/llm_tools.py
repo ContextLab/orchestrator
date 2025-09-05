@@ -444,9 +444,9 @@ class TaskDelegationTool(Tool):
                 # Parse model key to get provider and name
                 if ":" in model_key:
                     provider, name = model_key.split(":", 1)
-                    model = self.model_registry.get_model(name, provider)
+                    model = await self.model_registry.get_model(name, provider)
                 else:
-                    model = self.model_registry.get_model(model_key)
+                    model = await self.model_registry.get_model(model_key)
                 score = self._score_model(model, task_req, cost_weight, quality_weight)
                 scores.append(score)
             except Exception as e:
@@ -592,9 +592,9 @@ class MultiModelRoutingTool(Tool):
                 # Parse model key to get provider and name
                 if ":" in model_key:
                     provider, name = model_key.split(":", 1)
-                    model = self.model_registry.get_model(name, provider)
+                    model = await self.model_registry.get_model(name, provider)
                 else:
-                    model = self.model_registry.get_model(model_key)
+                    model = await self.model_registry.get_model(model_key)
                 cost = getattr(model, "_cost_per_1k_tokens", 0.01)
                 costs.append((model_key, cost))
             except Exception:
@@ -880,7 +880,7 @@ class MultiModelRoutingTool(Tool):
             
             # Get or create model instance
             try:
-                model = self.model_registry.get_model("llama3.2:1b", "ollama")
+                model = await self.model_registry.get_model("llama3.2:1b", "ollama")
             except:
                 # Fallback to creating a simple response
                 results = [f"[Translation of: {task}]" for task in tasks]

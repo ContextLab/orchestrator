@@ -33,7 +33,7 @@ steps:
   - id: analyze_content
     action: analyze_text
     parameters:
-      text: '{{ read_file.content }}'
+      text: '{{ read_file.result.content }}'
       model: <AUTO task="analyze">Select a model for text analysis</AUTO>
       analysis_type: summary
     dependencies:
@@ -44,7 +44,7 @@ steps:
       prompt: 'Transform the following text to be more concise:
 
 
-        {{ read_file.content }}
+        {{ read_file.result.content }}
 
 
         Key points from analysis: {{ analyze_content.result }}

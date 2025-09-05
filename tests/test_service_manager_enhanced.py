@@ -5,9 +5,9 @@ import asyncio
 import subprocess
 from unittest.mock import patch, MagicMock
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.utils.service_manager import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     OllamaServiceManager, 
     DockerServiceManager,
     SERVICE_MANAGERS

@@ -8,9 +8,9 @@ import tempfile
 from PIL import Image
 import io
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.tools.multimodal_tools import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     ImageAnalysisTool,
     ImageGenerationTool,
     AudioProcessingTool,

@@ -40,7 +40,7 @@ steps:
     parameters:
       prompt: 'We''re trying to guess the number {{ target_number }}.
 
-        Current guess: {{ read_guess.content }}
+        Current guess: {{ read_guess.result.content }}
 
         Iteration: {{ guessing_loop.iteration }}
 
@@ -78,7 +78,7 @@ steps:
         }}.txt
       content: 'Iteration: {{ guessing_loop.iteration }}
 
-        Previous guess: {{ read_guess.content }}
+        Previous guess: {{ read_guess.result.content }}
 
         New guess: {{ generate_guess.result | regex_search(''[0-9]+'') | default(''25'')
         }}

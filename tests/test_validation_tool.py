@@ -3,12 +3,12 @@
 import pytest
 
 from src.orchestrator.tools.validation import (
-
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     ValidationTool,
-    ValidationMode,
+    ValidationLevel,
     SchemaValidator,
-    FormatValidator)
+    FormatValidator
+)
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
 
 class TestFormatValidator:
@@ -111,18 +111,18 @@ class TestSchemaValidator:
         data = {"count": "42"}
 
         # Strict mode - should fail
-        result = validator.validate(data, schema, ValidationMode.STRICT)
+        result = validator.validate(data, schema, ValidationLevel.STRICT)
         assert not result.valid
         assert len(result.errors) == 1
 
         # Lenient mode - should coerce and warn
-        result = validator.validate(data, schema, ValidationMode.LENIENT)
+        result = validator.validate(data, schema, ValidationLevel.PERMISSIVE)
         assert result.valid
         assert len(result.warnings) == 1
         assert result.warnings[0]["coerced_to"] == 42
 
         # Report-only mode - should pass with warnings
-        result = validator.validate(data, schema, ValidationMode.REPORT_ONLY)
+        result = validator.validate(data, schema, ValidationLevel.DEVELOPMENT)
         assert result.valid
         assert len(result.warnings) == 1
 
@@ -299,7 +299,7 @@ class TestValidationTool:
                 "active": "true",  # String to bool
             },
             schema=schema,
-            mode="lenient")
+            validation_level=ValidationLevel.PERMISSIVE)
 
         assert result["valid"]
         assert len(result["warnings"]) == 3  # All values were coerced

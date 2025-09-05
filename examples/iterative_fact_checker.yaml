@@ -59,7 +59,7 @@ steps:
             Analyze this document and extract all factual claims and their references.
             
             Document:
-            {{ load_document.content }}
+            {{ load_document.result.content }}
             
             For each claim, provide:
             1. The claim text
@@ -133,7 +133,7 @@ steps:
             3. Formatting all references consistently as footnotes at the end
             
             Original document:
-            {{ load_document.content }}
+            {{ load_document.result.content }}
             
             Claims analysis:
             {{ extract_claims }}
@@ -177,7 +177,7 @@ steps:
         {% if fact_check_loop.iterations %}
         {{ fact_check_loop.iterations[-1].update_document.result }}
         {% else %}
-        {{ load_initial_doc.content }}
+        {{ load_initial_doc.result.content }}
         {% endif %}
     dependencies:
       - fact_check_loop

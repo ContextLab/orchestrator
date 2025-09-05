@@ -8,6 +8,15 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 import jsonschema
 from jsonschema import Draft7Validator, ValidationError
 
+from enum import Enum
+
+class ValidationLevel(Enum):
+    """Pipeline validation levels."""
+    STRICT = "strict"           # Full validation with strict rules
+    PERMISSIVE = "permissive"   # Relaxed validation allowing some issues
+    DEVELOPMENT = "development" # Development mode with warnings only
+    DISABLED = "disabled"       # Disable validation (not recommended)
+
 # Try to import pydantic, install if needed
 try:
     from pydantic import BaseModel, Field, create_model

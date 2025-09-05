@@ -196,7 +196,7 @@ steps:
   tool: pdf-compiler
   action: compile
   parameters:
-    markdown_content: '{{ read_report.content }}'
+    markdown_content: '{{ read_report.result.content }}'
     output_path: '{{ output_path }}/research_{{ topic | slugify }}.pdf'
     title: 'Research Report: {{ topic }}'
     author: AI Research Assistant

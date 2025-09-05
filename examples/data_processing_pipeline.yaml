@@ -26,7 +26,7 @@ steps:
     action: profile
     condition: "{{ enable_profiling }}"
     parameters:
-      data: "{{ read_data.content }}"
+      data: "{{ read_data.result.content }}"
       format: "csv"
       profiling_options:
         - missing_values
@@ -42,7 +42,7 @@ steps:
     tool: validation
     action: validate
     parameters:
-      data: "{{ read_data.content }}"
+      data: "{{ read_data.result.content }}"
       mode: "CSV"  # Use CSV validation mode
       schema:
         type: object
@@ -76,7 +76,7 @@ steps:
     tool: data-processing
     action: transform
     parameters:
-      data: "{{ validate_schema.data if validate_schema.valid else read_data.content }}"
+      data: "{{ validate_schema.data if validate_schema.valid else read_data.result.content }}"
       format: "json"  # The validated data is already parsed as JSON
       output_format: "json"
       operations:

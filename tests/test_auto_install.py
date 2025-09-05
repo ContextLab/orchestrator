@@ -7,9 +7,9 @@ import importlib
 import tempfile
 import os
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.utils.auto_install import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     is_package_installed,
     install_package,
     ensure_packages,

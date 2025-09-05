@@ -15,9 +15,9 @@ from typing import Dict, Any, List
 # Add orchestrator to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.core.unified_template_resolver import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     UnifiedTemplateResolver, 
     TemplateResolutionContext
 )
@@ -333,7 +333,7 @@ class TestRealPipelineTemplateValidation:
         if not model_registry or not model_registry.models:
             pytest.skip("No models available for testing")
         
-        control_system = HybridControlSystem(model_registry)
+        control_system = HybridControlSystem(model_registry=model_registry)
         return Orchestrator(model_registry=model_registry, control_system=control_system)
     
     def create_test_data_files(self, temp_dir: Path):

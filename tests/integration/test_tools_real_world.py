@@ -38,7 +38,7 @@ def model_registry():
 @pytest.fixture(scope="module")
 def orchestrator(model_registry):
     """Create orchestrator with real control system."""
-    control_system = HybridControlSystem(model_registry)
+    control_system = HybridControlSystem(model_registry=model_registry)
     return Orchestrator(model_registry=model_registry, control_system=control_system)
 
 

@@ -325,6 +325,10 @@ class Task:
 
         # Remove computed properties
         data.pop("execution_time", None)
+        
+        # Handle depends_on -> dependencies mapping
+        if "depends_on" in data:
+            data["dependencies"] = data.pop("depends_on")
 
         # Create task
         task = cls(**data)

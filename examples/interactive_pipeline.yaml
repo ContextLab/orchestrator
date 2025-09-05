@@ -82,7 +82,7 @@ steps:
         Process this CSV sales data according to the following instructions:
         
         Data:
-        {{ read_data.content }}
+        {{ read_data.result.content }}
         
         Processing Method: {{ get_processing_options.value }}
         Specific Operation: {{ get_specific_operation.value }}
@@ -202,7 +202,7 @@ steps:
       prompt: |
         Create a concise business summary based on this data processing:
         
-        Original data: {{ read_data.content.split('\n') | length - 1 }} rows of sales data
+        Original data: {{ read_data.result.content.split('\n') | length - 1 }} rows of sales data
         Processing type: {{ get_processing_options.value }} - {{ get_specific_operation.value }}
         
         Processed results:
@@ -296,7 +296,7 @@ steps:
         
         ## Data Summary
         - **Input File**: {{ input_file }}
-        - **Rows Processed**: {{ read_data.content.split('\n') | length - 1 }}
+        - **Rows Processed**: {{ read_data.result.content.split('\n') | length - 1 }}
         
         ## Business Insights
         {{ create_summary }}

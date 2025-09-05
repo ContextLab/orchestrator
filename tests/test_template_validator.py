@@ -4,9 +4,9 @@ Issue #229: Compile-time template validation
 """
 
 import pytest
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.validation.template_validator import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     TemplateValidator,
     TemplateValidationError,
     TemplateValidationResult

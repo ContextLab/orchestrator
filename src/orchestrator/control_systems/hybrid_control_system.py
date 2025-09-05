@@ -967,7 +967,7 @@ class HybridControlSystem(ModelBasedControlSystem):
                 "success": False,
                 "error": "No model available for prompt optimization"
             }
-        model = await self.model_registry.get_model(model_name)
+        model = self.model_registry.get_model(model_name)
         
         optimization_prompt = f"""Optimize this prompt for {task_type}:
 Original prompt: "{prompt}"
@@ -1129,7 +1129,7 @@ Just return the optimized prompt, nothing else."""
                             auto_prompt = match.group(1)
                             model_name = await self.model_registry.select_model({"tasks": ["generate"]})
                             if model_name:
-                                model = await self.model_registry.get_model(model_name)
+                                model = self.model_registry.get_model(model_name)
                                 response = await model.generate(
                                     f"{auto_prompt}\nBased on the task: '{params.get('task', '')}'\nRespond with only: simple, moderate, or complex"
                                 )
@@ -1199,10 +1199,10 @@ Just return the optimized prompt, nothing else."""
                     "context_window": len(prompt.encode()) // 4  # Rough token estimate
                 }
                 model_name = await self.model_registry.select_model(requirements)
-                model = await self.model_registry.get_model(model_name)
+                model = self.model_registry.get_model(model_name)
             else:
                 # Get specific model
-                model = await self.model_registry.get_model(model_spec)
+                model = self.model_registry.get_model(model_spec)
         else:
             # Fallback to creating a model directly
             from ..models.openai_model import OpenAIModel
@@ -1304,17 +1304,17 @@ Just return the optimized prompt, nothing else."""
         if model_spec:
             if isinstance(model_spec, str) and not model_spec.startswith("<AUTO"):
                 # Direct model specification
-                model = await self.model_registry.get_model(model_spec)
+                model = self.model_registry.get_model(model_spec)
             elif isinstance(model_spec, str) and model_spec.startswith("<AUTO"):
                 # AUTO tag - let model registry select
                 requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
                 model_name = await self.model_registry.select_model(requirements)
-                model = await self.model_registry.get_model(model_name)
+                model = self.model_registry.get_model(model_name)
         else:
             # No model specified, select appropriate model
             requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
             model_name = await self.model_registry.select_model(requirements)
-            model = await self.model_registry.get_model(model_name)
+            model = self.model_registry.get_model(model_name)
         
         if not model:
             return {

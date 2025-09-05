@@ -4,9 +4,9 @@ import time
 
 import pytest
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.core.resource_allocator import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     FairShareStrategy,
     PriorityBasedStrategy,
     ResourceAllocator,

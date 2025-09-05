@@ -74,7 +74,7 @@ steps:
         
         Text content: {{ "Available" if ingest_text_content.status == "completed" else "Failed/Skipped" }}
         {% if ingest_text_content.status == "completed" %}
-        Length: {{ ingest_text_content.content | length }} characters
+        Length: {{ ingest_text_content.result.content | length }} characters
         {% endif %}
         
         Image content: {{ "Available" if ingest_image_content.status == "completed" else "Failed/Skipped" }}
@@ -114,7 +114,7 @@ steps:
     action: analyze_text
     condition: "{{ ingest_text_content.status == 'completed' }}"
     parameters:
-      text: "{{ ingest_text_content.content }}"
+      text: "{{ ingest_text_content.result.content }}"
       prompt: |
         Comprehensive text analysis for multi-modal integration:
         

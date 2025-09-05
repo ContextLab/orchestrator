@@ -50,7 +50,7 @@ steps:
         outputs:
           processed_data: "{{ normalize_data.result }}"
       inputs:
-        raw_data: "{{ load_data.content }}"
+        raw_data: "{{ load_data.result.content }}"
       inherit_context: true
       wait_for_completion: true
     dependencies:

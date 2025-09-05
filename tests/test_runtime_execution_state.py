@@ -14,9 +14,9 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.runtime.execution_state import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     PipelineExecutionState,
     UnresolvedItem,
     LoopContext,

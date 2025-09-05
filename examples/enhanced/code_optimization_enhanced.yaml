@@ -24,7 +24,7 @@ steps:
 
       ```{{language}}
 
-      {{read_code.content}}
+      {{read_code.result.content}}
 
       ```
 

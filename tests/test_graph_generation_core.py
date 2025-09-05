@@ -12,9 +12,9 @@ from typing import Dict, Any
 from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
 from src.orchestrator.graph_generation.syntax_parser import DeclarativeSyntaxParser
 from src.orchestrator.graph_generation.dependency_resolver import EnhancedDependencyResolver
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.graph_generation.types import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     ParsedPipeline, ParsedStep, InputSchema, OutputSchema, StepType, DependencyType
 )
 

@@ -34,7 +34,7 @@ steps:
       \n        method: \"min-max\"\n\noutputs:\n  processed_data: \"{{ normalize_data.result\
       \ }}\"\n"
     inputs:
-      raw_data: '{{ load_data.content }}'
+      raw_data: '{{ load_data.result.content }}'
     wait_for_completion: true
   dependencies:
   - load_data

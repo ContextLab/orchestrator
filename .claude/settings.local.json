@@ -281,7 +281,20 @@
       "Read(/usr/bin/**)",
       "Read(/usr/local/bin/**)",
       "Read(/opt/homebrew/bin/**)",
-      "Read(/opt/homebrew/bin/**)"
+      "Read(/opt/homebrew/bin/**)",
+      "WebFetch(domain:docs.pytest.org)",
+      "WebFetch(domain:stackoverflow.com)",
+      "WebFetch(domain:claude.ai)",
+      "Bash(bash:*)",
+      "Bash(chmod:*)",
+      "Bash(cp:*)",
+      "Bash(gh label:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Read(//private/tmp/**)",
+      "Bash(do)",
+      "Bash(echo:*)",
+      "Read(//usr/bin/**)"
     ],
     "deny": [],
     "ask": []

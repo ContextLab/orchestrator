@@ -5,9 +5,9 @@ import time
 import pytest
 
 # Direct import to ensure coverage measurement
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.core.pipeline import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     CircularDependencyError,
     InvalidDependencyError,
     Pipeline)

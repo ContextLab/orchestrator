@@ -37,7 +37,7 @@ steps:
       \ it precisely (e.g., \"\u2022 Contains exactly 2000 instances of the character\
       \ 'A'\")\n- Be factual and specific about counts and patterns\n- No introductory\
       \ phrases or conclusions\n\nText to summarize ({{ read_file.size }} bytes):\n\
-      {{ read_file.content }}\n"
+      {{ read_file.result.content }}\n"
     model: <AUTO task="summarize">Select a model for text summarization</AUTO>
     max_tokens: 200
   dependencies:
@@ -57,7 +57,7 @@ steps:
       \ sizes ({{ read_file.size }} bytes, not kilobytes)\n- For any repetitive content,\
       \ provide meaningful technical analysis\n- Write in professional, informative\
       \ style\n- Minimum 200 words of actual expanded content\n\nText to expand ({{\
-      \ read_file.size }} bytes):\n{{ read_file.content }}\n"
+      \ read_file.size }} bytes):\n{{ read_file.result.content }}\n"
     model: <AUTO task="generate">Select a model for text generation</AUTO>
     max_tokens: 500
   dependencies:

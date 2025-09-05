@@ -20,9 +20,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from orchestrator import init_models
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.testing import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     PipelineDiscovery, 
     PipelineTestSuite,
     PipelineInfo,

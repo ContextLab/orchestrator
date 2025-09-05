@@ -1,9 +1,8 @@
 """Comprehensive tests for the Orchestrator error hierarchy."""
 
 import pytest
-from src.orchestrator.core.exceptions import (
-
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
+from src.orchestrator.core.exceptions import (
     # Base
     OrchestratorError,
     # Pipeline errors

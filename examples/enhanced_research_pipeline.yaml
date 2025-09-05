@@ -146,7 +146,7 @@ steps:
         
         {% for item in extract_content.extracted_content %}
         Source {{ loop.index }}: {{ item.title }}
-        Content: {{ item.content | truncate(2000) }}
+        Content: {{ item.result.content | truncate(2000) }}
         ---
         {% endfor %}
         

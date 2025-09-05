@@ -1,3 +1,10 @@
+---
+name: Test Categorization and Systematic Fixing
+status: backlog
+created: 2025-09-04T05:45:00Z
+updated: 2025-09-04T23:27:06Z
+---
+
 # Epic: Test Categorization and Systematic Fixing
 
 ## Overview
@@ -23,15 +30,25 @@ Systematically categorize all failing tests by their dependencies and root cause
 - [ ] **Phase 6: Cleanup Obsolete Tests** - Remove deprecated functionality tests (10-20 tests)
 
 ## Phase Status
-- **Phase 1**: 🔄 IN PROGRESS - TestModel pattern partially applied (test_data_processing.py ✅)
-- **Phase 2**: ⏳ READY - API patterns identified
-- **Phase 3**: ⏳ READY - Data structure patterns identified  
-- **Phase 4**: ⏳ PENDING - Awaiting earlier phases
-- **Phase 5**: ⏳ PENDING - Environment specific
-- **Phase 6**: ⏳ PENDING - Cleanup phase
+- **Phase 1**: ✅ COMPLETED - TestModel pattern applied to 115/231 test files, infrastructure fixed
+- **Phase 2**: ⏳ READY - API patterns identified, awaiting execution
+- **Phase 3**: ✅ COMPLETED - Data structure patterns applied to all 231 test files  
+- **Phase 4**: ⏳ READY - Business logic patterns ready for systematic fixing
+- **Phase 5**: ⏳ PENDING - Environment specific issues to address
+- **Phase 6**: ⏳ PENDING - Cleanup phase for obsolete tests
 
 ## Success Criteria
 - [ ] All test files analyzed and categorized
 - [ ] Test groups defined by shared dependencies
 - [ ] Sub-tasks created for each logical group
-- [ ] 100% test pass rate achieved through systematic group fixing
+
+## Tasks Created
+- [ ] #383-analysis -  (parallel: )
+- [ ] #408 - Epic Analysis and Planning (parallel: true)
+- [ ] #409 - Test Infrastructure Setup (parallel: true)
+- [ ] #410 - Integration Implementation (parallel: false)
+- [ ] #411 - Epic Validation and Completion (parallel: false)
+
+Total tasks: 5
+Parallel tasks: 2
+Sequential tasks: 3

@@ -15,7 +15,7 @@ import shutil
 from pathlib import Path
 from functools import wraps
 
-from orchestrator import Orchestrator, init_models
+from src.orchestrator import Orchestrator, init_models
 
 
 def cost_controlled_test(timeout=180):
@@ -209,14 +209,14 @@ class TestCodeOptimizationRealAPI:
                     Analyze this {{{{language}}}} code for optimization opportunities:
                     
                     ```{{{{language}}}}
-                    {{{{read_code.content}}}}
+                    {{{{read_code.result.content}}}}
                     ```
                     
                     Identify:
                     1. Performance bottlenecks
                     2. Code quality issues
                     3. Best practice violations
-                  model: <AUTO task="analyze">Select model for code analysis</AUTO>
+                  model: "gpt-5-mini"
                   analysis_type: "code_quality"
                 dependencies:
                   - read_code
@@ -231,7 +231,7 @@ class TestCodeOptimizationRealAPI:
                     Provide optimized version of the code that addresses the identified issues.
                     Return ONLY the optimized code without markdown formatting or explanations.
                     Do not include ```python``` or any markdown blocks - just the raw code.
-                  model: <AUTO task="generate">Select model for code generation</AUTO>
+                  model: "gpt-5-mini"
                   max_tokens: 2000
                 dependencies:
                   - analyze_code
@@ -245,7 +245,7 @@ class TestCodeOptimizationRealAPI:
                     {{{{optimize_code.result}}}}
                     
                     Return ONLY the pure Python code without any ```python``` blocks or explanations.
-                  model: <AUTO task="extract">Select model for code extraction</AUTO>
+                  model: "gpt-5-mini"
                   max_tokens: 2000
                 dependencies:
                   - optimize_code

@@ -24,7 +24,7 @@ async def test_model_based_system():
     model_registry = ModelRegistry()
     
     # Create control system
-    control_system = ModelBasedControlSystem(model_registry)
+    control_system = ModelBasedControlSystem(model_registry=model_registry)
     
     # Create a task with templates
     task = Task(
@@ -116,7 +116,7 @@ async def test_hybrid_system():
     model_registry = ModelRegistry()
     
     # Create control system
-    control_system = HybridControlSystem(model_registry)
+    control_system = HybridControlSystem(model_registry=model_registry)
     
     # Test the template context preparation
     context = {

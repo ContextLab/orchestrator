@@ -14,9 +14,9 @@ import time
 import docker
 from typing import List, Dict
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.intelligence import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     IntelligentModelSelector,
     ModelRequirements,
     OptimizationObjective,

@@ -45,7 +45,7 @@ steps:
     action: generate
     parameters:
       prompt: "Analyze this document and extract all factual claims and their references.\n\
-        \nDocument:\n{{ load_document.content }}\n\nFor each claim, provide:\n1. The\
+        \nDocument:\n{{ load_document.result.content }}\n\nFor each claim, provide:\n1. The\
         \ claim text\n2. Whether it has a reference/citation (true/false)\n3. If it\
         \ has a reference, extract the reference URL\n\nPlease respond in the following\
         \ JSON format:\n{\n  \"claims\": [\n    {\n      \"text\": \"claim text here\"\
@@ -121,7 +121,7 @@ steps:
 
         Original document:
 
-        {{ load_document.content }}
+        {{ load_document.result.content }}
 
 
         Claims analysis:
@@ -176,7 +176,7 @@ steps:
 
       {% else %}
 
-      {{ load_initial_doc.content }}
+      {{ load_initial_doc.result.content }}
 
       {% endif %}
 

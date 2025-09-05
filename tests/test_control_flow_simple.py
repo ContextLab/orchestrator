@@ -72,7 +72,7 @@ async def test_condition_evaluation():
     # Test template condition
     task.metadata["condition"] = "{{ value > 5 }}"
     result = await handler.evaluate_condition(task, {"value": 10}, {})
-    print(f"Condition '{{ value > 5 }}' with value=10 evaluates to: {result}")
+    print(f"Condition '{{{{ value > 5 }}}}' with value=10 evaluates to: {result}")
 
 
 if __name__ == "__main__":

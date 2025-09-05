@@ -71,7 +71,7 @@ steps:
   action: analyze_text
   foreach: '{{ fetch_content.results }}'
   parameters:
-    text: '{{ item.content | truncate(5000) }}'
+    text: '{{ item.result.content | truncate(5000) }}'
     analysis_type: research_extraction
     prompt: 'Analyze this source about {{ research_topic }} and extract:
 
@@ -209,7 +209,7 @@ steps:
       ---
 
 
-      {{ create_bibliography.content }}
+      {{ create_bibliography.result.content }}
 
 
       ---
@@ -258,7 +258,7 @@ steps:
   action: write
   parameters:
     path: '{{ output_path }}/research_{{ research_topic | slugify }}.md'
-    content: '{{ generate_report.content }}'
+    content: '{{ generate_report.result.content }}'
   dependencies:
   - generate_report
 outputs:

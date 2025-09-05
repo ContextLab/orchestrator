@@ -52,7 +52,7 @@ steps:
         parameters:
           prompt: |
             We're trying to guess the number {{ target_number }}.
-            Current guess: {{ read_guess.content }}
+            Current guess: {{ read_guess.result.content }}
             Iteration: {{ guessing_loop.iteration }}
             
             What number should we guess next? Reply with just a number between 1 and 100.
@@ -89,7 +89,7 @@ steps:
           path: "examples/outputs/control_flow_while_loop/logs/attempt_{{ guessing_loop.iteration }}.txt"
           content: |
             Iteration: {{ guessing_loop.iteration }}
-            Previous guess: {{ read_guess.content }}
+            Previous guess: {{ read_guess.result.content }}
             New guess: {{ generate_guess.result | regex_search('[0-9]+') | default('25') }}
             Target: {{ target_number }}
         dependencies:

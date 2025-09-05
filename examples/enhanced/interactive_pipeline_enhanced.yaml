@@ -100,7 +100,7 @@ steps:
   action: generate_text
   parameters:
     prompt: "Process this CSV sales data according to the following instructions:\n\
-      \nData:\n{{ read_data.content }}\n\nProcessing Method: {{ get_processing_options.value\
+      \nData:\n{{ read_data.result.content }}\n\nProcessing Method: {{ get_processing_options.value\
       \ }}\nSpecific Operation: {{ get_specific_operation.value }}\n\nInstructions:\n\
       {% if get_processing_options.value == 'aggregate' %}\n  {% if get_specific_operation.value\
       \ == 'by_category' %}\n  Group by category and calculate:\n  - Total quantity\
@@ -160,7 +160,7 @@ steps:
     prompt: 'Create a concise business summary based on this data processing:
 
 
-      Original data: {{ read_data.content.split(''\n'') | length - 1 }} rows of sales
+      Original data: {{ read_data.result.content.split(''\n'') | length - 1 }} rows of sales
       data
 
       Processing type: {{ get_processing_options.value }} - {{ get_specific_operation.value
@@ -280,7 +280,7 @@ steps:
 
       - **Input File**: {{ input_file }}
 
-      - **Rows Processed**: {{ read_data.content.split(''\n'') | length - 1 }}
+      - **Rows Processed**: {{ read_data.result.content.split(''\n'') | length - 1 }}
 
 
       ## Business Insights

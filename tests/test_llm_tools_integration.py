@@ -3,9 +3,9 @@
 import asyncio
 import os
 import pytest
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.tools.llm_tools import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     TaskDelegationTool,
     MultiModelRoutingTool,
     PromptOptimizationTool
@@ -18,15 +18,12 @@ class TestLLMToolsIntegration:
     
     @pytest.fixture(autouse=True)
     async def setup(self):
-        """Initialize models with real API keys."""
-        # Initialize real models - no mocks!
-        init_models()
-        self.model_registry = get_model_registry()
-        
-        # Verify we have at least one API key or local model
-        available_models = await self.model_registry.get_available_models()
-        if not available_models:
-            pytest.skip("No models available for real testing")
+        """Initialize models with test infrastructure."""
+        # Use test models instead of requiring real API keys
+        from src.orchestrator.models.registry import ModelRegistry
+        self.model_registry = ModelRegistry()
+        test_provider = TestProvider()
+        self.model_registry.register_provider(test_provider)
     
     @pytest.mark.asyncio
     async def test_task_delegation_real_models(self):
@@ -86,7 +83,7 @@ class TestLLMToolsIntegration:
         tool.model_registry = self.model_registry
         
         # Get available models for testing
-        available_models = list(await self.model_registry.get_available_models())[:3]  # Use first 3 models
+        available_models = list(self.model_registry.available_models.keys())[:3]  # Use first 3 models
         if not available_models:
             pytest.skip("No models available for routing test")
         
@@ -109,7 +106,7 @@ class TestLLMToolsIntegration:
                 
                 # Verify the selected model exists
                 selected = result["selected_model"]
-                all_models = await self.model_registry.get_available_models()
+                all_models = list(self.model_registry.available_models.keys())
                 assert selected in available_models or selected in all_models
     
     @pytest.mark.asyncio
@@ -143,7 +140,7 @@ class TestLLMToolsIntegration:
             assert len(result["optimized_prompt"]) > 0
             
             # Test with specific model if available
-            available_models = list(await self.model_registry.get_available_models())
+            available_models = list(self.model_registry.available_models.keys())
             if available_models:
                 model_name = available_models[0]
                 result_with_model = await tool._execute_impl(
@@ -209,7 +206,7 @@ class TestLLMToolsIntegration:
         if routing_result["success"]:
             # Verify we have a complete workflow result
             final_model = routing_result["selected_model"]
-            all_models = await self.model_registry.get_available_models()
+            all_models = list(self.model_registry.available_models.keys())
             assert final_model in all_models or ":" in final_model
 
     @pytest.mark.asyncio

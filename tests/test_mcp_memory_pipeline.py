@@ -30,7 +30,7 @@ class TestMCPMemoryPipeline:
         # Run pipeline
         result = subprocess.run(
             [
-                "python", "scripts/run_pipeline.py",
+                "python", "scripts/execution/run_pipeline.py",
                 "examples/mcp_memory_workflow.yaml",
                 "-i", "user_name=TestUser",
                 "-i", "task_description=Analyze test data",
@@ -49,8 +49,8 @@ class TestMCPMemoryPipeline:
         assert result.returncode == 0, f"Pipeline failed: {result.stderr}"
         
         # Verify output files
-        export_file = self.test_output_dir / "mcp_memory_export.json"
-        summary_file = self.test_output_dir / "context_summary.md"
+        export_file = self.test_output_dir / "testuser_memory_export.json"
+        summary_file = self.test_output_dir / "testuser_context_summary.md"
         
         assert export_file.exists(), f"Export file not created at {export_file}"
         assert summary_file.exists(), f"Summary file not created at {summary_file}"
@@ -82,7 +82,7 @@ class TestMCPMemoryPipeline:
         
         result = subprocess.run(
             [
-                "python", "scripts/run_pipeline.py",
+                "python", "scripts/execution/run_pipeline.py",
                 "examples/mcp_memory_workflow.yaml",
                 "-i", "user_name=CustomUser",
                 "-i", "task_description=Custom task",
@@ -96,8 +96,8 @@ class TestMCPMemoryPipeline:
         assert result.returncode == 0, f"Pipeline failed: {result.stderr}"
         
         # Verify files in custom location
-        assert (custom_output / "mcp_memory_export.json").exists()
-        assert (custom_output / "context_summary.md").exists()
+        assert (custom_output / "customuser_memory_export.json").exists()
+        assert (custom_output / "customuser_context_summary.md").exists()
         
         # Clean up
         if custom_output.exists():
@@ -117,7 +117,7 @@ class TestMCPMemoryPipeline:
             
             result = subprocess.run(
                 [
-                    "python", "scripts/run_pipeline.py",
+                    "python", "scripts/execution/run_pipeline.py",
                     "examples/mcp_memory_workflow.yaml",
                     "-i", f"user_name={user_name}",
                     "-i", f"task_description={task_desc}",
@@ -131,7 +131,9 @@ class TestMCPMemoryPipeline:
             assert result.returncode == 0, f"Failed for {user_name}: {result.stderr}"
             
             # Verify export contains correct data
-            with open(output_dir / "mcp_memory_export.json") as f:
+            # Use dynamic filename based on user_name parameter
+            user_slug = user_name.lower().replace(' ', '').replace('with', 'with')
+            with open(output_dir / f"{user_slug}_memory_export.json") as f:
                 data = json.load(f)
                 assert data["metadata"]["user"] == user_name
                 assert data["metadata"]["task"] == task_desc
@@ -140,7 +142,7 @@ class TestMCPMemoryPipeline:
         """Test that memory persists across pipeline steps."""
         result = subprocess.run(
             [
-                "python", "scripts/run_pipeline.py",
+                "python", "scripts/execution/run_pipeline.py",
                 "examples/mcp_memory_workflow.yaml",
                 "-i", "user_name=PersistenceTest",
                 "-o", str(self.test_output_dir)
@@ -153,7 +155,7 @@ class TestMCPMemoryPipeline:
         assert result.returncode == 0
         
         # Check that all three keys were stored and retrieved
-        with open(self.test_output_dir / "mcp_memory_export.json") as f:
+        with open(self.test_output_dir / "persistencetest_memory_export.json") as f:
             data = json.load(f)
             assert len(data["keys"]) == 3
             assert set(data["keys"]) == {"user_profile", "task_steps", "progress"}
@@ -162,7 +164,7 @@ class TestMCPMemoryPipeline:
         """Test that pipeline creates checkpoints with memory data."""
         result = subprocess.run(
             [
-                "python", "scripts/run_pipeline.py",
+                "python", "scripts/execution/run_pipeline.py",
                 "examples/mcp_memory_workflow.yaml",
                 "-o", str(self.test_output_dir)
             ],
@@ -203,7 +205,7 @@ class TestMCPMemoryPipeline:
         # Test with invalid output path (though pipeline should create it)
         result = subprocess.run(
             [
-                "python", "scripts/run_pipeline.py",
+                "python", "scripts/execution/run_pipeline.py",
                 "examples/mcp_memory_workflow.yaml",
                 "-o", "/invalid/path/that/cannot/be/created"
             ],
@@ -220,7 +222,7 @@ class TestMCPMemoryPipeline:
         """Test that all template expressions are properly rendered."""
         result = subprocess.run(
             [
-                "python", "scripts/run_pipeline.py",
+                "python", "scripts/execution/run_pipeline.py",
                 "examples/mcp_memory_workflow.yaml",
                 "-i", "user_name=TemplateTest",
                 "-i", "task_description=Test template rendering",
@@ -234,18 +236,18 @@ class TestMCPMemoryPipeline:
         assert result.returncode == 0
         
         # Check that templates were rendered (no {{ }} in output)
-        with open(self.test_output_dir / "mcp_memory_export.json") as f:
+        with open(self.test_output_dir / "templatetest_memory_export.json") as f:
             content = f.read()
             assert "{{" not in content
             assert "}}" not in content
             
         # Verify timestamp was rendered (read file again for JSON parsing)
-        with open(self.test_output_dir / "mcp_memory_export.json") as f:
+        with open(self.test_output_dir / "templatetest_memory_export.json") as f:
             data = json.load(f)
             assert data["exported_at"]  # Should have a timestamp value
             assert "now()" not in str(data["exported_at"])
         
-        with open(self.test_output_dir / "context_summary.md") as f:
+        with open(self.test_output_dir / "templatetest_context_summary.md") as f:
             content = f.read()
             assert "{{" not in content
             assert "}}" not in content

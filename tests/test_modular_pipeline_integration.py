@@ -25,7 +25,7 @@ class TestModularPipelineIntegration:
     async def orchestrator(self):
         """Create orchestrator with real model registry."""
         model_registry = get_model_registry()
-        control_system = HybridControlSystem(model_registry)
+        control_system = HybridControlSystem(model_registry=model_registry)
         return Orchestrator(model_registry=model_registry, control_system=control_system)
     
     @pytest.mark.asyncio

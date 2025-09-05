@@ -90,7 +90,7 @@ class TestCoreDataProcessing:
         
         # Check that load_data task succeeded
         load_data_result = result["steps"]["load_data"]
-        assert load_data_result["error"] is None
+        assert load_data_result["success"] is True
         assert "result" in load_data_result
         
         # Verify the JSON data was read
@@ -113,7 +113,7 @@ class TestCoreDataProcessing:
         assert "load_data" in result["steps"]
         
         load_data_result = result["steps"]["load_data"]
-        assert load_data_result["error"] is None
+        assert load_data_result["success"] is True
         assert "result" in load_data_result
         
         # Verify the CSV data was read
@@ -136,7 +136,7 @@ class TestCoreDataProcessing:
         assert "validate_data" in result["steps"]
         
         validation_result = result["steps"]["validate_data"]
-        assert validation_result["error"] is None
+        assert validation_result["success"] is True
         # Note: Actual validation result structure may differ post-refactor
         # Focus on successful pipeline execution for now
     
@@ -166,7 +166,7 @@ class TestCoreDataProcessing:
         assert "validate_data" in result["steps"]
         
         validation_result = result["steps"]["validate_data"]
-        assert validation_result["error"] is None  # Tool executed successfully
+        assert validation_result["success"] is True  # Tool executed successfully
         # Note: Actual validation logic may differ post-refactor
     
     @pytest.mark.asyncio
@@ -184,7 +184,7 @@ class TestCoreDataProcessing:
         assert "transform_data" in result["steps"]
         
         transform_result = result["steps"]["transform_data"]
-        assert transform_result["error"] is None  # Tool executed successfully
+        assert transform_result["success"] is True  # Tool executed successfully
         
         # Note: Actual transform result structure may differ post-refactor
         # Focus on successful pipeline execution for now
@@ -548,7 +548,7 @@ class TestErrorHandling:
         result = await orchestrator.run(pipeline, inputs)
         
         # Validation should handle invalid schema
-        assert "validate_data" in result.steps
+        assert "validate_data" in result["steps"]
     
     @pytest.mark.asyncio
     @pytest.mark.timeout(60)
@@ -574,4 +574,4 @@ class TestErrorHandling:
         result = await orchestrator.execute_pipeline_from_dict(pipeline_yaml, inputs)
         
         # Should either complete or timeout gracefully
-        assert "load_data" in result.steps
+        assert "load_data" in result["steps"]

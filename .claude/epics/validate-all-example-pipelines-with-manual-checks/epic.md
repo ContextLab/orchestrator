@@ -1,11 +1,11 @@
 ---
 name: validate-all-example-pipelines-with-manual-checks
-status: in_progress
+status: backlog
 created: 2025-08-25T18:35:00Z
-progress: 8%
+progress: 0%
 prd: .claude/prds/validate-all-example-pipelines-with-manual-checks.md
-github: https://github.com/ContextLab/orchestrator/issues/292
-updated: 2025-08-29T21:34:56Z
+github: https://github.com/ContextLab/orchestrator/issues/420
+updated: 2025-09-04T23:27:46Z
 ---
 
 # Epic: Comprehensive Example Pipeline Validation & Enhancement
@@ -232,3 +232,15 @@ examples/
 - **Maintenance Efficiency**: Automated quality monitoring prevents regression
 
 This comprehensive approach transforms the example ecosystem from a collection of potentially broken demos into a professional showcase that effectively teaches the toolbox and guides its development.
+
+## Tasks Created
+- [ ] #389-analysis -  (parallel: )
+- [ ] #421 - Epic Analysis and Planning (parallel: true)
+- [ ] #422 - Test Infrastructure Setup (parallel: true)
+- [ ] #423 - Integration Implementation (parallel: false)
+- [ ] #424 - Documentation Update (parallel: true)
+- [ ] #425 - Epic Validation and Completion (parallel: false)
+
+Total tasks: 6
+Parallel tasks: 3
+Sequential tasks: 3

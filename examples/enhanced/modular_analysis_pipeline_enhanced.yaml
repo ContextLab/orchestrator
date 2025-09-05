@@ -34,7 +34,7 @@ steps:
       \n        method: \"min-max\"\n\noutputs:\n  processed_data: \"{{ normalize_data.result\
       \ }}\"\n"
     inputs:
-      raw_data: '{{ load_data.content }}'
+      raw_data: '{{ load_data.result.content }}'
     output_mapping:
       processed_data: processed_data
     inherit_context: true
@@ -51,7 +51,7 @@ steps:
   parameters:
     pipeline: examples/sub_pipelines/statistical_analysis.yaml
     inputs:
-      data: '{{ load_data.content }}'
+      data: '{{ load_data.result.content }}'
       confidence_level: 0.95
     output_mapping:
       statistics: statistical_results
@@ -71,7 +71,7 @@ steps:
   parameters:
     pipeline: examples/sub_pipelines/sentiment_analysis.yaml
     inputs:
-      data: '{{ load_data.content }}'
+      data: '{{ load_data.result.content }}'
       text_column: comments
     output_mapping:
       sentiment_scores: sentiment_results
@@ -91,7 +91,7 @@ steps:
   parameters:
     pipeline: examples/sub_pipelines/trend_analysis.yaml
     inputs:
-      data: '{{ load_data.content }}'
+      data: '{{ load_data.result.content }}'
       time_column: timestamp
       value_columns:
       - sales
@@ -128,7 +128,7 @@ steps:
   tool: visualization
   action: create_charts
   parameters:
-    data: '{{ load_data.content }}'
+    data: '{{ load_data.result.content }}'
     chart_types:
     - bar
     - line

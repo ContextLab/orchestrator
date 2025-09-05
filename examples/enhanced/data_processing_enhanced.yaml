@@ -41,7 +41,7 @@ steps:
   tool: validation
   action: validate
   parameters:
-    data: '{{ load_data.content }}'
+    data: '{{ load_data.result.content }}'
     schema:
       type: object
       properties:
@@ -66,7 +66,7 @@ steps:
   tool: data-processing
   action: transform
   parameters:
-    data: '{{ load_data.content }}'
+    data: '{{ load_data.result.content }}'
     operation:
       transformations:
       - type: filter

@@ -26,14 +26,14 @@ steps:
         Analyze this {{language}} code for optimization opportunities:
         
         ```{{language}}
-        {{read_code.content}}
+        {{read_code.result.content}}
         ```
         
         Identify:
         1. Performance bottlenecks
         2. Code quality issues
         3. Best practice violations
-      model: <AUTO task="analyze">Select model best suited for code analysis</AUTO>
+      model: "gpt-5-mini"
       analysis_type: "code_quality"
     dependencies:
       - read_code
@@ -55,7 +55,7 @@ steps:
         - The output must be pure, executable {{language}} code
         
         Language: {{language}}
-      model: <AUTO task="generate">Select model for code generation</AUTO>
+      model: "gpt-5-mini"
       max_tokens: 2000
     dependencies:
       - analyze_code
@@ -72,7 +72,7 @@ steps:
         The output must be valid, executable {{language}} code with proper {{language}} syntax.
         
         Target Language: {{language}}
-      model: <AUTO task="extract">Select model for code extraction</AUTO>
+      model: "gpt-5-mini"
       max_tokens: 2000
     dependencies:
       - optimize_code

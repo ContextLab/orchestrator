@@ -17,8 +17,8 @@ steps:
   tool: validation
   action: validate
   parameters:
-    data: '{{ read_data.content | from_json }}'
-    schema: '{{ read_config.content | from_json }}'
+    data: '{{ read_data.result.content | from_json }}'
+    schema: '{{ read_config.result.content | from_json }}'
     mode: strict
   dependencies:
   - read_config

@@ -2,9 +2,9 @@
 
 import pytest
 
+from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.compiler.ambiguity_resolver import (
 
-from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
     AmbiguityResolutionError,
     AmbiguityResolver)
 from orchestrator import init_models

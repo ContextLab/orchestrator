@@ -100,7 +100,7 @@ class QualityJSONFormatter(logging.Formatter):
             
         except Exception as e:
             # Fallback to basic formatting to prevent log loss
-            return f'{{"timestamp": "{self._format_timestamp(record.created)}", "level": "ERROR", "message": "Failed to format log record: {e}", "original_message": "{record.getMessage()}"}}
+            return f'{"timestamp": "{self._format_timestamp(record.created)}", "level": "ERROR", "message": "Failed to format log record: {e}", "original_message": "{record.getMessage()}"}'
 
     def _format_timestamp(self, timestamp: float) -> str:
         """Format timestamp according to configured format."""
