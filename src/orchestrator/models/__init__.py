@@ -30,9 +30,7 @@ from .providers import (
     ModelProvider,
     ProviderConfig,
     ProviderError,
-    OpenAIProvider,
     AnthropicProvider,
-    LocalProvider,
 )
 
 # Keep legacy ModelRegistry for backwards compatibility
@@ -62,13 +60,11 @@ __all__ = [
     "LOCAL_ONLY_CONFIG", 
     "DEVELOPMENT_CONFIG",
     
-    # Provider abstractions
+    # Provider abstractions (Anthropic-only for Claude Skills refactor)
     "ModelProvider",
     "ProviderConfig",
     "ProviderError",
-    "OpenAIProvider",
     "AnthropicProvider",
-    "LocalProvider",
 ]
 
 # For backwards compatibility, keep ModelRegistry pointing to legacy

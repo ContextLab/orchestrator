@@ -19,124 +19,95 @@ logger = logging.getLogger(__name__)
 class AnthropicProvider(ModelProvider):
     """Provider for Anthropic models."""
     
-    # Known Anthropic models with their specifications
+    # Latest Anthropic models (2025) - Simplified for Claude Skills refactor
     KNOWN_MODELS = {
-        # Claude 3.5 Sonnet / Sonnet 4 
-        "claude-3-5-sonnet-20241022": {
+        # Claude Opus 4.1 (Released August 2025)
+        "claude-opus-4-1-20250805": {
             "context_window": 200000,
             "max_tokens": 8192,
-            "input_cost": 3.0 / 1000,  # $3 per 1M tokens = $0.003 per 1K
-            "output_cost": 15.0 / 1000,  # $15 per 1M tokens = $0.015 per 1K
+            "input_cost": 15.0 / 1000,  # $15 per 1M tokens (estimated)
+            "output_cost": 75.0 / 1000,  # $75 per 1M tokens (estimated)
             "vision": True,
             "function_calling": True,
+            "role": "review_and_analysis",
+            "description": "Most powerful Claude model for deep analysis and review",
+            "released": "2025-08-05",
         },
-        "claude-3-5-sonnet": {
+        "claude-opus-4.1": {
             "context_window": 200000,
             "max_tokens": 8192,
-            "input_cost": 3.0 / 1000,
-            "output_cost": 15.0 / 1000,
-            "vision": True,
-            "function_calling": True,
-        },
-        
-        # Claude 3 Opus
-        "claude-3-opus-20240229": {
-            "context_window": 200000,
-            "max_tokens": 4096,
-            "input_cost": 15.0 / 1000,  # $15 per 1M tokens
-            "output_cost": 75.0 / 1000,  # $75 per 1M tokens
-            "vision": True,
-            "function_calling": True,
-        },
-        "claude-3-opus": {
-            "context_window": 200000,
-            "max_tokens": 4096,
             "input_cost": 15.0 / 1000,
             "output_cost": 75.0 / 1000,
             "vision": True,
             "function_calling": True,
+            "role": "review_and_analysis",
+            "description": "Most powerful Claude model for deep analysis and review",
         },
-        
-        # Claude 3 Sonnet
-        "claude-3-sonnet-20240229": {
-            "context_window": 200000,
-            "max_tokens": 4096,
+
+        # Claude Sonnet 4.5 (Released September 2025)
+        "claude-sonnet-4-5": {
+            "context_window": 1000000,  # 1M token context window for API customers
+            "max_tokens": 8192,
             "input_cost": 3.0 / 1000,  # $3 per 1M tokens
             "output_cost": 15.0 / 1000,  # $15 per 1M tokens
             "vision": True,
             "function_calling": True,
+            "role": "orchestrator",
+            "description": "World's best coding model, optimal for building agents",
+            "released": "2025-09-29",
         },
-        "claude-3-sonnet": {
-            "context_window": 200000,
-            "max_tokens": 4096,
+        "claude-sonnet-4.5": {
+            "context_window": 1000000,  # 1M token context window
+            "max_tokens": 8192,
             "input_cost": 3.0 / 1000,
             "output_cost": 15.0 / 1000,
             "vision": True,
             "function_calling": True,
+            "role": "orchestrator",
+            "description": "World's best coding model, optimal for building agents",
         },
-        
-        # Claude 3 Haiku
-        "claude-3-haiku-20240307": {
+
+        # Claude Haiku 4.5 (Released October 2025)
+        "claude-haiku-4-5": {
             "context_window": 200000,
-            "max_tokens": 4096,
-            "input_cost": 0.25 / 1000,  # $0.25 per 1M tokens
-            "output_cost": 1.25 / 1000,  # $1.25 per 1M tokens
+            "max_tokens": 8192,
+            "input_cost": 1.0 / 1000,  # $1 per 1M tokens
+            "output_cost": 5.0 / 1000,  # $5 per 1M tokens
             "vision": True,
             "function_calling": True,
+            "role": "simple_tasks",
+            "description": "90% of Sonnet 4.5's performance at 1/3 the cost",
+            "released": "2025-10-15",
         },
-        "claude-3-haiku": {
+        "claude-haiku-4.5": {
+            "context_window": 200000,
+            "max_tokens": 8192,
+            "input_cost": 1.0 / 1000,
+            "output_cost": 5.0 / 1000,
+            "vision": True,
+            "function_calling": True,
+            "role": "simple_tasks",
+            "description": "90% of Sonnet 4.5's performance at 1/3 the cost",
+        },
+
+        # Legacy models kept for backwards compatibility (will be deprecated)
+        "claude-3-5-sonnet-20241022": {
+            "context_window": 200000,
+            "max_tokens": 8192,
+            "input_cost": 3.0 / 1000,
+            "output_cost": 15.0 / 1000,
+            "vision": True,
+            "function_calling": True,
+            "deprecated": True,
+        },
+        "claude-3-haiku-20240307": {
             "context_window": 200000,
             "max_tokens": 4096,
             "input_cost": 0.25 / 1000,
             "output_cost": 1.25 / 1000,
             "vision": True,
             "function_calling": True,
-        },
-        
-        # Claude 2.1
-        "claude-2.1": {
-            "context_window": 200000,
-            "max_tokens": 4096,
-            "input_cost": 8.0 / 1000,  # $8 per 1M tokens
-            "output_cost": 24.0 / 1000,  # $24 per 1M tokens
-            "vision": False,
-            "function_calling": False,
-        },
-        
-        # Claude 2
-        "claude-2.0": {
-            "context_window": 100000,
-            "max_tokens": 4096,
-            "input_cost": 8.0 / 1000,
-            "output_cost": 24.0 / 1000,
-            "vision": False,
-            "function_calling": False,
-        },
-        "claude-2": {
-            "context_window": 100000,
-            "max_tokens": 4096,
-            "input_cost": 8.0 / 1000,
-            "output_cost": 24.0 / 1000,
-            "vision": False,
-            "function_calling": False,
-        },
-        
-        # Claude Instant
-        "claude-instant-1.2": {
-            "context_window": 100000,
-            "max_tokens": 4096,
-            "input_cost": 0.8 / 1000,  # $0.80 per 1M tokens
-            "output_cost": 2.4 / 1000,  # $2.40 per 1M tokens
-            "vision": False,
-            "function_calling": False,
-        },
-        "claude-instant": {
-            "context_window": 100000,
-            "max_tokens": 4096,
-            "input_cost": 0.8 / 1000,
-            "output_cost": 2.4 / 1000,
-            "vision": False,
-            "function_calling": False,
+            "deprecated": True,
         },
     }
 
@@ -148,12 +119,11 @@ class AnthropicProvider(ModelProvider):
     async def initialize(self) -> None:
         """Initialize Anthropic provider."""
         try:
-            # Get API key
-            api_key = ensure_api_key(
-                service="anthropic",
-                api_key=self.config.api_key,
-                env_var="ANTHROPIC_API_KEY"
-            )
+            # Get API key - prioritize config, then use ensure_api_key
+            if self.config.api_key:
+                api_key = self.config.api_key
+            else:
+                api_key = ensure_api_key("anthropic")
             
             # Initialize client
             self._client = AsyncAnthropic(
@@ -168,12 +138,21 @@ class AnthropicProvider(ModelProvider):
             
             # Test connectivity with a simple completion
             try:
-                await self._client.messages.create(
-                    model="claude-3-haiku-20240307",  # Use cheapest model for health check
-                    max_tokens=1,
-                    messages=[{"role": "user", "content": "hi"}]
-                )
-                logger.info(f"Anthropic provider initialized with {len(self._available_models)} models")
+                # Try new model first, fall back to current model
+                test_models = ["claude-haiku-4.5", "claude-3-haiku-20240307"]
+                for test_model in test_models:
+                    try:
+                        await self._client.messages.create(
+                            model=test_model,
+                            max_tokens=1,
+                            messages=[{"role": "user", "content": "hi"}]
+                        )
+                        logger.info(f"Anthropic provider initialized with {len(self._available_models)} models (tested with {test_model})")
+                        break
+                    except Exception as model_error:
+                        if "not_found" in str(model_error).lower():
+                            continue
+                        raise model_error
             except Exception as e:
                 logger.warning(f"Could not test Anthropic connectivity: {e}. Provider may still work.")
                 
@@ -206,18 +185,23 @@ class AnthropicProvider(ModelProvider):
         """Check if Anthropic provider is healthy."""
         if not self._initialized or not self._client:
             return False
-            
-        try:
-            # Simple API call to check health
-            await self._client.messages.create(
-                model="claude-3-haiku-20240307",  # Use cheapest model
-                max_tokens=1,
-                messages=[{"role": "user", "content": "test"}]
-            )
-            return True
-        except Exception as e:
-            logger.warning(f"Anthropic health check failed: {e}")
-            return False
+
+        # Try new models first, fall back to current models
+        test_models = ["claude-haiku-4.5", "claude-3-haiku-20240307"]
+        for test_model in test_models:
+            try:
+                await self._client.messages.create(
+                    model=test_model,
+                    max_tokens=1,
+                    messages=[{"role": "user", "content": "test"}]
+                )
+                return True
+            except Exception as e:
+                if "not_found" in str(e).lower() and test_model != test_models[-1]:
+                    continue  # Try next model
+                logger.warning(f"Anthropic health check failed with {test_model}: {e}")
+
+        return False
 
     async def discover_models(self) -> List[str]:
         """Discover available Anthropic models."""
@@ -229,16 +213,16 @@ class AnthropicProvider(ModelProvider):
         """Get capabilities for an Anthropic model."""
         if not self.supports_model(model_name):
             raise ModelNotSupportedError(f"Model '{model_name}' not supported by Anthropic provider")
-        
+
         name_lower = model_name.lower()
         model_info = self.KNOWN_MODELS.get(model_name, {})
-        
-        # Claude 3.5 Sonnet / Sonnet 4
-        if "sonnet" in name_lower and ("3-5" in name_lower or "3.5" in name_lower or "sonnet-4" in name_lower):
+
+        # Claude Sonnet 4.5 (2025)
+        if "sonnet-4" in name_lower or "sonnet-4.5" in name_lower:
             return ModelCapabilities(
                 supported_tasks=[
                     "generate",
-                    "analyze", 
+                    "analyze",
                     "transform",
                     "code",
                     "reasoning",
@@ -248,6 +232,42 @@ class AnthropicProvider(ModelProvider):
                     "vision",
                     "math",
                     "research",
+                    "orchestration",
+                    "agent_building",
+                ],
+                context_window=model_info.get("context_window", 1000000),  # 1M tokens
+                supports_function_calling=model_info.get("function_calling", True),
+                supports_structured_output=True,
+                supports_streaming=True,
+                languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
+                max_tokens=model_info.get("max_tokens", 8192),
+                temperature_range=(0.0, 1.0),
+                domains=["general", "technical", "creative", "business", "visual", "agent"],
+                vision_capable=model_info.get("vision", True),
+                code_specialized=True,
+                supports_tools=True,
+                supports_json_mode=True,
+                accuracy_score=0.98,  # World's best coding model
+                speed_rating="medium",
+            )
+
+        # Claude Opus 4.1 (2025)
+        elif "opus-4" in name_lower or "opus-4.1" in name_lower:
+            return ModelCapabilities(
+                supported_tasks=[
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "reasoning",
+                    "creative",
+                    "chat",
+                    "instruct",
+                    "vision",
+                    "math",
+                    "research",
+                    "review",
+                    "deep_analysis",
                 ],
                 context_window=model_info.get("context_window", 200000),
                 supports_function_calling=model_info.get("function_calling", True),
@@ -256,17 +276,46 @@ class AnthropicProvider(ModelProvider):
                 languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
                 max_tokens=model_info.get("max_tokens", 8192),
                 temperature_range=(0.0, 1.0),
-                domains=["general", "technical", "creative", "business", "visual"],
+                domains=["general", "technical", "creative", "business", "visual", "academic"],
                 vision_capable=model_info.get("vision", True),
                 code_specialized=True,
                 supports_tools=True,
                 supports_json_mode=True,
-                accuracy_score=0.97,
-                speed_rating="medium",
+                accuracy_score=0.99,  # Most powerful for deep analysis
+                speed_rating="slow",
             )
-        
-        # Claude 3 Opus
-        elif "opus" in name_lower:
+
+        # Claude Haiku 4.5 (2025)
+        elif "haiku-4" in name_lower or "haiku-4.5" in name_lower:
+            return ModelCapabilities(
+                supported_tasks=[
+                    "generate",
+                    "analyze",
+                    "transform",
+                    "code",
+                    "chat",
+                    "instruct",
+                    "vision",
+                    "simple_tasks",
+                ],
+                context_window=model_info.get("context_window", 200000),
+                supports_function_calling=model_info.get("function_calling", True),
+                supports_structured_output=True,
+                supports_streaming=True,
+                languages=["en", "es", "fr", "de", "it", "pt", "ru", "ja", "ko", "zh"],
+                max_tokens=model_info.get("max_tokens", 8192),
+                temperature_range=(0.0, 1.0),
+                domains=["general", "technical", "visual"],
+                vision_capable=model_info.get("vision", True),
+                code_specialized=True,
+                supports_tools=True,
+                supports_json_mode=True,
+                accuracy_score=0.90,  # 90% of Sonnet 4.5's performance
+                speed_rating="fast",
+            )
+
+        # Legacy Claude 3 Opus (deprecated)
+        elif "opus" in name_lower and "opus-4" not in name_lower:
             return ModelCapabilities(
                 supported_tasks=[
                     "generate",

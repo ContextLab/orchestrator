@@ -8,9 +8,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from ..core.model import Model
 from .providers.base import ModelProvider, ProviderConfig, ProviderError
-from .providers.openai_provider import OpenAIProvider
 from .providers.anthropic_provider import AnthropicProvider
-from .providers.local_provider import LocalProvider
 
 logger = logging.getLogger(__name__)
 
@@ -71,23 +69,22 @@ class ModelRegistry:
     ) -> None:
         """
         Configure and register a provider.
-        
+
         Args:
             provider_name: Name for the provider instance
-            provider_type: Type of provider (openai, anthropic, local)
+            provider_type: Type of provider (currently only 'anthropic' supported)
             config: Provider configuration
         """
         provider_config = ProviderConfig(name=provider_name, **config)
-        
-        if provider_type.lower() == "openai":
-            provider = OpenAIProvider(provider_config)
-        elif provider_type.lower() == "anthropic":
+
+        if provider_type.lower() == "anthropic":
             provider = AnthropicProvider(provider_config)
-        elif provider_type.lower() == "local":
-            provider = LocalProvider(provider_config)
         else:
-            raise ValueError(f"Unknown provider type: {provider_type}")
-        
+            raise ValueError(
+                f"Unknown provider type: {provider_type}. "
+                f"Only 'anthropic' is supported in the Claude Skills refactor."
+            )
+
         self.register_provider(provider)
     
     async def initialize(self) -> None:

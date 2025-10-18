@@ -294,7 +294,10 @@
       "Read(//private/tmp/**)",
       "Bash(do)",
       "Bash(echo:*)",
-      "Read(//usr/bin/**)"
+      "Read(//usr/bin/**)",
+      "Bash(gh issue comment:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,15 +1,11 @@
-"""Provider abstractions for unified model management."""
+"""Provider abstractions for unified model management - Claude Skills refactor (Anthropic-only)."""
 
 from .base import ModelProvider, ProviderConfig, ProviderError
-from .openai_provider import OpenAIProvider
-from .anthropic_provider import AnthropicProvider  
-from .local_provider import LocalProvider
+from .anthropic_provider import AnthropicProvider
 
 __all__ = [
     "ModelProvider",
-    "ProviderConfig", 
+    "ProviderConfig",
     "ProviderError",
-    "OpenAIProvider",
     "AnthropicProvider",
-    "LocalProvider",
 ]
