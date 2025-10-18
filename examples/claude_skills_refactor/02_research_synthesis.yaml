@@ -1,0 +1,74 @@
+# Research Synthesis Pipeline
+# Demonstrates research and aggregation capabilities
+
+id: research-synthesis
+name: "Research Synthesis Pipeline"
+description: "Research a topic and synthesize findings"
+version: "1.0.0"
+
+inputs:
+  research_topic:
+    type: string
+    description: "Topic to research"
+    default: "Latest developments in LangGraph and agent frameworks"
+
+  num_sources:
+    type: integer
+    description: "Number of sources to include"
+    default: 5
+
+steps:
+  - id: create_research_plan
+    name: "Create research plan"
+    action: llm_generate
+    parameters:
+      prompt: |
+        Create a research plan for: {{ research_topic }}
+
+        Break down into specific subtopics to research.
+        Return as a JSON list of subtopics.
+      model: claude-3-5-sonnet-20241022
+      max_tokens: 1000
+
+  - id: research_subtopics
+    name: "Research each subtopic"
+    action: llm_generate
+    dependencies: [create_research_plan]
+    parameters:
+      prompt: |
+        Research the following subtopics for the topic "{{ research_topic }}":
+
+        {{ create_research_plan.result }}
+
+        For each subtopic, provide:
+        1. Key concepts
+        2. Current state of development
+        3. Notable implementations
+        4. Future directions
+
+        Include up to {{ num_sources }} sources or references per subtopic.
+      model: claude-3-5-sonnet-20241022
+      max_tokens: 4000
+
+  - id: synthesize_findings
+    name: "Synthesize research findings"
+    action: llm_generate
+    dependencies: [research_subtopics]
+    parameters:
+      prompt: |
+        Synthesize these research findings into a comprehensive report:
+
+        {{ research_subtopics.result }}
+
+        Create a well-structured report with:
+        - Executive Summary
+        - Key Findings by Subtopic
+        - Common Themes and Patterns
+        - Recommendations
+        - References
+
+        Format as professional markdown suitable for publication.
+      model: claude-opus-4-1-20250805
+      max_tokens: 5000
+    produces: research_report
+    location: "./research_report.md"

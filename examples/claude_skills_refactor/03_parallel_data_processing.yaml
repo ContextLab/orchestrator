@@ -1,0 +1,105 @@
+# Parallel Data Processing Pipeline
+# Demonstrates parallel execution and data aggregation
+
+id: parallel-data-processing
+name: "Parallel Data Processing"
+description: "Process multiple data sources in parallel and aggregate results"
+version: "1.0.0"
+
+inputs:
+  data_sources:
+    type: array
+    description: "List of data sources to process"
+    default:
+      - "https://api.example.com/dataset1"
+      - "https://api.example.com/dataset2"
+      - "https://api.example.com/dataset3"
+
+  processing_mode:
+    type: string
+    description: "Processing mode (fast/thorough)"
+    default: "fast"
+
+steps:
+  - id: validate_sources
+    name: "Validate all data sources"
+    action: llm_generate
+    parameters:
+      prompt: |
+        Validate these data sources for processing:
+        {% for source in data_sources %}
+        - {{ source }}
+        {% endfor %}
+
+        Check if they appear to be valid URLs/paths.
+        Return a JSON object with validation status for each.
+      model: claude-haiku-4-5
+      max_tokens: 500
+
+  - id: process_source_1
+    name: "Process first data source"
+    action: llm_generate
+    dependencies: [validate_sources]
+    parameters:
+      prompt: |
+        Process data from: {{ data_sources[0] }}
+        Mode: {{ processing_mode }}
+
+        Extract key information and format as structured JSON.
+      model: "{% if processing_mode == 'fast' %}claude-haiku-4-5{% else %}claude-3-5-sonnet-20241022{% endif %}"
+      max_tokens: 1500
+
+  - id: process_source_2
+    name: "Process second data source"
+    action: llm_generate
+    dependencies: [validate_sources]
+    parameters:
+      prompt: |
+        Process data from: {{ data_sources[1] }}
+        Mode: {{ processing_mode }}
+
+        Extract key information and format as structured JSON.
+      model: "{% if processing_mode == 'fast' %}claude-haiku-4-5{% else %}claude-3-5-sonnet-20241022{% endif %}"
+      max_tokens: 1500
+
+  - id: process_source_3
+    name: "Process third data source"
+    action: llm_generate
+    dependencies: [validate_sources]
+    parameters:
+      prompt: |
+        Process data from: {{ data_sources[2] }}
+        Mode: {{ processing_mode }}
+
+        Extract key information and format as structured JSON.
+      model: "{% if processing_mode == 'fast' %}claude-haiku-4-5{% else %}claude-3-5-sonnet-20241022{% endif %}"
+      max_tokens: 1500
+
+  - id: aggregate_results
+    name: "Aggregate all processing results"
+    action: llm_generate
+    dependencies: [process_source_1, process_source_2, process_source_3]
+    parameters:
+      prompt: |
+        Aggregate these processing results:
+
+        Source 1:
+        {{ process_source_1.result }}
+
+        Source 2:
+        {{ process_source_2.result }}
+
+        Source 3:
+        {{ process_source_3.result }}
+
+        Create a unified dataset that:
+        1. Combines all sources
+        2. Removes duplicates
+        3. Identifies patterns
+        4. Highlights key insights
+
+        Return as well-structured JSON.
+      model: claude-3-5-sonnet-20241022
+      max_tokens: 3000
+    produces: aggregated_data
+    location: "./aggregated_results.json"

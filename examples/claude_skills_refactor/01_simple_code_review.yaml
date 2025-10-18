@@ -1,0 +1,69 @@
+# Simple Code Review Pipeline
+# Demonstrates basic skill usage for code analysis
+
+id: simple-code-review
+name: "Simple Code Review"
+description: "Analyze code structure and generate a review report"
+version: "1.0.0"
+
+inputs:
+  code_directory:
+    type: string
+    description: "Path to code directory to review"
+    default: "./src"
+
+steps:
+  - id: analyze_structure
+    name: "Analyze code structure"
+    action: llm_generate
+    parameters:
+      prompt: |
+        Analyze the code structure in this directory: {{ code_directory }}
+
+        Provide:
+        1. File organization
+        2. Module dependencies
+        3. Code complexity metrics
+        4. Potential issues
+      model: claude-3-5-sonnet-20241022
+      max_tokens: 2000
+
+  - id: identify_components
+    name: "Identify key components"
+    action: llm_generate
+    dependencies: [analyze_structure]
+    parameters:
+      prompt: |
+        Based on this analysis:
+        {{ analyze_structure.result }}
+
+        Identify:
+        1. Main components/modules
+        2. Their responsibilities
+        3. Integration points
+      model: claude-3-5-sonnet-20241022
+      max_tokens: 1500
+
+  - id: generate_review_report
+    name: "Generate review report"
+    action: llm_generate
+    dependencies: [identify_components]
+    parameters:
+      prompt: |
+        Create a comprehensive code review report based on:
+
+        Structure Analysis:
+        {{ analyze_structure.result }}
+
+        Components:
+        {{ identify_components.result }}
+
+        Format as markdown with sections for:
+        - Executive Summary
+        - Architecture Overview
+        - Component Analysis
+        - Recommendations
+      model: claude-3-5-sonnet-20241022
+      max_tokens: 3000
+    produces: markdown_report
+    location: "./code_review_report.md"
