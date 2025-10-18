@@ -1,7 +1,9 @@
 ---
 name: Architecture & Core
 description: Core architecture improvements and refactoring
-status: backlog
+status: in-progress
+progress: 25%
+updated: 2025-09-05T03:10:43Z
 created: 2025-08-21T23:35:08.637783
 imported: true
 ---

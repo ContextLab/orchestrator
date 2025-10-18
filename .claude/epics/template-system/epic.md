@@ -2,9 +2,10 @@
 name: Template System Improvements
 description: Issues related to template resolution and rendering
 status: backlog
+progress: 0%
+updated: 2025-09-05T03:10:43Z
 github: https://github.com/ContextLab/orchestrator/issues/404
 created: 2025-08-21T23:35:08.636867
-updated: 2025-09-04T23:26:52Z
 imported: true
 ---
 

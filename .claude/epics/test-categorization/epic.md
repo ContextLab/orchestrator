@@ -1,8 +1,9 @@
 ---
 name: Test Categorization and Systematic Fixing
-status: backlog
+status: in-progress
+progress: 20%
+updated: 2025-09-05T03:10:43Z
 created: 2025-09-04T05:45:00Z
-updated: 2025-09-04T23:27:06Z
 ---
 
 # Epic: Test Categorization and Systematic Fixing
