@@ -1,0 +1,68 @@
+# Default Skills Registry for Orchestrator
+# Claude Skills Refactor - Version 1.0.0
+
+version: "1.0.0"
+metadata:
+  description: "Default skills registry for the Orchestrator framework"
+  created: "2024-01-15"
+  updated: "2024-01-15"
+  orchestrator_version: ">=1.0.0"
+
+# Core skills that come with Orchestrator
+skills:
+  # Example skill structure - will be populated as skills are created
+  example-skill:
+    name: "example-skill"
+    description: "Template for creating new skills"
+    version: "1.0.0"
+    capabilities:
+      - "template"
+      - "example"
+    parameters:
+      input:
+        type: "string"
+        required: true
+        description: "Input data for the skill"
+      options:
+        type: "object"
+        required: false
+        description: "Optional configuration"
+    examples:
+      - description: "Basic usage example"
+        input:
+          input: "Hello, world!"
+          options: {}
+        expected_output_format: "string"
+    path: "./default_skills/example-skill/"
+    tested_on: "2024-01-15"
+    test_results: "./default_skills/example-skill/test_results.md"
+    created_by: "system"
+    status: "active"
+
+# Categories for organizing skills
+categories:
+  analysis:
+    description: "Skills for analyzing data, code, and content"
+    skills: []
+
+  generation:
+    description: "Skills for generating content, code, and artifacts"
+    skills: []
+
+  transformation:
+    description: "Skills for transforming and processing data"
+    skills: []
+
+  integration:
+    description: "Skills for integrating with external services"
+    skills: []
+
+  validation:
+    description: "Skills for validating and testing"
+    skills: []
+
+# Skill creation metadata
+skill_creation:
+  default_model: "claude-sonnet-4.5"  # For creating skills
+  review_model: "claude-opus-4.1"      # For reviewing skills
+  test_model: "claude-haiku-4.5"       # For quick validation

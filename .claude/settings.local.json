@@ -297,7 +297,10 @@
       "Read(//usr/bin/**)",
       "Bash(gh issue comment:*)",
       "Bash(python -m pytest:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Read(//Users/jmanning/.orchestrator/skills/**)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
