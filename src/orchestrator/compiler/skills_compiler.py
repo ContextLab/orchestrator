@@ -1,10 +1,7 @@
 """Enhanced compiler with automatic skill creation for Claude Skills refactor."""
 
-import asyncio
 import logging
-from typing import Dict, Any, List, Optional
-
-import yaml
+from typing import Dict, Any, Optional
 
 from .yaml_compiler import YAMLCompiler
 from ..core.pipeline import Pipeline
@@ -177,7 +174,7 @@ class SkillsCompiler(YAMLCompiler):
             capability = self._infer_capability_from_step(step, skill_name)
 
             # Create the skill using ROMA pattern
-            skill = await self.skill_creator.create_skill(
+            await self.skill_creator.create_skill(
                 capability=capability,
                 pipeline_context={
                     "pipeline_id": pipeline_context.get("id", "unknown"),

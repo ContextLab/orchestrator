@@ -4,7 +4,6 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from .control_flow_compiler import ControlFlowCompiler
-from .skills_compiler import SkillsCompiler
 from ..core.pipeline import Pipeline
 from ..core.exceptions import YAMLCompilerError
 from ..skills.creator import SkillCreator

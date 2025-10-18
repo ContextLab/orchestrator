@@ -1,6 +1,5 @@
 """Registry installer for managing ~/.orchestrator directory structure."""
 
-import os
 import shutil
 import logging
 from pathlib import Path

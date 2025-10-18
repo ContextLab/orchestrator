@@ -1,6 +1,5 @@
 """Real-world skill testing framework - NO MOCKS."""
 
-import asyncio
 import json
 import logging
 import os
@@ -9,11 +8,10 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from urllib.parse import urlparse
 
 import aiohttp
-import yaml
 
 from ..utils.api_keys_flexible import ensure_api_key
 
@@ -267,7 +265,7 @@ class RealWorldSkillTester:
             raise ValueError(f"Invalid API spec: {api_spec}")
 
         provider = parts[0]
-        action = parts[1]
+        # parts[1] is action - reserved for future action-based routing
         data = parts[2] if len(parts) > 2 else ""
 
         if provider == "anthropic":

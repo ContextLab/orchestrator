@@ -77,13 +77,10 @@ def ensure_docker():
                 logger.warning("Tests requiring Docker will be skipped")
 
         elif not status["running"]:
-            logger.warning("Docker installed but not running, attempting to start...")
-            try:
-                DockerManager.ensure_docker_ready(install_if_missing=False, start_if_stopped=True)
-                logger.info("✅ Docker started successfully")
-            except Exception as e:
-                logger.warning(f"Could not start Docker: {e}")
-                logger.warning("Tests requiring Docker will be skipped")
+            logger.warning("Docker installed but not running")
+            logger.warning("Tests requiring Docker will be skipped")
+            # Note: Auto-start removed from fixture to prevent test hangs
+            # Tests can manually start Docker if needed
 
         else:
             logger.info("✅ Docker is already running")

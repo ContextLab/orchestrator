@@ -1,6 +1,5 @@
 """Skills registry management for the Orchestrator framework."""
 
-import json
 import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Set
