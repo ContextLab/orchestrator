@@ -12,7 +12,13 @@ Orchestrator Framework Documentation
 .. image:: https://img.shields.io/badge/build-passing-brightgreen.svg
    :alt: Build Status
 
-Welcome to the **Orchestrator Framework** - a powerful, flexible, and production-ready system for orchestrating AI workflows. Whether you're building simple task chains or complex multi-model pipelines, Orchestrator provides the tools you need to create, manage, and scale your AI applications.
+Welcome to the **Orchestrator Framework** - a powerful system for building multi-agent workflows with Anthropic's Claude models. Featuring **automatic skill creation** using the ROMA pattern, **intelligent model selection**, and **advanced control flow**.
+
+.. important::
+   **Claude Skills Edition**: This version focuses on Anthropic Claude models with automatic skill creation. Skills are generated on-demand using Claude Opus and Sonnet, tested with real data, and reusable across all pipelines.
+
+.. note::
+   **Quick Start**: New to Claude Skills? Start with :doc:`tutorials/claude_skills_quickstart` for a complete introduction.
 
 .. note::
    This documentation covers version 1.0.0 of the Orchestrator Framework. For the latest updates and features, please visit our `GitHub repository <https://github.com/ContextLab/orchestrator>`_.
@@ -141,6 +147,7 @@ This documentation is organized into several sections:
    :maxdepth: 2
    :caption: User Guide
 
+   user_guide/claude_skills_models
    user_guide/yaml_configuration
    user_guide/model_configuration
    user_guide/models_and_adapters
@@ -176,6 +183,7 @@ This documentation is organized into several sections:
    :maxdepth: 2
    :caption: Tutorials
 
+   tutorials/claude_skills_quickstart
    tutorials/notebooks
    tutorials/examples
    tutorials/integration_guides
