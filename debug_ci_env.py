@@ -58,12 +58,13 @@ def main():
     print("\n=== Basic Functionality Test ===")
     try:
         # Try importing core components
-        from orchestrator.api import compile
         from orchestrator.core.pipeline import Pipeline
+        from orchestrator.api import PipelineAPI
         print("[OK] Core components: importable")
     except ImportError as e:
         print(f"[ERROR] Core components: {e}")
-    
+        # Don't fail the script - just log the error
+
     print("\n=== CI Environment Debug Complete ===")
     return 0
 
