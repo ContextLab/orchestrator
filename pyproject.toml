@@ -69,11 +69,12 @@ dependencies = [
     "six>=1.16.0",
     # Google AI for generative models
     "google-generativeai>=0.3.0",
-    # Data visualization 
+    # Data visualization
     "seaborn>=0.11.0",
     "matplotlib>=3.5.0",
-    # RouteLLM for intelligent model routing and cost optimization
-    "routellm[serve,eval]>=0.1.0",
+    # Note: RouteLLM removed for Claude Skills refactor (Anthropic-only)
+    # Re-enable if multi-provider support is added back
+    # "routellm[serve,eval]>=0.1.0",
 ]
 
 [project.optional-dependencies]
