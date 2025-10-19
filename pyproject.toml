@@ -67,6 +67,7 @@ dependencies = [
     "imageio-ffmpeg>=0.4.9",
     # Additional dependencies
     "six>=1.16.0",
+    "psutil>=5.9.0",  # Required for memory monitoring
     # Google AI for generative models
     "google-generativeai>=0.3.0",
     # Data visualization
