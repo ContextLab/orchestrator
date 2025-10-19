@@ -20,13 +20,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from src.orchestrator.models.providers.base import ModelProvider, ProviderError, ProviderConfig
-from src.orchestrator.models.providers.openai_provider import OpenAIProvider
 from src.orchestrator.models.providers.anthropic_provider import AnthropicProvider
-from src.orchestrator.models.providers.local_provider import LocalProvider
 from src.orchestrator.models.registry import ModelRegistry
 from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelRequirements
-from src.orchestrator.integrations.ollama_model import OllamaModel
-from src.orchestrator.integrations.huggingface_model import HuggingFaceModel
+
+# Note: OpenAIProvider and LocalProvider removed in Claude Skills refactor (Issue #426)
+# Tests for these providers are skipped
 
 
 class TestProviderAbstractions:
@@ -78,13 +77,14 @@ class TestProviderAbstractions:
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="OpenAI provider removed in Claude Skills refactor (Issue #426)")
 class TestOpenAIProvider:
     """Test OpenAI provider with real API calls."""
 
     @pytest.fixture
     def openai_provider(self):
         """Create OpenAI provider instance."""
-        return OpenAIProvider()
+        pytest.skip("OpenAI provider removed")
 
     def test_openai_provider_initialization(self, openai_provider):
         """Test OpenAI provider can be created."""
@@ -210,13 +210,14 @@ class TestAnthropicProvider:
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Local provider removed in Claude Skills refactor (Issue #426)")
 class TestLocalProvider:
     """Test local provider with Ollama and HuggingFace models."""
 
     @pytest.fixture
     def local_provider(self):
         """Create local provider instance."""
-        return LocalProvider()
+        pytest.skip("Local provider removed")
 
     def test_local_provider_initialization(self, local_provider):
         """Test local provider can be created."""
@@ -286,20 +287,14 @@ class TestLocalProvider:
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Multi-provider registry removed in Claude Skills refactor (Issue #426)")
 class TestProviderRegistry:
     """Test provider registry integration."""
 
     @pytest.fixture
     def model_registry(self):
         """Create model registry with all providers."""
-        registry = ModelRegistry()
-        
-        # Add all providers
-        registry.add_provider(OpenAIProvider())
-        registry.add_provider(AnthropicProvider())
-        registry.add_provider(LocalProvider())
-        
-        return registry
+        pytest.skip("Multi-provider registry not applicable")
 
     async def test_registry_provider_enumeration(self, model_registry):
         """Test enumerating all providers in registry."""
@@ -369,15 +364,13 @@ class TestProviderRegistry:
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Multi-provider resilience tests not applicable (Issue #426)")
 class TestProviderResilience:
     """Test provider error handling and resilience."""
 
     def test_invalid_api_key_handling(self):
         """Test handling of invalid API keys."""
-        # Test with obviously invalid keys
-        os.environ["OPENAI_API_KEY"] = "invalid_key_test_12345"
-        
-        provider = OpenAIProvider()
+        pytest.skip("OpenAI provider removed")
         
         # Should not raise exception on creation
         assert provider is not None
@@ -403,13 +396,13 @@ class TestProviderResilience:
         pytest.skip("Rate limit testing requires controlled load generation")
 
 
+@pytest.mark.skip(reason="Multi-provider compatibility tests not applicable (Issue #426)")
 class TestProviderCompatibility:
     """Test compatibility across different provider versions."""
 
     def test_provider_version_compatibility(self):
         """Test provider compatibility with different API versions."""
-        # Each provider should handle version differences gracefully
-        providers = [OpenAIProvider(), AnthropicProvider(), LocalProvider()]
+        pytest.skip("Multi-provider tests not applicable")
         
         for provider in providers:
             capabilities = provider.get_capabilities()
@@ -418,7 +411,7 @@ class TestProviderCompatibility:
 
     def test_provider_feature_parity(self):
         """Test feature parity across providers."""
-        providers = [OpenAIProvider(), AnthropicProvider(), LocalProvider()]
+        pytest.skip("Multi-provider tests not applicable")
         
         # All providers should support basic text generation
         for provider in providers:
