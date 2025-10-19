@@ -7,16 +7,15 @@ from typing import Dict, Any
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from src.orchestrator.models import (
-
     UnifiedModelRegistry,
     create_registry_from_env,
     create_default_configuration,
     create_registry_from_config,
     ProviderConfig,
-    OpenAIProvider,
     AnthropicProvider,
-    LocalProvider,
 )
+
+# Note: OpenAIProvider and LocalProvider removed in Claude Skills refactor (Issue #426)
 
 
 class TestProviderAbstractions:
@@ -73,35 +72,18 @@ class TestProviderAbstractions:
                 }
             )
         
-        # Configure local provider
-        registry.configure_provider(
-            provider_name="local-test",
-            provider_type="local",
-            config={
-                "base_url": "http://localhost:11434",
-                "timeout": 60.0,
-            }
-        )
+        # Note: local provider no longer available in Claude Skills refactor
+        # Removed to focus on Anthropic-only
         
         # Check providers are registered
         providers = registry.providers
-        assert len(providers) >= 1  # At least local provider should be registered
+        assert len(providers) >= 0  # May have Anthropic if API key available
         
         await registry.cleanup()
 
     async def test_openai_provider(self):
         """Test OpenAI provider directly."""
-        if not os.getenv("OPENAI_API_KEY"):
-            pytest.skip("OPENAI_API_KEY not available")
-        
-        config = ProviderConfig(
-            name="openai-test",
-            api_key=os.getenv("OPENAI_API_KEY"),
-            timeout=30.0,
-            max_retries=2,
-        )
-        
-        provider = OpenAIProvider(config)
+        pytest.skip("OpenAI provider removed in Claude Skills refactor (Issue #426)")
         
         # Test initialization
         await provider.initialize()
@@ -209,14 +191,7 @@ class TestProviderAbstractions:
 
     async def test_local_provider(self):
         """Test local provider (Ollama)."""
-        config = ProviderConfig(
-            name="local-test",
-            base_url="http://localhost:11434",
-            timeout=60.0,
-            max_retries=2,
-        )
-        
-        provider = LocalProvider(config)
+        pytest.skip("Local provider removed in Claude Skills refactor (Issue #426)")
         
         # Test initialization (should work even if Ollama is not running)
         await provider.initialize()
@@ -343,14 +318,10 @@ def test_provider_abstractions_sync():
         await test_instance.test_provider_configuration()
         
         # Test individual providers (if API keys available)
-        if os.getenv("OPENAI_API_KEY"):
-            await test_instance.test_openai_provider()
-            
+        # Note: OpenAI and Local providers removed in Claude Skills refactor
+
         if os.getenv("ANTHROPIC_API_KEY"):
             await test_instance.test_anthropic_provider()
-            
-        # Always test local provider
-        await test_instance.test_local_provider()
         
         # Test unified registry
         await test_instance.test_unified_registry()
