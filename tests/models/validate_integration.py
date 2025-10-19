@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SKIPPED: This test file uses removed providers (OpenAI, Local) - Issue #426
+import pytest
+pytest.skip("Skipping entire module - uses removed providers", allow_module_level=True)
+
 """
 Comprehensive validation script for multi-model integration with execution engine.
 
