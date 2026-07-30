@@ -1,5 +1,0 @@
-# Simple While Loop Test Results
-
-Max attempts: 3
-Total iterations: 0
-Loop completed: False

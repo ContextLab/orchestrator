@@ -1,9 +1,0 @@
-{
-  "validation_success": false,
-  "errors": [],
-  "warnings": [],
-  "rows_validated": 0,
-  "timestamp": "2025-08-28 00:28:05.009272",
-  "input_file": "sales_data.csv",
-  "validation_mode": "strict"
-}
