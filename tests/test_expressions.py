@@ -148,6 +148,83 @@ def test_fail_closed_default_is_overridable_but_explicit():
     assert evaluate_condition("bogus(", {}, default=True) is True
 
 
+# ---------------------------------------------------------------------------
+# Bounded method calls and '**' (capabilities added so real pipelines could
+# migrate off eval(); each one widened the sandbox and is attacked here)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    ("expression", "context", "expected"),
+    [
+        ("state.get('counter', 0) >= 5", {"state": {"counter": 7}}, True),
+        ("sum(ex.values()) == 4", {"ex": {"a": 2, "b": 2}}, True),
+        ("len(items.keys()) == 2", {"items": {"a": 1, "b": 2}}, True),
+        ("name.startswith('pre')", {"name": "prefix"}, True),
+        ("s.split(',')", {"s": "a,b"}, ["a", "b"]),
+        ("2 ** 10", {}, 1024),
+    ],
+)
+def test_bounded_capabilities_work(expression, context, expected):
+    """Real pipeline conditions depend on these; they must keep working."""
+    assert evaluate_expression(expression, context) == expected
+
+
+class _EvilDict(dict):
+    """A dict subclass whose get() would return something dangerous."""
+
+    def get(self, *args, **kwargs):
+        import os
+
+        return os
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        # Method results must not be walked back to type objects.
+        "d.get('x').__class__",
+        "d.keys().__class__",
+        "s.upper().__class__",
+        # Exact-type matching: a dict SUBCLASS may override get(), so refuse it.
+        "evil.get('x')",
+        # Methods on modules / arbitrary objects.
+        "mod.system('echo pwned')",
+        # str.format is an information-disclosure vector; must not be allowed.
+        "s.format(1)",
+        "'{0.__class__}'.format(s)",
+        # Not on the str allowlist.
+        "s.encode()",
+        "s.join(['a', 'b'])",
+        # '**' must stay bounded and numeric.
+        "10 ** 10 ** 10",
+        "10 ** 100000",
+        "(10 ** 1000) ** 1000",
+        "'a' ** 2",
+        "True ** 2",
+    ],
+)
+def test_bounded_capabilities_cannot_be_abused(expression):
+    import os
+
+    context = {"d": {"x": 1}, "s": "a.b", "evil": _EvilDict(), "mod": os}
+    with pytest.raises(ExpressionError):
+        evaluate_expression(expression, context)
+
+
+def test_chained_methods_cannot_amplify_memory():
+    """Individually safe methods must not compose into an allocation bomb.
+
+    Each `.replace('x','xx')` doubles its input. Chaining ~18 of them in a
+    334-character expression allocated 769 MB before method results were
+    size-capped; the AST depth budget bounded the chain length but not the
+    growth rate.
+    """
+    expression = "('x'*1000)" + ".replace('x','xx')" * 18
+    assert len(expression) < 400, "the attack must stay small to be meaningful"
+    with pytest.raises(ExpressionError):
+        evaluate_expression(expression, {})
+
+
 def test_textual_substitution_bug_does_not_recur():
     """Variable names must not be substituted as raw text.
 

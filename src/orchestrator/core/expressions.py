@@ -211,6 +211,22 @@ class _Evaluator(ast.NodeVisitor):
         return func(left, right)
 
     @staticmethod
+    def _check_result_size(value: Any, what: str) -> Any:
+        """Reject an oversized value produced by an allowed method call.
+
+        Individually-safe methods compose into an amplifier: each
+        ``.replace('x','xx')`` doubles its input, so a 334-character expression
+        chaining ~18 of them allocated 769 MB. The AST depth budget bounds the
+        chain length but not the growth rate, so the size is capped here too.
+        """
+        if isinstance(value, (str, bytes, list, tuple, set, frozenset, dict)):
+            if len(value) > _MAX_SEQUENCE_LENGTH:
+                raise ExpressionError(
+                    f"result of {what}() exceeds {_MAX_SEQUENCE_LENGTH} elements"
+                )
+        return value
+
+    @staticmethod
     def _check_power(base: Any, exponent: Any) -> None:
         """Bound exponentiation so it cannot allocate an enormous integer."""
         if not isinstance(base, (int, float)) or not isinstance(exponent, (int, float)):
@@ -300,7 +316,9 @@ class _Evaluator(ast.NodeVisitor):
                     f"{type(target).__name__}.{node.func.attr}() is not allowed"
                 )
             args = [self.visit(arg) for arg in node.args]
-            return getattr(target, node.func.attr)(*args)
+            return self._check_result_size(
+                getattr(target, node.func.attr)(*args), node.func.attr
+            )
 
         # Otherwise only bare names from SAFE_FUNCTIONS are callable.
         if not isinstance(node.func, ast.Name):
