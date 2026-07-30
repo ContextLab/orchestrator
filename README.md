@@ -12,9 +12,9 @@
 This project is **alpha** and under active recovery. Treat the supported
 surface as small and everything else as experimental.
 
-**Verified today** — exercised on every commit by the blocking CI gate, which
-runs the `unit`/`contract`/`e2e` layer with no network, no API keys and no
-optional extras installed, plus a smoke test of a golden pipeline through the
+**Verified** — covered by the blocking CI gate, which runs the
+`unit`/`contract`/`e2e` layer with no network, no API keys and no optional
+extras installed, plus a smoke test of a golden pipeline through the
 *installed wheel*:
 
 - Compiling a YAML pipeline into a task graph
@@ -30,12 +30,21 @@ tooling. Anthropic is the first provider being brought under live acceptance
 tests; provider support is only advertised here once the live-provider
 workflow passes.
 
-**The wider legacy test suite is not green.** About 2,860 tests collect, but
-only the ~67 in the verified layer above gate the build. The remainder were
-written against several superseded architectures and many fail; they run in a
-separate, deliberately non-blocking CI job so the size of that backlog stays
-visible instead of being hidden behind a green check. Do not read "CI passing"
-as "the whole suite passes".
+**The wider legacy test suite is not green.** Only the marked
+`unit`/`contract`/`e2e` layer gates the build. The remainder were written
+against several superseded architectures, many fail, and some hang; they run
+in a separate, deliberately **non-blocking** CI job so the size of that
+backlog stays visible instead of being hidden behind a green check. Do not
+read "CI passing" as "the whole suite passes". Current counts are reported by
+that job — see [#354](https://github.com/ContextLab/orchestrator/issues/354)
+rather than a number maintained by hand here, which has been wrong before.
+
+**Security.** Two confirmed remote-code-execution defects have been fixed
+(pipeline conditions and `transform_spec` both reached `eval`). Pipeline
+content is now evaluated by a constrained, fail-closed AST evaluator, and
+`src/orchestrator` contains no live `eval()` call sites. Pipeline YAML is
+still **trusted input**: run only pipelines you would run as code, and see
+[CONTRIBUTING.md](CONTRIBUTING.md) before touching the evaluator.
 
 The scope, canonical code path, and the criteria for promoting anything out of
 "unverified" are recorded in
