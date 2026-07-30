@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from .enhanced_executor import EnhancedTaskExecutor
 from .pipeline_spec import ErrorHandling, TaskSpec
+from ..core.expressions import evaluate_condition
 
 logger = logging.getLogger(__name__)
 

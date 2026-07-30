@@ -1,0 +1,24 @@
+
+name: rate_limit_test
+version: "1.0"
+
+steps:
+  - id: simulate_rate_limit
+    action: python_code
+    parameters:
+      code: |
+        import requests
+        import time
+        
+        # Simulate rate limiting behavior
+        for i in range(3):
+            try:
+                # This will likely get rate limited by httpbin
+                response = requests.get("https://httpbin.org/delay/1", timeout=5)
+                print(f"Request {i+1}: Status {response.status_code}")
+                time.sleep(0.1)  # Very short delay to trigger rate limiting
+            except Exception as e:
+                print(f"Request {i+1} failed: {e}")
+                if "429" in str(e) or "rate" in str(e).lower():
+                    print("Rate limiting detected")
+                    break

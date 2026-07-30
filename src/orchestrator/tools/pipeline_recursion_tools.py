@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from .base import Tool
+from ..core.expressions import evaluate_condition
 
 
 @dataclass
@@ -479,26 +480,9 @@ class RecursionControlTool(Tool):
             "call_stack_size": len(context.call_stack),
         }
 
-        # Add helper functions
-        namespace.update(
-            {
-                "len": len,
-                "sum": sum,
-                "max": max,
-                "min": min,
-                "all": all,
-                "any": any,
-                "abs": abs,
-            }
-        )
-
-        try:
-            # Evaluate condition
-            result = eval(condition, {"__builtins__": {}}, namespace)
-            return bool(result)
-        except Exception as e:
-            self.logger.error(f"Error evaluating condition '{condition}': {e}")
-            return False
+        # Helper functions (len, sum, max, min, all, any, abs) come from the
+        # evaluator's SAFE_FUNCTIONS allowlist; they do not need to be injected.
+        return evaluate_condition(condition, namespace, default=False)
 
     def _check_limits(
         self,

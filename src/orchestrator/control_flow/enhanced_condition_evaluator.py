@@ -1,6 +1,5 @@
 """Enhanced condition evaluator with structured evaluation and performance tracking."""
 
-import ast
 import time
 import re
 from typing import Any, Dict, Optional, Union
@@ -8,6 +7,7 @@ import logging
 
 from .condition_models import LoopCondition, ConditionEvaluationResult, ConditionCache, ConditionParser
 from .auto_resolver import ControlFlowAutoResolver
+from ..core.expressions import ExpressionError, evaluate_expression
 
 logger = logging.getLogger(__name__)
 
@@ -286,54 +286,19 @@ class EnhancedConditionEvaluator:
             elif expr_lower in ['false', '0', 'no', 'off', 'none', '']:
                 return False
             
-            # Parse expression into AST
-            tree = ast.parse(expression, mode='eval')
-            
-            # Validate AST for safety
-            self._validate_ast_safety(tree)
-            
-            # Compile and evaluate
-            code = compile(tree, '<condition>', 'eval')
-            result = eval(code, {"__builtins__": {}}, context)
-            
-            return bool(result)
-            
+            # Evaluate with the constrained evaluator: allowlisted AST nodes
+            # only, names resolved exclusively from `context`.
+            return bool(evaluate_expression(expression, context))
+
+        except ExpressionError as e:
+            logger.warning(f"Rejected condition expression: {e}, expression: {expression}")
+            # Try simple variable lookup as fallback (returns False if unknown)
+            return self._try_simple_evaluation(expression, context)
         except Exception as e:
             logger.debug(f"Expression evaluation failed: {e}, expression: {expression}")
             # Try simple variable lookup as fallback
             return self._try_simple_evaluation(expression, context)
-    
-    def _validate_ast_safety(self, node):
-        """Validate AST node to ensure it's safe to evaluate."""
-        allowed_nodes = (
-            ast.Expression, ast.BoolOp, ast.BinOp, ast.UnaryOp,
-            ast.Compare, ast.Call, ast.Constant, ast.Name,
-            ast.Load, ast.Attribute, ast.Subscript,
-            ast.List, ast.Tuple, ast.Dict,
-            # Operators
-            ast.And, ast.Or, ast.Not,
-            ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE,
-            ast.Is, ast.IsNot, ast.In, ast.NotIn,
-            ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod,
-            ast.UAdd, ast.USub,
-        )
-        
-        # For Python 3.8 compatibility
-        if hasattr(ast, 'NameConstant'):
-            allowed_nodes = allowed_nodes + (ast.NameConstant, ast.Num, ast.Str)
-        
-        for node in ast.walk(node):
-            if not isinstance(node, allowed_nodes):
-                raise ValueError(f"Unsafe node type: {type(node).__name__}")
-            
-            # Check function calls - only allow safe ones
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name):
-                    if node.func.id not in self.safe_builtins:
-                        raise ValueError(f"Unsafe function call: {node.func.id}")
-                else:
-                    raise ValueError(f"Complex function calls not allowed")
-    
+
     def _try_simple_evaluation(self, expression: str, context: Dict[str, Any]) -> bool:
         """Try evaluating simple expressions as fallback."""
         expression = expression.strip().lower()

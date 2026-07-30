@@ -1,0 +1,32 @@
+
+name: network_recovery_test
+version: "1.0"
+
+steps:
+  - id: first_request
+    action: web_request
+    parameters:
+      url: "http://localhost:57487/test"
+      timeout: 5
+    outputs:
+      - first_response
+      
+  - id: wait_step
+    action: python_code
+    parameters:
+      code: |
+        import time
+        print("Waiting before second request...")
+        time.sleep(1)
+    depends_on:
+      - first_request
+      
+  - id: second_request
+    action: web_request
+    parameters:
+      url: "http://localhost:57487/test"
+      timeout: 5
+      retry_count: 2
+      retry_delay: 1
+    depends_on:
+      - wait_step

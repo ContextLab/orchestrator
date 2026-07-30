@@ -8,6 +8,7 @@ from ..compiler.ambiguity_resolver import AmbiguityResolver
 from ..auto_resolution.resolver import LazyAutoTagResolver
 from ..auto_resolution.models import AutoTagContext, AutoTagConfig
 from ..core.pipeline import Pipeline
+from ..core.expressions import ExpressionError, evaluate_expression
 from ..models.model_registry import ModelRegistry
 
 
@@ -742,12 +743,15 @@ class ControlFlowAutoResolver:
             logger.info(f"Evaluating expression: '{resolved_expr}'")
             logger.info(f"Context keys: {list(context.keys())}")
 
-            # Compile and evaluate
-            code = compile(resolved_expr, "<string>", "eval")
-            result = eval(code, {"__builtins__": {}}, context)
+            # Evaluate with the constrained evaluator: allowlisted AST nodes
+            # only, names resolved exclusively from `context`.
+            result = evaluate_expression(resolved_expr, context)
             logger.info(f"Result: {result}")
             return result
 
+        except ExpressionError as e:
+            logger.warning(f"Rejected expression '{expression}': {e}")
+            raise ValueError(f"Failed to evaluate expression '{expression}': {e}")
         except Exception as e:
             raise ValueError(f"Failed to evaluate expression '{expression}': {e}")
 

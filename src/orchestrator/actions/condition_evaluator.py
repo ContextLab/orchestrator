@@ -9,6 +9,7 @@ import logging
 
 from ..tools.base import Tool
 from ..core.exceptions import TaskExecutionError
+from ..core.expressions import ExpressionError, evaluate_expression
 
 
 class ConditionEvaluationError(TaskExecutionError):
@@ -107,16 +108,14 @@ class BooleanEvaluator(ConditionEvaluator):
             result = ast.literal_eval(condition)
             return bool(result)
         except (ValueError, SyntaxError):
-            # As last resort, check if it's a simple expression
+            # As last resort, evaluate it with the constrained evaluator.
+            # Names resolve only from `context`; anything outside the allowlist
+            # raises, so an unevaluable condition never yields True.
             try:
-                # Create a safe evaluation environment
-                safe_dict = {"__builtins__": {}}
-                safe_dict.update(context)
-                
-                # Compile and evaluate
-                code = compile(condition, "<condition>", "eval")
-                result = eval(code, safe_dict)
-                return bool(result)
+                return bool(evaluate_expression(condition, context))
+            except ExpressionError as e:
+                self.logger.warning(f"Rejected boolean condition '{condition}': {e}")
+                raise ConditionEvaluationError(f"Cannot evaluate boolean condition '{condition}': {e}", condition)
             except Exception as e:
                 raise ConditionEvaluationError(f"Cannot evaluate boolean condition '{condition}': {e}", condition)
 
@@ -409,7 +408,11 @@ class ExpressionEvaluator(ConditionEvaluator):
             namespace = self.SAFE_NAMES.copy()
             namespace.update(context)
             
-            # Compile and evaluate
+            # NOT migrated to orchestrator.core.expressions: this evaluator is
+            # contractually required to support `**` (see
+            # tests/test_condition_evaluator.py::test_mathematical_expressions),
+            # which the constrained evaluator excludes deliberately because
+            # `10**10**10` hangs the process. Guarded by _validate_ast below.
             code = compile(tree, '<expression>', 'eval')
             result = eval(code, {"__builtins__": {}}, namespace)
             

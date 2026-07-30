@@ -102,6 +102,10 @@ jobs:
   legacy-suite:
     name: Legacy suite (non-blocking backlog)
     runs-on: ubuntu-latest
+    # Hard cap: at least one legacy async test blocks forever (observed wedging
+    # a local run at ~36% despite pytest-timeout), so this job must not be able
+    # to occupy a runner indefinitely.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -125,10 +129,12 @@ jobs:
         # deleting or skipping failing tests -- fix them or delete them
         # deliberately with the reason recorded.
         continue-on-error: true
+        # --timeout-method=signal because the default thread method cannot
+        # interrupt a coroutine blocked in the event loop selector.
         run: >
           python -m pytest
           -m "not unit and not contract and not e2e and not live and not integration and not docker and not slow"
-          -q --timeout=90 --tb=no -rN
+          -q --timeout=60 --timeout-method=signal --tb=no -rN
           || true
 
   wheel-smoke:

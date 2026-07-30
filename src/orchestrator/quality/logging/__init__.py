@@ -189,10 +189,27 @@ def configure_quality_logging(
     # Add handlers to standard logging system for integration
     root_logger = logging.getLogger("orchestrator.quality")
     root_logger.setLevel(log_level.value)
-    
+
+    # Setup must be idempotent. `logging.getLogger` returns the SAME logger on
+    # every call, so re-running setup previously stacked another set of
+    # handlers onto it. AsyncQualityHandler starts three threads per instance
+    # (two workers plus a batch processor), so repeated setup leaked threads
+    # without bound -- enough to wedge a full test run under ~900 live threads.
+    # Close and detach whatever a previous call installed before installing
+    # this one.
+    for existing in list(root_logger.handlers):
+        root_logger.removeHandler(existing)
+        try:
+            existing.close()
+        except Exception:  # noqa: BLE001 - a broken handler must not block setup
+            logging.getLogger(__name__).debug(
+                "Failed to close previous quality log handler %r", existing,
+                exc_info=True,
+            )
+
     if enable_console and 'console' in handlers:
         root_logger.addHandler(handlers['console'])
-    
+
     if enable_structured and 'structured' in handlers:
         root_logger.addHandler(handlers['structured'])
     

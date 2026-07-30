@@ -15,6 +15,7 @@ from jinja2 import Environment, StrictUndefined, TemplateSyntaxError, UndefinedE
 import ast
 
 from .execution_state import PipelineExecutionState, UnresolvedItem, ItemStatus
+from ..core.expressions import ExpressionError, evaluate_expression
 
 logger = logging.getLogger(__name__)
 
@@ -276,10 +277,12 @@ class DependencyResolver:
         context = self.state.get_available_context()
         
         try:
-            # Safely evaluate the expression
-            # In production, this should use a sandboxed evaluator
-            result = eval(expression, {"__builtins__": {}}, context)
-            return result
+            # Constrained evaluator: allowlisted AST nodes only, names resolved
+            # exclusively from `context`.
+            return evaluate_expression(expression, context)
+        except ExpressionError as e:
+            logger.warning(f"Rejected expression '{expression}': {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to evaluate expression '{expression}': {e}")
             raise
