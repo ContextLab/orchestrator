@@ -54,6 +54,30 @@ def _require_anthropic_package():
         pytest.skip(message)
 
 
+#: Substrings identifying an account/billing precondition rather than a defect
+#: in this codebase. These must not be reported as our failure: doing so sends
+#: someone hunting a bug in the adapter when the real fix is to add credit.
+_ACCOUNT_PRECONDITIONS = (
+    "credit balance is too low",
+    "quota",
+    "rate_limit",
+)
+
+
+def _skip_if_account_blocked(exc: Exception) -> None:
+    """Skip (or fail, under REQUIRE_LIVE) on a billing/quota precondition."""
+    message = str(exc)
+    if not any(marker in message.lower() for marker in _ACCOUNT_PRECONDITIONS):
+        return
+    reason = (
+        "the Anthropic account cannot serve requests (billing/quota), so live "
+        f"provider behaviour was NOT verified: {message}"
+    )
+    if os.environ.get("ORCHESTRATOR_REQUIRE_LIVE") == "1":
+        pytest.fail(reason)
+    pytest.skip(reason)
+
+
 def _model():
     """Build a model against the real API, skipping with a precise reason."""
     _require_anthropic_package()
@@ -71,11 +95,15 @@ async def test_generate_returns_text_from_the_real_api():
     """The provider contract: generate(prompt) -> non-empty str."""
     model = _model()
 
-    response = await model.generate(
-        prompt="Reply with exactly the word: pong",
-        temperature=0.0,
-        max_tokens=MAX_TOKENS,
-    )
+    try:
+        response = await model.generate(
+            prompt="Reply with exactly the word: pong",
+            temperature=0.0,
+            max_tokens=MAX_TOKENS,
+        )
+    except Exception as exc:
+        _skip_if_account_blocked(exc)
+        raise
 
     # Report what was actually exercised, so a CI failure is diagnosable
     # without re-running against a paid API.
@@ -101,11 +129,15 @@ async def test_generate_respects_max_tokens():
     """
     model = _model()
 
-    response = await model.generate(
-        prompt="Count slowly from 1 to 500, one number per line.",
-        temperature=0.0,
-        max_tokens=MAX_TOKENS,
-    )
+    try:
+        response = await model.generate(
+            prompt="Count slowly from 1 to 500, one number per line.",
+            temperature=0.0,
+            max_tokens=MAX_TOKENS,
+        )
+    except Exception as exc:
+        _skip_if_account_blocked(exc)
+        raise
 
     print(f"\nlive model: {LIVE_MODEL}\ntruncated length: {len(response)} chars")
 
@@ -119,13 +151,13 @@ async def test_generate_respects_max_tokens():
 
 
 async def test_every_family_alias_resolves_to_a_real_model():
-    """Each bare-name alias must name a model the API actually serves.
+    """Each bare family name must resolve to a model the API actually serves.
 
-    `_FAMILY_ALIASES` maps "haiku"/"opus"/"sonnet" to Anthropic rolling
-    aliases. Those strings can only be validated against the live API -- a
-    hermetic test would just assert the table equals itself. This is precisely
-    how the predecessor rotted: it mapped every family to a pinned 2024 id,
-    which was correct when written and later 404'd.
+    Resolution goes through the Models API, so only a live run can prove it
+    works -- a hermetic test could only assert that the code calls the code.
+    This is the test that caught two successive rounds of hard-coded ids being
+    wrong: pinned 2024 ids (retired) and invented "-latest" aliases (never
+    existed), both 404.
     """
     _require_anthropic_package()
     from orchestrator.models.anthropic_model import AnthropicModel
@@ -144,6 +176,7 @@ async def test_every_family_alias_resolves_to_a_real_model():
             resolved = AnthropicModel._family_cache.get(family, "<unresolved>")
             print(f"\nfamily {family!r} -> {resolved!r}: OK ({reply.strip()[:40]!r})")
         except Exception as exc:  # noqa: BLE001 - reporting all failures at once
+            _skip_if_account_blocked(exc)
             failures.append(f"{family!r}: {exc}")
 
     assert not failures, (
