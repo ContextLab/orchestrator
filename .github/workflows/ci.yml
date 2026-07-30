@@ -32,6 +32,13 @@ jobs:
       - name: Install tooling
         run: python -m pip install --upgrade pip ruff build twine
 
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Lockfile is in sync with pyproject.toml
+        # A lock that drifts from the manifest is worse than no lock: it looks
+        # like a pinned resolution while no longer describing what installs.
+        run: uv lock --check
+
       - name: Correctness lint (blocking)
         # Only correctness-class rules gate the build. Style cleanup is tracked
         # separately; making ~10k style findings blocking would bury real bugs.
@@ -158,6 +165,35 @@ jobs:
           python -m venv /tmp/smoke
           /tmp/smoke/bin/python -m pip install --upgrade pip
           /tmp/smoke/bin/python -m pip install dist/*.whl
+
+      - name: Wheel ships its configuration resources
+        # The wheel previously contained no models.yaml/orchestrator.yaml/
+        # registry, so orchestrator-install-configs silently installed nothing.
+        # The golden pipeline does not need models, so it could not catch this.
+        run: |
+          /tmp/smoke/bin/python - <<'PY'
+          from importlib.resources import files
+          expected = {
+              "orchestrator.config": ["models.yaml", "orchestrator.yaml"],
+              "orchestrator.registry.models": ["default_registry.yaml"],
+              "orchestrator.registry.skills": ["default_registry.yaml"],
+          }
+          for package, names in expected.items():
+              present = {p.name for p in files(package).iterdir()}
+              missing = [n for n in names if n not in present]
+              assert not missing, f"{package} is missing {missing} in the wheel"
+          print("all configuration resources present in the installed wheel")
+          PY
+
+      - name: Config installer works from the installed wheel
+        run: |
+          export HOME=/tmp/smoke-home
+          mkdir -p "$HOME"
+          /tmp/smoke/bin/orchestrator-install-configs
+          test -d "$HOME/.orchestrator" || { echo "installer created nothing"; exit 1; }
+          find "$HOME/.orchestrator" -name '*.yaml' | grep -q . \
+            || { echo "installer wrote no yaml configuration"; exit 1; }
+          echo "config installer populated ~/.orchestrator from the wheel"
 
       - name: Run a golden pipeline through the installed console script
         # Executed outside the repo, so the source tree cannot satisfy imports:
