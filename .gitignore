@@ -278,3 +278,5 @@ production_output/
 demo_batch_results/
 golden_out/
 tests/performance/results/
+tests/quality/results/
+tests/scenarios/results/
