@@ -162,8 +162,20 @@ class Orchestrator:
         # Use ControlFlowCompiler to handle for_each, while, and conditionals
         if yaml_compiler is None:
             from .compiler.control_flow_compiler import ControlFlowCompiler
+            # Only hand the compiler a model registry that can actually serve a
+            # model. An empty registry makes the ambiguity resolver raise
+            # "No AI model available" during construction, which blocked
+            # pipelines that contain no <AUTO> tags and need no model at all
+            # (deterministic local-tool pipelines). With no registry the
+            # compiler preserves AUTO tags instead, and a pipeline that really
+            # does need resolution fails later with that specific error.
+            compiler_registry = (
+                self.model_registry
+                if getattr(self.model_registry, "models", None)
+                else None
+            )
             self.yaml_compiler = ControlFlowCompiler(
-                model_registry=self.model_registry
+                model_registry=compiler_registry
             )
         else:
             self.yaml_compiler = yaml_compiler

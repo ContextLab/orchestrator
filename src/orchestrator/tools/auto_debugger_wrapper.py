@@ -10,7 +10,6 @@ import logging
 from typing import Any, Dict, List
 
 from .base import Tool
-from .auto_debugger import AutoDebuggerTool as LangChainAutoDebuggerTool
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +113,15 @@ Returns structured JSON with debug results and fixed content."""
             raise ValueError("task_description is required and cannot be empty")
         
         logger.info(f"AutoDebugger executing: {task_description}")
-        
+
+        try:
+            from .auto_debugger import AutoDebuggerTool as LangChainAutoDebuggerTool
+        except ImportError as exc:
+            raise ImportError(
+                "The AutoDebugger tool requires the 'langchain' package. "
+                "Install it with: pip install 'py-orc[langgraph]'"
+            ) from exc
+
         try:
             # Initialize LangChain tool if not already done
             if self._langchain_tool is None:

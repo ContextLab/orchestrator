@@ -8,9 +8,12 @@ import os
 import time
 import tempfile
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
-from PIL import Image
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 import numpy as np
+
+# Optional dependency - imported lazily where used
+if TYPE_CHECKING:
+    from PIL import Image
 
 # Audio processing imports
 try:
@@ -53,7 +56,7 @@ from .base import Tool
 class ImageData:
     """Container for image data and metadata."""
 
-    data: Union[bytes, np.ndarray, Image.Image]
+    data: Union[bytes, np.ndarray, "Image.Image"]
     format: str
     width: int
     height: int
@@ -130,6 +133,14 @@ class ImageAnalysisTool(Tool):
     def _load_image(self, image_input: str) -> ImageData:
         """Load image from file path or base64 string."""
         try:
+            from PIL import Image
+        except ImportError as exc:
+            raise ImportError(
+                "Image processing requires the 'pillow' package. "
+                "Install it with: pip install 'py-orc[multimedia]'"
+            ) from exc
+
+        try:
             # Check if it's a file path
             if os.path.exists(image_input):
                 with Image.open(image_input) as img:
@@ -174,6 +185,8 @@ class ImageAnalysisTool(Tool):
         self, image_data: ImageData, max_size: int = 1024
     ) -> str:
         """Prepare image for model input (resize and encode)."""
+        from PIL import Image
+
         img = image_data.data
         if isinstance(img, (bytes, np.ndarray)):
             img = (
@@ -475,6 +488,14 @@ class ImageGenerationTool(Tool):
         self, prompt: str, size: str, num_images: int
     ) -> List[str]:
         """Generate placeholder images when no image model is available."""
+        try:
+            from PIL import Image
+        except ImportError as exc:
+            raise ImportError(
+                "Image generation requires the 'pillow' package. "
+                "Install it with: pip install 'py-orc[multimedia]'"
+            ) from exc
+
         images = []
         width, height = map(int, size.split("x"))
 
@@ -1375,6 +1396,14 @@ class VideoProcessingTool(Tool):
         output_path: str,
     ) -> List[str]:
         """Extract frames from video using OpenCV."""
+        try:
+            from PIL import Image
+        except ImportError as exc:
+            raise ImportError(
+                "Frame extraction requires the 'pillow' package. "
+                "Install it with: pip install 'py-orc[multimedia]'"
+            ) from exc
+
         os.makedirs(output_path, exist_ok=True)
         frames = []
         

@@ -1,20 +1,21 @@
 """Visualization tools for creating charts, plots, and dashboards."""
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 import io
 import base64
 from datetime import datetime
 
-import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import numpy as np
+
+# Optional dependencies - imported lazily where used
+if TYPE_CHECKING:
+    import pandas as pd
 
 try:
     import plotly.graph_objects as go
@@ -97,6 +98,14 @@ class VisualizationTool(Tool):
 
     def _load_data(self, data: Any) -> pd.DataFrame:
         """Load and convert data to pandas DataFrame."""
+        try:
+            import pandas as pd
+        except ImportError as exc:
+            raise ImportError(
+                "Visualization data loading requires the 'pandas' package. "
+                "Install it with: pip install 'py-orc[viz]'"
+            ) from exc
+
         if isinstance(data, pd.DataFrame):
             return data
         
@@ -179,6 +188,23 @@ class VisualizationTool(Tool):
 
     def _apply_theme(self, theme: str):
         """Apply visual theme to matplotlib."""
+        try:
+            import matplotlib
+            matplotlib.use('Agg')  # Use non-interactive backend
+            import matplotlib.pyplot as plt
+        except ImportError as exc:
+            raise ImportError(
+                "Chart rendering requires the 'matplotlib' package. "
+                "Install it with: pip install 'py-orc[viz]'"
+            ) from exc
+        try:
+            import seaborn as sns
+        except ImportError as exc:
+            raise ImportError(
+                "Visualization themes require the 'seaborn' package. "
+                "Install it with: pip install 'py-orc[viz]'"
+            ) from exc
+
         if theme == 'seaborn':
             sns.set_theme()
         elif theme == 'dark':
@@ -190,6 +216,10 @@ class VisualizationTool(Tool):
         self, df: pd.DataFrame, title: str, output_path: Path, **kwargs
     ) -> str:
         """Create a line chart."""
+        import matplotlib
+        matplotlib.use('Agg')  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+
         # Use proper figure size (convert pixels to inches at 100 DPI)
         width_inches = kwargs.get('width', 1000) / 100
         height_inches = kwargs.get('height', 600) / 100
@@ -297,6 +327,10 @@ class VisualizationTool(Tool):
         self, df: pd.DataFrame, title: str, output_path: Path, **kwargs
     ) -> str:
         """Create a bar chart."""
+        import matplotlib
+        matplotlib.use('Agg')  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+
         width_inches = kwargs.get('width', 800) / 100
         height_inches = kwargs.get('height', 600) / 100
         fig, ax = plt.subplots(figsize=(width_inches, height_inches))
@@ -370,6 +404,10 @@ class VisualizationTool(Tool):
         self, df: pd.DataFrame, title: str, output_path: Path, **kwargs
     ) -> str:
         """Create a scatter plot."""
+        import matplotlib
+        matplotlib.use('Agg')  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+
         width_inches = kwargs.get('width', 800) / 100
         height_inches = kwargs.get('height', 600) / 100
         fig, ax = plt.subplots(figsize=(width_inches, height_inches))
@@ -403,6 +441,10 @@ class VisualizationTool(Tool):
         self, df: pd.DataFrame, title: str, output_path: Path, **kwargs
     ) -> str:
         """Create a histogram."""
+        import matplotlib
+        matplotlib.use('Agg')  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+
         width_inches = kwargs.get('width', 800) / 100
         height_inches = kwargs.get('height', 600) / 100
         fig, ax = plt.subplots(figsize=(width_inches, height_inches))
@@ -434,6 +476,10 @@ class VisualizationTool(Tool):
         self, df: pd.DataFrame, title: str, output_path: Path, **kwargs
     ) -> str:
         """Create a pie chart."""
+        import matplotlib
+        matplotlib.use('Agg')  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+
         width_inches = kwargs.get('width', 800) / 100
         height_inches = kwargs.get('height', 800) / 100
         fig, ax = plt.subplots(figsize=(width_inches, height_inches))
@@ -539,6 +585,11 @@ class VisualizationTool(Tool):
         self, df: pd.DataFrame, title: str, output_path: Path, **kwargs
     ) -> str:
         """Create a correlation heatmap."""
+        import matplotlib
+        matplotlib.use('Agg')  # Use non-interactive backend
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
         width_inches = kwargs.get('width', 1000) / 100
         height_inches = kwargs.get('height', 800) / 100
         fig, ax = plt.subplots(figsize=(width_inches, height_inches))

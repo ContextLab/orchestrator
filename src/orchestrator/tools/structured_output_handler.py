@@ -1,11 +1,11 @@
 """Structured output handler using LangChain for consistent tool responses."""
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 
-from langchain.schema import BaseOutputParser
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.prompts import PromptTemplate
+# Optional dependency - imported lazily where used
+if TYPE_CHECKING:
+    from langchain.schema import BaseOutputParser
 
 # Try to import pydantic, install if needed
 try:
@@ -125,6 +125,14 @@ class StructuredOutputHandler:
     """Handles structured output parsing for tool responses."""
 
     def __init__(self):
+        try:
+            from langchain_core.output_parsers import PydanticOutputParser
+        except ImportError as exc:
+            raise ImportError(
+                "Structured output parsing requires the 'langchain' package. "
+                "Install it with: pip install 'py-orc[langgraph]'"
+            ) from exc
+
         self.parsers = {
             "tool_call": PydanticOutputParser(pydantic_object=ToolCallResponse),
             "file_operation": PydanticOutputParser(
@@ -136,7 +144,7 @@ class StructuredOutputHandler:
             "analysis": PydanticOutputParser(pydantic_object=AnalysisResponse),
         }
 
-    def get_parser(self, output_type: str) -> BaseOutputParser:
+    def get_parser(self, output_type: str) -> "BaseOutputParser":
         """Get the appropriate parser for the output type."""
         return self.parsers.get(output_type, self.parsers["tool_call"])
 
@@ -144,6 +152,8 @@ class StructuredOutputHandler:
         self, base_prompt: str, output_type: str = "tool_call"
     ) -> str:
         """Create a prompt with format instructions."""
+        from langchain_core.prompts import PromptTemplate
+
         parser = self.get_parser(output_type)
         format_instructions = parser.get_format_instructions()
 

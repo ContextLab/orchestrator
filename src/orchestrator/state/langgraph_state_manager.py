@@ -10,16 +10,17 @@ import asyncio
 import logging
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union, Callable
 from pathlib import Path
 import json
 import os
 
-# LangGraph imports
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from langgraph.graph import StateGraph, END, START
-from langgraph.store.memory import InMemoryStore
+# LangGraph imports (optional dependency - imported lazily where used)
+if TYPE_CHECKING:
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+    from langgraph.graph import StateGraph
+    from langgraph.store.memory import InMemoryStore
 
 # Try to import PostgreSQL checkpointer (may not be available)
 try:
@@ -72,6 +73,14 @@ class LangGraphGlobalContextManager:
             enable_compression: Enable state compression for large states
             max_history_size: Maximum number of checkpoint history entries
         """
+        try:
+            from langgraph.store.memory import InMemoryStore
+        except ImportError as exc:
+            raise ImportError(
+                "LangGraph state management requires the 'langgraph' package. "
+                "Install it with: pip install 'py-orc[langgraph]'"
+            ) from exc
+
         self.storage_type = storage_type
         self.database_url = database_url
         self.encryption_key = encryption_key
@@ -107,6 +116,8 @@ class LangGraphGlobalContextManager:
         
     def _create_checkpointer(self):
         """Create checkpointer based on storage type."""
+        from langgraph.checkpoint.memory import MemorySaver
+
         if self.storage_type == "memory":
             return MemorySaver()
         elif self.storage_type == "sqlite":
@@ -123,6 +134,8 @@ class LangGraphGlobalContextManager:
             
     def _create_state_graph(self) -> StateGraph:
         """Create StateGraph for state management operations."""
+        from langgraph.graph import StateGraph, END, START  # noqa: F401
+
         graph = StateGraph(PipelineGlobalState)
         
         # Add nodes for state operations

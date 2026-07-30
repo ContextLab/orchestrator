@@ -443,33 +443,23 @@ class StateGraphEngine(ExecutionEngineInterface):
                 graph.add_edge(step.id, END)
     
     def _evaluate_condition(self, condition: str, state: ExecutionState) -> bool:
+        """Evaluate a step condition against the current state.
+
+        Conditions come from pipeline content and are therefore untrusted. They
+        are evaluated by the constrained AST evaluator in
+        :mod:`orchestrator.core.expressions`, which resolves names only from the
+        supplied variables and refuses anything outside its allowlist.
+
+        This **fails closed**: a condition that is malformed, undefined, or
+        disallowed does not run the step it guards. The previous implementation
+        substituted variables textually, screened the result with a bypassable
+        blocklist, called :func:`eval` with full builtins, and returned ``True``
+        both when the blocklist fired and on any exception -- so a broken or
+        hostile condition executed the step it was meant to gate.
         """
-        Evaluate a step condition against current state.
-        
-        This is a simplified implementation - Stream B should provide
-        more sophisticated condition evaluation.
-        """
-        try:
-            # Simple variable substitution and evaluation
-            # In a real implementation, this would be more sophisticated
-            variables = state["variables"]
-            
-            # Replace variable references
-            eval_condition = condition
-            for var_name, value in variables.items():
-                eval_condition = eval_condition.replace(var_name, repr(value))
-            
-            # Basic safety check - only allow simple comparisons
-            allowed_operators = ["==", "!=", "<", ">", "<=", ">=", "is", "is not", "in", "not in"]
-            if any(op in eval_condition for op in ["import", "exec", "eval", "__"]):
-                self.logger.warning(f"Unsafe condition detected: {condition}")
-                return True  # Fail safe
-            
-            return eval(eval_condition)
-            
-        except Exception as e:
-            self.logger.error(f"Failed to evaluate condition '{condition}': {e}")
-            return True  # Fail safe - execute the step
+        from ..core.expressions import evaluate_condition
+
+        return evaluate_condition(condition, state["variables"], default=False)
     
     async def _execute_single_step(
         self,

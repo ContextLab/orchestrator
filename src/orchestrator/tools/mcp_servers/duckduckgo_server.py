@@ -6,7 +6,6 @@ import json
 import sys
 import logging
 from typing import Any, Dict, List
-from ddgs import DDGS
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -158,6 +157,14 @@ class DuckDuckGoMCPServer:
     
     async def search_web(self, query: str, max_results: int = 10) -> Dict[str, Any]:
         """Perform real DuckDuckGo web search."""
+        try:
+            from ddgs import DDGS
+        except ImportError as exc:
+            raise ImportError(
+                "DuckDuckGo search requires the 'ddgs' package. "
+                "Install it with: pip install 'py-orc[web]'"
+            ) from exc
+
         loop = asyncio.get_event_loop()
         
         def _search():
@@ -191,6 +198,14 @@ class DuckDuckGoMCPServer:
     
     async def search_news(self, query: str, max_results: int = 10) -> Dict[str, Any]:
         """Perform real DuckDuckGo news search."""
+        try:
+            from ddgs import DDGS
+        except ImportError as exc:
+            raise ImportError(
+                "DuckDuckGo search requires the 'ddgs' package. "
+                "Install it with: pip install 'py-orc[web]'"
+            ) from exc
+
         loop = asyncio.get_event_loop()
         
         def _search():
@@ -226,6 +241,14 @@ class DuckDuckGoMCPServer:
     
     async def search_images(self, query: str, max_results: int = 10) -> Dict[str, Any]:
         """Perform real DuckDuckGo image search."""
+        try:
+            from ddgs import DDGS
+        except ImportError as exc:
+            raise ImportError(
+                "DuckDuckGo search requires the 'ddgs' package. "
+                "Install it with: pip install 'py-orc[web]'"
+            ) from exc
+
         loop = asyncio.get_event_loop()
         
         def _search():

@@ -1,5 +1,17 @@
-"""Automatic package installation utilities."""
+"""Package installation utilities.
 
+Installing packages at runtime is **disabled by default**. Doing it implicitly
+means an ordinary pipeline run can reach the network, mutate the active
+environment, and produce results that depend on whatever happened to resolve at
+that moment -- so two runs of the same pipeline are not reproducible, and a
+dependency name that reaches this module from pipeline content becomes a
+supply-chain risk.
+
+Set ``ORCHESTRATOR_AUTO_INSTALL=1`` to opt in. When it is off, a missing
+package raises/returns as missing and the log states the exact command to run.
+"""
+
+import os
 import subprocess
 import sys
 import importlib
@@ -8,6 +20,19 @@ from typing import List, Optional, Dict, Any
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
+
+#: Environment variable that opts in to runtime installation.
+AUTO_INSTALL_ENV_VAR = "ORCHESTRATOR_AUTO_INSTALL"
+
+
+def auto_install_enabled() -> bool:
+    """Whether runtime package installation is permitted (default: no)."""
+    return os.environ.get(AUTO_INSTALL_ENV_VAR, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 @lru_cache(maxsize=128)
@@ -43,9 +68,20 @@ def install_package(package_name: str, pip_name: Optional[str] = None) -> bool:
         return True
     
     install_name = pip_name or package_name
-    
+
+    if not auto_install_enabled():
+        logger.warning(
+            "Package '%s' is not installed and runtime installation is disabled. "
+            "Install it with: pip install %s "
+            "(or set %s=1 to allow automatic installation).",
+            package_name,
+            install_name,
+            AUTO_INSTALL_ENV_VAR,
+        )
+        return False
+
     logger.info(f"Package '{package_name}' not found. Installing '{install_name}'...")
-    
+
     try:
         # Use the same Python interpreter that's running this script
         result = subprocess.run(

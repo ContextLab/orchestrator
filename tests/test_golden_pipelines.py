@@ -1,0 +1,197 @@
+"""End-to-end acceptance tests for the golden pipelines.
+
+These are the executable form of the acceptance specifications in
+docs/adr/0001-product-contract.md. They are hermetic: no network, no API keys,
+no Docker, no model provider. They exercise the real compiler, the real
+executor and the real filesystem tool, and they run the pipelines through
+*both* supported surfaces -- the CLI and the Python API -- because the contract
+requires the two to agree.
+
+Nothing here is mocked. A failure means the advertised path is broken.
+"""
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+GOLDEN_DIR = Path(__file__).parent / "golden"
+BASIC = GOLDEN_DIR / "basic.yaml"
+CONTROL_FLOW = GOLDEN_DIR / "control_flow.yaml"
+
+pytestmark = [pytest.mark.e2e]
+
+
+def _run_cli(args, cwd):
+    """Invoke the CLI as a subprocess, the way a user would."""
+    env = dict(os.environ)
+    src = str(Path(__file__).parent.parent / "src")
+    env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
+    # Keep the run hermetic regardless of the developer's shell.
+    env.pop("ANTHROPIC_API_KEY", None)
+    env["ORCHESTRATOR_AUTO_INSTALL"] = "0"
+    return subprocess.run(
+        [sys.executable, "-m", "orchestrator.cli", *args],
+        cwd=str(cwd),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+
+async def _run_api(pipeline_path, context, cwd):
+    """Execute a pipeline through the Python API, tool-only (no models)."""
+    from orchestrator.control_systems.tool_integrated_control_system import (
+        ToolIntegratedControlSystem,
+    )
+    from orchestrator.orchestrator import Orchestrator
+
+    previous = Path.cwd()
+    os.chdir(cwd)
+    try:
+        orchestrator = Orchestrator(control_system=ToolIntegratedControlSystem())
+        try:
+            return await orchestrator.execute_yaml_file(str(pipeline_path), context)
+        finally:
+            await orchestrator.shutdown()
+    finally:
+        os.chdir(previous)
+
+
+# ---------------------------------------------------------------------------
+# validate
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("pipeline", [BASIC, CONTROL_FLOW], ids=["basic", "control_flow"])
+def test_golden_pipeline_validates(pipeline, tmp_path):
+    """Every golden pipeline compiles and reports its task graph."""
+    result = _run_cli(["validate", str(pipeline)], cwd=tmp_path)
+    assert result.returncode == 0, (
+        f"validate failed for {pipeline.name}\n"
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+    assert "is valid" in result.stdout
+
+
+def test_validate_rejects_malformed_pipeline(tmp_path):
+    """A pipeline that cannot compile exits 2, not 0."""
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("id: bad\nsteps:\n  - id: x\n    tool: no_such_tool_at_all\n    action: nope\n")
+    result = _run_cli(["validate", str(bad)], cwd=tmp_path)
+    assert result.returncode == 2, (
+        f"expected exit 2 for an invalid pipeline, got {result.returncode}\n"
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# basic: sequential steps, templating, typed outputs
+# ---------------------------------------------------------------------------
+
+def test_basic_pipeline_via_cli(tmp_path):
+    result = _run_cli(["run", str(BASIC), "-i", "greeting=hello"], cwd=tmp_path)
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+
+    produced = tmp_path / "golden_out" / "greeting.txt"
+    assert produced.is_file(), "pipeline did not write its output file"
+    # The `greeting` input must reach the template.
+    assert produced.read_text() == "hello world"
+
+    # stdout must be the typed result document.
+    payload = json.loads(result.stdout[result.stdout.index("{"):])
+    assert payload["write_greeting"]["success"] is True
+    assert payload["read_back"]["success"] is True
+    # The dependent step read back exactly what the first step wrote.
+    assert payload["read_back"]["result"]["content"] == "hello world"
+
+
+@pytest.mark.asyncio
+async def test_basic_pipeline_via_api(tmp_path):
+    results = await _run_api(BASIC, {"greeting": "hello"}, tmp_path)
+    assert results["read_back"]["result"]["content"] == "hello world"
+    assert (tmp_path / "golden_out" / "greeting.txt").read_text() == "hello world"
+
+
+@pytest.mark.asyncio
+async def test_cli_and_api_agree(tmp_path):
+    """The contract requires both surfaces to produce the same result."""
+    cli_dir = tmp_path / "cli"
+    api_dir = tmp_path / "api"
+    cli_dir.mkdir()
+    api_dir.mkdir()
+
+    cli_result = _run_cli(["run", str(BASIC), "-i", "greeting=hello"], cwd=cli_dir)
+    assert cli_result.returncode == 0, cli_result.stderr
+    cli_payload = json.loads(cli_result.stdout[cli_result.stdout.index("{"):])
+
+    api_payload = await _run_api(BASIC, {"greeting": "hello"}, api_dir)
+
+    assert (
+        cli_payload["read_back"]["result"]["content"]
+        == api_payload["read_back"]["result"]["content"]
+        == "hello world"
+    )
+    assert (cli_dir / "golden_out" / "greeting.txt").read_text() == (
+        api_dir / "golden_out" / "greeting.txt"
+    ).read_text()
+
+
+# ---------------------------------------------------------------------------
+# control flow: parallel fan-out, dependency ordering, cross-step data flow
+# ---------------------------------------------------------------------------
+
+def test_control_flow_pipeline_via_cli(tmp_path):
+    result = _run_cli(["run", str(CONTROL_FLOW)], cwd=tmp_path)
+    assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+
+    out = tmp_path / "golden_out"
+    assert (out / "alpha.txt").read_text() == "alpha-value"
+    assert (out / "beta.txt").read_text() == "beta-value"
+
+    # The join step ran after both branches and interpolated both outputs.
+    joined = (out / "joined.txt").read_text()
+    assert joined == "alpha-value+beta-value", (
+        f"cross-step template interpolation failed; got {joined!r}"
+    )
+
+
+def test_unresolved_template_does_not_reach_output(tmp_path):
+    """Template references must resolve, not be written through literally.
+
+    Guards a regression class that recurred across several refactors: an
+    unresolved `{{ step.field }}` silently landing in the output file instead of
+    the value it names.
+    """
+    result = _run_cli(["run", str(CONTROL_FLOW)], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
+    joined = (tmp_path / "golden_out" / "joined.txt").read_text()
+    assert "{{" not in joined and "}}" not in joined
+
+
+# ---------------------------------------------------------------------------
+# CLI contract details
+# ---------------------------------------------------------------------------
+
+def test_input_flag_parses_json_scalars(tmp_path):
+    """-i values parse as JSON when possible so types survive."""
+    result = _run_cli(["run", str(BASIC), "-i", 'greeting="quoted"'], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "golden_out" / "greeting.txt").read_text() == "quoted world"
+
+
+def test_malformed_input_flag_is_rejected(tmp_path):
+    result = _run_cli(["run", str(BASIC), "-i", "no_equals_sign"], cwd=tmp_path)
+    assert result.returncode != 0
+    assert "key=value" in (result.stderr + result.stdout)
+
+
+def test_output_file_option(tmp_path):
+    target = tmp_path / "results.json"
+    result = _run_cli(["run", str(BASIC), "-o", str(target)], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(target.read_text())
+    assert payload["read_back"]["success"] is True

@@ -22,6 +22,14 @@ class SkillCreator:
         Args:
             api_key: Anthropic API key (will load from env if not provided)
         """
+        try:
+            from anthropic import AsyncAnthropic
+        except ImportError as exc:
+            raise ImportError(
+                "Skill creation requires the 'anthropic' package. "
+                "Install it with: pip install 'py-orc[anthropic]'"
+            ) from exc
+
         self.api_key = api_key or ensure_api_key("anthropic")
         self.client = AsyncAnthropic(api_key=self.api_key)
         self.installer = RegistryInstaller()

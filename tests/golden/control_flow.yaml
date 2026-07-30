@@ -1,0 +1,56 @@
+# Golden pipeline: dependency ordering and parallel fan-out/fan-in.
+#
+# `alpha` and `beta` have no dependencies on each other, so they occupy the
+# same execution level and may run concurrently. `join` depends on both and
+# must therefore run strictly after them, interpolating both of their outputs.
+id: golden_control_flow
+name: Golden Control Flow Pipeline
+description: Parallel fan-out with a dependent join, using deterministic tools
+version: "1.0.0"
+
+parameters:
+  out_dir:
+    type: string
+    default: "./golden_out"
+    description: Directory where output files will be written
+
+steps:
+  - id: alpha
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/alpha.txt"
+      content: "alpha-value"
+
+  - id: beta
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/beta.txt"
+      content: "beta-value"
+
+  - id: read_alpha
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/alpha.txt"
+    dependencies:
+      - alpha
+
+  - id: read_beta
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/beta.txt"
+    dependencies:
+      - beta
+
+  - id: join
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/joined.txt"
+      content: "{{ read_alpha.result.content }}+{{ read_beta.result.content }}"
+    dependencies:
+      - read_alpha
+      - read_beta
