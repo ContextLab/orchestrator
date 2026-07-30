@@ -1,3 +1,17 @@
+> **ARCHIVED — DO NOT TRUST THIS FILE.**
+>
+> Written 2025-01-29 and superseded. It claims "All 9 failing tests have been
+> fixed!", which has not been true of the repository as a whole for a long
+> time. As of 2026-07-30 the suite collects ~3,085 tests, of which only the
+> marked `unit`/`contract`/`e2e` layer is green; roughly 540 of the rest fail
+> and ~110 error.
+>
+> Current, measured status lives in the README and in
+> [issue #354](https://github.com/ContextLab/orchestrator/issues/354).
+> Kept only for historical context.
+
+---
+
 # Test Status Update - macOS M2 Max
 
 Date: 2025-01-29

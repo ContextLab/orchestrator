@@ -483,11 +483,13 @@ The [simple_data_processing.yaml](examples/simple_data_processing.yaml) pipeline
 - Template variable usage between pipeline steps
 - Multi-format output generation
 
-**Example outputs:**
-- [Processed CSV data](examples/outputs/simple_data_processing/input_processed_data.csv) - Active projects with input-specific naming
-- [Analysis report](examples/outputs/simple_data_processing/input_processing_report.md) - Human-readable summary with data preview
-
 Browse more examples in the [examples directory](examples/) including web research, model routing, recursive processing, and more.
+
+> **Heads-up:** most shipped examples do not currently pass `orchestrator validate` — a sweep found 44 of 45 failing, some because the example is stale and some because the validator produces false positives. Tracked in
+> [#104](https://github.com/ContextLab/orchestrator/issues/104) and
+> [#241](https://github.com/ContextLab/orchestrator/issues/241). The three
+> pipelines under `tests/golden/` are verified and are the reliable starting
+> point.
 
 ## Documentation
 
