@@ -28,8 +28,10 @@ references something undefined does not execute the guarded step.
 from __future__ import annotations
 
 import ast
+import json
 import logging
 import operator
+from collections import ChainMap
 from typing import Any, Callable, Mapping
 
 logger = logging.getLogger(__name__)
@@ -39,11 +41,47 @@ __all__ = [
     "evaluate_expression",
     "evaluate_condition",
     "SAFE_FUNCTIONS",
+    "SafeNamespace",
+    "JSON_NAMESPACE",
 ]
 
 
 class ExpressionError(ValueError):
     """Raised when an expression is malformed or uses a disallowed construct."""
+
+
+class SafeNamespace:
+    """An immutable namespace exposing a fixed set of pure callables.
+
+    This exists so an expression can call something like ``json.loads(data)``
+    *without* the ``json`` module itself being in scope.
+
+    Putting a module in the evaluation context is the single most effective way
+    to destroy a sandbox. Every Python function carries ``__globals__``: a live
+    reference to the globals of the module that defined it, which contains the
+    real, unrestricted ``__builtins__``. So with ``json`` in scope::
+
+        json.loads.__globals__["__builtins__"]["__import__"]("os").system(...)
+
+    reaches the host regardless of what ``__builtins__`` the caller passed to
+    :func:`eval`. That was a confirmed remote-code-execution path in this
+    codebase (``hybrid_control_system`` ``transform_spec``).
+
+    Members are reachable **only in call position** -- the evaluator refuses
+    attribute access on a ``SafeNamespace`` -- so no function object is ever
+    produced as a value and there is nothing to walk ``__globals__`` on.
+    """
+
+    __slots__ = ("name", "members")
+
+    def __init__(self, name: str, members: Mapping[str, Callable[..., Any]]) -> None:
+        self.name = name
+        self.members = dict(members)
+
+
+#: The only module-like surface a transform expression may reach. ``loads`` is
+#: pure parsing: it cannot open files, reach the network, or import anything.
+JSON_NAMESPACE = SafeNamespace("json", {"loads": json.loads})
 
 
 # Operators are mapped explicitly rather than executed by name, so only these
@@ -131,6 +169,11 @@ _MAX_SEQUENCE_LENGTH = 1_000_000
 #: Bounds on `**` so exponentiation cannot allocate an astronomical integer.
 _MAX_POWER_EXPONENT = 1024
 _MAX_POWER_BASE = 1_000_000
+#: Total comprehension iterations allowed per evaluation. This is a whole-
+#: expression budget, not a per-comprehension one: nested comprehensions
+#: multiply, so `[[y for y in xs] for x in xs]` over a 10k list would be 100M
+#: iterations if each were bounded independently.
+_MAX_COMPREHENSION_ITEMS = 100_000
 
 
 def _ast_depth(node: ast.AST) -> int:
@@ -144,6 +187,8 @@ class _Evaluator(ast.NodeVisitor):
 
     def __init__(self, context: Mapping[str, Any]) -> None:
         self.context = context
+        # Whole-expression comprehension budget; see _MAX_COMPREHENSION_ITEMS.
+        self._iterations = 0
 
     # Any node type without an explicit visitor is rejected here.
     def generic_visit(self, node: ast.AST) -> Any:
@@ -271,6 +316,13 @@ class _Evaluator(ast.NodeVisitor):
         if node.attr.startswith("_"):
             raise ExpressionError(f"access to private attribute {node.attr!r} denied")
         value = self.visit(node.value)
+        if isinstance(value, SafeNamespace):
+            # Reachable only in call position (see visit_Call). Returning the
+            # member here would hand the expression a real function object, and
+            # a function object is exactly what carries __globals__.
+            raise ExpressionError(
+                f"{value.name}.{node.attr} may only be called, not referenced"
+            )
         try:
             return getattr(value, node.attr)
         except AttributeError as exc:
@@ -306,6 +358,26 @@ class _Evaluator(ast.NodeVisitor):
                     f"access to private attribute {node.func.attr!r} denied"
                 )
             target = self.visit(node.func.value)
+
+            # Namespace call, e.g. `json.loads(data)`. Exact-type matched so a
+            # subclass cannot smuggle in a different `members` mapping.
+            if type(target) is SafeNamespace:
+                member = target.members.get(node.func.attr)
+                if member is None:
+                    raise ExpressionError(
+                        f"{target.name}.{node.func.attr}() is not allowed"
+                    )
+                args = [self.visit(arg) for arg in node.args]
+                try:
+                    result = member(*args)
+                except ExpressionError:
+                    raise
+                except Exception as exc:
+                    raise ExpressionError(
+                        f"{target.name}.{node.func.attr}() failed: {exc}"
+                    ) from exc
+                return self._check_result_size(result, node.func.attr)
+
             allowed = SAFE_METHODS.get(type(target))
             if allowed is None:
                 raise ExpressionError(
@@ -346,13 +418,130 @@ class _Evaluator(ast.NodeVisitor):
     def visit_IfExp(self, node: ast.IfExp) -> Any:
         return self.visit(node.body) if self.visit(node.test) else self.visit(node.orelse)
 
+    # -- comprehensions ----------------------------------------------------
+    # Supported because transform expressions genuinely need them, e.g.
+    # "sum(item['price'] for item in json.loads(data)['items'])". They are
+    # bounded by a whole-expression iteration budget and a result-size cap:
+    # a comprehension is the cheapest way to turn a short expression into an
+    # arbitrarily large allocation.
+
+    def _spend_iteration(self) -> None:
+        self._iterations += 1
+        if self._iterations > _MAX_COMPREHENSION_ITEMS:
+            raise ExpressionError(
+                f"comprehension exceeded {_MAX_COMPREHENSION_ITEMS} iterations"
+            )
+
+    def _bind_target(self, target: ast.expr, value: Any) -> None:
+        """Bind a comprehension loop variable in the innermost scope."""
+        if isinstance(target, ast.Name):
+            if target.id.startswith("_"):
+                raise ExpressionError(
+                    f"comprehension variable {target.id!r} may not start with '_'"
+                )
+            self.context[target.id] = value  # type: ignore[index]
+            return
+        if isinstance(target, ast.Tuple):
+            try:
+                items = list(value)
+            except TypeError as exc:
+                raise ExpressionError(
+                    f"cannot unpack {type(value).__name__} in comprehension"
+                ) from exc
+            if len(items) != len(target.elts):
+                raise ExpressionError(
+                    f"cannot unpack {len(items)} values into "
+                    f"{len(target.elts)} targets"
+                )
+            for sub_target, item in zip(target.elts, items):
+                self._bind_target(sub_target, item)
+            return
+        raise ExpressionError(
+            f"unsupported comprehension target: {type(target).__name__}"
+        )
+
+    def _iterate(self, generators: list[ast.comprehension], index: int) -> Any:
+        """Yield once per surviving combination of loop bindings."""
+        if index == len(generators):
+            yield
+            return
+        generator = generators[index]
+        if generator.is_async:
+            raise ExpressionError("async comprehensions are not supported")
+
+        iterable = self.visit(generator.iter)
+        try:
+            items = list(iterable)
+        except TypeError as exc:
+            raise ExpressionError(
+                f"cannot iterate over {type(iterable).__name__}"
+            ) from exc
+        if len(items) > _MAX_COMPREHENSION_ITEMS:
+            raise ExpressionError(
+                f"comprehension source of {len(items)} elements exceeds "
+                f"{_MAX_COMPREHENSION_ITEMS}"
+            )
+
+        for item in items:
+            self._spend_iteration()
+            self._bind_target(generator.target, item)
+            if all(self.visit(condition) for condition in generator.ifs):
+                yield from self._iterate(generators, index + 1)
+
+    def _comprehend(
+        self,
+        generators: list[ast.comprehension],
+        element: ast.expr,
+        value: ast.expr | None = None,
+    ) -> list[Any]:
+        """Evaluate a comprehension body in a child scope.
+
+        Loop variables are written to a fresh mapping layered over the caller's
+        context, so a comprehension can never mutate or shadow the real
+        pipeline context after it finishes.
+        """
+        outer = self.context
+        self.context = ChainMap({}, dict(outer))
+        try:
+            results = []
+            for _ in self._iterate(generators, 0):
+                if value is None:
+                    results.append(self.visit(element))
+                else:
+                    results.append((self.visit(element), self.visit(value)))
+            return results
+        finally:
+            self.context = outer
+
+    def visit_ListComp(self, node: ast.ListComp) -> Any:
+        return self._check_result_size(
+            self._comprehend(node.generators, node.elt), "comprehension"
+        )
+
+    def visit_SetComp(self, node: ast.SetComp) -> Any:
+        return self._check_result_size(
+            set(self._comprehend(node.generators, node.elt)), "comprehension"
+        )
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp) -> Any:
+        # Materialized eagerly rather than returned lazily: a lazy generator
+        # would escape the size cap and could be consumed outside the budget.
+        return self._check_result_size(
+            self._comprehend(node.generators, node.elt), "comprehension"
+        )
+
+    def visit_DictComp(self, node: ast.DictComp) -> Any:
+        pairs = self._comprehend(node.generators, node.key, node.value)
+        return self._check_result_size(dict(pairs), "comprehension")
+
 
 def evaluate_expression(expression: str, context: Mapping[str, Any] | None = None) -> Any:
     """Evaluate ``expression`` against ``context`` and return its value.
 
     Args:
         expression: A single Python-syntax expression. Statements, assignments,
-            comprehensions, lambdas, imports and f-strings are not supported.
+            lambdas, imports and f-strings are not supported. Comprehensions
+            are supported but bounded (see ``_MAX_COMPREHENSION_ITEMS``).
         context: Names available to the expression. Nothing else is in scope.
 
     Raises:

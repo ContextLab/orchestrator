@@ -8,6 +8,7 @@ guard fail open.
 import pytest
 
 from orchestrator.core.expressions import (
+    JSON_NAMESPACE,
     ExpressionError,
     evaluate_condition,
     evaluate_expression,
@@ -78,7 +79,6 @@ def test_attribute_access_on_plain_object():
         "globals()",
         "locals()",
         "getattr(x, '__class__')",
-        "[c for c in items]",           # comprehensions are not supported
         "(lambda: 1)()",                # lambdas are not supported
         "x := 5",                       # walrus / statements
         "print('hi')",                  # not in SAFE_FUNCTIONS
@@ -223,6 +223,109 @@ def test_chained_methods_cannot_amplify_memory():
     assert len(expression) < 400, "the attack must stay small to be meaningful"
     with pytest.raises(ExpressionError):
         evaluate_expression(expression, {})
+
+
+# ---------------------------------------------------------------------------
+# Bounded comprehensions and the json namespace (added so `transform_spec`
+# could migrate off eval(); both widen the sandbox and are attacked here)
+# ---------------------------------------------------------------------------
+
+ITEMS_JSON = '{"items": [{"price": 2}, {"price": 3}]}'
+LIST_JSON = '["a", "b", "c", "d"]'
+
+
+@pytest.mark.parametrize(
+    ("expression", "data", "expected"),
+    [
+        # Every one of these is a real transform_spec expression taken from
+        # tests/test_action_loop.py and tests/integration/test_tools_real_world.py.
+        ("sum(item['price'] for item in json.loads(data)['items'])", ITEMS_JSON, 5),
+        ("len(json.loads(data)['items'])", ITEMS_JSON, 2),
+        (
+            "sum(item['price'] for item in json.loads(data)['items'])"
+            " / len(json.loads(data)['items'])",
+            ITEMS_JSON,
+            2.5,
+        ),
+        ("len(json.loads(data))", LIST_JSON, 4),
+        ("json.loads(data)[0]", LIST_JSON, "a"),
+        ("[item.upper() for item in json.loads(data)]", LIST_JSON, ["A", "B", "C", "D"]),
+    ],
+)
+def test_real_transform_expressions_evaluate(expression, data, expected):
+    context = {"json": JSON_NAMESPACE, "data": data}
+    assert evaluate_expression(expression, context) == expected
+
+
+def test_module_globals_rce_is_refused():
+    """The confirmed host-RCE payload must not evaluate.
+
+    `transform_spec` used to run eval() with the real `json` MODULE in scope.
+    Every Python function carries __globals__ -- a live reference to its
+    defining module's globals, which holds the REAL builtins -- so
+
+        json.loads.__globals__["__builtins__"]["__import__"]("os").system(...)
+
+    reached the host no matter what __builtins__ the caller passed to eval().
+    This was verified exploitable (it returned the live process id) before the
+    fix, so it is pinned here permanently.
+    """
+    context = {"json": JSON_NAMESPACE, "data": "[]"}
+    payload = 'json.loads.__globals__["__builtins__"]["__import__"]("os").getpid()'
+    with pytest.raises(ExpressionError):
+        evaluate_expression(payload, context)
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        # A function object must never be produced as a VALUE -- that object is
+        # precisely what carries __globals__.
+        "json.loads",
+        "json.loads.__globals__",
+        # Only the explicitly allowed members are callable.
+        "json.dumps(data)",
+        "json.load(data)",
+        "json.JSONDecoder()",
+        # The namespace must not leak its own internals.
+        "json.name",
+        "json.members",
+        # Comprehensions must not become a new route to type objects.
+        "[x.__class__ for x in [1]]",
+        "[c for c in ().__class__.__bases__]",
+        "{x: x.__class__ for x in [1]}",
+        # Comprehension targets must not be able to shadow internals.
+        "[_x for _x in [1]]",
+    ],
+)
+def test_namespace_and_comprehension_escapes_are_refused(expression):
+    context = {"json": JSON_NAMESPACE, "data": LIST_JSON}
+    with pytest.raises(ExpressionError):
+        evaluate_expression(expression, context)
+
+
+def test_comprehension_iterations_are_bounded():
+    """Nested comprehensions multiply; the budget is per-expression, not per-loop.
+
+    A 10k-element source nested two deep is 100M iterations. Bounding each
+    comprehension independently would let that through.
+    """
+    context = {"xs": list(range(10_000))}
+    with pytest.raises(ExpressionError, match="iterations"):
+        evaluate_expression("[[y for y in xs] for x in xs]", context)
+
+
+def test_comprehension_cannot_leak_variables_into_context():
+    """A loop variable must not survive, or overwrite a real context name."""
+    context = {"data": "original"}
+    assert evaluate_expression("[data for data in [1, 2]]", context) == [1, 2]
+    assert context["data"] == "original", "comprehension mutated caller context"
+
+
+def test_generator_expression_is_not_lazy():
+    """A lazy generator would escape the size cap by being consumed later."""
+    result = evaluate_expression("(x for x in [1, 2, 3])", {})
+    assert result == [1, 2, 3], "generator expressions must be materialized"
 
 
 def test_textual_substitution_bug_does_not_recur():

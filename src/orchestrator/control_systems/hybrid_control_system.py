@@ -9,6 +9,11 @@ from datetime import datetime
 from .model_based_control_system import ModelBasedControlSystem
 from ..core.task import Task
 from ..core.action_loop_task import ActionLoopTask
+from ..core.expressions import (
+    JSON_NAMESPACE,
+    ExpressionError,
+    evaluate_expression,
+)
 from ..core.unified_template_resolver import UnifiedTemplateResolver, TemplateResolutionContext
 from ..models.model_registry import ModelRegistry
 from ..tools.system_tools import FileSystemTool, TerminalTool
@@ -691,45 +696,33 @@ class HybridControlSystem(ModelBasedControlSystem):
                 except Exception:
                     parsed_data = data_str
 
-                # Apply transformations
+                # Apply transformations.
+                #
+                # These expressions come from the pipeline, which is data, not
+                # trusted code. This used to call eval() with the `json` MODULE
+                # in scope, which was a confirmed host RCE: a function object
+                # carries __globals__, so
+                #     json.loads.__globals__["__builtins__"]["__import__"]
+                # recovered the real builtins and reached os.system, regardless
+                # of the {"__builtins__": safe_builtins} restriction.
+                #
+                # `JSON_NAMESPACE` exposes json.loads as a callable that cannot
+                # be referenced as a value, so no function object -- and hence
+                # no __globals__ -- is ever reachable from an expression.
+                eval_context = {
+                    "data": data_str,  # raw string, for json.loads(data)
+                    "parsed_data": parsed_data,  # pre-parsed convenience form
+                    "json": JSON_NAMESPACE,
+                }
                 processed_data = {}
                 for field, expr in transform_spec.items():
                     try:
-                        # Create safe evaluation context with necessary builtins
-                        safe_builtins = {
-                            "sum": sum,
-                            "len": len,
-                            "min": min,
-                            "max": max,
-                            "abs": abs,
-                            "round": round,
-                            "int": int,
-                            "float": float,
-                            "str": str,
-                            "bool": bool,
-                            "list": list,
-                            "dict": dict,
-                            "set": set,
-                            "tuple": tuple,
-                        }
-                        # Provide both raw string data and parsed data in context
-                        eval_context = {
-                            "data": data_str,  # Raw string data for json.loads(data)
-                            "parsed_data": parsed_data,  # Pre-parsed data
-                            "json": json,
-                        }
-                        # NOT migrated to orchestrator.core.expressions:
-                        # transform_spec expressions in real pipelines require
-                        # method calls on a module (`json.loads(data)`),
-                        # generator expressions and list comprehensions --
-                        # e.g. "sum(item['price'] for item in json.loads(data)['items'])"
-                        # -- none of which the constrained evaluator supports.
-                        # Tracked as an outstanding eval() site.
-                        processed_data[field] = eval(
-                            expr, {"__builtins__": safe_builtins}, eval_context
+                        processed_data[field] = evaluate_expression(expr, eval_context)
+                    except ExpressionError as e:
+                        logger.warning(
+                            "transform_spec field %r rejected: %s", field, e
                         )
-                    except Exception as e:
-                        processed_data[field] = f"Error: {str(e)}"
+                        processed_data[field] = f"Error: {e}"
 
                 return {"processed_data": processed_data, "success": True}
 
