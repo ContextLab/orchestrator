@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import asyncio
 import logging
+import re
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
@@ -125,43 +126,59 @@ class AnthropicModel(Model):
         self._size_billions = self._estimate_model_size(name)
         self._is_available = True
 
+    #: A model id the caller has already pinned: either dated
+    #: (``claude-haiku-4-5-20251001``) or an Anthropic ``-latest`` alias.
+    _QUALIFIED_MODEL_RE = re.compile(r"^claude-.+(-\d{8}|-latest)$", re.IGNORECASE)
+
+    #: Bare family names mapped to Anthropic's own rolling aliases. ``-latest``
+    #: is used rather than a pinned date so this table cannot silently rot the
+    #: way the previous hard-coded 2024 ids did.
+    _FAMILY_ALIASES = {
+        "opus": "claude-opus-4-latest",
+        "sonnet": "claude-sonnet-4-latest",
+        "haiku": "claude-haiku-4-latest",
+    }
+
     def _normalize_model_name(self, name: str) -> str:
-        """Normalize model name to Anthropic format."""
+        """Resolve a model name to an id to send to the API.
+
+        A fully-qualified id is returned untouched. This matters: the previous
+        implementation substring-matched on the family name and rewrote *every*
+        id containing "haiku"/"opus"/"sonnet" to a hard-coded 2024 model, so
+
+            AnthropicModel(name="claude-haiku-4-5-20251001")
+
+        actually requested ``claude-3-haiku-20240307`` and the API answered
+        404 not_found_error. No current Claude model was reachable at all, and
+        the caller's explicit choice was discarded with no warning. Caught by
+        the live acceptance test on its first real run.
+        """
+        if self._QUALIFIED_MODEL_RE.match(name):
+            return name
+
         name_lower = name.lower()
 
-        # Handle Claude Sonnet 4
-        if "sonnet-4" in name_lower or "sonnet4" in name_lower:
-            return "claude-3-5-sonnet-20241022"  # Latest Sonnet
-
-        # Claude 3.5 Sonnet
-        if "claude-3.5-sonnet" in name_lower or "claude-3-5-sonnet" in name_lower:
-            return "claude-3-5-sonnet-20241022"
-
-        # Claude 3 Opus
-        if "opus" in name_lower:
-            return "claude-3-opus-20240229"
-
-        # Claude 3 Sonnet
-        if "sonnet" in name_lower and "3.5" not in name_lower:
-            return "claude-3-sonnet-20240229"
-
-        # Claude 3 Haiku
-        if "haiku" in name_lower:
-            return "claude-3-haiku-20240307"
-
-        # Claude 2.1
+        # Legacy generations keep their exact ids; they have no rolling alias.
         if "claude-2.1" in name_lower:
             return "claude-2.1"
-
-        # Claude 2
         if "claude-2" in name_lower:
             return "claude-2.0"
-
-        # Claude Instant
         if "instant" in name_lower:
             return "claude-instant-1.2"
 
-        # Default
+        for family, alias in self._FAMILY_ALIASES.items():
+            if family in name_lower:
+                logger.debug(
+                    "Resolved bare model name %r to %r; pass a dated id to pin a "
+                    "specific version.",
+                    name,
+                    alias,
+                )
+                return alias
+
+        # Unrecognized: send it as given rather than guessing. An unknown id
+        # produces a clear 404 from the API, which is far more debuggable than
+        # silently substituting a different model.
         return name
 
     def _get_default_capabilities(self, name: str) -> ModelCapabilities:

@@ -118,6 +118,42 @@ async def test_generate_respects_max_tokens():
     )
 
 
+async def test_every_family_alias_resolves_to_a_real_model():
+    """Each bare-name alias must name a model the API actually serves.
+
+    `_FAMILY_ALIASES` maps "haiku"/"opus"/"sonnet" to Anthropic rolling
+    aliases. Those strings can only be validated against the live API -- a
+    hermetic test would just assert the table equals itself. This is precisely
+    how the predecessor rotted: it mapped every family to a pinned 2024 id,
+    which was correct when written and later 404'd.
+    """
+    _require_anthropic_package()
+    from orchestrator.models.anthropic_model import AnthropicModel
+
+    failures = []
+    for family, alias in AnthropicModel._FAMILY_ALIASES.items():
+        model = AnthropicModel(
+            name=family, api_key=os.environ["ANTHROPIC_API_KEY"], use_langchain=False
+        )
+        assert model._model_id == alias, (
+            f"{family!r} resolved to {model._model_id!r}, expected {alias!r}"
+        )
+        try:
+            reply = await model.generate(
+                prompt="Reply with the single word: ok",
+                temperature=0.0,
+                max_tokens=MAX_TOKENS,
+            )
+            print(f"\nalias {family!r} -> {alias!r}: OK ({reply.strip()[:40]!r})")
+        except Exception as exc:  # noqa: BLE001 - reporting all failures at once
+            failures.append(f"{family!r} -> {alias!r}: {exc}")
+
+    assert not failures, (
+        "these family aliases do not name a servable model:\n  "
+        + "\n  ".join(failures)
+    )
+
+
 async def test_health_check_reports_true_against_the_real_api():
     """The provider's own readiness probe must agree with reality."""
     _require_anthropic_package()
