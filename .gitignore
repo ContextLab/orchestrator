@@ -266,3 +266,14 @@ Desktop.ini
 # ClaudPoint checkpoint system
 .checkpoints/
 .omc/
+.ccpm_backup/
+test_env/
+.benchmarks/
+examples/outputs/
+test_outputs/
+test_output_dir/
+test_batch_processing_output/
+pipeline_test_results/
+production_output/
+demo_batch_results/
+golden_out/
