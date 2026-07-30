@@ -157,6 +157,21 @@ class AnthropicModel(Model):
             import sys
 
             try:
+                # Installing at runtime reaches the network and mutates the
+                # live environment on an ordinary pipeline run, so it is
+                # gated behind the same explicit opt-in as utils.auto_install.
+                from ..utils.auto_install import (
+                    AUTO_INSTALL_ENV_VAR,
+                    auto_install_enabled,
+                )
+
+                if not auto_install_enabled():
+                    raise ImportError(
+                        "Anthropic library is not installed. Install it with: "
+                        "pip install 'py-orc[anthropic]' "
+                        f"(or set {AUTO_INSTALL_ENV_VAR}=1 to install automatically)."
+                    )
+
                 print("Anthropic library not found. Installing...")
                 subprocess.check_call(
                     [sys.executable, "-m", "pip", "install", "anthropic"]

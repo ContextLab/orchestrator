@@ -19,22 +19,14 @@ class ValidationLevel(Enum):
 # Try to import pydantic, install if needed
 try:
     from pydantic import BaseModel, Field, create_model
-except ImportError:
-    import subprocess
-    import sys
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.info("Pydantic not found. Installing...")
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "pydantic"])
-        from pydantic import BaseModel, Field, create_model
-
-        logger.info("Pydantic installed successfully")
-    except Exception as e:
-        raise ImportError(
-            f"Failed to install pydantic: {e}. Please install manually with: pip install pydantic"
-        )
+except ImportError as exc:  # pragma: no cover - broken installation
+    # pydantic is a CORE dependency (see pyproject.toml). If it is
+    # missing the installation is broken; installing it silently at
+    # import time would hide that and reach the network on import.
+    raise ImportError(
+        "pydantic is required by orchestrator but is not installed. "
+        "Reinstall the package: pip install --force-reinstall py-orc"
+    ) from exc
 
 from ..core.model import Model
 from .base import Tool

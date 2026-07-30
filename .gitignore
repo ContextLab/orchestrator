@@ -277,3 +277,4 @@ pipeline_test_results/
 production_output/
 demo_batch_results/
 golden_out/
+tests/performance/results/

@@ -292,7 +292,36 @@ def run(pipeline_file: str, context: Optional[str], inputs: tuple, output: Optio
         click.echo(f"Results written to {output}")
     else:
         click.echo(rendered)
+
+    # A step can fail without raising: the executor records the failure in the
+    # step's result and continues. Reporting exit 0 in that case would tell a
+    # caller (a shell script, CI, a parent pipeline) that a pipeline succeeded
+    # when one of its steps did not.
+    failed = _failed_steps(results)
+    if failed:
+        click.echo(
+            f"Pipeline completed with {len(failed)} failed step(s): "
+            + ", ".join(sorted(failed)),
+            err=True,
+        )
+        sys.exit(EXIT_EXECUTION_ERROR)
+
     sys.exit(EXIT_OK)
+
+
+def _failed_steps(results) -> list:
+    """Return the ids of steps whose result reports failure.
+
+    Steps report themselves as ``{"success": bool, "error": ...}``. Anything
+    that does not look like a step result is ignored rather than guessed at.
+    """
+    if not isinstance(results, dict):
+        return []
+    failed = []
+    for step_id, value in results.items():
+        if isinstance(value, dict) and value.get("success") is False:
+            failed.append(str(step_id))
+    return failed
 
 
 @cli.command("validate")

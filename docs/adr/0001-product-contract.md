@@ -38,19 +38,26 @@ Typed result + outputs + state + trace
 These are the only implementations the product supports. Where competitors
 exist, they are listed so they can be retired against contract tests.
 
-| Role | Canonical | Competing implementations (not supported) |
+| Role | Canonical | Status of alternatives |
 |-|-|-|
-| Compiler | `compiler/yaml_compiler.py::YAMLCompiler` | `compiler/enhanced_yaml_compiler.py`, `graph_generation/` |
+| Compiler | `compiler/yaml_compiler.py::YAMLCompiler` | `compiler/enhanced_yaml_compiler.py`, `graph_generation/` — **off the import closure**, safe to retire |
 | Control-flow compiler | `compiler/control_flow_compiler.py` | — |
-| Executor | `orchestrator.py::Orchestrator` | `engine/`, `execution/`, `runtime/`, `executor/`, `api/` |
+| Executor | `orchestrator.py::Orchestrator` | `engine/`, `execution/`, `api/` are off the closure. **`executor/` and `runtime/` are NOT** — `orchestrator.py` imports `executor.parallel_executor` and `runtime`, so they are dependencies of the canonical path, not competitors |
 | Domain model | `core/pipeline.py`, `core/task.py` | — |
-| Model registry | `models/model_registry.py` | `models/registry.py` (unified) |
-| Tool registry | `tools/base.py::ToolRegistry` | `tools/registry.py`, `tools/universal_registry.py` |
-| State | `state/state_manager.py` | `state/langgraph_state_manager.py` (opt-in) |
-| Expression evaluation | `core/expressions.py` (new, AST-based) | every pipeline-facing `eval()` |
+| Model registry | `models/model_registry.py` | `models/registry.py` also loads on **every** import (`models/__init__.py`), so two classes named `ModelRegistry` coexist. Not yet separable |
+| Tool registry | `tools/base.py::ToolRegistry` | `tools/registry.py`, `tools/universal_registry.py` — off the closure |
+| State | `state/state_manager.py` | `state/langgraph_state_manager.py` is **imported** at module scope by `orchestrator.py`; only its *instantiation* is opt-in |
+| Expression evaluation | `core/expressions.py` (AST-based, fail-closed) | Migrated: `control_flow/auto_resolver.py` (the canonical condition path), `enhanced_condition_evaluator`, `runtime/dependency_resolver`, `actions/condition_evaluator`, `engine/advanced_executor`, `auto_resolution/integration`, `tools/pipeline_recursion_tools`, `execution/engine`. **Still on `eval()`: `control_systems/hybrid_control_system.py`** (its transform expressions need `json.loads`, comprehensions and generator expressions) |
 
-Competing implementations are **frozen**: no new features, no new callers. They
-are removed once contract tests characterize the behavior worth keeping.
+Alternatives that are genuinely off the import closure are **frozen**: no new
+features, no new callers, removed once contract tests characterize the behavior
+worth keeping.
+
+Rows marked as still-coupled are a statement of fact, not intent: decoupling
+them is remaining work, and this table must not claim otherwise. An earlier
+version of this table listed `executor/`, `runtime/`, `models/registry.py` and
+the LangGraph state manager as merely "competing", which an audit disproved by
+tracing the actual import closure.
 
 Selection rule: never choose an implementation by its name. `enhanced`,
 `advanced`, `clean`, `original`, `backup` and `v2` carry no information. Run

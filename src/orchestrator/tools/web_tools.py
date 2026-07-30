@@ -944,6 +944,18 @@ class HeadlessBrowserTool(Tool):
             if importlib.util.find_spec("playwright") is None:
                 raise ImportError("Playwright not available")
         except ImportError:
+            from ..utils.auto_install import (
+                AUTO_INSTALL_ENV_VAR,
+                auto_install_enabled,
+            )
+
+            if not auto_install_enabled():
+                raise ImportError(
+                    "Playwright is required for browser automation. Install it "
+                    "with: pip install 'py-orc[web]' && playwright install "
+                    f"(or set {AUTO_INSTALL_ENV_VAR}=1 to install automatically)."
+                )
+
             self.logger.info("Playwright not installed. Installing now...")
             try:
                 import subprocess

@@ -1,0 +1,30 @@
+# Golden pipeline: failure propagation.
+#
+# `read_missing` reads a file that does not exist. The pipeline must not report
+# success: the failure has to surface in the results and in the CLI exit code,
+# rather than being swallowed into a "successful" run with an empty value.
+id: golden_failure
+name: Golden Failure Pipeline
+description: A deliberately failing step, to verify failure propagation
+version: "1.0.0"
+
+parameters:
+  out_dir:
+    type: string
+    default: "./golden_out"
+
+steps:
+  - id: write_first
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/before_failure.txt"
+      content: "this step succeeds"
+
+  - id: read_missing
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/definitely_does_not_exist_12345.txt"
+    dependencies:
+      - write_first

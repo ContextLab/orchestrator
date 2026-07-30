@@ -21,6 +21,7 @@ import pytest
 GOLDEN_DIR = Path(__file__).parent / "golden"
 BASIC = GOLDEN_DIR / "basic.yaml"
 CONTROL_FLOW = GOLDEN_DIR / "control_flow.yaml"
+FAILURE = GOLDEN_DIR / "failure.yaml"
 
 pytestmark = [pytest.mark.e2e]
 
@@ -66,7 +67,11 @@ async def _run_api(pipeline_path, context, cwd):
 # validate
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("pipeline", [BASIC, CONTROL_FLOW], ids=["basic", "control_flow"])
+@pytest.mark.parametrize(
+    "pipeline",
+    [BASIC, CONTROL_FLOW, FAILURE],
+    ids=["basic", "control_flow", "failure"],
+)
 def test_golden_pipeline_validates(pipeline, tmp_path):
     """Every golden pipeline compiles and reports its task graph."""
     result = _run_cli(["validate", str(pipeline)], cwd=tmp_path)
@@ -191,6 +196,37 @@ def test_control_flow_pipeline_via_cli(tmp_path):
     assert joined == "alpha-value+beta-value", (
         f"cross-step template interpolation failed; got {joined!r}"
     )
+
+
+def test_failed_step_propagates_to_exit_code(tmp_path):
+    """A step that fails must NOT produce a successful run.
+
+    The executor records a step failure in that step's result and carries on,
+    so the process previously exited 0 even though `read_missing` reported
+    `"success": false`. A caller (shell script, CI job, parent pipeline) would
+    have been told the pipeline succeeded.
+    """
+    result = _run_cli(["run", str(FAILURE)], cwd=tmp_path)
+
+    assert result.returncode == 1, (
+        f"expected exit 1 for a pipeline with a failing step, got "
+        f"{result.returncode}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+    # The failing step is named, so the operator knows which one broke.
+    assert "read_missing" in result.stderr
+
+    payload = json.loads(result.stdout[result.stdout.index("{"):])
+    assert payload["read_missing"]["success"] is False
+    assert payload["read_missing"]["error"]
+    # The step before the failure still ran and is reported honestly.
+    assert payload["write_first"]["success"] is True
+    assert (tmp_path / "golden_out" / "before_failure.txt").is_file()
+
+
+def test_successful_pipeline_still_exits_zero(tmp_path):
+    """Guard against the failure check misfiring on healthy pipelines."""
+    result = _run_cli(["run", str(BASIC), "-i", "greeting=fine"], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
 
 
 def test_unresolved_template_does_not_reach_output(tmp_path):
