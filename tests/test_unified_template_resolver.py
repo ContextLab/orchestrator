@@ -2,14 +2,14 @@
 
 import pytest
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.core.unified_template_resolver import (
+from orchestrator.core.unified_template_resolver import (
 
     UnifiedTemplateResolver, 
     TemplateResolutionContext
 )
-from src.orchestrator.core.template_manager import TemplateManager
-from src.orchestrator.core.context_manager import ContextManager
-from src.orchestrator.core.loop_context import GlobalLoopContextManager, LoopContextVariables
+from orchestrator.core.template_manager import TemplateManager
+from orchestrator.core.context_manager import ContextManager
+from orchestrator.core.loop_context import GlobalLoopContextManager, LoopContextVariables
 
 
 class TestUnifiedTemplateResolver:

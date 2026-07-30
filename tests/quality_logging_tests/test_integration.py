@@ -12,34 +12,34 @@ from dataclasses import asdict
 from unittest.mock import Mock, patch, AsyncMock
 import pytest
 
-from src.orchestrator.quality.logging.integration import (
+from orchestrator.quality.logging.integration import (
     QualityLoggingIntegrator,
     IntegratedQualityControlManager,
     create_integrated_quality_logging
 )
-from src.orchestrator.quality.logging.logger import (
+from orchestrator.quality.logging.logger import (
     StructuredLogger,
     LogLevel,
     LogCategory,
     QualityEvent
 )
-from src.orchestrator.quality.logging.monitoring import QualityMonitor
-from src.orchestrator.quality.validation.validator import (
+from orchestrator.quality.logging.monitoring import QualityMonitor
+from orchestrator.quality.validation.validator import (
     ValidationResult,
     ValidationSeverity,
     OutputQualityValidator
 )
-from src.orchestrator.quality.validation.rules import (
+from orchestrator.quality.validation.rules import (
     RuleViolation,
     RuleSeverity,
     ValidationContext
 )
-from src.orchestrator.quality.validation.integration import (
+from orchestrator.quality.validation.integration import (
     ExecutionQualityMonitor,
     QualityControlManager
 )
-from src.orchestrator.execution.state import ExecutionContext, ExecutionStatus
-from src.orchestrator.execution.progress import ProgressTracker, ProgressEvent, ProgressEventType
+from orchestrator.execution.state import ExecutionContext, ExecutionStatus
+from orchestrator.execution.progress import ProgressTracker, ProgressEvent, ProgressEventType
 
 
 class TestQualityLoggingIntegrator:
@@ -508,7 +508,7 @@ class TestCreateIntegratedQualityLogging:
 
     def test_with_monitoring_enabled(self):
         """Test creation with monitoring enabled."""
-        with patch('src.orchestrator.quality.logging.integration.create_monitoring_setup') as mock_create_monitoring:
+        with patch('orchestrator.quality.logging.integration.create_monitoring_setup') as mock_create_monitoring:
             mock_monitor = Mock(spec=QualityMonitor)
             mock_create_monitoring.return_value = mock_monitor
             
@@ -530,7 +530,7 @@ class TestCreateIntegratedQualityLogging:
         
         with patch('builtins.open', mock_open(read_data="monitoring:\n  enabled: true\n  backends: []")), \
              patch('yaml.safe_load', return_value=config_data), \
-             patch('src.orchestrator.quality.logging.integration.create_monitoring_setup') as mock_create_monitoring:
+             patch('orchestrator.quality.logging.integration.create_monitoring_setup') as mock_create_monitoring:
             
             mock_monitor = Mock(spec=QualityMonitor)
             mock_create_monitoring.return_value = mock_monitor
@@ -565,14 +565,14 @@ class TestCreateIntegratedQualityLogging:
         }
         
         with patch('yaml.safe_load', return_value=config_data), \
-             patch('src.orchestrator.quality.logging.integration.create_monitoring_setup',
+             patch('orchestrator.quality.logging.integration.create_monitoring_setup',
                    side_effect=Exception("Setup failed")):
             
             # Should create mock logger with warning method
             mock_logger = Mock()
             mock_logger.warning = Mock()
             
-            with patch('src.orchestrator.quality.logging.integration.get_logger',
+            with patch('orchestrator.quality.logging.integration.get_logger',
                       return_value=mock_logger):
                 
                 integrator = create_integrated_quality_logging(

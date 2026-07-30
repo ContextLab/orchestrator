@@ -12,12 +12,12 @@ import yaml
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from src.orchestrator.quality.validation.rules import (
+from orchestrator.quality.validation.rules import (
     ValidationRule, QualityRule, RuleViolation, ValidationContext,
     RuleSeverity, RuleCategory, RuleRegistry,
     FileSizeRule, ContentFormatRule, ContentQualityRule, PerformanceRule
 )
-from src.orchestrator.execution.state import ExecutionContext, ExecutionMetrics
+from orchestrator.execution.state import ExecutionContext, ExecutionMetrics
 
 
 class TestValidationRules:

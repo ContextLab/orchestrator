@@ -11,13 +11,13 @@ import csv
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.core.template_resolver import (
+from orchestrator.core.template_resolver import (
 
     TemplateResolver, 
     TemplateFormat,
     POML_AVAILABLE
 )
-from src.orchestrator.core.output_tracker import OutputTracker
+from orchestrator.core.output_tracker import OutputTracker
 
 def create_test_data_files():
     """Create temporary test files for data integration."""

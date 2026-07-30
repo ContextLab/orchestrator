@@ -7,7 +7,7 @@ import asyncio
 import time
 from unittest.mock import Mock, patch, AsyncMock
 
-from src.orchestrator.execution.recovery import (
+from orchestrator.execution.recovery import (
     RecoveryManager,
     RecoveryStrategy,
     ErrorSeverity,
@@ -20,8 +20,8 @@ from src.orchestrator.execution.recovery import (
     timeout_error_handler,
     critical_error_handler
 )
-from src.orchestrator.execution.state import ExecutionContext
-from src.orchestrator.execution.progress import ProgressTracker
+from orchestrator.execution.state import ExecutionContext
+from orchestrator.execution.progress import ProgressTracker
 
 
 class TestErrorInfo:

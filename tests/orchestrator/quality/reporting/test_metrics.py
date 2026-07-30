@@ -20,23 +20,23 @@ from typing import List, Dict, Any
 from datetime import datetime, timezone
 
 # Import the system under test
-from src.orchestrator.quality.reporting.metrics import (
+from orchestrator.quality.reporting.metrics import (
     QualityMetricsCollector,
     MetricType,
     QualityMetric,
     TimeSeriesMetric,
     MetricsSnapshot
 )
-from src.orchestrator.quality.validation.engine import (
+from orchestrator.quality.validation.engine import (
     ValidationSession,
     RuleExecutionResult
 )
-from src.orchestrator.quality.validation.rules import (
+from orchestrator.quality.validation.rules import (
     RuleViolation,
     RuleSeverity,
     RuleCategory
 )
-from src.orchestrator.execution.state import ExecutionContext
+from orchestrator.execution.state import ExecutionContext
 
 
 @pytest.fixture

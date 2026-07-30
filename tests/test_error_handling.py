@@ -5,7 +5,7 @@ import time
 import pytest
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.core.error_handler import (
+from orchestrator.core.error_handler import (
 
     CircuitBreaker,
     ErrorCategory,
@@ -605,7 +605,7 @@ class TestRetryStrategyAdvanced:
 
     def test_should_retry_with_error_info_object(self):
         """Test should_retry with ErrorInfo object."""
-        from src.orchestrator.core.error_handler import (
+        from orchestrator.core.error_handler import (
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
@@ -636,7 +636,7 @@ class TestRetryStrategyAdvanced:
 
     def test_should_retry_with_attempt_only(self):
         """Test should_retry with attempt number only."""
-        from src.orchestrator.core.error_handler import RetryStrategy
+        from orchestrator.core.error_handler import RetryStrategy
 
         strategy = RetryStrategy(max_retries=3)
 
@@ -647,7 +647,7 @@ class TestRetryStrategyAdvanced:
 
     def test_should_retry_error_method(self):
         """Test should_retry_error method."""
-        from src.orchestrator.core.error_handler import RetryStrategy
+        from orchestrator.core.error_handler import RetryStrategy
 
         # Test with no specific retryable errors (should retry all)
         strategy = RetryStrategy(max_retries=3)
@@ -668,7 +668,7 @@ class TestExponentialBackoffRetry:
 
     def test_should_retry_validation_errors(self):
         """Test should_retry with validation errors."""
-        from src.orchestrator.core.error_handler import (
+        from orchestrator.core.error_handler import (
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
@@ -688,7 +688,7 @@ class TestExponentialBackoffRetry:
 
     def test_should_retry_permission_errors(self):
         """Test should_retry with permission errors."""
-        from src.orchestrator.core.error_handler import (
+        from orchestrator.core.error_handler import (
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
@@ -708,7 +708,7 @@ class TestExponentialBackoffRetry:
 
     def test_should_retry_configuration_errors(self):
         """Test should_retry with configuration errors."""
-        from src.orchestrator.core.error_handler import (
+        from orchestrator.core.error_handler import (
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
@@ -728,7 +728,7 @@ class TestExponentialBackoffRetry:
 
     def test_should_retry_max_retries_exceeded(self):
         """Test should_retry when max retries exceeded."""
-        from src.orchestrator.core.error_handler import (
+        from orchestrator.core.error_handler import (
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
@@ -749,7 +749,7 @@ class TestExponentialBackoffRetry:
 
     def test_should_retry_critical_non_recoverable(self):
         """Test should_retry with critical non-recoverable errors."""
-        from src.orchestrator.core.error_handler import (
+        from orchestrator.core.error_handler import (
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
@@ -769,7 +769,7 @@ class TestExponentialBackoffRetry:
 
     def test_should_retry_critical_recoverable(self):
         """Test should_retry with critical recoverable errors."""
-        from src.orchestrator.core.error_handler import (
+        from orchestrator.core.error_handler import (
             ErrorCategory,
             ErrorInfo,
             ErrorSeverity,
@@ -795,7 +795,7 @@ class TestErrorHandlerAdvanced:
     @pytest.mark.asyncio
     async def test_error_handler_circuit_breaker_integration(self):
         """Test error handler integration with circuit breaker."""
-        from src.orchestrator.core.error_handler import ErrorHandler
+        from orchestrator.core.error_handler import ErrorHandler
 
         handler = ErrorHandler()
 
@@ -814,7 +814,7 @@ class TestErrorHandlerAdvanced:
     @pytest.mark.asyncio
     async def test_error_handler_fallback_strategies(self):
         """Test error handler fallback strategies."""
-        from src.orchestrator.core.error_handler import ErrorHandler
+        from orchestrator.core.error_handler import ErrorHandler
 
         handler = ErrorHandler()
 

@@ -4,7 +4,7 @@ import asyncio
 import pytest
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.tools.mcp_tools import (
+from orchestrator.tools.mcp_tools import (
 
     MCPServerTool,
     MCPMemoryTool,

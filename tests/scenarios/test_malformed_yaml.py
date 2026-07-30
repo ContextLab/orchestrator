@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 
 # Import orchestrator components
-from src.orchestrator.orchestrator import Orchestrator
+from orchestrator.orchestrator import Orchestrator
 
 
 class TestMalformedYAML:

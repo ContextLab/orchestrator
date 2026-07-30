@@ -16,7 +16,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 import pytest
 
-from src.orchestrator.quality.logging.logger import (
+from orchestrator.quality.logging.logger import (
     StructuredLogger,
     LogLevel,
     LogCategory,

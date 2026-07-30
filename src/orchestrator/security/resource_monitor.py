@@ -6,11 +6,10 @@ with proactive threat detection and performance optimization.
 
 import asyncio
 import psutil
-import docker
 import logging
 import time
 import threading
-from typing import Dict, List, Optional, Any, Callable, Set
+from typing import Dict, List, Optional, Any, Callable, Set, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timedelta
@@ -19,6 +18,10 @@ import statistics
 from collections import deque, defaultdict
 
 from .docker_manager import SecureContainer, ResourceLimits
+
+# Optional dependency - only needed for type annotations here
+if TYPE_CHECKING:
+    import docker
 
 logger = logging.getLogger(__name__)
 
@@ -429,7 +432,7 @@ class ResourceAnalyzer:
 class ResourceEnforcer:
     """Enforces resource limits and takes remediation actions."""
     
-    def __init__(self, docker_client: docker.DockerClient):
+    def __init__(self, docker_client: "docker.DockerClient"):
         self.docker_client = docker_client
         self.enforcement_stats = {
             'violations_detected': 0,
@@ -628,7 +631,7 @@ class AlertManager:
 class ResourceMonitor:
     """Main resource monitoring system orchestrating all monitoring components."""
     
-    def __init__(self, docker_client: docker.DockerClient, monitoring_interval: float = 1.0):
+    def __init__(self, docker_client: "docker.DockerClient", monitoring_interval: float = 1.0):
         self.docker_client = docker_client
         self.monitoring_interval = monitoring_interval
         
@@ -887,7 +890,7 @@ class ResourceMonitor:
 # Utility functions
 async def monitor_container_resources(
     container: SecureContainer,
-    docker_client: docker.DockerClient,
+    docker_client: "docker.DockerClient",
     duration_seconds: int = 60
 ) -> Dict[str, Any]:
     """Monitor container resources for specified duration."""

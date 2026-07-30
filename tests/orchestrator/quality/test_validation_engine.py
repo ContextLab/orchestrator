@@ -11,14 +11,14 @@ import time
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from src.orchestrator.quality.validation.engine import (
+from orchestrator.quality.validation.engine import (
     ValidationEngine, ValidationSession, RuleExecutionResult, RuleExecutionContext
 )
-from src.orchestrator.quality.validation.rules import (
+from orchestrator.quality.validation.rules import (
     ValidationRule, RuleRegistry, ValidationContext, RuleViolation,
     RuleSeverity, RuleCategory, FileSizeRule, ContentQualityRule
 )
-from src.orchestrator.execution.state import ExecutionContext, ExecutionMetrics
+from orchestrator.execution.state import ExecutionContext, ExecutionMetrics
 
 
 class MockRule(ValidationRule):

@@ -7,10 +7,10 @@ import time
 import random
 import pytest
 
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.models.load_balancer import LoadBalancer, ModelPoolConfig
-from src.orchestrator.models.openai_model import OpenAIModel
-from src.orchestrator.integrations.ollama_model import OllamaModel
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.models.load_balancer import LoadBalancer, ModelPoolConfig
+from orchestrator.models.openai_model import OpenAIModel
+from orchestrator.integrations.ollama_model import OllamaModel
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

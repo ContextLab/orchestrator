@@ -16,7 +16,7 @@ from typing import Dict, Any, List
 from unittest.mock import patch, MagicMock
 
 # Import orchestrator components
-from src.orchestrator.orchestrator import Orchestrator
+from orchestrator.orchestrator import Orchestrator
 
 
 class TestMissingDependencies:

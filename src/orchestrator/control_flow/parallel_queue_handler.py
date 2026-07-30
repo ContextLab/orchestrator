@@ -586,7 +586,6 @@ class ParallelQueueHandler:
                                    parameters: Dict[str, Any],
                                    context: Dict[str, Any]) -> Any:
         """Execute action directly using real control system."""
-        from ..core.task import Task
         from ..control_systems.hybrid_control_system import HybridControlSystem
         
         # Create a temporary task for execution

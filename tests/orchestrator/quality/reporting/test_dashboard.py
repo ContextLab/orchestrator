@@ -20,18 +20,18 @@ from dataclasses import dataclass
 from typing import List, Dict, Any
 
 # Import the system under test
-from src.orchestrator.quality.reporting.dashboard import (
+from orchestrator.quality.reporting.dashboard import (
     QualityDashboard,
     DashboardWidget,
     WidgetType,
     DashboardConfig
 )
-from src.orchestrator.quality.reporting.metrics import (
+from orchestrator.quality.reporting.metrics import (
     QualityMetricsCollector,
     TimeSeriesMetric,
     MetricType
 )
-from src.orchestrator.quality.reporting.analytics import (
+from orchestrator.quality.reporting.analytics import (
     QualityAnalytics,
     AnalyticsResult,
     QualityInsight,
@@ -39,7 +39,7 @@ from src.orchestrator.quality.reporting.analytics import (
     TrendDirection,
     InsightType
 )
-from src.orchestrator.quality.reporting.alerts import (
+from orchestrator.quality.reporting.alerts import (
     QualityAlertSystem,
     AlertNotification,
     AlertSeverity,
@@ -809,7 +809,7 @@ class TestWebServerIntegration:
             
             assert dashboard._is_running is False
     
-    @patch('src.orchestrator.quality.reporting.dashboard.HTTPServer')
+    @patch('orchestrator.quality.reporting.dashboard.HTTPServer')
     def test_server_creation_error(self, mock_http_server, dashboard, mock_logger):
         """Test server creation error handling."""
         # Make HTTPServer raise an exception

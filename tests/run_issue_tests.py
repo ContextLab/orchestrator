@@ -21,7 +21,7 @@ def run_foundation_tests():
     
     try:
         # Test 1: Import foundation interfaces
-        from src.orchestrator.foundation import (
+        from orchestrator.foundation import (
             PipelineCompilerInterface,
             ExecutionEngineInterface,
             ModelManagerInterface,

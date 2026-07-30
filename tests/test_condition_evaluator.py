@@ -5,7 +5,7 @@ import asyncio
 from unittest.mock import Mock
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.actions.condition_evaluator import (
+from orchestrator.actions.condition_evaluator import (
 
     BooleanEvaluator,
     ComparisonEvaluator,

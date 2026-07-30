@@ -4,8 +4,8 @@ import time
 
 import pytest
 
-from src.orchestrator.core.pipeline import CircularDependencyError, Pipeline
-from src.orchestrator.core.task import Task, TaskStatus
+from orchestrator.core.pipeline import CircularDependencyError, Pipeline
+from orchestrator.core.task import Task, TaskStatus
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

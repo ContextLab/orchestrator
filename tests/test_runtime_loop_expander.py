@@ -11,10 +11,10 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from src.orchestrator.runtime.execution_state import PipelineExecutionState, LoopContext
-from src.orchestrator.runtime.dependency_resolver import DependencyResolver
+from orchestrator.runtime.execution_state import PipelineExecutionState, LoopContext
+from orchestrator.runtime.dependency_resolver import DependencyResolver
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.runtime.loop_expander import (
+from orchestrator.runtime.loop_expander import (
 
     LoopExpander,
     LoopTask,

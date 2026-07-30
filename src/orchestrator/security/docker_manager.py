@@ -9,19 +9,22 @@ Phase 3 Updates:
 """
 
 import asyncio
-import docker
 import logging
 import time
 import json
 import uuid
 import psutil
-from typing import Dict, List, Optional, Any, Set, Tuple
+from typing import Dict, List, Optional, Any, Set, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 import hashlib
 import threading
 from datetime import datetime, timedelta
+
+# Optional dependency - imported lazily where used
+if TYPE_CHECKING:
+    import docker
 
 logger = logging.getLogger(__name__)
 
@@ -393,7 +396,7 @@ class EnhancedDockerManager:
     """Production-grade Docker container management with security and performance optimization."""
     
     def __init__(self, enable_container_pooling: bool = True, enable_advanced_pooling: bool = True, performance_monitor=None):
-        self.docker_client: Optional[docker.DockerClient] = None
+        self.docker_client: Optional["docker.DockerClient"] = None
         
         # Performance monitoring integration
         self.performance_monitor = performance_monitor
@@ -433,6 +436,14 @@ class EnhancedDockerManager:
     
     def _init_docker(self) -> None:
         """Initialize Docker client with error handling."""
+        try:
+            import docker
+        except ImportError as exc:
+            raise ImportError(
+                "Docker container management requires the 'docker' package. "
+                "Install it with: pip install 'py-orc[infra]'"
+            ) from exc
+
         try:
             self.docker_client = docker.from_env()
             # Test Docker connectivity
@@ -587,6 +598,8 @@ class EnhancedDockerManager:
     
     async def _ensure_image_available(self, image: str) -> None:
         """Ensure Docker image is available locally."""
+        import docker
+
         try:
             self.docker_client.images.get(image)
             logger.debug(f"Image {image} already available locally")
@@ -1004,6 +1017,8 @@ class EnhancedDockerManager:
 
     async def destroy_container(self, container: SecureContainer, force: bool = False) -> bool:
         """Destroy container and clean up resources."""
+        import docker
+
         try:
             # Remove from active containers
             if container.container_id in self.active_containers:

@@ -751,10 +751,6 @@ class ControlFlowAutoResolver:
         except Exception as e:
             raise ValueError(f"Failed to evaluate expression '{expression}': {e}")
 
-    def clear_cache(self):
-        """Clear the resolution cache."""
-        self._resolution_cache.clear()
-
     def _get_default_resolution(self, prompt: str) -> Any:
         """Get default resolution when no model is available.
 

@@ -5,8 +5,8 @@ import asyncio
 import json
 from typing import Dict, Any
 
-from src.orchestrator.engine.control_flow_engine import ControlFlowEngine
-from src.orchestrator.tools.base import Tool, ToolRegistry
+from orchestrator.engine.control_flow_engine import ControlFlowEngine
+from orchestrator.tools.base import Tool, ToolRegistry
 
 
 # Mock tools for demonstration

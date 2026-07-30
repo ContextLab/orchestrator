@@ -1,117 +1,115 @@
-"""Shared pytest fixtures for orchestrator tests."""
+"""Shared pytest fixtures for orchestrator tests.
 
-import pytest
+Two rules this file enforces (see docs/adr/0001-product-contract.md):
+
+1. **The test suite never mutates the host.** Collection and startup must not
+   install or start Docker, download models, or touch anything outside the
+   working tree. A previous session-scoped ``autouse`` fixture called
+   ``DockerManager.ensure_docker_ready(install_if_missing=True)``, so merely
+   *collecting* tests could try to install Docker. That is gone.
+
+2. **The package is imported under exactly one identity.** Importing both
+   ``orchestrator`` and ``src.orchestrator`` creates two copies of every module:
+   duplicate singleton registries, and ``isinstance`` checks that fail between
+   two classes that are supposed to be the same. Everything imports
+   ``orchestrator``.
+"""
+
+import os
 import sys
-import logging
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+import pytest
 
-from orchestrator import init_models
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.utils.docker_manager import DockerManager
+# Prefer an installed package. Fall back to the source tree only when the
+# package is not installed, so a plain `pytest` in a fresh clone still works.
+# Note this inserts `src/` (so the import name stays `orchestrator`), never the
+# repo root (which would allow the `src.orchestrator` alias back in).
+try:  # pragma: no cover - environment dependent
+    import orchestrator  # noqa: F401
+except ImportError:  # pragma: no cover - environment dependent
+    sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-logger = logging.getLogger(__name__)
 
+# --------------------------------------------------------------------------
+# Marker-based gating
+# --------------------------------------------------------------------------
+# Tests that need secrets or external services are skipped unless the
+# environment actually provides them. They are never silently "passed", and the
+# skip reason always states what is missing.
+
+def _docker_running() -> bool:
+    """Report whether a Docker daemon is reachable. Never starts or installs."""
+    try:
+        from orchestrator.utils.docker_manager import DockerManager
+
+        return bool(DockerManager.is_running())
+    except Exception:
+        return False
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip opt-in tests when their prerequisites are absent."""
+    have_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    run_integration = os.environ.get("ORCHESTRATOR_RUN_INTEGRATION") == "1"
+    docker_ok = None  # probed lazily; the check itself is cheap but not free
+
+    for item in items:
+        if "live" in item.keywords and not have_anthropic:
+            item.add_marker(
+                pytest.mark.skip(
+                    reason="live-provider test: set ANTHROPIC_API_KEY to run"
+                )
+            )
+        if "integration" in item.keywords and not run_integration:
+            item.add_marker(
+                pytest.mark.skip(
+                    reason="integration test: set ORCHESTRATOR_RUN_INTEGRATION=1 to run"
+                )
+            )
+        if "docker" in item.keywords:
+            if docker_ok is None:
+                docker_ok = _docker_running()
+            if not docker_ok:
+                item.add_marker(
+                    pytest.mark.skip(reason="docker test: no Docker daemon reachable")
+                )
+
+
+# --------------------------------------------------------------------------
+# Fixtures
+# --------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
-def populated_model_registry() -> ModelRegistry:
+def populated_model_registry():
+    """A model registry populated from local config and available API keys.
+
+    Session-scoped because ``init_models()`` is expensive. Tests that require
+    an actual model are skipped when none could be registered, rather than
+    failing with a confusing downstream error.
     """
-    Provide a populated model registry for tests.
+    from orchestrator import init_models
 
-    This fixture initializes models once per test session and provides
-    the populated registry to all tests that need it.
-
-    Returns:
-        ModelRegistry: Registry populated with all configured models
-
-    Raises:
-        pytest.skip.Exception: If no models are available (likely due to missing API keys)
-    """
-    print("\n>> Test fixture: Initializing model registry...")
     registry = init_models()
-
-    # Verify we have models available
-    available_models = registry.list_models()
-    print(f">> Test fixture: Found {len(available_models)} models: {available_models}")
-    
-    if not available_models:
-        # Can't use pytest.skip in a session-scoped fixture
-        # Return None instead and let tests handle it
-        print(">> Test fixture: No models available - returning empty registry")
-        return registry
-
+    if not registry.list_models():
+        pytest.skip("no models available (missing API keys or local models)")
     return registry
 
 
 @pytest.fixture(scope="session")
-def model_registry(populated_model_registry) -> ModelRegistry:
-    """
-    Alias for populated_model_registry for backward compatibility.
-
-    Many tests expect a 'model_registry' fixture.
-    """
+def model_registry(populated_model_registry):
+    """Alias for :func:`populated_model_registry` used by older tests."""
     return populated_model_registry
-
-
-@pytest.fixture(scope="session", autouse=True)
-def ensure_docker():
-    """
-    Automatically ensure Docker is installed and running before tests.
-
-    This fixture runs automatically for all test sessions and ensures
-    Docker is ready for any tests that need it.
-    """
-    try:
-        logger.info("Checking Docker status...")
-        status = DockerManager.get_status()
-
-        if not status["installed"]:
-            logger.warning("Docker not installed, attempting automatic installation...")
-            try:
-                DockerManager.ensure_docker_ready(install_if_missing=True, start_if_stopped=True)
-                logger.info("✅ Docker installed and started successfully")
-            except Exception as e:
-                logger.warning(f"Could not auto-install Docker: {e}")
-                logger.warning("Tests requiring Docker will be skipped")
-
-        elif not status["running"]:
-            logger.warning("Docker installed but not running")
-            logger.warning("Tests requiring Docker will be skipped")
-            # Note: Auto-start removed from fixture to prevent test hangs
-            # Tests can manually start Docker if needed
-
-        else:
-            logger.info("✅ Docker is already running")
-
-    except Exception as e:
-        logger.warning(f"Docker check failed: {e}")
-        logger.warning("Tests requiring Docker will be skipped")
-
-    # Yield to run tests
-    yield
-
-    # No cleanup needed - leave Docker running
 
 
 @pytest.fixture
 def docker_available() -> bool:
-    """
-    Check if Docker is available for the current test.
+    """Whether Docker is usable. Read-only: never installs or starts anything.
 
-    Use this fixture in tests that require Docker:
     ```python
     def test_something(docker_available):
         if not docker_available:
             pytest.skip("Docker not available")
-        # ... test code that uses Docker
     ```
-
-    Returns:
-        True if Docker is ready to use
     """
-    try:
-        return DockerManager.is_running()
-    except Exception:
-        return False
+    return _docker_running()

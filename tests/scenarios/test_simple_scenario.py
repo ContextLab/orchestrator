@@ -5,8 +5,8 @@ Simple scenario test to verify our test framework works.
 import pytest
 import tempfile
 from pathlib import Path
-from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator import init_models
+from orchestrator.orchestrator import Orchestrator
+from orchestrator import init_models
 
 
 @pytest.mark.asyncio

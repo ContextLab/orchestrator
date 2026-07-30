@@ -12,16 +12,16 @@ import yaml
 from pathlib import Path
 from unittest.mock import Mock, patch, call
 
-from src.orchestrator.quality.validation.validator import (
+from orchestrator.quality.validation.validator import (
     OutputQualityValidator, ValidationResult, ValidationSeverity
 )
-from src.orchestrator.quality.validation.integration import (
+from orchestrator.quality.validation.integration import (
     ExecutionQualityMonitor, QualityControlManager, ValidationTrigger
 )
-from src.orchestrator.quality.validation.rules import (
+from orchestrator.quality.validation.rules import (
     RuleRegistry, RuleSeverity, RuleCategory
 )
-from src.orchestrator.execution.state import ExecutionContext, ExecutionStatus, ExecutionMetrics
+from orchestrator.execution.state import ExecutionContext, ExecutionStatus, ExecutionMetrics
 
 
 class TestOutputQualityValidator:
@@ -782,7 +782,7 @@ class TestValidationResult:
 
 def test_create_quality_control_manager():
     """Test the factory function for creating quality control manager."""
-    from src.orchestrator.quality.validation.integration import create_quality_control_manager
+    from orchestrator.quality.validation.integration import create_quality_control_manager
     
     # Test default creation
     manager = create_quality_control_manager()

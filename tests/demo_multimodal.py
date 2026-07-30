@@ -5,7 +5,7 @@ import base64
 from PIL import Image
 import io
 
-from src.orchestrator.tools.multimodal_tools import (
+from orchestrator.tools.multimodal_tools import (
     ImageAnalysisTool,
     ImageGenerationTool,
     AudioProcessingTool,

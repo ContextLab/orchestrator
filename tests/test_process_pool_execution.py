@@ -4,9 +4,9 @@ from concurrent.futures import ProcessPoolExecutor
 
 import pytest
 
-from src.orchestrator.core.task import Task
+from orchestrator.core.task import Task
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.executor.parallel_executor import (
+from orchestrator.executor.parallel_executor import (
 
     ExecutionConfig,
     ExecutionMode,

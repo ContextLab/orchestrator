@@ -7,8 +7,6 @@ import asyncio
 import logging
 from typing import Any, Dict, Optional
 
-from openai import AsyncOpenAI
-
 from ..core.model import Model, ModelCapabilities, ModelRequirements, ModelCost
 from ..utils.auto_install import safe_import
 from ..utils.api_keys_flexible import ensure_api_key
@@ -117,6 +115,14 @@ class OpenAIModel(Model):
 
         # Always initialize direct OpenAI client for image generation
         # (even if using LangChain for text)
+        try:
+            from openai import AsyncOpenAI
+        except ImportError as exc:
+            raise ImportError(
+                "OpenAI models require the 'openai' package. "
+                "Install it with: pip install 'py-orc[openai]'"
+            ) from exc
+
         self.client = AsyncOpenAI(
             api_key=self.api_key,
             organization=organization,

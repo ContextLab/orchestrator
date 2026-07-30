@@ -19,7 +19,7 @@ import fcntl
 import sqlite3
 
 # Import orchestrator components
-from src.orchestrator.orchestrator import Orchestrator
+from orchestrator.orchestrator import Orchestrator
 
 
 class TestFileAccessConflicts:

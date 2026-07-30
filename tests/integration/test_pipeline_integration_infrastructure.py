@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import Mock, patch
 
-from src.orchestrator.testing.pipeline_integration_infrastructure import (
+from orchestrator.testing.pipeline_integration_infrastructure import (
     PipelineTestModel,
     PipelineTestProvider,
     PipelineIntegrationValidator,
@@ -26,7 +26,7 @@ from src.orchestrator.testing.pipeline_integration_infrastructure import (
     create_pipeline_test_orchestrator,
     create_pipeline_integration_validator
 )
-from src.orchestrator.core.model import ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
+from orchestrator.core.model import ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
 
 
 class TestPipelineTestModel:

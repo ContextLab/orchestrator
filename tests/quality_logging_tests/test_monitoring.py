@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch, AsyncMock
 import pytest
 import aiohttp
 
-from src.orchestrator.quality.logging.monitoring import (
+from orchestrator.quality.logging.monitoring import (
     AlertRule,
     MonitoringAlert,
     PrometheusBackend,
@@ -21,7 +21,7 @@ from src.orchestrator.quality.logging.monitoring import (
     QualityMonitor,
     create_monitoring_setup
 )
-from src.orchestrator.quality.logging.logger import QualityEvent
+from orchestrator.quality.logging.logger import QualityEvent
 
 
 class TestAlertRule:

@@ -5,8 +5,8 @@ import asyncio
 from unittest.mock import patch
 import os
 
-from src.orchestrator.models.openai_model import OpenAIModel
-from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
+from orchestrator.models.openai_model import OpenAIModel
+from orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -125,7 +125,7 @@ class TestLangChainOpenAIIntegration:
     def test_langchain_package_mapping_exists(self):
         """Test that LangChain packages are mapped in auto_install."""
         
-        from src.orchestrator.utils.auto_install import PACKAGE_MAPPINGS
+        from orchestrator.utils.auto_install import PACKAGE_MAPPINGS
         
         # Verify LangChain packages are mapped
         assert "langchain_openai" in PACKAGE_MAPPINGS

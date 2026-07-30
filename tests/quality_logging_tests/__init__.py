@@ -34,10 +34,10 @@ import time
 from pathlib import Path
 from unittest.mock import Mock, AsyncMock
 
-from src.orchestrator.quality.logging.logger import StructuredLogger, LogLevel, LogCategory, QualityEvent
-from src.orchestrator.quality.validation.validator import ValidationResult, ValidationSeverity
-from src.orchestrator.quality.validation.rules import RuleViolation, RuleSeverity, ValidationContext
-from src.orchestrator.execution.state import ExecutionContext, ExecutionStatus
+from orchestrator.quality.logging.logger import StructuredLogger, LogLevel, LogCategory, QualityEvent
+from orchestrator.quality.validation.validator import ValidationResult, ValidationSeverity
+from orchestrator.quality.validation.rules import RuleViolation, RuleSeverity, ValidationContext
+from orchestrator.execution.state import ExecutionContext, ExecutionStatus
 
 
 def create_mock_logger(name: str = "test_logger") -> Mock:

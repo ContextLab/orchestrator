@@ -10,7 +10,7 @@ import asyncio
 import threading
 from unittest.mock import MagicMock
 
-from src.orchestrator.intelligence.model_health_monitor import (
+from orchestrator.intelligence.model_health_monitor import (
     ModelHealthMonitor,
     HealthStatus,
     HealthCheck,
@@ -18,8 +18,8 @@ from src.orchestrator.intelligence.model_health_monitor import (
     create_health_monitor,
     setup_basic_health_monitoring
 )
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.utils.api_keys import load_api_keys_optional
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.utils.api_keys import load_api_keys_optional
 
 
 class TestModelHealthMonitorReal:
@@ -49,7 +49,7 @@ class TestModelHealthMonitorReal:
         try:
             # Register available models for testing
             if self.api_keys.get("OPENAI_API_KEY"):
-                from src.orchestrator.models.openai_model import OpenAIModel
+                from orchestrator.models.openai_model import OpenAIModel
                 openai_model = OpenAIModel("gpt-3.5-turbo", api_key=self.api_keys["OPENAI_API_KEY"])
                 self.registry.register_model(openai_model)
                 
@@ -590,7 +590,7 @@ class TestModelHealthMonitorRealWorld:
         # Setup real models if available
         if self.api_keys.get("OPENAI_API_KEY"):
             try:
-                from src.orchestrator.models.openai_model import OpenAIModel
+                from orchestrator.models.openai_model import OpenAIModel
                 model = OpenAIModel("gpt-3.5-turbo", api_key=self.api_keys["OPENAI_API_KEY"])
                 self.registry.register_model(model)
             except Exception:

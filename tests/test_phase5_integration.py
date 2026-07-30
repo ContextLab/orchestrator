@@ -11,11 +11,11 @@ import pytest
 import yaml
 from typing import Dict, Any
 
-from src.orchestrator.compiler.enhanced_yaml_compiler import EnhancedYAMLCompiler
-from src.orchestrator.adapters.enhanced_langgraph_adapter import EnhancedLangGraphAdapter
-from src.orchestrator.core.enhanced_pipeline import EnhancedPipeline, create_enhanced_pipeline_from_legacy
-from src.orchestrator.core.pipeline import Pipeline
-from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
+from orchestrator.compiler.enhanced_yaml_compiler import EnhancedYAMLCompiler
+from orchestrator.adapters.enhanced_langgraph_adapter import EnhancedLangGraphAdapter
+from orchestrator.core.enhanced_pipeline import EnhancedPipeline, create_enhanced_pipeline_from_legacy
+from orchestrator.core.pipeline import Pipeline
+from orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -233,7 +233,7 @@ class TestEnhancedLangGraphAdapterIntegration:
         """Test converting Pipeline object to LangGraphWorkflow."""
         
         # Create test pipeline
-        from src.orchestrator.core.task import Task
+        from orchestrator.core.task import Task
         
         pipeline = Pipeline(
             id='test_conversion_pipeline',
@@ -311,7 +311,7 @@ class TestEnhancedPipelineIntegration:
         )
         
         # Add test tasks
-        from src.orchestrator.core.task import Task
+        from orchestrator.core.task import Task
         
         task1 = Task(
             id='task1',
@@ -407,7 +407,7 @@ class TestEnhancedPipelineIntegration:
         """Test converting legacy Pipeline to EnhancedPipeline."""
         
         # Create legacy pipeline
-        from src.orchestrator.core.task import Task
+        from orchestrator.core.task import Task
         
         legacy_pipeline = Pipeline(
             id='legacy_pipeline',

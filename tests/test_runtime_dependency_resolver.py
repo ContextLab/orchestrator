@@ -12,13 +12,13 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.runtime.execution_state import (
+from orchestrator.runtime.execution_state import (
 
     PipelineExecutionState,
     UnresolvedItem,
     ItemStatus
 )
-from src.orchestrator.runtime.dependency_resolver import (
+from orchestrator.runtime.dependency_resolver import (
     DependencyResolver,
     ResolutionResult
 )
@@ -184,7 +184,7 @@ class TestTemplateResolution:
         resolver = DependencyResolver(state)
         
         # Add loop context
-        from src.orchestrator.runtime.execution_state import LoopContext
+        from orchestrator.runtime.execution_state import LoopContext
         loop_ctx = LoopContext(
             loop_id="test_loop",
             iteration=2,

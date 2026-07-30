@@ -2,9 +2,9 @@
 """Simple test for control flow debugging."""
 
 import asyncio
-from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
-from src.orchestrator.core.task import Task
-from src.orchestrator import init_models
+from orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
+from orchestrator.core.task import Task
+from orchestrator import init_models
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -51,7 +51,7 @@ steps:
 
 async def test_condition_evaluation():
     """Test condition evaluation in handler."""
-    from src.orchestrator.control_flow.conditional import ConditionalHandler
+    from orchestrator.control_flow.conditional import ConditionalHandler
 
     handler = ConditionalHandler()
 

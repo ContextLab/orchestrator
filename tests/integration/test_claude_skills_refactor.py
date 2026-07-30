@@ -5,16 +5,16 @@ import os
 import pytest
 from pathlib import Path
 
-from src.orchestrator.models.registry import ModelRegistry
-from src.orchestrator.models.providers.anthropic_provider import AnthropicProvider
-from src.orchestrator.models.providers.base import ProviderConfig
-from src.orchestrator.skills import (
+from orchestrator.models.registry import ModelRegistry
+from orchestrator.models.providers.anthropic_provider import AnthropicProvider
+from orchestrator.models.providers.base import ProviderConfig
+from orchestrator.skills import (
     RegistryInstaller,
     SkillCreator,
     SkillRegistry,
     RealWorldSkillTester,
 )
-from src.orchestrator.compiler import EnhancedSkillsCompiler
+from orchestrator.compiler import EnhancedSkillsCompiler
 
 
 class TestClaudeSkillsRefactorIntegration:

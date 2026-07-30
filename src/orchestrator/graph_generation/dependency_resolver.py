@@ -17,7 +17,7 @@ Key Features:
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Set, Optional, Tuple
+from typing import Any, Dict, List, Set, Optional, Tuple
 from collections import defaultdict
 
 from ..core.exceptions import CircularDependencyError, InvalidDependencyError

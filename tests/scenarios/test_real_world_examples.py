@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Dict, Any, List
 
 # Import orchestrator components
-from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator import init_models
+from orchestrator.orchestrator import Orchestrator
+from orchestrator import init_models
 
 
 class TestExamplePipelineExecution:

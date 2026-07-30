@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from anthropic import AsyncAnthropic
+if TYPE_CHECKING:
+    # Annotations are strings (`from __future__ import annotations`), so the
+    # SDK is only needed when a client is actually constructed. Importing it at
+    # module scope made the whole model registry unimportable without the
+    # `anthropic` extra.
+    from anthropic import AsyncAnthropic
 
 from ...core.model import ModelCapabilities, ModelCost, ModelRequirements
 from ...utils.api_keys_flexible import ensure_api_key
@@ -125,6 +130,16 @@ class AnthropicProvider(ModelProvider):
             else:
                 api_key = ensure_api_key("anthropic")
             
+            # Imported here so the module stays importable without the
+            # `anthropic` extra; only constructing a client requires the SDK.
+            try:
+                from anthropic import AsyncAnthropic
+            except ImportError as exc:  # pragma: no cover - depends on install
+                raise ProviderInitializationError(
+                    "The Anthropic provider requires the 'anthropic' package. "
+                    "Install it with: pip install 'py-orc[anthropic]'"
+                ) from exc
+
             # Initialize client
             self._client = AsyncAnthropic(
                 api_key=api_key,

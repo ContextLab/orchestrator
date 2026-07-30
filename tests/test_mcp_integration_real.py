@@ -17,13 +17,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.tools.mcp_tools import (
+from orchestrator.tools.mcp_tools import (
 
     MCPServerTool,
     MCPMemoryTool,
     MCPResourceTool
 )
-from src.orchestrator import Orchestrator, init_models
+from orchestrator import Orchestrator, init_models
 
 
 class TestRealMCPServerConnection:

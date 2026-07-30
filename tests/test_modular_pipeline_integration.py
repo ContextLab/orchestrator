@@ -11,9 +11,9 @@ import pytest
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator.models.registry_singleton import get_model_registry
-from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from orchestrator.orchestrator import Orchestrator
+from orchestrator.models.registry_singleton import get_model_registry
+from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -31,7 +31,7 @@ class TestModularPipelineIntegration:
     @pytest.mark.asyncio
     async def test_visualization_tool_chart_generation(self):
         """Test VisualizationTool creates real charts."""
-        from src.orchestrator.tools.visualization_tools import VisualizationTool
+        from orchestrator.tools.visualization_tools import VisualizationTool
         
         tool = VisualizationTool()
         
@@ -65,7 +65,7 @@ class TestModularPipelineIntegration:
     @pytest.mark.asyncio
     async def test_visualization_tool_dashboard_creation(self):
         """Test VisualizationTool creates HTML dashboard."""
-        from src.orchestrator.tools.visualization_tools import VisualizationTool
+        from orchestrator.tools.visualization_tools import VisualizationTool
         
         tool = VisualizationTool()
         
@@ -108,7 +108,7 @@ class TestModularPipelineIntegration:
     @pytest.mark.asyncio
     async def test_data_processing_clean_action(self):
         """Test DataProcessingTool clean action with real data."""
-        from src.orchestrator.tools.data_tools import DataProcessingTool
+        from orchestrator.tools.data_tools import DataProcessingTool
         
         tool = DataProcessingTool()
         
@@ -137,7 +137,7 @@ class TestModularPipelineIntegration:
     @pytest.mark.asyncio
     async def test_data_processing_merge_action(self):
         """Test DataProcessingTool merge action with real datasets."""
-        from src.orchestrator.tools.data_tools import DataProcessingTool
+        from orchestrator.tools.data_tools import DataProcessingTool
         
         tool = DataProcessingTool()
         

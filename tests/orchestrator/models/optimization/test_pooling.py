@@ -5,8 +5,8 @@ import pytest
 import time
 from unittest.mock import AsyncMock, MagicMock
 
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost
-from src.orchestrator.models.optimization.pooling import (
+from orchestrator.core.model import Model, ModelCapabilities, ModelCost
+from orchestrator.models.optimization.pooling import (
     ConnectionPool,
     PoolConnection,
     PoolStats,

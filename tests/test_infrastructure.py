@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
+from orchestrator.core.model import Model, ModelCapabilities, ModelRequirements, ModelMetrics, ModelCost
 
 
 class MockTestModel(Model):
@@ -147,9 +147,9 @@ class MockTestProvider:
 
 def create_test_orchestrator():
     """Create orchestrator with test model for testing."""
-    from src.orchestrator.orchestrator import Orchestrator
-    from src.orchestrator.models.registry import ModelRegistry
-    from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+    from orchestrator.orchestrator import Orchestrator
+    from orchestrator.models.registry import ModelRegistry
+    from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
     
     # Create registry and add test provider
     registry = ModelRegistry()

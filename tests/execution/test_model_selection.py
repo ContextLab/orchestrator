@@ -12,27 +12,27 @@ from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from typing import Dict, Any, List, Optional
 
 # Import the modules we're testing
-from src.orchestrator.execution.model_selector import (
+from orchestrator.execution.model_selector import (
     ExecutionModelSelector, 
     RuntimeModelContext
 )
-from src.orchestrator.execution.engine import StateGraphEngine
-from src.orchestrator.api.execution import (
+from orchestrator.execution.engine import StateGraphEngine
+from orchestrator.api.execution import (
     PipelineExecutor,
     create_intelligent_pipeline_executor
 )
 
 # Import required foundation components
-from src.orchestrator.foundation._compatibility import (
+from orchestrator.foundation._compatibility import (
     FoundationConfig,
     PipelineSpecification,
     PipelineStep,
     PipelineResult,
     StepResult
 )
-from src.orchestrator.models.registry import ModelRegistry
-from src.orchestrator.models.model_selector import ModelSelectionCriteria
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
+from orchestrator.models.registry import ModelRegistry
+from orchestrator.models.model_selector import ModelSelectionCriteria
+from orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
 
 
 class TestExecutionModelSelector:
@@ -424,7 +424,7 @@ class TestPipelineExecutor:
     @pytest.fixture
     def sample_pipeline(self):
         """Create a sample pipeline for testing."""
-        from src.orchestrator.core.pipeline import Pipeline
+        from orchestrator.core.pipeline import Pipeline
         
         # Mock pipeline 
         pipeline = Mock(spec=Pipeline)

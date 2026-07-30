@@ -16,7 +16,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock, mock_open
 import pytest
 
-from src.orchestrator.quality.logging.handlers import (
+from orchestrator.quality.logging.handlers import (
     QualityJSONFormatter,
     QualityRotatingFileHandler,
     AsyncQualityHandler,
@@ -24,7 +24,7 @@ from src.orchestrator.quality.logging.handlers import (
     QualityEventStreamHandler,
     create_quality_logging_setup
 )
-from src.orchestrator.quality.logging.logger import QualityEvent
+from orchestrator.quality.logging.logger import QualityEvent
 
 
 class TestQualityJSONFormatter:

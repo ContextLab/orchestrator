@@ -4,9 +4,6 @@ import os
 import asyncio
 import logging
 from typing import Any, Dict, List, Optional
-import openai
-import anthropic
-import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
@@ -22,16 +19,37 @@ class ModelCaller:
         
         # Initialize OpenAI if API key available
         if os.getenv("OPENAI_API_KEY"):
+            try:
+                import openai
+            except ImportError as exc:
+                raise ImportError(
+                    "OpenAI model calling requires the 'openai' package. "
+                    "Install it with: pip install 'py-orc[openai]'"
+                ) from exc
             self.openai_client = openai.AsyncOpenAI()
             logger.info("OpenAI client initialized")
-        
+
         # Initialize Anthropic if API key available
         if os.getenv("ANTHROPIC_API_KEY"):
+            try:
+                import anthropic
+            except ImportError as exc:
+                raise ImportError(
+                    "Anthropic model calling requires the 'anthropic' package. "
+                    "Install it with: pip install 'py-orc[anthropic]'"
+                ) from exc
             self.anthropic_client = anthropic.AsyncAnthropic()
             logger.info("Anthropic client initialized")
-            
+
         # Initialize Gemini if API key available
         if os.getenv("GOOGLE_API_KEY"):
+            try:
+                import google.generativeai as genai
+            except ImportError as exc:
+                raise ImportError(
+                    "Gemini model calling requires the 'google-generativeai' package. "
+                    "Install it with: pip install 'py-orc[google]'"
+                ) from exc
             genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
             self.gemini_model = genai.GenerativeModel("gemini-pro")
             logger.info("Gemini client initialized")
@@ -144,6 +162,8 @@ class ModelCaller:
         max_tokens: Optional[int]
     ) -> str:
         """Call Gemini API."""
+        import google.generativeai as genai
+
         generation_config = genai.GenerationConfig(
             temperature=temperature,
             max_output_tokens=max_tokens or 2048,

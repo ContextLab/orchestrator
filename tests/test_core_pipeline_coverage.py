@@ -6,12 +6,12 @@ import pytest
 
 # Direct import to ensure coverage measurement
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.core.pipeline import (
+from orchestrator.core.pipeline import (
 
     CircularDependencyError,
     InvalidDependencyError,
     Pipeline)
-from src.orchestrator.core.task import Task
+from orchestrator.core.task import Task
 
 
 class TestCircularDependencyError:

@@ -13,8 +13,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional, TypeVar, Generic, Union, List
+from typing import Any, Dict, Optional, TypeVar, Generic, Union, List, TYPE_CHECKING
 import uuid
+
+if TYPE_CHECKING:
+    from .feature_flags import FeatureFlagManager
+    from .wrapper_monitoring import WrapperMonitoring
 
 logger = logging.getLogger(__name__)
 

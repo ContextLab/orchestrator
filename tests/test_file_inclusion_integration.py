@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Dict, Any
 import pytest
 
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
-from src.orchestrator.core.file_inclusion import FileInclusionProcessor
+from orchestrator.compiler.yaml_compiler import YAMLCompiler
+from orchestrator.core.file_inclusion import FileInclusionProcessor
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

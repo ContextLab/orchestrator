@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from unittest.mock import Mock
 
-from src.orchestrator.api.types import (
+from orchestrator.api.types import (
     # Enums
     APIOperation,
     ValidationLevel,
@@ -56,13 +56,13 @@ from src.orchestrator.api.types import (
     ExecutionStatusResponse,
     ProgressUpdateResponse,
 )
-from src.orchestrator.execution import (
+from orchestrator.execution import (
     ExecutionStatus,
     ExecutionMetrics,
     ProgressEventType,
     StepStatus,
 )
-from src.orchestrator.core.pipeline import Pipeline
+from orchestrator.core.pipeline import Pipeline
 
 
 class TestEnums:

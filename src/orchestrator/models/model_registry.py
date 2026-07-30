@@ -5,7 +5,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .model_selector import ModelSelectionCriteria
 
 from ..core.model import Model, ModelMetrics
 from ..core.exceptions import ModelNotFoundError, NoEligibleModelsError
@@ -758,13 +761,17 @@ class ModelRegistry:
         
         return estimated_cost <= cost_limit
 
-    def detect_model_capabilities(self, model: Model) -> Dict[str, Any]:
+    def detect_model_capabilities_uncached(self, model: Model) -> Dict[str, Any]:
         """
-        Detect and analyze model capabilities.
-        
+        Detect and analyze model capabilities without caching.
+
+        Produces an alternative analysis schema to the cached
+        detect_model_capabilities(); it reports task-oriented basic
+        capabilities and delegates to the _analyze_model_* helpers.
+
         Args:
             model: Model to analyze
-            
+
         Returns:
             Dictionary with detected capabilities and analysis
         """

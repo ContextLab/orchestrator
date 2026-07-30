@@ -23,7 +23,7 @@ from pathlib import Path
 # Add src to path for testing
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.orchestrator.tools.auto_debugger import AutoDebuggerTool, AutoDebuggerInput
+from orchestrator.tools.auto_debugger import AutoDebuggerTool, AutoDebuggerInput
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

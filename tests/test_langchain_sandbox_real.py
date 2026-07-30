@@ -10,7 +10,7 @@ import time
 import docker
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.security.langchain_sandbox import (
+from orchestrator.security.langchain_sandbox import (
 
     LangChainSandbox,
     SandboxType,

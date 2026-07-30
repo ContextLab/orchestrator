@@ -6,7 +6,7 @@ import platform
 import time
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.utils.service_manager import (
+from orchestrator.utils.service_manager import (
 
     ServiceManager,
     OllamaServiceManager,
@@ -226,14 +226,14 @@ class TestServiceRegistry:
     def setup_method(self):
         """Set up test registry."""
         # Save existing registrations
-        from src.orchestrator.utils.service_manager import SERVICE_MANAGERS
+        from orchestrator.utils.service_manager import SERVICE_MANAGERS
         self.original_managers = SERVICE_MANAGERS.copy()
         # Clear for testing
         SERVICE_MANAGERS.clear()
     
     def teardown_method(self):
         """Restore original registry."""
-        from src.orchestrator.utils.service_manager import SERVICE_MANAGERS
+        from orchestrator.utils.service_manager import SERVICE_MANAGERS
         SERVICE_MANAGERS.clear()
         SERVICE_MANAGERS.update(self.original_managers)
     
@@ -289,7 +289,7 @@ class TestServiceRegistry:
     def test_real_ollama_registration(self):
         """Test that Ollama service works when registered."""
         # Register Ollama service
-        from src.orchestrator.utils.service_manager import OllamaServiceManager
+        from orchestrator.utils.service_manager import OllamaServiceManager
         register_service_manager("ollama", OllamaServiceManager())
         
         status = get_service_status("ollama")
@@ -302,7 +302,7 @@ class TestServiceRegistry:
     def test_real_docker_registration(self):
         """Test that Docker service works when registered."""
         # Register Docker service
-        from src.orchestrator.utils.service_manager import DockerServiceManager
+        from orchestrator.utils.service_manager import DockerServiceManager
         register_service_manager("docker", DockerServiceManager())
         
         status = get_service_status("docker")

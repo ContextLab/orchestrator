@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any
 
 # Import the system under test
-from src.orchestrator.quality.reporting.alerts import (
+from orchestrator.quality.reporting.alerts import (
     QualityAlertSystem,
     AlertRule,
     AlertSeverity,
@@ -28,7 +28,7 @@ from src.orchestrator.quality.reporting.alerts import (
     AlertNotification,
     AlertChannel
 )
-from src.orchestrator.quality.reporting.metrics import (
+from orchestrator.quality.reporting.metrics import (
     QualityMetricsCollector,
     QualityMetric,
     MetricType,

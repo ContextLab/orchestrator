@@ -16,21 +16,21 @@ from unittest.mock import Mock, AsyncMock, patch
 from dataclasses import dataclass
 
 # Import wrapper framework components
-from src.orchestrator.core.wrapper_base import (
+from orchestrator.core.wrapper_base import (
     BaseWrapper, WrapperResult, WrapperContext, WrapperException,
     WrapperCapability, WrapperStatus, WrapperRegistry
 )
-from src.orchestrator.core.feature_flags import (
+from orchestrator.core.feature_flags import (
     FeatureFlagManager, FeatureFlag, FeatureFlagScope, FeatureFlagStrategy
 )
-from src.orchestrator.core.wrapper_base import BaseWrapperConfig
-from src.orchestrator.core.wrapper_config import (
+from orchestrator.core.wrapper_base import BaseWrapperConfig
+from orchestrator.core.wrapper_config import (
     ConfigurationManager, ConfigField, ConfigSource
 )
-from src.orchestrator.core.wrapper_monitoring import (
+from orchestrator.core.wrapper_monitoring import (
     WrapperMonitoring, OperationMetrics, WrapperHealthStatus, AlertSeverity, Alert
 )
-from src.orchestrator.core.wrapper_testing import (
+from orchestrator.core.wrapper_testing import (
     WrapperTestHarness, TestScenario, MockWrapper, MockWrapperConfig,
     IntegrationTestSuite, create_basic_scenarios
 )
@@ -541,7 +541,7 @@ class TestWrapperTestHarness:
     def test_test_report_generation(self, test_harness):
         """Test test report generation."""
         # Add some mock results
-        from src.orchestrator.core.wrapper_testing import TestResult
+        from orchestrator.core.wrapper_testing import TestResult
         
         test_harness.test_results = [
             TestResult("test1", True, 100.0),

@@ -12,12 +12,12 @@ from unittest.mock import Mock, AsyncMock, patch, MagicMock
 
 # Import model-related components
 try:
-    from src.orchestrator.models.model_registry import ModelRegistry
-    from src.orchestrator.models.langchain_adapter import LangChainModelAdapter
-    from src.orchestrator.models.advanced_caching import CacheManager
-    from src.orchestrator.models.performance_optimizations import ModelRegistryOptimizer
-    from src.orchestrator.models.memory_optimization import MemoryOptimizedRegistry
-    from src.orchestrator.foundation import ModelManagerInterface
+    from orchestrator.models.model_registry import ModelRegistry
+    from orchestrator.models.langchain_adapter import LangChainModelAdapter
+    from orchestrator.models.advanced_caching import CacheManager
+    from orchestrator.models.performance_optimizations import ModelRegistryOptimizer
+    from orchestrator.models.memory_optimization import MemoryOptimizedRegistry
+    from orchestrator.foundation import ModelManagerInterface
     HAS_MODEL_COMPONENTS = True
 except ImportError:
     HAS_MODEL_COMPONENTS = False

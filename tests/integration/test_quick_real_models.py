@@ -4,7 +4,7 @@
 import asyncio
 import sys
 
-from src.orchestrator.integrations.ollama_model import OllamaModel
+from orchestrator.integrations.ollama_model import OllamaModel
 
 
 async def test_ollama_model():
@@ -62,7 +62,7 @@ async def test_ambiguity_resolver():
     print("=" * 50)
 
     try:
-        from src.orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
 
         # Create resolver (should auto-detect and use Ollama model)
         print("🔍 Creating ambiguity resolver...")

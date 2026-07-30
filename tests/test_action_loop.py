@@ -8,15 +8,15 @@ from typing import Any, Dict, List
 
 import pytest
 
-from src.orchestrator.core.action_loop_task import ActionLoopTask
-from src.orchestrator.core.action_loop_context import ActionResult, EnhancedLoopContext
-from src.orchestrator.control_flow.action_loop_handler import ActionLoopHandler
-from src.orchestrator.tools.base import default_registry
-from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
-from src.orchestrator.core.template_manager import TemplateManager
-from src.orchestrator.models import get_model_registry
-from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
-from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from orchestrator.core.action_loop_task import ActionLoopTask
+from orchestrator.core.action_loop_context import ActionResult, EnhancedLoopContext
+from orchestrator.control_flow.action_loop_handler import ActionLoopHandler
+from orchestrator.tools.base import default_registry
+from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
+from orchestrator.core.template_manager import TemplateManager
+from orchestrator.models import get_model_registry
+from orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
+from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -448,7 +448,7 @@ class TestActionLoopCompilation:
     def compiler(self):
         """Create control flow compiler."""
         from tests.test_infrastructure import TestProvider
-        from src.orchestrator.models.registry import ModelRegistry
+        from orchestrator.models.registry import ModelRegistry
         
         # Create registry with test infrastructure
         model_registry = ModelRegistry()
@@ -620,7 +620,7 @@ class TestActionLoopIntegration:
         
         # Compile and execute pipeline
         from tests.test_infrastructure import TestProvider
-        from src.orchestrator.models.registry import ModelRegistry
+        from orchestrator.models.registry import ModelRegistry
         
         # Create registry with test infrastructure
         model_registry = ModelRegistry()

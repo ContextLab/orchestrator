@@ -6,7 +6,6 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 import yaml
-from anthropic import AsyncAnthropic
 
 from ..utils.api_keys_flexible import ensure_api_key
 from .installer import RegistryInstaller

@@ -11,10 +11,10 @@ from typing import Any, Dict, Optional
 import pytest
 import aiohttp
 
-from src.orchestrator.core.error_handling import ErrorHandler
-from src.orchestrator.execution.error_handler_executor import ErrorHandlerExecutor
-from src.orchestrator.engine.pipeline_spec import TaskSpec
-from src.orchestrator.engine.task_executor import UniversalTaskExecutor
+from orchestrator.core.error_handling import ErrorHandler
+from orchestrator.execution.error_handler_executor import ErrorHandlerExecutor
+from orchestrator.engine.pipeline_spec import TaskSpec
+from orchestrator.engine.task_executor import UniversalTaskExecutor
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

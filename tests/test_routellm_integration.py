@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, AsyncMock, patch
 from dataclasses import dataclass
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.models.routellm_integration import (
+from orchestrator.models.routellm_integration import (
 
     RouteLLMConfig,
     RoutingDecision,
@@ -19,10 +19,10 @@ from src.orchestrator.models.routellm_integration import (
     RouterType,
     CostSavingsReport,
 )
-from src.orchestrator.models.domain_router import DomainRouter, DomainConfig
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.models.model_selector import ModelSelectionCriteria
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
+from orchestrator.models.domain_router import DomainRouter, DomainConfig
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.models.model_selector import ModelSelectionCriteria
+from orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
 
 
 class TestRouteLLMConfig:

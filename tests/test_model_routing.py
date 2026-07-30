@@ -3,8 +3,8 @@
 import pytest
 import asyncio
 from typing import Dict, Any, List
-from src.orchestrator.tools.llm_tools import MultiModelRoutingTool
-from src.orchestrator.models.registry import ModelRegistry
+from orchestrator.tools.llm_tools import MultiModelRoutingTool
+from orchestrator.models.registry import ModelRegistry
 from tests.test_infrastructure import TestProvider
 
 

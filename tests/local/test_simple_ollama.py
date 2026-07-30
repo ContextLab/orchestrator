@@ -15,7 +15,7 @@ async def test_ollama_direct():
     print("=" * 40)
 
     try:
-        from src.orchestrator.integrations.ollama_model import OllamaModel
+        from orchestrator.integrations.ollama_model import OllamaModel
 
         # Create model with longer timeout
         print("📥 Creating Ollama model...")

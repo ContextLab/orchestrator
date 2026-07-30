@@ -4,8 +4,8 @@ import pytest
 import asyncio
 from unittest.mock import patch, MagicMock
 
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.utils.service_manager import SERVICE_MANAGERS
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.utils.service_manager import SERVICE_MANAGERS
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -230,7 +230,7 @@ class TestPhase2ComprehensiveIntegration:
             mock_adapter = MagicMock()
             
             with patch.object(registry, '_get_model_key', return_value="openai:gpt-4"):
-                with patch('src.orchestrator.models.langchain_adapter.LangChainModelAdapter.__new__', return_value=mock_adapter):
+                with patch('orchestrator.models.langchain_adapter.LangChainModelAdapter.__new__', return_value=mock_adapter):
                     registry.register_langchain_model("openai", "gpt-4")
                     
                     # Verify cache invalidation called (preserving existing caching logic)
@@ -251,7 +251,7 @@ class TestPhase2ComprehensiveIntegration:
             mock_adapter = MagicMock()
             
             with patch.object(registry, '_get_model_key', return_value="anthropic:claude-3"):
-                with patch('src.orchestrator.models.langchain_adapter.LangChainModelAdapter.__new__', return_value=mock_adapter):
+                with patch('orchestrator.models.langchain_adapter.LangChainModelAdapter.__new__', return_value=mock_adapter):
                     registry.register_langchain_model("anthropic", "claude-3")
                     
                     # Verify memory check called (preserving existing memory logic)
@@ -261,7 +261,7 @@ class TestPhase2ComprehensiveIntegration:
         """Verify all Issue #202 requirements are met."""
         
         # ✅ Auto-installation system extended with LangChain packages
-        from src.orchestrator.utils.auto_install import PACKAGE_MAPPINGS
+        from orchestrator.utils.auto_install import PACKAGE_MAPPINGS
         assert "langchain_openai" in PACKAGE_MAPPINGS
         assert "langchain_anthropic" in PACKAGE_MAPPINGS
         assert "langchain_google_genai" in PACKAGE_MAPPINGS

@@ -2,15 +2,15 @@
 
 import pytest
 import asyncio
-from src.orchestrator.compiler.ambiguity_resolver import (
+from orchestrator.compiler.ambiguity_resolver import (
     AmbiguityResolver,
     AmbiguityResolutionError
 )
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.compiler.structured_ambiguity_resolver import (
+from orchestrator.compiler.structured_ambiguity_resolver import (
     StructuredAmbiguityResolver)
-from src.orchestrator.compiler.utils import is_transient_error
-from src.orchestrator.models.registry_singleton import get_model_registry
+from orchestrator.compiler.utils import is_transient_error
+from orchestrator.models.registry_singleton import get_model_registry
 from orchestrator import init_models
 
 
@@ -60,7 +60,7 @@ class TestErrorHandling:
     def test_no_model_available_error_real(self):
         """Test error when no model is available at initialization."""
         # Create a registry with no models by passing an empty dict
-        from src.orchestrator.models.model_registry import ModelRegistry
+        from orchestrator.models.model_registry import ModelRegistry
         empty_registry = ModelRegistry()
         
         # Should raise ValueError at initialization

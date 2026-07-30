@@ -3,9 +3,9 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelRequirements
-from src.orchestrator.models.registry import ModelRegistry
-from src.orchestrator.models.selection.strategies import (
+from orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelRequirements
+from orchestrator.models.registry import ModelRegistry
+from orchestrator.models.selection.strategies import (
     TaskRequirements,
     SelectionResult,
     TaskBasedStrategy,

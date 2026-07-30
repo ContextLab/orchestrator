@@ -630,6 +630,12 @@ class AudioProcessingTool(Tool):
             "output_format", "string", "Output format for conversion", required=False
         )
         self.add_parameter(
+            "output_path",
+            "string",
+            "Destination path for enhanced/converted audio; a temp file is used if omitted",
+            required=False,
+        )
+        self.add_parameter(
             "enhance_options", "object", "Enhancement options", required=False
         )
 
@@ -1050,6 +1056,7 @@ class AudioProcessingTool(Tool):
         model_name = kwargs.get("model")
         language = kwargs.get("language", "en")
         output_format = kwargs.get("output_format")
+        output_path = kwargs.get("output_path")
         enhance_options = kwargs.get("enhance_options", {})
 
         # Validate operation

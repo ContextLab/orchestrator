@@ -17,7 +17,7 @@ from unittest.mock import patch
 from pathlib import Path
 
 # Import orchestrator components
-from src.orchestrator.orchestrator import Orchestrator
+from orchestrator.orchestrator import Orchestrator
 
 
 class TimeoutHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):

@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+logger = logging.getLogger(__name__)
+
 # Import optional dependencies with fallbacks
 try:
     from cryptography.fernet import Fernet
@@ -30,8 +32,6 @@ try:
 except ImportError:
     HAS_KEYRING = False
     logger.warning("keyring package not available - falling back to file storage")
-
-logger = logging.getLogger(__name__)
 
 
 class CredentialError(Exception):

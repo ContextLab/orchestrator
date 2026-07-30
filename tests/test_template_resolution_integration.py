@@ -16,18 +16,18 @@ from typing import Dict, Any, List
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.core.unified_template_resolver import (
+from orchestrator.core.unified_template_resolver import (
 
     UnifiedTemplateResolver, 
     TemplateResolutionContext
 )
-from src.orchestrator.core.template_manager import TemplateManager
-from src.orchestrator.core.context_manager import ContextManager
-from src.orchestrator.core.loop_context import GlobalLoopContextManager, LoopContextVariables
-from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+from orchestrator.core.template_manager import TemplateManager
+from orchestrator.core.context_manager import ContextManager
+from orchestrator.core.loop_context import GlobalLoopContextManager, LoopContextVariables
+from orchestrator.orchestrator import Orchestrator
+from orchestrator.compiler.yaml_compiler import YAMLCompiler
 from orchestrator import init_models
-from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
 
 
 class TestTemplateResolutionIntegration:

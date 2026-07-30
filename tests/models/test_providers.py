@@ -19,10 +19,10 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from src.orchestrator.models.providers.base import ModelProvider, ProviderError, ProviderConfig
-from src.orchestrator.models.providers.anthropic_provider import AnthropicProvider
-from src.orchestrator.models.registry import ModelRegistry
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelRequirements
+from orchestrator.models.providers.base import ModelProvider, ProviderError, ProviderConfig
+from orchestrator.models.providers.anthropic_provider import AnthropicProvider
+from orchestrator.models.registry import ModelRegistry
+from orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelRequirements
 
 # Note: OpenAIProvider and LocalProvider removed in Claude Skills refactor (Issue #426)
 # Tests for these providers are skipped

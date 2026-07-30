@@ -199,8 +199,6 @@ class ModelBasedControlSystem(ControlSystem):
             if custom_prompt:
                 prompt = f"{custom_prompt}\n\nData:\n{text}"
                 # Debug logging
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.info(f"Task {task.id}: Using custom prompt for analyze_text")
                 logger.info(f"  Prompt: {custom_prompt[:100]}...")
                 logger.info(f"  Text: {text[:100]}...")
@@ -453,8 +451,6 @@ class ModelBasedControlSystem(ControlSystem):
                     return json.loads(result)
                 except json.JSONDecodeError:
                     # If parsing fails, return the string as-is
-                    import logging
-                    logger = logging.getLogger(__name__)
                     logger.warning(f"Task {task.id}: Could not parse generate-structured result as JSON")
                     return result
             else:

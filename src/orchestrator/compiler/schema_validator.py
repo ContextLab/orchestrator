@@ -378,28 +378,6 @@ class SchemaValidator:
                                     "max_iterations": {"type": "integer", "minimum": 1},
                                     "break_on_error": {"type": "boolean"},
                                     "iteration_timeout": {"type": "integer", "minimum": 1},
-                                    "requires_model": {
-                                        "type": "object",
-                                        "properties": {
-                                            "min_size": {"type": "string"},
-                                            "max_size": {"type": "string"},
-                                            "expertise": {
-                                                "oneOf": [
-                                                    {
-                                                        "type": "string",
-                                                        "enum": [
-                                                            "low",
-                                                            "medium", 
-                                                            "medium-high",
-                                                            "high",
-                                                            "very-high",
-                                                        ],
-                                                    },
-                                                    {"type": "array", "items": {"type": "string"}},
-                                                ],
-                                            },
-                                        },
-                                    },
                                     "depends_on": {
                                         "oneOf": [
                                             {

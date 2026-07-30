@@ -7,7 +7,7 @@ import time
 from unittest.mock import Mock, MagicMock, patch, AsyncMock
 from datetime import datetime, timedelta
 
-from src.orchestrator.tools.resources import (
+from orchestrator.tools.resources import (
     ResourceManager, ResourceMonitor, ResourcePool, ResourceHandle,
     ResourceMetrics, ResourceLimits, ResourceType, ResourceState,
     get_resource_manager, allocate_resource, release_resource,
@@ -313,8 +313,8 @@ class TestResourceManager:
     @pytest.fixture
     def manager(self):
         """Create a resource manager for testing."""
-        with patch('src.orchestrator.tools.resources.get_enhanced_registry'), \
-             patch('src.orchestrator.tools.resources.get_dependency_manager'):
+        with patch('orchestrator.tools.resources.get_enhanced_registry'), \
+             patch('orchestrator.tools.resources.get_dependency_manager'):
             return ResourceManager()
     
     def test_resource_manager_creation(self, manager):
@@ -535,7 +535,7 @@ class TestConvenienceFunctions:
     
     def test_allocate_resource_convenience(self):
         """Test the convenience function for allocating resources."""
-        with patch('src.orchestrator.tools.resources.resource_manager') as mock_manager:
+        with patch('orchestrator.tools.resources.resource_manager') as mock_manager:
             mock_handle = Mock()
             mock_manager.allocate_resource.return_value = mock_handle
             
@@ -550,7 +550,7 @@ class TestConvenienceFunctions:
     
     def test_release_resource_convenience(self):
         """Test the convenience function for releasing resources."""
-        with patch('src.orchestrator.tools.resources.resource_manager') as mock_manager:
+        with patch('orchestrator.tools.resources.resource_manager') as mock_manager:
             mock_manager.release_resource.return_value = True
             
             result = release_resource("test-resource-id")
@@ -560,7 +560,7 @@ class TestConvenienceFunctions:
     
     def test_release_tool_resources_convenience(self):
         """Test the convenience function for releasing tool resources."""
-        with patch('src.orchestrator.tools.resources.resource_manager') as mock_manager:
+        with patch('orchestrator.tools.resources.resource_manager') as mock_manager:
             mock_manager.release_tool_resources.return_value = 3
             
             count = release_tool_resources("test-tool")
@@ -573,7 +573,7 @@ class TestConvenienceFunctions:
         """Test the convenience function for managed resources."""
         mock_handle = Mock()
         
-        with patch('src.orchestrator.tools.resources.resource_manager') as mock_manager:
+        with patch('orchestrator.tools.resources.resource_manager') as mock_manager:
             # Set up the async context manager
             mock_context = AsyncMock()
             mock_context.__aenter__.return_value = mock_handle
@@ -593,8 +593,8 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_resource_lifecycle(self):
         """Test complete resource lifecycle."""
-        with patch('src.orchestrator.tools.resources.get_enhanced_registry'), \
-             patch('src.orchestrator.tools.resources.get_dependency_manager'):
+        with patch('orchestrator.tools.resources.get_enhanced_registry'), \
+             patch('orchestrator.tools.resources.get_dependency_manager'):
             
             manager = ResourceManager()
             
@@ -645,8 +645,8 @@ class TestResourceCleanup:
     
     def test_temporary_file_cleanup(self):
         """Test cleanup of temporary file resources."""
-        with patch('src.orchestrator.tools.resources.get_enhanced_registry'), \
-             patch('src.orchestrator.tools.resources.get_dependency_manager'), \
+        with patch('orchestrator.tools.resources.get_enhanced_registry'), \
+             patch('orchestrator.tools.resources.get_dependency_manager'), \
              patch('os.path.exists', return_value=True), \
              patch('os.remove') as mock_remove:
             
@@ -668,8 +668,8 @@ class TestResourceCleanup:
     
     def test_database_connection_cleanup(self):
         """Test cleanup of database connection resources."""
-        with patch('src.orchestrator.tools.resources.get_enhanced_registry'), \
-             patch('src.orchestrator.tools.resources.get_dependency_manager'):
+        with patch('orchestrator.tools.resources.get_enhanced_registry'), \
+             patch('orchestrator.tools.resources.get_dependency_manager'):
             
             manager = ResourceManager()
             
@@ -692,8 +692,8 @@ class TestResourceCleanup:
     
     def test_process_cleanup(self):
         """Test cleanup of process resources."""
-        with patch('src.orchestrator.tools.resources.get_enhanced_registry'), \
-             patch('src.orchestrator.tools.resources.get_dependency_manager'):
+        with patch('orchestrator.tools.resources.get_enhanced_registry'), \
+             patch('orchestrator.tools.resources.get_dependency_manager'):
             
             manager = ResourceManager()
             

@@ -12,7 +12,7 @@ import json
 
 sys.path.insert(0, '/Users/jmanning/orchestrator/src')
 
-from src.orchestrator.orchestrator import Orchestrator
+from orchestrator.orchestrator import Orchestrator
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 from orchestrator import init_models

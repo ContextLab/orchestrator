@@ -4,11 +4,11 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost
-from src.orchestrator.models.registry import ModelRegistry
-from src.orchestrator.models.selection.manager import ModelManager, ModelUsageStats
-from src.orchestrator.models.selection.strategies import TaskRequirements, TaskBasedStrategy
-from src.orchestrator.models.optimization.caching import ModelResponseCache
+from orchestrator.core.model import Model, ModelCapabilities, ModelCost
+from orchestrator.models.registry import ModelRegistry
+from orchestrator.models.selection.manager import ModelManager, ModelUsageStats
+from orchestrator.models.selection.strategies import TaskRequirements, TaskBasedStrategy
+from orchestrator.models.optimization.caching import ModelResponseCache
 
 
 class MockModel(Model):

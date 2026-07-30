@@ -5,7 +5,7 @@ import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.auto_resolution import (
+from orchestrator.auto_resolution import (
 
     AutoTagContext,
     AutoTagResolution,
@@ -20,9 +20,9 @@ from src.orchestrator.auto_resolution import (
     AutoTagResolutionError,
     AutoTagNestingError,
 )
-from src.orchestrator.auto_resolution.integration import EnhancedControlFlowAutoResolver
-from src.orchestrator.core.pipeline import Pipeline
-from src.orchestrator.core.task import Task
+from orchestrator.auto_resolution.integration import EnhancedControlFlowAutoResolver
+from orchestrator.core.pipeline import Pipeline
+from orchestrator.core.task import Task
 
 
 class TestAutoTagModels:

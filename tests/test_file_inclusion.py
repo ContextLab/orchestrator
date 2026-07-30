@@ -12,7 +12,7 @@ from typing import Dict, Any
 import pytest
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.core.file_inclusion import (
+from orchestrator.core.file_inclusion import (
 
     FileInclusionProcessor,
     FileIncludeDirective,
@@ -486,7 +486,7 @@ class TestYAMLCompilerIntegration:
     @pytest.mark.asyncio
     async def test_yaml_compilation_with_file_inclusions(self, temp_dir):
         """Test YAML compilation with file inclusion directives."""
-        from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+        from orchestrator.compiler.yaml_compiler import YAMLCompiler
         
         # Create included files
         prompt_file = Path(temp_dir) / "prompt.txt"
@@ -527,7 +527,7 @@ steps:
 """
         
         # Set up compiler with file inclusion processor
-        from src.orchestrator.core.file_inclusion import FileInclusionProcessor
+        from orchestrator.core.file_inclusion import FileInclusionProcessor
         file_processor = FileInclusionProcessor(base_dirs=[temp_dir])
         compiler = YAMLCompiler(file_inclusion_processor=file_processor)
         
@@ -583,8 +583,8 @@ class TestTemplateManagerIntegration:
     @pytest.mark.asyncio
     async def test_template_manager_file_inclusion(self, temp_dir):
         """Test template manager with file inclusion support."""
-        from src.orchestrator.core.template_manager import TemplateManager
-        from src.orchestrator.core.file_inclusion import FileInclusionProcessor
+        from orchestrator.core.template_manager import TemplateManager
+        from orchestrator.core.file_inclusion import FileInclusionProcessor
         
         # Create test files
         greeting_file = Path(temp_dir) / "greeting.txt"

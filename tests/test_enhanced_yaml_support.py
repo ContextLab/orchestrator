@@ -19,13 +19,13 @@ import yaml
 from typing import Dict, Any
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.graph_generation.enhanced_yaml_processor import (
+from orchestrator.graph_generation.enhanced_yaml_processor import (
 
     EnhancedYAMLProcessor, EnhancedPipeline, EnhancedStep, 
     TypeSafeInput, TypeSafeOutput, StepType, DataType
 )
-from src.orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
-from src.orchestrator.core.exceptions import YAMLCompilerError, ValidationError
+from orchestrator.graph_generation.automatic_generator import AutomaticGraphGenerator
+from orchestrator.core.exceptions import YAMLCompilerError, ValidationError
 
 
 class TestEnhancedYAMLProcessor:

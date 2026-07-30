@@ -6,14 +6,14 @@ import sys
 sys.path.insert(0, 'src')
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.tools.llm_tools import (
+from orchestrator.tools.llm_tools import (
 
     TaskDelegationTool,
     MultiModelRoutingTool,
     PromptOptimizationTool
 )
 from orchestrator import init_models
-from src.orchestrator.models import get_model_registry
+from orchestrator.models import get_model_registry
 
 async def test_tools():
     """Test the LLM tools with real API calls."""

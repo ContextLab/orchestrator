@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.orchestrator.tools.validation import (
+from orchestrator.tools.validation import (
     ValidationTool,
     ValidationLevel,
     SchemaValidator,

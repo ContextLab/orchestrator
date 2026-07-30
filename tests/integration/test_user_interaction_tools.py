@@ -12,7 +12,7 @@ import threading
 import queue
 import time
 
-from src.orchestrator.tools.user_interaction_tools import (
+from orchestrator.tools.user_interaction_tools import (
     UserPromptTool,
     ApprovalGateTool,
     FeedbackCollectionTool)

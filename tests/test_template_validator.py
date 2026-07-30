@@ -5,13 +5,13 @@ Issue #229: Compile-time template validation
 
 import pytest
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.validation.template_validator import (
+from orchestrator.validation.template_validator import (
 
     TemplateValidator,
     TemplateValidationError,
     TemplateValidationResult
 )
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler, YAMLCompilerError
+from orchestrator.compiler.yaml_compiler import YAMLCompiler, YAMLCompilerError
 
 
 class TestTemplateValidator:

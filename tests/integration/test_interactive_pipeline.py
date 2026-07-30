@@ -14,8 +14,8 @@ import asyncio
 from pathlib import Path
 from typing import List, Dict, Any
 
-from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator.models.model_registry import ModelRegistry
+from orchestrator.orchestrator import Orchestrator
+from orchestrator.models.model_registry import ModelRegistry
 
 
 class RealPipelineInputSimulator:

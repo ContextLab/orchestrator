@@ -3,7 +3,7 @@
 import asyncio
 import json
 
-from src.orchestrator.tools.mcp_tools import (
+from orchestrator.tools.mcp_tools import (
     MCPServerTool,
     MCPMemoryTool,
     MCPResourceTool,

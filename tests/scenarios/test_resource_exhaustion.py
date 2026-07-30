@@ -18,7 +18,7 @@ from typing import Dict, Any, List
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 # Import orchestrator components
-from src.orchestrator.orchestrator import Orchestrator
+from orchestrator.orchestrator import Orchestrator
 
 
 class TestMemoryExhaustionScenarios:

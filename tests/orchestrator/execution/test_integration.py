@@ -6,14 +6,14 @@ import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock
 
-from src.orchestrator.execution.integration import (
+from orchestrator.execution.integration import (
     ComprehensiveExecutionManager,
     create_comprehensive_execution_manager
 )
-from src.orchestrator.execution.state import ExecutionContext, ExecutionStatus
-from src.orchestrator.execution.variables import VariableManager, VariableScope, VariableType
-from src.orchestrator.execution.progress import ProgressTracker, ProgressEventType
-from src.orchestrator.execution.recovery import RecoveryManager, RecoveryStrategy
+from orchestrator.execution.state import ExecutionContext, ExecutionStatus
+from orchestrator.execution.variables import VariableManager, VariableScope, VariableType
+from orchestrator.execution.progress import ProgressTracker, ProgressEventType
+from orchestrator.execution.recovery import RecoveryManager, RecoveryStrategy
 
 
 class TestComprehensiveExecutionManager:
@@ -225,7 +225,7 @@ class TestComprehensiveExecutionManagerAsync:
         execution_manager.start_execution(total_steps=1)
         
         # Set up a custom recovery plan for network errors
-        from src.orchestrator.execution.recovery import ErrorCategory, RecoveryPlan, RetryConfig
+        from orchestrator.execution.recovery import ErrorCategory, RecoveryPlan, RetryConfig
         
         retry_plan = RecoveryPlan(
             strategy=RecoveryStrategy.RETRY,
@@ -381,7 +381,7 @@ class TestIntegrationWithExistingSystems:
         initial_checkpoint = manager.create_checkpoint("initial_state")
         
         # Set up rollback recovery plan
-        from src.orchestrator.execution.recovery import RecoveryPlan
+        from orchestrator.execution.recovery import RecoveryPlan
         rollback_plan = RecoveryPlan(
             strategy=RecoveryStrategy.ROLLBACK,
             target_checkpoint=initial_checkpoint.id

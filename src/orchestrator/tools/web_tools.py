@@ -7,12 +7,13 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
-import httpx
 import requests
-from bs4 import BeautifulSoup
-from ddgs import DDGS
 
 from .base import Tool
+
+# `httpx`, `bs4` and `ddgs` ship in the optional [web] extra and are imported
+# inside the methods that use them, so importing this module (and therefore the
+# tool registry) does not require the extra to be installed.
 
 # Optional import for playwright - will be installed on demand
 try:
@@ -43,6 +44,8 @@ class DuckDuckGoSearchBackend(WebSearchBackend):
             loop = asyncio.get_event_loop()
 
             def _search():
+                from ddgs import DDGS
+
                 with DDGS() as ddgs:
                     results = list(
                         ddgs.text(
@@ -85,6 +88,8 @@ class BingSearchBackend(WebSearchBackend):
 
     async def search(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
         """Perform Bing search."""
+        import httpx
+
         api_key = self.config.get("api_key")
         if not api_key:
             self.logger.error("Bing API key not configured")
@@ -143,6 +148,8 @@ class GoogleSearchBackend(WebSearchBackend):
 
     async def search(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
         """Perform Google search."""
+        import httpx
+
         api_key = self.config.get("api_key")
         search_engine_id = self.config.get("search_engine_id")
 
@@ -216,6 +223,8 @@ class WebScraper:
 
     async def scrape_url(self, url: str) -> Dict[str, Any]:
         """Scrape content from a URL."""
+        from bs4 import BeautifulSoup
+
         try:
             # Run requests in a thread to avoid blocking
             loop = asyncio.get_event_loop()
@@ -491,6 +500,8 @@ class BrowserAutomation:
 
     async def scrape_with_js(self, url: str) -> Dict[str, Any]:
         """Scrape content from a URL with JavaScript support."""
+        from bs4 import BeautifulSoup
+
         if not self.browser:
             await self.start()
 

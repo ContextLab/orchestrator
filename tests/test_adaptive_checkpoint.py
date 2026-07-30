@@ -5,7 +5,7 @@ import time
 import pytest
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.state.adaptive_checkpoint import (
+from orchestrator.state.adaptive_checkpoint import (
 
     AdaptiveCheckpointManager,
     AdaptiveCheckpointStrategy,
@@ -409,7 +409,7 @@ class TestAdaptiveCheckpointManager:
 
     def test_manager_creation(self):
         """Test adaptive checkpoint manager creation."""
-        from src.orchestrator.state.state_manager import StateManager
+        from orchestrator.state.state_manager import StateManager
 
         state_manager = StateManager(backend_type="memory")
 
@@ -421,7 +421,7 @@ class TestAdaptiveCheckpointManager:
     @pytest.mark.asyncio
     async def test_manager_operations(self):
         """Test basic manager operations."""
-        from src.orchestrator.state.state_manager import StateManager
+        from orchestrator.state.state_manager import StateManager
 
         state_manager = StateManager(backend_type="memory")
 

@@ -11,7 +11,7 @@ from unittest.mock import patch
 from typing import List, Dict
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.intelligence.intelligent_model_selector import (
+from orchestrator.intelligence.intelligent_model_selector import (
 
     IntelligentModelSelector,
     ModelRequirements,
@@ -20,9 +20,9 @@ from src.orchestrator.intelligence.intelligent_model_selector import (
     create_intelligent_selector,
     select_optimal_model_for_task
 )
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.core.exceptions import NoEligibleModelsError
-from src.orchestrator.utils.api_keys import load_api_keys_optional
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.core.exceptions import NoEligibleModelsError
+from orchestrator.utils.api_keys import load_api_keys_optional
 
 
 class TestIntelligentModelSelectorReal:
@@ -42,12 +42,12 @@ class TestIntelligentModelSelectorReal:
         try:
             # Try to register real models if API keys available
             if self.api_keys.get("OPENAI_API_KEY"):
-                from src.orchestrator.models.openai_model import OpenAIModel
+                from orchestrator.models.openai_model import OpenAIModel
                 openai_model = OpenAIModel("gpt-3.5-turbo", api_key=self.api_keys["OPENAI_API_KEY"])
                 self.registry.register_model(openai_model)
                 
             if self.api_keys.get("ANTHROPIC_API_KEY"):
-                from src.orchestrator.models.anthropic_model import AnthropicModel  
+                from orchestrator.models.anthropic_model import AnthropicModel  
                 anthropic_model = AnthropicModel("claude-haiku", api_key=self.api_keys["ANTHROPIC_API_KEY"])
                 self.registry.register_model(anthropic_model)
                 
@@ -270,7 +270,7 @@ class TestIntelligentModelSelectorReal:
                 assert 0.0 <= rec.availability_score <= 1.0
                 
                 # If Ollama service is running and model available, should have high score
-                from src.orchestrator.utils.service_manager import SERVICE_MANAGERS
+                from orchestrator.utils.service_manager import SERVICE_MANAGERS
                 ollama_manager = SERVICE_MANAGERS.get("ollama")
                 if ollama_manager and ollama_manager.is_running():
                     if ollama_manager.is_model_available(rec.model_name):

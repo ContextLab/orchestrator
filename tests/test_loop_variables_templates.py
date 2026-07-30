@@ -12,7 +12,7 @@ import json
 import yaml
 from typing import Dict, Any
 
-from src.orchestrator.orchestrator import Orchestrator
+from orchestrator.orchestrator import Orchestrator
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

@@ -5,9 +5,14 @@ from __future__ import annotations
 import os
 import asyncio
 import logging
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from anthropic import AsyncAnthropic
+if TYPE_CHECKING:
+    # Annotations are lazy (`from __future__ import annotations`), so the SDK is
+    # only required when a client is constructed -- see __init__ below. Keeping
+    # this at module scope made the model registry unimportable without the
+    # `anthropic` extra.
+    from anthropic import AsyncAnthropic
 
 from ..core.model import Model, ModelCapabilities, ModelRequirements, ModelCost
 from ..utils.auto_install import safe_import
@@ -100,6 +105,14 @@ class AnthropicModel(Model):
 
         # Fallback: Initialize direct Anthropic client
         if not self._use_langchain:
+            try:
+                from anthropic import AsyncAnthropic
+            except ImportError as exc:  # pragma: no cover - depends on install
+                raise ImportError(
+                    "AnthropicModel requires the 'anthropic' package. "
+                    "Install it with: pip install 'py-orc[anthropic]'"
+                ) from exc
+
             self.client = AsyncAnthropic(
                 api_key=self.api_key,
                 base_url=base_url,

@@ -15,7 +15,7 @@ import shutil
 from pathlib import Path
 from functools import wraps
 
-from src.orchestrator import Orchestrator, init_models
+from orchestrator import Orchestrator, init_models
 
 
 def cost_controlled_test(timeout=180):

@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 import pytest
 import yaml
-from src.orchestrator.compiler.auto_tag_yaml_parser import parse_yaml_with_auto_tags
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
+from orchestrator.compiler.auto_tag_yaml_parser import parse_yaml_with_auto_tags
+from orchestrator.compiler.yaml_compiler import YAMLCompiler
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

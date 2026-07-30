@@ -11,7 +11,7 @@ from PIL import Image
 import cv2
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.tools.multimodal_tools import (
+from orchestrator.tools.multimodal_tools import (
 
     ImageAnalysisTool,
     ImageGenerationTool,

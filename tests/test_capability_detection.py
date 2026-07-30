@@ -5,8 +5,8 @@ Real tests for model capability detection and analysis functionality.
 
 import pytest
 from unittest.mock import MagicMock
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.core.model import Model, ModelCapabilities, ModelCost, ModelMetrics
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

@@ -15,11 +15,11 @@ from unittest.mock import Mock, AsyncMock, patch, MagicMock
 
 # Import YAML-related components
 try:
-    from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
-    from src.orchestrator.compiler.enhanced_yaml_compiler import EnhancedYAMLCompiler  
-    from src.orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
-    from src.orchestrator.compiler.schema_validator import SchemaValidator
-    from src.orchestrator.foundation import (
+    from orchestrator.compiler.yaml_compiler import YAMLCompiler
+    from orchestrator.compiler.enhanced_yaml_compiler import EnhancedYAMLCompiler  
+    from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+    from orchestrator.compiler.schema_validator import SchemaValidator
+    from orchestrator.foundation import (
         PipelineSpecification, PipelineHeader, PipelineStep,
         PipelineCompilerInterface
     )

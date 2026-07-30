@@ -5,12 +5,12 @@ import time
 import pytest
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.core.pipeline import (
+from orchestrator.core.pipeline import (
 
     CircularDependencyError,
     InvalidDependencyError,
     Pipeline)
-from src.orchestrator.core.task import Task, TaskStatus
+from orchestrator.core.task import Task, TaskStatus
 
 
 class TestPipeline:

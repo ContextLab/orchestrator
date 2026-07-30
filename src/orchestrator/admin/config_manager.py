@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from threading import Lock
 
+logger = logging.getLogger(__name__)
+
 # Optional Flask imports
 try:
     from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
@@ -32,8 +34,6 @@ from ..core.credential_manager import CredentialManager, CredentialConfig
 from ..core.environment_config import (
     EnvironmentConfigManager, Environment, EnvironmentOverride, EnvironmentProfile
 )
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass

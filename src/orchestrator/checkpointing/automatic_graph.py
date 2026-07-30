@@ -10,14 +10,15 @@ import asyncio
 import logging
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
 from dataclasses import dataclass
 
-# LangGraph imports
-from langgraph.graph import StateGraph, END, START
-from langgraph.checkpoint.base import BaseCheckpointSaver
+# LangGraph imports (optional dependency - imported lazily where used)
+if TYPE_CHECKING:
+    from langgraph.graph import StateGraph
+    from langgraph.checkpoint.base import BaseCheckpointSaver
 
-# Internal imports  
+# Internal imports
 from ..core.pipeline import Pipeline
 from ..core.task import Task, TaskStatus
 from ..state.global_context import (
@@ -111,6 +112,14 @@ class AutomaticCheckpointingGraph:
         Returns:
             Compiled StateGraph with checkpointing capabilities
         """
+        try:
+            from langgraph.graph import StateGraph, END, START  # noqa: F401
+        except ImportError as exc:
+            raise ImportError(
+                "Automatic checkpointing graphs require the 'langgraph' package. "
+                "Install it with: pip install 'py-orc[langgraph]'"
+            ) from exc
+
         # Create StateGraph using PipelineGlobalState
         graph = StateGraph(PipelineGlobalState)
         

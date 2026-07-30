@@ -6,12 +6,12 @@ import json
 import tempfile
 from pathlib import Path
 
-from src.orchestrator.core.pipeline import Pipeline
-from src.orchestrator.core.task import Task
-from src.orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
-from src.orchestrator.control_systems.tool_integrated_control_system import ToolIntegratedControlSystem
-from src.orchestrator.control_systems.hybrid_control_system import HybridControlSystem
-from src.orchestrator.models.model_registry import ModelRegistry
+from orchestrator.core.pipeline import Pipeline
+from orchestrator.core.task import Task
+from orchestrator.control_systems.model_based_control_system import ModelBasedControlSystem
+from orchestrator.control_systems.tool_integrated_control_system import ToolIntegratedControlSystem
+from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
+from orchestrator.models.model_registry import ModelRegistry
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

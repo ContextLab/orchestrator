@@ -11,7 +11,7 @@ import time
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 
-from src.orchestrator.execution.variables import (
+from orchestrator.execution.variables import (
     VariableManager,
     VariableContext,
     VariableScope,

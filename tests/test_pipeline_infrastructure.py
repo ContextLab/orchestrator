@@ -21,15 +21,15 @@ from typing import Dict, List, Optional
 
 from orchestrator import init_models
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.testing import (
+from orchestrator.testing import (
 
     PipelineDiscovery, 
     PipelineTestSuite,
     PipelineInfo,
     TestResults
 )
-from src.orchestrator.testing.quality_validator import QualityValidator, QualityValidationResult
-from src.orchestrator.testing.template_validator import TemplateValidator, TemplateValidationResult
+from orchestrator.testing.quality_validator import QualityValidator, QualityValidationResult
+from orchestrator.testing.template_validator import TemplateValidator, TemplateValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -320,7 +320,7 @@ class TestPipelineInfrastructure:
         }
         
         # Create mock pipeline info
-        from src.orchestrator.testing.pipeline_discovery import PipelineInfo
+        from orchestrator.testing.pipeline_discovery import PipelineInfo
         mock_pipeline = PipelineInfo(
             name="test_pipeline",
             path=Path("test.yaml"),

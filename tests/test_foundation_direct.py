@@ -17,7 +17,7 @@ def test_foundation_direct():
     try:
         # Import foundation components
         from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-        from src.orchestrator.foundation.interfaces import (
+        from orchestrator.foundation.interfaces import (
 
             PipelineCompilerInterface,
             ExecutionEngineInterface,
@@ -25,13 +25,13 @@ def test_foundation_direct():
             ToolRegistryInterface,
             QualityControlInterface,
         )
-        from src.orchestrator.foundation.pipeline_spec import (
+        from orchestrator.foundation.pipeline_spec import (
             PipelineSpecification,
             PipelineHeader,
             PipelineStep
         )
-        from src.orchestrator.foundation.result import StepResult, PipelineResult
-        from src.orchestrator.foundation import FoundationConfig
+        from orchestrator.foundation.result import StepResult, PipelineResult
+        from orchestrator.foundation import FoundationConfig
         
         print("✅ Foundation interfaces imported successfully")
         

@@ -914,8 +914,6 @@ class HybridControlSystem(ModelBasedControlSystem):
     async def _handle_pipeline_executor(self, task: Task, context: Dict[str, Any]) -> Any:
         """Handle pipeline execution operations."""
         # Execute using pipeline executor tool
-        from orchestrator.tools.pipeline_recursion_tools import PipelineExecutorTool
-        
         if not hasattr(self, 'pipeline_executor_tool'):
             self.pipeline_executor_tool = PipelineExecutorTool()
         

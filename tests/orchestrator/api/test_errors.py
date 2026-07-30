@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-from src.orchestrator.api.errors import (
+from orchestrator.api.errors import (
     OrchestratorAPIError,
     PipelineCompilationError,
     YAMLValidationError,
@@ -30,7 +30,7 @@ from src.orchestrator.api.errors import (
     create_api_error_handler,
     handle_api_exception,
 )
-from src.orchestrator.execution import (
+from orchestrator.execution import (
     ErrorSeverity,
     RecoveryStrategy,
     ErrorCategory,

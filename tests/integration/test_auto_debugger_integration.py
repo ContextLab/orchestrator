@@ -7,7 +7,7 @@ orchestrator's Tool system and can be executed through the standard tool registr
 
 import pytest
 import asyncio
-from src.orchestrator.tools.base import default_registry
+from orchestrator.tools.base import default_registry
 
 
 class TestAutoDebuggerIntegration:
@@ -95,7 +95,7 @@ def hello_world():
     async def test_autodebugger_tool_discovery(self):
         """Test that tool discovery correctly identifies AutoDebugger for debugging tasks."""
         
-        from src.orchestrator.tools.discovery import ToolDiscoveryEngine
+        from orchestrator.tools.discovery import ToolDiscoveryEngine
         
         discovery = ToolDiscoveryEngine(default_registry)
         

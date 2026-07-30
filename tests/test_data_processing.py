@@ -12,7 +12,7 @@ import pytest
 import asyncio
 import yaml
 
-from src.orchestrator.orchestrator import Orchestrator
+from orchestrator.orchestrator import Orchestrator
 
 
 @pytest.fixture

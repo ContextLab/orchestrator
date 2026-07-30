@@ -56,7 +56,6 @@ class ProfessionalStandardsValidator:
             'facilitate': 'enable',
             'implement': 'create', 
             'functionality': 'features',
-            'utilize': 'use',
         }
         
         # Casual language to flag

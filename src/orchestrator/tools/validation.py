@@ -8,7 +8,6 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 import jsonschema
 from jsonschema import Draft7Validator, ValidationError
 
-from enum import Enum
 
 class ValidationLevel(Enum):
     """Pipeline validation levels."""

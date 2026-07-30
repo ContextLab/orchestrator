@@ -27,17 +27,17 @@ from typing import Dict, List, Any, Optional
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from src.orchestrator.models.registry import ModelRegistry
-from src.orchestrator.models.providers.openai_provider import OpenAIProvider
-from src.orchestrator.models.providers.anthropic_provider import AnthropicProvider
-from src.orchestrator.models.providers.local_provider import LocalProvider
-from src.orchestrator.models.selection.strategies import TaskRequirements, CostOptimizedStrategy
-from src.orchestrator.models.selection.manager import ModelSelectionManager
-from src.orchestrator.execution.integration import create_comprehensive_execution_manager
-from src.orchestrator.execution.variables import VariableScope, VariableType
-from src.orchestrator.core.model import ModelCapabilities, ModelCost
-from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator.compiler.yaml_compiler import IntegratedYAMLCompiler
+from orchestrator.models.registry import ModelRegistry
+from orchestrator.models.providers.openai_provider import OpenAIProvider
+from orchestrator.models.providers.anthropic_provider import AnthropicProvider
+from orchestrator.models.providers.local_provider import LocalProvider
+from orchestrator.models.selection.strategies import TaskRequirements, CostOptimizedStrategy
+from orchestrator.models.selection.manager import ModelSelectionManager
+from orchestrator.execution.integration import create_comprehensive_execution_manager
+from orchestrator.execution.variables import VariableScope, VariableType
+from orchestrator.core.model import ModelCapabilities, ModelCost
+from orchestrator.orchestrator import Orchestrator
+from orchestrator.compiler.yaml_compiler import IntegratedYAMLCompiler
 
 
 class IntegrationValidator:
@@ -295,8 +295,8 @@ class IntegrationValidator:
         
         try:
             # Create a simple control system for testing
-            from src.orchestrator.core.control_system import ControlSystem
-            from src.orchestrator.core.task import Task
+            from orchestrator.core.control_system import ControlSystem
+            from orchestrator.core.task import Task
             
             class TestModelControlSystem(ControlSystem):
                 def __init__(self, model_registry):
@@ -385,7 +385,7 @@ steps:
         
         try:
             # Test caching
-            from src.orchestrator.models.optimization.caching import ModelCache, CacheConfig
+            from orchestrator.models.optimization.caching import ModelCache, CacheConfig
             
             cache = ModelCache(CacheConfig(max_size=10, ttl_seconds=300))
             
@@ -397,7 +397,7 @@ steps:
             self.log_result("Model Caching", cache_works, "Cache set/get operations working")
             
             # Test connection pooling
-            from src.orchestrator.models.optimization.pooling import ConnectionPool, PoolConfig
+            from orchestrator.models.optimization.pooling import ConnectionPool, PoolConfig
             
             pool = ConnectionPool("test_provider", PoolConfig(min_connections=1, max_connections=3))
             

@@ -3,7 +3,7 @@
 import pytest
 import logging
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.compiler.structured_ambiguity_resolver import (
+from orchestrator.compiler.structured_ambiguity_resolver import (
 
     StructuredAmbiguityResolver)
 from orchestrator import init_models

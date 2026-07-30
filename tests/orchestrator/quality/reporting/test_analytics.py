@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any
 
 # Import the system under test
-from src.orchestrator.quality.reporting.analytics import (
+from orchestrator.quality.reporting.analytics import (
     QualityAnalytics,
     TrendDirection,
     InsightType,
@@ -28,12 +28,12 @@ from src.orchestrator.quality.reporting.analytics import (
     QualityInsight,
     AnalyticsResult
 )
-from src.orchestrator.quality.reporting.metrics import (
+from orchestrator.quality.reporting.metrics import (
     QualityMetricsCollector,
     TimeSeriesMetric,
     MetricType
 )
-from src.orchestrator.quality.validation.rules import RuleSeverity
+from orchestrator.quality.validation.rules import RuleSeverity
 
 
 @pytest.fixture

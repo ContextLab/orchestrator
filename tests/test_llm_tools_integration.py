@@ -4,13 +4,13 @@ import asyncio
 import os
 import pytest
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.tools.llm_tools import (
+from orchestrator.tools.llm_tools import (
 
     TaskDelegationTool,
     MultiModelRoutingTool,
     PromptOptimizationTool
 )
-from src.orchestrator.models import get_model_registry
+from orchestrator.models import get_model_registry
 from orchestrator import init_models
 
 class TestLLMToolsIntegration:
@@ -20,7 +20,7 @@ class TestLLMToolsIntegration:
     async def setup(self):
         """Initialize models with test infrastructure."""
         # Use test models instead of requiring real API keys
-        from src.orchestrator.models.registry import ModelRegistry
+        from orchestrator.models.registry import ModelRegistry
         self.model_registry = ModelRegistry()
         test_provider = TestProvider()
         self.model_registry.register_provider(test_provider)

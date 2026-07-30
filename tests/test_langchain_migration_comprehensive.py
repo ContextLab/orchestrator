@@ -5,11 +5,11 @@ import asyncio
 import os
 from unittest.mock import patch
 
-from src.orchestrator.models.openai_model import OpenAIModel
-from src.orchestrator.models.anthropic_model import AnthropicModel
-from src.orchestrator.models.langchain_adapter import LangChainModelAdapter
-from src.orchestrator.utils.auto_install import PACKAGE_MAPPINGS
-from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
+from orchestrator.models.openai_model import OpenAIModel
+from orchestrator.models.anthropic_model import AnthropicModel
+from orchestrator.models.langchain_adapter import LangChainModelAdapter
+from orchestrator.utils.auto_install import PACKAGE_MAPPINGS
+from orchestrator.utils.api_keys_flexible import load_api_keys_optional
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -225,7 +225,7 @@ class TestLangChainMigrationComprehensive:
         """Test enhanced API key handling using existing infrastructure."""
         
         # Test that models use existing API key infrastructure
-        from src.orchestrator.utils.api_keys_flexible import load_api_keys_optional
+        from orchestrator.utils.api_keys_flexible import load_api_keys_optional
         
         available_keys = load_api_keys_optional()
         

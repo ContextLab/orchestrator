@@ -29,28 +29,28 @@ from unittest.mock import AsyncMock, MagicMock
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 # Model system imports
-from src.orchestrator.models.registry import ModelRegistry
-from src.orchestrator.models.selection.manager import ModelSelectionManager
-from src.orchestrator.models.selection.strategies import SelectionCriteria
-from src.orchestrator.models.providers.base import ModelCapability
-from src.orchestrator.models.providers.openai_provider import OpenAIProvider
-from src.orchestrator.models.providers.anthropic_provider import AnthropicProvider
-from src.orchestrator.models.providers.local_provider import LocalProvider
+from orchestrator.models.registry import ModelRegistry
+from orchestrator.models.selection.manager import ModelSelectionManager
+from orchestrator.models.selection.strategies import SelectionCriteria
+from orchestrator.models.providers.base import ModelCapability
+from orchestrator.models.providers.openai_provider import OpenAIProvider
+from orchestrator.models.providers.anthropic_provider import AnthropicProvider
+from orchestrator.models.providers.local_provider import LocalProvider
 
 # Execution engine imports
-from src.orchestrator.execution.integration import (
+from orchestrator.execution.integration import (
     ComprehensiveExecutionManager,
     create_comprehensive_execution_manager
 )
-from src.orchestrator.execution.state import ExecutionContext, ExecutionStatus
-from src.orchestrator.execution.variables import VariableManager, VariableScope, VariableType
-from src.orchestrator.execution.progress import ProgressTracker, ProgressEventType
-from src.orchestrator.execution.recovery import RecoveryManager, RecoveryStrategy
+from orchestrator.execution.state import ExecutionContext, ExecutionStatus
+from orchestrator.execution.variables import VariableManager, VariableScope, VariableType
+from orchestrator.execution.progress import ProgressTracker, ProgressEventType
+from orchestrator.execution.recovery import RecoveryManager, RecoveryStrategy
 
 # Core orchestrator imports
-from src.orchestrator.core.task import Task
-from src.orchestrator.orchestrator import Orchestrator
-from src.orchestrator.compiler.yaml_compiler import IntegratedYAMLCompiler
+from orchestrator.core.task import Task
+from orchestrator.orchestrator import Orchestrator
+from orchestrator.compiler.yaml_compiler import IntegratedYAMLCompiler
 
 
 @pytest.mark.integration
@@ -314,7 +314,7 @@ class TestPipelineExecutionWithModels:
     @pytest.fixture
     async def integrated_orchestrator(self):
         """Create orchestrator with integrated model system."""
-        from src.orchestrator.core.control_system import ControlSystem
+        from orchestrator.core.control_system import ControlSystem
         
         # Create a control system that integrates with models
         class ModelAwareControlSystem(ControlSystem):

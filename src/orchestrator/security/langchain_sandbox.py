@@ -14,7 +14,6 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-import docker
 import tarfile
 import io
 
@@ -148,6 +147,14 @@ class LangChainSandbox:
         
     def _init_docker(self) -> None:
         """Initialize Docker client."""
+        try:
+            import docker
+        except ImportError as exc:
+            raise ImportError(
+                "The LangChain sandbox requires the 'docker' package. "
+                "Install it with: pip install 'py-orc[infra]'"
+            ) from exc
+
         try:
             self.docker_client = docker.from_env()
             # Test Docker connectivity
@@ -486,6 +493,8 @@ delete global;
         command: List[str]
     ) -> Any:
         """Create Docker container with specified configuration."""
+        import docker
+
         # Ensure image is available
         try:
             self.docker_client.images.get(image)

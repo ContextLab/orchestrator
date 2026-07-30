@@ -4,12 +4,12 @@
 import os
 import pytest
 
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
-from src.orchestrator.models.openai_model import OpenAIModel
-from src.orchestrator.models.anthropic_model import AnthropicModel
-from src.orchestrator.integrations.ollama_model import OllamaModel
-from src.orchestrator.core.model import ModelCost
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
+from orchestrator.models.openai_model import OpenAIModel
+from orchestrator.models.anthropic_model import AnthropicModel
+from orchestrator.integrations.ollama_model import OllamaModel
+from orchestrator.core.model import ModelCost
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

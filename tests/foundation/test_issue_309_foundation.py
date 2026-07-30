@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import Mock, AsyncMock, patch
 
 # Import foundation components
-from src.orchestrator.foundation import (
+from orchestrator.foundation import (
     PipelineCompilerInterface,
     ExecutionEngineInterface,
     ModelManagerInterface,

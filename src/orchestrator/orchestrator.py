@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem
@@ -2685,10 +2685,13 @@ class Orchestrator:
 
     # Enhanced LangGraph state management methods
     
-    async def get_pipeline_global_state(self, execution_id: str) -> Optional[Dict[str, Any]]:
+    async def get_pipeline_global_state_by_execution_id(self, execution_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get comprehensive pipeline global state (only available with LangGraph).
-        
+        Get comprehensive pipeline global state by execution ID (only available with LangGraph).
+
+        Resolves the execution_id to a LangGraph thread_id first. Use
+        get_pipeline_global_state() when you already hold a thread_id.
+
         Args:
             execution_id: Pipeline execution ID
             
@@ -2705,10 +2708,13 @@ class Orchestrator:
                 return await self.langgraph_state_manager.get_global_state(thread_id)
         return None
     
-    async def create_named_checkpoint(self, execution_id: str, name: str, description: str = "") -> Optional[str]:
+    async def create_named_checkpoint_by_execution_id(self, execution_id: str, name: str, description: str = "") -> Optional[str]:
         """
-        Create a named checkpoint with description (only available with LangGraph).
-        
+        Create a named checkpoint by execution ID (only available with LangGraph).
+
+        Resolves the execution_id to a LangGraph thread_id first. Use
+        create_named_checkpoint() when you already hold a thread_id.
+
         Args:
             execution_id: Pipeline execution ID
             name: Checkpoint name
@@ -2728,20 +2734,23 @@ class Orchestrator:
                 )
         return None
     
-    async def get_pipeline_metrics(self, execution_id: str) -> Optional[Dict[str, Any]]:
+    async def get_pipeline_metrics_by_execution_id(self, execution_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get comprehensive pipeline execution metrics (only available with LangGraph).
-        
+        Get comprehensive LangGraph pipeline execution metrics by execution ID.
+
+        Only available with LangGraph. Use get_pipeline_metrics() for the
+        checkpointing-oriented metrics keyed by pipeline ID.
+
         Args:
             execution_id: Pipeline execution ID
-            
+
         Returns:
             Metrics dictionary or None if not found
         """
         if not self.use_langgraph_state:
             raise ValueError("Pipeline metrics only available when use_langgraph_state=True")
-            
-        state = await self.get_pipeline_global_state(execution_id)
+
+        state = await self.get_pipeline_global_state_by_execution_id(execution_id)
         if state:
             return {
                 "execution_metadata": state.get("execution_metadata", {}),

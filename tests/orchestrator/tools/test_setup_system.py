@@ -14,15 +14,15 @@ from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 import json
 
-from src.orchestrator.tools.setup import (
+from orchestrator.tools.setup import (
     SetupSystem, PlatformDetector, ConfigurationManager, SetupConfiguration,
     PlatformInfo, Platform, PackageManager, InstallationResult, InstallationStatus
 )
-from src.orchestrator.tools.installers import (
+from orchestrator.tools.installers import (
     PackageInstallerFactory, PipInstaller, PackageInstaller,
     InstallationEnvironment, ConcurrentInstaller
 )
-from src.orchestrator.tools.registry import (
+from orchestrator.tools.registry import (
     EnhancedToolRegistry, InstallationRequirement, SecurityLevel,
     EnhancedToolMetadata, VersionInfo, get_enhanced_registry
 )
@@ -336,7 +336,7 @@ class TestSetupSystem:
     @pytest.mark.asyncio 
     async def test_setup_tool_with_requirements(self):
         """Test setting up a tool with installation requirements."""
-        from src.orchestrator.tools.base import Tool
+        from orchestrator.tools.base import Tool
         
         # Create a mock tool class
         class MockTool(Tool):
@@ -384,7 +384,7 @@ class TestSetupSystem:
     
     def test_check_tool_availability(self):
         """Test tool availability checking."""
-        from src.orchestrator.tools.base import Tool
+        from orchestrator.tools.base import Tool
         
         class MockTool(Tool):
             async def _execute_impl(self, **kwargs):
@@ -408,7 +408,7 @@ class TestSetupSystem:
     
     def test_get_installation_status(self):
         """Test getting detailed installation status."""
-        from src.orchestrator.tools.base import Tool
+        from orchestrator.tools.base import Tool
         
         class MockTool(Tool):
             async def _execute_impl(self, **kwargs):
@@ -436,7 +436,7 @@ class TestSetupSystem:
     
     def test_cleanup_failed_installations(self):
         """Test cleanup of failed installations."""
-        from src.orchestrator.tools.base import Tool
+        from orchestrator.tools.base import Tool
         
         class MockTool(Tool):
             async def _execute_impl(self, **kwargs):
@@ -497,7 +497,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_full_tool_setup_workflow(self):
         """Test complete workflow from tool registration to setup."""
-        from src.orchestrator.tools.base import Tool
+        from orchestrator.tools.base import Tool
         
         class IntegrationTestTool(Tool):
             async def _execute_impl(self, **kwargs):

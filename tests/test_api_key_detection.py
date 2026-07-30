@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import shutil
 
-from src.orchestrator.utils.api_keys_flexible import (
+from orchestrator.utils.api_keys_flexible import (
     load_api_keys_optional,
     get_missing_providers,
     ensure_api_key

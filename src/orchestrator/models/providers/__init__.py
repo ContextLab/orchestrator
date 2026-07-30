@@ -1,11 +1,19 @@
-"""Provider abstractions for unified model management - Claude Skills refactor (Anthropic-only)."""
+"""Provider abstractions for unified model management.
 
-from .base import ModelProvider, ProviderConfig, ProviderError
-from .anthropic_provider import AnthropicProvider
+Concrete providers are resolved lazily so that importing the model registry
+does not require every provider SDK to be installed. ``AnthropicProvider``
+needs the ``anthropic`` extra; accessing it without that extra raises the
+underlying ``ImportError`` naming the missing package.
+"""
 
-__all__ = [
-    "ModelProvider",
-    "ProviderConfig",
-    "ProviderError",
-    "AnthropicProvider",
-]
+from ..._lazy import lazy_exports
+
+_EXPORTS = {
+    "ModelProvider": ".base",
+    "ProviderConfig": ".base",
+    "ProviderError": ".base",
+    "AnthropicProvider": ".anthropic_provider",
+}
+
+__all__ = sorted(_EXPORTS)
+__getattr__, __dir__ = lazy_exports(__name__, _EXPORTS, globals())

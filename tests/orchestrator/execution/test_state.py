@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from src.orchestrator.execution.state import (
+from orchestrator.execution.state import (
     ExecutionContext,
     FileStateManager,
     ExecutionStatus,
@@ -552,7 +552,7 @@ class TestIntegrationScenarios:
             
             with context:
                 # Set pipeline inputs
-                from src.orchestrator.execution.variables import VariableType
+                from orchestrator.execution.variables import VariableType
                 context.variable_manager.set_variable(
                     "input_data", [1, 2, 3, 4, 5],
                     var_type=VariableType.INPUT

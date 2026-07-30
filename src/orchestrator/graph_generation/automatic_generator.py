@@ -38,6 +38,7 @@ from .auto_debugger import AutoDebugger, AutoDebugResult
 
 if TYPE_CHECKING:
     from langgraph.graph import StateGraph
+    from .types import ParsedStep
 
 logger = logging.getLogger(__name__)
 

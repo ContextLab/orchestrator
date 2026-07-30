@@ -8,7 +8,7 @@ import time
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-from src.orchestrator.execution.progress import (
+from orchestrator.execution.progress import (
     ProgressTracker,
     ProgressEvent,
     ProgressEventType,
@@ -17,8 +17,8 @@ from src.orchestrator.execution.progress import (
     StepStatus,
     create_progress_tracker
 )
-from src.orchestrator.execution.state import ExecutionContext
-from src.orchestrator.execution.variables import VariableManager
+from orchestrator.execution.state import ExecutionContext
+from orchestrator.execution.variables import VariableManager
 
 
 class TestStepProgress:

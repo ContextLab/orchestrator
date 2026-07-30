@@ -6,8 +6,8 @@ import os
 import tempfile
 
 from orchestrator import Orchestrator
-from src.orchestrator.models.openai_model import OpenAIModel
-from src.orchestrator.integrations.ollama_model import OllamaModel
+from orchestrator.models.openai_model import OpenAIModel
+from orchestrator.integrations.ollama_model import OllamaModel
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -15,7 +15,7 @@ from tests.test_infrastructure import create_test_orchestrator, TestModel, TestP
 async def setup_orchestrator():
     """Set up orchestrator with real models."""
     # Initialize orchestrator with models
-    from src.orchestrator.models.registry_singleton import get_model_registry
+    from orchestrator.models.registry_singleton import get_model_registry
 
     # Get singleton registry
     registry = get_model_registry()

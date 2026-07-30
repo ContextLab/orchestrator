@@ -4,10 +4,10 @@ import pytest
 import asyncio
 from unittest.mock import AsyncMock
 
-from src.orchestrator.control_flow.enhanced_condition_evaluator import EnhancedConditionEvaluator
-from src.orchestrator.control_flow.condition_models import LoopCondition, ConditionParser
-from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
-from src.orchestrator.models.model_registry import ModelRegistry
+from orchestrator.control_flow.enhanced_condition_evaluator import EnhancedConditionEvaluator
+from orchestrator.control_flow.condition_models import LoopCondition, ConditionParser
+from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
+from orchestrator.models.model_registry import ModelRegistry
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

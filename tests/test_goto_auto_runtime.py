@@ -4,10 +4,10 @@ import pytest
 import asyncio
 import yaml
 
-from src.orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
+from orchestrator.compiler.control_flow_compiler import ControlFlowCompiler
+from orchestrator.compiler.yaml_compiler import YAMLCompiler
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -141,7 +141,7 @@ steps:
       data: "test"
 """
         
-        from src.orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
+        from orchestrator.compiler.auto_tag_yaml_parser import AutoTagYAMLParser
         
         parser = AutoTagYAMLParser()
         parsed = parser.parse(yaml_content)

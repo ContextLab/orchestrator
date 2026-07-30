@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from src.orchestrator.tools.report_tools import PDFCompilerTool, ReportGeneratorTool
-from src.orchestrator.tools.web_tools import WebSearchTool
+from orchestrator.tools.report_tools import PDFCompilerTool, ReportGeneratorTool
+from orchestrator.tools.web_tools import WebSearchTool
 
 
 class TestResearchAssistantWithReport:

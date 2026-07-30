@@ -3,14 +3,14 @@
 import pytest
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.adapters.langgraph_adapter import (
+from orchestrator.adapters.langgraph_adapter import (
 
     LangGraphAdapter,
     LangGraphWorkflow,
     LangGraphNode)
-from src.orchestrator.adapters.mcp_adapter import MCPAdapter
-from src.orchestrator.core.pipeline import Pipeline
-from src.orchestrator.core.task import Task
+from orchestrator.adapters.mcp_adapter import MCPAdapter
+from orchestrator.core.pipeline import Pipeline
+from orchestrator.core.task import Task
 
 # Skip BaseAdapter and CustomMLAdapter tests for now since they're not implemented
 

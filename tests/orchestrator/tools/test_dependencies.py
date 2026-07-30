@@ -5,17 +5,17 @@ import asyncio
 from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
 
-from src.orchestrator.tools.dependencies import (
+from orchestrator.tools.dependencies import (
     DependencyResolver, DependencyManager, DependencyNode, DependencyChain,
     DependencyConflict, ResolutionResult, DependencyType, ConflictSeverity,
     get_dependency_manager, ensure_dependencies, validate_dependencies
 )
-from src.orchestrator.tools.registry import (
+from orchestrator.tools.registry import (
     EnhancedToolRegistry, EnhancedToolMetadata, VersionInfo, 
     CompatibilityRequirement, InstallationStatus, ToolSource,
     ToolCategory, SecurityLevel
 )
-from src.orchestrator.tools.base import Tool as OrchestratorTool
+from orchestrator.tools.base import Tool as OrchestratorTool
 
 
 class TestDependencyNode:
@@ -243,8 +243,8 @@ class TestDependencyManager:
     @pytest.fixture
     def manager(self):
         """Create a dependency manager for testing."""
-        with patch('src.orchestrator.tools.dependencies.get_enhanced_registry'), \
-             patch('src.orchestrator.tools.dependencies.get_setup_system'):
+        with patch('orchestrator.tools.dependencies.get_enhanced_registry'), \
+             patch('orchestrator.tools.dependencies.get_setup_system'):
             return DependencyManager()
     
     @pytest.mark.asyncio
@@ -393,7 +393,7 @@ class TestConvenienceFunctions:
     @pytest.mark.asyncio
     async def test_ensure_dependencies(self):
         """Test the convenience function for ensuring dependencies."""
-        with patch('src.orchestrator.tools.dependencies.dependency_manager') as mock_manager:
+        with patch('orchestrator.tools.dependencies.dependency_manager') as mock_manager:
             mock_manager.ensure_dependencies = Mock(return_value=(True, []))
             
             success, errors = await ensure_dependencies("test-tool")
@@ -404,7 +404,7 @@ class TestConvenienceFunctions:
     
     def test_validate_dependencies(self):
         """Test the convenience function for validating dependencies."""
-        with patch('src.orchestrator.tools.dependencies.dependency_manager') as mock_manager:
+        with patch('orchestrator.tools.dependencies.dependency_manager') as mock_manager:
             mock_manager.validate_tool_dependencies = Mock(return_value=(True, []))
             
             success, issues = validate_dependencies("test-tool")

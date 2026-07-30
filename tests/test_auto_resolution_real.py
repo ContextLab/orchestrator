@@ -5,16 +5,16 @@ import os
 import pytest
 from unittest.mock import MagicMock
 
-from src.orchestrator.core.pipeline import Pipeline
-from src.orchestrator.core.task import Task
-from src.orchestrator.auto_resolution.models import AutoTagContext
-from src.orchestrator.auto_resolution.resolver import LazyAutoTagResolver
-from src.orchestrator.auto_resolution.model_caller import ModelCaller
-from src.orchestrator.auto_resolution.requirements_analyzer import RequirementsAnalyzer
-from src.orchestrator.auto_resolution.prompt_constructor import PromptConstructor
-from src.orchestrator.auto_resolution.resolution_executor import ResolutionExecutor
-from src.orchestrator.auto_resolution.action_determiner import ActionDeterminer
-from src.orchestrator.auto_resolution.nested_handler import NestedAutoTagHandler
+from orchestrator.core.pipeline import Pipeline
+from orchestrator.core.task import Task
+from orchestrator.auto_resolution.models import AutoTagContext
+from orchestrator.auto_resolution.resolver import LazyAutoTagResolver
+from orchestrator.auto_resolution.model_caller import ModelCaller
+from orchestrator.auto_resolution.requirements_analyzer import RequirementsAnalyzer
+from orchestrator.auto_resolution.prompt_constructor import PromptConstructor
+from orchestrator.auto_resolution.resolution_executor import ResolutionExecutor
+from orchestrator.auto_resolution.action_determiner import ActionDeterminer
+from orchestrator.auto_resolution.nested_handler import NestedAutoTagHandler
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 

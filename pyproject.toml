@@ -23,72 +23,89 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+# Core runtime dependencies.
+#
+# Scope rule: a package belongs here only if it is required to import
+# `orchestrator` and to compile + execute a YAML pipeline that uses
+# deterministic local tools. Everything else (model provider SDKs, browsers,
+# databases, multimedia, plotting) lives in an extra below and is imported
+# lazily at the point of use, so a missing extra degrades one tool rather than
+# breaking `import orchestrator`.
 dependencies = [
     "pydantic>=2.0.0",
     "pyyaml>=6.0",
-    "aiohttp>=3.8.0",
-    "aiofiles>=23.0.0",
-    "asyncio-mqtt>=0.13.0",
     "jinja2>=3.0.0",
     "jsonschema>=4.0.0",
-    "numpy>=1.21.0",
-    "docker>=6.0.0",
-    "redis>=4.0.0",
-    "psycopg2-binary>=2.9.0",
-    "cryptography>=3.4.0",
     "networkx>=3.0.0",
-    "openai>=1.0.0",
-    "anthropic>=0.7.0",
-    # LangChain for structured outputs
+    "click>=8.0.0",
+    "python-dotenv>=0.19.0",
+    "aiofiles>=23.0.0",
+    "aiohttp>=3.8.0",
+    "requests>=2.28.0",
+    "psutil>=5.9.0",
+    "numpy>=1.21.0",
+]
+
+[project.optional-dependencies]
+# --- Model providers -------------------------------------------------------
+anthropic = ["anthropic>=0.7.0"]
+openai = ["openai>=1.0.0"]
+google = ["google-generativeai>=0.3.0"]
+
+# --- Graph runtime ---------------------------------------------------------
+langgraph = [
     "langchain>=0.1.0",
     "langchain-core>=0.1.0",
     "langgraph>=0.2.0",
     "langgraph-checkpoint-sqlite>=1.0.0",
-    # Web search and browser automation
-    "requests>=2.28.0",
+]
+
+# --- Web search and browser automation -------------------------------------
+web = [
     "beautifulsoup4>=4.11.0",
-    "playwright>=1.40.0",
     "ddgs>=9.0.0",
     "httpx>=0.25.0",
     "lxml>=4.9.0",
-    "urllib3>=2.0.0",
-    # CLI
-    "click>=8.0.0",
-    "python-dotenv>=0.19.0",
-    # Multimodal tools
+    "playwright>=1.40.0",
+]
+
+# --- Multimedia processing -------------------------------------------------
+multimedia = [
     "pillow>=10.0.0",
-    # Audio processing
     "librosa>=0.10.1",
     "soundfile>=0.12.1",
     "SpeechRecognition>=3.10.0",
     "pydub>=0.25.1",
-    # Video processing (opencv-python already installed separately)
     "moviepy>=1.0.3",
     "imageio-ffmpeg>=0.4.9",
-    # Additional dependencies
-    "six>=1.16.0",
-    "psutil>=5.9.0",  # Required for memory monitoring
-    # Google AI for generative models
-    "google-generativeai>=0.3.0",
-    # Data visualization
-    "seaborn>=0.11.0",
-    "matplotlib>=3.5.0",
-    # Note: RouteLLM removed for Claude Skills refactor (Anthropic-only)
-    # Re-enable if multi-provider support is added back
-    # "routellm[serve,eval]>=0.1.0",
+    "opencv-python>=4.8.0",
 ]
 
-[project.optional-dependencies]
+# --- Plotting / reporting --------------------------------------------------
+viz = [
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
+]
+
+# --- Infrastructure backends -----------------------------------------------
+infra = [
+    "docker>=6.0.0",
+    "redis>=4.0.0",
+    "psycopg2-binary>=2.9.0",
+]
+crypto = ["cryptography>=3.4.0"]
+
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
     "pytest-timeout>=2.1.0",
+    "ruff>=0.6.0",
     "black>=22.0.0",
     "isort>=5.10.0",
-    "flake8>=4.0.0",
     "mypy>=1.0.0",
     "pre-commit>=2.20.0",
+    "build>=1.0.0",
     "pandas>=1.5.0",  # Used in data processing tests
 ]
 docs = [
@@ -106,8 +123,14 @@ notebooks = [
     "seaborn>=0.11.0",
     "plotly>=5.0.0",
 ]
+# Self-referential extras must use the DISTRIBUTION name (py-orc), not the
+# import name (orchestrator). The previous value referenced a package that
+# does not exist on any index.
 all = [
-    "orchestrator[dev,docs,notebooks]",
+    "py-orc[anthropic,openai,google,langgraph,web,multimedia,viz,infra,crypto]",
+]
+all-dev = [
+    "py-orc[all,dev,docs,notebooks]",
 ]
 
 [project.urls]
@@ -127,8 +150,10 @@ py-orc-test = "orchestrator.test_runner:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-orchestrator = ["py.typed", "*.yaml", "*.yml", "*.json"]
-"*" = ["../../config/*.yaml"]
+# Only ship files that live inside the package. The previous
+# `"*" = ["../../config/*.yaml"]` entry reached outside the source tree and
+# does not reliably survive an sdist/wheel build.
+orchestrator = ["py.typed", "*.yaml", "*.yml", "*.json", "config/*.yaml"]
 
 [tool.black]
 line-length = 88
@@ -158,14 +183,13 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+# Coverage is NOT enabled by default: forcing --cov made every invocation
+# depend on pytest-cov and made plain collection slow. CI adds the coverage
+# flags explicitly in the test job.
 addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
-    "--cov=src/orchestrator",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
@@ -175,9 +199,14 @@ timeout_method = "thread"
 
 # Exclude local tests from CI (Ollama tests require local setup)
 markers = [
+    # Test layers (see docs/adr/0001-product-contract.md)
+    "unit: hermetic; no network, no services, no API keys",
+    "contract: verifies a published interface contract; hermetic",
+    "integration: needs local services (docker/redis/postgres); opt-in",
+    "live: calls a real model provider API and costs money; opt-in",
+    "e2e: full pipeline through the installed CLI/API",
+    # Resource requirements
     "local: marks tests as local-only (not run in CI)",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "docker: marks tests that require docker",
     "redis: marks tests that require redis",
@@ -238,3 +267,21 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src", "tests"]
+exclude = [".git", "build", "dist", ".venv", "venv", "test_env", "temp", "checkpoints"]
+
+[tool.ruff.lint]
+# Correctness-first. Style rules are deliberately NOT enabled yet: the tree has
+# ~10k style findings and enabling them would drown the signal from real bugs.
+# The gate that CI enforces is `ruff check --select E9,F63,F7,F82,F823,F601,F811`.
+select = ["E4", "E7", "E9", "F"]
+ignore = [
+    "F401",  # unused imports: 692 findings, tracked separately as cleanup
+    "F841",  # unused locals: 70 findings, tracked separately as cleanup
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]

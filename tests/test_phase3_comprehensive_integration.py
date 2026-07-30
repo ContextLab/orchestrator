@@ -15,7 +15,7 @@ import docker
 from typing import List, Dict
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.intelligence import (
+from orchestrator.intelligence import (
 
     IntelligentModelSelector,
     ModelRequirements,
@@ -24,14 +24,14 @@ from src.orchestrator.intelligence import (
     HealthStatus,
     setup_basic_health_monitoring
 )
-from src.orchestrator.security import (
+from orchestrator.security import (
     LangChainSandbox,
     SecurityPolicy,
     execute_code_safely
 )
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.utils.api_keys import load_api_keys_optional
-from src.orchestrator.utils.service_manager import SERVICE_MANAGERS
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.utils.api_keys import load_api_keys_optional
+from orchestrator.utils.service_manager import SERVICE_MANAGERS
 
 
 class TestPhase3ComprehensiveIntegration:
@@ -69,7 +69,7 @@ class TestPhase3ComprehensiveIntegration:
         try:
             # Add real models if API keys available
             if self.api_keys.get("OPENAI_API_KEY"):
-                from src.orchestrator.models.openai_model import OpenAIModel
+                from orchestrator.models.openai_model import OpenAIModel
                 openai_model = OpenAIModel("gpt-3.5-turbo", api_key=self.api_keys["OPENAI_API_KEY"])
                 self.registry.register_model(openai_model)
                 

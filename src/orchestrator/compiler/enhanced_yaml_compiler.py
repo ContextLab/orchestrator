@@ -8,7 +8,10 @@ AutomaticGraphGenerator to create optimized execution graphs.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..core.task import Task
 
 from .yaml_compiler import YAMLCompiler
 from ..core.pipeline import Pipeline

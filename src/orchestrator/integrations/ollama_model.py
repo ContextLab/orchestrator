@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import subprocess
 from typing import Any, Dict, List, Optional
 
@@ -21,6 +22,8 @@ from orchestrator.core.model import (
     ModelMetrics,
     ModelRequirements,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaModel(Model):

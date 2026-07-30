@@ -4,9 +4,9 @@ import pytest
 import asyncio
 from unittest.mock import patch, MagicMock
 
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.models.langchain_adapter import LangChainModelAdapter
-from src.orchestrator.core.exceptions import ModelNotFoundError
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.models.langchain_adapter import LangChainModelAdapter
+from orchestrator.core.exceptions import ModelNotFoundError
 
 
 class TestModelRegistryLangChainIntegration:
@@ -145,7 +145,7 @@ class TestModelRegistryLangChainIntegration:
         with pytest.raises(ValueError, match="LangChain integration is disabled"):
             registry.auto_register_langchain_models(config)
             
-    @patch('src.orchestrator.utils.service_manager.ensure_service_running')
+    @patch('orchestrator.utils.service_manager.ensure_service_running')
     def test_ensure_service_running_ollama(self, mock_ensure_service):
         """Test ensuring Ollama service is running."""
         registry = ModelRegistry()
@@ -155,7 +155,7 @@ class TestModelRegistryLangChainIntegration:
         
         mock_ensure_service.assert_called_once_with("ollama")
         
-    @patch('src.orchestrator.utils.auto_install.ensure_packages')
+    @patch('orchestrator.utils.auto_install.ensure_packages')
     def test_auto_install_dependencies_openai(self, mock_ensure_packages):
         """Test auto-installing OpenAI dependencies."""
         registry = ModelRegistry()
@@ -168,7 +168,7 @@ class TestModelRegistryLangChainIntegration:
         """Test dependency mapping for all providers."""
         registry = ModelRegistry()
         
-        with patch('src.orchestrator.utils.auto_install.ensure_packages') as mock_ensure:
+        with patch('orchestrator.utils.auto_install.ensure_packages') as mock_ensure:
             registry._auto_install_dependencies("openai")
             mock_ensure.assert_called_with(["langchain-openai"])
             

@@ -9,16 +9,16 @@ import asyncio
 from typing import Dict, Any, List
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
-from src.orchestrator.core.loop_context import (
+from orchestrator.core.loop_context import (
 
     LoopContextVariables, 
     GlobalLoopContextManager, 
     ItemListAccessor
 )
-from src.orchestrator.control_flow.loops import ForLoopHandler, WhileLoopHandler
-from src.orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
-from src.orchestrator.core.template_manager import TemplateManager
-from src.orchestrator.core.context_manager import ContextManager
+from orchestrator.control_flow.loops import ForLoopHandler, WhileLoopHandler
+from orchestrator.control_flow.auto_resolver import ControlFlowAutoResolver
+from orchestrator.core.template_manager import TemplateManager
+from orchestrator.core.context_manager import ContextManager
 
 
 class TestLoopContextVariables:

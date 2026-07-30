@@ -6,10 +6,10 @@ Tests the enhanced model requirements specification with actual OpenAI API calls
 import pytest
 import os
 from unittest.mock import patch
-from src.orchestrator.models.openai_model import OpenAIModel
-from src.orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
-from src.orchestrator.models.model_registry import ModelRegistry
-from src.orchestrator.core.model import ModelCapabilities, ModelCost
+from orchestrator.models.openai_model import OpenAIModel
+from orchestrator.models.model_selector import ModelSelector, ModelSelectionCriteria
+from orchestrator.models.model_registry import ModelRegistry
+from orchestrator.core.model import ModelCapabilities, ModelCost
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -358,7 +358,7 @@ class TestRealOpenAIIntegration:
 
     def test_openai_model_size_parsing_integration(self):
         """Test model size parsing with OpenAI model names."""
-        from src.orchestrator.utils.model_utils import parse_model_size
+        from orchestrator.utils.model_utils import parse_model_size
         
         # Test OpenAI model names (which don't have explicit sizes)
         test_cases = [

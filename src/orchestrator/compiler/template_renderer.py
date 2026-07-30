@@ -259,7 +259,6 @@ class TemplateRenderer:
             return os.path.basename(str(value))
         elif filter_expr == "slugify":
             # Handle slugify filter - convert string to URL-safe slug
-            import re
             slug = re.sub(r'[^\w\s-]', '', str(value).lower())
             slug = re.sub(r'[\s_-]+', '_', slug)
             return slug.strip('_')

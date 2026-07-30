@@ -5,13 +5,13 @@ import pytest
 import time
 from unittest.mock import AsyncMock
 
-from src.orchestrator.models.optimization.caching import (
+from orchestrator.models.optimization.caching import (
     ModelResponseCache,
     CacheStats,
     CacheEntry,
 )
-from src.orchestrator.models.selection.strategies import SelectionResult
-from src.orchestrator.core.model import Model, ModelCapabilities, ModelCost
+from orchestrator.models.selection.strategies import SelectionResult
+from orchestrator.core.model import Model, ModelCapabilities, ModelCost
 
 
 class MockModel(Model):

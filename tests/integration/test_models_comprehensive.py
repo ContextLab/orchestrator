@@ -70,7 +70,7 @@ async def test_ollama_model():
     print("-" * 30)
 
     try:
-        from src.orchestrator.integrations.ollama_model import OllamaModel
+        from orchestrator.integrations.ollama_model import OllamaModel
 
         # Check if Ollama is running
         if not OllamaModel.check_ollama_installation():
@@ -99,7 +99,7 @@ async def test_huggingface_model():
     print("-" * 30)
 
     try:
-        from src.orchestrator.integrations.huggingface_model import HuggingFaceModel
+        from orchestrator.integrations.huggingface_model import HuggingFaceModel
 
         print("📥 Loading HuggingFace model...")
         # Use a small model for testing, force CPU to avoid CUDA OOM
@@ -143,9 +143,9 @@ async def test_model_auto_detection():
     print("-" * 30)
 
     try:
-        from src.orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
+        from orchestrator.compiler.ambiguity_resolver import AmbiguityResolver
         from orchestrator import init_models
-        from src.orchestrator.models.registry_singleton import get_model_registry
+        from orchestrator.models.registry_singleton import get_model_registry
 
         # Initialize models first
         init_models()

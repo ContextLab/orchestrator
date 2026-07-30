@@ -13,14 +13,14 @@ import tempfile
 import pytest
 from pathlib import Path
 
-from src.orchestrator.compiler.yaml_compiler import YAMLCompiler
-from src.orchestrator.core.output_tracker import OutputTracker
-from src.orchestrator.core.output_metadata import OutputMetadata, OutputInfo
-from src.orchestrator.core.template_resolver import TemplateResolver
-from src.orchestrator.engine.task_executor import UniversalTaskExecutor
-from src.orchestrator.engine.pipeline_spec import TaskSpec, PipelineSpec
-from src.orchestrator.tools.output_visualization import OutputVisualizer
-from src.orchestrator.validation.output_validator import OutputValidator
+from orchestrator.compiler.yaml_compiler import YAMLCompiler
+from orchestrator.core.output_tracker import OutputTracker
+from orchestrator.core.output_metadata import OutputMetadata, OutputInfo
+from orchestrator.core.template_resolver import TemplateResolver
+from orchestrator.engine.task_executor import UniversalTaskExecutor
+from orchestrator.engine.pipeline_spec import TaskSpec, PipelineSpec
+from orchestrator.tools.output_visualization import OutputVisualizer
+from orchestrator.validation.output_validator import OutputValidator
 
 from tests.test_infrastructure import create_test_orchestrator, TestModel, TestProvider
 
@@ -351,7 +351,7 @@ class TestVisualizationAndValidation:
         tracker.register_output("task2", result="csv,content")
         
         # Add some references
-        from src.orchestrator.core.output_metadata import OutputReference
+        from orchestrator.core.output_metadata import OutputReference
         tracker.add_reference("task2", OutputReference("task1", "result"))
         tracker.add_reference("task3", OutputReference("task2", "location"))
         
