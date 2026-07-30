@@ -220,7 +220,12 @@ cache/
 *.tmp
 temp/
 tmp/
-debug_*
+# Debug scratch scripts at the repo root only. This was previously an
+# unanchored `debug_*`, which silently matched the real source module
+# src/orchestrator/quality/debug_artifact_detector.py -- so it was never
+# committed and `import orchestrator.quality` was broken for every clone.
+/debug_*
+!src/**/debug_*.py
 .temp*
 temp_*
 # Redis cache directories with invalid Windows paths
