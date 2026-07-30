@@ -1,0 +1,28 @@
+id: golden_basic
+name: Golden Basic Pipeline
+description: Deterministic local-tool pipeline with templating and dependencies
+version: "1.0.0"
+
+parameters:
+  greeting:
+    type: string
+    default: "hello"
+  out_dir:
+    type: string
+    default: "./golden_out"
+
+steps:
+  - id: write_greeting
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/greeting.txt"
+      content: "{{ greeting }} world"
+
+  - id: read_back
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/greeting.txt"
+    dependencies:
+      - write_greeting

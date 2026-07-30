@@ -182,14 +182,19 @@ class ToolValidator:
     
     def _extract_tool_name(self, step: Dict[str, Any]) -> Optional[str]:
         """Extract tool name from step definition."""
-        # Check 'action' field first (preferred)
-        if "action" in step:
-            return step["action"]
-        
-        # Check 'tool' field (legacy)
+        # When a step names a `tool`, that is the registry key and `action` is
+        # the operation invoked on it, e.g.
+        #     tool: filesystem
+        #     action: read
+        # Checking `action` first made this look up a tool named "read", so
+        # every step using the two-field form failed validation.
         if "tool" in step:
             return step["tool"]
-        
+
+        # Legacy single-field form, where `action` names the tool itself.
+        if "action" in step:
+            return step["action"]
+
         # Check for special control flow steps
         if "create_parallel_queue" in step:
             return "create_parallel_queue"

@@ -178,9 +178,18 @@ class DataFlowValidator:
                 
             task_id = step.get("id", "unknown")
             
-            # Validate template references in this task
+            # Validate template references in this task.
+            # Pipelines declare their externally supplied values under either
+            # `parameters:` or `inputs:`; both are addressable from templates,
+            # so both must be visible to the validator. Reading only `inputs`
+            # made every `{{ some_parameter }}` reference look like a reference
+            # to an undefined task.
+            declared_inputs = {
+                **pipeline_def.get("parameters", {}),
+                **pipeline_def.get("inputs", {}),
+            }
             task_errors, task_warnings, task_dependencies = self._validate_task_data_flow(
-                step, task_schemas, pipeline_def.get("inputs", {})
+                step, task_schemas, declared_inputs
             )
             
             errors.extend(task_errors)
@@ -464,6 +473,16 @@ class DataFlowValidator:
             else:
                 return {"valid": True, "type": "pipeline_inputs"}
         
+        # A declared pipeline parameter/input may also be referenced bare, e.g.
+        # `{{ output_path }}` rather than `{{ inputs.output_path }}`.
+        if base_var in pipeline_inputs:
+            return {"valid": True, "type": "pipeline_input"}
+
+        # Runtime namespaces injected by the executor rather than by the
+        # pipeline author.
+        if base_var in ("execution", "pipeline", "context", "env"):
+            return {"valid": True, "type": "runtime_namespace"}
+
         # Check for task output references
         if base_var in task_schemas:
             source_task = base_var

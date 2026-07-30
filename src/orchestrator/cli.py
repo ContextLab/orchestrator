@@ -154,15 +154,179 @@ def validate():
         sys.exit(1)
 
 
-# Add more commands as needed
+# Exit codes (see docs/adr/0001-product-contract.md):
+#   0   success
+#   1   execution failure
+#   2   validation / compilation failure
+#   130 interrupted
+EXIT_OK = 0
+EXIT_EXECUTION_ERROR = 1
+EXIT_VALIDATION_ERROR = 2
+EXIT_INTERRUPTED = 130
+
+
+def _build_orchestrator():
+    """Construct an Orchestrator suited to the available environment.
+
+    A pipeline built only from deterministic local tools (filesystem,
+    data-processing, validation, ...) needs no model provider at all. The
+    default ``Orchestrator()`` refuses to start without a populated model
+    registry, which made such pipelines impossible to run without credentials.
+
+    So: register models when credentials/local models are present, and
+    otherwise fall back to the tool-only control system. The fallback is
+    announced rather than silent -- a step that genuinely needs a model then
+    fails with that step's own error, instead of being masked here.
+    """
+    from .control_systems.tool_integrated_control_system import (
+        ToolIntegratedControlSystem,
+    )
+    from .orchestrator import Orchestrator
+
+    try:
+        from . import init_models
+
+        registry = init_models()
+        if registry.models:
+            return Orchestrator(model_registry=registry)
+    except Exception as exc:  # noqa: BLE001 - degrade to the tool-only path
+        click.echo(f"Model initialization skipped ({type(exc).__name__}: {exc})", err=True)
+
+    click.echo(
+        "No models available - running with deterministic local tools only.",
+        err=True,
+    )
+    return Orchestrator(control_system=ToolIntegratedControlSystem())
+
+
+def _load_context(context_file: Optional[str], inputs: tuple) -> dict:
+    """Build the pipeline context from a JSON file plus -i key=value overrides.
+
+    Raises:
+        click.ClickException: if the file is not valid JSON, is not an object,
+            or an -i argument is not in ``key=value`` form.
+    """
+    import json
+
+    ctx: dict = {}
+    if context_file:
+        try:
+            with open(context_file) as fh:
+                loaded = json.load(fh)
+        except json.JSONDecodeError as exc:
+            raise click.ClickException(f"{context_file} is not valid JSON: {exc}")
+        if not isinstance(loaded, dict):
+            raise click.ClickException(
+                f"{context_file} must contain a JSON object, got {type(loaded).__name__}"
+            )
+        ctx.update(loaded)
+
+    for item in inputs:
+        if "=" not in item:
+            raise click.ClickException(
+                f"--input expects key=value, got {item!r}"
+            )
+        key, _, value = item.partition("=")
+        # Accept JSON scalars/objects so that -i n=3 gives an int, while a bare
+        # word stays a string.
+        try:
+            ctx[key] = json.loads(value)
+        except json.JSONDecodeError:
+            ctx[key] = value
+    return ctx
+
+
 @cli.command()
-@click.argument("pipeline_file", type=click.Path(exists=True))
+@click.argument("pipeline_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--context", "-c", help="Context JSON file", type=click.Path(exists=True))
-def run(pipeline_file: str, context: Optional[str]):
-    """Run a pipeline from a YAML file."""
-    click.echo(f"Running pipeline: {pipeline_file}")
-    # This would integrate with the existing run_pipeline.py functionality
-    click.echo("Note: Pipeline execution not yet integrated into CLI")
+@click.option(
+    "--input",
+    "-i",
+    "inputs",
+    multiple=True,
+    help="Pipeline input as key=value (repeatable). Values parse as JSON when possible.",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(dir_okay=False),
+    help="Write results as JSON to this file instead of stdout.",
+)
+def run(pipeline_file: str, context: Optional[str], inputs: tuple, output: Optional[str]):
+    """Run a pipeline from a YAML file.
+
+    Compiles PIPELINE_FILE and executes it, printing the results as JSON.
+    """
+    import asyncio
+    import json
+
+    ctx = _load_context(context, inputs)
+
+    async def _execute():
+        orchestrator = _build_orchestrator()
+        try:
+            return await orchestrator.execute_yaml_file(pipeline_file, ctx)
+        finally:
+            # Release background workers/connections even when execution fails.
+            await orchestrator.shutdown()
+
+    try:
+        results = asyncio.run(_execute())
+    except KeyboardInterrupt:
+        click.echo("Interrupted.", err=True)
+        sys.exit(EXIT_INTERRUPTED)
+    except Exception as exc:
+        # Compilation/validation problems are a distinct, actionable class from
+        # a pipeline that compiled but failed while running.
+        name = type(exc).__name__
+        is_validation = any(
+            token in name
+            for token in ("Validation", "Compil", "YAML", "Schema", "CircularDependency")
+        )
+        click.echo(f"{name}: {exc}", err=True)
+        sys.exit(EXIT_VALIDATION_ERROR if is_validation else EXIT_EXECUTION_ERROR)
+
+    rendered = json.dumps(results, indent=2, default=str)
+    if output:
+        Path(output).write_text(rendered)
+        click.echo(f"Results written to {output}")
+    else:
+        click.echo(rendered)
+    sys.exit(EXIT_OK)
+
+
+@cli.command("validate")
+@click.argument("pipeline_file", type=click.Path(exists=True, dir_okay=False))
+def validate_pipeline(pipeline_file: str):
+    """Compile a pipeline without running it, and report its task graph."""
+    import asyncio
+
+    from .compiler.yaml_compiler import YAMLCompiler
+
+    async def _compile():
+        compiler = YAMLCompiler()
+        with open(pipeline_file) as fh:
+            return await compiler.compile(fh.read(), {})
+
+    try:
+        pipeline = asyncio.run(_compile())
+    except KeyboardInterrupt:
+        click.echo("Interrupted.", err=True)
+        sys.exit(EXIT_INTERRUPTED)
+    except Exception as exc:
+        click.echo(f"{type(exc).__name__}: {exc}", err=True)
+        sys.exit(EXIT_VALIDATION_ERROR)
+
+    tasks = getattr(pipeline, "tasks", {}) or {}
+    click.echo(f"✓ {pipeline_file} is valid")
+    click.echo(f"  pipeline: {getattr(pipeline, 'id', '<unnamed>')}")
+    click.echo(f"  tasks: {len(tasks)}")
+    for task_id in tasks:
+        task = tasks[task_id]
+        deps = getattr(task, "dependencies", []) or []
+        suffix = f"  <- {', '.join(deps)}" if deps else ""
+        click.echo(f"    - {task_id}{suffix}")
+    sys.exit(EXIT_OK)
 
 
 def main():
