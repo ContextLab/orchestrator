@@ -10,6 +10,7 @@ Nothing here is part of the public import path; use ``orchestrator.init_models``
 """
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import Any, Dict
 
@@ -20,15 +21,37 @@ from .models.registry_singleton import get_model_registry
 from .orchestrator import Orchestrator
 from .tools.mcp_server import default_mcp_server, default_tool_detector
 
+logger = logging.getLogger(__name__)
+
 # Global instances
 _model_registry = None
 _orchestrator = None
 
 
 def init_models(config_path: str = None) -> ModelRegistry:
-    """Initialize the pool of available models by reading models.yaml and environment."""
+    """Initialize the pool of available models by reading models.yaml and environment.
+
+    This is the eager entry point: it reads credentials and probes providers
+    immediately. Callers that may never need a model should instead hand
+    :func:`populate_model_registry` to a
+    :class:`~orchestrator.models.lazy_registry.LazyModelRegistry`, which defers
+    all of that until a model is actually requested.
+    """
     global _model_registry
 
+    _model_registry = get_model_registry()
+    populate_model_registry(_model_registry)
+    return _model_registry
+
+
+def populate_model_registry(registry: ModelRegistry) -> ModelRegistry:
+    """Register every model the current environment can actually serve.
+
+    Reads ``~/.orchestrator/.env`` for provider credentials, loads
+    ``models.yaml`` and probes for a local Ollama install. This is the step
+    that touches the user's credentials, so it must only run when a model is
+    genuinely required.
+    """
     import os
 
     from .integrations.anthropic_model import AnthropicModel
@@ -38,14 +61,12 @@ def init_models(config_path: str = None) -> ModelRegistry:
     from .utils.model_config_loader import get_model_config_loader
     from .utils.api_keys_flexible import load_api_keys_optional
 
-    print(">> Initializing model pool...")
-    print(f">> Current environment: CI={os.environ.get('CI', 'false')}, GITHUB_ACTIONS={os.environ.get('GITHUB_ACTIONS', 'false')}")
+    logger.info("Initializing model pool")
 
     # Load available API keys (doesn't require all keys to be present)
     available_keys = load_api_keys_optional()
-    print(f">> Available keys returned: {list(available_keys.keys()) if available_keys else 'None'}")
     if available_keys:
-        print(f">> Found API keys for: {', '.join(available_keys.keys())}")
+        logger.info("Found API keys for: %s", ", ".join(sorted(available_keys)))
         # Also set them in environment for backward compatibility
         provider_env_map = {
             "anthropic": "ANTHROPIC_API_KEY",
@@ -58,9 +79,7 @@ def init_models(config_path: str = None) -> ModelRegistry:
             if env_var and not os.environ.get(env_var):
                 os.environ[env_var] = api_key
     else:
-        print(">> No API keys found - only local models will be available")
-
-    _model_registry = get_model_registry()
+        logger.info("No API keys found - only local models will be available")
 
     # Load model configuration using the new loader
     loader = get_model_config_loader()
@@ -70,12 +89,16 @@ def init_models(config_path: str = None) -> ModelRegistry:
     # Check if Ollama is installed
     ollama_available = check_ollama_installed()
     if not ollama_available:
-        print(">> ⚠️  Ollama not found - Ollama models will not be available")
-        print(">>    Install from: https://ollama.ai")
+        logger.info(
+            "Ollama not found - Ollama models unavailable (install from https://ollama.ai)"
+        )
 
     # Process each model in configuration (list format)
     if not isinstance(models_config, list):
-        print(">> ⚠️  Invalid models configuration format - expected list")
+        logger.warning(
+            "Invalid models configuration format: expected a list, got %s",
+            type(models_config).__name__,
+        )
         models_config = []
 
     # Process each model
@@ -109,9 +132,11 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
-                _model_registry.register_model(model)
-                print(
-                    f">>   📦 Registered Ollama model: {name} ({size_billions}B params) - will download on first use"
+                registry.register_model(model)
+                logger.info(
+                    "Registered Ollama model %s (%sB) - downloads on first use",
+                    name,
+                    size_billions,
                 )
 
             elif provider == "huggingface":
@@ -136,17 +161,22 @@ def init_models(config_path: str = None) -> ModelRegistry:
                         # Add dynamic attributes for model selection
                         setattr(hf_model, "_expertise", expertise)
                         setattr(hf_model, "_size_billions", size_billions)
-                        _model_registry.register_model(hf_model)
-                        print(
-                            f">>   📦 Registered HuggingFace model: {name} ({size_billions}B params) - will download on first use"
+                        registry.register_model(hf_model)
+                        logger.info(
+                            "Registered HuggingFace model %s (%sB) - downloads on first use",
+                            name,
+                            size_billions,
                         )
                 except ImportError:
-                    print(
-                        f">>   ⚠️  HuggingFace model {name} configured but transformers not installed"
+                    logger.info(
+                        "HuggingFace model %s configured but transformers is not "
+                        "installed (pip install 'py-orc[multimedia]')",
+                        name,
                     )
-                    print(">>      Install with: pip install transformers torch")
                 except Exception as e:
-                    print(f">>   ⚠️  Failed to register HuggingFace model {name}: {e}")
+                    logger.warning(
+                        "Could not register HuggingFace model %s: %s", name, e
+                    )
 
             elif provider == "openai" and "openai" in available_keys:
                 # Only register if API key is available
@@ -154,10 +184,8 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
-                _model_registry.register_model(model)
-                print(
-                    f">>   ✅ Registered OpenAI model: {name} ({size_billions}B params)"
-                )
+                registry.register_model(model)
+                logger.info("Registered OpenAI model %s (%sB)", name, size_billions)
 
             elif provider == "anthropic" and "anthropic" in available_keys:
                 # Only register if API key is available
@@ -167,10 +195,8 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
-                _model_registry.register_model(model)
-                print(
-                    f">>   ✅ Registered Anthropic model: {name} ({size_billions}B params)"
-                )
+                registry.register_model(model)
+                logger.info("Registered Anthropic model %s (%sB)", name, size_billions)
 
             elif provider == "google" and "google" in available_keys:
                 # Only register if API key is available
@@ -178,29 +204,31 @@ def init_models(config_path: str = None) -> ModelRegistry:
                 # Add dynamic attributes for model selection
                 setattr(model, "_expertise", expertise)
                 setattr(model, "_size_billions", size_billions)
-                _model_registry.register_model(model)
-                print(
-                    f">>   ✅ Registered Google model: {name} ({size_billions}B params)"
-                )
+                registry.register_model(model)
+                logger.info("Registered Google model %s (%sB)", name, size_billions)
 
         except Exception as e:
-            print(f">>   ⚠️  Error registering {provider} model {name}: {e}")
+            # One line per provider, naming the real cause. Registering a
+            # model is best-effort: a missing provider SDK must not stop the
+            # models that *are* usable from being registered.
+            logger.warning("Could not register %s model %s: %s", provider, name, e)
 
-    print(
-        f"\n>> Model initialization complete: {len(_model_registry.list_models())} models registered"
-    )
-
-    if not _model_registry.list_models():
-        print(">>   ⚠️  No models available - ensure models.yaml is properly configured")
+    registered = registry.list_models()
+    if registered:
+        logger.info("Model pool ready: %d model(s) registered", len(registered))
+    else:
+        logger.info(
+            "Model pool ready: no models registered "
+            "(no provider credentials and no local models)"
+        )
 
     # Store defaults in registry for later use
-    setattr(_model_registry, "_defaults", config.get("defaults", {}))
+    setattr(registry, "_defaults", config.get("defaults", {}))
 
     # Enable auto-registration for new models
-    _model_registry.enable_auto_registration()
-    print(">> Auto-registration enabled for new models")
+    registry.enable_auto_registration()
 
-    return _model_registry
+    return registry
 
 
 class OrchestratorPipeline:

@@ -55,15 +55,12 @@ class AmbiguityResolver:
         self.resolution_cache: Dict[str, Any] = {}
         self._model_initialized = False
 
-        # If no model provided and we have a registry, defer model selection until first use
-        if not model and model_registry:
-            available_models = model_registry.list_models()
-            if not available_models:
-                raise ValueError(
-                    "No AI model available for ambiguity resolution. "
-                    "A real model must be provided."
-                )
-        elif not model and not model_registry:
+        # With a registry but no model, selection is deferred to `resolve()`,
+        # which raises AmbiguityResolutionError if the registry cannot serve
+        # one. Probing the registry here would force a registry that discovers
+        # its models on demand to read the user's credentials at compile time,
+        # for a pipeline that may contain no AUTO tags at all.
+        if not model and not model_registry:
             raise ValueError(
                 "No AI model available for ambiguity resolution. "
                 "A real model must be provided."

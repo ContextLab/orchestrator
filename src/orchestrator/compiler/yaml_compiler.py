@@ -1166,11 +1166,9 @@ class YAMLCompiler:
         if "model" in pipeline_def:
             metadata["model"] = pipeline_def["model"]
 
-        # Debug: log what's in context
-        if "topic" in context:
-            logger.warning(f"YAML Compiler: Creating pipeline with topic='{context['topic']}'")
-        else:
-            logger.warning(f"YAML Compiler: Creating pipeline WITHOUT topic. Context keys: {list(context.keys())}")
+        # Compilation tracing. `topic` is optional, so its absence is not a
+        # warning -- reporting it as one made every ordinary run look wrong.
+        logger.debug("Creating pipeline %s with context keys: %s", pipeline_id, list(context.keys()))
         
         # Create pipeline
         pipeline = Pipeline(

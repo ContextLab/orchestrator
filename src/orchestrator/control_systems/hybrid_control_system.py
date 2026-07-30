@@ -158,7 +158,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         # Check if a specific tool is requested
         tool_name = task.metadata.get("tool")
         if tool_name:
-            print(f"Routing to tool handler: {tool_name}")
+            logger.debug("Routing to tool handler: %s", tool_name)
             return await self._handle_tool_execution(task, tool_name, context)
 
         # Check if this is a control flow operation
@@ -500,7 +500,10 @@ class HybridControlSystem(ModelBasedControlSystem):
             if "_loop_context_mapping" in context:
                 resolved_params["_loop_context_mapping"] = context["_loop_context_mapping"]
             
-            print(f"   📋 Using UnifiedTemplateResolver for filesystem tool with {len(context.get('previous_results', {}))} results")
+            logger.debug(
+                "Using UnifiedTemplateResolver for filesystem tool with %d results",
+                len(context.get("previous_results", {})),
+            )
             
             return await self.filesystem_tool.execute(**resolved_params)
         
@@ -539,7 +542,10 @@ class HybridControlSystem(ModelBasedControlSystem):
             if "_loop_context_mapping" in context:
                 resolved_params["_loop_context_mapping"] = context["_loop_context_mapping"]
             
-            print(f"   📋 Using UnifiedTemplateResolver for filesystem tool with {len(context.get('previous_results', {}))} results")
+            logger.debug(
+                "Using UnifiedTemplateResolver for filesystem tool with %d results",
+                len(context.get("previous_results", {})),
+            )
             
             return await self.filesystem_tool.execute(**resolved_params)
 

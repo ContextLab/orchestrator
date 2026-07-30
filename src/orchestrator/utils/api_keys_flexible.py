@@ -1,10 +1,13 @@
 """Flexible API key loading that doesn't require all keys to be present."""
 
+import logging
 import os
 from pathlib import Path
 from typing import Dict, Set, Optional
 
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 
 def load_api_keys_optional() -> Dict[str, str]:
@@ -13,32 +16,27 @@ def load_api_keys_optional() -> Dict[str, str]:
     Unlike load_api_keys(), this doesn't raise errors for missing keys.
     It returns a dict of available keys.
 
+    This reads the user's credentials, so it must only be called when a model
+    is actually required -- never speculatively at startup or compile time.
+
     Returns:
         Dict mapping provider names to their API keys (if available)
     """
-    # Debug logging
-    is_github_actions = os.getenv("GITHUB_ACTIONS")
-    if is_github_actions:
-        print(f">> Running in GitHub Actions (GITHUB_ACTIONS={is_github_actions})")
-    
-    # Check if running in GitHub Actions
-    if is_github_actions:
-        # Use environment variables directly - they're injected as secrets
-        print(">> Using environment variables from GitHub secrets")
+    # ``load_dotenv`` never overrides an already-set variable, so credentials
+    # injected by the environment (CI secrets, a shell export) always win over
+    # the file. There is therefore no CI-specific branch to make here.
+    env_path = Path.home() / ".orchestrator" / ".env"
+    if env_path.exists():
+        logger.debug("Loading API keys from %s", env_path)
+        load_dotenv(env_path)
     else:
-        # Load from ~/.orchestrator/.env for local development
-        env_path = Path.home() / ".orchestrator" / ".env"
-        if env_path.exists():
-            print(f">> Loading API keys from {env_path}")
-            load_dotenv(env_path)
-        else:
-            # Try legacy location
-            legacy_path = Path(".env")
-            if legacy_path.exists():
-                print(
-                    f"Warning: Found .env in current directory. Please move it to {env_path}"
-                )
-                load_dotenv(legacy_path)
+        # Legacy location, kept working but nudged toward the new one.
+        legacy_path = Path(".env")
+        if legacy_path.exists():
+            logger.warning(
+                "Found .env in the current directory; please move it to %s", env_path
+            )
+            load_dotenv(legacy_path)
 
     # Collect available keys
     provider_keys = {
@@ -52,13 +50,10 @@ def load_api_keys_optional() -> Dict[str, str]:
     for provider, env_var in provider_keys.items():
         value = os.getenv(env_var)
         if value:
-            # Don't log the actual key value for security
+            # Never log the key itself, nor its length.
             available[provider] = value
-            print(f">> Found API key for {provider} (length: {len(value)})")
-        else:
-            print(f">> No API key found for {provider} ({env_var})")
 
-    print(f">> Total API keys found: {len(available)}")
+    logger.debug("Credentials present for: %s", sorted(available) or "no providers")
     return available
 
 

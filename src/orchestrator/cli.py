@@ -10,44 +10,67 @@ from typing import Optional
 from .utils.api_keys import get_configured_providers, add_api_key, validate_api_keys
 
 
-def setup_logging():
-    """Configure logging based on LOG_LEVEL environment variable."""
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    
-    # Map string levels to logging constants
-    level_map = {
-        "DEBUG": logging.DEBUG,
-        "INFO": logging.INFO,
-        "WARNING": logging.WARNING,
-        "ERROR": logging.ERROR,
-        "CRITICAL": logging.CRITICAL,
-    }
-    
-    level = level_map.get(log_level, logging.INFO)
-    
-    # Configure logging
+# The default is deliberately quiet. Running a pipeline is a user-facing
+# operation, not a debugging session: its output should be the pipeline's
+# result plus anything that actually needs attention. Tracing is opt-in, via
+# --verbose or an explicit LOG_LEVEL/--log-level.
+DEFAULT_LOG_LEVEL = "WARNING"
+VERBOSE_LOG_LEVEL = "DEBUG"
+
+_LEVEL_MAP = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
+
+
+def setup_logging(verbose: bool = False):
+    """Configure logging.
+
+    Precedence: ``--verbose`` beats ``LOG_LEVEL`` (set by ``--log-level``),
+    which beats the quiet default.
+    """
+    if verbose:
+        log_level = VERBOSE_LOG_LEVEL
+    else:
+        log_level = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
+
+    level = _LEVEL_MAP.get(log_level, _LEVEL_MAP[DEFAULT_LOG_LEVEL])
+
+    # force=True so a later call (a subcommand's --verbose) actually replaces
+    # the handler installed by the group callback.
     logging.basicConfig(
         level=level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
+        force=True,
     )
-    
-    # Set orchestrator logger to the specified level
-    logger = logging.getLogger("orchestrator")
-    logger.setLevel(level)
+
+    logging.getLogger("orchestrator").setLevel(level)
+
+
+verbose_option = click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Print detailed execution tracing instead of just the result.",
+)
 
 
 @click.group()
-@click.option("--log-level", 
-              type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], 
+@click.option("--log-level",
+              type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
                                case_sensitive=False),
               help="Set logging level (overrides LOG_LEVEL environment variable)")
-def cli(log_level):
+@verbose_option
+def cli(log_level, verbose):
     """Orchestrator - AI pipeline orchestration framework."""
     # Set up logging - apply CLI parameter if provided
     if log_level:
         os.environ["LOG_LEVEL"] = log_level.upper()
-    setup_logging()
+    setup_logging(verbose=verbose)
 
 
 @cli.group()
@@ -166,37 +189,25 @@ EXIT_INTERRUPTED = 130
 
 
 def _build_orchestrator():
-    """Construct an Orchestrator suited to the available environment.
+    """Construct an Orchestrator whose model registry populates on demand.
 
     A pipeline built only from deterministic local tools (filesystem,
-    data-processing, validation, ...) needs no model provider at all. The
-    default ``Orchestrator()`` refuses to start without a populated model
-    registry, which made such pipelines impossible to run without credentials.
+    data-processing, validation, ...) needs no model provider at all, and must
+    not inspect the user's provider credentials to find that out. Eagerly
+    calling ``init_models()`` here did exactly that: every run read
+    ``~/.orchestrator/.env`` and probed every configured provider before
+    discovering the pipeline never wanted a model.
 
-    So: register models when credentials/local models are present, and
-    otherwise fall back to the tool-only control system. The fallback is
-    announced rather than silent -- a step that genuinely needs a model then
-    fails with that step's own error, instead of being masked here.
+    Instead the orchestrator gets a :class:`LazyModelRegistry`. Compilation and
+    tool-only execution stay hermetic; the first step that actually asks for a
+    model triggers credential discovery, and if none can be served that step
+    fails with its own error rather than one manufactured here.
     """
-    from .control_systems.tool_integrated_control_system import (
-        ToolIntegratedControlSystem,
-    )
+    from ._api import populate_model_registry
+    from .models.lazy_registry import LazyModelRegistry
     from .orchestrator import Orchestrator
 
-    try:
-        from . import init_models
-
-        registry = init_models()
-        if registry.models:
-            return Orchestrator(model_registry=registry)
-    except Exception as exc:  # noqa: BLE001 - degrade to the tool-only path
-        click.echo(f"Model initialization skipped ({type(exc).__name__}: {exc})", err=True)
-
-    click.echo(
-        "No models available - running with deterministic local tools only.",
-        err=True,
-    )
-    return Orchestrator(control_system=ToolIntegratedControlSystem())
+    return Orchestrator(model_registry=LazyModelRegistry(populate_model_registry))
 
 
 def _load_context(context_file: Optional[str], inputs: tuple) -> dict:
@@ -252,13 +263,23 @@ def _load_context(context_file: Optional[str], inputs: tuple) -> dict:
     type=click.Path(dir_okay=False),
     help="Write results as JSON to this file instead of stdout.",
 )
-def run(pipeline_file: str, context: Optional[str], inputs: tuple, output: Optional[str]):
+@verbose_option
+def run(
+    pipeline_file: str,
+    context: Optional[str],
+    inputs: tuple,
+    output: Optional[str],
+    verbose: bool,
+):
     """Run a pipeline from a YAML file.
 
     Compiles PIPELINE_FILE and executes it, printing the results as JSON.
     """
     import asyncio
     import json
+
+    if verbose:
+        setup_logging(verbose=True)
 
     ctx = _load_context(context, inputs)
 
@@ -326,9 +347,13 @@ def _failed_steps(results) -> list:
 
 @cli.command("validate")
 @click.argument("pipeline_file", type=click.Path(exists=True, dir_okay=False))
-def validate_pipeline(pipeline_file: str):
+@verbose_option
+def validate_pipeline(pipeline_file: str, verbose: bool):
     """Compile a pipeline without running it, and report its task graph."""
     import asyncio
+
+    if verbose:
+        setup_logging(verbose=True)
 
     from .compiler.yaml_compiler import YAMLCompiler
 

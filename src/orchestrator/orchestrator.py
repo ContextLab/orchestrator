@@ -140,8 +140,10 @@ class Orchestrator:
         
         # Initialize control system after template resolver is ready
         if control_system is None:
-            # We need models to create a real control system
-            if not self.model_registry.models:
+            # We need models to create a real control system. Ask the registry
+            # rather than reading `.models`: a registry that discovers its
+            # contents on demand is empty here but can still serve a model.
+            if not self.model_registry.can_provide_models():
                 raise RuntimeError(
                     "No control system provided and no models available. "
                     "Initialize models first with init_models() or provide a control system."
@@ -171,7 +173,7 @@ class Orchestrator:
             # does need resolution fails later with that specific error.
             compiler_registry = (
                 self.model_registry
-                if getattr(self.model_registry, "models", None)
+                if self.model_registry.can_provide_models()
                 else None
             )
             self.yaml_compiler = ControlFlowCompiler(
@@ -856,8 +858,10 @@ class Orchestrator:
             
             if executable_tasks:
                 # Execute tasks in parallel within the level
-                self.logger.warning(f"ORCHESTRATOR: Executing level {level_index} with tasks: {executable_tasks}")
-                self.logger.warning(f"ORCHESTRATOR: Accumulated results so far: {list(results.keys())}")
+                # Execution tracing, not a problem report: keep it at debug so
+                # a normal run is quiet and `--verbose` still shows the trace.
+                self.logger.debug("Executing level %s with tasks: %s", level_index, executable_tasks)
+                self.logger.debug("Accumulated results so far: %s", list(results.keys()))
                 level_results = await self._execute_level(pipeline, executable_tasks, context, results)
 
                 # Check for failures

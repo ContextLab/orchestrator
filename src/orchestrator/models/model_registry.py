@@ -71,6 +71,16 @@ class ModelRegistry:
         self._langchain_adapters: Dict[str, LangChainModelAdapter] = {}
         self._langchain_enabled = True
 
+    def can_provide_models(self) -> bool:
+        """Whether this registry is able to serve a model when one is demanded.
+
+        Callers use this instead of testing ``registry.models`` directly, so a
+        registry that discovers its contents on demand (see
+        :class:`~orchestrator.models.lazy_registry.LazyModelRegistry`) can
+        answer honestly without being forced to populate itself.
+        """
+        return bool(self.models)
+
     def register_model(self, model: Model) -> None:
         """
         Register a new model.

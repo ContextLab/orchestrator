@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import json
 import os
 from typing import Any, Dict, List, Optional
@@ -24,6 +26,8 @@ from orchestrator.core.model import (
     ModelRequirements,
 )
 
+
+logger = logging.getLogger(__name__)
 
 class OpenAIModel(Model):
     """OpenAI model implementation."""
@@ -267,23 +271,27 @@ class OpenAIModel(Model):
             import subprocess
             import sys
 
-            try:
-                # Installing at runtime reaches the network and mutates the
-                # live environment on an ordinary pipeline run, so it is
-                # gated behind the same explicit opt-in as utils.auto_install.
-                from ..utils.auto_install import (
-                    AUTO_INSTALL_ENV_VAR,
-                    auto_install_enabled,
+            # Installing at runtime reaches the network and mutates the
+            # live environment on an ordinary pipeline run, so it is
+            # gated behind the same explicit opt-in as utils.auto_install.
+            from ..utils.auto_install import (
+                AUTO_INSTALL_ENV_VAR,
+                auto_install_enabled,
+            )
+
+            if not auto_install_enabled():
+                # This is the whole story: the library is absent and we are
+                # not allowed to fetch it. Re-wrapping it as "Failed to
+                # install ..." reported one cause twice and named the wrong
+                # one -- nothing was attempted, so nothing failed to install.
+                raise ImportError(
+                    "OpenAI library is not installed. Install it with: "
+                    "pip install 'py-orc[openai]' "
+                    f"(or set {AUTO_INSTALL_ENV_VAR}=1 to install automatically)."
                 )
 
-                if not auto_install_enabled():
-                    raise ImportError(
-                        "OpenAI library is not installed. Install it with: "
-                        "pip install 'py-orc[openai]' "
-                        f"(or set {AUTO_INSTALL_ENV_VAR}=1 to install automatically)."
-                    )
-
-                print("OpenAI library not found. Installing...")
+            logger.info("OpenAI library not found; installing it.")
+            try:
                 subprocess.check_call(
                     [sys.executable, "-m", "pip", "install", "openai"]
                 )
@@ -294,8 +302,9 @@ class OpenAIModel(Model):
                 OPENAI_AVAILABLE = True
             except Exception as e:
                 raise ImportError(
-                    f"Failed to install OpenAI library: {e}. Install manually with: pip install openai"
-                )
+                    f"Could not install the OpenAI library automatically: {e}. "
+                    "Install it with: pip install openai"
+                ) from e
 
         # Get model configuration
         config = self.MODEL_CONFIGS.get(model_name)

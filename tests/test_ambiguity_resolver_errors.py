@@ -57,15 +57,27 @@ class TestErrorHandling:
         
         return real_registry.get_model(model_name)
 
-    def test_no_model_available_error_real(self):
-        """Test error when no model is available at initialization."""
-        # Create a registry with no models by passing an empty dict
-        from orchestrator.models.model_registry import ModelRegistry
-        empty_registry = ModelRegistry()
-        
-        # Should raise ValueError at initialization
+    def test_no_model_and_no_registry_fails_immediately(self):
+        """With neither a model nor a registry, there is nothing to defer to."""
         with pytest.raises(ValueError, match="No AI model available"):
-            AmbiguityResolver(model_registry=empty_registry)
+            AmbiguityResolver()
+
+    @pytest.mark.asyncio
+    async def test_empty_registry_fails_when_resolution_is_attempted(self):
+        """An empty registry is only a problem once something needs resolving.
+
+        Construction used to call ``list_models()`` and reject an empty
+        registry on the spot. That forced a registry which discovers its models
+        on demand to read the user's credentials at *compile* time, for a
+        pipeline that may contain no AUTO tags at all. The check now happens
+        where the demand is -- in ``resolve()`` -- and says the same thing.
+        """
+        from orchestrator.models.model_registry import ModelRegistry
+
+        resolver = AmbiguityResolver(model_registry=ModelRegistry())
+
+        with pytest.raises(AmbiguityResolutionError, match="No AI model available"):
+            await resolver.resolve("json or yaml", "output.format")
 
     @pytest.mark.asyncio
     async def test_model_resolution_real(self, real_registry, real_model):

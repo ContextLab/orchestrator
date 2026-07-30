@@ -48,42 +48,40 @@ class TestAPIKeyDetection:
                 else:
                     os.environ[var] = value
     
-    def test_load_api_keys_github_actions_simulation(self):
-        """Test loading API keys with GitHub Actions environment variables set."""
-        # Save current environment
-        saved_env = {}
-        vars_to_save = ["GITHUB_ACTIONS", "CI", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", 
-                        "GOOGLE_AI_API_KEY", "HF_TOKEN"]
-        for var in vars_to_save:
-            saved_env[var] = os.environ.get(var)
-        
-        try:
-            # Clear environment and set GitHub Actions environment
-            for var in vars_to_save:
-                os.environ.pop(var, None)
-                
-            os.environ["GITHUB_ACTIONS"] = "true"
-            os.environ["CI"] = "true"
-            os.environ["OPENAI_API_KEY"] = "gh-secret-openai-real"
-            os.environ["ANTHROPIC_API_KEY"] = "gh-secret-anthropic-real"
-            
-            # Load keys - this actually checks for GITHUB_ACTIONS
-            loaded_keys = load_api_keys_optional()
-            
-            assert loaded_keys.get("openai") == "gh-secret-openai-real"
-            assert loaded_keys.get("anthropic") == "gh-secret-anthropic-real"
-            # Should not have keys that weren't set
-            assert "google" not in loaded_keys
-            assert "huggingface" not in loaded_keys
-            
-        finally:
-            # Restore environment
-            for var, value in saved_env.items():
-                if value is None:
-                    os.environ.pop(var, None)
-                else:
-                    os.environ[var] = value
-    
+    def test_environment_credentials_win_without_a_ci_special_case(self, tmp_path, monkeypatch):
+        """Credentials in the environment take precedence over the .env file.
+
+        ``load_api_keys_optional`` used to branch on ``GITHUB_ACTIONS`` and skip
+        the file entirely when set. That branch was load-bearing for nothing:
+        ``load_dotenv`` never overrides an already-set variable, so injected
+        secrets already win. It only served to make CI behave differently from
+        a developer machine, which is how an eager-credential-read defect went
+        unnoticed in CI. It is gone; this pins the behaviour that replaced it.
+        """
+        home = tmp_path / "home"
+        (home / ".orchestrator").mkdir(parents=True)
+        (home / ".orchestrator" / ".env").write_text(
+            "OPENAI_API_KEY=from-file\nGOOGLE_AI_API_KEY=google-from-file\n"
+        )
+        monkeypatch.setenv("HOME", str(home))
+        monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+
+        for var in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_AI_API_KEY", "HF_TOKEN"):
+            monkeypatch.delenv(var, raising=False)
+        monkeypatch.setenv("GITHUB_ACTIONS", "true")
+        monkeypatch.setenv("OPENAI_API_KEY", "gh-secret-openai-real")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "gh-secret-anthropic-real")
+
+        loaded_keys = load_api_keys_optional()
+
+        # Injected secrets win over the file, with or without GITHUB_ACTIONS.
+        assert loaded_keys.get("openai") == "gh-secret-openai-real"
+        assert loaded_keys.get("anthropic") == "gh-secret-anthropic-real"
+        # A provider only present in the file is still discovered.
+        assert loaded_keys.get("google") == "google-from-file"
+        # A provider configured nowhere is absent.
+        assert "huggingface" not in loaded_keys
+
     def test_load_api_keys_from_real_dotenv_file(self):
         """Test loading API keys from actual .env file."""
         # Create a temporary directory to simulate home
@@ -218,46 +216,44 @@ class TestAPIKeyDetection:
             assert "Missing API key for fake_provider" in str(exc_info.value)
             assert "FAKE_PROVIDER_API_KEY" in str(exc_info.value)
     
-    def test_debug_logging_output_real(self, capsys):
-        """Test that debug logging works correctly with real environment."""
-        # Save current environment
-        saved_env = {}
-        vars_to_save = ["GITHUB_ACTIONS", "CI", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-                        "GOOGLE_AI_API_KEY", "HF_TOKEN"]
-        for var in vars_to_save:
-            saved_env[var] = os.environ.get(var)
-        
-        try:
-            # Set up test environment
-            for var in vars_to_save:
-                os.environ.pop(var, None)
-                
-            os.environ["GITHUB_ACTIONS"] = "true"
-            os.environ["OPENAI_API_KEY"] = "test-key-12345"
-            os.environ["ANTHROPIC_API_KEY"] = "test-key-67890"
-            
-            # Actually load keys and capture output
-            load_api_keys_optional()
-            
-            # Check debug output
-            captured = capsys.readouterr()
-            assert "Running in GitHub Actions" in captured.out
-            assert "Using environment variables from GitHub secrets" in captured.out
-            assert "Found API key for openai (length: 14)" in captured.out
-            assert "Found API key for anthropic (length: 14)" in captured.out
-            assert "No API key found for google" in captured.out
-            assert "Total API keys found: 2" in captured.out
-            # Should not log actual key values
-            assert "test-key-12345" not in captured.out
-            assert "test-key-67890" not in captured.out
-            
-        finally:
-            # Restore environment
-            for var, value in saved_env.items():
-                if value is None:
-                    os.environ.pop(var, None)
-                else:
-                    os.environ[var] = value
+    def test_loading_credentials_prints_nothing_and_leaks_nothing(
+        self, tmp_path, monkeypatch, capsys, caplog
+    ):
+        """Credential discovery is silent on stdout and never echoes a key.
+
+        It used to print a running commentary -- which provider files it read,
+        which keys it found and how long each was -- on every run. Key lengths
+        are themselves a disclosure, and the commentary was a large part of the
+        CLI's default noise. What remains goes to the logger at DEBUG.
+        """
+        import logging
+
+        home = tmp_path / "home"
+        (home / ".orchestrator").mkdir(parents=True)
+        (home / ".orchestrator" / ".env").write_text("HF_TOKEN=hf-secret-value\n")
+        monkeypatch.setenv("HOME", str(home))
+        monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+
+        for var in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_AI_API_KEY", "HF_TOKEN"):
+            monkeypatch.delenv(var, raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key-12345")
+
+        with caplog.at_level(logging.DEBUG, logger="orchestrator.utils.api_keys_flexible"):
+            loaded = load_api_keys_optional()
+
+        assert loaded["openai"] == "test-key-12345"
+        assert loaded["huggingface"] == "hf-secret-value"
+
+        captured = capsys.readouterr()
+        assert captured.out == "", f"credential loading printed to stdout: {captured.out!r}"
+
+        logged = captured.out + captured.err + caplog.text
+        # Neither the values nor their lengths.
+        assert "test-key-12345" not in logged
+        assert "hf-secret-value" not in logged
+        assert "length" not in logged.lower()
+        # The providers that were found are still traceable at DEBUG.
+        assert "openai" in caplog.text
 
 
 class TestModelInitialization:
