@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import logging
 import pickle
 import threading
 import time
@@ -12,7 +13,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
-from .safe_serialization import ensure_pickle_allowed
+from .safe_serialization import PickleDisabledError, ensure_pickle_allowed
+
+logger = logging.getLogger(__name__)
 
 
 class CacheLevel(Enum):
@@ -496,42 +499,67 @@ class DiskCache(CacheBackend):
             pass
 
     async def get(self, key: str) -> Optional[CacheEntry]:
-        """Get value from disk cache."""
+        """Get value from disk cache.
+
+        Two failure modes are deliberately kept apart:
+
+        * **Policy refusal** -- pickle loading is disabled. The stored entry is
+          still intact and becomes readable again the moment the operator sets
+          ``ORCHESTRATOR_ALLOW_PICKLE``, so the index is left untouched and the
+          :class:`PickleDisabledError` propagates with its actionable message.
+          Evicting here would silently destroy recoverable data every time the
+          variable happens to be off.
+        * **Corruption** -- the file is damaged, truncated, or holds something
+          that is not a :class:`CacheEntry`. That entry is unusable, so it is
+          evicted and the reason logged.
+
+        Raises:
+            PickleDisabledError: Pickle loading is disabled.
+        """
         with self._lock:
             if key not in self._index:
                 return None
 
             file_path = self._get_file_path(key)
+
+            # Cache entries are unpickled; refuse unless explicitly allowed,
+            # since a writable cache directory would otherwise be a
+            # code-execution vector. Checked before the file is opened so a
+            # refusal cannot leak a handle.
+            ensure_pickle_allowed(f"cache entry {file_path}")
+
             try:
-                # Cache entries are unpickled; refuse unless explicitly
-                # allowed, since a writable cache directory would otherwise be
-                # a code-execution vector.
-                ensure_pickle_allowed(f"cache entry {file_path}")
                 with open(file_path, "rb") as f:
                     entry = pickle.load(f)
-
-                # Check if expired
-                if entry.is_expired():
-                    await self.delete(key)
-                    return None
-
-                # Update access info
-                entry.touch()
-
-                # Update index
-                self._index[key] = {
-                    "accessed_at": entry.accessed_at,
-                    "access_count": entry.access_count,
-                }
-
-                return entry
-
-            except Exception:
-                # File corruption or missing, remove from index
-                if key in self._index:
-                    del self._index[key]
-                    self._save_index()
+                if not isinstance(entry, CacheEntry):
+                    raise TypeError(
+                        f"expected a CacheEntry, got {type(entry).__name__}"
+                    )
+            except Exception as exc:
+                logger.warning(
+                    "Evicting corrupt disk cache entry %r (%s): %s",
+                    key,
+                    file_path,
+                    exc,
+                )
+                await self.delete(key)
                 return None
+
+            # Check if expired
+            if entry.is_expired():
+                await self.delete(key)
+                return None
+
+            # Update access info
+            entry.touch()
+
+            # Update index
+            self._index[key] = {
+                "accessed_at": entry.accessed_at,
+                "access_count": entry.access_count,
+            }
+
+            return entry
 
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in disk cache."""
@@ -625,26 +653,49 @@ class DiskCache(CacheBackend):
         await self.delete(oldest_key)
 
     async def cleanup_expired(self):
-        """Remove expired entries from cache."""
-        with self._lock:
-            time.time()
-            expired_keys = []
+        """Remove expired and unreadable entries from cache.
 
-            for key, entry_meta in self._index.items():
+        A refusal to unpickle is a policy state, not evidence of expiry: it
+        must not turn every entry into a deletion candidate and wipe the cache.
+        It is checked up front, before anything is removed.
+
+        Raises:
+            PickleDisabledError: Pickle loading is disabled. Nothing is deleted.
+        """
+        with self._lock:
+            keys = list(self._index.keys())
+
+            # Fail closed before any mutation: if reading is refused for one
+            # entry it is refused for all of them, and no entry may be dropped.
+            for key in keys:
+                ensure_pickle_allowed(f"cache entry {self._get_file_path(key)}")
+
+            removable_keys = []
+
+            for key in keys:
                 file_path = self._get_file_path(key)
                 try:
-                    ensure_pickle_allowed(f"cache entry {file_path}")
                     with open(file_path, "rb") as f:
                         entry = pickle.load(f)
+                    if not isinstance(entry, CacheEntry):
+                        raise TypeError(
+                            f"expected a CacheEntry, got {type(entry).__name__}"
+                        )
+                except Exception as exc:
+                    logger.warning(
+                        "Evicting corrupt disk cache entry %r (%s): %s",
+                        key,
+                        file_path,
+                        exc,
+                    )
+                    removable_keys.append(key)
+                    continue
 
-                    if entry.is_expired():
-                        expired_keys.append(key)
-                except Exception:
-                    # File corruption or missing, mark for removal
-                    expired_keys.append(key)
+                if entry.is_expired():
+                    removable_keys.append(key)
 
-            # Remove expired entries
-            for key in expired_keys:
+            # Remove expired and corrupt entries
+            for key in removable_keys:
                 await self.delete(key)
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -715,6 +766,10 @@ class DistributedCache(CacheBackend):
                 except Exception:
                     pass
                 return disk_entry.value
+        except PickleDisabledError:
+            # Not a cache miss: the entry exists but policy forbids reading it.
+            # Reporting it as absent would hide a fixable configuration state.
+            raise
         except Exception:
             pass
 

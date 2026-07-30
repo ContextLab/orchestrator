@@ -21,10 +21,20 @@ from enum import Enum
 from pathlib import Path
 
 # Internal imports
+from ..core.safe_serialization import PickleDisabledError, ensure_pickle_allowed
 from ..state.global_context import PipelineGlobalState, validate_pipeline_state
 from ..state.langgraph_state_manager import LangGraphGlobalContextManager
 
 logger = logging.getLogger(__name__)
+
+
+class StateDecompressionError(RuntimeError):
+    """Raised when a stored checkpoint payload cannot be turned back into state.
+
+    Decompression failures must never degrade into "return the input": the
+    input is an undeserialized, potentially attacker-controlled blob, and a
+    caller that receives it would treat those raw bytes as restored state.
+    """
 
 
 class CompressionMethod(Enum):
@@ -435,7 +445,15 @@ class PerformanceOptimizer:
         return compressed, stats
     
     async def _decompress_state(self, compressed_data: Any) -> PipelineGlobalState:
-        """Decompress pipeline state."""
+        """Decompress pipeline state.
+
+        Raises:
+            PickleDisabledError: The payload is pickled and the operator has
+                not opted in. Propagated unchanged so the message naming
+                ``ORCHESTRATOR_ALLOW_PICKLE`` reaches the caller.
+            StateDecompressionError: The payload is unreadable (truncated,
+                wrong method, hostile). The raw bytes are never handed back.
+        """
         if not isinstance(compressed_data, bytes):
             return compressed_data  # Not compressed
         
@@ -452,22 +470,30 @@ class PerformanceOptimizer:
             elif self.compression_method == CompressionMethod.PICKLE:
                 # Checkpoint payloads are unpickled; refuse unless explicitly
                 # allowed. The JSON/ZLIB methods above carry no such risk.
-                from ..core.safe_serialization import ensure_pickle_allowed
-
                 ensure_pickle_allowed("compressed checkpoint state")
                 state = pickle.loads(compressed_data)
             else:
                 state = json.loads(compressed_data.decode('utf-8'))
-            
-            decompression_time = time.time() - start_time
-            logger.debug(f"Decompressed state in {decompression_time:.3f}s")
-            
-            return state
-            
+
+        except PickleDisabledError:
+            # A policy refusal, not a damaged payload: the operator can correct
+            # it, so the actionable message must not be swallowed or reshaped.
+            logger.error(
+                "Refused to decompress checkpoint state: pickle loading is disabled"
+            )
+            raise
         except Exception as e:
             logger.error(f"State decompression failed: {e}")
-            # Return as-is if decompression fails
-            return compressed_data
+            raise StateDecompressionError(
+                f"Could not decompress checkpoint state "
+                f"({len(compressed_data)} bytes, "
+                f"method={self.compression_method.value}): {e}"
+            ) from e
+
+        decompression_time = time.time() - start_time
+        logger.debug(f"Decompressed state in {decompression_time:.3f}s")
+
+        return state
     
     async def _update_cache(self, thread_id: str, state: PipelineGlobalState):
         """Update state cache with LRU eviction."""
@@ -516,7 +542,7 @@ class PerformanceOptimizer:
             # Use JSON serialization as size estimate
             serialized = json.dumps(state, ensure_ascii=False)
             return len(serialized.encode('utf-8'))
-        except:
+        except Exception:
             # Fallback to string representation
             return len(str(state))
     
