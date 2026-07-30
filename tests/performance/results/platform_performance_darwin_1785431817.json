@@ -1,0 +1,97 @@
+{
+  "platform_info": {
+    "system": "Darwin",
+    "release": "25.5.0",
+    "version": "Darwin Kernel Version 25.5.0: Tue Jun  9 22:28:24 PDT 2026; root:xnu-12377.121.10~1/RELEASE_ARM64_T6020",
+    "machine": "arm64",
+    "processor": "arm",
+    "python_version": "3.12.10",
+    "cpu_count_physical": 12,
+    "cpu_count_logical": 12,
+    "cpu_frequency_mhz": 3696,
+    "memory_total_gb": 96.0,
+    "disk_total_gb": 1858.1917190551758,
+    "uptime_hours": 245.66056428558298,
+    "platform_specific": {
+      "cpu_brand": "Apple M2 Max",
+      "is_apple_silicon": true
+    }
+  },
+  "test_summary": {
+    "total_tests": 3,
+    "test_date": "2026-07-30T17:16:57.817240",
+    "python_version": "3.12.10",
+    "orchestrator_version": "0.1.0"
+  },
+  "performance_statistics": {
+    "execution_time": {
+      "mean_ms": 58.441166300326586,
+      "median_ms": 57.81541601754725,
+      "std_dev_ms": 3.891582955438174,
+      "min_ms": 54.90037496201694,
+      "max_ms": 62.60770792141557
+    },
+    "memory_usage": {
+      "mean_mb": 0.020833333333333332,
+      "median_mb": 0.0,
+      "std_dev_mb": 0.03608439182435161,
+      "min_mb": 0.0,
+      "max_mb": 0.0625,
+      "peak_mb": 0.0625
+    },
+    "cpu_usage": {
+      "mean_percent": 0.6447605333333328,
+      "median_percent": 0.5830559999999707,
+      "std_dev_percent": 0.38998569184941434,
+      "min_percent": 0.2893056000000005,
+      "max_percent": 1.0619200000000273
+    }
+  },
+  "detailed_results": [
+    {
+      "test_name": "test_0",
+      "platform": "Darwin",
+      "execution_time_ms": 54.90037496201694,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 0.2893056000000005,
+      "disk_io_read_mb": 0.0,
+      "disk_io_write_mb": 0.0,
+      "network_io_bytes": 3909632,
+      "peak_memory_mb": 0.0,
+      "platform_specific": {
+        "vm_stat_available": true
+      },
+      "timestamp": "2026-07-30T17:16:57.476247"
+    },
+    {
+      "test_name": "test_1",
+      "platform": "Darwin",
+      "execution_time_ms": 57.81541601754725,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 0.5830559999999707,
+      "disk_io_read_mb": 0.0,
+      "disk_io_write_mb": 0.0,
+      "network_io_bytes": 3935232,
+      "peak_memory_mb": 0.0,
+      "platform_specific": {
+        "vm_stat_available": true
+      },
+      "timestamp": "2026-07-30T17:16:57.645770"
+    },
+    {
+      "test_name": "test_2",
+      "platform": "Darwin",
+      "execution_time_ms": 62.60770792141557,
+      "memory_usage_mb": 0.0625,
+      "cpu_usage_percent": 1.0619200000000273,
+      "disk_io_read_mb": 0.0,
+      "disk_io_write_mb": 0.0,
+      "network_io_bytes": 4344832,
+      "peak_memory_mb": 0.0625,
+      "platform_specific": {
+        "vm_stat_available": true
+      },
+      "timestamp": "2026-07-30T17:16:57.817121"
+    }
+  ]
+}

@@ -718,7 +718,13 @@ class HybridControlSystem(ModelBasedControlSystem):
                             "parsed_data": parsed_data,  # Pre-parsed data
                             "json": json,
                         }
-                        # Evaluate the expression
+                        # NOT migrated to orchestrator.core.expressions:
+                        # transform_spec expressions in real pipelines require
+                        # method calls on a module (`json.loads(data)`),
+                        # generator expressions and list comprehensions --
+                        # e.g. "sum(item['price'] for item in json.loads(data)['items'])"
+                        # -- none of which the constrained evaluator supports.
+                        # Tracked as an outstanding eval() site.
                         processed_data[field] = eval(
                             expr, {"__builtins__": safe_builtins}, eval_context
                         )

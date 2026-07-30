@@ -450,6 +450,11 @@ class PerformanceOptimizer:
                 decompressed = zlib.decompress(compressed_data)
                 state = json.loads(decompressed.decode('utf-8'))
             elif self.compression_method == CompressionMethod.PICKLE:
+                # Checkpoint payloads are unpickled; refuse unless explicitly
+                # allowed. The JSON/ZLIB methods above carry no such risk.
+                from ..core.safe_serialization import ensure_pickle_allowed
+
+                ensure_pickle_allowed("compressed checkpoint state")
                 state = pickle.loads(compressed_data)
             else:
                 state = json.loads(compressed_data.decode('utf-8'))

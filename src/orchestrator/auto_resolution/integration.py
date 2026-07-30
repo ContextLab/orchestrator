@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 
 from ..core.pipeline import Pipeline
+from ..core.expressions import evaluate_condition
 from ..models.model_registry import ModelRegistry
 from .models import AutoTagContext, AutoTagConfig
 from .resolver import LazyAutoTagResolver
@@ -260,11 +261,11 @@ class EnhancedControlFlowAutoResolver:
             elif lower in ("false", "no", "0", "off", ""):
                 return False
             else:
-                # Try to evaluate as expression
-                try:
-                    return bool(eval(lower, {"__builtins__": {}}, {}))
-                except:
-                    return bool(value)
+                # Try to evaluate as expression. An AUTO-resolved string that
+                # is not a recognizable boolean expression is treated as False:
+                # the previous fallback (`bool(value)`) made every unparseable
+                # string truthy, which fails OPEN for the conditions this feeds.
+                return evaluate_condition(lower, {}, default=False)
         else:
             return bool(value)
     

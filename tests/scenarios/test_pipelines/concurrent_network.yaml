@@ -10,21 +10,21 @@ steps:
       tasks:
         - action: web_request
           parameters:
-            url: "http://localhost:57488/test1"
+            url: "http://localhost:58202/test1"
             timeout: 10
         - action: web_request
           parameters:
-            url: "http://localhost:57488/test2"  
+            url: "http://localhost:58202/test2"  
             timeout: 10
         - action: web_request
           parameters:
-            url: "http://localhost:57488/test3"
+            url: "http://localhost:58202/test3"
             timeout: 10
         - action: web_request
           parameters:
-            url: "http://localhost:57488/test4"
+            url: "http://localhost:58202/test4"
             timeout: 10
         - action: web_request
           parameters:
-            url: "http://localhost:57488/test5"
+            url: "http://localhost:58202/test5"
             timeout: 10

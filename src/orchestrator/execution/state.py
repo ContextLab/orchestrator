@@ -306,7 +306,15 @@ class FileStateManager:
             pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
     
     def _load_pickle(self, filepath: Path) -> Dict[str, Any]:
-        """Load data from pickle."""
+        """Load data from pickle.
+
+        Refuses unless ORCHESTRATOR_ALLOW_PICKLE=1: unpickling a state file
+        executes whatever code it contains. The default JSON format has no
+        such property.
+        """
+        from ..core.safe_serialization import ensure_pickle_allowed
+
+        ensure_pickle_allowed(f"execution state file {filepath}")
         with open(filepath, 'rb') as f:
             return pickle.load(f)
     
@@ -327,7 +335,13 @@ class FileStateManager:
             pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
     
     def _load_compressed_pickle(self, filepath: Path) -> Dict[str, Any]:
-        """Load data from compressed pickle."""
+        """Load data from compressed pickle.
+
+        Refuses unless ORCHESTRATOR_ALLOW_PICKLE=1; see :meth:`_load_pickle`.
+        """
+        from ..core.safe_serialization import ensure_pickle_allowed
+
+        ensure_pickle_allowed(f"compressed execution state file {filepath}")
         with gzip.open(filepath, 'rb') as f:
             return pickle.load(f)
     

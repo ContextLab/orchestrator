@@ -116,12 +116,10 @@ class ConditionalExecutor:
             parts = expression.split(" or ")
             return any(self._evaluate_expression(part) for part in parts)
         else:
-            # Try to evaluate as a simple boolean
-            try:
-                return bool(eval(expression))
-            except Exception:
-                logger.warning(f"Could not evaluate expression: {expression}")
-                return False
+            # Try to evaluate as a simple boolean. The condition text is
+            # pipeline data: it is evaluated with no names in scope beyond the
+            # built-in helper allowlist, and fails closed.
+            return evaluate_condition(expression, {}, default=False)
 
 
 class LoopExecutor:

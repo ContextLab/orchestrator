@@ -6,7 +6,7 @@ steps:
   - id: first_request
     action: web_request
     parameters:
-      url: "http://localhost:57487/test"
+      url: "http://localhost:58198/test"
       timeout: 5
     outputs:
       - first_response
@@ -24,7 +24,7 @@ steps:
   - id: second_request
     action: web_request
     parameters:
-      url: "http://localhost:57487/test"
+      url: "http://localhost:58198/test"
       timeout: 5
       retry_count: 2
       retry_delay: 1

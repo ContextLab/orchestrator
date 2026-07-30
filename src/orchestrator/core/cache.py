@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
+from .safe_serialization import ensure_pickle_allowed
+
 
 class CacheLevel(Enum):
     """Cache level priorities."""
@@ -501,6 +503,10 @@ class DiskCache(CacheBackend):
 
             file_path = self._get_file_path(key)
             try:
+                # Cache entries are unpickled; refuse unless explicitly
+                # allowed, since a writable cache directory would otherwise be
+                # a code-execution vector.
+                ensure_pickle_allowed(f"cache entry {file_path}")
                 with open(file_path, "rb") as f:
                     entry = pickle.load(f)
 
@@ -627,6 +633,7 @@ class DiskCache(CacheBackend):
             for key, entry_meta in self._index.items():
                 file_path = self._get_file_path(key)
                 try:
+                    ensure_pickle_allowed(f"cache entry {file_path}")
                     with open(file_path, "rb") as f:
                         entry = pickle.load(f)
 
