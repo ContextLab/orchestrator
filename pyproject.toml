@@ -198,7 +198,13 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 # Test timeout configuration
 timeout = 300
-timeout_method = "thread"
+# "thread" cannot interrupt a test blocked in a C-level call (a socket read, a
+# subprocess wait), so the suite would hang indefinitely part-way through and
+# never produce a summary. "signal" interrupts the main thread and does
+# terminate those, which is what makes the legacy backlog measurable at all:
+# the same run that hung under "thread" completes in ~10 minutes under
+# "signal". Unix-only, which matches the ubuntu/macos CI matrix.
+timeout_method = "signal"
 
 # Exclude local tests from CI (Ollama tests require local setup)
 markers = [
