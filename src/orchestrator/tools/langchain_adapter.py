@@ -15,6 +15,8 @@ from typing import Any, Dict, List, Optional, Union, Callable
 from dataclasses import dataclass
 import inspect
 
+from pydantic import BaseModel, Field, create_model
+
 from .base import Tool as OrchestratorTool, ToolParameter
 
 logger = logging.getLogger(__name__)
@@ -23,7 +25,6 @@ logger = logging.getLogger(__name__)
 try:
     from langchain.tools import BaseTool, StructuredTool
     from langchain.callbacks.manager import CallbackManagerForToolRun
-    from pydantic import BaseModel, Field, create_model
     LANGCHAIN_AVAILABLE = True
 except ImportError:
     logger.warning("LangChain not available - install with: pip install langchain")

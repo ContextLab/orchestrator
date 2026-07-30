@@ -5,6 +5,9 @@ and security policy enforcement. NO MOCKS policy enforced.
 """
 
 import pytest
+
+pytest.importorskip("docker", reason="requires the [infra] extra and a Docker daemon")
+
 import asyncio
 import time
 import docker

@@ -12,11 +12,14 @@ AutoDebugger tool as specified in Issue #201. All tests use real systems:
 NO MOCK IMPLEMENTATIONS are used anywhere in this test suite.
 """
 
+import pytest
+
+pytest.importorskip("langchain", reason="requires the [langgraph] extra")
+
 import asyncio
 import json
 import os
 import tempfile
-import pytest
 import sys
 from pathlib import Path
 

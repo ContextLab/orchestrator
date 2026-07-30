@@ -1,5 +1,10 @@
 """Real integration tests for multimodal tools - NO MOCKS."""
 
+import pytest
+
+pytest.importorskip("PIL", reason="requires the [multimedia] extra")
+pytest.importorskip("cv2", reason="requires the [multimedia] extra")
+
 import asyncio
 import base64
 import os

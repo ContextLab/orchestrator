@@ -1,5 +1,9 @@
 """Tests for multimodal tools."""
 
+import pytest
+
+pytest.importorskip("PIL", reason="requires the [multimedia] extra")
+
 import asyncio
 import base64
 import os

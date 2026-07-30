@@ -3,6 +3,10 @@ Comprehensive test suite for creative_image_pipeline.
 Tests all functionality with REAL API calls (NO MOCKS).
 """
 
+import pytest
+
+pytest.importorskip("PIL", reason="requires the [multimedia] extra")
+
 import os
 import json
 import asyncio

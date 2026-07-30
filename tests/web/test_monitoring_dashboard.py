@@ -5,8 +5,11 @@ Tests the web interface, API endpoints, real-time updates, and integration
 with the wrapper monitoring system.
 """
 
-import json
 import pytest
+
+pytest.importorskip("flask", reason="requires the [web] extra (see requirements/requirements-web.txt)")
+
+import json
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, MagicMock
 from flask import Flask

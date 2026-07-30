@@ -1,5 +1,9 @@
 """Integration tests for modular analysis pipeline with real data and APIs."""
 
+import pytest
+
+pytest.importorskip("pandas", reason="requires the [dev] extra")
+
 import asyncio
 import json
 import os

@@ -77,6 +77,40 @@ def test_golden_pipeline_validates(pipeline, tmp_path):
     assert "is valid" in result.stdout
 
 
+def test_validate_accepts_what_run_accepts(tmp_path):
+    """`validate` must not reject a pipeline that `run` executes successfully.
+
+    Regression: the tool validator inspected only `parameters:` when checking a
+    tool's required arguments, so a step written in the documented two-field
+    form (`tool:` + `action:`) was reported as missing a required `action`
+    parameter. It surfaced only when no parameter contained a template --
+    templates downgraded the finding to a warning -- so a literal-path pipeline
+    failed `validate` while `run` succeeded.
+    """
+    pipeline = tmp_path / "literal.yaml"
+    pipeline.write_text(
+        "id: literal\n"
+        "name: Literal Path Pipeline\n"
+        "steps:\n"
+        "  - id: write_it\n"
+        "    tool: filesystem\n"
+        "    action: write\n"
+        "    parameters:\n"
+        "      path: \"./out/literal.txt\"\n"
+        "      content: \"no templates here\"\n"
+    )
+
+    validated = _run_cli(["validate", str(pipeline)], cwd=tmp_path)
+    executed = _run_cli(["run", str(pipeline)], cwd=tmp_path)
+
+    assert executed.returncode == 0, f"run failed:\n{executed.stdout}\n{executed.stderr}"
+    assert validated.returncode == 0, (
+        "validate rejected a pipeline that run executed successfully:\n"
+        f"{validated.stdout}\n{validated.stderr}"
+    )
+    assert (tmp_path / "out" / "literal.txt").read_text() == "no templates here"
+
+
 def test_validate_rejects_malformed_pipeline(tmp_path):
     """A pipeline that cannot compile exits 2, not 0."""
     bad = tmp_path / "bad.yaml"

@@ -9,6 +9,9 @@ Tests the complete Phase 3 implementation including:
 """
 
 import pytest
+
+pytest.importorskip("docker", reason="requires the [infra] extra and a Docker daemon")
+
 import asyncio
 import time
 import docker

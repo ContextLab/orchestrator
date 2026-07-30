@@ -161,8 +161,17 @@ class ToolValidator:
                     ))
                 continue
             
-            # Validate tool parameters
-            parameters = step.get("parameters", {})
+            # Validate tool parameters.
+            #
+            # A step's `action:` names the operation to invoke on the tool, and
+            # the executor passes it through as the tool's `action` parameter.
+            # The validator only inspected `parameters:`, so a step written in
+            # the documented two-field form was reported as missing a required
+            # `action` parameter -- meaning `validate` rejected pipelines that
+            # `run` executes successfully.
+            parameters = dict(step.get("parameters", {}))
+            if "action" in step and "action" not in parameters:
+                parameters["action"] = step["action"]
             tool_errors, tool_warnings = self._validate_tool_parameters(
                 task_id, tool_name, parameters
             )

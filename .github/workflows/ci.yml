@@ -1,0 +1,132 @@
+name: CI
+
+# Default CI is hermetic: no secrets, no external services, no model providers.
+# Anything needing credentials or a live API lives in live-tests.yml and is
+# triggered explicitly. See docs/adr/0001-product-contract.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Runtime package installation must never happen inside CI.
+  ORCHESTRATOR_AUTO_INSTALL: "0"
+
+jobs:
+  lint:
+    name: Lint and package metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tooling
+        run: python -m pip install --upgrade pip ruff build twine
+
+      - name: Correctness lint (blocking)
+        # Only correctness-class rules gate the build. Style cleanup is tracked
+        # separately; making ~10k style findings blocking would bury real bugs.
+        run: ruff check src/orchestrator --select E9,F63,F7,F82,F821,F823,F601,F811
+
+      - name: Syntax check
+        run: python -m compileall -q src/orchestrator
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Validate package metadata
+        run: twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  test:
+    name: Tests (py${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package and test tooling
+        # Core dependencies only -- this proves the hermetic layers do not
+        # secretly need an extra.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest pytest-asyncio pytest-timeout pytest-cov
+
+      - name: Package imports without optional extras
+        run: |
+          python -c "import orchestrator; print(orchestrator.__version__)"
+          python -c "import orchestrator; [getattr(orchestrator, n) for n in ['Orchestrator','YAMLCompiler','Pipeline','Task']]; print('core exports OK')"
+
+      - name: Collect the full suite
+        # Collection must succeed with no network and no extras installed.
+        run: python -m pytest --collect-only -q
+
+      - name: Hermetic tests (unit, contract, e2e)
+        run: >
+          python -m pytest
+          -m "not live and not integration and not docker and not slow"
+          --cov=src/orchestrator --cov-report=xml --cov-report=term-missing
+          -q
+
+      - name: Upload coverage
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml
+
+  wheel-smoke:
+    name: Installed-wheel smoke test
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Install the built wheel into a clean environment
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/python -m pip install --upgrade pip
+          /tmp/smoke/bin/python -m pip install dist/*.whl
+
+      - name: Run a golden pipeline through the installed console script
+        # Executed outside the repo, so the source tree cannot satisfy imports:
+        # this tests the artifact users actually install.
+        run: |
+          mkdir -p /tmp/smoke-run
+          cp tests/golden/basic.yaml /tmp/smoke-run/
+          cd /tmp/smoke-run
+          /tmp/smoke/bin/orchestrator validate basic.yaml
+          /tmp/smoke/bin/orchestrator run basic.yaml -i greeting=ci
+          test "$(cat golden_out/greeting.txt)" = "ci world"
+          echo "installed wheel executed a pipeline correctly"

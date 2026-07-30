@@ -3,6 +3,10 @@
 Test script to explore POML SDK capabilities and understand the integration points.
 """
 
+import pytest
+
+pytest.importorskip("poml", reason="POML integration is deferred; package is not a dependency")
+
 import poml
 from poml import Prompt
 import json

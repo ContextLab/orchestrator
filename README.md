@@ -4,29 +4,52 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/py-orc)](https://pypi.org/project/py-orc/)
 [![Downloads](https://img.shields.io/pypi/dm/py-orc)](https://pypi.org/project/py-orc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ContextLab/orchestrator/blob/main/LICENSE)
-[![Tests](https://github.com/ContextLab/orchestrator/actions/workflows/tests.yml/badge.svg)](https://github.com/ContextLab/orchestrator/actions/workflows/tests.yml)
-[![Coverage](https://github.com/ContextLab/orchestrator/actions/workflows/coverage.yml/badge.svg)](https://github.com/ContextLab/orchestrator/actions/workflows/coverage.yml)
+[![CI](https://github.com/ContextLab/orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/ContextLab/orchestrator/actions/workflows/ci.yml)
 [![Documentation](https://readthedocs.org/projects/orc/badge/?version=latest)](https://orc.readthedocs.io/en/latest/?badge=latest)
+
+## Project status: alpha
+
+This project is **alpha** and under active recovery. Treat the supported
+surface as small and everything else as experimental.
+
+**Verified today** (exercised by hermetic tests in CI on every commit):
+
+- Compiling a YAML pipeline into a task graph
+- Executing sequential and parallel steps with dependency ordering
+- Jinja-style template interpolation, including cross-step references
+- Deterministic local tools (filesystem, data-processing, validation)
+- `orchestrator run` / `orchestrator validate` and the equivalent Python API
+
+**Present in the tree but NOT verified**, and therefore not claimed to work:
+OpenAI / Google / HuggingFace / Ollama adapters, multimodal tooling, the web
+dashboard, monitoring and analytics, MCP integration, and the deployment
+tooling. Anthropic is the first provider being brought under live acceptance
+tests; provider support is only advertised here once the live-provider
+workflow passes.
+
+The scope, canonical code path, and the criteria for promoting anything out of
+"unverified" are recorded in
+[docs/adr/0001-product-contract.md](docs/adr/0001-product-contract.md).
 
 ## Overview
 
-Orchestrator is a powerful, flexible AI pipeline orchestration framework that simplifies the creation and execution of complex AI workflows. By combining YAML-based configuration with intelligent model selection and automatic ambiguity resolution, Orchestrator makes it easy to build sophisticated AI applications without getting bogged down in implementation details.
+Orchestrator is an AI pipeline orchestration framework built around YAML
+workflow definitions. It combines a declarative pipeline language with model
+selection and `<AUTO>` ambiguity resolution, so workflows can be described
+without hand-writing the execution plumbing.
 
-### Key Features
+### Key features
 
-- 🎯 **YAML-Based Pipelines**: Define complex workflows in simple, readable YAML with full template variable support
-- 🤖 **Multi-Model Support**: Seamlessly work with OpenAI, Anthropic, Google, Ollama, and HuggingFace models
-- 🧠 **Intelligent Model Selection**: Automatically choose the best model based on task requirements
-- 🔄 **Automatic Ambiguity Resolution**: Use `<AUTO>` tags to let AI resolve configuration ambiguities
-- 📦 **Modular Architecture**: Extend with custom models, tools, and control systems
-- 🛡️ **Production Ready**: Built-in error handling, retries, checkpointing, and comprehensive validation
-- ⚡ **Parallel Execution**: Efficient resource management and parallel task execution
-- 🐳 **Sandboxed Execution**: Secure code execution in isolated environments
-- 💾 **Lazy Model Loading**: Models are downloaded only when needed, saving disk space
-- 🔧 **Reliable Tool Execution**: Guaranteed execution with structured outputs and comprehensive validation
-- 📝 **Advanced Templates**: Unified template resolution with support for nested variables, filters, and Jinja2-style templates
-- 🧹 **Output Sanitization**: Automatic removal of conversational markers and AI fluff from outputs
-- ✅ **Comprehensive Validation**: Built-in validation framework for pipelines, dependencies, and data flow
+- 🎯 **YAML-based pipelines** — declare workflows with full template variable support
+- 🔄 **`<AUTO>` ambiguity resolution** — let a model resolve configuration choices
+- ⚡ **Parallel execution** — independent steps run concurrently, dependencies are ordered
+- 📦 **Modular architecture** — extend with custom models, tools, and control systems
+- 🔒 **Fail-closed conditions** — pipeline conditions run in a constrained expression
+  language, never `eval()`; a condition that cannot be evaluated does not run its step
+- 🪶 **Light import** — `import orchestrator` pulls in 12 dependencies, not 40;
+  optional features live behind extras and are imported only when used
+- ✅ **Validation framework** — pipelines, dependencies, and data flow are checked
+  before execution
 
 ## Quick Start
 
@@ -36,13 +59,91 @@ Orchestrator is a powerful, flexible AI pipeline orchestration framework that si
 pip install py-orc
 ```
 
-For additional features:
+The base install is deliberately small and is all you need to compile and run
+pipelines built from deterministic local tools — no API key required.
+
+Optional features are grouped into extras:
+
 ```bash
-pip install py-orc[ollama]      # Ollama model support
-pip install py-orc[cloud]        # Cloud model providers
-pip install py-orc[dev]          # Development tools
-pip install py-orc[all]          # Everything
+pip install "py-orc[anthropic]"    # Anthropic provider
+pip install "py-orc[openai]"       # OpenAI provider (unverified)
+pip install "py-orc[google]"       # Google provider (unverified)
+pip install "py-orc[langgraph]"    # LangGraph state/checkpoint backends
+pip install "py-orc[web]"          # web search and browser tools
+pip install "py-orc[multimedia]"   # image/audio/video tools
+pip install "py-orc[viz]"          # plotting and report figures
+pip install "py-orc[infra]"        # Docker, Redis, Postgres backends
+pip install "py-orc[dev]"          # development and test tooling
+pip install "py-orc[all]"          # every runtime extra
 ```
+
+A missing extra disables only the feature that needs it; it never breaks
+`import orchestrator`.
+
+### Run your first pipeline
+
+Save this as `hello.yaml`:
+
+```yaml
+id: hello
+name: Hello Pipeline
+
+parameters:
+  greeting:
+    type: string
+    default: "hello"
+
+steps:
+  - id: write_greeting
+    tool: filesystem
+    action: write
+    parameters:
+      path: "./out/greeting.txt"
+      content: "{{ greeting }} world"
+
+  - id: read_back
+    tool: filesystem
+    action: read
+    parameters:
+      path: "./out/greeting.txt"
+    dependencies:
+      - write_greeting
+```
+
+Then:
+
+```bash
+orchestrator validate hello.yaml          # compile only; prints the task graph
+orchestrator run hello.yaml -i greeting=hi
+cat out/greeting.txt                      # -> hi world
+```
+
+Exit codes: `0` success, `1` execution failure, `2` validation failure,
+`130` interrupted.
+
+The equivalent Python API:
+
+```python
+import asyncio
+
+from orchestrator import Orchestrator
+from orchestrator.control_systems.tool_integrated_control_system import (
+    ToolIntegratedControlSystem,
+)
+
+async def main():
+    orchestrator = Orchestrator(control_system=ToolIntegratedControlSystem())
+    try:
+        results = await orchestrator.execute_yaml_file("hello.yaml", {"greeting": "hi"})
+        print(results["read_back"]["result"]["content"])   # -> hi world
+    finally:
+        await orchestrator.shutdown()
+
+asyncio.run(main())
+```
+
+Both surfaces are asserted to produce the same result in
+`tests/test_golden_pipelines.py`.
 
 ### API Key Configuration
 
@@ -388,32 +489,32 @@ Comprehensive documentation is available at [orc.readthedocs.io](https://orc.rea
 - [API Reference](https://orc.readthedocs.io/en/latest/api/core.html)
 - [Examples and Tutorials](https://orc.readthedocs.io/en/latest/tutorials/examples.html)
 
-## Available Models
+## Model support
 
-Orchestrator supports a wide range of models:
+Adapters for several providers exist in the tree, but "an adapter exists" is
+not the same as "the provider works". This table reflects test evidence, not
+intent:
 
-### Local Models (via Ollama)
-- **DeepSeek-R1**: Advanced reasoning and coding (1.5b, 8b, 32b)
-- **Gemma3**: Fast general-purpose models (1b, 4b, 12b)
-- **Llama 3.x**: General purpose, multilingual support
-- **Qwen2.5-Coder**: Specialized for code generation
-- **Mistral**: Fast and efficient general purpose
+| Provider | Extra | Status |
+|-|-|-|
+| Anthropic | `anthropic` | Being brought under live acceptance tests |
+| OpenAI | `openai` | Adapter present, unverified |
+| Google | `google` | Adapter present, unverified |
+| Ollama (local) | — | Adapter present, unverified |
+| HuggingFace | — | Adapter present, unverified |
 
-### Cloud Models
-- **OpenAI**: GPT-4o, GPT-4o-mini, and other GPT models
-- **Anthropic**: Claude Sonnet 4 (claude-sonnet-4-20250514), Claude Haiku 4
-- **Google**: Gemini 2.5 Flash (gemini-2.5-flash), Gemini Pro
+A provider moves out of "unverified" only when the `live-tests` workflow passes
+for it. Until then it is not recommended, and the specific model lists that
+previously appeared here have been removed rather than left to rot.
 
-### HuggingFace Models
-- **Mistral 7B Instruct v0.3**: High-quality instruction-following model
-- Llama, Qwen, Phi, and many more
-- Automatically downloaded on first use
+**No model is required** to compile and run pipelines built from deterministic
+local tools.
 
 ## Requirements
 
-- Python 3.8+
-- Optional: Ollama for local model execution
-- Optional: API keys for cloud providers (OpenAI, Anthropic, Google)
+- Python 3.11+ (tested on 3.11, 3.12 and 3.13)
+- Optional: an API key for a cloud provider, if your pipeline uses one
+- Optional: Ollama, for local model execution
 
 ## Contributing
 

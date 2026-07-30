@@ -8,12 +8,16 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from ..core.error_handling import ErrorContext, ErrorHandler, ErrorHandlerResult
 from ..core.error_handler_registry import ErrorHandlerRegistry
 from ..core.task import Task, TaskStatus
-from ..engine.pipeline_spec import TaskSpec
+
+if TYPE_CHECKING:
+    # Deferred: orchestrator.engine imports back into this module at runtime,
+    # so a module-level import here creates a circular import.
+    from ..engine.pipeline_spec import TaskSpec
 
 logger = logging.getLogger(__name__)
 
@@ -301,8 +305,10 @@ class ErrorHandlerExecutor:
         failed_task: Union[Task, TaskSpec]
     ) -> Dict[str, Any]:
         """Execute a handler action directly."""
+        from ..engine.pipeline_spec import TaskSpec
+
         task_id = failed_task.id if hasattr(failed_task, 'id') else str(failed_task)
-        
+
         # Create temporary task spec for handler action
         handler_spec = TaskSpec(
             id=f"{task_id}_error_handler",
