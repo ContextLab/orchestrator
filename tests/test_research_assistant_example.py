@@ -92,33 +92,13 @@ class ResearchAssistant:
 
     def _load_orchestrator_config(self) -> Dict[str, Any]:
         """Load orchestrator configuration for web tools."""
-        config_path = "/Users/jmanning/orchestrator/config/orchestrator.yaml"
-        if os.path.exists(config_path):
-            with open(config_path, "r") as f:
-                return yaml.safe_load(f)
-        else:
-            # Default configuration for web tools
-            return {
-                "web_tools": {
-                    "search": {
-                        "default_backend": "duckduckgo",
-                        "max_results": 10,
-                        "timeout": 30,
-                    },
-                    "scraping": {
-                        "timeout": 30,
-                        "max_content_length": 1048576,
-                        "user_agent": "Mozilla/5.0 (compatible; Research Assistant)",
-                    },
-                    "browser": {"headless": True, "timeout": 30},
-                    "rate_limiting": {
-                        "enabled": True,
-                        "requests_per_minute": 30,
-                        "delay_between_requests": 2,
-                    },
-                    "caching": {"enabled": True, "ttl": 3600, "max_cache_size": 100},
-                }
-            }
+        # The default config is a packaged resource, not a path on one
+        # developer's machine.
+        from orchestrator.install_configs import packaged_config_path
+
+        config_path = packaged_config_path("orchestrator.yaml")
+        with open(config_path, "r") as f:
+            return yaml.safe_load(f)
 
     def _get_tools(self):
         """Get tools for web search and content extraction."""

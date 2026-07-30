@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 import logging
 
+from ..install_configs import packaged_config_path
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +19,7 @@ class ModelConfigLoader:
         Args:
             config_path: Path to models.yaml. If not provided, searches in:
                 1. ~/.orchestrator/models.yaml (user config)
-                2. config/models.yaml (repository config)
+                2. the packaged default (orchestrator/config/models.yaml)
         """
         self.config_path = self._find_config_path(config_path)
         self._config_cache = None
@@ -28,23 +30,17 @@ class ModelConfigLoader:
         if config_path and config_path.exists():
             return config_path
 
-        # Search paths in order of preference
-        search_paths = [
-            Path.home() / ".orchestrator" / "models.yaml",  # User config
-            Path(__file__).parent.parent.parent.parent
-            / "config"
-            / "models.yaml",  # Repo config
-        ]
+        # User config wins; otherwise fall back to the packaged default, which
+        # is a resource inside the installed package (never a path derived by
+        # walking __file__ out of the package).
+        user_config = Path.home() / ".orchestrator" / "models.yaml"
+        if user_config.exists():
+            logger.info(f"Using models config from: {user_config}")
+            return user_config
 
-        for path in search_paths:
-            if path.exists():
-                logger.info(f"Using models config from: {path}")
-                return path
-
-        # Fallback to repo config path even if it doesn't exist yet
-        default_path = search_paths[1]
-        logger.warning(f"No models.yaml found, will use default path: {default_path}")
-        return default_path
+        packaged_default = packaged_config_path("models.yaml")
+        logger.info(f"Using packaged default models config: {packaged_default}")
+        return packaged_default
 
     def load_config(self, force_reload: bool = False) -> Dict[str, Any]:
         """Load the models configuration from YAML.
@@ -154,6 +150,11 @@ class ModelConfigLoader:
         Args:
             config: Configuration dictionary to save
         """
+        # Never write back into the installed package: if the active config is
+        # the packaged default, redirect the write to the user config.
+        if self.config_path == packaged_config_path("models.yaml"):
+            self.config_path = Path.home() / ".orchestrator" / "models.yaml"
+
         # Ensure directory exists
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
 

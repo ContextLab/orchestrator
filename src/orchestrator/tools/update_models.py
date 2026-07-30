@@ -492,8 +492,12 @@ def main():
         "--config",
         "-c",
         type=Path,
-        default=Path(__file__).parent.parent.parent.parent / "config" / "models.yaml",
-        help="Also update the config/models.yaml in the repository",
+        default=None,
+        help=(
+            "Also update an additional models.yaml at this path (e.g. a "
+            "repository's checked-in copy). Not set by default: the packaged "
+            "default config must not be rewritten in an installed environment."
+        ),
     )
 
     args = parser.parse_args()

@@ -1,13 +1,42 @@
 """Registry installer for managing ~/.orchestrator directory structure."""
 
-import shutil
 import logging
+from importlib.resources import files
+from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Optional, Dict, Any
 
 import yaml
 
 logger = logging.getLogger(__name__)
+
+REGISTRY_PACKAGE = "orchestrator.registry"
+
+
+def packaged_registry_resource(*parts: str) -> Traversable:
+    """Return a packaged default registry resource.
+
+    Args:
+        *parts: Path components below the ``orchestrator.registry`` package,
+            e.g. ``("skills", "default_registry.yaml")``.
+
+    Returns:
+        The resource, guaranteed to exist.
+
+    Raises:
+        FileNotFoundError: If the resource is missing from the installed
+            package. That is a packaging failure and must not be papered over
+            with a synthesized "minimal" registry.
+    """
+    resource = files(REGISTRY_PACKAGE)
+    for part in parts:
+        resource = resource / part
+    if not resource.is_file():
+        raise FileNotFoundError(
+            f"Packaged registry resource {'/'.join(parts)!r} is missing from "
+            f"the {REGISTRY_PACKAGE} package; the installation is incomplete."
+        )
+    return resource
 
 
 class RegistryInstaller:
@@ -22,10 +51,6 @@ class RegistryInstaller:
         self.home_dir = home_dir or (Path.home() / ".orchestrator")
         self.skills_dir = self.home_dir / "skills"
         self.models_dir = self.home_dir / "models"
-
-        # Package registry location (source)
-        self.package_root = Path(__file__).parent.parent.parent.parent  # Up to orchestrator root
-        self.package_registry = self.package_root / "orchestrator" / "registry"
 
     def is_installed(self) -> bool:
         """Check if registries are already installed."""
@@ -71,62 +96,18 @@ class RegistryInstaller:
             return False
 
     def _install_skills_registry(self) -> None:
-        """Install default skills registry."""
-        source = self.package_registry / "skills" / "default_registry.yaml"
+        """Install default skills registry from the packaged resource."""
+        source = packaged_registry_resource("skills", "default_registry.yaml")
         dest = self.skills_dir / "registry.yaml"
-
-        if source.exists():
-            shutil.copy(source, dest)
-            logger.info(f"Installed skills registry to {dest}")
-
-            # Copy default skills if they exist
-            default_skills_src = self.package_registry / "skills" / "default_skills"
-            if default_skills_src.exists():
-                default_skills_dest = self.skills_dir / "default_skills"
-                if not default_skills_dest.exists():
-                    shutil.copytree(default_skills_src, default_skills_dest)
-                    logger.info(f"Installed default skills to {default_skills_dest}")
-        else:
-            # Create minimal registry if source doesn't exist
-            minimal_registry = {
-                "version": "1.0.0",
-                "skills": {},
-                "metadata": {
-                    "description": "User skills registry",
-                    "created": "2024-01-15"
-                }
-            }
-            with open(dest, 'w') as f:
-                yaml.dump(minimal_registry, f, default_flow_style=False)
-            logger.info(f"Created minimal skills registry at {dest}")
+        dest.write_bytes(source.read_bytes())
+        logger.info(f"Installed skills registry to {dest}")
 
     def _install_models_registry(self) -> None:
-        """Install default models registry."""
-        source = self.package_registry / "models" / "default_registry.yaml"
+        """Install default models registry from the packaged resource."""
+        source = packaged_registry_resource("models", "default_registry.yaml")
         dest = self.models_dir / "registry.yaml"
-
-        if source.exists():
-            shutil.copy(source, dest)
-            logger.info(f"Installed models registry to {dest}")
-        else:
-            # Create minimal registry if source doesn't exist
-            minimal_registry = {
-                "version": "1.0.0",
-                "providers": {
-                    "anthropic": {
-                        "enabled": True,
-                        "api_key_env": "ANTHROPIC_API_KEY"
-                    }
-                },
-                "models": {},
-                "metadata": {
-                    "description": "User models registry",
-                    "created": "2024-01-15"
-                }
-            }
-            with open(dest, 'w') as f:
-                yaml.dump(minimal_registry, f, default_flow_style=False)
-            logger.info(f"Created minimal models registry at {dest}")
+        dest.write_bytes(source.read_bytes())
+        logger.info(f"Installed models registry to {dest}")
 
     def _create_env_template(self, env_file: Path) -> None:
         """Create template .env file."""
@@ -244,6 +225,9 @@ def ensure_registry_installed() -> RegistryInstaller:
 
     if not installer.is_installed():
         logger.info("Registry not found, installing defaults...")
-        installer.install()
+        if not installer.install():
+            raise RuntimeError(
+                f"Failed to install default registries to {installer.home_dir}"
+            )
 
     return installer

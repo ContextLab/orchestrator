@@ -150,10 +150,13 @@ py-orc-test = "orchestrator.test_runner:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-# Only ship files that live inside the package. The previous
-# `"*" = ["../../config/*.yaml"]` entry reached outside the source tree and
-# does not reliably survive an sdist/wheel build.
-orchestrator = ["py.typed", "*.yaml", "*.yml", "*.json", "config/*.yaml"]
+# Only ship files that live inside the package. Anything outside `src/` cannot
+# be packaged by a src-layout wheel, so the default config and registries live
+# in `orchestrator.config` / `orchestrator.registry` and are read with
+# importlib.resources.
+orchestrator = ["py.typed", "*.yaml", "*.yml", "*.json"]
+"orchestrator.config" = ["*.yaml", "*.yml", "*.json"]
+"orchestrator.registry" = ["models/*.yaml", "skills/*.yaml"]
 
 [tool.black]
 line-length = 88

@@ -14,7 +14,10 @@ The model update tool connects to various AI provider APIs to retrieve their cur
 python -m src.orchestrator.tools.update_models [config_path]
 ```
 
-If no config path is provided, it defaults to `config/models.yaml`.
+If no config path is provided, it defaults to `~/.orchestrator/models.yaml`. The
+packaged default (`orchestrator/config/models.yaml`, shipped inside the
+installed package) is never rewritten; pass `--config <path>` to additionally
+update a checked-in copy.
 
 ### Programmatic Usage
 
