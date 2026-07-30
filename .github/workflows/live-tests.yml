@@ -54,9 +54,16 @@ jobs:
       - name: Run live-provider tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Turns "skipped for a missing key or extra" into a hard failure, so
+          # this job cannot report success having exercised no provider.
+          ORCHESTRATOR_REQUIRE_LIVE: "1"
         run: |
           if [ -z "${ANTHROPIC_API_KEY}" ]; then
             echo "ANTHROPIC_API_KEY is not configured; cannot verify live provider support."
             exit 1
           fi
-          python -m pytest -m live -q
+          python -m pytest -m live -v
+          # Guard against the suite silently collecting nothing: -m live must
+          # select at least one test.
+          python -m pytest -m live --collect-only -q | grep -qE "[1-9][0-9]* tests? collected" \
+            || { echo "No live tests were collected; live coverage is not real."; exit 1; }

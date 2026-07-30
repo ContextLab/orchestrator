@@ -51,6 +51,18 @@ def _docker_running() -> bool:
 def pytest_collection_modifyitems(config, items):
     """Skip opt-in tests when their prerequisites are absent."""
     have_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+    # The live CI job sets ORCHESTRATOR_REQUIRE_LIVE=1. Without this guard a
+    # missing key would skip every live test and the job would report success
+    # having exercised no provider at all -- indistinguishable from having no
+    # live coverage, which is the state this suite is meant to leave behind.
+    if os.environ.get("ORCHESTRATOR_REQUIRE_LIVE") == "1" and not have_anthropic:
+        raise pytest.UsageError(
+            "ORCHESTRATOR_REQUIRE_LIVE=1 requires real live coverage, but "
+            "ANTHROPIC_API_KEY is unset. Either provide the key or unset "
+            "ORCHESTRATOR_REQUIRE_LIVE."
+        )
+
     run_integration = os.environ.get("ORCHESTRATOR_RUN_INTEGRATION") == "1"
     docker_ok = None  # probed lazily; the check itself is cheap but not free
 
