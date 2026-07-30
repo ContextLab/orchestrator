@@ -6,7 +6,9 @@ Provides safe code execution, dependency management, and resource constraints.
 
 import os
 import time
+import json
 import logging
+import re
 import tempfile
 import subprocess
 import asyncio
@@ -18,6 +20,68 @@ import tarfile
 import io
 
 logger = logging.getLogger(__name__)
+
+
+class DependencySpecError(ValueError):
+    """Raised when a dependency specifier is not a plain package reference."""
+
+
+#: A PEP 508 name, optional extras, and optional version specifiers -- and
+#: nothing else. Deliberately narrow: URLs, local paths, VCS references and
+#: environment markers are all refused, because each is a way to make an
+#: "install" fetch and run arbitrary code.
+_PYTHON_SPEC_RE = re.compile(
+    r"^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?"      # package name
+    r"(\[[A-Za-z0-9,._-]+\])?"                        # optional extras
+    r"((===|==|!=|<=|>=|~=|<|>)\s*[A-Za-z0-9][A-Za-z0-9.*+!_-]*"
+    r"(\s*,\s*(===|==|!=|<=|>=|~=|<|>)\s*[A-Za-z0-9][A-Za-z0-9.*+!_-]*)*)?$"
+)
+
+#: An npm package name, optionally scoped, with an optional @version range.
+_NPM_SPEC_RE = re.compile(
+    r"^(@[a-z0-9][a-z0-9._-]*/)?"                     # optional @scope/
+    r"[a-z0-9][a-z0-9._-]*"                           # package name
+    r"(@[A-Za-z0-9][A-Za-z0-9.*+~^><=|\s-]*)?$"       # optional @version
+)
+
+_MAX_DEPENDENCIES = 64
+
+
+def _validate_dependencies(
+    dependencies: List[str], pattern: re.Pattern, ecosystem: str
+) -> List[str]:
+    """Return ``dependencies`` if every entry is a plain package specifier.
+
+    Dependency strings used to be interpolated straight into generated source::
+
+        f"subprocess.check_call(['pip', 'install', '{dep}'])"
+
+    so a dependency of ``x']); import os; os.system('...')  #`` executed inside
+    the container. Validation is the primary defence and it fails closed: an
+    unrecognised specifier raises rather than being silently dropped, because
+    silently dropping it would run the user's code without its dependency and
+    produce a confusing downstream failure.
+    """
+    if len(dependencies) > _MAX_DEPENDENCIES:
+        raise DependencySpecError(
+            f"{len(dependencies)} {ecosystem} dependencies exceeds the "
+            f"maximum of {_MAX_DEPENDENCIES}"
+        )
+    validated = []
+    for dependency in dependencies:
+        if not isinstance(dependency, str):
+            raise DependencySpecError(
+                f"{ecosystem} dependency must be a string, got "
+                f"{type(dependency).__name__}"
+            )
+        candidate = dependency.strip()
+        if not pattern.match(candidate):
+            raise DependencySpecError(
+                f"refusing unsafe {ecosystem} dependency specifier: "
+                f"{dependency!r}"
+            )
+        validated.append(candidate)
+    return validated
 
 
 class SandboxType(Enum):
@@ -426,10 +490,21 @@ class LangChainSandbox:
         """Prepare Python script with security and dependency handling."""
         script_parts = []
         
-        # Install dependencies if specified
+        # Install dependencies if specified.
+        #
+        # Specifiers are validated first, then passed as a JSON payload that
+        # the script decodes into an argument vector. No dependency text is
+        # ever interpolated into executable source, and pip is invoked without
+        # a shell, so neither the specifier nor the install can inject code.
         if dependencies:
-            for dep in dependencies:
-                script_parts.append(f"import subprocess; subprocess.check_call(['pip', 'install', '{dep}'])")
+            validated = _validate_dependencies(dependencies, _PYTHON_SPEC_RE, "python")
+            script_parts.append(
+                "import subprocess, sys, json\n"
+                "subprocess.check_call(\n"
+                "    [sys.executable, '-m', 'pip', 'install', '--']\n"
+                "    + json.loads(%r)\n"
+                ")" % json.dumps(validated)
+            )
         
         # Add security wrapper if strict policy
         if config.security_policy == SecurityPolicy.STRICT:
@@ -466,10 +541,17 @@ for func in ['eval', 'exec', 'compile']:
         """Prepare JavaScript script with security handling."""
         script_parts = []
         
-        # Install dependencies if specified
+        # Install dependencies if specified. See _prepare_python_script: the
+        # specifiers are validated and then emitted as a JSON array literal
+        # passed to execFileSync, which takes an argument vector and does not
+        # invoke a shell. execSync with an interpolated name did both.
         if dependencies:
-            for dep in dependencies:
-                script_parts.append(f"require('child_process').execSync('npm install {dep}');")
+            validated = _validate_dependencies(dependencies, _NPM_SPEC_RE, "npm")
+            script_parts.append(
+                "require('child_process').execFileSync("
+                "'npm', ['install', '--'].concat(%s), {stdio: 'inherit'});"
+                % json.dumps(validated)
+            )
         
         # Add security restrictions for strict policy
         if config.security_policy == SecurityPolicy.STRICT:
