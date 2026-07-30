@@ -55,6 +55,10 @@ _BIN_OPS: dict[type[ast.operator], Callable[[Any, Any], Any]] = {
     ast.Div: operator.truediv,
     ast.FloorDiv: operator.floordiv,
     ast.Mod: operator.mod,
+    # Exponentiation is permitted but bounded (see _check_power): unbounded
+    # `10**10**10` allocates an astronomically large integer and hangs the
+    # process, so the exponent and operand magnitudes are capped.
+    ast.Pow: operator.pow,
 }
 
 _UNARY_OPS: dict[type[ast.unaryop], Callable[[Any], Any]] = {
@@ -94,12 +98,45 @@ SAFE_FUNCTIONS: dict[str, Callable[..., Any]] = {
     "all": all,
 }
 
-#: Exponentiation is excluded on purpose: `10**10**10` is a cheap way to hang
-#: the process. Power is not needed to express a pipeline condition.
-
-# `**` is deliberately absent from _BIN_OPS (see above).
+#: Methods callable on a value, keyed by the value's EXACT type. Exact-type
+#: matching (``type(x) is dict``) is deliberate: a subclass could override
+#: ``get`` with arbitrary code, so subclasses are not accepted.
+SAFE_METHODS: dict[type, frozenset[str]] = {
+    dict: frozenset({"get", "keys", "values", "items", "copy"}),
+    list: frozenset({"count", "index", "copy"}),
+    tuple: frozenset({"count", "index"}),
+    set: frozenset({"issubset", "issuperset", "union", "intersection", "difference"}),
+    frozenset: frozenset(
+        {"issubset", "issuperset", "union", "intersection", "difference"}
+    ),
+    str: frozenset(
+        {
+            "startswith", "endswith", "lower", "upper", "strip", "lstrip",
+            "rstrip", "split", "replace", "find", "count", "isdigit",
+            "isalpha", "isnumeric", "title", "casefold",
+        }
+    ),
+}
 
 _MAX_EXPRESSION_LENGTH = 4096
+
+#: Caps that bound resource use. Removing `**` alone does not close the
+#: denial-of-service class: `'x' * 55000 * 55000` allocates ~3 GB from a
+#: 20-character expression, and a flat chain like `not not not ...` recurses
+#: deeply enough to exhaust the interpreter stack while staying under the
+#: character cap. These bound both.
+_MAX_AST_NODES = 500
+_MAX_AST_DEPTH = 40
+_MAX_SEQUENCE_LENGTH = 1_000_000
+#: Bounds on `**` so exponentiation cannot allocate an astronomical integer.
+_MAX_POWER_EXPONENT = 1024
+_MAX_POWER_BASE = 1_000_000
+
+
+def _ast_depth(node: ast.AST) -> int:
+    """Maximum child-nesting depth of a parsed expression."""
+    children = list(ast.iter_child_nodes(node))
+    return 1 + max((_ast_depth(child) for child in children), default=0)
 
 
 class _Evaluator(ast.NodeVisitor):
@@ -157,7 +194,46 @@ class _Evaluator(ast.NodeVisitor):
             raise ExpressionError(
                 f"unsupported operator: {type(node.op).__name__}"
             )
-        return func(self.visit(node.left), self.visit(node.right))
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        if isinstance(node.op, ast.Mult):
+            self._check_repetition(left, right)
+        elif isinstance(node.op, ast.Pow):
+            self._check_power(left, right)
+        elif isinstance(node.op, ast.Mod) and isinstance(left, (str, bytes)):
+            # printf-style formatting can allocate arbitrarily large output
+            # from a tiny expression, e.g. '%.300000000f' % 1.0 (~600 MB).
+            raise ExpressionError(
+                "string formatting with '%' is not supported in expressions"
+            )
+
+        return func(left, right)
+
+    @staticmethod
+    def _check_power(base: Any, exponent: Any) -> None:
+        """Bound exponentiation so it cannot allocate an enormous integer."""
+        if not isinstance(base, (int, float)) or not isinstance(exponent, (int, float)):
+            raise ExpressionError("'**' requires numeric operands")
+        if isinstance(exponent, bool) or isinstance(base, bool):
+            raise ExpressionError("'**' requires numeric operands")
+        if abs(exponent) > _MAX_POWER_EXPONENT:
+            raise ExpressionError(
+                f"exponent exceeds {_MAX_POWER_EXPONENT}"
+            )
+        if abs(base) > _MAX_POWER_BASE:
+            raise ExpressionError(f"base of '**' exceeds {_MAX_POWER_BASE}")
+
+    @staticmethod
+    def _check_repetition(left: Any, right: Any) -> None:
+        """Reject sequence repetition that would allocate an enormous result."""
+        for seq, count in ((left, right), (right, left)):
+            if isinstance(seq, (str, bytes, list, tuple)) and isinstance(count, int):
+                if len(seq) * max(count, 0) > _MAX_SEQUENCE_LENGTH:
+                    raise ExpressionError(
+                        "sequence repetition would exceed "
+                        f"{_MAX_SEQUENCE_LENGTH} elements"
+                    )
 
     def visit_Compare(self, node: ast.Compare) -> Any:
         left = self.visit(node.left)
@@ -200,15 +276,37 @@ class _Evaluator(ast.NodeVisitor):
         )
 
     def visit_Call(self, node: ast.Call) -> Any:
-        # Only bare names from SAFE_FUNCTIONS are callable. Calling an
-        # arbitrary expression result (`obj.method()`) is refused, since that
-        # would reach code this module cannot vet.
+        if node.keywords:
+            raise ExpressionError("keyword arguments are not supported")
+
+        # Method call on a value, e.g. `state.get('n', 0)` or
+        # `items.startswith('x')`. Permitted only on exact built-in container
+        # types and only for methods in SAFE_METHODS, so no user-defined code
+        # can be reached. Subclasses are refused because they can override the
+        # method with arbitrary code.
+        if isinstance(node.func, ast.Attribute):
+            if node.func.attr.startswith("_"):
+                raise ExpressionError(
+                    f"access to private attribute {node.func.attr!r} denied"
+                )
+            target = self.visit(node.func.value)
+            allowed = SAFE_METHODS.get(type(target))
+            if allowed is None:
+                raise ExpressionError(
+                    f"method calls are not allowed on {type(target).__name__}"
+                )
+            if node.func.attr not in allowed:
+                raise ExpressionError(
+                    f"{type(target).__name__}.{node.func.attr}() is not allowed"
+                )
+            args = [self.visit(arg) for arg in node.args]
+            return getattr(target, node.func.attr)(*args)
+
+        # Otherwise only bare names from SAFE_FUNCTIONS are callable.
         if not isinstance(node.func, ast.Name):
             raise ExpressionError("only direct calls to built-in helpers are allowed")
         if node.func.id not in SAFE_FUNCTIONS:
             raise ExpressionError(f"call to {node.func.id!r} is not allowed")
-        if node.keywords:
-            raise ExpressionError("keyword arguments are not supported")
         args = [self.visit(arg) for arg in node.args]
         return SAFE_FUNCTIONS[node.func.id](*args)
 
@@ -258,8 +356,37 @@ def evaluate_expression(expression: str, context: Mapping[str, Any] | None = Non
         tree = ast.parse(stripped, mode="eval")
     except SyntaxError as exc:
         raise ExpressionError(f"invalid syntax: {exc.msg}") from exc
+    except (ValueError, MemoryError, RecursionError) as exc:
+        # ast.parse itself rejects some pathological inputs (e.g. null bytes,
+        # excessive nesting) with these.
+        raise ExpressionError(f"expression could not be parsed: {exc}") from exc
 
-    return _Evaluator(context or {}).visit(tree)
+    # Bound the shape of the tree before walking it. A flat operator chain such
+    # as ("not " * 800 + "1") stays under the character cap but exhausts the
+    # interpreter stack inside the recursive visitor.
+    node_count = sum(1 for _ in ast.walk(tree))
+    if node_count > _MAX_AST_NODES:
+        raise ExpressionError(
+            f"expression is too complex ({node_count} nodes, limit {_MAX_AST_NODES})"
+        )
+    depth = _ast_depth(tree)
+    if depth > _MAX_AST_DEPTH:
+        raise ExpressionError(
+            f"expression is nested too deeply ({depth} levels, limit {_MAX_AST_DEPTH})"
+        )
+
+    try:
+        return _Evaluator(context or {}).visit(tree)
+    except ExpressionError:
+        raise
+    except Exception as exc:
+        # Keep the documented contract: callers of this function should only
+        # have to handle ExpressionError. Ordinary evaluation errors
+        # (ZeroDivisionError, TypeError from `'a' + 1`, ValueError from
+        # `int('nope')`, RecursionError) are wrapped rather than leaking out.
+        raise ExpressionError(
+            f"{type(exc).__name__} while evaluating expression: {exc}"
+        ) from exc
 
 
 def evaluate_condition(

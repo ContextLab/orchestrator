@@ -206,8 +206,50 @@ class ToolRegistry:
         return await tool.execute(**kwargs)
 
 
+class _DefaultToolRegistry(ToolRegistry):
+    """The global registry, populated on first use rather than at import.
+
+    Registering the built-in tools while this module was still executing meant
+    ``base`` imported ``pipeline_recursion_tools``, which imports ``base`` --
+    fine when something had already loaded ``base`` first, but an ImportError
+    ("partially initialized module") when a tool module was imported first.
+    The eager ``tools/__init__`` used to hide that by fixing the load order.
+
+    Populating on first read keeps the registry's behavior identical while
+    ensuring no module is imported when another is only half-built.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._populated = False
+
+    def _ensure_populated(self) -> None:
+        if self._populated:
+            return
+        # Set before registering: register_default_tools() constructs tools
+        # that may themselves touch the registry, and this must not recurse.
+        self._populated = True
+        register_default_tools()
+
+    def get_tool(self, name: str) -> Optional[Tool]:
+        self._ensure_populated()
+        return super().get_tool(name)
+
+    def list_tools(self) -> List[str]:
+        self._ensure_populated()
+        return super().list_tools()
+
+    def get_schemas(self) -> List[Dict[str, Any]]:
+        self._ensure_populated()
+        return super().get_schemas()
+
+    async def execute_tool(self, name: str, **kwargs) -> Dict[str, Any]:
+        self._ensure_populated()
+        return await super().execute_tool(name, **kwargs)
+
+
 # Global tool registry
-default_registry = ToolRegistry()
+default_registry = _DefaultToolRegistry()
 
 
 def register_default_tools():
@@ -273,5 +315,6 @@ def register_default_tools():
     return len(tools)
 
 
-# Auto-register default tools
-_registered = register_default_tools()
+# Default tools are registered on first use by _DefaultToolRegistry, not here.
+# Calling register_default_tools() at import time re-entered modules that were
+# still being imported (see _DefaultToolRegistry).

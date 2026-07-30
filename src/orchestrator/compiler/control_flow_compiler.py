@@ -7,21 +7,34 @@ from ..core.pipeline import Pipeline
 from ..core.task import Task
 from ..core.action_loop_task import ActionLoopTask
 from ..core.for_each_task import ForEachTask
-from ..control_flow import (
-    ConditionalHandler,
-    ForLoopHandler,
-    WhileLoopHandler,
-    DynamicFlowHandler,
-    ControlFlowAutoResolver,
-)
-from ..control_flow.action_loop_handler import ActionLoopHandler
-
-
 class ControlFlowCompiler(YAMLCompiler):
     """YAML compiler with advanced control flow support."""
 
     def __init__(self, *args, **kwargs):
         """Initialize control flow compiler."""
+        # Imported here rather than at module scope to break a circular import.
+        # The cycle was:
+        #   control_flow/__init__ -> conditional -> auto_resolver
+        #     -> compiler.ambiguity_resolver -> compiler/__init__
+        #     -> control_flow_compiler -> `from ..control_flow import ...`
+        # which re-entered a partially initialized `control_flow` package. That
+        # made a cold `from orchestrator import ConditionalHandler` fail with
+        # "cannot import name ... from partially initialized module", while the
+        # same import succeeded if something had already loaded `compiler`.
+        # These handlers are only needed here, at construction time, by which
+        # point every module involved is fully imported.
+        # `action_loop_handler` participates in a second arm of the same cycle
+        # (-> enhanced_condition_evaluator -> auto_resolver), so it is imported
+        # here for the same reason.
+        from ..control_flow import (
+            ConditionalHandler,
+            ForLoopHandler,
+            WhileLoopHandler,
+            DynamicFlowHandler,
+            ControlFlowAutoResolver,
+        )
+        from ..control_flow.action_loop_handler import ActionLoopHandler
+
         # Extract model_registry if provided
         model_registry = kwargs.get("model_registry", None)
 

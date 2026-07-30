@@ -408,14 +408,17 @@ class ExpressionEvaluator(ConditionEvaluator):
             namespace = self.SAFE_NAMES.copy()
             namespace.update(context)
             
-            # NOT migrated to orchestrator.core.expressions: this evaluator is
-            # contractually required to support `**` (see
-            # tests/test_condition_evaluator.py::test_mathematical_expressions),
-            # which the constrained evaluator excludes deliberately because
-            # `10**10**10` hangs the process. Guarded by _validate_ast below.
-            code = compile(tree, '<expression>', 'eval')
-            result = eval(code, {"__builtins__": {}}, namespace)
-            
+            # Uses the constrained AST evaluator rather than eval(). An empty
+            # __builtins__ is not a sandbox: the standard
+            # ().__class__.__base__.__subclasses__() gadget reaches
+            # BuiltinImporter.load_module('os') and executes before any
+            # exception handler runs. `**` is supported by the evaluator with
+            # bounded operands, so the mathematical expressions this evaluator
+            # is contracted to handle still work.
+            from ..core.expressions import evaluate_expression
+
+            result = evaluate_expression(condition, namespace)
+
             return bool(result)
         except ConditionEvaluationError:
             # Re-raise validation errors

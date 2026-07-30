@@ -48,11 +48,19 @@ _EXPORTS: dict[str, str] = {
     "Orchestrator": ".orchestrator",
     "ControlFlowEngine": ".engine.control_flow_engine",
     # --- Control flow ---
-    "ConditionalHandler": ".control_flow",
-    "ForLoopHandler": ".control_flow",
-    "WhileLoopHandler": ".control_flow",
-    "DynamicFlowHandler": ".control_flow",
-    "ControlFlowAutoResolver": ".control_flow",
+    # These point at the DEFINING submodules, not the `control_flow` package.
+    # Resolving them through `control_flow/__init__` executes its eager
+    # submodule imports, which reach back into `compiler` and then into
+    # `control_flow_compiler`, which imports these same names from the
+    # still-partially-initialized package -- a circular import. Going straight
+    # to the defining module avoids entering that cycle, so a cold
+    # `from orchestrator import ConditionalHandler` works regardless of what
+    # was imported first.
+    "ConditionalHandler": ".control_flow.conditional",
+    "ForLoopHandler": ".control_flow.loops",
+    "WhileLoopHandler": ".control_flow.loops",
+    "DynamicFlowHandler": ".control_flow.dynamic_flow",
+    "ControlFlowAutoResolver": ".control_flow.auto_resolver",
     # --- Models ---
     "ModelRegistry": ".models.model_registry",
     "get_model_registry": ".models.registry_singleton",

@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from .base import Tool
-from ..core.expressions import evaluate_condition
 
 
 @dataclass
@@ -480,8 +479,19 @@ class RecursionControlTool(Tool):
             "call_stack_size": len(context.call_stack),
         }
 
-        # Helper functions (len, sum, max, min, all, any, abs) come from the
-        # evaluator's SAFE_FUNCTIONS allowlist; they do not need to be injected.
+        # Helper callables (len, sum, max, ...) come from the evaluator's own
+        # allowlist and must not be injected into the namespace.
+        #
+        # This previously used eval(condition, {"__builtins__": {}}, namespace).
+        # An empty __builtins__ is NOT a sandbox: the standard
+        # ().__class__.__base__.__subclasses__() gadget reaches
+        # BuiltinImporter.load_module('os') and executes before any exception
+        # handler runs, so "fail-closed on error" did not prevent code
+        # execution. The constrained evaluator permits the method calls this
+        # tool's condition language needs (state.get(...),
+        # executions.values()) on built-in containers only.
+        from ..core.expressions import evaluate_condition
+
         return evaluate_condition(condition, namespace, default=False)
 
     def _check_limits(
