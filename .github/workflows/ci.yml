@@ -32,6 +32,19 @@ jobs:
       - name: Install tooling
         run: python -m pip install --upgrade pip ruff build twine
 
+      - name: No source file is excluded by .gitignore
+        # An unanchored `debug_*` rule silently excluded a real module
+        # (orchestrator/quality/debug_artifact_detector.py) for ~11 months.
+        # Local trees still had the file, so only fresh clones broke.
+        run: |
+          ignored=$(git ls-files --others --ignored --exclude-standard -- 'src/**/*.py')
+          if [ -n "$ignored" ]; then
+            echo "::error::These source files are present but excluded by .gitignore:"
+            echo "$ignored"
+            exit 1
+          fi
+          echo "no source files are hidden by .gitignore"
+
       - uses: astral-sh/setup-uv@v5
 
       - name: Lockfile is in sync with pyproject.toml
