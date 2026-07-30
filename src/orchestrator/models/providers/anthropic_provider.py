@@ -201,28 +201,36 @@ class AnthropicProvider(ModelProvider):
         if not self._initialized or not self._client:
             return False
 
-        # Try new models first, fall back to current models
-        test_models = ["claude-haiku-4.5", "claude-3-haiku-20240307"]
-        for test_model in test_models:
-            try:
-                await self._client.messages.create(
-                    model=test_model,
-                    max_tokens=1,
-                    messages=[{"role": "user", "content": "test"}]
-                )
-                return True
-            except Exception as e:
-                if "not_found" in str(e).lower() and test_model != test_models[-1]:
-                    continue  # Try next model
-                logger.warning(f"Anthropic health check failed with {test_model}: {e}")
-
-        return False
+        # Listing models proves credentials and connectivity without spending
+        # tokens. The previous implementation generated against hard-coded
+        # model ids ("claude-haiku-4.5", "claude-3-haiku-20240307"); both now
+        # 404, so health_check reported unhealthy against a perfectly good key.
+        try:
+            await self._client.models.list()
+            return True
+        except Exception as e:
+            logger.warning(f"Anthropic health check failed: {e}")
+            return False
 
     async def discover_models(self) -> List[str]:
-        """Discover available Anthropic models."""
-        # Anthropic doesn't provide a models discovery endpoint
-        # Return known models
-        return list(self.KNOWN_MODELS.keys())
+        """Discover available Anthropic models from the Models API.
+
+        Anthropic does provide a discovery endpoint; the previous comment
+        saying otherwise was stale, and returning a hard-coded table meant
+        newly released models were invisible and retired ones were still
+        advertised.
+        """
+        if not self._initialized or not self._client:
+            return list(self.KNOWN_MODELS.keys())
+        try:
+            listing = await self._client.models.list()
+            return [model.id for model in listing.data]
+        except Exception as e:
+            logger.warning(
+                f"Anthropic model discovery failed ({e}); "
+                f"falling back to the built-in table."
+            )
+            return list(self.KNOWN_MODELS.keys())
 
     def get_model_capabilities(self, model_name: str) -> ModelCapabilities:
         """Get capabilities for an Anthropic model."""

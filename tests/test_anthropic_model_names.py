@@ -50,23 +50,28 @@ def test_qualified_ids_pass_through_unchanged(name):
 
 
 @pytest.mark.parametrize("family", ["haiku", "opus", "sonnet"])
-def test_bare_family_names_resolve_to_an_alias(family):
-    resolved = _resolve(family)
-    assert resolved == AnthropicModel._FAMILY_ALIASES[family]
-    assert resolved != family, "a bare family name is not a servable model id"
+def test_bare_family_names_are_deferred_not_guessed(family):
+    """A bare family name survives __init__ untouched.
 
-
-def test_family_aliases_are_rolling_not_pinned():
-    """Pinned dates are what made the previous table rot.
-
-    A dated alias is correct when written and 404s once retired. `-latest`
-    cannot go stale, so the table does not need maintenance to keep working.
+    It is resolved against the Models API on first use. Resolving here would
+    require a network call during construction, and hard-coding a target is
+    what rotted twice already: the 2024 dated ids 404 today, and invented
+    "-latest" aliases 404 as well -- both confirmed against the live API.
     """
-    for family, alias in AnthropicModel._FAMILY_ALIASES.items():
-        assert alias.endswith("-latest"), (
-            f"{family!r} maps to the pinned id {alias!r}; use a -latest alias "
-            "so it cannot expire"
-        )
+    assert _resolve(family) == family
+    assert family in AnthropicModel._FAMILIES
+
+
+def test_no_hardcoded_model_id_table_exists():
+    """Guards against reintroducing a table that cannot be kept correct.
+
+    Every hard-coded mapping in this module has become wrong within a year.
+    Model ids now come from the API.
+    """
+    assert not hasattr(AnthropicModel, "_FAMILY_ALIASES"), (
+        "hard-coded family->id mapping reintroduced; resolve from the Models "
+        "API instead (see resolve_family_alias)"
+    )
 
 
 @pytest.mark.parametrize(

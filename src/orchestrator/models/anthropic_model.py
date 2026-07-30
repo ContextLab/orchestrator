@@ -130,14 +130,52 @@ class AnthropicModel(Model):
     #: (``claude-haiku-4-5-20251001``) or an Anthropic ``-latest`` alias.
     _QUALIFIED_MODEL_RE = re.compile(r"^claude-.+(-\d{8}|-latest)$", re.IGNORECASE)
 
-    #: Bare family names mapped to Anthropic's own rolling aliases. ``-latest``
-    #: is used rather than a pinned date so this table cannot silently rot the
-    #: way the previous hard-coded 2024 ids did.
-    _FAMILY_ALIASES = {
-        "opus": "claude-opus-4-latest",
-        "sonnet": "claude-sonnet-4-latest",
-        "haiku": "claude-haiku-4-latest",
-    }
+    #: Recognized bare family names. These are NOT mapped to hard-coded ids:
+    #: every attempt to hard-code them in this file has rotted (the 2024 dated
+    #: ids 404 today, and invented ``-latest`` aliases 404 too -- both verified
+    #: against the live API). They are resolved from the Models API instead;
+    #: see :meth:`resolve_family_alias`.
+    _FAMILIES = ("opus", "sonnet", "haiku")
+
+    #: Process-wide cache of family -> concrete id, filled from the Models API.
+    _family_cache: Dict[str, str] = {}
+
+    @classmethod
+    async def resolve_family_alias(cls, client: Any, family: str) -> str:
+        """Return the newest served model id for ``family``.
+
+        Asks the API what exists rather than trusting a table in this file.
+        Anthropic ids sort chronologically by their trailing date, so the
+        lexicographic maximum is the newest release of that family.
+        """
+        if family in cls._family_cache:
+            return cls._family_cache[family]
+
+        try:
+            listing = await client.models.list()
+        except Exception as exc:  # noqa: BLE001 - surfaced with guidance below
+            raise RuntimeError(
+                f"cannot resolve the bare model name {family!r}: the Anthropic "
+                f"Models API is unreachable ({exc}). Pass a fully-qualified id "
+                f"such as 'claude-haiku-4-5-20251001' instead."
+            ) from exc
+
+        candidates = sorted(
+            model.id
+            for model in listing.data
+            if family in model.id.lower()
+        )
+        if not candidates:
+            available = ", ".join(sorted(m.id for m in listing.data))
+            raise RuntimeError(
+                f"no Anthropic model matches the family {family!r}. "
+                f"Available: {available}"
+            )
+
+        resolved = candidates[-1]
+        cls._family_cache[family] = resolved
+        logger.info("Resolved model family %r to %r", family, resolved)
+        return resolved
 
     def _normalize_model_name(self, name: str) -> str:
         """Resolve a model name to an id to send to the API.
@@ -166,20 +204,20 @@ class AnthropicModel(Model):
         if "instant" in name_lower:
             return "claude-instant-1.2"
 
-        for family, alias in self._FAMILY_ALIASES.items():
-            if family in name_lower:
-                logger.debug(
-                    "Resolved bare model name %r to %r; pass a dated id to pin a "
-                    "specific version.",
-                    name,
-                    alias,
-                )
-                return alias
-
-        # Unrecognized: send it as given rather than guessing. An unknown id
-        # produces a clear 404 from the API, which is far more debuggable than
-        # silently substituting a different model.
+        # A bare family name is left as-is here and resolved against the
+        # Models API on first use (see _resolve_model_id). Resolution needs a
+        # network round trip, which must not happen in __init__.
+        #
+        # Unrecognized names are also passed through: an unknown id produces a
+        # clear 404 from the API, which is far more debuggable than silently
+        # substituting some near match.
         return name
+
+    async def _resolve_model_id(self) -> str:
+        """The id to send to the API, resolving a bare family name if needed."""
+        if self._model_id.lower() in self._FAMILIES:
+            return await self.resolve_family_alias(self.client, self._model_id.lower())
+        return self._model_id
 
     def _get_default_capabilities(self, name: str) -> ModelCapabilities:
         """Get default capabilities based on model name."""
@@ -518,7 +556,7 @@ class AnthropicModel(Model):
 
             # Make API call
             api_kwargs = {
-                "model": self._model_id,
+                "model": await self._resolve_model_id(),
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens or self.capabilities.max_tokens,

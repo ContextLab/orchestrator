@@ -131,12 +131,9 @@ async def test_every_family_alias_resolves_to_a_real_model():
     from orchestrator.models.anthropic_model import AnthropicModel
 
     failures = []
-    for family, alias in AnthropicModel._FAMILY_ALIASES.items():
+    for family in AnthropicModel._FAMILIES:
         model = AnthropicModel(
             name=family, api_key=os.environ["ANTHROPIC_API_KEY"], use_langchain=False
-        )
-        assert model._model_id == alias, (
-            f"{family!r} resolved to {model._model_id!r}, expected {alias!r}"
         )
         try:
             reply = await model.generate(
@@ -144,14 +141,39 @@ async def test_every_family_alias_resolves_to_a_real_model():
                 temperature=0.0,
                 max_tokens=MAX_TOKENS,
             )
-            print(f"\nalias {family!r} -> {alias!r}: OK ({reply.strip()[:40]!r})")
+            resolved = AnthropicModel._family_cache.get(family, "<unresolved>")
+            print(f"\nfamily {family!r} -> {resolved!r}: OK ({reply.strip()[:40]!r})")
         except Exception as exc:  # noqa: BLE001 - reporting all failures at once
-            failures.append(f"{family!r} -> {alias!r}: {exc}")
+            failures.append(f"{family!r}: {exc}")
 
     assert not failures, (
-        "these family aliases do not name a servable model:\n  "
+        "these model families could not be resolved to a servable model:\n  "
         + "\n  ".join(failures)
     )
+
+
+async def test_models_api_lists_servable_models():
+    """Record what the account can actually serve.
+
+    Printed so a CI log is a primary source for which ids exist, instead of
+    the guesswork that produced two rounds of 404s in this adapter.
+    """
+    _require_anthropic_package()
+    from orchestrator.models.providers.anthropic_provider import AnthropicProvider
+    from orchestrator.models.providers.base import ProviderConfig
+
+    provider = AnthropicProvider(
+        ProviderConfig(name="anthropic", api_key=os.environ["ANTHROPIC_API_KEY"])
+    )
+    await provider.initialize()
+    models = await provider.discover_models()
+
+    print("\nmodels served to this account:")
+    for model_id in sorted(models):
+        print(f"  {model_id}")
+
+    assert models, "the Models API returned no models"
+    assert any("claude" in m.lower() for m in models)
 
 
 async def test_health_check_reports_true_against_the_real_api():
