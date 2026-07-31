@@ -39,6 +39,32 @@ read "CI passing" as "the whole suite passes". Current counts are reported by
 that job — see [#354](https://github.com/ContextLab/orchestrator/issues/354)
 rather than a number maintained by hand here, which has been wrong before.
 
+**Free models via Dartmouth Chat.** If you have a
+[Dartmouth Chat](https://chat.dartmouth.edu/) account, the
+`DartmouthProvider` runs pipelines against real models at **zero cost per
+token** — no provider extra needed, since the gateway is OpenAI-compatible and
+the adapter speaks it with `aiohttp` (already a core dependency):
+
+```python
+from orchestrator import DartmouthProvider
+
+provider = DartmouthProvider()
+await provider.initialize()
+print(provider.list_free_models())
+# ['google.gemma-3-27b-it', 'google.gemma-4-31B-it',
+#  'meta.llama-3-2-3b-instruct', 'meta.llama-3.2-11b-vision-instruct',
+#  'openai.gpt-oss-120b', 'qwen.qwen3-vl:32b', 'qwen.qwen3.5-122b']
+
+text, model_used = await provider.generate_free("Summarize this in one line: ...")
+```
+
+Set `DARTMOUTH_CHAT_API_KEY`, or put it in `~/.orchestrator/.env`. Free/paid
+status comes from the live catalog, and **paid models are refused unless
+`ORCHESTRATOR_ALLOW_PAID_MODELS=1`**, so a model-name typo cannot quietly
+start spending. Prefer `generate_free()` over naming one model: the free
+endpoints are individually hosted and go down independently, and it falls
+through the free set until one answers.
+
 **Security.** Two confirmed remote-code-execution defects have been fixed
 (pipeline conditions and `transform_spec` both reached `eval`). Pipeline
 content is now evaluated by a constrained, fail-closed AST evaluator, and

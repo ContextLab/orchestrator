@@ -43,8 +43,26 @@ Opt in to the gated-off layers explicitly:
 
 ```bash
 ORCHESTRATOR_RUN_INTEGRATION=1 pytest -m integration
-ANTHROPIC_API_KEY=... pytest -m live
+ANTHROPIC_API_KEY=... pytest -m live            # costs money
+DARTMOUTH_CHAT_API_KEY=... pytest -m live -k dartmouth   # costs nothing
 ```
+
+The Dartmouth live tests are **free** — they only use models the live catalog
+reports at zero cost per token, and assert that before making a request. If
+you have a Dartmouth Chat account, run them: they are the cheapest real-model
+coverage available, and they exercise the same provider contract.
+
+Two things about them are easy to get wrong:
+
+- **Free model endpoints flap.** Each is served from its own cluster endpoint
+  and they go down independently (`Cannot connect to host
+  vllm-qwen35...`). A live test must **skip** on `ModelUnavailable`, not fail
+  — that is an upstream outage, not a defect. Prefer
+  `provider.generate_free()`, which falls through the free set.
+- **Several free models are reasoning models.** They spend tokens on
+  `reasoning_content` before emitting any `content`, so a small `max_tokens`
+  yields `content: null` — a truncation, not an empty answer. That raises
+  `ReasoningTruncated` rather than returning `""`.
 
 Tests requiring absent prerequisites **skip with a reason naming what is
 missing**. They must never silently pass. If you add a test that needs

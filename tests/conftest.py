@@ -52,27 +52,53 @@ def pytest_collection_modifyitems(config, items):
     """Skip opt-in tests when their prerequisites are absent."""
     have_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
 
+    # Live tests are not all about the same provider, so they cannot share one
+    # credential gate. Dartmouth Chat tests need a Dartmouth key -- and they
+    # cost nothing to run, so gating them behind a paid provider's key would
+    # needlessly forgo free coverage.
+    def _have_dartmouth() -> bool:
+        try:
+            from orchestrator.models.dartmouth_credentials import (
+                resolve_dartmouth_api_key,
+            )
+
+            return resolve_dartmouth_api_key(required=False) is not None
+        except Exception:
+            return False
+
+    have_dartmouth = _have_dartmouth()
+
+    def _credential_for(item) -> tuple[bool, str]:
+        """Which credential a live test needs, and whether we have it."""
+        if "dartmouth" in str(getattr(item, "fspath", "")).lower():
+            return have_dartmouth, "DARTMOUTH_CHAT_API_KEY"
+        return have_anthropic, "ANTHROPIC_API_KEY"
+
     # The live CI job sets ORCHESTRATOR_REQUIRE_LIVE=1. Without this guard a
     # missing key would skip every live test and the job would report success
     # having exercised no provider at all -- indistinguishable from having no
     # live coverage, which is the state this suite is meant to leave behind.
-    if os.environ.get("ORCHESTRATOR_REQUIRE_LIVE") == "1" and not have_anthropic:
+    if os.environ.get("ORCHESTRATOR_REQUIRE_LIVE") == "1" and not (
+        have_anthropic or have_dartmouth
+    ):
         raise pytest.UsageError(
             "ORCHESTRATOR_REQUIRE_LIVE=1 requires real live coverage, but "
-            "ANTHROPIC_API_KEY is unset. Either provide the key or unset "
-            "ORCHESTRATOR_REQUIRE_LIVE."
+            "neither ANTHROPIC_API_KEY nor a Dartmouth Chat credential is "
+            "available. Provide one, or unset ORCHESTRATOR_REQUIRE_LIVE."
         )
 
     run_integration = os.environ.get("ORCHESTRATOR_RUN_INTEGRATION") == "1"
     docker_ok = None  # probed lazily; the check itself is cheap but not free
 
     for item in items:
-        if "live" in item.keywords and not have_anthropic:
-            item.add_marker(
-                pytest.mark.skip(
-                    reason="live-provider test: set ANTHROPIC_API_KEY to run"
+        if "live" in item.keywords:
+            available, variable = _credential_for(item)
+            if not available:
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason=f"live-provider test: set {variable} to run"
+                    )
                 )
-            )
         if "integration" in item.keywords and not run_integration:
             item.add_marker(
                 pytest.mark.skip(

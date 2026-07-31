@@ -67,6 +67,11 @@ _EXPORTS: dict[str, str] = {
     # --- Model integrations (each needs its provider extra) ---
     "HuggingFaceModel": ".integrations.huggingface_model",
     "OllamaModel": ".integrations.ollama_model",
+    # Dartmouth Chat needs no extra: it is an OpenAI-compatible HTTP gateway
+    # spoken with aiohttp (a core dep), and it serves free models.
+    "DartmouthModel": ".models.dartmouth_model",
+    "DartmouthProvider": ".models.providers.dartmouth_provider",
+    "resolve_dartmouth_api_key": ".models.dartmouth_credentials",
     # --- State ---
     "StateManager": ".state.state_manager",
     # --- Tools / MCP ---
