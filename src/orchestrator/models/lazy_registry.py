@@ -14,6 +14,7 @@ moment a step asks for a model, discovery runs once.
 
 from __future__ import annotations
 
+import threading
 from typing import Any, Callable, Dict, List
 
 from .model_registry import ModelRegistry
@@ -31,7 +32,18 @@ class LazyModelRegistry(ModelRegistry):
     def __init__(self, populate: Callable[[ModelRegistry], None], **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._populate = populate
+        # Two flags, deliberately. `_populated` means "discovery was
+        # attempted", and gates retries. `_population_done` means "discovery
+        # has finished", and is the only safe basis for a lock-free fast path:
+        # checking `_populated` there let a second thread sail past while the
+        # first was still registering models.
         self._populated = False
+        self._population_done = False
+        # Reentrant: population registers models, and a registration path may
+        # reach back into a demand point on this same thread. A plain Lock
+        # would deadlock there; an RLock lets the owning thread through, where
+        # the flag below already short-circuits it.
+        self._populate_lock = threading.RLock()
 
     @property
     def populated(self) -> bool:
@@ -44,11 +56,30 @@ class LazyModelRegistry(ModelRegistry):
         The flag is set *before* populating so that a failing discovery is not
         retried on every model request; the failure surfaces to the caller that
         triggered it.
+
+        The whole step is serialised. Without the lock a second thread saw
+        ``_populated == True`` the instant the first thread set it and went on
+        to read a registry that was still filling up -- reporting "model not
+        found" for a model that was about to exist. Concurrent callers now
+        block until discovery has actually finished.
         """
-        if self._populated:
+        # Fast path only once discovery has *finished*. Testing `_populated`
+        # here would return the instant the flag flipped, handing the caller a
+        # registry that was still filling up.
+        if self._population_done:
             return
-        self._populated = True
-        self._populate(self)
+        with self._populate_lock:
+            # Either another thread finished while this one waited, or this is
+            # a re-entrant call from inside populate() on the same thread.
+            if self._populated:
+                return
+            self._populated = True
+            try:
+                self._populate(self)
+            finally:
+                # Set even when populate() raises, so a failing discovery is
+                # not re-run on every subsequent model request.
+                self._population_done = True
 
     def can_provide_models(self) -> bool:
         """A lazy registry may yield models; discovery has not run yet."""

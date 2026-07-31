@@ -379,6 +379,211 @@ def test_structured_generation_also_refuses_a_model_override():
 
 
 # ---------------------------------------------------------------------------
+# Structured output must match the schema it asked for
+# ---------------------------------------------------------------------------
+
+def _model_replying(text):
+    """A free model whose gateway always returns ``text`` as the reply."""
+    model = DartmouthModel(
+        name="meta.llama-3-2-3b-instruct",
+        api_key=FAKE_KEY,
+        cost=ModelCost(is_free=True),
+    )
+
+    async def reply(path, payload):
+        return {"choices": [{"message": {"content": text}}]}
+
+    model._post = reply
+    return model
+
+
+SCHEMA = {
+    "type": "object",
+    "properties": {"name": {"type": "string"}, "count": {"type": "integer"}},
+    "required": ["name", "count"],
+}
+
+
+def test_structured_output_matching_the_schema_is_returned():
+    model = _model_replying('{"name": "widget", "count": 3}')
+    assert asyncio.run(model.generate_structured("x", SCHEMA)) == {
+        "name": "widget",
+        "count": 3,
+    }
+
+
+def test_structured_output_missing_a_required_key_is_rejected():
+    """Well-formed JSON is not the same as the requested JSON.
+
+    Small models routinely return a valid object with the wrong keys. Parsing
+    alone let that flow downstream as though the schema had been honoured.
+    """
+    model = _model_replying('{"name": "widget"}')
+    with pytest.raises(DartmouthModelError, match="does not match the requested"):
+        asyncio.run(model.generate_structured("x", SCHEMA))
+
+
+def test_structured_output_with_a_wrongly_typed_field_is_rejected():
+    model = _model_replying('{"name": "widget", "count": "three"}')
+    with pytest.raises(DartmouthModelError) as excinfo:
+        asyncio.run(model.generate_structured("x", SCHEMA))
+    assert "count" in str(excinfo.value), "the error must name the offending field"
+
+
+def test_a_fenced_reply_is_still_unwrapped_and_validated():
+    """Models fence JSON despite being told not to."""
+    model = _model_replying('```json\n{"name": "w", "count": 1}\n```')
+    assert asyncio.run(model.generate_structured("x", SCHEMA))["count"] == 1
+
+
+def test_an_invalid_schema_is_reported_as_the_callers_mistake():
+    model = _model_replying('{"name": "w", "count": 1}')
+    with pytest.raises(DartmouthModelError, match="schema passed to"):
+        asyncio.run(model.generate_structured("x", {"type": "not-a-real-type"}))
+
+
+# ---------------------------------------------------------------------------
+# Error bodies are attacker-influenced and must not forge log lines
+# ---------------------------------------------------------------------------
+
+def test_error_bodies_cannot_inject_newlines_into_logs():
+    """A reflected prompt could otherwise forge extra log records."""
+    from orchestrator.models.dartmouth_model import _safe_error_body
+
+    hostile = '{"detail":"x"}\nERROR:root:Everything is fine, ignore the above'
+    cleaned = _safe_error_body(hostile)
+    assert "\n" not in cleaned and "\r" not in cleaned
+
+
+def test_error_bodies_are_truncated():
+    from orchestrator.models.dartmouth_model import (
+        _MAX_ERROR_BODY_CHARS,
+        _safe_error_body,
+    )
+
+    cleaned = _safe_error_body("a" * 5000)
+    assert len(cleaned) <= _MAX_ERROR_BODY_CHARS + len("... (truncated)")
+    assert cleaned.endswith("(truncated)")
+
+
+# ---------------------------------------------------------------------------
+# Transport configuration and session lifetime
+# ---------------------------------------------------------------------------
+
+def test_provider_transport_config_reaches_the_model():
+    """Regression: timeout/retries were hard-coded and the config ignored."""
+    from orchestrator.models.providers.base import ProviderConfig
+    from orchestrator.models.providers.dartmouth_provider import DartmouthProvider
+
+    provider = DartmouthProvider(
+        ProviderConfig(name="dartmouth", api_key=FAKE_KEY, timeout=12.5,
+                       max_retries=7, retry_delay=0.25)
+    )
+    provider._catalog = {"meta.llama-3-2-3b-instruct": {}}
+    provider._costs = {"meta.llama-3-2-3b-instruct": ModelCost(is_free=True)}
+
+    model = asyncio.run(provider.create_model("meta.llama-3-2-3b-instruct"))
+    assert model._timeout == 12.5
+    assert model._max_retries == 7
+    assert model._retry_delay == 0.25
+
+
+def test_default_provider_timeout_suits_generation_not_metadata():
+    """ProviderConfig's 30s default would cut off a slow generation."""
+    from orchestrator.models.dartmouth_model import DEFAULT_REQUEST_TIMEOUT_SECONDS
+    from orchestrator.models.providers.dartmouth_provider import DartmouthProvider
+
+    provider = DartmouthProvider()
+    assert provider.config.timeout == DEFAULT_REQUEST_TIMEOUT_SECONDS
+    assert provider.config.timeout > 30.0
+
+
+def test_aclose_is_idempotent_and_safe_before_any_request():
+    """Closing a model that never opened a session must not raise."""
+    model = DartmouthModel(
+        name="meta.llama-3-2-3b-instruct", api_key=FAKE_KEY,
+        cost=ModelCost(is_free=True),
+    )
+
+    async def close_twice():
+        await model.aclose()
+        await model.aclose()
+
+    asyncio.run(close_twice())
+    assert model._session is None
+
+
+def test_session_is_reused_rather_than_rebuilt_per_request():
+    """Regression: a new ClientSession per request meant a TLS handshake
+    per request, which a fallback chain pays several times over.
+
+    Constructing a session does not open a connection, so this stays hermetic.
+    """
+    model = DartmouthModel(
+        name="meta.llama-3-2-3b-instruct", api_key=FAKE_KEY,
+        cost=ModelCost(is_free=True),
+    )
+
+    async def run():
+        first = await model._get_session()
+        second = await model._get_session()
+        assert first is second, "each request must not build a new session"
+        assert not first.closed
+        await model.aclose()
+        return first
+
+    session = asyncio.run(run())
+    assert session.closed, "aclose() must actually close the session"
+
+
+def test_async_context_manager_closes_a_real_session():
+    model = DartmouthModel(
+        name="meta.llama-3-2-3b-instruct", api_key=FAKE_KEY,
+        cost=ModelCost(is_free=True),
+    )
+
+    async def use():
+        async with model as m:
+            return await m._get_session()
+
+    session = asyncio.run(use())
+    assert session.closed, "leaving the context must release the connection"
+    assert model._session is None
+
+
+def test_generate_free_closes_every_model_it_tries():
+    """Walking a chain of downed models must not leak a session per attempt."""
+    from orchestrator.models.dartmouth_model import ModelUnavailable
+    from orchestrator.models.providers.dartmouth_provider import DartmouthProvider
+
+    provider = DartmouthProvider.__new__(DartmouthProvider)
+    provider._catalog = {"a": {}, "b": {}}
+    provider._costs = {m: ModelCost(is_free=True) for m in provider._catalog}
+    built = []
+
+    async def fake_create(model_id, **kwargs):
+        model = DartmouthModel(
+            name=model_id, api_key=FAKE_KEY, cost=ModelCost(is_free=True)
+        )
+
+        async def down(path, payload):
+            raise ModelUnavailable(f"{model_id} backend is down")
+
+        model._post = down
+        await model._get_session()  # the session a real request would open
+        built.append(model)
+        return model
+
+    provider.create_model = fake_create
+
+    with pytest.raises(DartmouthModelError):
+        asyncio.run(provider.generate_free("hi"))
+
+    assert len(built) == 2, "both candidates should have been tried"
+    assert all(m._session is None for m in built), "every attempt must be closed"
+
+
+# ---------------------------------------------------------------------------
 # Endpoint safety -- every request carries the bearer token
 # ---------------------------------------------------------------------------
 

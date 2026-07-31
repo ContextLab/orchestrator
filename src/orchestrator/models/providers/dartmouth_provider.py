@@ -17,6 +17,7 @@ from ..dartmouth_credentials import resolve_dartmouth_api_key
 from ..dartmouth_model import (
     DEFAULT_BASE_URL,
     DEFAULT_MAX_TOKENS,
+    DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DartmouthModel,
     DartmouthModelError,
     ModelUnavailable,
@@ -28,8 +29,6 @@ from .base import ModelProvider, ProviderConfig
 logger = logging.getLogger(__name__)
 
 __all__ = ["DartmouthProvider"]
-
-_CATALOG_TIMEOUT_SECONDS = 60
 
 
 def _walk_token_costs(node: object) -> Tuple[List[float], List[float]]:
@@ -84,7 +83,16 @@ class DartmouthProvider(ModelProvider):
     """Serves models from the Dartmouth Chat OpenAI-compatible gateway."""
 
     def __init__(self, config: Optional[ProviderConfig] = None) -> None:
-        super().__init__(config or ProviderConfig(name="dartmouth"))
+        # ProviderConfig defaults to a 30s timeout, which is right for a
+        # metadata call and far too short for generation on a busy shared
+        # cluster. The default config therefore carries the generation
+        # timeout; an explicit config is honoured exactly as given.
+        super().__init__(
+            config
+            or ProviderConfig(
+                name="dartmouth", timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS
+            )
+        )
         # The catalog request carries the bearer token too, so the endpoint is
         # checked here as well -- not only in DartmouthModel.
         self._base_url = validate_base_url(self.config.base_url or DEFAULT_BASE_URL)
@@ -103,7 +111,7 @@ class DartmouthProvider(ModelProvider):
         import aiohttp
 
         url = f"{self._base_url}/models"
-        timeout = aiohttp.ClientTimeout(total=_CATALOG_TIMEOUT_SECONDS)
+        timeout = aiohttp.ClientTimeout(total=self.config.timeout)
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(
@@ -170,6 +178,12 @@ class DartmouthProvider(ModelProvider):
             cost=self._costs[model_name],
             capabilities=self.get_model_capabilities(model_name),
             requirements=self.get_model_requirements(model_name),
+            # The provider's configured transport policy applies to every
+            # model it builds; previously these were hard-coded and the
+            # config was silently ignored.
+            timeout=self.config.timeout,
+            max_retries=self.config.max_retries,
+            retry_delay=self.config.retry_delay,
             **kwargs,
         )
 
@@ -253,6 +267,12 @@ class DartmouthProvider(ModelProvider):
                 )
                 skipped.append(f"{model_id} (reasoning truncated)")
                 continue
+            finally:
+                # Each candidate holds its own HTTP session. Walking a chain
+                # of downed models would otherwise leak one session per
+                # attempt. The success path closes too: the reply is already
+                # in hand by the time this runs.
+                await model.aclose()
 
         raise DartmouthModelError(
             f"no free Dartmouth model could answer: {', '.join(skipped)}. "

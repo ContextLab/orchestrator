@@ -67,11 +67,21 @@ passes.
 ## Provider policy
 
 - Core interfaces stay **provider-neutral**.
-- **Anthropic** is the first and only supported live provider, matching the
-  October refactor and the code that actually works.
+- Two providers are being brought under live acceptance tests:
+  - **Anthropic**, matching the October refactor and the code that works.
+  - **Dartmouth Chat**, an OpenAI-compatible gateway that serves several
+    models at zero cost per token. It was added because unfunded real-model
+    coverage is worth more than mocked coverage, and it needs no provider
+    extra: the adapter speaks the gateway's HTTP API with `aiohttp`, already
+    a core dependency. Free/paid status is read from the live catalog, and
+    paid models are refused unless `ORCHESTRATOR_ALLOW_PAID_MODELS=1`.
+- Neither is **supported** yet: a provider earns that word only when its
+  `live-tests` job passes remotely. Both are currently "verified locally".
 - OpenAI, Google, HuggingFace and Ollama adapters remain in the tree but are
   **unsupported** until they have contract tests and live acceptance tests.
-- No provider may be advertised in the README before those tests pass.
+- No provider may be advertised in the README as supported before its live
+  job passes. Describing it as verified-locally-but-not-gated is permitted,
+  provided the README says exactly that.
 
 ## Dependency policy
 
@@ -133,6 +143,11 @@ Three executable acceptance specifications, all hermetic:
    propagation and exit codes.
 3. **`live-anthropic`** — the same shape as `basic` but with one real Anthropic
    call. Marked `live`, skipped unless `ANTHROPIC_API_KEY` is set.
+4. **`live-dartmouth`** — the same shape, against a free Dartmouth Chat model.
+   Marked `live`, skipped unless `DARTMOUTH_CHAT_API_KEY` is set. Its job runs
+   separately from the Anthropic one: run together, a missing Dartmouth
+   credential produced skips inside a green Anthropic job, which read as
+   coverage that did not exist.
 
 Golden pipelines run through **both** the CLI and the Python API and must agree.
 

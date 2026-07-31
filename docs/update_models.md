@@ -1,6 +1,9 @@
 # Model Registry Update Tool
 
-The `update_models` tool automatically fetches the latest available models from all supported providers and updates the `models.yaml` configuration file.
+The `update_models` tool fetches currently available models from the provider
+APIs it knows about and updates the `models.yaml` configuration file. Being
+queryable here does **not** mean a provider is supported — see the provider
+table in the README.
 
 ## Overview
 
@@ -11,7 +14,7 @@ The model update tool connects to various AI provider APIs to retrieve their cur
 ### Command Line
 
 ```bash
-python -m src.orchestrator.tools.update_models [config_path]
+python -m orchestrator.tools.update_models [config_path]
 ```
 
 If no config path is provided, it defaults to `~/.orchestrator/models.yaml`. The
@@ -22,7 +25,7 @@ update a checked-in copy.
 ### Programmatic Usage
 
 ```python
-from src.orchestrator.tools.update_models import update_models
+from orchestrator.tools.update_models import update_models
 
 # Update the default config
 await update_models()
@@ -31,9 +34,12 @@ await update_models()
 await update_models("/path/to/custom/models.yaml")
 ```
 
-## Supported Providers
+## Providers this tool can query
 
-The tool fetches models from the following providers:
+Being listed here means the tool knows how to ask; it does **not** mean the
+provider is supported. See the provider table in the README and
+[the product contract](adr/0001-product-contract.md) for what is actually
+verified.
 
 1. **OpenAI** - Via OpenAI API (requires `OPENAI_API_KEY`)
    - GPT-4 variants
@@ -41,23 +47,31 @@ The tool fetches models from the following providers:
    - O1/O3 reasoning models
    - Embedding models
 
-2. **Anthropic** - Hardcoded list (API doesn't provide model listing)
-   - Claude 4th generation models (Opus/Sonnet)
-   - Claude 3 variants (legacy)
-   - Claude 2 variants (legacy)
+2. **Anthropic** - Via the API's own listing endpoint (`client.models.list()`),
+   requires `ANTHROPIC_API_KEY`.
 
-3. **Google** - Via Gemini API (requires `GOOGLE_API_KEY`)
+   This used to be a hardcoded list, on the belief that the API offered no
+   model listing. It does. The hardcoded list rotted twice — first into
+   retired 2024 model ids, then into invented `-latest` aliases that all
+   returned 404 — so model ids are now always read from the live API. Do not
+   reintroduce a static list here.
+
+3. **Dartmouth Chat** - Via the gateway's OpenAI-compatible `/models`
+   endpoint (requires `DARTMOUTH_CHAT_API_KEY`). Pricing comes from the same
+   response, which is what makes free/paid classification trustworthy.
+
+4. **Google** - Via Gemini API (requires `GOOGLE_API_KEY`)
    - Gemini Pro variants
    - Gemini Flash variants
    - PaLM models (if available)
 
-4. **Ollama** - Comprehensive hardcoded list
+5. **Ollama** - Comprehensive hardcoded list
    - Llama variants
    - Mistral variants
    - Code-specific models
    - Various open-source models
 
-5. **HuggingFace** - Curated list of popular models
+6. **HuggingFace** - Curated list of popular models
    - Meta Llama models
    - Microsoft Phi models
    - Qwen models
@@ -134,7 +148,7 @@ export OPENAI_API_KEY="sk-..."  # Get from https://platform.openai.com/api-keys
 export GOOGLE_API_KEY="..."      # Get from https://makersuite.google.com/app/apikey
 
 # 2. Update models
-python -m src.orchestrator.tools.update_models
+python -m orchestrator.tools.update_models
 
 # 3. Verify the update
 cat config/models.yaml | grep "models:" -A 5

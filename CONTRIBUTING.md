@@ -108,6 +108,17 @@ is **data**.
   capability added to it has introduced a defect on the first attempt —
   including a memory-amplification DoS from methods that were individually
   safe. Add attack tests alongside the capability.
+- **A cost check is only worth the field it checked.** The Dartmouth adapter
+  approves a model at construction, so the request body may not override
+  `model` (or `messages`, or `stream`) — `payload.update(kwargs)` once turned
+  an approved free model into an unapproved paid one at call time. Controlled
+  fields are written last, and overrides raise `ReservedRequestField`.
+- **Unknown cost is paid, not free.** A model built without consulting the
+  live catalog has an unknown price. Defaulting that to free is how money
+  gets spent by accident.
+- **Credentials only travel over TLS.** Any configurable endpoint that
+  receives a token must be scheme-checked before the first request;
+  loopback is the only plaintext exemption.
 
 ## Making changes
 
@@ -133,14 +144,31 @@ Before opening a PR, run the full local gate:
 
 ```bash
 pytest -m "unit or contract or e2e" -q
-ruff check src/orchestrator
+ruff check src/orchestrator --select E9,F63,F7,F82,F821,F823,F601,F811
 python -m build && twine check dist/*
+
+# No source file may be hidden by .gitignore. An unanchored `debug_*` rule
+# silently excluded a real module for ~11 months: local trees still had the
+# file, so only fresh clones broke and no local test could notice.
+git ls-files --others --ignored --exclude-standard -- 'src/**/*.py'   # must be empty
+```
+
+Only correctness-class Ruff rules gate the build. The style backlog is large
+and making it blocking would bury real bugs.
+
+If you change dependencies, refresh the lockfile — CI installs from it, and a
+stale lock fails `uv lock --check`:
+
+```bash
+uv lock
+uv sync --locked --no-default-groups --group test   # what CI installs
 ```
 
 CI runs lint, the blocking test matrix across Python 3.11–3.13 on Ubuntu and
 macOS, a wheel smoke test, and the legacy suite as a **non-blocking** job. The
 legacy job is expected to be red; it exists to keep the backlog visible rather
-than hidden. Do not "fix" it by deleting or skipping tests — see
+than hidden, and it publishes its counts to the run summary. Do not "fix" it
+by deleting or skipping tests — see
 [#354](https://github.com/ContextLab/orchestrator/issues/354).
 
 ## Reporting bugs

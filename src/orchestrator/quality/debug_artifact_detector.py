@@ -31,43 +31,43 @@ class ArtifactType(Enum):
 @dataclass
 class ArtifactPattern:
     """Represents a debug artifact pattern with metadata."""
-    
+
     pattern: Pattern[str]
     artifact_type: ArtifactType
     description: str
     severity: IssueSeverity
     confidence: float
     context_sensitive: bool = False
-    
+
 
 class DebugArtifactDetector:
     """
     Comprehensive detector for debug artifacts, conversational AI language,
     and development content that should not appear in production outputs.
     """
-    
+
     def __init__(self):
         """Initialize debug artifact detector with comprehensive pattern library."""
         self.artifact_patterns = self._initialize_artifact_patterns()
-        
+
         # Context patterns to help with accurate detection
         self.code_context_indicators = [
             r'(function|class|def|var|let|const|import|export)',
             r'(if|else|for|while|switch|try|catch)',
             r'[{};]',  # Code structure indicators
         ]
-        
+
         # Whitelist patterns for legitimate use of certain terms
         self.whitelisted_contexts = [
             r'(?i)(class|function|variable)\s+name',  # "debug" as legitimate name
             r'(?i)debug\s+(mode|flag|option|setting)',  # Configuration context
             r'(?i)(about|regarding|concerning)\s+debug',  # Documentation context
         ]
-    
+
     def _initialize_artifact_patterns(self) -> List[ArtifactPattern]:
         """Initialize comprehensive library of debug artifact patterns."""
         patterns = []
-        
+
         # Debug Statements
         patterns.extend([
             ArtifactPattern(
@@ -93,7 +93,7 @@ class DebugArtifactDetector:
                 confidence=0.85
             ),
         ])
-        
+
         # Stack Traces and Error Messages
         patterns.extend([
             ArtifactPattern(
@@ -125,7 +125,7 @@ class DebugArtifactDetector:
                 confidence=0.9
             ),
         ])
-        
+
         # Console Output Artifacts
         patterns.extend([
             ArtifactPattern(
@@ -150,7 +150,7 @@ class DebugArtifactDetector:
                 confidence=0.85
             ),
         ])
-        
+
         # Conversational AI Artifacts
         patterns.extend([
             ArtifactPattern(
@@ -210,7 +210,7 @@ class DebugArtifactDetector:
                 confidence=0.9
             ),
         ])
-        
+
         # Development Comments and Meta-Commentary
         patterns.extend([
             ArtifactPattern(
@@ -235,7 +235,7 @@ class DebugArtifactDetector:
                 confidence=0.7
             ),
         ])
-        
+
         # Test Data and Development Placeholders
         patterns.extend([
             ArtifactPattern(
@@ -267,7 +267,7 @@ class DebugArtifactDetector:
                 confidence=0.9
             ),
         ])
-        
+
         # Processing and Generation Artifacts
         patterns.extend([
             ArtifactPattern(
@@ -285,8 +285,8 @@ class DebugArtifactDetector:
                 confidence=0.85
             ),
         ])
-        
-        # Instructional and Tutorial Artifacts  
+
+        # Instructional and Tutorial Artifacts
         patterns.extend([
             ArtifactPattern(
                 pattern=re.compile(r'(?i)\b(step\s+\d+:|first,?\s+|second,?\s+|third,?\s+|finally,?\s+)\b', re.MULTILINE),
@@ -310,44 +310,44 @@ class DebugArtifactDetector:
                 confidence=0.75
             ),
         ])
-        
+
         return patterns
-    
+
     def detect_debug_artifacts(self, content: str, file_path: str = "") -> List[QualityIssue]:
         """
         Detect debug artifacts, conversational AI language, and development
         content using comprehensive pattern matching.
         """
         issues = []
-        
+
         for pattern_obj in self.artifact_patterns:
             matches = pattern_obj.pattern.finditer(content)
-            
+
             for match in matches:
                 matched_text = match.group(0)
                 match_start = match.start()
-                
+
                 # Apply context-sensitive filtering if enabled
                 if pattern_obj.context_sensitive:
                     if self._is_whitelisted_context(content, match_start, matched_text):
                         continue
-                    
+
                     # Adjust confidence based on context
                     confidence = self._calculate_context_confidence(
                         content, match_start, matched_text, pattern_obj.confidence
                     )
                 else:
                     confidence = pattern_obj.confidence
-                
+
                 # Skip if confidence is too low
                 if confidence < 0.5:
                     continue
-                
+
                 line_number = content[:match_start].count('\n') + 1
-                
+
                 # Generate contextual suggestion based on artifact type
                 suggestion = self._generate_suggestion(pattern_obj.artifact_type, matched_text)
-                
+
                 issues.append(QualityIssue(
                     category=IssueCategory.CONTENT_QUALITY,
                     severity=pattern_obj.severity,
@@ -357,50 +357,50 @@ class DebugArtifactDetector:
                     suggestion=suggestion,
                     confidence=confidence
                 ))
-        
+
         # Additional context-aware detection
         additional_issues = self._detect_context_specific_artifacts(content, file_path)
         issues.extend(additional_issues)
-        
+
         return self._deduplicate_issues(issues)
-    
+
     def _is_whitelisted_context(self, content: str, match_start: int, matched_text: str) -> bool:
         """Check if the match appears in a whitelisted context."""
         # Get surrounding context (50 characters before and after)
         context_start = max(0, match_start - 50)
         context_end = min(len(content), match_start + len(matched_text) + 50)
         context = content[context_start:context_end]
-        
+
         # Check against whitelist patterns
         for whitelist_pattern in self.whitelisted_contexts:
             if re.search(whitelist_pattern, context, re.IGNORECASE):
                 return True
-        
+
         return False
-    
+
     def _calculate_context_confidence(self, content: str, match_start: int, matched_text: str, base_confidence: float) -> float:
         """Calculate confidence based on surrounding context."""
         confidence = base_confidence
-        
+
         # Get surrounding context
         context_start = max(0, match_start - 100)
         context_end = min(len(content), match_start + len(matched_text) + 100)
         context = content[context_start:context_end]
-        
+
         # Reduce confidence if in code-like context
         if any(re.search(pattern, context) for pattern in self.code_context_indicators):
             confidence *= 0.7
-        
+
         # Increase confidence if in documentation context
         if any(marker in context for marker in ['#', '**', '*', '```', '---']):
             confidence *= 1.1
-        
+
         # Reduce confidence if term appears to be part of legitimate text
         if re.search(r'\b(about|regarding|concerning|documentation)\s+' + re.escape(matched_text.lower()), context, re.IGNORECASE):
             confidence *= 0.5
-        
+
         return min(1.0, confidence)
-    
+
     def _generate_suggestion(self, artifact_type: ArtifactType, matched_text: str) -> str:
         """Generate contextual suggestion based on artifact type."""
         suggestions = {
@@ -415,20 +415,20 @@ class DebugArtifactDetector:
             ArtifactType.DEVELOPMENT_PLACEHOLDER: f"Complete development placeholder '{matched_text.strip()}' with actual content",
             ArtifactType.META_COMMENTARY: f"Remove meta-commentary '{matched_text.strip()}' and provide direct information"
         }
-        
+
         return suggestions.get(artifact_type, "Review and improve content for production readiness")
-    
+
     def _detect_context_specific_artifacts(self, content: str, file_path: str) -> List[QualityIssue]:
         """Detect artifacts that require contextual analysis."""
         issues = []
-        
+
         # Detect common names that suggest test data
         test_name_patterns = [
             r'(?i)\b(john\s+doe|jane\s+smith|test\s*user\d*|example\s+user)\b',
             r'(?i)\b(alice|bob|charlie|dave)\b(?=\s+(?:smith|jones|brown|wilson))',
             r'(?i)\b(user\d+|test\d+|sample\d+|example\d+)\b'
         ]
-        
+
         for pattern in test_name_patterns:
             matches = re.finditer(pattern, content)
             for match in matches:
@@ -442,7 +442,7 @@ class DebugArtifactDetector:
                     suggestion="Replace test names with production-appropriate data or anonymized references",
                     confidence=0.8
                 ))
-        
+
         # Detect common test email addresses
         test_email_pattern = r'(?i)\b[a-zA-Z0-9._%+-]+@(?:example|test|sample|demo)\.(?:com|org|net)\b'
         matches = re.finditer(test_email_pattern, content)
@@ -457,13 +457,13 @@ class DebugArtifactDetector:
                 suggestion="Replace test email addresses with production examples or placeholder format",
                 confidence=0.9
             ))
-        
+
         # Detect URL artifacts that suggest development/testing
         dev_url_patterns = [
             r'(?i)\b(?:https?://)?(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?(?:/[^\s]*)?',
             r'(?i)\b(?:https?://)?[a-zA-Z0-9.-]*(?:\.local|\.test|\.dev|\.localhost)(?::\d+)?(?:/[^\s]*)?'
         ]
-        
+
         for pattern in dev_url_patterns:
             matches = re.finditer(pattern, content)
             for match in matches:
@@ -477,26 +477,26 @@ class DebugArtifactDetector:
                     suggestion="Replace development URLs with production examples or generic placeholders",
                     confidence=0.85
                 ))
-        
+
         return issues
-    
+
     def _deduplicate_issues(self, issues: List[QualityIssue]) -> List[QualityIssue]:
         """Remove duplicate issues based on description and line number."""
         seen = set()
         deduplicated = []
-        
+
         for issue in issues:
             key = (issue.description, issue.line_number, issue.file_path)
             if key not in seen:
                 seen.add(key)
                 deduplicated.append(issue)
-        
+
         return deduplicated
-    
+
     def get_artifact_summary(self, issues: List[QualityIssue]) -> Dict[ArtifactType, int]:
         """Generate summary of detected artifacts by type."""
         summary = {artifact_type: 0 for artifact_type in ArtifactType}
-        
+
         for issue in issues:
             # Parse artifact type from issue description
             for artifact_type in ArtifactType:
@@ -512,10 +512,10 @@ class DebugArtifactDetector:
                     ArtifactType.DEVELOPMENT_PLACEHOLDER: ['placeholder', 'processing'],
                     ArtifactType.META_COMMENTARY: ['meta-commentary', 'instructional']
                 }
-                
+
                 keywords = type_keywords.get(artifact_type, [])
                 if any(keyword in issue.description.lower() for keyword in keywords):
                     summary[artifact_type] += 1
                     break
-        
+
         return summary

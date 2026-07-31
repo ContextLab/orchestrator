@@ -17,6 +17,7 @@ typo cannot quietly start spending money.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -54,7 +55,24 @@ ALLOW_PAID_ENV_VAR = "ORCHESTRATOR_ALLOW_PAID_MODELS"
 #: default is large enough that a reasoning model can finish and still answer.
 DEFAULT_MAX_TOKENS = 2048
 
-_REQUEST_TIMEOUT_SECONDS = 300
+#: Generation can legitimately take minutes on a busy shared cluster, so this
+#: is far longer than ``ProviderConfig.timeout``'s 30s default. A provider
+#: built with an explicit config uses that config's value instead.
+DEFAULT_REQUEST_TIMEOUT_SECONDS = 300
+
+#: Gateway error bodies are echoed into exceptions and logs for diagnosis.
+#: They are attacker-influenced (a prompt can be reflected back), so they are
+#: truncated and stripped of control characters first -- an unescaped newline
+#: or carriage return lets one line of response forge additional log lines.
+_MAX_ERROR_BODY_CHARS = 500
+
+
+def _safe_error_body(body: str) -> str:
+    """Render a gateway error body safely for an exception or log line."""
+    collapsed = " ".join(body.split())
+    if len(collapsed) > _MAX_ERROR_BODY_CHARS:
+        collapsed = collapsed[:_MAX_ERROR_BODY_CHARS] + "... (truncated)"
+    return collapsed
 
 
 class DartmouthModelError(RuntimeError):
@@ -179,6 +197,9 @@ class DartmouthModel(Model):
         capabilities: Optional[ModelCapabilities] = None,
         requirements: Optional[ModelRequirements] = None,
         cost: Optional[ModelCost] = None,
+        timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
         **kwargs: Any,
     ) -> None:
         """Initialize the adapter.
@@ -228,6 +249,13 @@ class DartmouthModel(Model):
         self._api_key = api_key or (credential.key if credential else "")
         self._base_url = validate_base_url(base_url or DEFAULT_BASE_URL)
         self._is_available = True
+        self._timeout = timeout
+        self._max_retries = max_retries
+        self._retry_delay = retry_delay
+        # Created on first request and reused, so a fallback chain walking
+        # several models does not pay a fresh TLS handshake each time. Closed
+        # by aclose(); see the async-context-manager support below.
+        self._session: Optional[Any] = None
 
         if credential is not None:
             logger.debug(
@@ -275,29 +303,58 @@ class DartmouthModel(Model):
         """Whether a credential is available. Never exposes the key itself."""
         return bool(self._api_key)
 
+    async def _get_session(self) -> Any:
+        """Return the shared HTTP session, opening it on first use."""
+        import aiohttp
+
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=self._timeout),
+                headers={
+                    "Authorization": f"Bearer {self._api_key}",
+                    "Content-Type": "application/json",
+                },
+            )
+        return self._session
+
+    async def aclose(self) -> None:
+        """Close the shared HTTP session. Safe to call more than once."""
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
+        self._session = None
+
+    async def __aenter__(self) -> "DartmouthModel":
+        return self
+
+    async def __aexit__(self, *exc_info: Any) -> None:
+        await self.aclose()
+
     async def _post(self, path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """POST JSON to the gateway and return the decoded response."""
+        """POST JSON to the gateway and return the decoded response.
+
+        Transport failures (connection reset, DNS blip) are retried
+        ``max_retries`` times. A *model* being down is deliberately NOT
+        retried: the backend stays down for minutes, so retrying wastes the
+        caller's time where :meth:`DartmouthProvider.generate_free` would
+        simply move to the next free model.
+        """
         import aiohttp
 
         url = f"{self._base_url}/{path.lstrip('/')}"
-        timeout = aiohttp.ClientTimeout(total=_REQUEST_TIMEOUT_SECONDS)
-        try:
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    url,
-                    json=payload,
-                    headers={
-                        "Authorization": f"Bearer {self._api_key}",
-                        "Content-Type": "application/json",
-                    },
-                ) as response:
+        last_error: Optional[Exception] = None
+
+        for attempt in range(self._max_retries + 1):
+            try:
+                session = await self._get_session()
+                async with session.post(url, json=payload) as response:
                     body = await response.text()
                     if response.status >= 400:
                         # The body may echo the request but never the bearer
-                        # token, so it is safe to surface.
+                        # token. It is still attacker-influenced, so it is
+                        # sanitised before going into an exception or a log.
                         detail = (
                             f"Dartmouth Chat returned HTTP {response.status} "
-                            f"for model {self.name!r}: {body[:500]}"
+                            f"for model {self.name!r}: {_safe_error_body(body)}"
                         )
                         # A downed model backend is reported as a 400/500 from
                         # the gateway, which is indistinguishable from a bad
@@ -313,12 +370,28 @@ class DartmouthModel(Model):
                         raise DartmouthModelError(
                             f"Dartmouth Chat returned a non-JSON response for "
                             f"{self.name!r} (is the gateway in maintenance?): "
-                            f"{body[:200]}"
+                            f"{_safe_error_body(body)}"
                         ) from exc
-        except aiohttp.ClientError as exc:
-            raise DartmouthModelError(
-                f"Dartmouth Chat request failed for {self.name!r}: {exc}"
-            ) from exc
+            except aiohttp.ClientError as exc:
+                last_error = exc
+                if attempt < self._max_retries:
+                    logger.warning(
+                        "Dartmouth transport error for %s (attempt %d/%d), "
+                        "retrying: %s",
+                        self.name,
+                        attempt + 1,
+                        self._max_retries + 1,
+                        exc,
+                    )
+                    await asyncio.sleep(self._retry_delay * (attempt + 1))
+                    # The session may be poisoned by the failure; drop it so
+                    # the next attempt opens a fresh connection.
+                    await self.aclose()
+
+        raise DartmouthModelError(
+            f"Dartmouth Chat request failed for {self.name!r} after "
+            f"{self._max_retries + 1} attempts: {last_error}"
+        ) from last_error
 
     @staticmethod
     def _extract_text(response: Dict[str, Any], model_name: str) -> str:
@@ -442,6 +515,26 @@ class DartmouthModel(Model):
                 f"{self.name!r} returned a {type(parsed).__name__}, expected a "
                 f"JSON object"
             )
+
+        # Parsing proves the reply is JSON, not that it is the JSON that was
+        # asked for. Small models routinely return well-formed objects with
+        # the wrong keys or types, which would otherwise flow downstream as if
+        # the schema had been honoured.
+        import jsonschema
+
+        try:
+            jsonschema.validate(instance=parsed, schema=schema)
+        except jsonschema.ValidationError as exc:
+            raise DartmouthModelError(
+                f"{self.name!r} returned JSON that does not match the "
+                f"requested schema at {list(exc.absolute_path) or '<root>'}: "
+                f"{exc.message}. Received: {json.dumps(parsed)[:200]}"
+            ) from exc
+        except jsonschema.SchemaError as exc:
+            raise DartmouthModelError(
+                f"the schema passed to generate_structured() is itself "
+                f"invalid: {exc.message}"
+            ) from exc
         return parsed
 
     async def health_check(self) -> bool:
@@ -452,6 +545,10 @@ class DartmouthModel(Model):
         except Exception as exc:  # noqa: BLE001 - health checks report, not raise
             logger.warning("Dartmouth health check failed for %s: %s", self.name, exc)
             return False
+        finally:
+            # A health check is a one-shot probe, so it must not leave a
+            # session open behind it.
+            await self.aclose()
 
     async def estimate_cost(
         self,

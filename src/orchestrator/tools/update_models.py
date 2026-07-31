@@ -92,39 +92,69 @@ class ModelUpdater:
         return models
 
     async def fetch_anthropic_models(self) -> List[Dict[str, Any]]:
-        """Fetch available models from Anthropic."""
-        # Anthropic doesn't have a public API endpoint for listing models
-        # We'll use a hardcoded list of known models
-        models = [
-            {
-                "id": "claude-opus-4-20250514",
-                "provider": "anthropic",
-                "type": "anthropic",
-            },
-            {
-                "id": "claude-sonnet-4-20250514",
-                "provider": "anthropic",
-                "type": "anthropic",
-            },
-            {"id": "claude-2.1", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-2", "provider": "anthropic", "type": "anthropic"},
-            {"id": "claude-instant-1.2", "provider": "anthropic", "type": "anthropic"},
-        ]
+        """Fetch available models from Anthropic's own listing endpoint.
 
-        # Try to use the API if available
+        This was a hardcoded list, on the stated belief that "Anthropic
+        doesn't have a models.list() endpoint". It does, and the list rotted
+        accordingly: it still advertised claude-2, claude-2.1 and
+        claude-instant-1.2, all long retired. The same mistake has now been
+        made three times in this repository, so ids are read from the API and
+        never guessed. Returns an empty list when the key or SDK is absent,
+        matching how every other provider here degrades.
+        """
         api_key = os.getenv("ANTHROPIC_API_KEY")
-        if api_key:
-            try:
-                import anthropic
+        if not api_key:
+            logger.info("No ANTHROPIC_API_KEY set; skipping Anthropic models")
+            return []
 
-                anthropic.Anthropic(api_key=api_key)
-                # Note: As of now, Anthropic doesn't have a models.list() endpoint
-                # This is for future compatibility
-                pass
-            except Exception as e:
-                logger.debug(f"Could not use Anthropic API: {e}")
+        try:
+            import anthropic
+        except ImportError:
+            logger.info(
+                "The anthropic package is not installed "
+                '(pip install "py-orc[anthropic]"); skipping Anthropic models'
+            )
+            return []
 
-        return models
+        try:
+            client = anthropic.AsyncAnthropic(api_key=api_key)
+            listing = await client.models.list()
+            return [
+                {"id": model.id, "provider": "anthropic", "type": "anthropic"}
+                for model in listing.data
+            ]
+        except Exception as e:
+            logger.error(f"Error fetching Anthropic models: {e}")
+            return []
+
+    async def fetch_dartmouth_models(self) -> List[Dict[str, Any]]:
+        """Fetch models from the Dartmouth Chat gateway's live catalog.
+
+        Only the **free** models are registered. The catalog also serves paid
+        ones, and writing those into models.yaml would make them selectable by
+        default, which is precisely the accident
+        ``ORCHESTRATOR_ALLOW_PAID_MODELS`` exists to prevent.
+        """
+        from ..models.dartmouth_credentials import resolve_dartmouth_api_key
+        from ..models.providers.dartmouth_provider import DartmouthProvider
+
+        credential = resolve_dartmouth_api_key(required=False)
+        if credential is None:
+            logger.info(
+                "No Dartmouth Chat credential found; skipping Dartmouth models"
+            )
+            return []
+
+        try:
+            provider = DartmouthProvider()
+            await provider.initialize()
+            return [
+                {"id": model_id, "provider": "dartmouth", "type": "dartmouth"}
+                for model_id in provider.list_free_models()
+            ]
+        except Exception as e:
+            logger.error(f"Error fetching Dartmouth models: {e}")
+            return []
 
     async def fetch_google_models(self) -> List[Dict[str, Any]]:
         """Fetch available models from Google Gemini."""
@@ -371,6 +401,7 @@ class ModelUpdater:
         tasks = [
             self.fetch_openai_models(),
             self.fetch_anthropic_models(),
+            self.fetch_dartmouth_models(),
             self.fetch_google_models(),
             self.fetch_ollama_models(),
             self.fetch_huggingface_models(),
