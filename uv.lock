@@ -4442,6 +4442,14 @@ web = [
     { name = "playwright" },
 ]
 
+[package.dev-dependencies]
+test = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-timeout" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aiofiles", specifier = ">=23.0.0" },
@@ -4508,6 +4516,14 @@ requires-dist = [
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=1.0.0" },
 ]
 provides-extras = ["anthropic", "openai", "google", "langgraph", "web", "multimedia", "viz", "infra", "crypto", "dev", "docs", "notebooks", "all", "all-dev"]
+
+[package.metadata.requires-dev]
+test = [
+    { name = "pytest", specifier = ">=7.0.0" },
+    { name = "pytest-asyncio", specifier = ">=0.21.0" },
+    { name = "pytest-cov", specifier = ">=4.0.0" },
+    { name = "pytest-timeout", specifier = ">=2.1.0" },
+]
 
 [[package]]
 name = "pyasn1"

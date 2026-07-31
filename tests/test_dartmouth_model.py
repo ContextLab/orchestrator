@@ -8,16 +8,22 @@ here exercises real functions over real catalog-shaped data.
 The live round trip is covered by tests/test_live_dartmouth.py.
 """
 
+import asyncio
+
 import pytest
 
 from orchestrator.core.model import ModelCost
 from orchestrator.models.dartmouth_model import (
     ALLOW_PAID_ENV_VAR,
     DEFAULT_MAX_TOKENS,
+    RESERVED_REQUEST_FIELDS,
     DartmouthModel,
     DartmouthModelError,
+    InsecureEndpoint,
     PaidModelRefused,
+    ReservedRequestField,
     paid_models_allowed,
+    validate_base_url,
 )
 from orchestrator.models.providers.dartmouth_provider import model_cost_from_catalog
 
@@ -146,6 +152,29 @@ def test_only_the_exact_value_1_enables_paid_usage(monkeypatch, value):
             api_key=FAKE_KEY,
             cost=ModelCost(input_cost_per_1k_tokens=0.005),
         )
+
+
+def test_unpriced_model_is_refused_rather_than_assumed_free():
+    """Regression: `cost or ModelCost(is_free=True)` made this construct.
+
+    A model built without consulting the catalog has an *unknown* price. The
+    old default treated unknown as free, so
+    `DartmouthModel(name="anthropic.claude-opus-5")` sailed past the cost gate
+    and would have billed a real account on the first request.
+    """
+    with pytest.raises(PaidModelRefused) as excinfo:
+        DartmouthModel(name="anthropic.claude-opus-5", api_key=FAKE_KEY)
+    message = str(excinfo.value)
+    assert "unknown" in message.lower(), "must say why it was refused"
+    assert "create_model" in message, "must name the supported way to build it"
+
+
+def test_unpriced_model_refuses_to_estimate_cost(monkeypatch):
+    """A confidently wrong $0.00 budget is worse than an error."""
+    monkeypatch.setenv(ALLOW_PAID_ENV_VAR, "1")
+    model = DartmouthModel(name="anthropic.claude-opus-5", api_key=FAKE_KEY)
+    with pytest.raises(DartmouthModelError, match="without pricing"):
+        asyncio.run(model.estimate_cost("hello", max_tokens=100))
 
 
 def test_estimate_cost_is_exactly_zero_for_free_models(anyio_backend=None):
@@ -284,6 +313,126 @@ def test_unavailable_and_truncated_are_both_dartmouth_errors():
 
     assert issubclass(ModelUnavailable, DartmouthModelError)
     assert issubclass(ReasoningTruncated, DartmouthModelError)
+
+
+# ---------------------------------------------------------------------------
+# Request-body integrity -- the cost gate is only worth as much as the field
+# it checked, so `model` must survive to the wire unchanged
+# ---------------------------------------------------------------------------
+
+def _free_model_recording_its_payload():
+    """A free model whose transport records the request instead of sending it."""
+    model = DartmouthModel(
+        name="meta.llama-3-2-3b-instruct",
+        api_key=FAKE_KEY,
+        cost=ModelCost(is_free=True),
+    )
+    sent = {}
+
+    async def record(path, payload):
+        sent.update(payload)
+        return {"choices": [{"message": {"content": "ok"}}]}
+
+    model._post = record
+    return model, sent
+
+
+@pytest.mark.parametrize("field", sorted(RESERVED_REQUEST_FIELDS))
+def test_reserved_request_fields_cannot_be_overridden(field):
+    """Regression: `payload.update(kwargs)` let kwargs replace `model`.
+
+    The free/paid decision is made at construction against `self.name`. When
+    the request body could still be handed a different `model`, an approved
+    free model became an *unapproved paid one* at call time -- the check
+    passed and the bill arrived anyway.
+    """
+    model, _ = _free_model_recording_its_payload()
+    with pytest.raises(ReservedRequestField, match=field):
+        asyncio.run(model.generate("hi", **{field: "anthropic.claude-opus-5"}))
+
+
+def test_the_checked_model_is_the_model_actually_sent():
+    """The positive half: what the policy approved is what goes on the wire."""
+    model, sent = _free_model_recording_its_payload()
+    asyncio.run(model.generate("hi"))
+    assert sent["model"] == model.name
+
+
+def test_ordinary_sampling_kwargs_are_still_forwarded():
+    """The guard must not turn into a blanket refusal of tuning parameters."""
+    model, sent = _free_model_recording_its_payload()
+    asyncio.run(model.generate("hi", top_p=0.9, frequency_penalty=0.5))
+    assert sent["top_p"] == 0.9
+    assert sent["frequency_penalty"] == 0.5
+    assert sent["model"] == model.name, "controlled fields still win"
+
+
+def test_structured_generation_also_refuses_a_model_override():
+    """generate_structured() forwards kwargs too, so it inherits the guard."""
+    model, _ = _free_model_recording_its_payload()
+    with pytest.raises(ReservedRequestField):
+        asyncio.run(
+            model.generate_structured(
+                "hi", schema={"type": "object"}, model="anthropic.claude-opus-5"
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
+# Endpoint safety -- every request carries the bearer token
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://evil.example/api",       # plaintext to a remote host
+        "http://chat.dartmouth.edu/api",  # a plausible typo of the real URL
+        "ftp://chat.dartmouth.edu/api",
+        "chat.dartmouth.edu/api",        # no scheme at all
+        "https://",                      # no host
+    ],
+)
+def test_unsafe_base_urls_are_refused(url):
+    with pytest.raises(InsecureEndpoint):
+        validate_base_url(url)
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["https://chat.dartmouth.edu/api", "http://localhost:8000/api",
+     "http://127.0.0.1:8000", "http://[::1]:8000"],
+)
+def test_https_and_loopback_are_accepted(url):
+    """Loopback stays usable so a local mock gateway remains testable."""
+    assert validate_base_url(url) == url.rstrip("/")
+
+
+def test_trailing_slash_is_normalised():
+    assert validate_base_url("https://chat.dartmouth.edu/api/") == (
+        "https://chat.dartmouth.edu/api"
+    )
+
+
+def test_model_refuses_to_construct_against_a_plaintext_endpoint():
+    """The check must run at construction, before any token is sent."""
+    with pytest.raises(InsecureEndpoint):
+        DartmouthModel(
+            name="meta.llama-3-2-3b-instruct",
+            api_key=FAKE_KEY,
+            base_url="http://evil.example/api",
+            cost=ModelCost(is_free=True),
+        )
+
+
+def test_provider_also_validates_its_endpoint():
+    """The catalog fetch carries the token too, so it needs the same check."""
+    from orchestrator.models.providers.base import ProviderConfig
+    from orchestrator.models.providers.dartmouth_provider import DartmouthProvider
+
+    with pytest.raises(InsecureEndpoint):
+        DartmouthProvider(
+            ProviderConfig(name="dartmouth", base_url="http://evil.example/api")
+        )
 
 
 def test_free_preference_ranks_strongest_first_and_keeps_unknowns():

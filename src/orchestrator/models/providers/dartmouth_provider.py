@@ -21,6 +21,7 @@ from ..dartmouth_model import (
     DartmouthModelError,
     ModelUnavailable,
     ReasoningTruncated,
+    validate_base_url,
 )
 from .base import ModelProvider, ProviderConfig
 
@@ -84,7 +85,9 @@ class DartmouthProvider(ModelProvider):
 
     def __init__(self, config: Optional[ProviderConfig] = None) -> None:
         super().__init__(config or ProviderConfig(name="dartmouth"))
-        self._base_url = (self.config.base_url or DEFAULT_BASE_URL).rstrip("/")
+        # The catalog request carries the bearer token too, so the endpoint is
+        # checked here as well -- not only in DartmouthModel.
+        self._base_url = validate_base_url(self.config.base_url or DEFAULT_BASE_URL)
         self._catalog: Dict[str, Dict[str, Any]] = {}
         self._costs: Dict[str, ModelCost] = {}
 

@@ -26,9 +26,10 @@ extras installed, plus a smoke test of a golden pipeline through the
 **Present in the tree but NOT verified**, and therefore not claimed to work:
 OpenAI / Google / HuggingFace / Ollama adapters, multimodal tooling, the web
 dashboard, monitoring and analytics, MCP integration, and the deployment
-tooling. Anthropic is the first provider being brought under live acceptance
-tests; provider support is only advertised here once the live-provider
-workflow passes.
+tooling. Anthropic and Dartmouth Chat are the providers being brought under
+live acceptance tests; neither has a green remote `live-tests` run yet, so
+both are described below as "verified locally, not yet gated in CI" rather
+than as supported.
 
 **The wider legacy test suite is not green.** Only the marked
 `unit`/`contract`/`e2e` layer gates the build. The remainder were written
@@ -39,11 +40,13 @@ read "CI passing" as "the whole suite passes". Current counts are reported by
 that job — see [#354](https://github.com/ContextLab/orchestrator/issues/354)
 rather than a number maintained by hand here, which has been wrong before.
 
-**Free models via Dartmouth Chat.** If you have a
-[Dartmouth Chat](https://chat.dartmouth.edu/) account, the
+**Free models via Dartmouth Chat** (verified locally; *not yet* gated in CI).
+If you have a [Dartmouth Chat](https://chat.dartmouth.edu/) account, the
 `DartmouthProvider` runs pipelines against real models at **zero cost per
 token** — no provider extra needed, since the gateway is OpenAI-compatible and
-the adapter speaks it with `aiohttp` (already a core dependency):
+the adapter speaks it with `aiohttp` (already a core dependency). The
+`live-dartmouth` job exists but has not yet passed remotely, so treat this as
+working-but-unratified rather than supported:
 
 ```python
 from orchestrator import DartmouthProvider
@@ -544,15 +547,19 @@ intent:
 
 | Provider | Extra | Status |
 |-|-|-|
+| Dartmouth Chat | — | Free models verified locally; `live-dartmouth` job not yet green |
 | Anthropic | `anthropic` | Being brought under live acceptance tests |
 | OpenAI | `openai` | Adapter present, unverified |
 | Google | `google` | Adapter present, unverified |
 | Ollama (local) | — | Adapter present, unverified |
 | HuggingFace | — | Adapter present, unverified |
 
-A provider moves out of "unverified" only when the `live-tests` workflow passes
-for it. Until then it is not recommended, and the specific model lists that
-previously appeared here have been removed rather than left to rot.
+A provider is only called **supported** once the `live-tests` workflow passes
+for it remotely. "Verified locally" means its live tests were run by hand
+against the real service and passed; that is real evidence, but it is not a
+gate, because nothing stops it silently rotting. Until a provider's job is
+green it is not recommended, and the specific model lists that previously
+appeared here have been removed rather than left to rot.
 
 **No model is required** to compile and run pipelines built from deterministic
 local tools.

@@ -21,6 +21,7 @@ import json
 import logging
 import os
 from typing import Any, Dict, Optional
+from urllib.parse import urlsplit
 
 from ..core.model import Model, ModelCapabilities, ModelCost, ModelRequirements
 from .dartmouth_credentials import mask_key, resolve_dartmouth_api_key
@@ -32,7 +33,10 @@ __all__ = [
     "DEFAULT_BASE_URL",
     "DartmouthModel",
     "DartmouthModelError",
+    "InsecureEndpoint",
     "PaidModelRefused",
+    "ReservedRequestField",
+    "validate_base_url",
 ]
 
 #: Overridable for testing against a different gateway.
@@ -74,6 +78,20 @@ class ModelUnavailable(DartmouthModelError):
     """
 
 
+class ReservedRequestField(DartmouthModelError):
+    """Raised when a caller tries to override a field this adapter controls.
+
+    ``model`` is the field the free/paid policy was checked against at
+    construction, so silently letting a request body override it converts an
+    approved free model into an unapproved paid one *after* the check. That is
+    a policy bypass, not a convenience, so it is refused rather than ignored.
+    """
+
+
+class InsecureEndpoint(DartmouthModelError):
+    """Raised when a gateway URL would send the bearer token in the clear."""
+
+
 class ReasoningTruncated(DartmouthModelError):
     """Raised when a reasoning model spent its whole budget thinking.
 
@@ -105,6 +123,51 @@ def paid_models_allowed() -> bool:
     return os.environ.get(ALLOW_PAID_ENV_VAR, "").strip() == "1"
 
 
+#: Request fields this adapter owns. A caller may tune sampling, penalties and
+#: the token budget, but not these -- see :class:`ReservedRequestField`.
+#: ``stream`` is included because a streamed reply is a series of SSE events,
+#: which :meth:`DartmouthModel._extract_text` would misread as a malformed
+#: response rather than a stream.
+RESERVED_REQUEST_FIELDS = frozenset({"model", "messages", "stream"})
+
+#: Hosts allowed to serve the gateway over plaintext HTTP. Every request
+#: carries the bearer token in an ``Authorization`` header, so anything that
+#: leaves the machine must be TLS. Loopback is exempt so a local mock gateway
+#: remains testable.
+_PLAINTEXT_OK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def validate_base_url(url: str) -> str:
+    """Return ``url`` normalised, or raise if it would leak the credential.
+
+    A mistyped or hostile ``base_url`` receives the bearer token on the very
+    first request, so the scheme is checked before any call is made rather
+    than trusted.
+
+    Raises:
+        InsecureEndpoint: if the URL is malformed, or is plaintext HTTP to
+        anything other than loopback.
+    """
+    cleaned = url.strip().rstrip("/")
+    parts = urlsplit(cleaned)
+
+    if not parts.scheme or not parts.netloc:
+        raise InsecureEndpoint(
+            f"Dartmouth base_url {url!r} is not a valid absolute URL. "
+            f"Expected something like {DEFAULT_BASE_URL!r}."
+        )
+    if parts.scheme == "https":
+        return cleaned
+    if parts.scheme == "http" and (parts.hostname or "") in _PLAINTEXT_OK_HOSTS:
+        return cleaned
+    raise InsecureEndpoint(
+        f"Dartmouth base_url {url!r} uses {parts.scheme!r}, which would send "
+        f"the API key unencrypted to {parts.hostname!r}. Use https:// "
+        f"(plaintext http:// is permitted only for "
+        f"{', '.join(sorted(_PLAINTEXT_OK_HOSTS))})."
+    )
+
+
 class DartmouthModel(Model):
     """A model served by the Dartmouth Chat OpenAI-compatible gateway."""
 
@@ -124,10 +187,21 @@ class DartmouthModel(Model):
             name: A Dartmouth model id, e.g. ``qwen.qwen3.5-122b``.
             api_key: Bearer token. Resolved from the environment or the local
                 credential stores when omitted.
-            base_url: Gateway root. Defaults to Dartmouth Chat.
-            cost: Pricing. Defaults to free; the provider supplies real
-                pricing from the live catalog.
+            base_url: Gateway root. Must be HTTPS unless it is loopback.
+            cost: Real pricing from the live catalog, normally supplied by
+                :meth:`DartmouthProvider.create_model`. Omitting it means the
+                price is **unknown**, which is treated as paid -- see
+                :meth:`_enforce_cost_policy`.
+
+        Raises:
+            PaidModelRefused: if the model costs money, or its price is
+                unknown, and the paid opt-in is not set.
+            InsecureEndpoint: if ``base_url`` would leak the credential.
         """
+        # Distinguishes "the catalog says this is free" from "nobody asked the
+        # catalog". Only the former is safe to run without an opt-in.
+        self._pricing_is_known = cost is not None
+
         super().__init__(
             name=name,
             provider="dartmouth",
@@ -141,7 +215,10 @@ class DartmouthModel(Model):
                 supports_structured_output=True,
             ),
             requirements=requirements or ModelRequirements(),
-            cost=cost or ModelCost(is_free=True),
+            # NOT `cost or ModelCost(is_free=True)`. Defaulting an unpriced
+            # model to free let `DartmouthModel(name="anthropic.claude-opus-5")`
+            # skip the cost gate entirely and bill a real account.
+            cost=cost if cost is not None else ModelCost(is_free=False),
             **kwargs,
         )
 
@@ -149,7 +226,7 @@ class DartmouthModel(Model):
             None if api_key else resolve_dartmouth_api_key(required=True)
         )
         self._api_key = api_key or (credential.key if credential else "")
-        self._base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
+        self._base_url = validate_base_url(base_url or DEFAULT_BASE_URL)
         self._is_available = True
 
         if credential is not None:
@@ -166,8 +243,23 @@ class DartmouthModel(Model):
 
         Checked at construction rather than at call time so the failure lands
         where the model was chosen, not deep inside a pipeline run.
+
+        Unknown pricing is refused alongside known-paid pricing. The catalog is
+        the only authority on what a model costs, so a model built without
+        consulting it has an unknown price -- and treating unknown as free is
+        precisely the assumption that spends money by accident.
         """
-        if self.cost.is_free or paid_models_allowed():
+        if paid_models_allowed():
+            return
+        if not self._pricing_is_known:
+            raise PaidModelRefused(
+                f"{self.name!r} was constructed without pricing, so its cost "
+                f"is unknown and it is treated as paid. Build it through "
+                f"DartmouthProvider.create_model(), which attaches real "
+                f"pricing from the live catalog, or pass an explicit cost=. "
+                f"Set {ALLOW_PAID_ENV_VAR}=1 to permit unpriced and paid usage."
+            )
+        if self.cost.is_free:
             return
         raise PaidModelRefused(
             f"{self.name!r} costs money "
@@ -269,20 +361,45 @@ class DartmouthModel(Model):
         max_tokens: Optional[int] = None,
         **kwargs: Any,
     ) -> str:
-        """Generate text from ``prompt``."""
+        """Generate text from ``prompt``.
+
+        Extra ``kwargs`` are forwarded to the gateway as request fields, so
+        sampling parameters work as expected. Fields in
+        :data:`RESERVED_REQUEST_FIELDS` are refused rather than forwarded.
+
+        Raises:
+            ReservedRequestField: if ``kwargs`` would override a field this
+                adapter controls -- notably ``model``, which the cost policy
+                was checked against.
+        """
+        reserved = sorted(RESERVED_REQUEST_FIELDS.intersection(kwargs))
+        if reserved:
+            raise ReservedRequestField(
+                f"cannot override {', '.join(repr(f) for f in reserved)} on a "
+                f"request to {self.name!r}: these fields are set by the "
+                f"adapter. Overriding 'model' in particular would bypass the "
+                f"free/paid check already made for {self.name!r} -- construct "
+                f"a different model instead."
+            )
+
         messages = []
         system_prompt = kwargs.pop("system_prompt", None)
         if system_prompt and system_prompt.strip():
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        payload: Dict[str, Any] = {
-            "model": self.name,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens or DEFAULT_MAX_TOKENS,
-        }
-        payload.update(kwargs)
+        # Caller-supplied fields go in first and the controlled fields are
+        # written over them, so the reserved-field check above is belt and
+        # braces: even if it were bypassed, `model` still cannot be swapped.
+        payload: Dict[str, Any] = dict(kwargs)
+        payload.update(
+            {
+                "model": self.name,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens or DEFAULT_MAX_TOKENS,
+            }
+        )
 
         response = await self._post("chat/completions", payload)
         return self._extract_text(response, self.name)
@@ -341,7 +458,20 @@ class DartmouthModel(Model):
         prompt: str,
         max_tokens: Optional[int] = None,
     ) -> float:
-        """Estimate USD cost. Exactly 0.0 for the free models."""
+        """Estimate USD cost. Exactly 0.0 for the free models.
+
+        Raises:
+            DartmouthModelError: if the model was built without pricing. The
+                zero-filled default would otherwise report $0.00 for a model
+                that may well bill -- a confidently wrong budget number is
+                worse than an error.
+        """
+        if not self._pricing_is_known:
+            raise DartmouthModelError(
+                f"cannot estimate cost for {self.name!r}: it was constructed "
+                f"without pricing. Build it through "
+                f"DartmouthProvider.create_model() to attach real pricing."
+            )
         if self.cost.is_free:
             return 0.0
         # ~4 characters per token is the usual rough English estimate; this is

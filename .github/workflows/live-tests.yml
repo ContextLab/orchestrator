@@ -51,7 +51,7 @@ jobs:
           python -m pip install -e ".[anthropic]"
           python -m pip install pytest pytest-asyncio pytest-timeout
 
-      - name: Run live-provider tests
+      - name: Run live Anthropic tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # Turns "skipped for a missing key or extra" into a hard failure, so
@@ -62,8 +62,45 @@ jobs:
             echo "ANTHROPIC_API_KEY is not configured; cannot verify live provider support."
             exit 1
           fi
-          python -m pytest -m live -v
-          # Guard against the suite silently collecting nothing: -m live must
-          # select at least one test.
-          python -m pytest -m live --collect-only -q | grep -qE "[1-9][0-9]* tests? collected" \
-            || { echo "No live tests were collected; live coverage is not real."; exit 1; }
+          # Deselect Dartmouth: it has its own job with its own credential.
+          # Running it here only produced skips, which looked like coverage.
+          python -m pytest -m live -k "not dartmouth" -v
+          # Guard against the suite silently collecting nothing.
+          python -m pytest -m live -k "not dartmouth" --collect-only -q \
+            | grep -qE "[1-9][0-9]* tests? collected" \
+            || { echo "No live Anthropic tests were collected; coverage is not real."; exit 1; }
+
+  live-dartmouth:
+    name: Live Dartmouth provider (free models)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          # No provider extra: the gateway is OpenAI-compatible and the
+          # adapter speaks it with aiohttp, which is already a core dependency.
+          python -m pip install -e .
+          python -m pip install pytest pytest-asyncio pytest-timeout
+
+      - name: Run live Dartmouth tests
+        env:
+          DARTMOUTH_CHAT_API_KEY: ${{ secrets.DARTMOUTH_CHAT_API_KEY }}
+          ORCHESTRATOR_REQUIRE_LIVE: "1"
+        run: |
+          if [ -z "${DARTMOUTH_CHAT_API_KEY}" ]; then
+            echo "DARTMOUTH_CHAT_API_KEY is not configured; cannot verify Dartmouth support."
+            exit 1
+          fi
+          python -m pytest -m live -k dartmouth -v | tee dartmouth-live.txt
+          # A missing credential is already a hard error via
+          # ORCHESTRATOR_REQUIRE_LIVE, but every free model can legitimately be
+          # down at once, in which case every test skips and the job would
+          # otherwise pass having proved nothing. Require real passes.
+          grep -qE "[1-9][0-9]* passed" dartmouth-live.txt \
+            || { echo "No Dartmouth live test actually passed; coverage is not real."; exit 1; }

@@ -133,6 +133,18 @@ all-dev = [
     "py-orc[all,dev,docs,notebooks]",
 ]
 
+[dependency-groups]
+# Test runners only. Deliberately NOT the `dev` extra, which also pulls in
+# pandas, linters and build tooling: CI installs the locked core plus this
+# group, so the blocking layers are still proven to run with no optional
+# extra installed. Keep this minimal for that reason.
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-timeout>=2.1.0",
+]
+
 [project.urls]
 Homepage = "https://www.context-lab.com/"
 Repository = "https://github.com/ContextLab/orchestrator"
