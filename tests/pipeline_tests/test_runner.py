@@ -48,6 +48,8 @@ class PipelineTestCase:
 @dataclass
 class TestSuiteResult:
     """Results from running a complete test suite."""
+    # Not a pytest test case despite the Test* name.
+    __test__ = False
     
     suite_name: str
     total_tests: int

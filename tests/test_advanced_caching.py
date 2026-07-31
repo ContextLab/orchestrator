@@ -18,6 +18,8 @@ from orchestrator.core.model import Model, ModelCapabilities, ModelRequirements,
 
 class TestModel(Model):
     """Test model implementation for testing."""
+    # Not a pytest test case despite the Test* name.
+    __test__ = False
     
     async def generate(self, prompt: str, **kwargs):
         return "test response"

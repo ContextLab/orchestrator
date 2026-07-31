@@ -29,6 +29,9 @@ class CISystem(Enum):
 
 class TestStatus(Enum):
     """Test execution status for CI/CD systems."""
+    # Domain class, not a pytest test case. Its Test* name makes pytest
+    # try to collect it wherever it is imported into a test module.
+    __test__ = False
     SUCCESS = "success"
     FAILURE = "failure"
     WARNING = "warning" 

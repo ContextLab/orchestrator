@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 class TestMode(Enum):
     """Test execution modes with different coverage and time characteristics."""
+    # Domain class, not a pytest test case. Its Test* name makes pytest
+    # try to collect it wherever it is imported into a test module.
+    __test__ = False
     
     QUICK = "quick"      # 5-10 critical pipelines, ~5-10 minutes
     CORE = "core"        # 15-20 essential pipelines, ~15-30 minutes  
@@ -30,6 +33,9 @@ class TestMode(Enum):
 @dataclass
 class TestModeConfig:
     """Configuration for a specific test mode."""
+    # Domain class, not a pytest test case. Its Test* name makes pytest
+    # try to collect it wherever it is imported into a test module.
+    __test__ = False
     
     name: str
     description: str
@@ -61,6 +67,9 @@ class PipelineExecutionEstimate:
 @dataclass
 class TestSuiteComposition:
     """Composition of a test suite for a specific mode."""
+    # Domain class, not a pytest test case. Its Test* name makes pytest
+    # try to collect it wherever it is imported into a test module.
+    __test__ = False
     
     mode: TestMode
     selected_pipelines: List[str]
@@ -82,6 +91,9 @@ class TestModeManager:
     - Historical performance analysis
     - CI/CD integration support
     """
+    # Domain class, not a pytest test case. Its Test* name makes pytest
+    # try to collect it wherever it is imported into a test module.
+    __test__ = False
     
     def __init__(self, performance_tracker=None):
         """Initialize test mode manager."""

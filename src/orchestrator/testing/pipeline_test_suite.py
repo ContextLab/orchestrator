@@ -160,6 +160,9 @@ class PipelineTestResult:
 @dataclass
 class TestResults:
     """Collection of pipeline test results."""
+    # Domain class, not a pytest test case. Its Test* name makes pytest
+    # try to collect it wherever it is imported into a test module.
+    __test__ = False
     
     results: Dict[str, PipelineTestResult] = field(default_factory=dict)
     total_tests: int = 0

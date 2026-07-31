@@ -9,8 +9,20 @@ from orchestrator.core.model import Model, ModelCapabilities, ModelRequirements,
 
 
 class MockTestModel(Model):
-    """Mock model for testing that implements all required abstract methods."""
-    
+    """A concrete Model implementing every abstract method, for use in tests.
+
+    Despite the name this is not a `unittest.mock` object: it is a real
+    subclass with real behaviour, used where a test needs *a* model rather
+    than a particular provider.
+    """
+
+    # Its name contains "Test", so pytest tries to collect it as a test class
+    # and then warns that it cannot, once per importing module -- 213 of the
+    # suite's 228 collection warnings came from this class and its sibling
+    # below. This is pytest's supported way to say "not a test".
+    __test__ = False
+
+
     def __init__(
         self, 
         name: str = "test-model",
@@ -78,8 +90,11 @@ class MockTestModel(Model):
 
 
 class MockTestProvider:
-    """Mock provider for testing."""
-    
+    """A minimal provider stand-in. Not a `unittest.mock` object."""
+
+    __test__ = False  # see MockTestModel above
+
+
     def __init__(self, name: str = "test-provider"):
         self.name = name
         self.is_initialized = True
@@ -312,6 +327,8 @@ from dataclasses import dataclass
 @dataclass
 class TestFailureInfo:
     """Information about a test failure."""
+    # Not a pytest test case despite the Test* name.
+    __test__ = False
     test_file: str
     test_name: str
     failure_type: str

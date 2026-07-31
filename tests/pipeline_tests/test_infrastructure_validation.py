@@ -13,6 +13,8 @@ pytestmark = pytest.mark.integration
 
 class TestInfrastructureValidation(BasePipelineTest):
     """Test that validates the pipeline testing infrastructure works correctly."""
+    # Not a pytest test case despite the Test* name.
+    __test__ = False
     
     def test_basic_execution(self):
         """Test basic pipeline execution using the infrastructure."""

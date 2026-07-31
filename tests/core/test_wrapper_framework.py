@@ -41,6 +41,8 @@ from orchestrator.core.wrapper_testing import (
 @dataclass
 class TestWrapperConfig(BaseWrapperConfig):
     """Test configuration for wrapper testing."""
+    # Not a pytest test case despite the Test* name.
+    __test__ = False
     
     test_setting: str = "default"
     numeric_setting: int = 42
@@ -61,6 +63,8 @@ class TestWrapperConfig(BaseWrapperConfig):
 
 class TestWrapper(BaseWrapper[str, TestWrapperConfig]):
     """Test wrapper implementation."""
+    # Not a pytest test case despite the Test* name.
+    __test__ = False
     
     def __init__(self, name: str, config: TestWrapperConfig, feature_flags=None, monitoring=None):
         super().__init__(name, config, feature_flags, monitoring)

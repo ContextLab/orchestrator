@@ -39,6 +39,9 @@ C = TypeVar('C', bound=BaseWrapperConfig)
 @dataclass
 class TestScenario:
     """Test scenario definition for wrapper testing."""
+    # Domain class, not a pytest test case. Its Test* name makes pytest
+    # try to collect it wherever it is imported into a test module.
+    __test__ = False
     
     name: str
     description: str
@@ -54,6 +57,9 @@ class TestScenario:
 @dataclass
 class TestResult:
     """Result of a wrapper test."""
+    # Domain class, not a pytest test case. Its Test* name makes pytest
+    # try to collect it wherever it is imported into a test module.
+    __test__ = False
     
     scenario_name: str
     success: bool
