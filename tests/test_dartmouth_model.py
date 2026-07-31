@@ -379,6 +379,91 @@ def test_structured_generation_also_refuses_a_model_override():
 
 
 # ---------------------------------------------------------------------------
+# Registry integration -- only free models may be registered
+# ---------------------------------------------------------------------------
+
+#: Shaped like a real chat.dartmouth.edu /models response: free internal
+#: models, a paid external one, and an unpriced embedding model.
+CATALOG = {
+    "meta.llama-3-2-3b-instruct": {
+        "id": "meta.llama-3-2-3b-instruct",
+        "model_info": {"input_cost_per_token": 0, "output_cost_per_token": 0},
+    },
+    "google.gemma-4-31B-it": {
+        "id": "google.gemma-4-31B-it",
+        "model_info": {"input_cost_per_token": 0, "output_cost_per_token": 0},
+    },
+    "anthropic.claude-opus-5": {
+        "id": "anthropic.claude-opus-5",
+        "upstream_model_info": {
+            "model_info": {
+                "input_cost_per_token": 5e-06,
+                "output_cost_per_token": 2.5e-05,
+            }
+        },
+    },
+    "baai.bge-m3": {"id": "baai.bge-m3"},
+}
+
+
+def test_only_free_models_are_selected_for_registration():
+    """A paid model registered as if free is the accident that costs money."""
+    from orchestrator.models.providers.dartmouth_provider import (
+        free_models_from_catalog,
+    )
+
+    free = free_models_from_catalog(CATALOG)
+
+    assert set(free) == {"meta.llama-3-2-3b-instruct", "google.gemma-4-31B-it"}
+    assert "anthropic.claude-opus-5" not in free, "paid model must not register"
+    assert "baai.bge-m3" not in free, "unpriced model must not register"
+    assert all(cost.is_free for cost in free.values())
+
+
+def test_registry_population_is_skipped_without_a_credential(monkeypatch, tmp_path):
+    """No credential means no Dartmouth models -- and no network call."""
+    from orchestrator._api import _register_free_dartmouth_models
+    from orchestrator.models.model_registry import ModelRegistry
+
+    monkeypatch.delenv("DARTMOUTH_CHAT_API_KEY", raising=False)
+    monkeypatch.setattr(
+        "orchestrator.models.dartmouth_credentials._ORCHESTRATOR_ENV_FILE",
+        tmp_path / "absent.env",
+    )
+    monkeypatch.setattr(
+        "orchestrator.models.dartmouth_credentials._LLMXIVE_CREDENTIALS_FILE",
+        tmp_path / "absent.toml",
+    )
+
+    registry = ModelRegistry()
+    assert _register_free_dartmouth_models(registry) == 0
+    assert registry.list_models() == []
+
+
+def test_registry_population_survives_an_unreachable_gateway(monkeypatch):
+    """An outage must degrade to "no Dartmouth models", not break startup.
+
+    Model discovery sits on the path to a user's first model; a gateway
+    problem there must behave like a missing Ollama install, not an exception.
+    """
+    from orchestrator import _api
+    from orchestrator.models.model_registry import ModelRegistry
+
+    monkeypatch.setenv("DARTMOUTH_CHAT_API_KEY", FAKE_KEY)
+
+    def unreachable(*args, **kwargs):
+        raise OSError("Name or service not known")
+
+    monkeypatch.setattr(
+        "orchestrator.models.providers.dartmouth_provider.fetch_catalog_sync",
+        unreachable,
+    )
+
+    registry = ModelRegistry()
+    assert _api._register_free_dartmouth_models(registry) == 0
+
+
+# ---------------------------------------------------------------------------
 # Structured output must match the schema it asked for
 # ---------------------------------------------------------------------------
 

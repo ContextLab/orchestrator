@@ -35,10 +35,16 @@ than as supported.
 `unit`/`contract`/`e2e` layer gates the build. The remainder were written
 against several superseded architectures, many fail, and some hang; they run
 in a separate, deliberately **non-blocking** CI job so the size of that
-backlog stays visible instead of being hidden behind a green check. Do not
-read "CI passing" as "the whole suite passes". Current counts are reported by
-that job — see [#354](https://github.com/ContextLab/orchestrator/issues/354)
-rather than a number maintained by hand here, which has been wrong before.
+backlog stays visible. Do not read "CI passing" as "the whole suite passes".
+
+That job is marked `continue-on-error`, which means GitHub reports it green
+**regardless of the result** — so its check mark says nothing about the
+suite. The real numbers are in the job's run summary, in a warning
+annotation on the run page, and in its `legacy-suite-results` artifact.
+As of the most recent run: **434 failed, 248 errors, 1827 passed, 227
+skipped**. Track it in
+[#354](https://github.com/ContextLab/orchestrator/issues/354) rather than
+trusting a number maintained by hand here, which has been wrong before.
 
 **Free models via Dartmouth Chat** (verified locally; *not yet* gated in CI).
 If you have a [Dartmouth Chat](https://chat.dartmouth.edu/) account, the
@@ -67,6 +73,22 @@ status comes from the live catalog, and **paid models are refused unless
 start spending. Prefer `generate_free()` over naming one model: the free
 endpoints are individually hosted and go down independently, and it falls
 through the free set until one answers.
+
+The free models are also registered in the normal model registry when a
+credential is present, so pipelines can select them without touching the
+provider directly:
+
+```python
+import orchestrator
+registry = orchestrator.init_models()
+registry.get_model("meta.llama-3-2-3b-instruct", "dartmouth")
+```
+
+Unlike other providers, these are **not** listed in `models.yaml`: which
+models are free changes upstream, and a stale local list could offer a paid
+model as though it were free. Only zero-cost catalog entries are registered,
+and an unreachable gateway degrades to "no Dartmouth models" rather than
+failing.
 
 **Security.** Two confirmed remote-code-execution defects have been fixed
 (pipeline conditions and `transform_spec` both reached `eval`). Pipeline

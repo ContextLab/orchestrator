@@ -44,6 +44,74 @@ def init_models(config_path: str = None) -> ModelRegistry:
     return _model_registry
 
 
+#: How long registry population will wait on the Dartmouth catalog. Short on
+#: purpose: this runs on the path to a user's first model, and a slow gateway
+#: must degrade to "no Dartmouth models" rather than stall the pipeline.
+_DARTMOUTH_DISCOVERY_TIMEOUT = 10.0
+
+
+def _register_free_dartmouth_models(registry: ModelRegistry) -> int:
+    """Register the free Dartmouth Chat models, if a credential is present.
+
+    Unlike every other provider here, Dartmouth models are not read from
+    ``models.yaml``: which models are free changes upstream, and a stale local
+    list would either miss free models or -- much worse -- offer a paid one as
+    if it were free. The live catalog is the only trustworthy source, so it is
+    consulted here and **only** the zero-cost entries are registered.
+
+    Never raises: a missing credential, an unreachable gateway or a slow one
+    all mean "no Dartmouth models available", exactly as a missing Ollama
+    install does.
+
+    Returns:
+        How many models were registered.
+    """
+    from .models.dartmouth_credentials import resolve_dartmouth_api_key
+    from .models.dartmouth_model import DEFAULT_BASE_URL, DartmouthModel
+    from .models.providers.dartmouth_provider import (
+        fetch_catalog_sync,
+        free_models_from_catalog,
+    )
+
+    credential = resolve_dartmouth_api_key(required=False)
+    if credential is None:
+        logger.debug("No Dartmouth Chat credential found; skipping Dartmouth models")
+        return 0
+
+    try:
+        catalog = fetch_catalog_sync(
+            DEFAULT_BASE_URL, credential.key, _DARTMOUTH_DISCOVERY_TIMEOUT
+        )
+        free = free_models_from_catalog(catalog)
+    except Exception as exc:  # noqa: BLE001 - discovery is best-effort
+        logger.info("Could not reach the Dartmouth catalog, skipping: %s", exc)
+        return 0
+
+    from .models.dartmouth_model import DartmouthModelError
+
+    registered = 0
+    for model_id, cost in free.items():
+        try:
+            registry.register_model(
+                DartmouthModel(name=model_id, api_key=credential.key, cost=cost)
+            )
+            registered += 1
+        except (DartmouthModelError, ValueError) as exc:
+            # Deliberately NOT `except Exception`: one unusable catalog entry
+            # must not stop the rest, but a programming error here should
+            # surface rather than be logged as a per-model hiccup. A bare
+            # except hid exactly that during development.
+            logger.warning("Could not register Dartmouth model %s: %s", model_id, exc)
+
+    if registered:
+        logger.info(
+            "Registered %d free Dartmouth models (%d in catalog)",
+            registered,
+            len(catalog),
+        )
+    return registered
+
+
 def populate_model_registry(registry: ModelRegistry) -> ModelRegistry:
     """Register every model the current environment can actually serve.
 
@@ -92,6 +160,8 @@ def populate_model_registry(registry: ModelRegistry) -> ModelRegistry:
         logger.info(
             "Ollama not found - Ollama models unavailable (install from https://ollama.ai)"
         )
+
+    _register_free_dartmouth_models(registry)
 
     # Process each model in configuration (list format)
     if not isinstance(models_config, list):

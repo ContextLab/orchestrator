@@ -59,6 +59,34 @@ def _walk_token_costs(node: object) -> Tuple[List[float], List[float]]:
     return inputs, outputs
 
 
+def fetch_catalog_sync(
+    base_url: str, api_key: str, timeout: float
+) -> Dict[str, Dict[str, Any]]:
+    """Fetch the model catalog synchronously, keyed by model id.
+
+    The async path is preferred everywhere else. This exists for
+    :func:`orchestrator.populate_model_registry`, which is synchronous and can
+    be reached from inside a running event loop -- where ``asyncio.run`` would
+    raise. Uses ``urllib`` rather than aiohttp for exactly that reason.
+    """
+    import json
+    import urllib.request
+
+    url = f"{validate_base_url(base_url)}/models"
+    request = urllib.request.Request(
+        url, headers={"Authorization": f"Bearer {api_key}"}
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    return {e["id"]: e for e in (payload.get("data") or []) if e.get("id")}
+
+
+def free_models_from_catalog(catalog: Dict[str, Dict[str, Any]]) -> Dict[str, ModelCost]:
+    """The subset of ``catalog`` that costs nothing per token."""
+    priced = {mid: model_cost_from_catalog(e) for mid, e in catalog.items()}
+    return {mid: cost for mid, cost in priced.items() if cost.is_free}
+
+
 def model_cost_from_catalog(entry: Dict[str, Any]) -> ModelCost:
     """Build a :class:`ModelCost` from one catalog entry.
 

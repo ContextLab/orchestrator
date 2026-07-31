@@ -170,22 +170,41 @@ jobs:
 
       - name: Publish backlog counts
         # Runs even when the step above fails, which is the normal case.
+        #
+        # `continue-on-error` forces the step's *conclusion* to "success" no
+        # matter what pytest returned, so neither the job badge nor the step
+        # list can show this backlog. The summary and the warning annotation
+        # below are therefore the only honest surface for it.
         if: always()
         run: |
+          summary=""
+          if [ -f legacy-results.txt ]; then
+            # pytest's own tally is the last non-empty line of the run.
+            summary=$(grep -vE '^\s*$' legacy-results.txt | tail -n 1)
+          fi
           {
             echo "## Legacy suite backlog (non-blocking)"
             echo
-            if [ -f legacy-results.txt ]; then
+            if [ -n "$summary" ]; then
               echo '```'
-              grep -E "passed|failed|error" legacy-results.txt | tail -n 3
+              echo "$summary"
               echo '```'
               echo
               echo "Tracked in [#354](https://github.com/ContextLab/orchestrator/issues/354)."
-              echo "This job is expected to be red. Do not fix it by deleting or skipping tests."
+              echo "This job is **expected** to be failing. It is marked"
+              echo "\`continue-on-error\`, so the green check above reflects that"
+              echo "policy, NOT a passing suite. Do not 'fix' it by deleting or"
+              echo "skipping tests."
             else
               echo "The run produced no output -- it timed out or the runner died."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+          # An annotation surfaces on the run page even though the job is green.
+          if [ -n "$summary" ]; then
+            echo "::warning title=Legacy backlog (non-blocking)::${summary}"
+          else
+            echo "::warning title=Legacy suite produced no result::timed out or runner died"
+          fi
 
       - name: Upload legacy results
         if: always()
