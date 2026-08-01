@@ -84,15 +84,32 @@ class MockSlowServer:
             self.thread.join(timeout=1)
 
 
-class TestNetworkFailures:
+class _UsesTemporaryPipelineDir:
+    """Generated pipelines go to a temp directory, never into the repository.
+
+    These tests build pipeline YAML that embeds the ephemeral port their mock
+    server happened to bind. They used to write it into
+    tests/scenarios/test_pipelines/, which is tracked, so every run left the
+    working tree dirty with a different random port -- and whichever port was
+    committed last became the fixture everyone else got (#431).
+
+    The directory was also an absolute path to one developer's home directory,
+    so on any other machine `mkdir(exist_ok=True)` raised FileNotFoundError on
+    the missing parent and the whole class errored out.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _pipeline_dir(self, tmp_path):
+        self.test_pipelines_dir = tmp_path
+
+
+class TestNetworkFailures(_UsesTemporaryPipelineDir):
     """Test network failure scenarios and timeout handling."""
-    
+
     def setup_method(self):
         """Set up test fixtures."""
         self.mock_server = MockSlowServer()
-        self.test_pipelines_dir = Path("/Users/jmanning/orchestrator/tests/scenarios/test_pipelines")
-        self.test_pipelines_dir.mkdir(exist_ok=True)
-    
+
     def teardown_method(self):
         """Clean up test fixtures."""
         self.mock_server.stop()
@@ -393,7 +410,7 @@ steps:
         print("✓ Rate limiting scenario tested")
 
 
-class TestAPITimeoutScenarios:
+class TestAPITimeoutScenarios(_UsesTemporaryPipelineDir):
     """Test various API timeout scenarios with real services."""
     
     @pytest.mark.asyncio
@@ -425,9 +442,7 @@ steps:
       - slow_model_call
 """
         
-        test_dir = Path("/Users/jmanning/orchestrator/tests/scenarios/test_pipelines")
-        test_dir.mkdir(exist_ok=True)
-        pipeline_path = test_dir / "model_timeout.yaml"
+        pipeline_path = self.test_pipelines_dir / "model_timeout.yaml"
         pipeline_path.write_text(pipeline_content)
         
         executor = Orchestrator()
@@ -479,8 +494,7 @@ steps:
       - web_search_with_timeout
 """
         
-        test_dir = Path("/Users/jmanning/orchestrator/tests/scenarios/test_pipelines")
-        pipeline_path = test_dir / "web_search_timeout.yaml"
+        pipeline_path = self.test_pipelines_dir / "web_search_timeout.yaml"
         pipeline_path.write_text(pipeline_content)
         
         executor = Orchestrator()

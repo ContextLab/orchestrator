@@ -31,7 +31,9 @@ class TestExamplePipelineExecution:
         self.orchestrator = Orchestrator(model_registry=self.model_registry)
         
         # Path to examples directory
-        self.examples_dir = Path("/Users/jmanning/orchestrator/examples")
+        # Repo-relative: an absolute path to one developer's home directory
+        # meant every example silently `pytest.skip`ped on any other machine.
+        self.examples_dir = Path(__file__).resolve().parents[2] / "examples"
     
     def load_example_pipeline(self, filename: str) -> str:
         """Load an example pipeline from the examples directory."""
