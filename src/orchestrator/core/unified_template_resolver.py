@@ -10,15 +10,45 @@ Issue #223: Template resolution system needs comprehensive fixes
 """
 
 import logging
+import re
 from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass
 from contextlib import contextmanager
 
+from .exceptions import UnresolvedTemplateError
 from .template_manager import TemplateManager
 from .context_manager import ContextManager
 from .loop_context import LoopContextVariables, GlobalLoopContextManager
 
 logger = logging.getLogger(__name__)
+
+# `{{ ... }}` substitutions and `{% ... %}` control blocks. Comments (`{# #}`)
+# are not included: they are erased by rendering, so one surviving is a syntax
+# problem the renderer already reports.
+_TEMPLATE_MARKER = re.compile(r"\{\{.*?\}\}|\{%.*?%\}", re.DOTALL)
+
+
+def _find_template_markers(value: Any) -> List[str]:
+    """Every template marker surviving anywhere inside `value`.
+
+    Walks nested containers, because a parameter is routinely a list of paths
+    or a dict of fields and an unresolved reference buried in one of those
+    reaches a tool exactly as readily as a top-level string does.
+    """
+    if isinstance(value, str):
+        return _TEMPLATE_MARKER.findall(value)
+    if isinstance(value, dict):
+        found = []
+        for key, item in value.items():
+            found.extend(_find_template_markers(key))
+            found.extend(_find_template_markers(item))
+        return found
+    if isinstance(value, (list, tuple, set)):
+        found = []
+        for item in value:
+            found.extend(_find_template_markers(item))
+        return found
+    return []
 
 
 @dataclass
@@ -334,14 +364,57 @@ class UnifiedTemplateResolver:
         # Register context and resolve templates
         self.register_context(context)
         resolved_parameters = self.resolve_templates(tool_parameters)
-        
+
         if self.debug_mode:
             logger.info(f"Resolved templates for tool '{tool_name}'")
             for key, (original, resolved) in self._compare_dicts(tool_parameters, resolved_parameters).items():
                 if original != resolved:
                     logger.debug(f"  {key}: '{original}' -> '{resolved}'")
-        
+
+        # This method promises "all templates resolved", and it is the last
+        # point at which that promise can still be kept: past here the value is
+        # written to a file or sent to a model. Rendering falls back to
+        # returning the original text when a reference is undefined, so without
+        # this check a literal `{{ step.field }}` lands in the output and the
+        # step reports success (#153).
+        self._reject_unresolved_templates(
+            tool_name, tool_parameters, resolved_parameters
+        )
+
         return resolved_parameters
+
+    def _reject_unresolved_templates(
+        self,
+        tool_name: str,
+        original: Dict[str, Any],
+        resolved: Dict[str, Any],
+    ) -> None:
+        """Raise if a template reference survived rendering unchanged.
+
+        The test is *survival*, not mere presence. A marker in the output that
+        was not in the input is content, not a failure to resolve: Jinja's own
+        escape, `{{ '{{' }}`, renders to a literal `{{`, and a step result may
+        legitimately contain text that looks like a template. Flagging those
+        would make it impossible to write documentation about templates.
+
+        A marker that appears in the input and comes back byte-identical did
+        not render, which is exactly the #153 defect.
+
+        Parameters whose names begin with an underscore are internal plumbing
+        the control systems attach on the way to a tool (`_template_manager`,
+        `_resolution_context` and friends), not user-authored values, so they
+        are not inspected.
+        """
+        for name, value in resolved.items():
+            if name.startswith("_"):
+                continue
+            after = _find_template_markers(value)
+            if not after:
+                continue
+            before = set(_find_template_markers(original.get(name)))
+            survived = [marker for marker in after if marker in before]
+            if survived:
+                raise UnresolvedTemplateError(tool_name, name, survived)
     
     def validate_templates(self, template: str) -> List[str]:
         """Validate template syntax and check for undefined variables.

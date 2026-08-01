@@ -114,6 +114,32 @@ missing extra must degrade one feature, never break the package import.
 Exit codes: `0` success, `1` execution failure, `2` validation/compile failure,
 `130` interrupted.
 
+## Actions and template resolution
+
+A step names either a tool and an operation on it (`tool: filesystem` with
+`action: read`), or an action the runtime executes itself (`action: generate`).
+`core/actions.py` is the single source of truth for the second group:
+`HybridControlSystem` dispatches off it and `ToolValidator` accepts exactly the
+names in it, so `validate` and `run` cannot disagree about whether an action
+exists (#241).
+
+Template rendering deliberately falls back to returning the original text when
+a reference is undefined, because resolution runs in several passes and a
+reference that cannot resolve yet may resolve later. That fallback must not
+survive the handoff to a tool:
+
+> A template reference that reaches a tool still unresolved fails the step
+> before any side effect. No file is written, the step's envelope carries
+> `success: false` naming the reference, and the run exits 1.
+
+The test is *survival*, not presence: a marker in the rendered output that was
+not in the input is content, not a failure. Jinja's own escape `{{ '{{' }}`
+renders to a literal `{{`, and a step result may legitimately contain text that
+looks like a template (#153).
+
+Rendering is all-or-nothing per string. One undefined reference aborts the
+whole render, so every marker in that string is reported, not just the bad one.
+
 ## Test layers
 
 | Layer | Marker | Network | Secrets | Runs in default CI |
