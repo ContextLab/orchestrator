@@ -35,7 +35,17 @@ class MockTestModel(Model):
         """Initialize test model with minimal defaults."""
         if capabilities is None:
             capabilities = ModelCapabilities(
-                supported_tasks=["text-generation", "analysis"],
+                # "generate" is the task name the control system actually asks
+                # for and that real providers advertise (asserted in
+                # tests/test_provider_abstractions.py). Advertising only
+                # "text-generation" made this model ineligible for every
+                # `action: generate` step -- selection failed with
+                # NoEligibleModelsError, so no pipeline could use it. The
+                # older names are kept so existing callers keep matching.
+                supported_tasks=[
+                    "generate", "analyze", "transform", "summarize",
+                    "text-generation", "analysis",
+                ],
                 context_window=8192,
                 supports_function_calling=True,
                 supports_structured_output=True
@@ -161,16 +171,28 @@ class MockTestProvider:
 
 
 def create_test_orchestrator():
-    """Create orchestrator with test model for testing."""
+    """Create orchestrator with test model for testing.
+
+    Uses `models.model_registry.ModelRegistry`, not `models.registry`. The two
+    classes share a name and are not interchangeable: only `models.registry`
+    has `register_provider`, and only `models.model_registry` has
+    `can_provide_models`, which `Orchestrator.__init__` calls. This helper
+    previously built the first and every call raised
+
+        AttributeError: 'ModelRegistry' object has no attribute
+        'can_provide_models'
+
+    so it could not construct an orchestrator at all. Registering the model
+    directly avoids needing `register_provider` and works with the class the
+    orchestrator expects. (The duplicate-registry split itself is #429.)
+    """
     from orchestrator.orchestrator import Orchestrator
-    from orchestrator.models.registry import ModelRegistry
+    from orchestrator.models.model_registry import ModelRegistry
     from orchestrator.control_systems.hybrid_control_system import HybridControlSystem
-    
-    # Create registry and add test provider
+
     registry = ModelRegistry()
-    test_provider = MockTestProvider()
-    registry.register_provider(test_provider)
-    
+    registry.register_model(MockTestModel())
+
     # Create control system with populated registry  
     control_system = HybridControlSystem(model_registry=registry)
     
@@ -320,7 +342,7 @@ def test_create_test_orchestrator():
 import os
 import subprocess
 import re
-from typing import Dict, List, Tuple
+from typing import Tuple  # Dict/List already imported at the top of the file
 from dataclasses import dataclass
 
 
