@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional, Set, Type, Union
 from dataclasses import dataclass
 
-from ..core.actions import is_builtin_action
+from ..core.actions import is_known_action, resolve_action
 from ..tools.base import Tool, ToolRegistry, default_registry
 from .template_validator import TemplateValidationError
 
@@ -151,7 +151,10 @@ class ToolValidator:
             # The tool lookup still comes first, so the legacy single-field
             # form (`action: filesystem`, naming the tool itself) keeps its
             # full parameter validation.
-            if not tool_available and "tool" not in step and is_builtin_action(tool_name):
+            if not tool_available and "tool" not in step and is_known_action(tool_name):
+                errors.extend(
+                    self._validate_action_parameters(task_id, step, tool_name)
+                )
                 continue
 
             tool_availability[tool_name] = tool_available
@@ -204,6 +207,35 @@ class ToolValidator:
             tool_availability=tool_availability
         )
     
+    def _validate_action_parameters(
+        self, task_id: str, step: Dict[str, Any], action: str
+    ) -> List[ToolValidationError]:
+        """Check the parameters an action cannot run without.
+
+        `ActionSpec.required_parameters` is the single declaration of these, so
+        a missing `prompt` on a `generate` step fails at compile time with exit
+        2 rather than at dispatch. Prose families carry no spec and no required
+        parameters, so they are not checked here.
+        """
+        spec = resolve_action(action)
+        if spec is None or not spec.required_parameters:
+            return []
+
+        parameters = step.get("parameters") or {}
+        missing = sorted(spec.required_parameters - set(parameters))
+        return [
+            ToolValidationError(
+                task_id=task_id,
+                tool_name=spec.name,
+                parameter_name=name,
+                error_type="missing_parameter",
+                message=(
+                    f"action '{spec.name}' requires a '{name}' parameter"
+                ),
+            )
+            for name in missing
+        ]
+
     def _extract_tool_name(self, step: Dict[str, Any]) -> Optional[str]:
         """Extract tool name from step definition."""
         # When a step names a `tool`, that is the registry key and `action` is

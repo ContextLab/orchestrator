@@ -205,6 +205,30 @@ class ParameterValidationError(ValidationError):
         )
 
 
+class UnknownActionError(ValidationError):
+    """Raised when a step names an action nothing can execute.
+
+    The runtime used to turn any unrecognised action into a prompt for the
+    model, so `action: gernate` did not fail -- it became a model request and
+    reported success. A typo is now refused: at compile time by the validator,
+    and again at dispatch, so constructing a `Task` directly cannot route
+    around the check.
+    """
+
+    def __init__(self, action: str, task_id: Optional[str] = None, **kwargs):
+        where = f" in task '{task_id}'" if task_id else ""
+        message = (
+            f"Unknown action {action!r}{where}. An action must name a "
+            f"registered action (see orchestrator.core.actions), name a tool "
+            f"via `tool:`, or be an explicit <AUTO>...</AUTO> instruction."
+        )
+        super().__init__(
+            message,
+            details={"action": action, "task_id": task_id},
+            **kwargs
+        )
+
+
 class UnresolvedTemplateError(ValidationError):
     """Raised when a template reaches a tool with references still unresolved.
 

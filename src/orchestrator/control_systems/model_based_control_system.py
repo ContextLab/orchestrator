@@ -6,7 +6,12 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from ..core.actions import STRUCTURED_ACTIONS
+from ..core.actions import (
+    STRUCTURED_ACTIONS,
+    SUPPORTED_ACTIONS,
+    is_known_action,
+)
+from ..core.exceptions import UnknownActionError
 from ..core.control_system import ControlSystem
 from ..core.pipeline import Pipeline
 from ..core.task import Task
@@ -37,25 +42,9 @@ class ModelBasedControlSystem(ControlSystem):
         if config is None:
             config = {
                 "capabilities": {
-                    "supported_actions": [
-                        "generate",
-                        "generate_text",
-                        "generate_structured",
-                        "analyze",
-                        "transform",
-                        "execute",
-                        "search",
-                        "extract",
-                        "filter",
-                        "synthesize",
-                        "create",
-                        "validate",
-                        "optimize",
-                        "review",
-                        "write",
-                        "compile",
-                        "process",
-                    ],
+                    # Generated from core/actions.py, so this can no
+                    # longer advertise an action nobody implements.
+                    "supported_actions": list(SUPPORTED_ACTIONS),
                     "parallel_execution": True,
                     "streaming": True,
                     "checkpoint_support": True,
@@ -217,8 +206,17 @@ class ModelBasedControlSystem(ControlSystem):
                 elif analysis_type == "trends":
                     prompt += "\n\nIdentify and analyze key trends, patterns, and insights from this data."
         else:
-            # For other actions, use the action as the prompt
             action_text = str(task.action)  # Convert to string in case it's not
+
+            # Anything reaching here is being turned into a prompt, which is
+            # only ever correct for an explicit <AUTO>...</AUTO> instruction.
+            # It used to be the fate of *every* unrecognised action, so a typo
+            # like `action: gernate` became a successful model call instead of
+            # an error. The check is repeated here rather than left to the
+            # compiler because a caller can build a Task and reach dispatch
+            # directly, without going through YAML validation at all.
+            if not is_known_action(action_text):
+                raise UnknownActionError(action_text, task_id=task.id)
 
             # Handle AUTO tags by extracting the content
             auto_tag_pattern = r"<AUTO>(.*?)</AUTO>"

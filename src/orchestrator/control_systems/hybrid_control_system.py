@@ -7,7 +7,12 @@ from pathlib import Path
 from datetime import datetime
 
 from .model_based_control_system import ModelBasedControlSystem
-from ..core.actions import BUILTIN_ACTION_HANDLERS
+from ..core.actions import (
+    SUPPORTED_ACTIONS,
+    match_action_family,
+    resolve_action,
+)
+from ..core.exceptions import UnknownActionError
 from ..core.task import Task
 from ..core.action_loop_task import ActionLoopTask
 from ..core.expressions import (
@@ -70,28 +75,9 @@ class HybridControlSystem(ModelBasedControlSystem):
         if config is None:
             config = {
                 "capabilities": {
-                    "supported_actions": [
-                        # Model-based actions
-                        "generate",
-                        "analyze",
-                        "transform",
-                        "execute",
-                        "search",
-                        "extract",
-                        "filter",
-                        "synthesize",
-                        "create",
-                        "validate",
-                        "optimize",
-                        "review",
-                        # File operations
-                        "save_output",
-                        "save_to_file",
-                        "write_file",
-                        "read_file",
-                        "save",
-                        "write",
-                    ],
+                    # Generated from core/actions.py, so this can no
+                    # longer advertise an action nobody implements.
+                    "supported_actions": list(SUPPORTED_ACTIONS),
                     "parallel_execution": True,
                     "streaming": True,
                     "checkpoint_support": True,
@@ -167,22 +153,34 @@ class HybridControlSystem(ModelBasedControlSystem):
         # keeping a parallel chain of `if action_str == ...` branches -- is
         # what stops it from drifting out of step with the validator, which
         # accepts exactly the same names (#241).
-        handler_name = BUILTIN_ACTION_HANDLERS.get(action_str.strip())
-        if handler_name:
-            logger.debug("Routing to built-in action handler: %s", handler_name)
-            return await getattr(self, handler_name)(task, context)
+        spec = resolve_action(action_str)
+        if spec is not None:
+            if spec.handler is None:
+                # Registered, but run one level down -- `generate_structured`
+                # is ModelBasedControlSystem's. Falling through to the raise
+                # below would reject a perfectly valid action.
+                logger.debug("Delegating registered action %r to the model layer", spec.name)
+                return await super()._execute_task_impl(task, context)
+            logger.debug("Routing to built-in action handler: %s", spec.handler)
+            return await getattr(self, spec.handler)(task, context)
 
-        # The remaining two families are matched by pattern, not by name: an
-        # action like "echo hello" or "write the following content to report.md"
-        # is prose, so there is no name to register.
-        if self._is_echo_operation(action_str):
-            return await self._handle_echo_operation(task, context)
+        # The remaining families are matched by pattern, not by name: "echo
+        # hello", "write the following content to report.md", and an explicit
+        # <AUTO>...</AUTO> instruction are prose, so there is no name to
+        # register. `auto` carries no handler -- it is the one case that is
+        # *meant* to reach the model.
+        family = match_action_family(str(task.action))
+        if family is not None:
+            if family.handler is None:
+                logger.debug("Routing %r to the model via the 'auto' family", task.action)
+                return await super()._execute_task_impl(task, context)
+            logger.debug("Routing to action family %r: %s", family.name, family.handler)
+            return await getattr(self, family.handler)(task, context)
 
-        if self._is_file_operation(action_str):
-            return await self._handle_file_operation(task, context)
-
-        # Otherwise use model-based execution
-        return await super()._execute_task_impl(task, context)
+        # Nothing can run this. Previously execution fell through to the model,
+        # which turned the action itself into a prompt -- so `action: gernate`
+        # became a successful model call rather than a typo (#241 follow-up).
+        raise UnknownActionError(str(task.action), task_id=task.id)
 
     async def _handle_tool_execution(self, task: Task, tool_name: str, context: Dict[str, Any]) -> Any:
         """Handle execution with a specific tool."""
@@ -222,42 +220,6 @@ class HybridControlSystem(ModelBasedControlSystem):
             # Tool not found - this is an error, not a fallback situation
             available_tools = ", ".join(tool_handlers.keys())
             raise ValueError(f"Tool '{tool_name}' not found in hybrid control system. Available tools: {available_tools}")
-
-    def _is_file_operation(self, action: str) -> bool:
-        """Check if action is a file operation."""
-        # Simple check for 'file' action
-        if action.strip() == "file":
-            return True
-
-        # More specific patterns that indicate file operations
-        file_patterns = [
-            r"write.*to\s+(?:a\s+)?(?:file|path)",  # Write ... to file/path
-            r"save.*to\s+(?:a\s+)?(?:file|path)",  # Save ... to file/path
-            r"write.*following.*content.*to",  # Write the following content to
-            r"save.*following.*content.*to",  # Save the following content to
-            r"create.*file\s+at",  # Create file at
-            r"export.*to\s+file",  # Export to file
-            r"store.*in\s+file",  # Store in file
-            r"write.*to\s+[^\s]+\.(txt|md|json|yaml|yml|csv|html)",  # Write to filename.ext
-            r"save.*to\s+[^\s]+\.(txt|md|json|yaml|yml|csv|html)",  # Save to filename.ext
-        ]
-        return any(
-            re.search(pattern, action, re.IGNORECASE | re.DOTALL)
-            for pattern in file_patterns
-        )
-
-    def _is_echo_operation(self, action: str) -> bool:
-        """Check if action is a simple echo/print operation."""
-        echo_patterns = [
-            r"^echo\s+",
-            r"^print\s+",
-            r"^display\s+",
-            r"^show\s+",
-            r"^output\s+",
-        ]
-        return any(
-            re.match(pattern, action, re.IGNORECASE) for pattern in echo_patterns
-        )
 
     async def _handle_echo_operation(
         self, task: Task, context: Dict[str, Any]
@@ -480,7 +442,14 @@ class HybridControlSystem(ModelBasedControlSystem):
             return await self.filesystem_tool.execute(**resolved_params)
         
         # If the action is a known filesystem operation, use FileSystemTool
-        filesystem_actions = ["read", "write", "copy", "move", "delete", "list", "file"]
+        # Mixes operations (read, write, ...) with names for the tool itself.
+        # `filesystem` is the canonical spelling of the latter and `file` its
+        # alias; both must appear or a step reaching this branch under its
+        # canonical name silently falls through to the default below.
+        filesystem_actions = [
+            "read", "write", "copy", "move", "delete", "list",
+            "file", "filesystem",
+        ]
         if action_text in filesystem_actions and task.parameters:
             # Use UnifiedTemplateResolver for template resolution
             resolved_params = task.parameters.copy()
