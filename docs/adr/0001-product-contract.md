@@ -114,6 +114,44 @@ missing extra must degrade one feature, never break the package import.
 Exit codes: `0` success, `1` execution failure, `2` validation/compile failure,
 `130` interrupted.
 
+## The result contract
+
+`Orchestrator.execute_pipeline` returns a `PipelineResult`
+(`core/pipeline_result.py`). It is a `Mapping`, so `result["step_id"]` returns
+the step's raw value exactly as before; the trace arrives as attributes
+alongside.
+
+| | |
+|-|-|
+| `status` / `success` | whether the run as a whole succeeded |
+| `outputs` | declared `outputs:`, resolved |
+| `steps` | `StepResult` per step |
+| `execution_order` / `execution_levels` | dependency order, and what could run together |
+| `started_at` / `completed_at` / `duration` | run timing |
+| `failed_steps` / `skipped_steps` / `retried_steps` | the trace, by category |
+
+Each `StepResult` carries its canonical action, status, success, value,
+structured error (`error` and `error_type`), the tool or model and provider
+that ran it, start/end/duration, retry count and dependencies.
+
+**`status` and `success` are not the same question.** `status` records whether
+the task finished; `success` whether it worked. A tool that returns
+`{"success": False}` without raising *finishes* — reading only the status
+reported a failing pipeline as successful, and that is why the CLI's exit code
+consults `success`.
+
+Declared outputs do not change the shape of the return value. They used to:
+a pipeline with `outputs:` returned `{"steps": …, "outputs": …}` and one
+without returned `{step_id: …}`, so a caller could not index a result without
+first checking which it had been handed, and a step named `outputs` collided
+with the second.
+
+`to_dict()` is the stable serialisation the CLI emits — no `default=str`
+coercion, so it round-trips. `normalized()` drops the execution id and
+wall-clock times, which are the only fields that legitimately differ between
+two runs. **The CLI and the Python API must produce equal normalised
+documents**, compared whole rather than by selected nested values.
+
 ## Actions and template resolution
 
 A step names either a tool and an operation on it (`tool: filesystem` with

@@ -221,6 +221,18 @@ def test_registry_populates_when_a_model_is_actually_demanded(tmp_path):
 # 2. output volume
 # ---------------------------------------------------------------------------
 
+
+def _normalise_run(payload):
+    """Drop the fields that legitimately differ between two runs."""
+    payload["execution_id"] = "<execution-id>"
+    for key in ("started_at", "completed_at", "duration"):
+        payload[key] = None
+    for step in payload.get("steps", {}).values():
+        for key in ("started_at", "completed_at", "duration"):
+            step[key] = None
+    return payload
+
+
 def test_default_output_is_only_the_result_document(tmp_path):
     """Default stdout is the typed result and nothing else; stderr is empty."""
     home = _decoy_home(tmp_path)
@@ -232,7 +244,7 @@ def test_default_output_is_only_the_result_document(tmp_path):
 
     # Parsable with no leading noise to skip past.
     payload = json.loads(result.stdout)
-    assert payload["read_back"]["result"]["content"] == "hi world"
+    assert payload["steps"]["read_back"]["value"]["result"]["content"] == "hi world"
 
     assert result.stderr == "", f"unexpected output on stderr:\n{result.stderr}"
 
@@ -240,7 +252,14 @@ def test_default_output_is_only_the_result_document(tmp_path):
     # emitted well over a hundred lines around it.
     rendered = json.dumps(payload, indent=2, default=str)
     assert result.stdout.strip() == rendered
-    assert len(result.stdout.splitlines()) < 30
+    # Round-tripping the *whole* of stdout is the real check: any log line
+    # anywhere would make the parse above fail. A line-count ceiling stood in
+    # for this while the payload was a compact {step_id: value} map, but the
+    # typed result carries a trace and is legitimately longer, so the bound
+    # measured the document rather than the noise it was meant to catch.
+    assert not any(
+        marker in result.stdout for marker in ("DEBUG", "INFO", "WARNING", "Traceback")
+    )
 
 
 def test_verbose_restores_the_detailed_trace(tmp_path):
@@ -274,9 +293,11 @@ def test_verbose_restores_the_detailed_trace(tmp_path):
     assert DECOY_ANTHROPIC not in trace
     assert DECOY_OPENAI not in trace
 
-    # Both surfaces still produce the same result document.
-    assert json.loads(quiet.stdout) == json.loads(
-        loud.stdout[loud.stdout.index("{"):]
+    # Both surfaces still produce the same result document. The typed
+    # document carries an execution id and wall-clock timings, which differ
+    # between any two runs, so those are normalised away first.
+    assert _normalise_run(json.loads(quiet.stdout)) == _normalise_run(
+        json.loads(loud.stdout[loud.stdout.index("{"):])
     )
 
 

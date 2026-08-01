@@ -311,7 +311,12 @@ def run(
         click.echo(f"{name}: {exc}", err=True)
         sys.exit(EXIT_VALIDATION_ERROR if is_validation else EXIT_EXECUTION_ERROR)
 
-    rendered = json.dumps(results, indent=2, default=str)
+    # Serialise the typed result, not whatever the executor happened to
+    # return. `default=str` silently stringified anything unserialisable, so
+    # the JSON was neither stable nor round-trippable and CLI/API equivalence
+    # could not be asserted at all.
+    payload = results.to_dict() if hasattr(results, "to_dict") else results
+    rendered = json.dumps(payload, indent=2, default=str)
     if output:
         Path(output).write_text(rendered)
         click.echo(f"Results written to {output}")
@@ -340,6 +345,13 @@ def _failed_steps(results) -> list:
     Steps report themselves as ``{"success": bool, "error": ...}``. Anything
     that does not look like a step result is ignored rather than guessed at.
     """
+    # A PipelineResult knows which steps failed from their recorded status,
+    # which catches a failure whose value is not a dict at all. The duck-typed
+    # fallback stays for anything still returning a plain mapping.
+    typed = getattr(results, "failed_steps", None)
+    if typed is not None:
+        return sorted(step.id for step in typed)
+
     if not isinstance(results, dict):
         return []
     failed = []

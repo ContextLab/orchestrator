@@ -142,10 +142,11 @@ def test_basic_pipeline_via_cli(tmp_path):
 
     # stdout must be the typed result document.
     payload = json.loads(result.stdout[result.stdout.index("{"):])
-    assert payload["write_greeting"]["success"] is True
-    assert payload["read_back"]["success"] is True
+    steps = payload["steps"]
+    assert steps["write_greeting"]["success"] is True
+    assert steps["read_back"]["success"] is True
     # The dependent step read back exactly what the first step wrote.
-    assert payload["read_back"]["result"]["content"] == "hello world"
+    assert steps["read_back"]["value"]["result"]["content"] == "hello world"
 
 
 @pytest.mark.asyncio
@@ -167,11 +168,22 @@ async def test_cli_and_api_agree(tmp_path):
     assert cli_result.returncode == 0, cli_result.stderr
     cli_payload = json.loads(cli_result.stdout[cli_result.stdout.index("{"):])
 
-    api_payload = await _run_api(BASIC, {"greeting": "hello"}, api_dir)
+    api_result = await _run_api(BASIC, {"greeting": "hello"}, api_dir)
 
+    # Whole documents, not selected values: a difference anywhere is caught.
+    def _normalise(payload):
+        payload = json.loads(json.dumps(payload))
+        payload["execution_id"] = "<execution-id>"
+        for key in ("started_at", "completed_at", "duration"):
+            payload[key] = None
+        for step in payload["steps"].values():
+            for key in ("started_at", "completed_at", "duration"):
+                step[key] = None
+        return payload
+
+    assert _normalise(cli_payload) == _normalise(api_result.to_dict())
     assert (
-        cli_payload["read_back"]["result"]["content"]
-        == api_payload["read_back"]["result"]["content"]
+        cli_payload["steps"]["read_back"]["value"]["result"]["content"]
         == "hello world"
     )
     assert (cli_dir / "golden_out" / "greeting.txt").read_text() == (
@@ -216,10 +228,12 @@ def test_failed_step_propagates_to_exit_code(tmp_path):
     assert "read_missing" in result.stderr
 
     payload = json.loads(result.stdout[result.stdout.index("{"):])
-    assert payload["read_missing"]["success"] is False
-    assert payload["read_missing"]["error"]
+    assert payload["success"] is False
+    steps = payload["steps"]
+    assert steps["read_missing"]["success"] is False
+    assert steps["read_missing"]["error"]
     # The step before the failure still ran and is reported honestly.
-    assert payload["write_first"]["success"] is True
+    assert steps["write_first"]["success"] is True
     assert (tmp_path / "golden_out" / "before_failure.txt").is_file()
 
 
@@ -264,4 +278,4 @@ def test_output_file_option(tmp_path):
     result = _run_cli(["run", str(BASIC), "-o", str(target)], cwd=tmp_path)
     assert result.returncode == 0, result.stderr
     payload = json.loads(target.read_text())
-    assert payload["read_back"]["success"] is True
+    assert payload["steps"]["read_back"]["success"] is True

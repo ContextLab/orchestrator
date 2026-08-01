@@ -11,6 +11,7 @@ from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem
 from .core.error_handler import ErrorHandler
 from .core.pipeline import Pipeline
+from .core.pipeline_result import PipelineResult, StepResult
 from .core.pipeline_status_tracker import PipelineStatusTracker
 from .core.pipeline_resume_manager import PipelineResumeManager, ResumeStrategy
 from .core.resource_allocator import ResourceAllocator
@@ -336,11 +337,25 @@ class Orchestrator:
             # Execute pipeline
             results = await self._execute_pipeline_internal(pipeline, context)
 
-            # Extract outputs if defined in pipeline metadata
-            final_result = results
-            if pipeline.metadata.get("outputs"):
-                outputs = self._extract_outputs(pipeline, results)
-                final_result = {"steps": results, "outputs": outputs}
+            # Extract outputs if defined in pipeline metadata.
+            #
+            # This used to change the *shape* of the return value: a bare
+            # {step_id: value} normally, but {"steps": ..., "outputs": ...}
+            # when the pipeline declared outputs. Two shapes from one method,
+            # told apart only by inspecting keys, and a step called `outputs`
+            # collided with the second. The outputs now live on a field.
+            outputs = (
+                self._extract_outputs(pipeline, results)
+                if pipeline.metadata.get("outputs")
+                else {}
+            )
+            final_result = self._build_pipeline_result(
+                pipeline=pipeline,
+                execution_id=execution_id,
+                results=results,
+                outputs=outputs,
+                started_at=context["start_time"],
+            )
 
             # Record successful execution
             execution_record = {
@@ -2181,6 +2196,63 @@ class Orchestrator:
                 processed_results[task_id] = task_result
                 
         return processed_results
+
+    def _build_pipeline_result(
+        self,
+        pipeline: Pipeline,
+        execution_id: str,
+        results: Dict[str, Any],
+        outputs: Dict[str, Any],
+        started_at: float,
+    ) -> PipelineResult:
+        """Assemble the typed result from state the run already holds.
+
+        Almost nothing here is new information: `Task` has carried status,
+        timing, retry count and the error all along, and `Pipeline` can already
+        report dependency order. It was simply discarded at the return
+        statement. This keeps it.
+        """
+        completed_at = time.time()
+
+        steps: Dict[str, StepResult] = {}
+        for task_id in pipeline.tasks:
+            task = pipeline.get_task(task_id)
+            if task is None:
+                continue
+            steps[task_id] = StepResult.from_task(task, results.get(task_id))
+
+        try:
+            execution_levels = tuple(
+                tuple(level) for level in pipeline.get_execution_levels()
+            )
+        except Exception:  # pragma: no cover - a cyclic graph cannot reach here
+            execution_levels = ()
+        execution_order = tuple(
+            task_id for level in execution_levels for task_id in level
+        )
+
+        # Not `status == FAILED`: a tool can report {"success": False} without
+        # raising, leaving its task COMPLETED. StepResult.success accounts for
+        # both, and a pipeline containing such a step has not succeeded.
+        failed = [
+            s
+            for s in steps.values()
+            if not s.success and s.status != TaskStatus.SKIPPED.value
+        ]
+
+        return PipelineResult(
+            pipeline_id=pipeline.id,
+            execution_id=execution_id,
+            status="failed" if failed else "completed",
+            success=not failed,
+            steps=steps,
+            outputs=outputs,
+            execution_order=execution_order,
+            execution_levels=execution_levels,
+            started_at=started_at,
+            completed_at=completed_at,
+            duration=completed_at - started_at,
+        )
 
     def _extract_outputs(
         self, pipeline: Pipeline, results: Dict[str, Any]
