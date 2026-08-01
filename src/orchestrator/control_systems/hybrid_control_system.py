@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 
 from .model_based_control_system import ModelBasedControlSystem
+from ..core.actions import BUILTIN_ACTION_HANDLERS
 from ..core.task import Task
 from ..core.action_loop_task import ActionLoopTask
 from ..core.expressions import (
@@ -161,53 +162,24 @@ class HybridControlSystem(ModelBasedControlSystem):
             logger.debug("Routing to tool handler: %s", tool_name)
             return await self._handle_tool_execution(task, tool_name, context)
 
-        # Check if this is a control flow operation
-        if action_str == "control_flow":
-            return await self._handle_control_flow(task, context)
+        # Actions the runtime runs itself, dispatched off the shared registry
+        # in core/actions.py. Driving dispatch from that mapping -- rather than
+        # keeping a parallel chain of `if action_str == ...` branches -- is
+        # what stops it from drifting out of step with the validator, which
+        # accepts exactly the same names (#241).
+        handler_name = BUILTIN_ACTION_HANDLERS.get(action_str.strip())
+        if handler_name:
+            logger.debug("Routing to built-in action handler: %s", handler_name)
+            return await getattr(self, handler_name)(task, context)
 
-        # Check if this is a simple echo/print operation
+        # The remaining two families are matched by pattern, not by name: an
+        # action like "echo hello" or "write the following content to report.md"
+        # is prose, so there is no name to register.
         if self._is_echo_operation(action_str):
             return await self._handle_echo_operation(task, context)
 
-        # Check if this is a file operation
-        if self._is_file_operation(action_str) or action_str == "filesystem":
+        if self._is_file_operation(action_str):
             return await self._handle_file_operation(task, context)
-
-        # Check if this is a data processing operation
-        if action_str == "process":
-            return await self._handle_data_processing(task, context)
-
-        # Check if this is a validation operation
-        if action_str == "validate":
-            return await self._handle_validation(task, context)
-
-        # Check if this is a loop completion marker
-        if action_str == "loop_complete":
-            return await self._handle_loop_complete(task, context)
-            
-        # Check if this is a capture result marker
-        if action_str == "capture_result":
-            return await self._handle_capture_result(task, context)
-            
-        # Check if this is a condition evaluation
-        if action_str == "evaluate_condition":
-            return await self._handle_evaluate_condition(task, context)
-            
-        # Check if this is a parallel queue execution
-        if action_str == "create_parallel_queue":
-            return await self._handle_create_parallel_queue(task, context)
-        
-        # Check if this is an action loop
-        if action_str == "action_loop":
-            return await self._handle_action_loop(task, context)
-        
-        # Check if this is text analysis
-        if action_str == "analyze_text" or action_str == "analyze":
-            return await self._handle_analyze_text(task, context)
-        
-        # Check if this is text generation
-        if action_str == "generate_text" or action_str == "generate":
-            return await self._handle_generate_text(task, context)
 
         # Otherwise use model-based execution
         return await super()._execute_task_impl(task, context)

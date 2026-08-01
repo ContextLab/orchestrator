@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional, Set, Type, Union
 from dataclasses import dataclass
 
+from ..core.actions import is_builtin_action
 from ..tools.base import Tool, ToolRegistry, default_registry
 from .template_validator import TemplateValidationError
 
@@ -139,8 +140,22 @@ class ToolValidator:
             
             # Check tool availability
             tool_available = self._check_tool_availability(tool_name)
+
+            # A step with no `tool:` names an action, and some actions are run
+            # by the runtime itself rather than by a tool -- `generate`,
+            # `evaluate_condition`, `loop_complete` and the rest of
+            # core.actions.BUILTIN_ACTIONS. Looking those up as tools is what
+            # made `validate` reject a model pipeline that `run` executes
+            # perfectly well: "Tool 'generate' not found in registry" (#241).
+            #
+            # The tool lookup still comes first, so the legacy single-field
+            # form (`action: filesystem`, naming the tool itself) keeps its
+            # full parameter validation.
+            if not tool_available and "tool" not in step and is_builtin_action(tool_name):
+                continue
+
             tool_availability[tool_name] = tool_available
-            
+
             if not tool_available:
                 if self.allow_unknown_tools:
                     warnings.append(ToolValidationError(
