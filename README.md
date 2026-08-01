@@ -26,10 +26,11 @@ extras installed, plus a smoke test of a golden pipeline through the
 **Present in the tree but NOT verified**, and therefore not claimed to work:
 OpenAI / Google / HuggingFace / Ollama adapters, multimodal tooling, the web
 dashboard, monitoring and analytics, MCP integration, and the deployment
-tooling. Anthropic and Dartmouth Chat are the providers being brought under
-live acceptance tests; neither has a green remote `live-tests` run yet, so
-both are described below as "verified locally, not yet gated in CI" rather
-than as supported.
+tooling. **Dartmouth Chat is the first provider to pass live acceptance
+tests** (`live-dartmouth`, 9 passed remotely on 2026-08-01) and is the one
+provider described here as supported. Anthropic's live job is currently red
+because the account has no credit, so its behaviour is unverified and it is
+not claimed to work.
 
 **The wider legacy test suite is not green.** Only the marked
 `unit`/`contract`/`e2e` layer gates the build. The remainder were written
@@ -46,13 +47,13 @@ skipped**. Track it in
 [#354](https://github.com/ContextLab/orchestrator/issues/354) rather than
 trusting a number maintained by hand here, which has been wrong before.
 
-**Free models via Dartmouth Chat** (verified locally; *not yet* gated in CI).
-If you have a [Dartmouth Chat](https://chat.dartmouth.edu/) account, the
+**Free models via Dartmouth Chat.** If you have a
+[Dartmouth Chat](https://chat.dartmouth.edu/) account, the
 `DartmouthProvider` runs pipelines against real models at **zero cost per
 token** — no provider extra needed, since the gateway is OpenAI-compatible and
-the adapter speaks it with `aiohttp` (already a core dependency). The
-`live-dartmouth` job exists but has not yet passed remotely, so treat this as
-working-but-unratified rather than supported:
+the adapter speaks it with `aiohttp` (already a core dependency). This is
+gated by the `live-dartmouth` CI job, which makes real calls to real free
+models weekly and fails if none answered:
 
 ```python
 from orchestrator import DartmouthProvider
@@ -569,8 +570,8 @@ intent:
 
 | Provider | Extra | Status |
 |-|-|-|
-| Dartmouth Chat | — | Free models verified locally; `live-dartmouth` job not yet green |
-| Anthropic | `anthropic` | Being brought under live acceptance tests |
+| Dartmouth Chat | — | **Supported** (free models). `live-dartmouth` green: 9 passed, 2026-08-01 |
+| Anthropic | `anthropic` | Live job red — account has no credit, so behaviour is unverified |
 | OpenAI | `openai` | Adapter present, unverified |
 | Google | `google` | Adapter present, unverified |
 | Ollama (local) | — | Adapter present, unverified |

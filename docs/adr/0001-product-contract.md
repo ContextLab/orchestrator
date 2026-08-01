@@ -75,8 +75,13 @@ passes.
     extra: the adapter speaks the gateway's HTTP API with `aiohttp`, already
     a core dependency. Free/paid status is read from the live catalog, and
     paid models are refused unless `ORCHESTRATOR_ALLOW_PAID_MODELS=1`.
-- Neither is **supported** yet: a provider earns that word only when its
-  `live-tests` job passes remotely. Both are currently "verified locally".
+- A provider earns the word **supported** only when its `live-tests` job
+  passes remotely. As of 2026-08-01:
+  - **Dartmouth Chat: supported.** `live-dartmouth` passed with 9 tests
+    against real free models. This is the first provider to clear the bar.
+  - **Anthropic: not supported.** Its live job is red — the account has no
+    credit, so the API returns 400 and the tests correctly refuse to pass
+    rather than reporting unverified behaviour as working. See #432.
 - OpenAI, Google, HuggingFace and Ollama adapters remain in the tree but are
   **unsupported** until they have contract tests and live acceptance tests.
 - No provider may be advertised in the README as supported before its live
