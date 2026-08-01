@@ -150,24 +150,22 @@ def test_a_malformed_pipeline_is_refused(compiler):
         )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "#241 / #104: a model step runs but does not validate. Strict "
-        "validation resolves `action: generate` as a TOOL name and reports "
-        "\"Tool 'generate' not found in registry\", while the executor runs "
-        "the same pipeline happily -- see test_a_model_pipeline_executes "
-        "below. strict=True so this flips to a visible failure the moment "
-        "the two agree, rather than sitting here forgotten."
-    ),
-)
 def test_a_model_pipeline_compiles(compiler):
-    """`validate` and `run` must accept the same pipelines. Today they do not."""
+    """`validate` and `run` must accept the same pipelines.
+
+    They did not, until #241. Strict validation resolved `action: generate` as
+    a TOOL name and reported "Tool 'generate' not found in registry", while the
+    executor ran the very same document happily -- see
+    test_a_model_pipeline_executes below. This lived here as a strict xfail so
+    it would flip to a visible failure the moment the two agreed; it did, and
+    this is the assertion that replaced it.
+    """
     pipeline = asyncio.run(
         compiler.compile(MODEL_PIPELINE, {}, resolve_ambiguities=False)
     )
 
     assert "think" in pipeline.tasks
+    assert pipeline.tasks["think"].action == "generate"
 
 
 # ---------------------------------------------------------------------------

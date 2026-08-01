@@ -6,6 +6,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
+from ..core.actions import STRUCTURED_ACTIONS
 from ..core.control_system import ControlSystem
 from ..core.pipeline import Pipeline
 from ..core.task import Task
@@ -14,14 +15,6 @@ from ..models.model_registry import ModelRegistry
 from ..utils.output_sanitizer import sanitize_output
 
 logger = logging.getLogger(__name__)
-
-# Every other action in this project is spelled with underscores
-# (`generate_text`, `analyze_text`, `evaluate_condition`, `loop_complete`).
-# `generate-structured` was the lone hyphenated one, so `generate_structured`
-# fell through to the natural-language branch below, which turns an unknown
-# action into a *prompt*: the step returned a sentence instead of an object and
-# still reported success. Both spellings dispatch here.
-STRUCTURED_ACTIONS = frozenset({"generate-structured", "generate_structured"})
 
 
 class ModelBasedControlSystem(ControlSystem):
