@@ -205,6 +205,36 @@ class ParameterValidationError(ValidationError):
         )
 
 
+class UnresolvedTemplateError(ValidationError):
+    """Raised when a template reaches a tool with references still unresolved.
+
+    Template rendering deliberately falls back to returning the original text
+    when a reference is undefined, because resolution runs in several passes
+    and a reference that cannot be resolved yet may resolve later. The one
+    place that fallback must not survive is the handoff to a tool: past that
+    point the literal `{{ ... }}` is written to a file, sent to a model, or
+    returned as a result, and the step reports success having produced its own
+    source code instead of a value (#153).
+    """
+
+    def __init__(self, tool_name: str, parameter: str, unresolved: list, **kwargs):
+        rendered = ", ".join(repr(marker) for marker in unresolved)
+        message = (
+            f"Parameter '{parameter}' of tool '{tool_name}' still contains "
+            f"unresolved template references: {rendered}. The step was stopped "
+            f"before it could act on them."
+        )
+        super().__init__(
+            message,
+            details={
+                "tool": tool_name,
+                "parameter": parameter,
+                "unresolved": list(unresolved),
+            },
+            **kwargs
+        )
+
+
 # Resource errors
 class ResourceError(OrchestratorError):
     """Base class for resource-related errors."""
