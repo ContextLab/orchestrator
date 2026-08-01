@@ -971,13 +971,13 @@ class HybridControlSystem(ModelBasedControlSystem):
         goal = task.parameters.get("optimization_goal", "quality")
         
         # Use the model to enhance the prompt
-        model_name = await self.model_registry.select_model({"tasks": ["generate"]})
-        if not model_name:
+        # select_model returns a Model, so there is nothing further to look up.
+        model = await self.model_registry.select_model({"tasks": ["generate"]})
+        if not model:
             return {
                 "success": False,
                 "error": "No model available for prompt optimization"
             }
-        model = self.model_registry.get_model(model_name)
         
         optimization_prompt = f"""Optimize this prompt for {task_type}:
 Original prompt: "{prompt}"
@@ -1137,9 +1137,9 @@ Just return the optimized prompt, nothing else."""
                         if match:
                             # Use a model to resolve the AUTO tag
                             auto_prompt = match.group(1)
-                            model_name = await self.model_registry.select_model({"tasks": ["generate"]})
-                            if model_name:
-                                model = self.model_registry.get_model(model_name)
+                            # select_model returns a Model already.
+                            model = await self.model_registry.select_model({"tasks": ["generate"]})
+                            if model:
                                 response = await model.generate(
                                     f"{auto_prompt}\nBased on the task: '{params.get('task', '')}'\nRespond with only: simple, moderate, or complex"
                                 )
@@ -1208,8 +1208,8 @@ Just return the optimized prompt, nothing else."""
                     "tasks": ["analyze", "generate"],
                     "context_window": len(prompt.encode()) // 4  # Rough token estimate
                 }
-                model_name = await self.model_registry.select_model(requirements)
-                model = self.model_registry.get_model(model_name)
+                # select_model returns a Model already.
+                model = await self.model_registry.select_model(requirements)
             else:
                 # Get specific model
                 model = self.model_registry.get_model(model_spec)
@@ -1318,13 +1318,16 @@ Just return the optimized prompt, nothing else."""
             elif isinstance(model_spec, str) and model_spec.startswith("<AUTO"):
                 # AUTO tag - let model registry select
                 requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
-                model_name = await self.model_registry.select_model(requirements)
-                model = self.model_registry.get_model(model_name)
+                # select_model already returns a Model, not a name. Feeding it
+                # back into get_model() raised
+                #   TypeError: argument of type 'Model' is not a container
+                # from get_model()'s `":" in model_name` check, so every
+                # registry-selected `action: generate` step failed.
+                model = await self.model_registry.select_model(requirements)
         else:
             # No model specified, select appropriate model
             requirements = {"tasks": ["generate"], "context_window": len(prompt) // 4}
-            model_name = await self.model_registry.select_model(requirements)
-            model = self.model_registry.get_model(model_name)
+            model = await self.model_registry.select_model(requirements)
         
         if not model:
             return {

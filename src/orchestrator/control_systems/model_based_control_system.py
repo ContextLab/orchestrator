@@ -178,9 +178,10 @@ class ModelBasedControlSystem(ControlSystem):
         # If still no model, select one based on task requirements
         if not model:
             requirements = self._get_task_requirements(task)
-            model_name = await self.model_registry.select_model(requirements)
-            if model_name:
-                model = await self.model_registry.get_model(model_name)
+            # select_model returns a Model, not a name -- passing its result
+            # back into get_model() raised TypeError from get_model()'s
+            # `":" in model_name` check.
+            model = await self.model_registry.select_model(requirements)
 
         # Extract the actual action/prompt from the task
         if task.action in ["generate", "generate_text"] and task.parameters.get(
