@@ -74,6 +74,42 @@ def _run_cli(args, cwd, home):
 
 
 # ---------------------------------------------------------------------------
+# 0. the CLI can state its own version
+# ---------------------------------------------------------------------------
+
+def test_cli_reports_its_version(tmp_path):
+    """`--version` is the first thing anyone runs against a release.
+
+    A release rehearsal against the built wheel found this missing entirely:
+    `orchestrator --version` failed with "No such option". There is no other
+    way to ask an installed copy what it is.
+    """
+    import orchestrator
+
+    result = _run_cli(["--version"], tmp_path, _decoy_home(tmp_path))
+
+    assert result.returncode == 0, f"--version failed: {result.stderr}"
+    assert orchestrator.__version__ in result.stdout, (
+        f"version {orchestrator.__version__!r} missing from {result.stdout!r}"
+    )
+
+
+def test_version_does_not_read_credentials(tmp_path):
+    """Asking the version must not touch the user's provider credentials.
+
+    The version is read from distribution metadata rather than by importing
+    the package, so nothing on the credential path runs.
+    """
+    home = _decoy_home(tmp_path)
+    result = _run_cli(["--version"], tmp_path, home)
+
+    assert result.returncode == 0
+    combined = result.stdout + result.stderr
+    assert DECOY_ANTHROPIC not in combined
+    assert DECOY_OPENAI not in combined
+
+
+# ---------------------------------------------------------------------------
 # 1. hermetic boundary
 # ---------------------------------------------------------------------------
 

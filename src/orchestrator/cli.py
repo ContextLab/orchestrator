@@ -60,6 +60,10 @@ verbose_option = click.option(
 
 
 @click.group()
+# `package_name` reads the version from installed distribution metadata, so
+# this does not import the package -- the CLI stays hermetic and no
+# credential-touching import runs just to answer `--version`.
+@click.version_option(package_name="py-orc", prog_name="orchestrator")
 @click.option("--log-level",
               type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
                                case_sensitive=False),
