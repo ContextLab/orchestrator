@@ -8,7 +8,9 @@ from pathlib import Path
 import shutil
 import sys
 
-sys.path.insert(0, '/Users/jmanning/orchestrator/src')
+# Repo-relative: an absolute path to one developer's home directory made
+# this import work on exactly one machine.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from orchestrator.orchestrator import Orchestrator
 

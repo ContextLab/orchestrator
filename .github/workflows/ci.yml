@@ -165,8 +165,26 @@ jobs:
           set -o pipefail
           uv run --no-sync python -m pytest \
             -m "not unit and not contract and not e2e and not live and not integration and not docker and not slow" \
-            -q --timeout=60 --timeout-method=signal --tb=no -rN \
+            -q --timeout=60 --timeout-method=signal --tb=no -rfE \
             | tee legacy-results.txt
+
+      - name: Fail if the suite dirtied the repository
+        # NOT continue-on-error, deliberately: the backlog is allowed to be
+        # red, but it is not allowed to modify tracked files. Tests used to
+        # write generated pipelines -- embedding whichever ephemeral port their
+        # mock server bound -- straight into tests/scenarios/test_pipelines/,
+        # so every run left a diff and whichever port was committed last became
+        # everyone else's fixture (#431). This is the guard that keeps it fixed.
+        if: always()
+        run: |
+          if ! git diff --quiet; then
+            echo "::error::The test suite modified tracked files:"
+            git diff --stat
+            echo
+            echo "Tests must write generated files to a temp directory"
+            echo "(pytest's tmp_path), never into the repository."
+            exit 1
+          fi
 
       - name: Publish backlog counts
         # Runs even when the step above fails, which is the normal case.
