@@ -15,6 +15,14 @@ from ..utils.output_sanitizer import sanitize_output
 
 logger = logging.getLogger(__name__)
 
+# Every other action in this project is spelled with underscores
+# (`generate_text`, `analyze_text`, `evaluate_condition`, `loop_complete`).
+# `generate-structured` was the lone hyphenated one, so `generate_structured`
+# fell through to the natural-language branch below, which turns an unknown
+# action into a *prompt*: the step returned a sentence instead of an object and
+# still reported success. Both spellings dispatch here.
+STRUCTURED_ACTIONS = frozenset({"generate-structured", "generate_structured"})
+
 
 class ModelBasedControlSystem(ControlSystem):
     """Control system that executes tasks using real AI models."""
@@ -39,6 +47,7 @@ class ModelBasedControlSystem(ControlSystem):
                     "supported_actions": [
                         "generate",
                         "generate_text",
+                        "generate_structured",
                         "analyze",
                         "transform",
                         "execute",
@@ -229,11 +238,11 @@ class ModelBasedControlSystem(ControlSystem):
 
         try:
             # Check if this is a structured generation task
-            if task.action == "generate-structured":
+            if task.action in STRUCTURED_ACTIONS:
                 # Use structured generation
                 if not task.parameters or "schema" not in task.parameters:
                     raise ValueError(
-                        f"Task '{task.id}' with action 'generate-structured' requires a 'schema' parameter"
+                        f"Task '{task.id}' with action '{task.action}' requires a 'schema' parameter"
                     )
                 
                 temperature = (
@@ -443,8 +452,8 @@ class ModelBasedControlSystem(ControlSystem):
 
     def _parse_result(self, result: Any, task: Task) -> Any:
         """Parse model result based on expected format."""
-        # For generate-structured actions, the result should already be a structured object
-        if task.action == "generate-structured":
+        # For structured actions, the result should already be a structured object
+        if task.action in STRUCTURED_ACTIONS:
             # If it's still a string, try to parse it as JSON
             if isinstance(result, str):
                 try:

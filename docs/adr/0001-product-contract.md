@@ -139,13 +139,16 @@ collection is prohibited.
 
 ## Golden pipelines
 
-Three executable acceptance specifications, all hermetic:
+Four executable acceptance specifications. The first two are hermetic; the last
+two are `live` and skip without a credential:
 
 1. **`basic`** — deterministic local tools, sequential steps, template
    interpolation, typed outputs.
-2. **`control-flow`** — conditional branching and parallel fan-out with
-   dependency ordering, plus a deliberately failing step to verify failure
-   propagation and exit codes.
+2. **`control-flow`** — parallel fan-out and a dependent fan-in join, with
+   template interpolation across step results, plus a deliberately failing step
+   to verify failure propagation and exit codes. Conditional branching and
+   loops are *not* covered by this fixture and are not yet part of the
+   supported contract; see #333 (`on_false` / `on_success`) and #320.
 3. **`live-anthropic`** — the same shape as `basic` but with one real Anthropic
    call. Marked `live`, skipped unless `ANTHROPIC_API_KEY` is set.
 4. **`live-dartmouth`** — the same shape, against a free Dartmouth Chat model.
