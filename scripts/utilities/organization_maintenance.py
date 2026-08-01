@@ -849,7 +849,7 @@ class OrganizationMaintenance:
             "",
             f"## System Status (as of {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})",
             "",
-        ]
+        ])
         
         # Add current system status
         try:

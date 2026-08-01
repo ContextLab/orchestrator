@@ -1610,8 +1610,20 @@ class Orchestrator:
                         except Exception:
                             # Fallback to original error
                             handled_error = result
-                        task.fail(handled_error)
-                        results[task_id] = {"error": str(handled_error)}
+                        # `handle_error` returns a *recovery decision* --
+                        # {"action": "retry", "delay": 5.0, ...} -- not an
+                        # error. Recording that as the task's error meant every
+                        # failed step reported a retry policy instead of the
+                        # reason it failed, and `task.error` was not even an
+                        # exception. The reason is the original exception; the
+                        # decision is kept beside it rather than on top of it.
+                        task.fail(result)
+                        results[task_id] = {
+                            "success": False,
+                            "error": str(result),
+                            "error_type": type(result).__name__,
+                            "recovery": handled_error,
+                        }
                     else:
                         # Task succeeded
                         results[task_id] = result
@@ -2039,8 +2051,21 @@ class Orchestrator:
                 # Skip dependent tasks
                 self._skip_dependent_tasks(pipeline, task_id)
             elif failure_policy == "fail":
-                # Fail entire pipeline
-                raise ExecutionError(f"Task '{task_id}' failed and policy is 'fail'")
+                # Fail entire pipeline.
+                #
+                # The task already knows why it failed; reporting only "failed
+                # and policy is 'fail'" threw that away and left the caller to
+                # go hunting in the logs. The reason is carried in the message
+                # and chained, so `raise ... from` preserves the original
+                # traceback and type for anyone catching it.
+                # `Task.error` is typed Optional[Exception] but is not always
+                # populated with one, so chaining is conditional.
+                cause = task.error
+                reason = f": {cause}" if cause else ""
+                message = f"Task '{task_id}' failed and policy is 'fail'{reason}"
+                if isinstance(cause, BaseException):
+                    raise ExecutionError(message) from cause
+                raise ExecutionError(message)
             elif failure_policy == "retry":
                 # Retry is handled in _execute_task
                 continue

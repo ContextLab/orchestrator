@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import logging
 import re
+import warnings
 from typing import Any, Dict, List, Optional
 
 import yaml
 from jinja2 import Environment, StrictUndefined
 
+from ..core.actions import canonical_action
 from ..core.pipeline import Pipeline
 from ..core.task import Task
 from ..core.template_metadata import TemplateMetadata
@@ -247,6 +249,17 @@ class YAMLCompiler:
                 if self.validation_report.has_errors and self.validation_level == ValidationLevel.STRICT:
                     # Create comprehensive error message from validation report
                     error_message = self.validation_report.format_report(format_type=OutputFormat.SUMMARY)
+                    # The SUMMARY format reports counts by category -- "1
+                    # errors, tool: 1" -- which tells an author that something
+                    # is wrong but not what. Lead with the actual messages so
+                    # the exception alone is enough to fix the pipeline.
+                    detail = "\n".join(
+                        f"  - {issue.message}"
+                        for issue in self.validation_report.issues
+                        if issue.severity is ValidationSeverity.ERROR
+                    )
+                    if detail:
+                        error_message = f"{detail}\n\n{error_message}"
                     raise YAMLCompilerError(f"Pipeline validation failed:\n{error_message}")
                 
                 # Log validation summary
@@ -1388,6 +1401,26 @@ class YAMLCompiler:
         if "while" in task_def:
             metadata["is_while_loop"] = True
             metadata["while_condition"] = task_def["while"]
+
+        # Normalise action aliases so exactly one spelling reaches the task
+        # graph, the trace and every downstream consumer. Steps that name a
+        # `tool:` are left alone -- their `action` is an operation on that
+        # tool, not an entry in the action vocabulary.
+        if isinstance(action, str) and "tool" not in task_def:
+            canonical = canonical_action(action)
+            if canonical is not None and canonical != action.strip().lower():
+                warnings.warn(
+                    f"Task '{task_id}': action '{action}' is a deprecated "
+                    f"alias of '{canonical}'. Support for the alias will be "
+                    f"removed; write '{canonical}' instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                logger.warning(
+                    "Task '%s': normalising deprecated action alias '%s' -> '%s'",
+                    task_id, action, canonical,
+                )
+                action = canonical
 
         # Analyze templates in parameters
         template_metadata = self._analyze_parameter_templates(parameters, available_steps)

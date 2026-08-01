@@ -177,9 +177,16 @@ jobs:
         # everyone else's fixture (#431). This is the guard that keeps it fixed.
         if: always()
         run: |
-          if ! git diff --quiet; then
-            echo "::error::The test suite modified tracked files:"
-            git diff --stat
+          # --untracked-files=all, not `git diff`: a diff only sees
+          # modifications to tracked files, so a test could still scatter new
+          # files through the checkout and the guard would pass.
+          # legacy-results.txt is written by the step above, on purpose. It is
+          # the only expected artifact; anything else is a test misbehaving.
+          dirt=$(git status --porcelain --untracked-files=all \
+                 | grep -v ' legacy-results\.txt$' || true)
+          if [ -n "$dirt" ]; then
+            echo "::error::The test suite left the repository dirty:"
+            echo "$dirt"
             echo
             echo "Tests must write generated files to a temp directory"
             echo "(pytest's tmp_path), never into the repository."

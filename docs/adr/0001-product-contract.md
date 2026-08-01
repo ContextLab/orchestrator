@@ -118,10 +118,34 @@ Exit codes: `0` success, `1` execution failure, `2` validation/compile failure,
 
 A step names either a tool and an operation on it (`tool: filesystem` with
 `action: read`), or an action the runtime executes itself (`action: generate`).
-`core/actions.py` is the single source of truth for the second group:
-`HybridControlSystem` dispatches off it and `ToolValidator` accepts exactly the
-names in it, so `validate` and `run` cannot disagree about whether an action
-exists (#241).
+`core/actions.py` is the single source of truth for the second group. Each
+action is an `ActionSpec` carrying its canonical name, aliases, handler,
+whether it needs a model or a tool, its required parameters and its result
+schema. Everything else is *derived* from that registry rather than restated
+beside it:
+
+| Consumer | Derived as |
+|-|-|
+| Executor dispatch | `resolve_action(...).handler` |
+| Validator recognition | `is_known_action(...)` |
+| Advertised `supported_actions` | `SUPPORTED_ACTIONS` |
+| Alias normalisation | `canonical_action(...)`, applied by the compiler |
+| Documentation | `docs/actions.md`, generated and drift-tested |
+
+So `validate` and `run` cannot disagree about whether an action exists (#241),
+and the vocabulary cannot drift apart again.
+
+**An unrecognised action is refused.** It used to become a prompt for the
+model, so `action: gernate` returned a plausible answer and reported success.
+It now fails at compile time, and again at dispatch — the runtime checks
+independently, because a caller can construct a `Task` and reach execution
+without going through YAML validation at all. `<AUTO>...</AUTO>` remains
+supported: that is an author explicitly asking the model to interpret an
+instruction, which is not the same as a typo falling through.
+
+Aliases are accepted but deprecated. The compiler rewrites them to the
+canonical name and warns, so exactly one spelling reaches the task graph and
+the trace.
 
 Template rendering deliberately falls back to returning the original text when
 a reference is undefined, because resolution runs in several passes and a
