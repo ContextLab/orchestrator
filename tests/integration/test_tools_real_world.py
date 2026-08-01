@@ -26,6 +26,40 @@ from orchestrator.tools.report_tools import ReportGeneratorTool, PDFCompilerTool
 pytestmark = pytest.mark.integration
 
 
+def payload(response):
+    """Return the data half of a tool's response.
+
+    Every tool returns the envelope ``{"success": bool, "result": Any,
+    "error": str | None}``. ``success`` and ``error`` are read from the
+    envelope directly; everything else -- ``stdout``, ``content``, ``items``,
+    ``markdown`` and so on -- lives one level down, in ``result``.
+
+    These tests originally asserted against a flat shape that predates the
+    envelope, which is why they failed with ``KeyError`` on keys that did
+    exist (see #433).
+    """
+    assert isinstance(response, dict), (
+        f"tool returned {type(response).__name__}, expected the response envelope"
+    )
+    assert "result" in response, (
+        f"no 'result' key in tool response; got {sorted(response)}"
+    )
+    return response["result"]
+
+
+def skip_if_optional_dependency_missing(response):
+    """Skip when a tool could not run for lack of an optional package.
+
+    A missing ``[web]`` extra is a statement about this environment, not a
+    defect in the tool, so it must skip with a reason rather than fail --
+    the same rule the rest of the suite follows.
+    """
+    error = str(response.get("error") or "")
+    lowered = error.lower()
+    if "no module named" in lowered or "playwright is required" in lowered:
+        pytest.skip(f"optional dependency missing: {error}")
+
+
 @pytest.fixture(scope="module")
 def model_registry():
     """Initialize real models for testing."""
@@ -65,37 +99,38 @@ class TestHeadlessBrowserTool:
         # Use example.com - it's stable and simple
         result = await browser_tool.execute(url="https://example.com", action="scrape")
 
-        # Check if there was an error
-        if "error" in result:
+        skip_if_optional_dependency_missing(result)
+        # `"error" in result` is always true -- the envelope always carries the
+        # key, with None on success. The error's *value* is the signal.
+        if result["error"]:
             pytest.fail(f"Scraping failed: {result['error']}")
 
         # Should have scraped content
-        assert "url" in result
-        assert result["url"] == "https://example.com"
-        assert "title" in result
-        assert "Example Domain" in result["title"]
+        data = payload(result)
+        assert data["url"] == "https://example.com"
+        assert "Example Domain" in data["title"]
 
         # Check for text content (if extracted)
-        if "text" in result:
-            assert "Example Domain" in result["text"]
-            assert "More information" in result["text"]
+        if "text" in data:
+            assert "Example Domain" in data["text"]
+            assert "More information" in data["text"]
 
         # Check for other metadata
-        if "status_code" in result:
-            assert result["status_code"] == 200
+        if "status_code" in data:
+            assert data["status_code"] == 200
 
     @pytest.mark.asyncio
     async def test_verify_real_website(self, browser_tool):
         """Test verifying a real website."""
         result = await browser_tool.execute(url="https://example.com", action="verify")
 
-        # Check if there was an error
-        if "error" in result:
+        skip_if_optional_dependency_missing(result)
+        if result["error"]:
             pytest.fail(f"Verification failed: {result['error']}")
 
-        assert "url" in result
-        assert "accessible" in result
-        assert result["accessible"] is True
+        data = payload(result)
+        assert "url" in data
+        assert data["accessible"] is True
 
     @pytest.mark.asyncio
     async def test_invalid_url_handling(self, browser_tool):
@@ -104,9 +139,15 @@ class TestHeadlessBrowserTool:
             url="https://this-domain-definitely-does-not-exist-12345.com",
             action="scrape")
 
-        # Should have an error for invalid URL
-        assert "error" in result
-        assert "url" in result
+        # Skip first: a missing bs4 also produces an error, which would make
+        # this pass while proving nothing about URL handling.
+        skip_if_optional_dependency_missing(result)
+
+        # `assert "error" in result` used to stand here. The envelope always
+        # has that key, so the assertion could never fail -- it passed whether
+        # or not the tool handled the bad URL at all. Assert the value.
+        assert result["success"] is False
+        assert result["error"], "an unreachable domain must report an error"
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(240)  # Increased timeout to allow for playwright installation
@@ -122,7 +163,8 @@ class TestHeadlessBrowserTool:
         elapsed = time.time() - start_time
         
         # The tool should handle playwright installation automatically
-        if "error" in result:
+        skip_if_optional_dependency_missing(result)
+        if result["error"]:
             # Get more diagnostic info
             error_msg = result["error"]
             
@@ -153,8 +195,9 @@ class TestHeadlessBrowserTool:
                 pytest.fail(f"JS scraping failed after {elapsed:.1f}s: {error_msg}")
 
         # Should have scraped content
-        assert "url" in result
-        assert "title" in result
+        data = payload(result)
+        assert "url" in data
+        assert "title" in data
 
 
 class TestWebSearchTool:
@@ -172,22 +215,22 @@ class TestWebSearchTool:
             query="Python programming language official documentation", max_results=5
         )
 
-        # WebSearchTool returns different format - no "success" key
-        assert "results" in result
-        assert "query" in result
-        assert result["query"] == "Python programming language official documentation"
+        data = payload(result)
+        assert "results" in data
+        assert data["query"] == "Python programming language official documentation"
 
         # Check if we got results (may be empty if search fails)
-        if result.get("error"):
-            # Search failed, but should still have proper structure
-            assert result["total_results"] == 0
+        if result["error"] or not data["results"]:
+            # Search failed or returned nothing -- it must still be
+            # structurally coherent rather than claiming results it lacks.
+            assert data["total_results"] == 0
         else:
             # Should have some results
-            assert len(result["results"]) > 0
-            assert len(result["results"]) <= 5
+            assert len(data["results"]) > 0
+            assert len(data["results"]) <= 5
 
             # Check result structure
-            for item in result["results"]:
+            for item in data["results"]:
                 assert "title" in item
                 assert "url" in item
                 assert "snippet" in item
@@ -199,9 +242,15 @@ class TestWebSearchTool:
         """Test handling of empty search query."""
         result = await search_tool.execute(query="", max_results=5)
 
-        # Should have error for empty query
-        assert "error" in result
-        assert result["total_results"] == 0
+        # The tool rejects the query outright rather than inventing an empty
+        # result set, so there is no payload to inspect -- `result` is None.
+        # The old `assert "error" in result` could never fail, because the
+        # envelope always carries that key.
+        assert result["success"] is False
+        assert "no query" in str(result["error"]).lower()
+        assert result["result"] is None, (
+            "a rejected query must not come back with a fabricated payload"
+        )
 
 
 class TestTerminalTool:
@@ -218,9 +267,11 @@ class TestTerminalTool:
         # Test echo command
         result = await terminal_tool.execute(command="echo 'Hello from terminal tool'")
 
+        # `success` is the envelope's own key and tracks the command's exit
+        # status; the stream contents live in the payload.
         assert result["success"] is True
-        assert result["stdout"].strip() == "Hello from terminal tool"
-        assert result["return_code"] == 0
+        assert payload(result)["stdout"].strip() == "Hello from terminal tool"
+        assert payload(result)["return_code"] == 0
 
     @pytest.mark.asyncio
     async def test_command_with_error(self, terminal_tool):
@@ -228,8 +279,8 @@ class TestTerminalTool:
         result = await terminal_tool.execute(command="ls /nonexistent/directory/path")
 
         assert result["success"] is False
-        assert result["return_code"] != 0
-        assert result["stderr"] != ""  # Should have error message
+        assert payload(result)["return_code"] != 0
+        assert payload(result)["stderr"] != ""  # Should have error message
 
     @pytest.mark.asyncio
     async def test_command_timeout(self, terminal_tool):
@@ -251,7 +302,7 @@ class TestTerminalTool:
         )
 
         assert result["success"] is True
-        assert "test.txt" in result["stdout"]
+        assert "test.txt" in payload(result)["stdout"]
 
 
 class TestFileSystemTool:
@@ -280,7 +331,7 @@ class TestFileSystemTool:
         read_result = await fs_tool.execute(action="read", path=str(test_file))
 
         assert read_result["success"] is True
-        assert read_result["content"] == test_content
+        assert payload(read_result)["content"] == test_content
 
         # Test delete
         delete_result = await fs_tool.execute(action="delete", path=str(test_file))
@@ -311,8 +362,9 @@ class TestFileSystemTool:
         list_result = await fs_tool.execute(action="list", path=str(test_dir))
 
         assert list_result["success"] is True
-        assert len(list_result["items"]) == 3  # dummy.txt, file1.txt, file2.txt
-        file_names = [item["name"] for item in list_result["items"]]
+        items = payload(list_result)["items"]
+        assert len(items) == 3  # dummy.txt, file1.txt, file2.txt
+        file_names = [item["name"] for item in items]
         assert "file1.txt" in file_names
         assert "file2.txt" in file_names
         assert "dummy.txt" in file_names
@@ -323,7 +375,8 @@ class TestFileSystemTool:
         result = await fs_tool.execute(action="read", path="/nonexistent/file/path.txt")
 
         assert result["success"] is False
-        assert "error" in result
+        # Was `assert "error" in result`, which the envelope makes always true.
+        assert result["error"], "a missing file must report why it failed"
 
 
 class TestDataProcessingTool:
@@ -356,11 +409,13 @@ class TestDataProcessingTool:
         )
 
         assert result["success"] is True
-        assert "result" in result
-        assert result["original_count"] == 3
-        assert result["filtered_count"] == 1
-        assert len(result["result"]) == 1
-        assert result["result"][0]["name"] == "Alice"
+        data = payload(result)
+        assert data["original_count"] == 3
+        assert data["filtered_count"] == 1
+        # The filtered rows are under `data`, not directly under the envelope's
+        # `result` -- the old assertion happened to read the envelope key.
+        assert len(data["data"]) == 1
+        assert data["data"][0]["name"] == "Alice"
 
     @pytest.mark.asyncio
     async def test_csv_processing(self, data_tool, temp_workspace):
@@ -380,11 +435,11 @@ Charlie,35,Tokyo
         )
 
         assert result["success"] is True
-        assert "result" in result
-        assert result["target_format"] == "json"
+        data = payload(result)
+        assert data["target_format"] == "json"
 
         # Parse the JSON result
-        converted_data = json.loads(result["result"])
+        converted_data = json.loads(data["data"])
         assert len(converted_data) == 3
         assert converted_data[0]["name"] == "Alice"
         assert converted_data[1]["age"] == "25"  # Note: CSV values are strings
@@ -492,10 +547,11 @@ class TestReportGeneratorTool:
             output_path=str(temp_workspace / "report.md"))
 
         assert result["success"] is True
-        assert "markdown" in result
+        data = payload(result)
+        assert "markdown" in data
 
         # Verify content structure
-        content = result["markdown"]
+        content = data["markdown"]
         assert "# AI Applications Report" in content
         assert "## Executive Summary" in content
         assert "## Search Results" in content
@@ -543,10 +599,10 @@ The PDF generation tool should create a properly formatted document.
             # Pandoc is installed
             assert output_path.exists()
             assert output_path.stat().st_size > 0
-            assert result["file_size"] > 0
+            assert payload(result)["file_size"] > 0
         else:
             # Pandoc not installed - should fail gracefully
-            assert "pandoc" in result["error"].lower()
+            assert "pandoc" in str(result["error"]).lower()
 
 
 class TestToolIntegration:
@@ -619,6 +675,12 @@ outputs:
   search_count: "{{search_web.total_results}}"
 """
 
+        # This pipeline needs a real web-search backend AND a real model for
+        # the `generate` step. Without the [web] extra the search step fails
+        # and the whole pipeline aborts, which says nothing about the
+        # orchestration being tested.
+        pytest.importorskip("bs4", reason="web scraping needs the [web] extra")
+
         # Execute pipeline
         context = {
             "topic": "artificial intelligence",
@@ -627,7 +689,7 @@ outputs:
 
         import time
         start_time = time.time()
-        
+
         try:
             result = await orchestrator.execute_yaml(
                 yaml_content=yaml_content, context=context
@@ -738,7 +800,11 @@ steps:
     action: process
     parameters:
       action: transform
-      data: "{{read_data.content}}"
+      # A step's output is the {success, result, error} envelope, so the
+      # payload is reached through `.result`. `{{read_data.content}}` silently
+      # rendered as the literal placeholder text, which then reached
+      # json.loads() and failed there instead -- see #153.
+      data: "{{read_data.result.content}}"
       transform_spec:
         total_price: "sum(item['price'] for item in json.loads(data)['items'])"
         item_count: "len(json.loads(data)['items'])"
@@ -748,7 +814,10 @@ steps:
   - id: validate_results
     action: validate
     parameters:
-      data: "{{process_data.processed_data}}"
+      # `| tojson` is required: without it a dict is interpolated with
+      # Python's repr (single quotes), which the validator rejects as
+      # "not JSON or CSV".
+      data: "{{ process_data.processed_data | tojson }}"
       schema:
         type: object
         properties:
@@ -766,11 +835,11 @@ steps:
     parameters:
       action: write
       path: "{{output_file}}"
-      content: "{{process_data.processed_data}}"
+      content: "{{ process_data.processed_data | tojson }}"
     depends_on: [validate_results]
 
 outputs:
-  validation_passed: "{{validate_results.valid}}"
+  validation_passed: "{{validate_results.result.valid}}"
   total_price: "{{process_data.processed_data.total_price}}"
 """
 
@@ -786,11 +855,19 @@ outputs:
 
         # Verify results
         # Check if result has the new structure with steps/outputs
-        if "steps" in result:
-            assert result["steps"]["validate_results"]["valid"] is True
-        else:
-            assert result["validate_results"]["valid"] is True
+        step = (
+            result["steps"]["validate_results"]
+            if "steps" in result
+            else result["validate_results"]
+        )
+        assert step["success"] is True, f"validation step failed: {step['error']}"
+        assert payload(step)["valid"] is True
         assert (temp_workspace / "output_data.json").exists()
+
+        # The saved file must be real JSON, not a Python repr.
+        saved = json.loads((temp_workspace / "output_data.json").read_text())
+        assert saved["item_count"] == 3
+        assert saved["total_price"] == pytest.approx(51.25)
 
 
 if __name__ == "__main__":
