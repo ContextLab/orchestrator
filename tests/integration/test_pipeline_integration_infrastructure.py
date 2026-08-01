@@ -332,12 +332,16 @@ class TestPipelineTestProvider:
         assert stats['model_usage']["pipeline-test-model"]['requests'] == 1
     
     @pytest.mark.asyncio
-    async def test_pipeline_test_provider_initialization(self):
-        """Test provider initialization process."""
-        
+    async def test_pipeline_test_provider_async_initialization(self):
+        """Test the async initialize() call.
+
+        Renamed: this shared a name with the constructor test above, so it
+        silently replaced it and that test never ran. The two check different
+        things and both are wanted.
+        """
         provider = PipelineTestProvider()
         await provider.initialize()
-        
+
         assert provider.is_initialized is True
     
     def test_pipeline_test_provider_usage_statistics(self):

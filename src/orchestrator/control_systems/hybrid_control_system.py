@@ -512,7 +512,14 @@ class HybridControlSystem(ModelBasedControlSystem):
         if action_text in filesystem_actions and task.parameters:
             # Use UnifiedTemplateResolver for template resolution
             resolved_params = task.parameters.copy()
-            resolved_params["action"] = action_text
+            # Only supply the operation when the step did not state one.
+            # `file` names the TOOL, not an operation, so overwriting a
+            # caller's `action: read` with it sent action="file" to
+            # FileSystemTool and every such step failed with
+            # "Unknown filesystem action: file". The metadata-routed branch
+            # above already guards this; this branch did not.
+            if "action" not in resolved_params:
+                resolved_params["action"] = action_text
             
             # Prepare template context using the unified system
             template_context = self._prepare_template_context(context)
