@@ -1,0 +1,58 @@
+# Supported example 02: parallel fan-out with a dependent join.
+#
+# `alpha` and `beta` do not depend on each other, so they share an execution
+# level and may run concurrently. `join` depends on both and must run strictly
+# after them, interpolating both of their results.
+id: parallel_fanout_fanin
+name: Parallel Fan-out and Fan-in
+description: Two independent branches joined by a dependent step
+version: "1.0.0"
+
+parameters:
+  out_dir:
+    type: string
+    default: "./output"
+
+steps:
+  - id: alpha
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/alpha.txt"
+      content: "alpha-value"
+
+  - id: beta
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/beta.txt"
+      content: "beta-value"
+
+  - id: read_alpha
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/alpha.txt"
+    dependencies:
+      - alpha
+
+  - id: read_beta
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/beta.txt"
+    dependencies:
+      - beta
+
+  - id: join
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/joined.txt"
+      content: "{{ read_alpha.result.content }}+{{ read_beta.result.content }}"
+    dependencies:
+      - read_alpha
+      - read_beta
+
+outputs:
+  joined: "{{ join.result.path }}"
