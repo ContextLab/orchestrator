@@ -114,6 +114,87 @@ missing extra must degrade one feature, never break the package import.
 Exit codes: `0` success, `1` execution failure, `2` validation/compile failure,
 `130` interrupted.
 
+## Control-flow routing
+
+A step may say where execution goes next:
+
+```yaml
+- id: check_topic
+  action: evaluate_condition
+  condition: "{{ topic | length > 10 }}"
+  parameters:
+    condition: "{{ topic | length > 10 }}"
+  on_false: short_topic_handler
+  on_success: main_processing
+  on_failure: error_recovery
+```
+
+| Key | Fires when |
+|-|-|
+| `on_false` | the step's own `condition:` was false, so the step was skipped |
+| `on_success` | the step ran and succeeded |
+| `on_failure` | the step ran and did not succeed |
+
+Routing jumps **forward**. Steps between the source and the target are marked
+`skipped`, which is the same machinery `goto` already used rather than a second
+one beside it. Skipping is not failing: a pipeline that routed around a step
+still reports `success`.
+
+"Did not succeed" means `StepResult.success`, not status — a tool returning
+`{"success": False}` without raising leaves its task `completed`, and routing
+on status alone sent a failing step down the success path.
+
+**`on_failure` means two things, told apart by value.** It already selected a
+failure *policy* — `fail`, `continue`, `skip`, `retry` — and now also names a
+step to jump to. A reserved policy word keeps its policy meaning; anything else
+is a step id. When `on_failure` names a step, the run continues there instead
+of aborting.
+
+That is only safe because the ambiguous case is refused rather than guessed:
+a pipeline containing a step whose id *is* a policy word fails to compile,
+because routing to it could not be distinguished from selecting the policy.
+
+Routing targets are validated at compile time — a jump to a step that does not
+exist, or a step routing to itself, is exit 2 naming the offending target.
+
+## The result contract
+
+`Orchestrator.execute_pipeline` returns a `PipelineResult`
+(`core/pipeline_result.py`). It is a `Mapping`, so `result["step_id"]` returns
+the step's raw value exactly as before; the trace arrives as attributes
+alongside.
+
+| | |
+|-|-|
+| `status` / `success` | whether the run as a whole succeeded |
+| `outputs` | declared `outputs:`, resolved |
+| `steps` | `StepResult` per step |
+| `execution_order` / `execution_levels` | dependency order, and what could run together |
+| `started_at` / `completed_at` / `duration` | run timing |
+| `failed_steps` / `skipped_steps` / `retried_steps` | the trace, by category |
+
+Each `StepResult` carries its canonical action, status, success, value,
+structured error (`error` and `error_type`), the tool or model and provider
+that ran it, start/end/duration, retry count and dependencies.
+
+**`status` and `success` are not the same question.** `status` records whether
+the task finished; `success` whether it worked. A tool that returns
+`{"success": False}` without raising *finishes* — reading only the status
+reported a failing pipeline as successful, and that is why the CLI's exit code
+consults `success`.
+
+Declared outputs do not change the shape of the return value. They used to:
+a pipeline with `outputs:` returned `{"steps": …, "outputs": …}` and one
+without returned `{step_id: …}`, so a caller could not index a result without
+first checking which it had been handed, and a step named `outputs` collided
+with the second.
+
+`to_dict()` is the stable serialisation the CLI emits — no `default=str`
+coercion, so it round-trips. `normalized()` drops the execution id and
+wall-clock times, which are the only fields that legitimately differ between
+two runs. **The CLI and the Python API must produce equal normalised
+documents**, compared whole rather than by selected nested values.
+
 ## Actions and template resolution
 
 A step names either a tool and an operation on it (`tool: filesystem` with

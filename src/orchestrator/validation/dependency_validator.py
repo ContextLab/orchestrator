@@ -23,6 +23,7 @@ except ImportError:
     nx = None
 
 from ..core.exceptions import ValidationError
+from ..core.routing import FAILURE_POLICIES, routing_targets
 
 logger = logging.getLogger(__name__)
 
@@ -392,7 +393,54 @@ class DependencyValidator:
                         dependency_chain=[task_id, task_id],
                         recommendation=f"Remove self-dependency from task '{task_id}'"
                     ))
-        
+
+        # Control-flow routing targets (#333). A jump to a step that does not
+        # exist has to fail at compile time with the bad name, not at runtime
+        # when the executor tries to route into nothing.
+        for task in tasks:
+            task_id = task.get("id")
+            if not task_id:
+                continue
+            for key, target in routing_targets(task).items():
+                if target not in task_ids:
+                    issues.append(DependencyIssue(
+                        issue_type="missing_routing_target",
+                        severity="error",
+                        message=(
+                            f"Task '{task_id}' has {key}: '{target}', which is "
+                            f"not a step in this pipeline"
+                        ),
+                        involved_tasks=[task_id, target],
+                        recommendation=(
+                            f"Either add a step '{target}' or correct the "
+                            f"{key} of task '{task_id}'"
+                        ),
+                    ))
+                elif target == task_id:
+                    issues.append(DependencyIssue(
+                        issue_type="self_routing",
+                        severity="error",
+                        message=f"Task '{task_id}' routes {key} to itself",
+                        involved_tasks=[task_id],
+                        recommendation=f"Route {key} to a different step",
+                    ))
+
+        # A step id that is also a failure policy makes `on_failure` ambiguous:
+        # routing to it cannot be told apart from selecting the policy. Refuse
+        # rather than silently pick one reading.
+        for policy_name in sorted(FAILURE_POLICIES & set(task_ids)):
+            issues.append(DependencyIssue(
+                issue_type="ambiguous_task_id",
+                severity="error",
+                message=(
+                    f"Task id '{policy_name}' collides with the on_failure "
+                    f"policy of the same name, so routing to it could not be "
+                    f"distinguished from selecting the policy"
+                ),
+                involved_tasks=[policy_name],
+                recommendation=f"Rename the step '{policy_name}'",
+            ))
+
         return issues
     
     def _validate_circular_dependencies(

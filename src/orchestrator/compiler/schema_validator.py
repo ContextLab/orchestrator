@@ -133,9 +133,20 @@ class SchemaValidator:
                                     },
                                     "timeout": {"type": "integer", "minimum": 1},
                                     "max_retries": {"type": "integer", "minimum": 0},
-                                    "on_failure": {
+                                    # Either a failure policy or a step to jump
+                                    # to (#333). Which one is decided by the
+                                    # value; `validate_dependencies` checks
+                                    # that a non-policy value names a real
+                                    # step, so an enum here would reject valid
+                                    # routing outright.
+                                    "on_failure": {"type": "string"},
+                                    "on_false": {
                                         "type": "string",
-                                        "enum": ["continue", "fail", "retry", "skip"],
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+                                    },
+                                    "on_success": {
+                                        "type": "string",
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
                                     },
                                     "requires_model": {
                                         "oneOf": [

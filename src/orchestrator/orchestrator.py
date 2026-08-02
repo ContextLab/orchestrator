@@ -11,6 +11,8 @@ from .compiler.yaml_compiler import YAMLCompiler
 from .core.control_system import ControlSystem
 from .core.error_handler import ErrorHandler
 from .core.pipeline import Pipeline
+from .core.pipeline_result import PipelineResult, StepResult
+from .core.routing import is_failure_policy
 from .core.pipeline_status_tracker import PipelineStatusTracker
 from .core.pipeline_resume_manager import PipelineResumeManager, ResumeStrategy
 from .core.resource_allocator import ResourceAllocator
@@ -336,11 +338,25 @@ class Orchestrator:
             # Execute pipeline
             results = await self._execute_pipeline_internal(pipeline, context)
 
-            # Extract outputs if defined in pipeline metadata
-            final_result = results
-            if pipeline.metadata.get("outputs"):
-                outputs = self._extract_outputs(pipeline, results)
-                final_result = {"steps": results, "outputs": outputs}
+            # Extract outputs if defined in pipeline metadata.
+            #
+            # This used to change the *shape* of the return value: a bare
+            # {step_id: value} normally, but {"steps": ..., "outputs": ...}
+            # when the pipeline declared outputs. Two shapes from one method,
+            # told apart only by inspecting keys, and a step called `outputs`
+            # collided with the second. The outputs now live on a field.
+            outputs = (
+                self._extract_outputs(pipeline, results)
+                if pipeline.metadata.get("outputs")
+                else {}
+            )
+            final_result = self._build_pipeline_result(
+                pipeline=pipeline,
+                execution_id=execution_id,
+                results=results,
+                outputs=outputs,
+                started_at=context["start_time"],
+            )
 
             # Record successful execution
             execution_record = {
@@ -1014,9 +1030,23 @@ class Orchestrator:
         # Check recently completed tasks for goto directives
         for task_id in completed_tasks:
             task = pipeline.get_task(task_id)
-            if not task or task.status != TaskStatus.COMPLETED:
+            if not task:
                 continue
-                
+
+            # Control-flow routing (#333), which jumps the same way `goto`
+            # does. Unlike goto it also applies to steps that were skipped or
+            # that failed, so the status filter cannot come first.
+            routed = self._routing_target(task, results.get(task_id))
+            if routed and routed in pipeline.tasks:
+                self.logger.info(
+                    "Task %s routing to %s (%s)", task_id, routed, task.status.value
+                )
+                self._skip_tasks_between(pipeline, task_id, routed)
+                return routed
+
+            if task.status != TaskStatus.COMPLETED:
+                continue
+
             # Check for goto in task metadata
             goto_target = task.metadata.get("goto")
             if goto_target:
@@ -1033,6 +1063,34 @@ class Orchestrator:
                     
         return None
     
+    def _routing_target(self, task: Task, value: Any = None) -> Optional[str]:
+        """Where this task's outcome says to go next, if anywhere.
+
+        `on_false` fires when the step's own `condition:` was false, which is
+        recorded as a skip. `on_success` and `on_failure` fire on how the step
+        itself ended, and "ended badly" is not the same as status FAILED: a
+        tool returning {"success": False} without raising leaves its task
+        COMPLETED. StepResult already owns that distinction, so it is reused
+        here rather than restated -- routing on status alone sent a failing
+        step down the success path.
+
+        `on_failure` names a step only when its value is not one of the
+        reserved failure policies -- see core/routing.py.
+        """
+        if task.status is TaskStatus.SKIPPED:
+            return task.metadata.get("on_false")
+
+        succeeded = StepResult.from_task(task, value).success
+
+        if succeeded:
+            return task.metadata.get("on_success")
+
+        on_failure = task.metadata.get("on_failure")
+        if isinstance(on_failure, str) and not is_failure_policy(on_failure):
+            return on_failure.strip() or None
+
+        return None
+
     def _skip_tasks_between(self, pipeline: Pipeline, from_task: str, to_task: str) -> None:
         """Skip tasks between a goto source and target.
         
@@ -2044,6 +2102,11 @@ class Orchestrator:
             task = pipeline.get_task(task_id)
             failure_policy = task.metadata.get("on_failure", "fail")
 
+            # `on_failure` naming a step is routing, not a policy: the run
+            # continues at that step rather than aborting here (#333).
+            if not is_failure_policy(failure_policy):
+                continue
+
             if failure_policy == "continue":
                 # Continue with other tasks
                 continue
@@ -2181,6 +2244,63 @@ class Orchestrator:
                 processed_results[task_id] = task_result
                 
         return processed_results
+
+    def _build_pipeline_result(
+        self,
+        pipeline: Pipeline,
+        execution_id: str,
+        results: Dict[str, Any],
+        outputs: Dict[str, Any],
+        started_at: float,
+    ) -> PipelineResult:
+        """Assemble the typed result from state the run already holds.
+
+        Almost nothing here is new information: `Task` has carried status,
+        timing, retry count and the error all along, and `Pipeline` can already
+        report dependency order. It was simply discarded at the return
+        statement. This keeps it.
+        """
+        completed_at = time.time()
+
+        steps: Dict[str, StepResult] = {}
+        for task_id in pipeline.tasks:
+            task = pipeline.get_task(task_id)
+            if task is None:
+                continue
+            steps[task_id] = StepResult.from_task(task, results.get(task_id))
+
+        try:
+            execution_levels = tuple(
+                tuple(level) for level in pipeline.get_execution_levels()
+            )
+        except Exception:  # pragma: no cover - a cyclic graph cannot reach here
+            execution_levels = ()
+        execution_order = tuple(
+            task_id for level in execution_levels for task_id in level
+        )
+
+        # Not `status == FAILED`: a tool can report {"success": False} without
+        # raising, leaving its task COMPLETED. StepResult.success accounts for
+        # both, and a pipeline containing such a step has not succeeded.
+        failed = [
+            s
+            for s in steps.values()
+            if not s.success and s.status != TaskStatus.SKIPPED.value
+        ]
+
+        return PipelineResult(
+            pipeline_id=pipeline.id,
+            execution_id=execution_id,
+            status="failed" if failed else "completed",
+            success=not failed,
+            steps=steps,
+            outputs=outputs,
+            execution_order=execution_order,
+            execution_levels=execution_levels,
+            started_at=started_at,
+            completed_at=completed_at,
+            duration=completed_at - started_at,
+        )
 
     def _extract_outputs(
         self, pipeline: Pipeline, results: Dict[str, Any]
