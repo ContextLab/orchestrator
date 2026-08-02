@@ -14,7 +14,9 @@ import logging
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
-from jinja2 import Environment, TemplateSyntaxError, meta
+from jinja2 import TemplateSyntaxError, Undefined, meta
+
+from ..core.template_sandbox import create_sandboxed_environment
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +130,7 @@ class DataFlowValidator:
         self.tool_validator = tool_validator
         
         # Jinja2 environment for template analysis
-        self.jinja_env = Environment()
+        self.jinja_env = create_sandboxed_environment(undefined=Undefined)
         
         # Pattern for extracting template variables
         self.template_var_pattern = re.compile(r'\{\{\s*([^}]+)\s*\}\}')

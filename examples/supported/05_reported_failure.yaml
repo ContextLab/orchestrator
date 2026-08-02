@@ -1,0 +1,56 @@
+# Supported example 05: a step that fails without raising.
+#
+# There are two ways a step fails, and they are not the same shape.
+#
+# 06 covers the first: the step raises, the task ends FAILED, and the error is
+# an exception. This example covers the second, which is easier to miss. A
+# tool can decline its work and return `{"success": false, "error": ...}`
+# without raising anything. The task then ends **completed** -- it did run to
+# the end -- while the step did **not** succeed.
+#
+# Reading `status` alone reports this run as fine. Only the step's `success`
+# flag says otherwise, and the pipeline must take the failure from there: this
+# run exits 1 and reports success=false even though no task is FAILED and
+# nothing raised.
+#
+# `read_missing` asks for a file that is not there. The filesystem tool
+# reports that as a failed result rather than an exception.
+id: reported_failure
+name: Reported Failure
+description: A tool that reports failure without raising, and a run that honours it
+version: "1.0.0"
+
+parameters:
+  out_dir:
+    type: string
+    default: "./output"
+  missing_path:
+    type: string
+    default: "./output/does-not-exist.txt"
+
+steps:
+  - id: before
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/before.txt"
+      content: "this step succeeds"
+
+  # Completes without raising, and reports that it did not succeed.
+  - id: read_missing
+    tool: filesystem
+    action: read
+    on_failure: continue
+    parameters:
+      path: "{{ missing_path }}"
+    dependencies:
+      - before
+
+  - id: after
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/after.txt"
+      content: "the run continued"
+    dependencies:
+      - read_missing

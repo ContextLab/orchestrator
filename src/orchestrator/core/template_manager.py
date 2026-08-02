@@ -3,7 +3,11 @@
 import asyncio
 import logging
 from typing import Any, Dict, List, Union, Optional
-from jinja2 import Environment, StrictUndefined, Template, TemplateSyntaxError, UndefinedError
+from jinja2 import StrictUndefined, Template, TemplateSyntaxError, UndefinedError
+
+from jinja2.sandbox import SecurityError
+
+from .template_sandbox import create_sandboxed_environment
 from jinja2.filters import FILTERS
 from datetime import datetime
 import json
@@ -100,7 +104,7 @@ class TemplateManager:
         self.loop_context_manager = loop_context_manager or GlobalLoopContextManager()
         
         # Set up Jinja2 environment with custom filters and undefined handling
-        self.env = Environment(
+        self.env = create_sandboxed_environment(
             undefined=StrictUndefined,
             trim_blocks=True,
             lstrip_blocks=True,
@@ -538,6 +542,12 @@ class TemplateManager:
                     logger.warning(f"Variable '{undefined_var}' not found in context")
             
             return template_string
+        except SecurityError:
+            # A sandbox violation is never recoverable. Every other render
+            # failure below falls back to returning the template unrendered,
+            # which for this one would hand the caller back the payload it was
+            # refused -- and leave the refusal visible only in a log line.
+            raise
         except Exception as e:
             logger.error(f"Error rendering template: {e}")
             logger.error(f"Error type: {type(e).__name__}")
