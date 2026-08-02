@@ -880,7 +880,21 @@ class Orchestrator:
                 self.logger.debug("Accumulated results so far: %s", list(results.keys()))
                 level_results = await self._execute_level(pipeline, executable_tasks, context, results)
 
-                # Check for failures
+                # Check for failures.
+                #
+                # This selects on status, so it fires only for a step that
+                # *raised*. A tool returning {"success": False} without raising
+                # leaves its task COMPLETED and does not trigger the failure
+                # policy at all -- the run continues, and the failure surfaces
+                # in the result and the exit code instead.
+                #
+                # Making this consult StepResult.success so the default `fail`
+                # policy fired for those too was tried and reverted: the policy
+                # aborts by raising, so the run produced no result document at
+                # all -- discarding the trace precisely when it is most useful.
+                # Fail-fast that still returns a trace is a real gap, recorded
+                # in ADR 0001; it needs the execution loop to stop scheduling
+                # rather than to throw, which is more than a predicate change.
                 failed_tasks = [
                     task_id
                     for task_id in executable_tasks
@@ -1675,7 +1689,13 @@ class Orchestrator:
                         # reason it failed, and `task.error` was not even an
                         # exception. The reason is the original exception; the
                         # decision is kept beside it rather than on top of it.
-                        task.fail(result)
+                        # `Task.fail()` also increments `retry_count`, and the
+                        # retry handler in _execute_task_with_resources has
+                        # already called it for this failure. Calling it again
+                        # here counted one attempt twice, which is why a step
+                        # with `max_retries: 0` reported one retry.
+                        if task.status is not TaskStatus.FAILED:
+                            task.fail(result)
                         results[task_id] = {
                             "success": False,
                             "error": str(result),
