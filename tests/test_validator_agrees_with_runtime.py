@@ -93,17 +93,22 @@ def test_every_environment_knows_every_filter_the_runtime_registers():
     "expression",
     [
         "{{ topic | slugify }}",
-        "{{ topic | from_json }}",
         "{{ '/a/b/c.txt' | basename }}",
         "{{ topic | regex_search('World') }}",
         "{{ topic | truncate_words(2) }}",
+        # Valid JSON, because the subject is whether the filter is *known*.
+        # This case used to feed `from_json` the literal "Hello World Report",
+        # which is not JSON, so the pipeline failed for an unrelated reason and
+        # the assertion below was satisfied by the wrong error.
+        "{{ '[1, 2]' | from_json }}",
     ],
 )
 def test_a_pipeline_using_a_runtime_filter_validates(expression):
-    error = _validate(_pipeline(expression))
-
-    assert error is None or "filter" not in error.lower(), (
-        f"{expression} was rejected over its filter: {error}"
+    # Assert it compiles. The previous form accepted any error whose text did
+    # not contain "filter", so an unrelated rendering failure passed as though
+    # the filter had been recognised.
+    assert _validate(_pipeline(expression)) is None, (
+        f"{expression} does not validate, though the runtime registers this filter"
     )
 
 

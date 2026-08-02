@@ -151,9 +151,6 @@ class YAMLCompiler:
 
         self.template_engine = create_pipeline_environment()
 
-        # Add custom filters to Jinja2 environment
-        self._register_custom_filters()
-
         # Regex pattern for AUTO tags (with optional attributes)
         self.auto_tag_pattern = re.compile(r"<AUTO[^>]*>(.*?)</AUTO>", re.DOTALL)
 
@@ -1548,116 +1545,6 @@ class YAMLCompiler:
             return True
         except Exception:
             return False
-
-    def _register_custom_filters(self) -> None:
-        """Register custom Jinja2 filters."""
-        import re as regex_module
-
-        def regex_search(value, pattern, group=None):
-            """Search for regex pattern in value."""
-            if not isinstance(value, str):
-                value = str(value)
-            match = regex_module.search(pattern, value, regex_module.DOTALL)
-            if match:
-                if group is not None:
-                    try:
-                        # Handle numeric group references
-                        if isinstance(group, str) and group.startswith("\\"):
-                            group_num = int(group[1:])
-                            return (
-                                match.group(group_num)
-                                if group_num <= match.lastindex
-                                else ""
-                            )
-                        return match.group(group)
-                    except (IndexError, ValueError):
-                        return ""
-                return match.group(0)
-            return ""
-
-        # Register filters
-        self.template_engine.filters["regex_search"] = regex_search
-
-        # Also add other commonly used filters that might be missing
-        self.template_engine.filters["default"] = lambda v, d="": v if v else d
-        self.template_engine.filters["lower"] = lambda v: str(v).lower()
-        self.template_engine.filters["upper"] = lambda v: str(v).upper()
-        self.template_engine.filters["replace"] = lambda v, old, new: str(v).replace(
-            old, new
-        )
-
-        # Add missing filters
-        import json
-        from datetime import datetime
-        import re as re_module
-
-        # Slugify filter
-        def slugify(value):
-            """Convert string to slug format."""
-            value = str(value).lower()
-            # Replace spaces and underscores with hyphens
-            value = re_module.sub(r"[\s_]+", "-", value)
-            # Remove non-alphanumeric characters except hyphens
-            value = re_module.sub(r"[^a-z0-9-]", "", value)
-            # Remove multiple consecutive hyphens
-            value = re_module.sub(r"-+", "-", value)
-            # Strip hyphens from start and end
-            return value.strip("-")
-
-        # Date filter
-        def date_filter(value, format="%Y-%m-%d"):
-            """Format datetime value."""
-            if isinstance(value, str):
-                # Parse ISO format
-                try:
-                    value = datetime.fromisoformat(value.replace("Z", "+00:00"))
-                except Exception:
-                    value = datetime.now()
-            elif not isinstance(value, datetime):
-                value = datetime.now()
-
-            # Handle special format strings
-            format = format.replace("Y", "%Y").replace("m", "%m").replace("d", "%d")
-            format = format.replace("H", "%H").replace("i", "%M").replace("s", "%S")
-            return value.strftime(format)
-
-        # JSON filter
-        def json_filter(value, indent=None):
-            """Convert value to JSON string."""
-            return json.dumps(value, indent=indent, default=str)
-
-        # Now function for templates
-        def now():
-            """Return current datetime."""
-            return datetime.now()
-
-        # from_json filter
-        def from_json(value):
-            """Parse JSON string to object."""
-            if isinstance(value, str):
-                try:
-                    return json.loads(value)
-                except Exception:
-                    return value
-            return value
-
-        # Basename filter
-        def basename(value):
-            """Get the basename of a path."""
-            import os
-            return os.path.basename(str(value))
-        
-        self.template_engine.filters["slugify"] = slugify
-        self.template_engine.filters["date"] = date_filter
-        self.template_engine.filters["json"] = json_filter
-        self.template_engine.filters["from_json"] = from_json
-        self.template_engine.filters["to_json"] = json_filter  # Alias for json
-        self.template_engine.filters["basename"] = basename
-        self.template_engine.globals["now"] = now
-
-        # Add special variables that should not be processed as regular templates
-        # These will be handled by the control flow system
-        self.special_vars = {"$item", "$index", "$is_first", "$is_last"}
 
     def get_template_variables(self, yaml_content: str) -> List[str]:
         """
