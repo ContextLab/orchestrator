@@ -157,6 +157,41 @@ because routing to it could not be distinguished from selecting the policy.
 Routing targets are validated at compile time — a jump to a step that does not
 exist, or a step routing to itself, is exit 2 naming the offending target.
 
+## Failure, timeout and retry
+
+| | Behaviour |
+|-|-|
+| `timeout: N` | The step is cancelled after N seconds and fails with `TimeoutError`. `StepResult.timed_out` distinguishes it from an ordinary failure. |
+| `max_retries: N` | Bounds the **total number of attempts**, not the retries beyond the first. `max_retries: 2` is two attempts, so one retry; `0` and `1` are both a single attempt. |
+| A timeout | Is retried like any other failure, so worst-case wall time is roughly `timeout × max_retries`. |
+| `on_failure: fail` (default) | Aborts the run — but only for a step that **raised**. |
+| `on_failure: continue` | The run carries on; the failure still surfaces in the result and the exit code. |
+| Model fallback | **Does not exist.** `ModelRegistry.select_model` raises `NoEligibleModelsError` rather than substituting a model the pipeline did not ask for. |
+
+The `max_retries` name and its behaviour disagree — it reads as "retries beyond
+the first" and acts as "total attempts". The behaviour is pinned by tests so
+that changing it has to be deliberate, since every pipeline's retry budget
+would shift.
+
+Fallback failing closed is deliberate, not an omission. Quietly selecting an
+unrequested model is how a cost-control policy gets bypassed: the pipeline
+believes it ran on the free model it asked for. Any future fallback has to
+record what it did, and cannot cross the free/paid boundary silently.
+
+### Known gap: fail-fast does not fire for non-raising failures
+
+A tool returning `{"success": False}` without raising leaves its task
+`completed`, so the failure policy never sees it and the run continues past a
+step the author asked to abort on. The failure is not lost — it surfaces in the
+result and the exit code — but "fail fast" does not currently fail fast for
+this class.
+
+Making the policy consult `StepResult.success` closes it in one line and was
+tried; it is reverted, because the policy aborts by *raising*, so the run then
+produces no result document at all — discarding the trace exactly when it is
+most wanted. Closing this properly means the execution loop stops scheduling
+rather than throwing, and still returns a `PipelineResult`.
+
 ## The result contract
 
 `Orchestrator.execute_pipeline` returns a `PipelineResult`

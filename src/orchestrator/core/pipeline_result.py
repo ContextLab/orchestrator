@@ -111,6 +111,17 @@ class StepResult:
             dependencies=tuple(task.dependencies),
         )
 
+    @property
+    def timed_out(self) -> bool:
+        """Whether this step ran out of time rather than failing on its merits.
+
+        A timeout is retried like any other failure, so a step with
+        `timeout: 2` and `max_retries: 3` can occupy roughly eight seconds
+        before giving up. Distinguishing it from an ordinary failure is the
+        difference between "make the timeout bigger" and "fix the step".
+        """
+        return self.error_type == "TimeoutError"
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
@@ -127,6 +138,7 @@ class StepResult:
             "completed_at": self.completed_at,
             "duration": self.duration,
             "retries": self.retries,
+            "timed_out": self.timed_out,
             "dependencies": list(self.dependencies),
         }
 
