@@ -82,6 +82,19 @@ class TaskOutputSchema:
     produces: Optional[str] = None  # what the task produces (file, data, etc.)
     format: Optional[str] = None    # output format
     
+    @property
+    def knows_outputs(self) -> bool:
+        """Whether anything actually declared what this task produces.
+
+        `outputs` is populated from an explicit `outputs:`/`produces:` on the
+        step, or from a tool schema. When it is empty -- a model step, an
+        `<AUTO>` step, a tool the validator has no schema for -- the only
+        available names are the generic fallbacks below, which say nothing
+        about this task. Rejecting an unrecognised field in that case asserts
+        knowledge the validator does not have.
+        """
+        return bool(self.outputs)
+
     def get_available_variables(self) -> Set[str]:
         """Get all variable names this task makes available."""
         variables = set()
@@ -385,6 +398,10 @@ class DataFlowValidator:
                 
                 if error.severity == "warning":
                     warnings.append(error)
+                    # The reference is still a real edge in the data-flow
+                    # graph; downgrading the message must not lose it.
+                    if validation_result.get("dependency"):
+                        dependencies.add(validation_result["dependency"])
                 else:
                     errors.append(error)
         
@@ -458,8 +475,11 @@ class DataFlowValidator:
         
         base_var = parts[0]
         
-        # Check for pipeline inputs
-        if base_var == "inputs":
+        # Check for pipeline inputs. `parameters` names the same merged
+        # namespace -- `pipeline_inputs` is built from both keys -- and without
+        # it here the reference fell through to the task lookup below and was
+        # reported as an undefined *task* called "parameters".
+        if base_var in ("inputs", "parameters"):
             if len(parts) > 1:
                 input_name = parts[1]
                 if input_name in pipeline_inputs:
@@ -508,11 +528,21 @@ class DataFlowValidator:
                     else:
                         # Extract just the output names for suggestions
                         available_outputs = [var.split('.', 1)[1] for var in available_vars if '.' in var]
+                        # Only an error when the task said what it produces.
+                        declared = schema.knows_outputs
                         return {
                             "valid": False,
+                            "severity": "error" if declared else "warning",
                             "error_type": "undefined_output",
-                            "message": f"Task '{source_task}' does not produce output '{output_field}'",
+                            "message": (
+                                f"Task '{source_task}' does not produce output "
+                                f"'{output_field}'"
+                                if declared else
+                                f"Task '{source_task}' does not declare its outputs, so "
+                                f"'{output_field}' cannot be checked until it runs"
+                            ),
                             "source_task": source_task,
+                            "dependency": source_task,
                             "suggestions": self._suggest_similar_names(output_field, available_outputs)
                         }
                 else:

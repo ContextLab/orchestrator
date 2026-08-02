@@ -36,6 +36,30 @@ def create_sandboxed_environment(**kwargs: Any) -> SandboxedEnvironment:
     return SandboxedEnvironment(**kwargs)
 
 
+def create_pipeline_environment(**kwargs: Any) -> SandboxedEnvironment:
+    """A sandboxed environment that also knows the orchestrator's own filters.
+
+    `create_sandboxed_environment` gives a bare Jinja environment. Anything
+    that renders *pipeline* templates needs more than that: `slugify`,
+    `basename`, `from_json` and the rest are part of the pipeline language, and
+    an environment without them reports a working pipeline as broken.
+
+    Three environments used to build their own filter sets independently -- the
+    template validator (56 filters), the YAML compiler (61) and the runtime
+    (70). A pipeline using `{{ title | slugify }}` therefore failed validation
+    and compiled fine, or compiled and failed on `truncate_words`, depending on
+    which one it met first. They are all built here now, from the runtime's
+    registry, so the three cannot drift apart again.
+    """
+    from .template_manager import TemplateManager
+
+    env = create_sandboxed_environment(**kwargs)
+    # TemplateManager owns the filter set; this copies it rather than
+    # re-declaring it, which is what let the three sets diverge.
+    env.filters.update(TemplateManager().env.filters)
+    return env
+
+
 def sandboxed_template(source: str, **kwargs: Any) -> Template:
     """A single template, compiled under the sandbox.
 

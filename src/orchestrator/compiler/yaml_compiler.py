@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 from jinja2 import StrictUndefined
 
-from ..core.template_sandbox import create_sandboxed_environment
+from ..core.template_sandbox import create_pipeline_environment
 
 from ..core.actions import canonical_action
 from ..core.pipeline import Pipeline
@@ -149,7 +149,7 @@ class YAMLCompiler:
             self.ambiguity_resolver = None
             logger.info("No model registry provided - AUTO tags will be preserved")
 
-        self.template_engine = create_sandboxed_environment()
+        self.template_engine = create_pipeline_environment()
 
         # Add custom filters to Jinja2 environment
         self._register_custom_filters()
