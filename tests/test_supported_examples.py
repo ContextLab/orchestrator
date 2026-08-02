@@ -85,9 +85,16 @@ class Case:
     artifacts: Dict[str, str]
     #: The complete declared `outputs` document, compared exactly.
     outputs: Dict[str, Any]
+    #: Steps that ran to the end AND succeeded.
     completed: Tuple[str, ...]
     skipped: Tuple[str, ...] = ()
+    #: Steps whose task ended FAILED, i.e. something raised.
     failed: Tuple[str, ...] = ()
+    #: Steps that ran to the end and reported `success: false` without raising.
+    #: Their status is "completed" like `completed` above, so status alone
+    #: cannot tell the two apart -- which is the entire point of listing them
+    #: separately.
+    reported_failure: Tuple[str, ...] = ()
     #: Pipeline parameters, passed as `-i k=v` to the CLI and as `context=` to
     #: the API -- the two surfaces must reach the same branch the same way.
     inputs: Dict[str, Any] = field(default_factory=dict)
@@ -177,6 +184,31 @@ CASES = (
             ("mark_short",),
             ("summarise",),
         ),
+    ),
+    # The sibling of 06. There, the step raises and the task ends FAILED; here
+    # the tool declines without raising and the task ends *completed*, so the
+    # run is failing while no task is. Nothing else in this suite covers it:
+    # deleting the `reported_failure` branch of StepResult.from_task left the
+    # whole suite green before this case existed.
+    Case(
+        example="05_reported_failure.yaml",
+        variant="default",
+        exit_code=1,
+        artifacts={
+            "output/before.txt": "this step succeeds",
+            "output/after.txt": "the run continued",
+        },
+        outputs={},
+        completed=("before", "after"),
+        reported_failure=("read_missing",),
+        levels=(("before",), ("read_missing",), ("after",)),
+        step_fields={
+            "read_missing": {
+                "status": "completed",
+                "success": False,
+                "error": "File not found: ./output/does-not-exist.txt",
+            },
+        },
     ),
     Case(
         example="06_failure_policy.yaml",
@@ -286,9 +318,12 @@ def _assert_case_holds(case: Case, payload: Dict[str, Any], run_dir: Path):
     for step_id, step in steps.items():
         by_status.setdefault(step["status"], []).append(step_id)
 
-    assert sorted(by_status.get("completed", [])) == sorted(case.completed), (
+    # Both `completed` and `reported_failure` steps carry status "completed";
+    # only the success flag separates them.
+    ran_to_the_end = sorted(case.completed) + sorted(case.reported_failure)
+    assert sorted(by_status.get("completed", [])) == sorted(ran_to_the_end), (
         f"{case.id}: completed steps were {sorted(by_status.get('completed', []))}, "
-        f"expected {sorted(case.completed)}"
+        f"expected {sorted(ran_to_the_end)}"
     )
     assert sorted(by_status.get("skipped", [])) == sorted(case.skipped), (
         f"{case.id}: skipped steps were {sorted(by_status.get('skipped', []))}, "
@@ -309,6 +344,17 @@ def _assert_case_holds(case: Case, payload: Dict[str, Any], run_dir: Path):
     for step_id in case.failed:
         assert steps[step_id]["success"] is False, (
             f"{case.id}: step {step_id} was expected to fail"
+        )
+    # The combination that status alone cannot express, and that nothing else
+    # in this suite exercises: ran to the end, and did not succeed.
+    for step_id in case.reported_failure:
+        assert steps[step_id]["status"] == "completed", (
+            f"{case.id}: step {step_id} was expected to report failure without "
+            f"raising, but its status was {steps[step_id]['status']!r}"
+        )
+        assert steps[step_id]["success"] is False, (
+            f"{case.id}: step {step_id} completed and was reported successful, "
+            f"but it returned a failing result"
         )
 
     assert payload["success"] is (case.exit_code == 0), (

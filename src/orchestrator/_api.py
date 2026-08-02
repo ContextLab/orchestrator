@@ -417,7 +417,7 @@ class OrchestratorPipeline:
         outputs_def = self._extract_outputs()
 
         if outputs_def:
-            from jinja2 import Template
+            from .core.template_sandbox import sandboxed_template
 
             for name, value in outputs_def.items():
                 if isinstance(value, str):
@@ -438,7 +438,7 @@ class OrchestratorPipeline:
                     else:
                         # Regular template - render with current context
                         try:
-                            template = Template(value)
+                            template = sandboxed_template(value)
                             outputs[name] = template.render(
                                 inputs=inputs, outputs=outputs
                             )
@@ -475,12 +475,12 @@ class OrchestratorPipeline:
 
     async def _resolve_task_templates(self, obj, context):
         """Recursively resolve templates in task parameters."""
-        from jinja2 import Template
+        from .core.template_sandbox import sandboxed_template
 
         if isinstance(obj, str):
             if "{{" in obj and "}}" in obj:
                 try:
-                    template = Template(obj)
+                    template = sandboxed_template(obj)
                     return template.render(**context)
                 except Exception:
                     # If template resolution fails, return original

@@ -2339,13 +2339,15 @@ class Orchestrator:
         output_defs = pipeline.metadata.get("outputs", {})
 
         # Use Jinja2 for template rendering to support filters
-        from jinja2 import Template, TemplateError
+        from jinja2 import TemplateError
+
+        from .core.template_sandbox import sandboxed_template
 
         for output_name, output_expr in output_defs.items():
             try:
                 if isinstance(output_expr, str) and "{{" in output_expr:
                     # Render template with results context
-                    template = Template(output_expr)
+                    template = sandboxed_template(output_expr)
                     # Create a context that includes all step results
                     # Also create objects with .result attribute for backward compatibility
                     context = {}

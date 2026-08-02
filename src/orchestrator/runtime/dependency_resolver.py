@@ -11,7 +11,9 @@ import logging
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass
-from jinja2 import Environment, StrictUndefined, TemplateSyntaxError, UndefinedError, meta
+from jinja2 import StrictUndefined, TemplateSyntaxError, UndefinedError, meta
+
+from ..core.template_sandbox import create_sandboxed_environment
 import ast
 
 from .execution_state import PipelineExecutionState, UnresolvedItem, ItemStatus
@@ -59,7 +61,7 @@ class DependencyResolver:
         self.max_iterations = max_iterations
         
         # Initialize Jinja2 environment for template parsing
-        self.jinja_env = Environment(undefined=StrictUndefined)
+        self.jinja_env = create_sandboxed_environment()
         
         # Regex patterns for different types of references
         self.patterns = {

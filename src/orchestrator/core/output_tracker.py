@@ -271,9 +271,9 @@ class OutputTracker:
     
     def resolve_template_string(self, template: str) -> str:
         """Resolve template string with tracked output values."""
-        from jinja2 import Environment, StrictUndefined
+        from .template_sandbox import create_sandboxed_environment
         
-        env = Environment(undefined=StrictUndefined)
+        env = create_sandboxed_environment()
         template_obj = env.from_string(template)
         
         try:
