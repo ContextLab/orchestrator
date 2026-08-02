@@ -1,0 +1,48 @@
+# Supported example 04: conditional execution and control-flow routing.
+#
+# `check_size` runs only when its `condition:` holds. When the condition is
+# false the step is skipped and `on_false` routes execution to the recovery
+# branch, marking the steps in between as skipped. Skipping is not failing:
+# this pipeline succeeds either way.
+id: conditions
+name: Conditions and Routing
+description: Conditional execution with on_false routing and skipped steps
+version: "1.0.0"
+
+parameters:
+  content:
+    type: string
+    default: "a reasonably long piece of text"
+  out_dir:
+    type: string
+    default: "./output"
+
+steps:
+  - id: check_size
+    tool: filesystem
+    action: write
+    condition: "{{ content | length > 10 }}"
+    on_false: handle_short
+    parameters:
+      path: "{{ out_dir }}/long.txt"
+      content: "long: {{ content }}"
+
+  - id: handle_long
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/long.txt"
+    dependencies:
+      - check_size
+
+  - id: handle_short
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/short.txt"
+      content: "short: {{ content }}"
+    dependencies:
+      - handle_long
+
+outputs:
+  taken_branch: "{{ out_dir }}"

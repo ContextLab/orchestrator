@@ -449,7 +449,15 @@ class TemplateValidator:
                 # Extract filters
                 parts = var_expr.split('|')
                 for i, part in enumerate(parts[1:], 1):  # Skip variable name
-                    filter_name = part.strip().split('(')[0].strip()
+                    # The filter name is the leading identifier, and nothing
+                    # more. Splitting only on "(" treated everything after the
+                    # name as part of it, so `{{ content | length > 10 }}` --
+                    # which Jinja reads as `(content | length) > 10` -- was
+                    # reported as an unknown filter called "length > 10".
+                    match = re.match(r"\s*([A-Za-z_][A-Za-z0-9_]*)", part)
+                    if not match:
+                        continue
+                    filter_name = match.group(1)
                     
                     # Check if filter exists
                     if filter_name not in self.env.filters:

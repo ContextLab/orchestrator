@@ -1,0 +1,47 @@
+# Supported example 06: failure policy, timeout and retry.
+#
+# `flaky` cannot finish inside its timeout, so it fails with a TimeoutError.
+# A timeout is retried like any other failure, so `max_retries: 2` means two
+# attempts and therefore one retry -- max_retries bounds ATTEMPTS, not retries
+# beyond the first.
+#
+# `on_failure: continue` lets the run finish. The failure is not swallowed:
+# the step reports success=false with its error, the run reports success=false,
+# and the CLI exits 1.
+id: failure_policy
+name: Failure Policy
+description: Timeout, bounded retry, and continuing past a failed step
+version: "1.0.0"
+
+parameters:
+  out_dir:
+    type: string
+    default: "./output"
+
+steps:
+  - id: before
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/before.txt"
+      content: "this step succeeds"
+
+  - id: flaky
+    tool: terminal
+    action: execute
+    timeout: 1
+    max_retries: 2
+    on_failure: continue
+    parameters:
+      command: "sleep 5"
+    dependencies:
+      - before
+
+  - id: after
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/after.txt"
+      content: "the run continued"
+    dependencies:
+      - flaky

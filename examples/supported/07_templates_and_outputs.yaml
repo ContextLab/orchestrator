@@ -1,0 +1,49 @@
+# Supported example 07: templates, step-result references and declared outputs.
+#
+# A step's result is referenced by `{{ step_id.result.field }}`. Any reference
+# that does not resolve fails the step before it can write anything, so an
+# unresolved `{{ }}` never reaches a file.
+id: templates_and_outputs
+name: Templates and Outputs
+description: Nested parameters, step-result references and declared outputs
+version: "1.0.0"
+
+parameters:
+  title:
+    type: string
+    default: "Quarterly Report"
+  author:
+    type: string
+    default: "Orchestrator"
+  out_dir:
+    type: string
+    default: "./output"
+
+steps:
+  - id: write_header
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/header.md"
+      content: "# {{ title }}\n\nBy {{ author }}\n"
+
+  - id: read_header
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/header.md"
+    dependencies:
+      - write_header
+
+  - id: write_report
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/report.md"
+      content: "{{ read_header.result.content }}\nBody of the report.\n"
+    dependencies:
+      - read_header
+
+outputs:
+  report_path: "{{ write_report.result.path }}"
+  header_text: "{{ read_header.result.content }}"

@@ -135,7 +135,11 @@ class DependencyValidator:
             issues.extend(self._validate_unique_task_ids(tasks))
             
             # Validate that all referenced dependencies exist
-            issues.extend(self._validate_dependency_references(tasks))
+            issues.extend(
+                self._validate_dependency_references(
+                    tasks, self._declared_names(pipeline_def)
+                )
+            )
             
             # Check for circular dependencies
             issues.extend(self._validate_circular_dependencies(dependency_graph, tasks))
@@ -144,7 +148,11 @@ class DependencyValidator:
             issues.extend(self._validate_reachable_tasks(dependency_graph, tasks))
             
             # Validate special dependency types
-            issues.extend(self._validate_control_flow_dependencies(tasks))
+            issues.extend(
+                self._validate_control_flow_dependencies(
+                    tasks, self._declared_names(pipeline_def)
+                )
+            )
             
             # Determine execution order if possible
             if not any(issue.severity == 'error' for issue in issues):
@@ -363,11 +371,24 @@ class DependencyValidator:
         
         return issues
     
-    def _validate_dependency_references(self, tasks: List[Dict[str, Any]]) -> List[DependencyIssue]:
-        """Validate that all referenced dependencies exist."""
+    def _validate_dependency_references(
+        self,
+        tasks: List[Dict[str, Any]],
+        declared_names: Optional[Set[str]] = None,
+    ) -> List[DependencyIssue]:
+        """Validate that all referenced dependencies exist.
+
+        `_get_task_dependencies` folds condition references in with real
+        dependencies, so a condition naming a pipeline parameter arrived
+        here looking like a dependency on a step that does not exist.
+        Declared parameter and loop-variable names are therefore known
+        here too.
+        """
         issues = []
         task_ids = {task["id"] for task in tasks if "id" in task}
         
+        known = task_ids | (declared_names or set())
+
         for task in tasks:
             task_id = task.get("id")
             if not task_id:
@@ -376,7 +397,7 @@ class DependencyValidator:
             dependencies = self._get_task_dependencies(task)
             
             for dep in dependencies:
-                if dep not in task_ids:
+                if dep not in known:
                     issues.append(DependencyIssue(
                         issue_type="missing_dependency",
                         severity="error",
@@ -655,11 +676,44 @@ class DependencyValidator:
         
         return issues
     
-    def _validate_control_flow_dependencies(self, tasks: List[Dict[str, Any]]) -> List[DependencyIssue]:
+    @staticmethod
+    def _declared_names(pipeline_def: Dict[str, Any]) -> Set[str]:
+        """Names a condition may reference that are not steps.
+
+        Pipeline parameters and inputs are ordinary references -- a condition
+        like `{{ content | length > 10 }}` is about a parameter, not a step --
+        but this validator only ever saw the task list, so every such name was
+        reported as a dependency on a non-existent task.
+
+        Loop variables are included for the same reason: inside a `for_each`
+        they are defined by the loop, not by a step.
+        """
+        names: Set[str] = set()
+        for section in ("parameters", "inputs"):
+            declared = pipeline_def.get(section)
+            if isinstance(declared, dict):
+                names.update(str(key) for key in declared)
+            elif isinstance(declared, list):
+                for entry in declared:
+                    if isinstance(entry, str):
+                        names.add(entry)
+                    elif isinstance(entry, dict):
+                        names.update(str(key) for key in entry)
+        names.update({"item", "index", "is_first", "is_last", "iteration", "loop"})
+        return names
+
+    def _validate_control_flow_dependencies(
+        self,
+        tasks: List[Dict[str, Any]],
+        declared_names: Optional[Set[str]] = None,
+    ) -> List[DependencyIssue]:
         """Validate control flow specific dependency patterns."""
         issues = []
         
         task_ids = {task["id"] for task in tasks if "id" in task}
+        # A condition may legitimately name a pipeline parameter or a loop
+        # variable; neither is a step, and neither is a missing dependency.
+        known = task_ids | (declared_names or set())
         
         for task in tasks:
             task_id = task.get("id")
@@ -685,7 +739,7 @@ class DependencyValidator:
             if condition:
                 deps = self._extract_template_dependencies(condition)
                 for dep in deps:
-                    if dep not in task_ids:
+                    if dep not in known:
                         issues.append(DependencyIssue(
                             issue_type="invalid_condition_dependency",
                             severity="error",
