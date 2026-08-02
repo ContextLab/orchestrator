@@ -5,18 +5,26 @@ Every pipeline in this directory is **tested as product behaviour**. Each one:
 1. compiles under `orchestrator validate`;
 2. executes through the CLI;
 3. executes through the Python API;
-4. produces the same normalised result document from both surfaces;
-5. produces the artifacts and declared outputs its expectations record.
+4. produces the same normalised result document from both surfaces —
+   *whole documents*, including every step value and the declared outputs,
+   with only wall-clock times and the execution id blanked;
+5. produces exactly the artifacts its case records, **with their exact
+   contents**, and no others;
+6. records exactly which steps completed, which were skipped and which
+   failed, on every branch it has.
 
-`tests/test_supported_examples.py` enforces all five, and fails if a file is
-added here without an entry declaring what it should do — so the set cannot
-grow past its coverage.
+`tests/test_supported_examples.py` enforces all six, and fails if a file is
+added here without a case declaring what it should do — so the set cannot grow
+past its coverage.
+
+A pipeline with a branch declares one case per branch, so the arm a default
+run does not take is still executed in CI.
 
 | Example | Demonstrates |
 |-|-|
 | `01_hello_filesystem.yaml` | typed parameters, templating, dependencies, declared outputs |
 | `02_parallel_fanout_fanin.yaml` | independent steps sharing an execution level, joined by a dependent step |
-| `04_conditions.yaml` | `condition:`, `on_false` routing, skipped steps |
+| `04_conditions.yaml` | `condition:`, `on_false`/`on_success` routing, two **exclusive** branches converging on a join |
 | `06_failure_policy.yaml` | `timeout`, bounded retry, `on_failure: continue`, honest exit code |
 | `07_templates_and_outputs.yaml` | step-result references and declared outputs |
 
@@ -34,6 +42,18 @@ orchestrator run      examples/supported/01_hello_filesystem.yaml
 
 `06_failure_policy.yaml` exits **1** on purpose: it contains a step that
 fails, and the run reports that rather than hiding it.
+
+`04_conditions.yaml` takes its long branch by default. Force the other one
+with a shorter input, and note that the two branches produce different files:
+
+```bash
+orchestrator run examples/supported/04_conditions.yaml               # long.txt
+orchestrator run examples/supported/04_conditions.yaml -i content=hi # short.txt
+```
+
+Every run also writes a checkpoint under `./checkpoints/` in the working
+directory. That is a side effect of running any pipeline rather than of these
+examples.
 
 ## Not here yet
 

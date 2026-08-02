@@ -1,12 +1,28 @@
-# Supported example 04: conditional execution and control-flow routing.
+# Supported example 04: exclusive conditional branches and control-flow routing.
 #
-# `check_size` runs only when its `condition:` holds. When the condition is
-# false the step is skipped and `on_false` routes execution to the recovery
-# branch, marking the steps in between as skipped. Skipping is not failing:
-# this pipeline succeeds either way.
+# Two branches, and exactly one of them runs.
+#
+#   check_size --(condition false)--> handle_short -> mark_short -\
+#        |                                                         >-- summarise
+#        \--(condition true)--> handle_long ---------(on_success)--/
+#
+# `check_size` runs only while its `condition:` holds. When the condition is
+# false the step is skipped and `on_false` routes to `handle_short`, marking
+# `handle_long` skipped on the way past. When it holds, `handle_long` runs and
+# its `on_success` routes to `summarise`, marking the whole short branch
+# skipped. Routing only ever jumps *forward*, so the branch a run did not take
+# is skipped rather than executed.
+#
+# The two branches therefore write mutually exclusive artifacts -- `long.txt`
+# or `short.txt`, never both -- and agree on one file, `branch.txt`, which
+# names the branch that ran. `summarise` reads that file, so the declared
+# output `taken_branch` reports real branch behaviour rather than echoing an
+# input back.
+#
+# Skipping is not failing: this pipeline succeeds down either branch.
 id: conditions
 name: Conditions and Routing
-description: Conditional execution with on_false routing and skipped steps
+description: Two exclusive branches joined by a converging summary step
 version: "1.0.0"
 
 parameters:
@@ -18,6 +34,7 @@ parameters:
     default: "./output"
 
 steps:
+  # The gate. Skipped when the condition is false, which fires `on_false`.
   - id: check_size
     tool: filesystem
     action: write
@@ -27,14 +44,19 @@ steps:
       path: "{{ out_dir }}/long.txt"
       content: "long: {{ content }}"
 
+  # Long branch tail. `on_success` jumps the short branch entirely, which is
+  # what makes the two branches exclusive rather than sequential.
   - id: handle_long
     tool: filesystem
-    action: read
+    action: write
+    on_success: summarise
     parameters:
-      path: "{{ out_dir }}/long.txt"
+      path: "{{ out_dir }}/branch.txt"
+      content: "long"
     dependencies:
       - check_size
 
+  # Short branch. Reached only by the `on_false` jump above.
   - id: handle_short
     tool: filesystem
     action: write
@@ -44,5 +66,23 @@ steps:
     dependencies:
       - handle_long
 
+  - id: mark_short
+    tool: filesystem
+    action: write
+    parameters:
+      path: "{{ out_dir }}/branch.txt"
+      content: "short"
+    dependencies:
+      - handle_short
+
+  # The join. Both branches converge here, so this step runs either way.
+  - id: summarise
+    tool: filesystem
+    action: read
+    parameters:
+      path: "{{ out_dir }}/branch.txt"
+    dependencies:
+      - mark_short
+
 outputs:
-  taken_branch: "{{ out_dir }}"
+  taken_branch: "{{ summarise.result.content }}"

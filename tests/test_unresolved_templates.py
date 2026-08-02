@@ -242,3 +242,73 @@ def test_find_template_markers(value, expected):
 def test_find_template_markers_spans_newlines():
     """A multi-line block is still one marker, not two halves of nothing."""
     assert _find_template_markers("{{ a\n  + b }}") == ["{{ a\n  + b }}"]
+
+
+def test_a_template_writes_exactly_what_it_says_including_the_last_newline(tmp_path):
+    """Rendering must not quietly eat the final byte.
+
+    Three parameters that differ only in what they interpolate must agree on
+    their trailing newline. They did not: a parameter referring to another
+    *step* was rendered by a Jinja environment left on its default
+    `keep_trailing_newline=False`, so it lost the newline its `content:` ended
+    with, while a literal and a pipeline-parameter reference kept theirs.
+
+    Measured before the fix, from one run of the pipeline below:
+
+        a_literal.txt = 'literal\n'
+        b_parameter.txt = 'param W\n'
+        c_step_reference.txt = 'step 8'      <- one byte short
+
+    Silent truncation of written content is worth a test of its own: nothing
+    fails, nothing warns, and the file is simply wrong.
+    """
+    pipeline = tmp_path / "newlines.yaml"
+    pipeline.write_text(
+        """
+id: newline_fidelity
+name: Newline Fidelity
+parameters:
+  word:
+    type: string
+    default: "W"
+steps:
+  - id: literal
+    tool: filesystem
+    action: write
+    parameters:
+      path: "./a_literal.txt"
+      content: "literal\\n"
+
+  - id: from_parameter
+    tool: filesystem
+    action: write
+    parameters:
+      path: "./b_parameter.txt"
+      content: "param {{ word }}\\n"
+
+  - id: reader
+    tool: filesystem
+    action: read
+    parameters:
+      path: "./b_parameter.txt"
+    dependencies: [from_parameter]
+
+  - id: from_step
+    tool: filesystem
+    action: write
+    parameters:
+      path: "./c_step_reference.txt"
+      content: "step {{ reader.result.size }}\\n"
+    dependencies: [reader]
+"""
+    )
+
+    result = _run_cli(["run", str(pipeline)], cwd=tmp_path)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    assert (tmp_path / "a_literal.txt").read_text() == "literal\n"
+    assert (tmp_path / "b_parameter.txt").read_text() == "param W\n"
+    assert (tmp_path / "c_step_reference.txt").read_text() == "step 8\n", (
+        "a parameter that references another step lost the trailing newline "
+        "its content ended with"
+    )

@@ -25,7 +25,14 @@ from orchestrator.core.exceptions import NoEligibleModelsError
 from orchestrator.models.model_registry import ModelRegistry
 from tests.test_infrastructure import create_test_orchestrator
 
-pytestmark = [pytest.mark.contract, pytest.mark.e2e]
+pytestmark = [
+    pytest.mark.contract,
+    pytest.mark.e2e,
+    # Timeouts are where subprocesses get abandoned, and an abandoned child
+    # reports itself only as an unraisable exception at teardown. Promote it.
+    pytest.mark.filterwarnings("error::pytest.PytestUnraisableExceptionWarning"),
+    pytest.mark.filterwarnings("error::ResourceWarning"),
+]
 
 
 def _run(yaml_content, cwd):
@@ -238,3 +245,75 @@ def test_model_selection_fails_closed_rather_than_substituting():
 
     with pytest.raises(NoEligibleModelsError):
         asyncio.run(registry.select_model({"tasks": ["generate"]}))
+
+
+def test_a_timed_out_command_leaves_no_surviving_process(tmp_path):
+    """A command that outran its timeout must be dead, not merely abandoned.
+
+    `asyncio.wait_for` cancels the *wait*, not the process. Before this was
+    fixed the tool returned its timeout result and never referred to the child
+    again, so the command kept running: `06_failure_policy.yaml`, whose step
+    runs `sleep 5` under a one second timeout with two attempts, left two
+    `sleep` processes alive after the orchestrator had exited.
+
+    The same missing cleanup is what leaves pipe transports for `__del__` to
+    close after the event loop is gone, which surfaces as
+    PytestUnraisableExceptionWarning at teardown.
+    """
+    import psutil
+
+    # Identify the leak by process *ancestry* rather than by matching a
+    # sentinel in the command line. Two simpler approaches do not work: a
+    # shell comment vanishes because `sh -c "sleep 30 # marker"` execs `sleep`
+    # in place and the replaced argv keeps neither the comment nor the shell,
+    # and a renamed copy of `sleep` is SIGKILLed by macOS code signing. What
+    # the tool owns is its child, so that is what this looks at.
+    pipeline = """
+id: leak_probe
+name: Leak Probe
+steps:
+  - id: slow
+    tool: terminal
+    action: execute
+    timeout: 1
+    max_retries: 1
+    on_failure: continue
+    parameters:
+      command: "sleep 30"
+"""
+
+    me = psutil.Process()
+
+    def live_children():
+        """Descendants that are actually running, not already-reaped zombies."""
+        alive = []
+        for child in me.children(recursive=True):
+            try:
+                if child.is_running() and child.status() != psutil.STATUS_ZOMBIE:
+                    alive.append(child)
+            except psutil.NoSuchProcess:
+                pass  # exited while we were looking at it
+        return alive
+
+    before = {child.pid for child in live_children()}
+
+    try:
+        result = _run(pipeline, tmp_path)
+
+        assert result.steps["slow"].success is False, (
+            "the step was supposed to time out"
+        )
+        assert result.steps["slow"].timed_out is True
+
+        leaked = [child for child in live_children() if child.pid not in before]
+        assert leaked == [], (
+            f"a command that timed out is still running after the pipeline "
+            f"finished -- the child was abandoned rather than killed: "
+            f"{[(c.pid, ' '.join(c.cmdline())) for c in leaked]}"
+        )
+    finally:
+        # Never leave stray processes behind, even when the assertion above is
+        # the thing that failed.
+        for child in live_children():
+            if child.pid not in before:
+                child.kill()
