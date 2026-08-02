@@ -19,6 +19,13 @@ from jinja2.sandbox import SandboxedEnvironment
 
 logger = logging.getLogger(__name__)
 
+#: The namespaces a pipeline's own parameters can be reached through.
+#: `{{ topic }}`, `{{ parameters.topic }}` and `{{ inputs.topic }}` all render
+#: the same value, so all three must validate. Deliberately does not include
+#: `execution` -- the data-flow validator accepts that one, but the runtime
+#: does not populate it, and papering over that here would hide a real bug.
+PARAMETER_NAMESPACES = frozenset({"parameters", "inputs"})
+
 
 @dataclass
 class TemplateValidationError:
@@ -234,23 +241,24 @@ class TemplateValidator:
         # Add pipeline inputs and parameters to context
         full_context = compile_context.copy()
         
-        # Add inputs
-        if "inputs" in pipeline_def:
-            inputs = pipeline_def["inputs"]
-            for input_name, input_spec in inputs.items():
-                if isinstance(input_spec, dict) and "default" in input_spec:
-                    full_context[input_name] = input_spec["default"]
-                elif not isinstance(input_spec, dict):
-                    full_context[input_name] = input_spec
-        
-        # Add parameters
-        if "parameters" in pipeline_def:
-            params = pipeline_def["parameters"]
-            for param_name, param_spec in params.items():
-                if isinstance(param_spec, dict) and "default" in param_spec:
-                    full_context[param_name] = param_spec["default"]
-                elif not isinstance(param_spec, dict):
-                    full_context[param_name] = param_spec
+        # Add inputs and parameters.
+        #
+        # A declared name counts as available whether or not it has a default.
+        # These entries are only ever tested for membership -- they answer "is
+        # this name declared", not "what is its value" -- and a parameter
+        # without a default is still perfectly well declared; its value simply
+        # arrives at run time from `-i name=value`.
+        #
+        # Registering only the ones with defaults meant a pipeline declaring
+        # `output_path` with no default was told `Undefined variable:
+        # 'output_path'`, which is the name it just declared. That single case
+        # accounted for the largest remaining cluster of false rejections.
+        for section in ("inputs", "parameters"):
+            for name, spec in (pipeline_def.get(section) or {}).items():
+                if isinstance(spec, dict):
+                    full_context[name] = spec.get("default")
+                else:
+                    full_context[name] = spec
         
         # Validate all templates in pipeline
         all_errors = []
@@ -356,6 +364,14 @@ class TemplateValidator:
                     ))
                     continue
                 
+                # A pipeline's own parameters can be named three ways --
+                # `{{ topic }}`, `{{ parameters.topic }}`, `{{ inputs.topic }}`
+                # -- and the runtime renders all three identically. Only the
+                # bare form appears in `available_context`, so the other two
+                # were reported undefined in pipelines that run correctly.
+                if var_name in PARAMETER_NAMESPACES:
+                    continue
+
                 # Check if variable is available in context
                 if var_name not in available_context:
                     undefined_variables.add(var_name)
@@ -632,39 +648,21 @@ class TemplateValidator:
         return position_similarity >= threshold or char_similarity >= threshold
     
     def _register_custom_filters(self):
-        """Register custom filters that might be used in templates."""
-        # Add common filters that might be missing
-        
-        def safe_default(value, default_value=""):
-            """Safe default filter."""
-            return value if value is not None else default_value
-        
-        def safe_length(value):
-            """Safe length filter."""
-            try:
-                return len(value) if value is not None else 0
-            except TypeError:
-                return 0
-        
-        def safe_json(value, indent=None):
-            """Safe JSON serialization."""
-            import json
-            try:
-                return json.dumps(value, indent=indent, default=str)
-            except Exception:
-                return str(value)
-        
-        # Register filters
-        self.env.filters['default'] = safe_default
-        self.env.filters['length'] = safe_length
-        self.env.filters['json'] = safe_json
-        self.env.filters['to_json'] = safe_json
-        
-        # Add other commonly used filters
-        self.env.filters['lower'] = lambda x: str(x).lower()
-        self.env.filters['upper'] = lambda x: str(x).upper()
-        self.env.filters['replace'] = lambda x, old, new: str(x).replace(old, new)
-        
+        """Take the runtime's filters verbatim.
+
+        This used to define its own small set -- `default`, `length`, `json`,
+        `lower`, `upper`, `replace` -- in parallel with the ones
+        `TemplateManager` registers. The two drifted: the runtime grew to 70
+        filters and this environment knew 56, so `{{ title | slugify }}` was
+        reported as an unknown filter in a pipeline that renders it correctly.
+
+        A validator that rejects working pipelines is worse than no validator,
+        so there is one source of truth and this is not it.
+        """
+        from ..core.template_sandbox import create_pipeline_environment
+
+        self.env = create_pipeline_environment()
+
         if self.debug_mode:
             logger.debug(f"Registered {len(self.env.filters)} template filters")
     
