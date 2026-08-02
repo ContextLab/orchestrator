@@ -1346,6 +1346,13 @@ class YAMLCompiler:
         # Add additional metadata from task definition
         if "on_failure" in task_def:
             metadata["on_failure"] = task_def["on_failure"]
+
+        # Control-flow routing (#333). `on_failure` is deliberately not copied
+        # again here: it is already above, and whether it names a policy or a
+        # step is decided by its value, not by a second key.
+        for routing_key in ("on_false", "on_success"):
+            if routing_key in task_def:
+                metadata[routing_key] = task_def[routing_key]
         if "requires_model" in task_def:
             metadata["requires_model"] = task_def["requires_model"]
         if "tool" in task_def:

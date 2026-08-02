@@ -20,6 +20,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from orchestrator.core.actions import ACTION_FAMILIES, ACTION_SPECS  # noqa: E402
+from orchestrator.core.routing import FAILURE_POLICIES  # noqa: E402
 
 TARGET = ROOT / "docs" / "actions.md"
 
@@ -105,6 +106,33 @@ def render() -> str:
         "handed to the model to interpret. That is an explicit request, which is why\n"
         "it remains supported while the implicit \"unrecognised action becomes a\n"
         "prompt\" behaviour does not.\n"
+    )
+
+    lines.append("## Control-flow routing\n")
+    lines.append(
+        "A step may name where execution goes next. Routing jumps **forward**;\n"
+        "steps between the source and the target are marked `skipped`. Skipping is\n"
+        "not failing -- a pipeline that routed around a step still succeeds.\n"
+    )
+    lines.append("| Key | Fires when |")
+    lines.append("|-|-|")
+    lines.append(
+        "| `on_false` | the step's own `condition:` was false, so it was skipped |"
+    )
+    lines.append("| `on_success` | the step ran and succeeded |")
+    lines.append("| `on_failure` | the step ran and did not succeed |")
+    lines.append("")
+    policies = ", ".join(f"`{p}`" for p in sorted(FAILURE_POLICIES))
+    lines.append(
+        f"`on_failure` means two things, told apart by value. These are failure\n"
+        f"**policies**: {policies}. Any other value names a **step to jump to**,\n"
+        f"and the run continues there instead of aborting.\n"
+    )
+    lines.append(
+        "A step whose id is one of those policy words is refused at compile time,\n"
+        "since routing to it could not be distinguished from selecting the policy.\n"
+        "Routing targets are checked at compile time too: a jump to a step that\n"
+        "does not exist, or a step routing to itself, is exit 2.\n"
     )
     return "\n".join(lines)
 
