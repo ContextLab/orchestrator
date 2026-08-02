@@ -81,3 +81,24 @@ written as instructions rather than identifiers.
 handed to the model to interpret. That is an explicit request, which is why
 it remains supported while the implicit "unrecognised action becomes a
 prompt" behaviour does not.
+
+## Control-flow routing
+
+A step may name where execution goes next. Routing jumps **forward**;
+steps between the source and the target are marked `skipped`. Skipping is
+not failing -- a pipeline that routed around a step still succeeds.
+
+| Key | Fires when |
+|-|-|
+| `on_false` | the step's own `condition:` was false, so it was skipped |
+| `on_success` | the step ran and succeeded |
+| `on_failure` | the step ran and did not succeed |
+
+`on_failure` means two things, told apart by value. These are failure
+**policies**: `continue`, `fail`, `retry`, `skip`. Any other value names a **step to jump to**,
+and the run continues there instead of aborting.
+
+A step whose id is one of those policy words is refused at compile time,
+since routing to it could not be distinguished from selecting the policy.
+Routing targets are checked at compile time too: a jump to a step that
+does not exist, or a step routing to itself, is exit 2.

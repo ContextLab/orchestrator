@@ -114,6 +114,49 @@ missing extra must degrade one feature, never break the package import.
 Exit codes: `0` success, `1` execution failure, `2` validation/compile failure,
 `130` interrupted.
 
+## Control-flow routing
+
+A step may say where execution goes next:
+
+```yaml
+- id: check_topic
+  action: evaluate_condition
+  condition: "{{ topic | length > 10 }}"
+  parameters:
+    condition: "{{ topic | length > 10 }}"
+  on_false: short_topic_handler
+  on_success: main_processing
+  on_failure: error_recovery
+```
+
+| Key | Fires when |
+|-|-|
+| `on_false` | the step's own `condition:` was false, so the step was skipped |
+| `on_success` | the step ran and succeeded |
+| `on_failure` | the step ran and did not succeed |
+
+Routing jumps **forward**. Steps between the source and the target are marked
+`skipped`, which is the same machinery `goto` already used rather than a second
+one beside it. Skipping is not failing: a pipeline that routed around a step
+still reports `success`.
+
+"Did not succeed" means `StepResult.success`, not status — a tool returning
+`{"success": False}` without raising leaves its task `completed`, and routing
+on status alone sent a failing step down the success path.
+
+**`on_failure` means two things, told apart by value.** It already selected a
+failure *policy* — `fail`, `continue`, `skip`, `retry` — and now also names a
+step to jump to. A reserved policy word keeps its policy meaning; anything else
+is a step id. When `on_failure` names a step, the run continues there instead
+of aborting.
+
+That is only safe because the ambiguous case is refused rather than guessed:
+a pipeline containing a step whose id *is* a policy word fails to compile,
+because routing to it could not be distinguished from selecting the policy.
+
+Routing targets are validated at compile time — a jump to a step that does not
+exist, or a step routing to itself, is exit 2 naming the offending target.
+
 ## The result contract
 
 `Orchestrator.execute_pipeline` returns a `PipelineResult`
