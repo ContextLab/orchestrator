@@ -3,9 +3,32 @@
 import asyncio
 import shutil
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .base import Tool
+
+
+async def _reap(process: Optional[asyncio.subprocess.Process]) -> None:
+    """Kill a child that is still running, and wait for it.
+
+    `asyncio.wait_for` cancels the *wait*, not the process. A command that
+    outran its timeout is therefore still running when the tool returns, and
+    nothing else ever refers to it again: running `06_failure_policy.yaml`,
+    whose step runs `sleep 5` under a 1 second timeout with two attempts, left
+    two `sleep` processes alive after the orchestrator itself had exited.
+
+    Killing and then awaiting the child also lets its pipe transports close on
+    the running loop, instead of leaving them to `__del__` at interpreter
+    teardown -- which is what surfaces as `PytestUnraisableExceptionWarning`
+    once the loop is gone.
+    """
+    if process is None or process.returncode is not None:
+        return
+    try:
+        process.kill()
+    except ProcessLookupError:
+        return  # exited between the check and the kill
+    await process.wait()
 
 
 class TerminalTool(Tool):
@@ -42,6 +65,7 @@ class TerminalTool(Tool):
         if command.startswith("!"):
             command = command[1:]
 
+        process: Optional[asyncio.subprocess.Process] = None
         try:
             # Create working directory if it doesn't exist
             Path(working_dir).mkdir(parents=True, exist_ok=True)
@@ -98,6 +122,10 @@ class TerminalTool(Tool):
                 "success": False,
                 "working_dir": working_dir,
             }
+        finally:
+            # Every exit path, including the cancellation the orchestrator
+            # raises when a *step* times out rather than the command.
+            await _reap(process)
 
 
 class FileSystemTool(Tool):

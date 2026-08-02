@@ -20,10 +20,37 @@ selected values out of nested dicts.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from .task import Task, TaskStatus
+
+
+#: Fields whose values are a property of *when* a run happened rather than of
+#: what it did. Two runs of the same pipeline differ here and nowhere else.
+RUN_SPECIFIC_FIELDS: Tuple[str, ...] = ("started_at", "completed_at", "duration")
+
+
+def normalize_result_payload(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Blank the run-specific fields of a serialised result, leaving the rest.
+
+    The CLI emits `to_dict()` as JSON and the Python API returns a
+    `PipelineResult`, so comparing the two surfaces means comparing a plain
+    dict against an object. This works on the dict form, which both can reach,
+    and is the *only* definition of what "run-specific" means -- a second
+    definition living in a test is how a comparison quietly stops comparing
+    anything. Everything not blanked here, `outputs` and every step `value`
+    included, is behaviour the two surfaces must agree on exactly.
+    """
+    data = deepcopy(data)
+    data["execution_id"] = "<execution-id>"
+    for key in RUN_SPECIFIC_FIELDS:
+        data[key] = None
+    for step in data.get("steps", {}).values():
+        for key in RUN_SPECIFIC_FIELDS:
+            step[key] = None
+    return data
 
 
 def _describe_error(error: Any) -> Tuple[Optional[str], Optional[str]]:
@@ -231,11 +258,4 @@ class PipelineResult(Mapping):
         comparing raw results would always fail. This is the form the CLI and
         the Python API must agree on byte for byte.
         """
-        data = self.to_dict()
-        data["execution_id"] = "<execution-id>"
-        for key in ("started_at", "completed_at", "duration"):
-            data[key] = None
-        for step in data["steps"].values():
-            for key in ("started_at", "completed_at", "duration"):
-                step[key] = None
-        return data
+        return normalize_result_payload(self.to_dict())

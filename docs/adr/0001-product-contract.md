@@ -162,6 +162,7 @@ exist, or a step routing to itself, is exit 2 naming the offending target.
 | | Behaviour |
 |-|-|
 | `timeout: N` | The step is cancelled after N seconds and fails with `TimeoutError`. `StepResult.timed_out` distinguishes it from an ordinary failure. |
+| A timed-out command | Is **killed and reaped**, not merely abandoned. `asyncio.wait_for` cancels the wait rather than the process, so a command that outran its timeout used to keep running after the orchestrator exited. |
 | `max_retries: N` | Bounds the **total number of attempts**, not the retries beyond the first. `max_retries: 2` is two attempts, so one retry; `0` and `1` are both a single attempt. |
 | A timeout | Is retried like any other failure, so worst-case wall time is roughly `timeout × max_retries`. |
 | `on_failure: fail` (default) | Aborts the run — but only for a step that **raised**. |
@@ -279,6 +280,13 @@ looks like a template (#153).
 
 Rendering is all-or-nothing per string. One undefined reference aborts the
 whole render, so every marker in that string is reported, not just the bad one.
+
+**What a template renders is what gets written, to the byte.** A parameter
+referring to another step used to lose the trailing newline its `content:`
+ended with, while a literal or a pipeline-parameter reference kept theirs —
+Jinja's `keep_trailing_newline` defaults to false, and only the step-reference
+path went through that environment. Content fidelity does not depend on which
+kind of variable a template happens to mention.
 
 ## Test layers
 
