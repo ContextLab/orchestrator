@@ -143,6 +143,8 @@ def find_global_misuse(ast: Any) -> List[GlobalMisuse]:
     """
     from jinja2 import nodes
 
+    from .template_scope import shadowed_name_nodes
+
     # A Name node is a legitimate use only when it is the thing being called.
     # Identity matters here, not the name: `{{ now() and now.foo }}` has two
     # Name nodes spelled the same, one valid and one not.
@@ -154,21 +156,17 @@ def find_global_misuse(ast: Any) -> List[GlobalMisuse]:
 
     # `{% for now in items %}{{ now }}{% endfor %}` rebinds the name: the
     # target is a `store`, but the use inside the body is an ordinary `load`
-    # and is indistinguishable from ours without tracking scope. A template
-    # that binds the name anywhere is left alone entirely -- deliberately
-    # conservative, because a false rejection here is the exact failure the
-    # last three changes to this validator existed to remove.
-    shadowed = {
-        node.name
-        for node in ast.find_all(nodes.Name)
-        if getattr(node, "ctx", "load") != "load"
-    }
+    # and looks exactly like ours. Which uses the binding actually reaches is
+    # a question of scope -- a template-wide set of bound names would silence
+    # `{{ now }}` before and after that loop as well, where it really is our
+    # global and really is a misuse.
+    shadowed = shadowed_name_nodes(ast)
 
     misuse: List[GlobalMisuse] = []
     seen = set()
     for name_node in ast.find_all(nodes.Name):
         spec = global_spec(name_node.name)
-        if spec is None or spec.name in shadowed:
+        if spec is None or id(name_node) in shadowed:
             continue
         if getattr(name_node, "ctx", "load") != "load":
             continue
