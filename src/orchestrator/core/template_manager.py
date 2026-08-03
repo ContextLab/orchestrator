@@ -287,6 +287,10 @@ class TemplateManager:
             'truncate_words': truncate_words,
             'regex_search': regex_search,
             'to_json': to_json,
+            # Ansible spells it this way, and two catalogue examples were
+            # written against that spelling. Same function, not a second
+            # implementation -- #449 was about exactly that kind of drift.
+            'json_encode': to_json,
             'json': to_json,
             'from_json': from_json,
             'date': date_format,

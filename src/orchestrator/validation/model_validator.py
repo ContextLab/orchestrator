@@ -76,6 +76,11 @@ class ModelValidationResult:
         return f"Model validation: {', '.join(parts)}"
 
 
+#: Parameter keys whose value names the model a step should run on. A dict
+#: found anywhere else is data, however model-shaped its keys look.
+MODEL_KEYS = frozenset({"model", "llm", "language_model"})
+
+
 class ModelValidator:
     """Validates model requirements at compile time to prevent runtime errors.
     
@@ -313,7 +318,26 @@ class ModelValidator:
         elif isinstance(model_spec, dict):
             # Handle model specification as dictionary
             model_name = model_spec.get("name") or model_spec.get("model")
-            if not model_name:
+            if model_name is not None and not isinstance(model_name, str):
+                # A nested mapping under `name:`/`model:` is not a model name.
+                # Returning it as one made `validated_models.add(...)` raise
+                # `TypeError: unhashable type: 'dict'`, which escaped the
+                # validator and was reported as "Model validation failed" --
+                # i.e. as though the *pipeline* were invalid. Six catalogue
+                # examples were held down by it.
+                errors.append(ModelValidationError(
+                    task_id=task_id,
+                    model_requirement=str(model_spec),
+                    error_type="invalid_model_type",
+                    message=(
+                        f"Model name must be a string, got "
+                        f"{type(model_name).__name__}"
+                    ),
+                    context_path=context_path,
+                    suggestions=["Use a string like 'openai/gpt-4'"],
+                ))
+                model_name = None
+            elif not model_name:
                 errors.append(ModelValidationError(
                     task_id=task_id,
                     model_requirement=str(model_spec),
@@ -498,14 +522,22 @@ class ModelValidator:
         for key, value in parameters.items():
             param_path = f"{context_path}.{key}"
             
-            if key in ["model", "llm", "language_model"] and isinstance(value, str):
+            if key in MODEL_KEYS and isinstance(value, str):
                 # Direct model reference
                 if value and not self._is_template_string(value):
                     validated_models.add(value)
                     
             elif isinstance(value, dict):
-                # Check if this looks like a model specification
-                if "model" in value or "name" in value:
+                # A model specification is one reached *under a model key*.
+                # This used to accept any nested dict carrying a `name` or
+                # `model` key, which makes a JSON Schema look like a model:
+                #
+                #     parameters.schema.properties.records.items.properties
+                #       -> {'id': {...}, 'name': {'type': 'string'}, ...}
+                #
+                # `name` there is a *field* called "name", and its value is a
+                # mapping, so the "model name" came back as a dict.
+                if key in MODEL_KEYS:
                     result = self._validate_model_specification(
                         value, task_id, param_path
                     )
