@@ -217,14 +217,13 @@ class LangChainCompatibilityManager:
         def sync_wrapper(**kwargs) -> str:
             """Synchronous wrapper for orchestrator tool execution."""
             try:
-                # Run async method in event loop
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    result = loop.run_until_complete(tool.execute(**kwargs))
-                finally:
-                    loop.close()
-                
+                # `asyncio.run` closes the loop *and* unsets it. Closing a
+                # hand-made loop while leaving it set as the thread's current
+                # loop leaves the next caller of `get_event_loop()` holding a
+                # closed loop -- which is how `include_file()` came to render
+                # "Event loop is closed" into a document instead of the file.
+                result = asyncio.run(tool.execute(**kwargs))
+
                 # Convert result to string format expected by LangChain
                 if isinstance(result, dict):
                     if 'output' in result:
