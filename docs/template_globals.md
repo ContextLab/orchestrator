@@ -54,7 +54,7 @@ validate`, exit 2).
 | `include_file` | 1 to 2 | The contents of a file, read when the step runs. |
 | `loop_item_at` | 2 | An item at a fixed index of a named loop: `loop_item_at('outer', 0)`. |
 | `loop_var` | 2 | A named loop's variable by name: `loop_var('outer', 'item')`. |
-| `now` | 0 | The current time. Re-evaluated at every use, so two steps in one run disagree -- prefer `execution.timestamp` where a run needs one answer. |
+| `now` | 0 | The current time, read afresh at every use, so two steps of one run disagree. Deprecated: use `execution.timestamp`, which is the same for every step of a run. |
 
 A name that is not on this list is not a global. `{{ nowx() }}` is a
 typo and is refused at compile time rather than becoming an undefined

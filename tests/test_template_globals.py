@@ -25,6 +25,7 @@ from pathlib import Path
 import pytest
 
 from orchestrator.core.template_globals import (
+    DEPRECATED,
     GLOBAL_NAMES,
     GLOBAL_SPECS,
     NOT_CALLED,
@@ -40,7 +41,13 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def _misuse(expression):
-    """The misuse codes a template's expression produces, as a set."""
+    """Codes that would *refuse* the template. Warnings are not refusals."""
+    ast = TemplateManager().env.parse(expression)
+    return {m.code for m in find_global_misuse(ast) if m.severity == "error"}
+
+
+def _reported(expression):
+    """Every code, whatever its severity."""
     ast = TemplateManager().env.parse(expression)
     return {m.code for m in find_global_misuse(ast)}
 
@@ -157,6 +164,26 @@ def test_misuse_is_detected(expression, expected):
 )
 def test_valid_use_is_left_alone(expression):
     assert _misuse(expression) == set(), f"{expression} is valid and was rejected"
+
+
+def test_a_deprecated_global_is_reported_but_not_refused():
+    """`now()` still runs -- pipelines in the wild use it -- and says so.
+
+    Refusing it would break working pipelines to make a style point. Staying
+    silent would leave authors on a function that gives a different answer to
+    every step of one run.
+    """
+    assert DEPRECATED in _reported("{{ now() }}")
+    assert _misuse("{{ now() }}") == set(), "a deprecated global must still validate"
+
+
+def test_a_global_with_no_replacement_is_not_reported():
+    assert _reported("{{ file_exists('a.txt') }}") == set()
+
+
+def test_deprecation_is_not_reported_for_a_call_that_cannot_work():
+    """One problem at a time: fix the call, then hear about the replacement."""
+    assert _reported("{{ now(1, 2) }}") == {WRONG_ARITY}
 
 
 @pytest.mark.parametrize(
@@ -284,3 +311,30 @@ def test_every_global_appears_in_the_documentation():
     text = (ROOT / "docs" / "template_globals.md").read_text()
     for spec in GLOBAL_SPECS:
         assert f"`{spec.name}`" in text, f"{spec.name} is undocumented"
+
+
+def test_no_example_still_calls_a_deprecated_global():
+    """The catalogue was migrated; this keeps it migrated.
+
+    `{{ now() }}` gave each step of a run a different answer, so the six
+    examples using it stamped their reports inconsistently. They now use
+    `execution.timestamp`.
+    """
+    import re
+
+    deprecated = {s.name for s in GLOBAL_SPECS if s.deprecated_for}
+    if not deprecated:
+        # An empty alternation matches every call, so guard rather than report
+        # the whole catalogue as offending.
+        return
+    pattern = re.compile(r"\{\{[^}]*\b(" + "|".join(sorted(deprecated)) + r")\s*\(")
+
+    offenders = sorted(
+        f"{path.relative_to(ROOT)}: {pattern.search(path.read_text()).group(0)}"
+        for path in (ROOT / "examples").rglob("*.yaml")
+        if pattern.search(path.read_text())
+    )
+    assert not offenders, (
+        "these examples call a deprecated global; the replacement is in "
+        f"docs/template_globals.md: {offenders}"
+    )
