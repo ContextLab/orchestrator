@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from jinja2 import Environment, TemplateSyntaxError, meta
 from jinja2.sandbox import SandboxedEnvironment
 
-from ..core.runtime_context import RUNTIME_NAMESPACE
+from ..core.runtime_context import BARE_RUNTIME_NAMES, RUNTIME_NAMESPACE
 from ..core.template_globals import find_global_misuse
 from ..core.template_sandbox import pipeline_global_names
 
@@ -411,7 +411,7 @@ class TemplateValidator:
                 # correctly and failed validation. Which *fields* it offers is
                 # checked by the data-flow validator, which sees the whole
                 # dotted reference; this only sees the base name.
-                if var_name == RUNTIME_NAMESPACE:
+                if var_name == RUNTIME_NAMESPACE or var_name in BARE_RUNTIME_NAMES:
                     continue
 
                 # Check if variable is available in context

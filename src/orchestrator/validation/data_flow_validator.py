@@ -16,7 +16,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 from jinja2 import TemplateSyntaxError, Undefined, meta
 
-from ..core.runtime_context import EXECUTION_FIELDS, RUNTIME_NAMESPACE
+from ..core.runtime_context import (
+    BARE_RUNTIME_NAMES,
+    EXECUTION_FIELDS,
+    RUNTIME_NAMESPACE,
+)
 from ..core.template_sandbox import create_sandboxed_environment, pipeline_global_names
 
 logger = logging.getLogger(__name__)
@@ -546,6 +550,11 @@ class DataFlowValidator:
         # call syntax attached, so `now()` was looked up as a *task id* and
         # reported as `Undefined task reference: 'now()'` on pipelines that run
         # correctly.
+        # Registered by the runtime under a bare name rather than under
+        # `execution.`; they render correctly and were reported undefined.
+        if base_var in BARE_RUNTIME_NAMES:
+            return {"valid": True, "type": "runtime_namespace"}
+
         if base_var.split("(", 1)[0] in pipeline_global_names():
             return {"valid": True, "type": "pipeline_global"}
 

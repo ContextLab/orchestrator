@@ -55,6 +55,16 @@ EXECUTION_FIELD_NAMES: Tuple[str, ...] = (
 
 EXECUTION_FIELDS: FrozenSet[str] = frozenset(EXECUTION_FIELD_NAMES)
 
+#: Names the runtime registers directly, without the `execution.` prefix.
+#: They render correctly today and were reported as undefined variables, which
+#: is the same false positive `execution.timestamp` had before it was declared.
+#: `timestamp` is the run's start time, so it must be *the same instant* as
+#: `execution.timestamp` -- it used to be a separate reading of the clock, in a
+#: different format, which is the divergence this module exists to end.
+BARE_RUNTIME_NAMES: FrozenSet[str] = frozenset(
+    {"pipeline_id", "execution_id", "timestamp"}
+)
+
 
 @dataclass(frozen=True)
 class RuntimeContext:

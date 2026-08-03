@@ -29,6 +29,7 @@ from pathlib import Path
 import pytest
 
 from orchestrator.core.runtime_context import (
+    BARE_RUNTIME_NAMES,
     EXECUTION_FIELDS,
     RUNTIME_NAMESPACE,
     RuntimeContext,
@@ -280,3 +281,72 @@ def test_the_run_the_template_sees_is_the_run_the_result_reports(tmp_path):
     assert rendered == reported, (
         f"the template saw run {rendered!r}, the result reports {reported!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# The same run, under its bare names
+# ---------------------------------------------------------------------------
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("name", sorted(BARE_RUNTIME_NAMES))
+def test_a_bare_runtime_name_both_validates_and_renders(name, tmp_path):
+    """`{{ pipeline_id }}` is registered by the runtime and rendered correctly.
+
+    All three were reported as undefined variables -- the same false positive
+    `execution.timestamp` had before it was declared, just without the prefix.
+    """
+    pipeline = tmp_path / "p.yaml"
+    pipeline.write_text(_pipeline(f"{{{{ {name} }}}}"))
+
+    validated = _cli("validate", pipeline, tmp_path)
+    ran = _cli("run", pipeline, tmp_path)
+
+    assert ran.returncode == 0, f"{name} did not run: {ran.stdout[-400:]}"
+    assert (tmp_path / "out_0.txt").read_text().strip(), f"{name} rendered nothing"
+    assert validated.returncode == 0, (
+        f"{name} renders correctly but validation rejects it: "
+        f"{validated.stdout[-400:]}"
+    )
+
+
+@pytest.mark.e2e
+def test_the_bare_timestamp_is_the_run_s_own(tmp_path):
+    """`{{ timestamp }}` and `{{ execution.timestamp }}` are one instant.
+
+    They were two readings of two different clocks: `TemplateManager` seeds a
+    base context from `datetime.now()` when the *manager* is constructed --
+    neither the run's start nor the same value, and in local time without a
+    zone while the run context is UTC:
+
+        bare: 2026-08-03T08:07:56.022350
+        exec: 2026-08-03T12:07:56.022379+00:00
+
+    Four hours and 29 microseconds apart, in one run.
+    """
+    pipeline = tmp_path / "p.yaml"
+    pipeline.write_text(_pipeline("{{ timestamp }}|{{ execution.timestamp }}"))
+
+    result = _cli("run", pipeline, tmp_path)
+    assert result.returncode == 0, f"{result.stdout[-400:]}"
+
+    bare, prefixed = (tmp_path / "out_0.txt").read_text().split("|")
+    assert bare == prefixed, (
+        f"one run reported two start times: bare={bare!r} execution={prefixed!r}"
+    )
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("name", ["current_timestamp", "current_date"])
+def test_a_name_the_runtime_does_not_provide_is_still_refused(name, tmp_path):
+    """Declaring three names must not wave through every bare name.
+
+    These two appear in the catalogue as often as the real ones and are
+    populated by nothing.
+    """
+    pipeline = tmp_path / "p.yaml"
+    pipeline.write_text(_pipeline(f"{{{{ {name} }}}}"))
+
+    assert _cli("run", pipeline, tmp_path).returncode != 0, (
+        f"{name} runs after all; it should be declared rather than refused"
+    )
+    assert _cli("validate", pipeline, tmp_path).returncode != 0
