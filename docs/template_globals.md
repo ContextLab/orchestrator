@@ -59,3 +59,27 @@ validate`, exit 2).
 A name that is not on this list is not a global. `{{ nowx() }}` is a
 typo and is refused at compile time rather than becoming an undefined
 value at run time.
+
+## The `execution` namespace
+
+What the run knows about itself. Computed once, when the run starts,
+so every step of one run reports the same values -- naming an output
+file after `execution.timestamp` gives one file, not one per step.
+
+| Field | Example |
+|-|-|
+| `execution.id` | `run-4f2a91c07e3b` |
+| `execution.started_at` | `2026-01-15T14:30:45+00:00` |
+| `execution.timestamp` | `2026-01-15T14:30:45+00:00` |
+| `execution.date` | `2026-01-15` |
+| `execution.time` | `14:30:45` |
+
+`timestamp` is `started_at` under its older name: the same instant,
+not a second reading of the clock. Times are UTC, so stamps from two
+machines are comparable and a run spanning a daylight-saving change
+does not go backwards.
+
+The field list is closed. `{{ execution.strated_at }}` is a typo and
+is refused at compile time; an open namespace would render it as an
+empty string and report success. `pipeline`, `context` and `env` are
+not namespaces -- nothing populates them.

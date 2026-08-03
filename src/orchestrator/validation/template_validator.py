@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from jinja2 import Environment, TemplateSyntaxError, meta
 from jinja2.sandbox import SandboxedEnvironment
 
+from ..core.runtime_context import RUNTIME_NAMESPACE
 from ..core.template_globals import find_global_misuse
 from ..core.template_sandbox import pipeline_global_names
 
@@ -395,6 +396,15 @@ class TemplateValidator:
                 # is what stops `{{ now() }}` -- which runs correctly -- from
                 # being reported as an undefined variable.
                 if var_name in pipeline_global_names():
+                    continue
+
+                # The run's own context. Populated by the runtime, so it is
+                # not an undefined variable -- `{{ execution.timestamp }}` is
+                # used by 32 catalogue pipelines, every one of which ran
+                # correctly and failed validation. Which *fields* it offers is
+                # checked by the data-flow validator, which sees the whole
+                # dotted reference; this only sees the base name.
+                if var_name == RUNTIME_NAMESPACE:
                     continue
 
                 # Check if variable is available in context

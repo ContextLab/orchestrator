@@ -16,10 +16,16 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
+from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+from orchestrator.core.runtime_context import (  # noqa: E402
+    EXECUTION_FIELD_NAMES,
+    RUNTIME_NAMESPACE,
+    RuntimeContext,
+)
 from orchestrator.core.template_globals import GLOBAL_SPECS  # noqa: E402
 
 TARGET = ROOT / "docs" / "template_globals.md"
@@ -82,6 +88,36 @@ def render() -> str:
         "A name that is not on this list is not a global. `{{ nowx() }}` is a\n"
         "typo and is refused at compile time rather than becoming an undefined\n"
         "value at run time.\n"
+    )
+
+    lines.append(f"## The `{RUNTIME_NAMESPACE}` namespace\n")
+    lines.append(
+        "What the run knows about itself. Computed once, when the run starts,\n"
+        "so every step of one run reports the same values -- naming an output\n"
+        "file after `execution.timestamp` gives one file, not one per step.\n"
+    )
+    # A fixed instant, not the current one: `--check` compares bytes, so a
+    # live clock here would make the page differ from itself on every run.
+    example = RuntimeContext(
+        id="run-4f2a91c07e3b",
+        started_at=datetime(2026, 1, 15, 14, 30, 45, tzinfo=timezone.utc),
+    ).as_template_namespace()
+    lines.append("| Field | Example |")
+    lines.append("|-|-|")
+    for name in EXECUTION_FIELD_NAMES:
+        lines.append(f"| `{RUNTIME_NAMESPACE}.{name}` | `{example[name]}` |")
+    lines.append("")
+    lines.append(
+        "`timestamp` is `started_at` under its older name: the same instant,\n"
+        "not a second reading of the clock. Times are UTC, so stamps from two\n"
+        "machines are comparable and a run spanning a daylight-saving change\n"
+        "does not go backwards.\n"
+    )
+    lines.append(
+        "The field list is closed. `{{ execution.strated_at }}` is a typo and\n"
+        "is refused at compile time; an open namespace would render it as an\n"
+        "empty string and report success. `pipeline`, `context` and `env` are\n"
+        "not namespaces -- nothing populates them.\n"
     )
     return "\n".join(lines)
 

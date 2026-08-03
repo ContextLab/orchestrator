@@ -10,6 +10,7 @@ from ..models.model_registry import ModelRegistry
 from ..tools.base import default_registry
 from .advanced_executor import AdvancedTaskExecutor
 from .pipeline_spec import PipelineSpec, TaskSpec
+from ..core.runtime_context import execution_namespace_for
 
 logger = logging.getLogger(__name__)
 
@@ -118,14 +119,16 @@ class DeclarativePipelineEngine:
                 "description": pipeline_spec.description,
             },
             "config": pipeline_spec.config,
-            "execution": {
-                "start_time": datetime.now().isoformat(),
-                "engine_version": "1.0.0",
-            },
+            "execution": {},  # filled in below, once the dict exists to carry it
         }
 
         # Add input values directly to context for easy template access
         context.update(inputs)
+
+        # One answer per run, shared with every other engine. This used to
+        # offer `start_time` and no `timestamp` at all, so `{{ execution.timestamp }}`
+        # rendered here and nowhere else.
+        context["execution"] = execution_namespace_for(context)
 
         return context
 

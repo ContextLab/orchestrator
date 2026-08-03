@@ -28,6 +28,7 @@ from .state.langgraph_state_manager import LangGraphGlobalContextManager
 from .state.legacy_compatibility import LegacyStateManagerAdapter
 from .core.exceptions import PipelineExecutionError
 from .runtime import RuntimeResolutionIntegration
+from .core.runtime_context import execution_namespace_for
 
 # Import checkpointing components for Issue #205
 try:
@@ -301,14 +302,11 @@ class Orchestrator:
         self.template_manager.register_context("pipeline_id", pipeline.id)
         self.template_manager.register_context("execution_id", execution_id)
         
-        # Add execution metadata
-        from datetime import datetime
-        execution_timestamp = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
-        self.template_manager.register_context("execution", {
-            "timestamp": execution_timestamp,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "time": datetime.now().strftime("%H:%M:%S")
-        })
+        # What the run knows about itself. Created here, once, and read
+        # everywhere else -- see core/runtime_context.py.
+        self.template_manager.register_context(
+            "execution", execution_namespace_for(context)
+        )
         
         # Register all pipeline context (including inputs)
         for key, value in pipeline.context.items():
@@ -1419,13 +1417,10 @@ class Orchestrator:
                     if step_id not in task_context:
                         task_context[step_id] = result
                 
-                # Add execution metadata for templates
-                from datetime import datetime
-                task_context["execution"] = {
-                    "timestamp": datetime.now().isoformat(),
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "time": datetime.now().strftime("%H:%M:%S"),
-                }
+                # The run's own answer, not a fresh reading of the clock.
+                # Rebuilding it here is what made two steps of one run report
+                # timestamps milliseconds apart.
+                task_context["execution"] = execution_namespace_for(context)
                 
                 # Ensure pipeline parameters are directly accessible
                 if isinstance(pipeline.context, dict):
@@ -1989,13 +1984,8 @@ class Orchestrator:
                 if step_id not in loop_context:
                     loop_context[step_id] = result
             
-            # Add execution metadata
-            from datetime import datetime
-            loop_context["execution"] = {
-                "timestamp": datetime.now().isoformat(),
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "time": datetime.now().strftime("%H:%M:%S"),
-            }
+            # Same instant as every other step, including across iterations.
+            loop_context["execution"] = execution_namespace_for(context)
             
             # Process each step in the loop body
             for step_def in for_each_task.loop_steps:
