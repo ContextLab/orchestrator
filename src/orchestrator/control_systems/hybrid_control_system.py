@@ -1,6 +1,6 @@
 """Hybrid control system that handles both model-based tasks and tool operations."""
 
-from typing import Any, Dict, Optional
+from typing import Mapping, Any, Dict, Optional
 import logging
 import re
 from pathlib import Path
@@ -56,6 +56,7 @@ from ..tools.pipeline_recursion_tools import (
 )
 from ..compiler.template_renderer import TemplateRenderer
 from ..runtime import RuntimeResolutionIntegration
+from ..core.runtime_context import execution_namespace_for
 
 logger = logging.getLogger(__name__)
 
@@ -322,27 +323,14 @@ class HybridControlSystem(ModelBasedControlSystem):
         
         return template_context
     
-    def _get_execution_metadata(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Get execution metadata for templates."""
-        from datetime import datetime
-        
-        # Try to get existing execution metadata
-        existing_execution = context.get("execution", {})
-        if isinstance(existing_execution, dict) and existing_execution:
-            # If we have execution metadata with timestamp, use it
-            if "timestamp" in existing_execution:
-                return existing_execution
-        
-        # Generate new execution metadata
-        now = datetime.now()
-        return {
-            "timestamp": now.strftime("%Y-%m-%dT%H:%M:%S"),
-            "date": now.strftime("%Y-%m-%d"),
-            "time": now.strftime("%H:%M:%S"),
-            "iso_timestamp": now.isoformat(),
-            "pipeline_id": context.get("pipeline_id", "unknown"),
-            "execution_id": context.get("execution_id", "unknown"),
-        }
+    def _get_execution_metadata(self, context: Dict[str, Any]) -> Mapping[str, str]:
+        """What `{{ execution }}` resolves to for this run.
+
+        This used to answer with its own field set -- `iso_timestamp`,
+        `pipeline_id`, `execution_id` -- in a format no other site used, so
+        which fields existed depended on which control system ran the step.
+        """
+        return execution_namespace_for(context)
     
     def _extract_pipeline_parameters(self, pipeline_inputs: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """Extract original pipeline parameters for template access."""
@@ -590,13 +578,7 @@ class HybridControlSystem(ModelBasedControlSystem):
         template_context_obj = self._prepare_template_context(context)
         
         # Add execution metadata
-        execution_metadata = {
-            "execution": {
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "time": datetime.now().strftime("%H:%M:%S"),
-            }
-        }
+        execution_metadata = {"execution": self._get_execution_metadata(context)}
         
         # Convert to flat dict and add execution metadata
         flat_context = template_context_obj.to_flat_dict()

@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 from .pipeline import Pipeline
 from .task import Task
+from .runtime_context import execution_namespace_for
 
 
 class ControlAction(Enum):
@@ -217,13 +218,10 @@ class ControlSystem(ABC):
                 for key, value in context["pipeline_context"].items():
                     template_manager.register_context(key, value)
             
-            # Add execution metadata
-            from datetime import datetime
-            template_manager.register_context("execution", {
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "time": datetime.now().strftime("%H:%M:%S")
-            })
+            # The run's own answer -- see core/runtime_context.py.
+            template_manager.register_context(
+                "execution", execution_namespace_for(context)
+            )
             
             # Register other context values (including direct pipeline inputs like 'topic')
             # Skip only internal keys and already registered results
