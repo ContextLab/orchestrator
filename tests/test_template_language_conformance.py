@@ -21,6 +21,15 @@ environment that could not do it.
 
 These tests compare *results*, not registries: the same expression and input
 through every environment, asserting the same value or the same failure.
+
+Globals are the other half of the language, and they do not want the same
+treatment. `now()`, `file_exists()` and the loop helpers each answer a question
+about the state of a *run*, so only the runtime can answer them; copying them
+into the compiler the way filters are copied makes it answer at compile time,
+before any step has run, and write a confident wrong answer to a file. The rule
+for them is therefore split: every environment knows the *names* -- otherwise
+`{{ now() }}` is reported undefined on a pipeline that runs correctly -- and
+only the runtime holds the implementations.
 """
 
 import os
@@ -33,11 +42,28 @@ import pytest
 
 from orchestrator.compiler.yaml_compiler import YAMLCompiler
 from orchestrator.core.template_manager import TemplateManager
+from orchestrator.core.template_sandbox import pipeline_global_names
 from orchestrator.validation.template_validator import TemplateValidator
 
 pytestmark = [pytest.mark.contract]
 
 REPO = Path(__file__).parent.parent
+
+
+def _cli(command, pipeline, cwd):
+    """Run `orchestrator {command} {pipeline}` the way a user would."""
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(REPO / "src") + os.pathsep + env.get("PYTHONPATH", "")
+    env.pop("ANTHROPIC_API_KEY", None)
+    env["ORCHESTRATOR_AUTO_INSTALL"] = "0"
+    return subprocess.run(
+        [sys.executable, "-m", "orchestrator.cli", command, str(pipeline)],
+        cwd=str(cwd),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
 
 
 def _environments():
@@ -225,20 +251,186 @@ steps:
 """
     )
 
-    env = dict(os.environ)
-    env["PYTHONPATH"] = str(REPO / "src") + os.pathsep + env.get("PYTHONPATH", "")
-    env.pop("ANTHROPIC_API_KEY", None)
-    env["ORCHESTRATOR_AUTO_INSTALL"] = "0"
-    result = subprocess.run(
-        [sys.executable, "-m", "orchestrator.cli", "run", str(pipeline)],
-        cwd=str(tmp_path),
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=300,
-    )
+    result = _cli("run", pipeline, tmp_path)
 
     assert result.returncode == 0, (
         f"{expression} did not run: {result.stdout[-800:]}{result.stderr[-800:]}"
     )
     assert (tmp_path / "out.txt").read_text() == expected
+
+
+# ---------------------------------------------------------------------------
+# Globals: shared names, run-time-only evaluation
+# ---------------------------------------------------------------------------
+
+#: One call per pipeline global. The arguments only have to be plausible --
+#: these cases test that the *name* is part of the language everywhere, not
+#: what the call returns.
+GLOBAL_CALLS = {
+    "now": "now()",
+    "file_exists": "file_exists('./x.txt')",
+    "include_file": "include_file('./x.txt')",
+    "loop_var": "loop_var('l', 'item')",
+    "loop_item_at": "loop_item_at('l', 0)",
+    "current_loop_name": "current_loop_name()",
+    "active_loops": "active_loops()",
+    "historical_loops": "historical_loops()",
+}
+
+
+def test_every_pipeline_global_has_a_case_here():
+    """A ninth global must arrive with a case, or the sweep below skips it.
+
+    `pipeline_global_names` is derived from what the runtime registers, so it
+    picks up a new global automatically. This table does not, and a silently
+    untested global is how `now()` reached a release rejecting its own
+    pipelines.
+    """
+    assert set(GLOBAL_CALLS) == pipeline_global_names(), (
+        f"GLOBAL_CALLS does not match the language: "
+        f"missing={sorted(pipeline_global_names() - set(GLOBAL_CALLS))}, "
+        f"stale={sorted(set(GLOBAL_CALLS) - pipeline_global_names())}"
+    )
+
+
+@pytest.mark.parametrize("call", sorted(GLOBAL_CALLS.values()))
+def test_a_pipeline_calling_a_global_validates(call):
+    """`{{ now() }}` runs correctly, so it must not fail validation.
+
+    It used to draw four errors from two validators: `Undefined variable:
+    'now'` from the template validator, and -- because splitting on `.` leaves
+    the call syntax attached -- `Undefined task reference: 'now()'` from the
+    data-flow validator, which looked the name up as a task id.
+    """
+    # Note the braces: an earlier version interpolated the bare call, so the
+    # pipeline carried the literal string `now()` and validated for the one
+    # reason the test was not looking for.
+    expression = "{{ " + call + " }}"
+    pipeline = f"""
+id: globals_probe
+name: Globals Probe
+steps:
+  - id: write_it
+    tool: filesystem
+    action: write
+    parameters:
+      path: "./out.txt"
+      content: "{expression}"
+"""
+    import asyncio
+
+    try:
+        asyncio.run(YAMLCompiler().compile(pipeline, {}))
+    except Exception as exc:  # noqa: BLE001 - the message is the subject
+        pytest.fail(f"{call} does not validate, but the runtime renders it: {exc}")
+
+
+def test_globals_are_not_evaluated_outside_the_runtime():
+    """The names are shared; the implementations deliberately are not.
+
+    Filters transform a value the caller already holds, so copying them into
+    every environment is right. Globals answer questions about the state of a
+    run, and the obvious symmetry -- copy the globals too -- makes the compiler
+    answer them at compile time, before any step has run. Leaving them
+    unregistered is what makes the compiler keep the template for the runtime.
+    """
+    leaked = {
+        name: sorted(pipeline_global_names() & set(env.globals))
+        for name, env in _environments().items()
+        if name != "runtime" and pipeline_global_names() & set(env.globals)
+    }
+    assert not leaked, (
+        f"these environments can evaluate run-time globals at compile or "
+        f"validation time, which answers them wrongly rather than deferring: "
+        f"{leaked}"
+    )
+
+
+def test_the_runtime_can_evaluate_every_global():
+    """The other half: unregistered everywhere would be no language at all."""
+    missing = sorted(pipeline_global_names() - set(TemplateManager().env.globals))
+    assert not missing, f"the runtime cannot evaluate {missing}"
+
+
+def test_pipeline_global_names_excludes_jinja_s_own():
+    """`range` and `dict` are Jinja's, not ours.
+
+    They must keep working in every environment, so they must not be treated as
+    run-time-only names.
+    """
+    assert "range" not in pipeline_global_names()
+    assert "dict" not in pipeline_global_names()
+    for name, env in _environments().items():
+        assert env.from_string("{{ range(3) | list }}").render() == "[0, 1, 2]", (
+            f"{name} lost Jinja's own globals"
+        )
+
+
+@pytest.mark.e2e
+def test_a_global_is_answered_after_earlier_steps_have_run(tmp_path):
+    """The decisive case: `file_exists` on a file an earlier step writes.
+
+    At run time the answer is True, because `make_it` has already written it.
+    Evaluated at compile time -- which is what copying the globals into the
+    compiler's environment does -- the answer is False, and the pipeline
+    silently writes the wrong thing. This is the test that says which.
+    """
+    pipeline = tmp_path / "p.yaml"
+    pipeline.write_text(
+        """
+id: ordering
+name: Ordering
+steps:
+  - id: make_it
+    tool: filesystem
+    action: write
+    parameters:
+      path: "artifact"
+      content: "hello"
+
+  - id: check_it
+    tool: filesystem
+    action: write
+    parameters:
+      path: "./b.txt"
+      content: "exists={{ file_exists('artifact') }}"
+    dependencies:
+      - make_it
+"""
+    )
+
+    result = _cli("run", pipeline, tmp_path)
+    assert result.returncode == 0, f"{result.stdout[-800:]}{result.stderr[-800:]}"
+    assert (tmp_path / "b.txt").read_text() == "exists=True", (
+        "file_exists was answered before make_it ran, so it was evaluated at "
+        "compile time rather than at run time"
+    )
+
+
+@pytest.mark.e2e
+def test_validate_and_run_agree_about_globals(tmp_path):
+    """A pipeline the runtime executes must not be refused by `validate`."""
+    pipeline = tmp_path / "p.yaml"
+    pipeline.write_text(
+        """
+id: now_probe
+name: Now Probe
+steps:
+  - id: write_it
+    tool: filesystem
+    action: write
+    parameters:
+      path: "./out.txt"
+      content: "generated {{ now() }}"
+"""
+    )
+
+    validated = _cli("validate", pipeline, tmp_path)
+    ran = _cli("run", pipeline, tmp_path)
+
+    assert ran.returncode == 0, f"run failed: {ran.stdout[-800:]}{ran.stderr[-800:]}"
+    assert (tmp_path / "out.txt").read_text().startswith("generated 20")
+    assert validated.returncode == 0, (
+        f"`run` executes this pipeline but `validate` rejects it: "
+        f"{validated.stdout[-800:]}{validated.stderr[-800:]}"
+    )
