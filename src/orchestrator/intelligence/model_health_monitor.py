@@ -317,14 +317,11 @@ class ModelHealthMonitor:
     def _check_and_update_health(self, model_key: str) -> None:
         """Check health and update metrics for a single model."""
         try:
-            # Perform health check
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                health_check = loop.run_until_complete(self.check_model_health(model_key))
-            finally:
-                loop.close()
-            
+            # `asyncio.run` closes the loop and unsets it; closing it while
+            # leaving it set hands the next caller on this thread a closed
+            # loop. See core/template_manager.py for what that cost.
+            health_check = asyncio.run(self.check_model_health(model_key))
+
             # Update metrics
             self._update_health_metrics(model_key, health_check)
             
@@ -335,13 +332,8 @@ class ModelHealthMonitor:
                 
                 # Attempt recovery
                 if self.recovery_enabled:
-                    recovery_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(recovery_loop)
-                    try:
-                        recovery_loop.run_until_complete(self.recover_model(model_key))
-                    finally:
-                        recovery_loop.close()
-                        
+                    asyncio.run(self.recover_model(model_key))
+
         except Exception as e:
             logger.error(f"Error checking health for {model_key}: {e}")
     

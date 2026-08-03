@@ -224,18 +224,21 @@ class TemplateManager:
         def include_file_sync(path: str, base_dir: Optional[str] = None, **kwargs) -> str:
             """Synchronous file inclusion function for Jinja2 templates."""
             try:
-                # Create a new event loop if none exists (for sync context)
+                # The question is "am I inside a running loop?", and
+                # `get_running_loop` is the one that answers exactly that.
+                # `get_event_loop` answers a different question -- "what loop
+                # is set on this thread?" -- and its answer may be a loop
+                # somebody else created, ran, closed and left set. Calling
+                # `run_until_complete` on that raises "Event loop is closed",
+                # which this function catches and renders into the document
+                # as a comment. The file silently does not get included.
                 try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        # We're in an async context but need sync result
-                        # This is a limitation - we'll return a warning
-                        return f"<!-- File inclusion '{path}' requires async context -->"
+                    asyncio.get_running_loop()
                 except RuntimeError:
-                    # No event loop, create one
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                
+                    pass  # nothing running here, so we may run our own
+                else:
+                    return f"<!-- File inclusion '{path}' requires async context -->"
+
                 # Create directive
                 directive = FileIncludeDirective(
                     syntax="template",
@@ -243,11 +246,14 @@ class TemplateManager:
                     base_dir=base_dir,
                     **kwargs
                 )
-                
-                # Run async include_file
-                result = loop.run_until_complete(self.file_inclusion_processor.include_file(directive))
+
+                # `asyncio.run` closes the loop it creates and unsets it.
+                # Creating one by hand and leaving it set leaked both the loop
+                # and the socketpair it holds for its self-pipe, and left the
+                # next caller the closed-loop problem described above.
+                result = asyncio.run(self.file_inclusion_processor.include_file(directive))
                 return result.content
-                
+
             except FileInclusionError as e:
                 logger.warning(f"File inclusion failed for '{path}': {e}")
                 return f"<!-- File inclusion failed: {path} - {e} -->"
