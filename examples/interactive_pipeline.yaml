@@ -315,6 +315,6 @@ steps:
         - **Processing Useful**: {{ 'Yes' if collect_feedback.summary.boolean_summary.processing_useful else 'No' }}
         
         ## Timestamp
-        Generated at: {{ now() }}
+        Generated at: {{ execution.timestamp }}
     dependencies:
       - collect_feedback
