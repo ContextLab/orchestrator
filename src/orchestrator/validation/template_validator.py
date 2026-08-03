@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from jinja2 import Environment, TemplateSyntaxError, meta
 from jinja2.sandbox import SandboxedEnvironment
 
+from ..core.template_sandbox import pipeline_global_names
+
 logger = logging.getLogger(__name__)
 
 #: The namespaces a pipeline's own parameters can be reached through.
@@ -370,6 +372,14 @@ class TemplateValidator:
                 # bare form appears in `available_context`, so the other two
                 # were reported undefined in pipelines that run correctly.
                 if var_name in PARAMETER_NAMESPACES:
+                    continue
+
+                # `now()`, `file_exists()` and the loop helpers are part of the
+                # language, but only the runtime can answer them, so they are
+                # deliberately absent from this environment. Knowing the name
+                # is what stops `{{ now() }}` -- which runs correctly -- from
+                # being reported as an undefined variable.
+                if var_name in pipeline_global_names():
                     continue
 
                 # Check if variable is available in context

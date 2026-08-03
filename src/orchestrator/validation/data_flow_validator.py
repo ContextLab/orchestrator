@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 from jinja2 import TemplateSyntaxError, Undefined, meta
 
-from ..core.template_sandbox import create_sandboxed_environment
+from ..core.template_sandbox import create_sandboxed_environment, pipeline_global_names
 
 logger = logging.getLogger(__name__)
 
@@ -474,7 +474,15 @@ class DataFlowValidator:
             }
         
         base_var = parts[0]
-        
+
+        # A call to one of the pipeline language's globals -- `{{ now() }}` --
+        # references nothing this validator tracks. Splitting on `.` leaves the
+        # call syntax attached, so `now()` was looked up as a *task id* and
+        # reported as `Undefined task reference: 'now()'` on pipelines that run
+        # correctly.
+        if base_var.split("(", 1)[0] in pipeline_global_names():
+            return {"valid": True, "type": "pipeline_global"}
+
         # Check for pipeline inputs. `parameters` names the same merged
         # namespace -- `pipeline_inputs` is built from both keys -- and without
         # it here the reference fell through to the task lookup below and was
