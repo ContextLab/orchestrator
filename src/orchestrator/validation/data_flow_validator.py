@@ -22,6 +22,7 @@ from ..core.runtime_context import (
     RUNTIME_NAMESPACE,
 )
 from ..core.template_sandbox import create_sandboxed_environment, pipeline_global_names
+from ..core.template_scope import shadowed_name_nodes
 
 logger = logging.getLogger(__name__)
 
@@ -447,13 +448,19 @@ class DataFlowValidator:
             # simply has no references this validator can be sure of.
             return []
 
-        # `{% for row in rows %}` binds `row`; it is not a reference to
-        # anything this validator tracks.
-        bound = {
-            node.name
-            for node in ast.find_all(nodes.Name)
-            if getattr(node, "ctx", "load") != "load"
-        }
+        # `{% for row in rows %}` binds `row` *inside its body*; it is not a
+        # reference to anything this validator tracks. Which uses the binding
+        # reaches is a question of scope, and getting that wrong in the
+        # permissive direction is worse than the false positive it replaced:
+        #
+        #     {{ ghost.done }}            <- undefined, and reported nothing
+        #     {% for ghost in rows %}
+        #       {{ ghost.name }}          <- the binding that silenced it
+        #     {% endfor %}
+        #
+        # A template-wide set of bound names made adding a loop anywhere in a
+        # file suppress that typo everywhere in it.
+        shadowed = shadowed_name_nodes(ast)
 
         # `a.b.c` is one reference, not three. Only the outermost node of a
         # chain is reported; the links inside it are skipped.
@@ -470,15 +477,31 @@ class DataFlowValidator:
         for node in ast.find_all((nodes.Name, nodes.Getattr, nodes.Getitem)):
             if id(node) in inner:
                 continue
+            base_node = self._base_name(node)
+            if base_node is None or id(base_node) in shadowed:
+                continue
+            if base_node.name in provided:
+                continue
             path = self._dotted_path(node)
-            if not path:
-                continue
-            base = path.split(".", 1)[0]
-            if base in bound or base in provided:
-                continue
-            variables.append(path)
+            if path:
+                variables.append(path)
 
         return variables
+
+    def _base_name(self, node):
+        """The `Name` node a reference chain starts from.
+
+        `a.b['c']` is a reference to `a`; identity of that particular node is
+        what decides whether this use is shadowed, since one template can hold
+        both a shadowed and an unshadowed use of the same word.
+        """
+        from jinja2 import nodes
+
+        while isinstance(node, (nodes.Getattr, nodes.Getitem)):
+            node = node.node
+        if isinstance(node, nodes.Name) and getattr(node, "ctx", "load") == "load":
+            return node
+        return None
 
     def _dotted_path(self, node) -> Optional[str]:
         """`a.b`, `a['b']` and `a[0]` as the one name they refer to."""
