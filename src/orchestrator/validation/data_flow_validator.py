@@ -21,6 +21,11 @@ from ..core.template_sandbox import create_sandboxed_environment, pipeline_globa
 
 logger = logging.getLogger(__name__)
 
+#: `thing['key']` -> `thing.key`, so one spelling reaches the checks below.
+_SUBSCRIPT = re.compile(r"""\[\s*['"]([^'"]+)['"]\s*\]""")
+#: `thing[0]` -> `thing`; an element of a collection is not a separate name.
+_INDEX = re.compile(r"\[\s*\d+\s*\]")
+
 
 @dataclass
 class DataFlowError:
@@ -465,6 +470,14 @@ class DataFlowValidator:
             # Loop variables like $item, $index
             return {"valid": True, "type": "loop_variable"}
         
+        # `a['b']` and `a.b` name the same thing. Splitting on `.` alone left
+        # the subscript attached, so `execution['timestamp']` was looked up as a
+        # *task id* and reported as an undefined task -- on pipelines that run
+        # correctly. Same class as `now()` before #451, and it hits step outputs
+        # too: `get_full_context['keys']`.
+        var_ref = _SUBSCRIPT.sub(r".\1", var_ref)
+        var_ref = _INDEX.sub("", var_ref)
+
         # Parse dotted variable reference
         parts = var_ref.split('.')
         if len(parts) < 1:
