@@ -113,22 +113,22 @@ class DeclarativePipelineEngine:
         """Initialize execution context with pipeline configuration and inputs."""
         context = {
             "inputs": inputs,
-            "pipeline": {
-                "name": pipeline_spec.name,
-                "version": pipeline_spec.version,
-                "description": pipeline_spec.description,
-            },
             "config": pipeline_spec.config,
-            "execution": {},  # filled in below, once the dict exists to carry it
+            "pipeline_id": pipeline_spec.name,
         }
 
         # Add input values directly to context for easy template access
         context.update(inputs)
 
-        # One answer per run, shared with every other engine. This used to
-        # offer `start_time` and no `timestamp` at all, so `{{ execution.timestamp }}`
-        # rendered here and nowhere else.
-        context["execution"] = execution_namespace_for(context)
+        # One answer per run, and the same names every other engine offers.
+        # This used to supply `start_time` and no `timestamp`, so
+        # `{{ execution.timestamp }}` rendered here and nowhere else, and none
+        # of the bare names (`pipeline_id`, `execution_id`, `timestamp`)
+        # existed at all. It also supplied a `pipeline` namespace that no
+        # other engine populates and that validation refuses, so a pipeline
+        # written against it could not be validated -- see
+        # `runtime_context.public_names` for the language it replaces.
+        execution_namespace_for(context)
 
         return context
 

@@ -28,7 +28,11 @@ from .state.langgraph_state_manager import LangGraphGlobalContextManager
 from .state.legacy_compatibility import LegacyStateManagerAdapter
 from .core.exceptions import PipelineExecutionError
 from .runtime import RuntimeResolutionIntegration
-from .core.runtime_context import execution_namespace_for
+from .core.runtime_context import (
+    execution_namespace_for,
+    new_execution_id,
+    runtime_context_for,
+)
 
 # Import checkpointing components for Issue #205
 try:
@@ -270,7 +274,7 @@ class Orchestrator:
         Raises:
             ExecutionError: If execution fails
         """
-        execution_id = f"{pipeline.id}_{int(time.time())}"
+        execution_id = new_execution_id(pipeline.id)
 
         # Issue #205: Check if automatic checkpointing should be used
         if self.use_automatic_checkpointing and checkpoint_enabled:
@@ -299,21 +303,22 @@ class Orchestrator:
         
         # Initialize template manager context with pipeline parameters and execution metadata
         self.template_manager.clear_context()
-        self.template_manager.register_context("pipeline_id", pipeline.id)
-        self.template_manager.register_context("execution_id", execution_id)
-        
+
         # What the run knows about itself. Created here, once, and read
-        # everywhere else -- see core/runtime_context.py.
-        execution_namespace = execution_namespace_for(context)
-        self.template_manager.register_context("execution", execution_namespace)
-        # `{{ timestamp }}` is the same instant under a bare name.
-        # `TemplateManager._setup_base_context` seeds it from the clock when the
-        # manager is *constructed*, which is neither the run's start nor the
-        # same value as `execution.timestamp`; the run's own answer wins.
-        self.template_manager.register_context(
-            "timestamp", execution_namespace["started_at"]
-        )
-        
+        # everywhere else -- see core/runtime_context.py. `public_names` is
+        # the single builder every engine uses, so a pipeline is written
+        # against one language rather than against whichever engine runs it.
+        # It supplies `pipeline_id`, `execution_id`, `timestamp` and the
+        # `execution` namespace; `{{ timestamp }}` is the run's start under a
+        # bare name, overriding the clock reading that
+        # `TemplateManager._setup_base_context` takes when the *manager* is
+        # constructed -- neither the run's start nor the same instant as
+        # `execution.timestamp`.
+        runtime = runtime_context_for(context)
+        runtime.project_into(context)
+        for name, value in runtime.public_names().items():
+            self.template_manager.register_context(name, value)
+
         # Register all pipeline context (including inputs)
         for key, value in pipeline.context.items():
             self.template_manager.register_context(key, value)

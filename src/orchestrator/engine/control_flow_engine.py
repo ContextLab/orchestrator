@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Set
 from datetime import datetime
 
 from ..core.pipeline import Pipeline
+from ..core.runtime_context import execution_namespace_for
 from ..core.task import Task, TaskStatus
 from ..compiler.control_flow_compiler import ControlFlowCompiler
 from ..control_flow import (
@@ -90,12 +91,13 @@ class ControlFlowEngine:
         self.step_results.clear()
         self.skipped_tasks.clear()
 
-        # Add pipeline info to context
-        context["pipeline"] = {
-            "id": pipeline.id,
-            "name": pipeline.name,
-            "version": pipeline.version,
-        }
+        # The run's public names: `pipeline_id`, `execution_id`, `timestamp`
+        # and the `execution` namespace. This engine used to offer a
+        # `pipeline` namespace instead, which no other engine populates and
+        # which validation refuses -- so a pipeline using it ran here and
+        # could not be validated anywhere.
+        context.setdefault("pipeline_id", pipeline.id)
+        execution_namespace_for(context)
 
         # Execute tasks
         start_time = datetime.now()
