@@ -21,6 +21,11 @@ from ..core.template_sandbox import create_sandboxed_environment, pipeline_globa
 
 logger = logging.getLogger(__name__)
 
+#: Names bound by a loop rather than by a step. `loop` is Jinja's own.
+LOOP_VARIABLES = frozenset(
+    {"item", "index", "loop", "iteration", "is_first", "is_last"}
+)
+
 #: `thing['key']` -> `thing.key`, so one spelling reaches the checks below.
 _SUBSCRIPT = re.compile(r"""\[\s*['"]([^'"]+)['"]\s*\]""")
 #: `thing[0]` -> `thing`; an element of a collection is not a separate name.
@@ -414,43 +419,86 @@ class DataFlowValidator:
         return errors, warnings, dependencies
     
     def _extract_template_variables(self, template_str: str) -> List[str]:
-        """Extract all template variable references from a string."""
-        variables = []
-        
-        # Find all {{ variable }} patterns
-        matches = self.template_var_pattern.findall(template_str)
-        
-        for match in matches:
-            # Clean up the variable reference
-            var = match.strip()
-            
-            # Handle filters and complex expressions
-            # Take the base variable before any filters or operations
-            var = var.split('|')[0].strip()  # Remove filters
-            var = var.split(' ')[0].strip()   # Remove operations
-            
-            # Skip literals and complex expressions
-            if (not var.startswith('"') and 
-                not var.startswith("'") and 
-                not var.isdigit() and
-                not var.startswith('[') and
-                not var.startswith('{')):
-                variables.append(var)
-        
-        # Also check for Jinja2 control structures ({% %})
-        control_pattern = re.compile(r'\{%\s*(?:for|if)\s+([^%]+)\s*%\}')
-        control_matches = control_pattern.findall(template_str)
-        
-        for match in control_matches:
-            # Extract variable references from control structures
-            # This is more complex parsing, simplified for now
-            parts = match.split()
-            for part in parts:
-                if '.' in part and not part.startswith('"') and not part.startswith("'"):
-                    variables.append(part.strip())
-        
+        """Every variable reference in a template, as dotted paths.
+
+        This used to chop the raw text -- `split('|')[0]`, then `split(' ')[0]`
+        -- which does not survive an expression. Anything with a space or a
+        bracket in it came out mangled, and the mangled fragment was then
+        looked up as a task id:
+
+            Undefined task reference: '(row'
+            Undefined task reference: 'from_json)'
+            Undefined task reference: 'analysis_topics[loop'
+
+        None of those is a name anyone wrote. The parser knows what a
+        reference is, so it is asked instead -- the same move #451 made for
+        global calls.
+        """
+        from jinja2 import nodes
+
+        try:
+            ast = self.jinja_env.parse(template_str)
+        except Exception:
+            # Syntax is the template validator's business; a broken template
+            # simply has no references this validator can be sure of.
+            return []
+
+        # `{% for row in rows %}` binds `row`; it is not a reference to
+        # anything this validator tracks.
+        bound = {
+            node.name
+            for node in ast.find_all(nodes.Name)
+            if getattr(node, "ctx", "load") != "load"
+        }
+
+        # `a.b.c` is one reference, not three. Only the outermost node of a
+        # chain is reported; the links inside it are skipped.
+        inner = {
+            id(node.node)
+            for node in ast.find_all((nodes.Getattr, nodes.Getitem))
+        }
+
+        # `{{ range(3) }}` names a function the environment provides, not a
+        # step. Jinja's own globals and the pipeline's both count.
+        provided = set(self.jinja_env.globals) | pipeline_global_names()
+
+        variables: List[str] = []
+        for node in ast.find_all((nodes.Name, nodes.Getattr, nodes.Getitem)):
+            if id(node) in inner:
+                continue
+            path = self._dotted_path(node)
+            if not path:
+                continue
+            base = path.split(".", 1)[0]
+            if base in bound or base in provided:
+                continue
+            variables.append(path)
+
         return variables
-    
+
+    def _dotted_path(self, node) -> Optional[str]:
+        """`a.b`, `a['b']` and `a[0]` as the one name they refer to."""
+        from jinja2 import nodes
+
+        if isinstance(node, nodes.Name):
+            return node.name if getattr(node, "ctx", "load") == "load" else None
+
+        if isinstance(node, nodes.Getattr):
+            base = self._dotted_path(node.node)
+            return f"{base}.{node.attr}" if base else None
+
+        if isinstance(node, nodes.Getitem):
+            base = self._dotted_path(node.node)
+            if not base:
+                return None
+            key = node.arg
+            if isinstance(key, nodes.Const) and isinstance(key.value, str):
+                return f"{base}.{key.value}"
+            # An index selects an element of `base`; it is not its own name.
+            return base
+
+        return None
+
     def _validate_variable_reference(self, 
                                    var_ref: str,
                                    task_id: str,
@@ -463,7 +511,11 @@ class DataFlowValidator:
         Returns dict with validation result and metadata.
         """
         # Handle special variables
-        if var_ref in ['item', 'index', 'loop', 'iteration', 'is_first', 'is_last']:
+        # `loop` is Jinja's own, `item` and the rest are ours. The check used
+        # to compare the whole reference, so a bare `loop` passed while
+        # `{{ loop.index }}` -- the way anyone actually writes it -- was
+        # reported as an undefined *task*.
+        if var_ref.split(".", 1)[0] in LOOP_VARIABLES:
             return {"valid": True, "type": "loop_variable"}
         
         if var_ref.startswith('$'):
