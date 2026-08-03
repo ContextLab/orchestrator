@@ -88,14 +88,15 @@ def pipeline_global_names() -> FrozenSet[str]:
     pipelines that run correctly -- the false-positive class of #448 again.
     They import this instead, so the names are stated once.
 
-    Derived rather than hand-listed: a literal list drifts the moment someone
-    registers a ninth global, and drift is the failure this module exists to
-    prevent.
+    The names come from `template_globals.GLOBAL_SPECS`, which also carries
+    each one's argument contract. They were originally derived from what
+    `TemplateManager` happened to register, which could not drift but could not
+    express an arity either; `test_template_globals.py` compares the two, so
+    the drift protection survives the change.
     """
-    from .template_manager import TemplateManager
+    from .template_globals import GLOBAL_NAMES
 
-    stock = frozenset(SandboxedEnvironment().globals)
-    return frozenset(TemplateManager().env.globals) - stock
+    return GLOBAL_NAMES
 
 
 def sandboxed_template(source: str, **kwargs: Any) -> Template:

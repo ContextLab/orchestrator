@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from jinja2 import Environment, TemplateSyntaxError, meta
 from jinja2.sandbox import SandboxedEnvironment
 
+from ..core.template_globals import find_global_misuse
 from ..core.template_sandbox import pipeline_global_names
 
 logger = logging.getLogger(__name__)
@@ -326,10 +327,24 @@ class TemplateValidator:
         try:
             # Parse template to get AST
             ast = self.env.parse(template)
-            
+
+            # Knowing the name is not knowing the use. `{{ now }}` names a
+            # global correctly and still cannot work: it renders the function
+            # object itself, so the artifact receives "<function ...>" and
+            # nothing fails. The AST is what tells a call apart from an
+            # attribute access or a bare mention; the text does not.
+            for misuse in find_global_misuse(ast):
+                errors.append(TemplateValidationError(
+                    template=template,
+                    error_type=misuse.code,
+                    message=misuse.message,
+                    context_path=context_path,
+                    suggestions=[misuse.suggestion],
+                ))
+
             # Find all variable references
             var_names = meta.find_undeclared_variables(ast)
-            
+
             # Also look for loop variables manually (since they start with $)
             loop_var_matches = []
             for loop_var in self.loop_vars:
