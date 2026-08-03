@@ -210,3 +210,71 @@ def test_a_shadowed_and_an_unshadowed_use_can_share_one_template():
     """Identity, not spelling: same word, two nodes, two answers."""
     source = "{% for now in items %}{{ now }}{% endfor %}{{ now.foo }}"
     assert NOT_CALLED in _misuse(source)
+
+
+# ---------------------------------------------------------------------------
+# It reaches the product
+# ---------------------------------------------------------------------------
+
+def _validate(source, tmp_path):
+    """Validate a real pipeline the way `orchestrator validate` does."""
+    import asyncio
+
+    from orchestrator.compiler.yaml_compiler import YAMLCompiler
+
+    pipeline = f"""
+id: probe
+name: Probe
+steps:
+  - id: write_it
+    tool: filesystem
+    action: write
+    parameters:
+      path: "./out.txt"
+      content: "{source}"
+"""
+    try:
+        asyncio.run(YAMLCompiler().compile(pipeline, {}))
+        return None
+    except Exception as exc:  # noqa: BLE001 - the message is the subject
+        return str(exc)
+
+
+def test_a_reference_outside_the_loop_that_shadows_it_fails_validation(tmp_path):
+    """The whole point, through the compiler rather than the helper.
+
+    Without this, deleting the scope check leaves every test above passing:
+    they exercise the function, not whether anything asks it.
+
+    Asserting merely that validation *fails* proves nothing here, and the
+    first version of this test passed under the very mutation it existed to
+    catch. Two reasons: `rows` is undeclared, so the pipeline is refused
+    either way; and the template validator finds undeclared names with
+    `jinja2.meta`, which is scope-aware already and reports `ghost` on its
+    own. The data-flow validator is the one that was blind, and it has its
+    own phrasing -- so that is what this looks for.
+    """
+    refused = _validate(
+        "{% for ghost in rows %}{{ ghost.name }}{% endfor %}{{ ghost.done }}",
+        tmp_path,
+    )
+    assert refused is not None, (
+        "a reference to a loop target from outside the loop compiled at all"
+    )
+    assert "Undefined task reference: 'ghost'" in refused, (
+        "the data-flow validator did not object to 'ghost' used outside the "
+        f"loop that binds it, so the scope check is not wired in: {refused}"
+    )
+
+
+def test_a_reference_inside_the_loop_still_validates(tmp_path):
+    """The false positive this whole line of work exists to avoid.
+
+    `{{ row.name }}` inside `{% for row in ... %}` is correct and common; a
+    scope check that rejected it would be worse than no check at all.
+    """
+    inputs = "{% for row in [1, 2] %}{{ row }}{% endfor %}"
+    assert _validate(inputs, tmp_path) is None, (
+        f"a loop variable used inside its loop was refused: "
+        f"{_validate(inputs, tmp_path)}"
+    )
