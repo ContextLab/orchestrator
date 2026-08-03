@@ -304,8 +304,14 @@ class Orchestrator:
         
         # What the run knows about itself. Created here, once, and read
         # everywhere else -- see core/runtime_context.py.
+        execution_namespace = execution_namespace_for(context)
+        self.template_manager.register_context("execution", execution_namespace)
+        # `{{ timestamp }}` is the same instant under a bare name.
+        # `TemplateManager._setup_base_context` seeds it from the clock when the
+        # manager is *constructed*, which is neither the run's start nor the
+        # same value as `execution.timestamp`; the run's own answer wins.
         self.template_manager.register_context(
-            "execution", execution_namespace_for(context)
+            "timestamp", execution_namespace["started_at"]
         )
         
         # Register all pipeline context (including inputs)

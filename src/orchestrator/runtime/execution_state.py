@@ -15,6 +15,7 @@ from datetime import datetime
 from enum import Enum
 import json
 import copy
+from ..core.runtime_context import execution_namespace_for
 
 logger = logging.getLogger(__name__)
 
@@ -299,7 +300,11 @@ class PipelineExecutionState:
         # Add system variables
         context['pipeline_id'] = self.pipeline_id
         context['execution_time'] = (datetime.now() - self.start_time).total_seconds()
-        context['timestamp'] = datetime.now().isoformat()
+        # The run's start time, not a fresh reading. `{{ timestamp }}` and
+        # `{{ execution.timestamp }}` name the same instant and disagreed:
+        # this returned local time without a zone while the run context
+        # returned UTC.
+        context['timestamp'] = execution_namespace_for(context)['started_at']
         
         return context
     
