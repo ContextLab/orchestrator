@@ -181,3 +181,79 @@ def test_json_encode_is_the_same_function_as_to_json():
     """
     filters = TemplateManager().env.filters
     assert filters["json_encode"] is filters["to_json"]
+
+
+# ---------------------------------------------------------------------------
+# 4. References were extracted by chopping text
+# ---------------------------------------------------------------------------
+
+def _refs(template):
+    return DataFlowValidator()._extract_template_variables(template)
+
+
+@pytest.mark.parametrize(
+    "template,expected",
+    [
+        # An expression with a space in it. `split(' ')[0]` cut here.
+        ("{{ zip(rows, cols) }}", {"zip", "rows", "cols"}),
+        ("{{ 'yes' if ready else 'no' }}", {"ready"}),
+        # A filter. `split('|')[0]` left the tail behind as its own "name".
+        ("{{ payload | from_json }}", {"payload"}),
+        # A subscript holding another reference.
+        ("{{ topics[loop.index] }}", {"topics", "loop.index"}),
+        # A chain is one reference, not three.
+        ("{{ a.b.c }}", {"a.b.c"}),
+    ],
+)
+def test_a_reference_survives_being_in_an_expression(template, expected):
+    """Chopping the text produced fragments nobody wrote.
+
+        Undefined task reference: '(row'
+        Undefined task reference: 'from_json)'
+        Undefined task reference: 'analysis_topics[loop'
+
+    Each was then looked up as a task id and reported against the pipeline.
+    """
+    assert set(_refs(template)) == expected
+
+
+def test_a_loop_target_is_not_a_reference():
+    """`{% for row in rows %}` binds `row`; only `rows` is a reference."""
+    assert set(_refs("{% for row in rows %}{{ row.x }}{% endfor %}")) == {"rows"}
+
+
+@pytest.mark.parametrize("template", ["{{ range(3) }}", "{{ now() }}"])
+def test_a_function_the_environment_provides_is_not_a_task(template):
+    assert _refs(template) == []
+
+
+def test_a_broken_template_yields_no_references():
+    """Syntax is the template validator's business.
+
+    Guessing at references inside something that does not parse is how the
+    fragments above were invented.
+    """
+    assert _refs("{{ unclosed ") == []
+
+
+@pytest.mark.parametrize("reference", ["loop.index", "item.name", "loop", "item"])
+def test_loop_variables_are_recognised_however_they_are_written(reference):
+    """The allowlist compared the *whole* reference, so a bare `loop` passed
+    while `{{ loop.index }}` -- the way anyone writes it -- did not."""
+    assert _reference(reference)["valid"] is True
+
+
+def test_a_typo_inside_an_expression_is_now_caught():
+    """Parsing catches more than chopping did, not less.
+
+    `split(' ')[0]` on `'x' if ghost_step.done else 'y'` yielded `'x'` -- a
+    literal, discarded -- so the reference to a step that does not exist was
+    never checked at all. A 14-file jump in the catalogue is only trustworthy
+    if it comes with this.
+    """
+    refs = _refs("{{ 'x' if ghost_step.done else 'y' }}")
+    assert "ghost_step.done" in refs
+
+    result = _reference("ghost_step.done")
+    assert result["valid"] is False
+    assert result["error_type"] == "undefined_task"
