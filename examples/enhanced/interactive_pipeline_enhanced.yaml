@@ -318,7 +318,7 @@ steps:
 
       ## Timestamp
 
-      Generated at: {{ now() }}
+      Generated at: {{ execution.timestamp }}
 
       '
   dependencies:

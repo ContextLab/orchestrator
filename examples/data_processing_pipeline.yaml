@@ -237,7 +237,7 @@ steps:
           "errors": {{ validate_schema.errors | default([]) | to_json }},
           "warnings": {{ validate_schema.warnings | default([]) | to_json }},
           "rows_validated": {{ validate_schema.rows_validated | default(0) }},
-          "timestamp": "{{ now() }}",
+          "timestamp": "{{ execution.timestamp }}",
           "input_file": "{{ input_file }}",
           "validation_mode": "{{ validate_schema.mode | default('strict') }}"
         }
@@ -370,7 +370,7 @@ steps:
         
         ---
         
-        *Report generated on: {{ now() }}*
+        *Report generated on: {{ execution.timestamp }}*
         *Pipeline ID: {{ pipeline_id }}*
     dependencies:
       - clean_data

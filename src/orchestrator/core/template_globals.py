@@ -50,6 +50,10 @@ class GlobalSpec:
     min_args: int
     max_args: Optional[int]  # None means unbounded
     summary: str
+    #: What to write instead, if this global should no longer be used. The
+    #: call keeps working -- pipelines in the wild use it -- but validation
+    #: says so, once, with the replacement named.
+    deprecated_for: Optional[str] = None
 
     def accepts(self, positional: int) -> bool:
         if positional < self.min_args:
@@ -71,8 +75,10 @@ class GlobalSpec:
 GLOBAL_SPECS: Tuple[GlobalSpec, ...] = (
     GlobalSpec(
         "now", 0, 0,
-        "The current time. Re-evaluated at every use, so two steps in one run "
-        "disagree -- prefer `execution.timestamp` where a run needs one answer.",
+        "The current time, read afresh at every use, so two steps of one run "
+        "disagree. Deprecated: use `execution.timestamp`, which is the same "
+        "for every step of a run.",
+        deprecated_for="execution.timestamp",
     ),
     GlobalSpec(
         "file_exists", 1, 2,
@@ -113,6 +119,7 @@ def global_spec(name: str) -> Optional[GlobalSpec]:
 #: on these rather than on message text.
 NOT_CALLED = "global_not_called"
 WRONG_ARITY = "global_wrong_arity"
+DEPRECATED = "global_deprecated"
 
 
 @dataclass(frozen=True)
@@ -123,6 +130,8 @@ class GlobalMisuse:
     code: str
     message: str
     suggestion: str
+    #: "error" refuses the pipeline; "warning" lets it run and says so.
+    severity: str = "error"
 
 
 def find_global_misuse(ast: Any) -> List[GlobalMisuse]:
@@ -201,6 +210,26 @@ def find_global_misuse(ast: Any) -> List[GlobalMisuse]:
                     f"{positional}"
                 ),
                 suggestion=f"{spec.name} expects {spec.arity} argument(s)",
+            ))
+            continue
+
+        # A correct call to something that should no longer be written. Not an
+        # error: pipelines in the wild use it and must keep running.
+        if spec.deprecated_for is not None:
+            key = (spec.name, DEPRECATED)
+            if key in seen:
+                continue
+            seen.add(key)
+            misuse.append(GlobalMisuse(
+                name=spec.name,
+                code=DEPRECATED,
+                message=(
+                    f"'{spec.name}()' is deprecated: it is read afresh at every "
+                    f"use, so two steps of one run disagree. Use "
+                    f"'{spec.deprecated_for}', which is the same for every step."
+                ),
+                suggestion=spec.deprecated_for,
+                severity="warning",
             ))
 
     return misuse

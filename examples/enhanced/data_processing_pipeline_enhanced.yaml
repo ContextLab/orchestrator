@@ -235,7 +235,7 @@ steps:
       \ | to_json }},\n  \"errors\": {{ validate_schema.errors | default([]) | to_json\
       \ }},\n  \"warnings\": {{ validate_schema.warnings | default([]) | to_json }},\n\
       \  \"rows_validated\": {{ validate_schema.rows_validated | default(0) }},\n\
-      \  \"timestamp\": \"{{ now() }}\",\n  \"input_file\": \"{{ input_file }}\",\n\
+      \  \"timestamp\": \"{{ execution.timestamp }}\",\n  \"input_file\": \"{{ input_file }}\",\n\
       \  \"validation_mode\": \"{{ validate_schema.mode | default('strict') }}\"\n\
       }\n"
   dependencies:
@@ -312,7 +312,7 @@ steps:
       \ %}\n*Statistical analysis pending*\n{% endif %}\n\n## Recommendations\n\n\
       {% if quality_check.result.recommendations %}\n{% for rec in quality_check.result.recommendations\
       \ %}\n- \U0001F4CC {{ rec }}\n{% endfor %}\n{% endif %}\n\n---\n\n*Report generated\
-      \ on: {{ now() }}*\n*Pipeline ID: {{ pipeline_id }}*\n"
+      \ on: {{ execution.timestamp }}*\n*Pipeline ID: {{ pipeline_id }}*\n"
   dependencies:
   - clean_data
   - quality_check
