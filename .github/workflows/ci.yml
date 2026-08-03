@@ -19,6 +19,34 @@ env:
   ORCHESTRATOR_AUTO_INSTALL: "0"
 
 jobs:
+  pr-base:
+    name: Pull request targets main
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Base branch must be main
+        # #452, #453 and #455 were each merged into a feature branch that had
+        # itself already been merged and deleted. GitHub reported MERGED for
+        # all three and none of the work reached main; it was found later by
+        # checking file contents, not badges.
+        #
+        # The badge cannot distinguish "merged into main" from "merged into a
+        # dead branch". This can, before the merge rather than after it.
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$BASE_REF" != "main" ]; then
+            echo "::error::This pull request targets '$BASE_REF', not 'main'."
+            echo ""
+            echo "Merging into a base that is itself unmerged -- or already"
+            echo "merged and deleted -- reports MERGED while the work never"
+            echo "reaches main. That silently discarded three PRs."
+            echo ""
+            echo "Retarget to main, or keep this a draft until its parent lands."
+            exit 1
+          fi
+          echo "Base branch is 'main'."
+
   lint:
     name: Lint and package metadata
     runs-on: ubuntu-latest
