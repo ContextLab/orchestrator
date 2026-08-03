@@ -32,6 +32,7 @@ string into somebody's report -- which is what an open namespace would do.
 
 from __future__ import annotations
 
+import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -66,15 +67,48 @@ BARE_RUNTIME_NAMES: FrozenSet[str] = frozenset(
 )
 
 
+def new_execution_id(pipeline_id: Optional[str] = None) -> str:
+    """An identifier no two runs share.
+
+    This was ``f"{pipeline.id}_{int(time.time())}"``, which is unique only
+    until the same pipeline is started twice inside one second -- routine
+    under a test suite, a scheduler, or a retry loop. Two runs then shared an
+    id, and since that id names checkpoints and stamps artifacts, the second
+    run resumed from the first one's checkpoint.
+
+    The second-resolution stamp is kept because it sorts and reads well; the
+    uniqueness comes from the entropy after it.
+    """
+    stamp = int(time.time())
+    entropy = uuid.uuid4().hex[:8]
+    if pipeline_id:
+        return f"{pipeline_id}_{stamp}_{entropy}"
+    return f"run-{stamp}-{entropy}"
+
+
 @dataclass(frozen=True)
 class RuntimeContext:
-    """One run's identity and start time. Immutable, created once."""
+    """One run's identity and start time. Immutable, created once.
+
+    Created by whoever owns the run -- an orchestrator, an engine, a
+    `PipelineExecutionState`. Context dictionaries receive a *projection* of
+    it (see `project_into`) and never establish it themselves, because a
+    dictionary cannot know whether it is the run or merely a copy of part of
+    it. `PipelineExecutionState.get_available_context` proved the difference:
+    it built a fresh dict per call and let the identity be established inside
+    it, so every read of the run's context invented a new run.
+    """
 
     id: str
     started_at: datetime
+    pipeline_id: Optional[str] = None
 
     @classmethod
-    def create(cls, execution_id: Optional[str] = None) -> "RuntimeContext":
+    def create(
+        cls,
+        execution_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+    ) -> "RuntimeContext":
         """A context for a run starting now, in UTC.
 
         UTC rather than local time so two machines running the same pipeline
@@ -82,8 +116,9 @@ class RuntimeContext:
         change does not go backwards.
         """
         return cls(
-            id=execution_id or f"run-{uuid.uuid4().hex[:12]}",
+            id=execution_id or new_execution_id(pipeline_id),
             started_at=datetime.now(timezone.utc),
+            pipeline_id=pipeline_id,
         )
 
     @property
@@ -111,6 +146,63 @@ class RuntimeContext:
         }
 
 
+    def public_names(self) -> Dict[str, Any]:
+        """Exactly the names the pipeline language declares, and no others.
+
+        One builder for every engine. Each used to assemble its own idea of
+        what a run offers, so `{{ execution.timestamp }}` worked under the
+        main orchestrator and not the declarative engine, `{{ timestamp }}`
+        the reverse, and two engines offered a `pipeline` namespace that
+        validation refuses. The language a pipeline is written against must
+        not depend on which engine happens to run it.
+        """
+        namespace = self.as_template_namespace()
+        names: Dict[str, Any] = {
+            RUNTIME_NAMESPACE: namespace,
+            "execution_id": self.id,
+            "timestamp": namespace["started_at"],
+        }
+        if self.pipeline_id is not None:
+            names["pipeline_id"] = self.pipeline_id
+        return names
+
+    def project_into(self, context: MutableMapping[str, Any]) -> Dict[str, str]:
+        """Write this run's public names into a context dict.
+
+        Idempotent: the values come from an immutable object, so projecting
+        twice writes the same thing twice. Returns the `execution` namespace
+        for callers that want it directly.
+        """
+        namespace = self.as_template_namespace()
+        context[CONTEXT_KEY] = namespace
+        context.update(self.public_names())
+        return namespace
+
+
+def runtime_context_for(context: MutableMapping[str, Any]) -> RuntimeContext:
+    """The run a context dict belongs to, established on first ask.
+
+    For callers that hold a run's context but not the object -- a control
+    system, an engine mid-run. The identity is stored back on the dict, so
+    every later caller holding that same dict gets the same run.
+
+    `PipelineExecutionState` deliberately does not use this: it *is* the run
+    owner and holds a `RuntimeContext` directly.
+    """
+    cached = context.get(CONTEXT_KEY)
+    if isinstance(cached, dict) and EXECUTION_FIELDS <= set(cached):
+        return RuntimeContext(
+            id=cached["id"],
+            started_at=datetime.fromisoformat(cached["started_at"]),
+            pipeline_id=context.get("pipeline_id"),
+        )
+
+    return RuntimeContext.create(
+        execution_id=context.get("execution_id"),
+        pipeline_id=context.get("pipeline_id"),
+    )
+
+
 def execution_namespace_for(context: MutableMapping[str, Any]) -> Dict[str, str]:
     """The run's answer, computed on the first ask and reused after.
 
@@ -118,10 +210,4 @@ def execution_namespace_for(context: MutableMapping[str, Any]) -> Dict[str, str]
     hold without threading an instance through every caller -- and every
     caller already holds the run's context dict.
     """
-    cached = context.get(CONTEXT_KEY)
-    if isinstance(cached, dict) and EXECUTION_FIELDS <= set(cached):
-        return cached
-
-    namespace = RuntimeContext.create(context.get("execution_id")).as_template_namespace()
-    context[CONTEXT_KEY] = namespace
-    return namespace
+    return runtime_context_for(context).project_into(context)

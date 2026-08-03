@@ -30,10 +30,13 @@ import pytest
 
 from orchestrator.core.runtime_context import (
     BARE_RUNTIME_NAMES,
+    CONTEXT_KEY,
     EXECUTION_FIELDS,
     RUNTIME_NAMESPACE,
     RuntimeContext,
     execution_namespace_for,
+    new_execution_id,
+    runtime_context_for,
 )
 
 pytestmark = [pytest.mark.contract]
@@ -350,3 +353,207 @@ def test_a_name_the_runtime_does_not_provide_is_still_refused(name, tmp_path):
         f"{name} runs after all; it should be declared rather than refused"
     )
     assert _cli("validate", pipeline, tmp_path).returncode != 0
+
+
+# ---------------------------------------------------------------------------
+# The run owns its identity; dictionaries only receive projections of it
+# ---------------------------------------------------------------------------
+
+def _state(pipeline_id="p"):
+    from orchestrator.runtime.execution_state import PipelineExecutionState
+
+    return PipelineExecutionState(pipeline_id=pipeline_id)
+
+
+def test_reading_a_run_s_context_twice_does_not_start_a_second_run():
+    """The defect this section exists for.
+
+    `get_available_context` built a fresh dict per call and let the run's
+    identity be established *inside it*, then returned the dict and dropped
+    the cache with it. So every read invented a new run::
+
+        first:  2026-08-03T23:15:17.116698+00:00
+        second: 2026-08-03T23:15:17.117053+00:00
+
+    A context dict cannot tell whether it is the run or a copy of part of it,
+    so it is the wrong owner. The state is the run and holds the object.
+    """
+    state = _state()
+    first, second = state.get_available_context(), state.get_available_context()
+
+    assert first["timestamp"] == second["timestamp"], (
+        f"one run reported two start times: {first['timestamp']!r} then "
+        f"{second['timestamp']!r}"
+    )
+    assert first["execution_id"] == second["execution_id"], (
+        f"one run reported two identities: {first['execution_id']!r} then "
+        f"{second['execution_id']!r}"
+    )
+    assert first["execution"] == second["execution"]
+
+
+def test_a_run_s_context_stays_json_serializable():
+    """Checkpointing writes it out; an object in there fails the whole run."""
+    json.dumps(_state().get_available_context())
+
+
+def test_elapsed_time_is_measurable_against_the_run_s_start():
+    """`start_time` became timezone-aware when it became the run's own.
+
+    Subtracting an aware datetime from a naive one raises `TypeError`, so
+    this is the arithmetic that would break silently at the two call sites
+    that measure duration.
+    """
+    state = _state()
+    assert state.get_available_context()["execution_time"] >= 0
+    assert state.get_execution_summary()["duration_seconds"] >= 0
+
+
+# ---------------------------------------------------------------------------
+# A resumed run is the same run
+# ---------------------------------------------------------------------------
+
+def test_a_checkpoint_round_trip_preserves_the_run(tmp_path):
+    """Export, restore, and it is still the same run.
+
+    The identity was not exported at all, so a resumed run got a new id and a
+    new start time -- the artifacts written after the checkpoint stamped
+    differently from the ones written before it, in the one situation where
+    you most want to line them up.
+    """
+    original = _state()
+    before = original.get_available_context()
+
+    exported = json.loads(json.dumps(original.export_state()))  # as it travels
+    restored = _state(pipeline_id="something-else")
+    restored.import_state(exported)
+    after = restored.get_available_context()
+
+    assert after["execution_id"] == before["execution_id"]
+    assert after["timestamp"] == before["timestamp"]
+    assert after["execution"] == before["execution"]
+
+
+def test_a_checkpoint_written_before_start_times_had_a_zone_still_loads():
+    """Older checkpoints hold a naive local `start_time`.
+
+    Reading one must not leave the state unable to subtract its own start
+    time from the clock.
+    """
+    from datetime import datetime as _datetime
+
+    state = _state()
+    exported = state.export_state()
+    exported["start_time"] = _datetime.now().isoformat()  # naive, as before
+    exported.pop("execution_id")
+
+    state.import_state(exported)
+    assert state.get_execution_summary()["duration_seconds"] >= 0
+    assert state.get_available_context()["execution_id"]
+
+
+# ---------------------------------------------------------------------------
+# Two runs are two runs
+# ---------------------------------------------------------------------------
+
+def test_ids_generated_in_one_second_are_distinct():
+    """`f"{pipeline.id}_{int(time.time())}"` is unique only until a pipeline
+    starts twice inside one second -- routine under a test suite, a scheduler
+    or a retry loop. The id names checkpoints, so a collision means the second
+    run resumes from the first one's state.
+    """
+    ids = {new_execution_id("same-pipeline") for _ in range(5000)}
+    assert len(ids) == 5000, f"{5000 - len(ids)} of 5000 ids collided"
+
+
+def test_an_id_still_names_its_pipeline():
+    """Uniqueness must not cost traceability: the id is read in logs."""
+    assert new_execution_id("my-pipeline").startswith("my-pipeline_")
+
+
+def test_two_states_are_two_runs():
+    assert (
+        _state().get_available_context()["execution_id"]
+        != _state().get_available_context()["execution_id"]
+    )
+
+
+# ---------------------------------------------------------------------------
+# One language, whichever engine runs it
+# ---------------------------------------------------------------------------
+
+def test_the_builder_emits_exactly_the_declared_language():
+    """`public_names` is the contract every engine is held to.
+
+    If it drifts from what the validators accept, an engine offers a name no
+    pipeline may use, or a declared name no engine populates -- both of which
+    this namespace has done.
+    """
+    names = RuntimeContext.create(execution_id="x", pipeline_id="p").public_names()
+
+    assert set(names) == BARE_RUNTIME_NAMES | {RUNTIME_NAMESPACE}
+    assert set(names[RUNTIME_NAMESPACE]) == EXECUTION_FIELDS
+
+
+def test_projection_is_idempotent():
+    """Engines project defensively, sometimes more than once per run."""
+    runtime = RuntimeContext.create(execution_id="x", pipeline_id="p")
+    context = {}
+    runtime.project_into(context)
+    first = dict(context)
+    runtime.project_into(context)
+    assert context == first
+
+
+def test_a_context_that_already_knows_its_run_does_not_start_another():
+    context = {"execution_id": "abc", "pipeline_id": "p"}
+    execution_namespace_for(context)
+    recovered = runtime_context_for(context)
+
+    assert recovered.id == "abc"
+    assert recovered.as_template_namespace() == context[CONTEXT_KEY]
+
+
+def test_the_declarative_engine_offers_the_same_names_as_everyone_else():
+    """It offered `start_time` and no `timestamp`, so `{{ execution.timestamp }}`
+    rendered under the main orchestrator and nowhere else."""
+    from orchestrator.engine.declarative_engine import DeclarativePipelineEngine
+    from orchestrator.engine.pipeline_spec import PipelineSpec
+
+    spec = PipelineSpec(
+        name="p", steps=[{"id": "s", "action": "generate", "inputs": {}}]
+    )
+    context = DeclarativePipelineEngine()._initialize_context(spec, {"topic": "x"})
+
+    assert BARE_RUNTIME_NAMES <= set(context), (
+        f"the declarative engine does not populate "
+        f"{sorted(BARE_RUNTIME_NAMES - set(context))}"
+    )
+    assert set(context[RUNTIME_NAMESPACE]) == EXECUTION_FIELDS
+    assert context["timestamp"] == context[RUNTIME_NAMESPACE]["started_at"]
+
+
+def test_no_engine_offers_a_namespace_validation_refuses():
+    """`pipeline` was populated by two engines and refused by the validators.
+
+    A pipeline written against it ran on those engines and could not be
+    validated anywhere -- the contract described one engine, not the product.
+    `context` and `env` are refused on the same grounds.
+    """
+    import re
+
+    refused = ("pipeline", "context", "env")
+    pattern = re.compile(
+        r"""context\[\s*['"](""" + "|".join(refused) + r""")['"]\s*\]\s*="""
+    )
+
+    offenders = [
+        f"{path.relative_to(REPO)}:{i}: {line.strip()}"
+        for path in (REPO / "src" / "orchestrator").rglob("*.py")
+        for i, line in enumerate(path.read_text().splitlines(), 1)
+        if pattern.search(line)
+    ]
+    assert not offenders, (
+        "these populate a namespace the validators refuse, so a pipeline "
+        f"using it cannot be validated: {offenders}"
+    )

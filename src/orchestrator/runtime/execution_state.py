@@ -11,11 +11,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import json
 import copy
-from ..core.runtime_context import execution_namespace_for
+from ..core.runtime_context import RuntimeContext, new_execution_id
 
 logger = logging.getLogger(__name__)
 
@@ -115,8 +115,17 @@ class PipelineExecutionState:
             pipeline_id: Unique identifier for this pipeline execution
         """
         self.pipeline_id = pipeline_id
-        self.start_time = datetime.now()
-        
+        # This state *is* the run, so it owns the run's identity rather than
+        # letting each reader establish one. `get_available_context` used to
+        # build a fresh dict per call and let the identity be created inside
+        # it; the dict was discarded on return, so every read invented a new
+        # run and reported a different start time:
+        #
+        #     first:  2026-08-03T23:15:17.116698+00:00
+        #     second: 2026-08-03T23:15:17.117053+00:00
+        self.runtime_context = RuntimeContext.create(pipeline_id=pipeline_id)
+        self.start_time = self.runtime_context.started_at
+
         # Core state storage
         self.global_context = {
             'variables': {},      # User-defined and system variables
@@ -297,16 +306,17 @@ class PipelineExecutionState:
                 parent = parent.parent_context
                 depth += 1
         
-        # Add system variables
-        context['pipeline_id'] = self.pipeline_id
-        context['execution_time'] = (datetime.now() - self.start_time).total_seconds()
-        # The run's start time, not a fresh reading. `{{ timestamp }}` and
-        # `{{ execution.timestamp }}` name the same instant and disagreed:
-        # this returned local time without a zone while the run context
-        # returned UTC.
-        context['timestamp'] = execution_namespace_for(context)['started_at']
-        
+        # Add system variables. `pipeline_id`, `execution_id`, `timestamp`
+        # and the `execution` namespace all come from the run this state owns,
+        # so repeated reads agree with each other and with every other engine.
+        self.runtime_context.project_into(context)
+        context['execution_time'] = self._elapsed_seconds()
+
         return context
+
+    def _elapsed_seconds(self) -> float:
+        """How long the run has been going, in seconds."""
+        return (datetime.now(timezone.utc) - self.start_time).total_seconds()
     
     def add_unresolved_item(self, item: UnresolvedItem) -> None:
         """
@@ -478,7 +488,7 @@ class PipelineExecutionState:
         """
         return {
             'pipeline_id': self.pipeline_id,
-            'duration_seconds': (datetime.now() - self.start_time).total_seconds(),
+            'duration_seconds': self._elapsed_seconds(),
             'tasks_executed': len(self.executed_tasks),
             'tasks_pending': len(self.pending_tasks),
             'tasks_failed': len(self.failed_tasks),
@@ -498,6 +508,11 @@ class PipelineExecutionState:
         """
         return {
             'pipeline_id': self.pipeline_id,
+            # The run's identity travels with its state. Without it a resumed
+            # run is a different run: new id, new start time, so the artifacts
+            # written after the checkpoint are stamped differently from the
+            # ones written before it.
+            'execution_id': self.runtime_context.id,
             'start_time': self.start_time.isoformat(),
             'global_context': copy.deepcopy(self.global_context),
             'loop_contexts': {
@@ -537,7 +552,18 @@ class PipelineExecutionState:
             state_dict: State dictionary to import
         """
         self.pipeline_id = state_dict.get('pipeline_id', 'imported')
-        self.start_time = datetime.fromisoformat(state_dict['start_time'])
+        started_at = datetime.fromisoformat(state_dict['start_time'])
+        if started_at.tzinfo is None:
+            # A checkpoint written before start times carried a zone. It was
+            # local time; reading it as UTC keeps the arithmetic working and
+            # is the only interpretation available.
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        self.runtime_context = RuntimeContext(
+            id=state_dict.get('execution_id') or new_execution_id(self.pipeline_id),
+            started_at=started_at,
+            pipeline_id=self.pipeline_id,
+        )
+        self.start_time = self.runtime_context.started_at
         self.global_context = copy.deepcopy(state_dict.get('global_context', {}))
         
         # Reconstruct loop contexts
