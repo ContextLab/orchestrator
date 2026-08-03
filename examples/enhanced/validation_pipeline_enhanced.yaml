@@ -51,7 +51,7 @@ steps:
   parameters:
     path: examples/outputs/validation_pipeline/reports/validation_report.json
     content: "{\n  \"validation_result\": {{ validate_data | to_json }},\n  \"extracted_data\"\
-      : {{ extract_info | to_json }},\n  \"timestamp\": \"{{ now() }}\"\n}\n"
+      : {{ extract_info | to_json }},\n  \"timestamp\": \"{{ execution.timestamp }}\"\n}\n"
   dependencies:
   - validate_data
   - extract_info

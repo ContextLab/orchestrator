@@ -335,13 +335,20 @@ class TemplateValidator:
             # nothing fails. The AST is what tells a call apart from an
             # attribute access or a bare mention; the text does not.
             for misuse in find_global_misuse(ast):
-                errors.append(TemplateValidationError(
+                reported = TemplateValidationError(
                     template=template,
                     error_type=misuse.code,
                     message=misuse.message,
                     context_path=context_path,
                     suggestions=[misuse.suggestion],
-                ))
+                    severity=misuse.severity,
+                )
+                # A deprecated global still works, so saying so must not stop
+                # the pipeline; a misused one cannot work, so it must.
+                if misuse.severity == "error":
+                    errors.append(reported)
+                else:
+                    warnings.append(reported)
 
             # Find all variable references
             var_names = meta.find_undeclared_variables(ast)

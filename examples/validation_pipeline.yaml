@@ -59,7 +59,7 @@ steps:
         {
           "validation_result": {{ validate_data | to_json }},
           "extracted_data": {{ extract_info | to_json }},
-          "timestamp": "{{ now() }}"
+          "timestamp": "{{ execution.timestamp }}"
         }
     dependencies:
       - validate_data
