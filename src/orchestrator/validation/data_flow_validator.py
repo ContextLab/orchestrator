@@ -12,9 +12,12 @@ Issue #241 Stream 4: Data Flow Validation
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
-from jinja2 import TemplateSyntaxError, Undefined, meta
+# `jinja2.meta` was how references used to be found. It reports only top-level
+# undeclared names, which is why the chain and subscript forms had to be
+# recovered from the raw text afterwards; walking the AST replaced both.
+from jinja2 import Undefined
 
 from ..core.runtime_context import (
     BARE_RUNTIME_NAMES,
