@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 from jinja2 import TemplateSyntaxError, Undefined, meta
 
+from ..core.runtime_context import EXECUTION_FIELDS, RUNTIME_NAMESPACE
 from ..core.template_sandbox import create_sandboxed_environment, pipeline_global_names
 
 logger = logging.getLogger(__name__)
@@ -508,10 +509,26 @@ class DataFlowValidator:
         if base_var in pipeline_inputs:
             return {"valid": True, "type": "pipeline_input"}
 
-        # Runtime namespaces injected by the executor rather than by the
-        # pipeline author.
-        if base_var in ("execution", "pipeline", "context", "env"):
-            return {"valid": True, "type": "runtime_namespace"}
+        # The one namespace the runtime injects. `pipeline`, `context` and
+        # `env` were accepted alongside it and are populated by nothing -- the
+        # template validator rejected them anyway, so the permissiveness here
+        # was invisible rather than harmless. They are gone; a pipeline naming
+        # them now gets a reason instead of an "undefined variable".
+        if base_var == RUNTIME_NAMESPACE:
+            field = parts[1] if len(parts) > 1 else None
+            if field is None or field in EXECUTION_FIELDS:
+                return {"valid": True, "type": "runtime_namespace"}
+            return {
+                "valid": False,
+                "error_type": "unknown_execution_field",
+                "message": (
+                    f"'execution.{field}' is not a field of the run context. "
+                    f"Available: {', '.join(sorted(EXECUTION_FIELDS))}"
+                ),
+                "suggestions": self._suggest_similar_names(
+                    field, sorted(EXECUTION_FIELDS)
+                ),
+            }
 
         # Check for task output references
         if base_var in task_schemas:
