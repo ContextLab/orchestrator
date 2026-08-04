@@ -166,3 +166,22 @@ def test_the_list_is_not_empty():
     assert report.load_baseline(), (
         "an empty baseline would make the regression gate vacuous"
     )
+
+
+def test_updating_an_already_current_baseline_changes_nothing():
+    """`--update` rewrites the whole file, header included.
+
+    The header was edited by hand when examples/supported/ landed, so the
+    next `--update` silently deleted the paragraph explaining that passing
+    validation is not the same as being a supported example. Generated files
+    have no room for hand-written parts; this pins the two together.
+    """
+    current = report.BASELINE.read_text()
+    listed = report.load_baseline()
+
+    assert current == report.BASELINE_HEADER + "".join(
+        f"{path}\n" for path in sorted(listed)
+    ), (
+        "the baseline on disk is not what --update would write, so the next "
+        "--update will silently discard the difference"
+    )

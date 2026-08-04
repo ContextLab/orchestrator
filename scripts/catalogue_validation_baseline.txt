@@ -23,6 +23,7 @@ examples/enhanced/control_flow_conditional_enhanced.yaml
 examples/enhanced/control_flow_dynamic_enhanced.yaml
 examples/enhanced/data_processing_enhanced.yaml
 examples/enhanced/data_processing_pipeline_enhanced.yaml
+examples/enhanced/fact_checker_enhanced.yaml
 examples/enhanced/interactive_pipeline_enhanced.yaml
 examples/enhanced/llm_routing_pipeline_enhanced.yaml
 examples/enhanced/mcp_integration_pipeline_enhanced.yaml
@@ -36,6 +37,7 @@ examples/enhanced/statistical_analysis_enhanced.yaml
 examples/enhanced/terminal_automation_enhanced.yaml
 examples/enhanced/validation_pipeline_enhanced.yaml
 examples/enhanced/working_web_search_enhanced.yaml
+examples/fact_checker.yaml
 examples/interactive_pipeline.yaml
 examples/llm_routing_pipeline.yaml
 examples/mcp_integration_pipeline.yaml

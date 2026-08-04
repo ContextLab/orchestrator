@@ -29,10 +29,10 @@ from ..core.template_scope import template_references
 
 logger = logging.getLogger(__name__)
 
-#: Names bound by a loop rather than by a step. `loop` is Jinja's own.
-LOOP_VARIABLES = frozenset(
-    {"item", "index", "loop", "iteration", "is_first", "is_last"}
-)
+#: Names bound by a loop rather than by a step. Declared with the rest of the
+#: pipeline language in `core.template_globals`, so this validator and the
+#: template validator cannot disagree about them again (#469).
+from ..core.template_globals import LOOP_VARIABLES  # noqa: E402
 
 #: `thing['key']` -> `thing.key`, so one spelling reaches the checks below.
 _SUBSCRIPT = re.compile(r"""\[\s*['"]([^'"]+)['"]\s*\]""")

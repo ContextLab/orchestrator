@@ -107,6 +107,42 @@ GLOBAL_SPECS: Tuple[GlobalSpec, ...] = (
 
 GLOBAL_NAMES: FrozenSet[str] = frozenset(spec.name for spec in GLOBAL_SPECS)
 
+
+#: Names the runtime binds inside a loop step -- `for_each`, `foreach`,
+#: `create_parallel_queue`, `action_loop` -- and inside that step's nested
+#: `steps:`. Declared here, with the globals, because they are part of the
+#: pipeline language rather than one validator's private knowledge. The
+#: data-flow validator knew the bare spelling and the template validator knew
+#: only the `$`-prefixed one, so `{{ item.name }}` -- the form every example
+#: actually uses -- was reported as an undefined variable (#469).
+LOOP_VARIABLE_NAMES: Tuple[str, ...] = (
+    "item", "index", "is_first", "is_last", "iteration", "loop",
+)
+
+LOOP_VARIABLES: FrozenSet[str] = frozenset(LOOP_VARIABLE_NAMES)
+
+#: The runtime registers both spellings. `$item` is not a name Jinja can
+#: parse, so it has to be matched as raw text rather than found in the AST --
+#: a substring hack that must stay confined to these.
+DOLLAR_LOOP_VARIABLES: FrozenSet[str] = frozenset(
+    f"${name}" for name in LOOP_VARIABLE_NAMES
+)
+
+ALL_LOOP_VARIABLES: FrozenSet[str] = LOOP_VARIABLES | DOLLAR_LOOP_VARIABLES
+
+
+#: Step keys that make a step a loop, and so bind `LOOP_VARIABLES` inside it
+#: and inside its nested `steps:`.
+#:
+#: The template validator recognised only `for_each` and `while`, so a step
+#: written with `foreach` -- the spelling the compiler accepts as an alias --
+#: was not treated as a loop, and its loop variables were reported as used
+#: outside a loop. One spelling known to the compiler and a different set
+#: known to the validator is the same class of disagreement as #465.
+LOOP_STEP_KEYS: Tuple[str, ...] = (
+    "for_each", "foreach", "while", "create_parallel_queue", "action_loop",
+)
+
 _BY_NAME = {spec.name: spec for spec in GLOBAL_SPECS}
 
 
