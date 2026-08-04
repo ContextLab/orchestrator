@@ -19,6 +19,7 @@ from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.runtime_context import BARE_RUNTIME_NAMES, RUNTIME_NAMESPACE
 from ..core.loop_contracts import ALL_BINDINGS, LoopContract, contracts_for
+from ..core.step_fields import INERT_PIPELINE_FIELDS, INERT_STEP_FIELDS
 from ..core.template_globals import (
     ALL_LOOP_VARIABLES,
     DOLLAR_LOOP_VARIABLES,
@@ -38,6 +39,17 @@ PARAMETER_NAMESPACES = frozenset({"parameters", "inputs"})
 #: Where a step sits in a pipeline document. A loop is declared by a step, so
 #: this is where a loop construct is looked for -- see `_validate_object_templates`.
 _STEP_PATH = re.compile(r"steps\[\d+\]$")
+
+#: What a template in an inert field actually does. Validation used to report
+#: `{{ b.result }}` in a step's `name:` as "references step results - will be
+#: resolved at runtime", which is the opposite of true: nothing renders `name`,
+#: so the braces reach the log verbatim. Worse, `{{ nosuch }}` in a
+#: `description:` was a hard error, so a stray brace in prose rejected a
+#: pipeline that runs correctly.
+_INERT_TEMPLATE_MESSAGE = (
+    "'{field}' is copied verbatim, so this template is never rendered -- "
+    "the braces appear literally in the output"
+)
 
 
 def _binding_set(value: Union[bool, FrozenSet[str], None]) -> FrozenSet[str]:
@@ -605,6 +617,7 @@ class TemplateValidator:
         undefined_variables: Set,
         loop_bindings: FrozenSet[str] = frozenset(),
         loop_scope: Optional[Tuple[LoopContract, str, FrozenSet[str]]] = None,
+        inert_field: Optional[str] = None,
     ):
         """Recursively validate templates in an object.
 
@@ -613,10 +626,29 @@ class TemplateValidator:
         path reached inside it, because scope is a property of the field and
         not of the step: a `create_parallel_queue`'s `on` resolves before any
         item exists while the action list beside it runs per item.
+
+        `inert_field` names the step field the runtime copies verbatim, if
+        this walk is inside one. Nothing substitutes into it, so a reference
+        there cannot be undefined and cannot be resolved later. The *field* is
+        carried rather than a flag so a nested value reports `metadata` -- the
+        field that is inert -- instead of whichever key it sits under.
         """
         if isinstance(obj, str):
             # Check if this contains templates
             if '{{' in obj or '{%' in obj:
+                if inert_field:
+                    warnings.append(TemplateValidationError(
+                        template=obj,
+                        error_type="inert_field_template",
+                        message=_INERT_TEMPLATE_MESSAGE.format(field=inert_field),
+                        context_path=path,
+                        severity="warning",
+                        suggestions=[
+                            "Move the reference to a field that is rendered "
+                            "(parameters, action, location), or remove the braces"
+                        ],
+                    ))
+                    return
                 result = self.validate_template(
                     obj, context, path, step_ids, loop_bindings
                 )
@@ -631,7 +663,8 @@ class TemplateValidator:
             # `action_loop` look like a second, separate loop, which replaced
             # the queue's scope with the action loop's and let `{{ item }}`
             # through in the `on` expression that generates the queue.
-            declared = contracts_for(obj) if _STEP_PATH.search(path) else ()
+            is_step = bool(_STEP_PATH.search(path))
+            declared = contracts_for(obj) if is_step else ()
             if len(declared) > 1:
                 # Which construct wins is decided by declaration order in
                 # `loop_contracts`, and no engine agreed to that order. The
@@ -659,6 +692,11 @@ class TemplateValidator:
 
             for key, value in obj.items():
                 new_path = f"{path}.{key}" if path else key
+                inert_here = (
+                    (is_step and key in INERT_STEP_FIELDS)
+                    or (not path and key in INERT_PIPELINE_FIELDS)
+                )
+                child_inert = inert_field or (key if inert_here else None)
                 child_bindings, child_scope = loop_bindings, loop_scope
                 if loop_scope is not None:
                     contract, prefix, enclosing = loop_scope
@@ -668,7 +706,7 @@ class TemplateValidator:
                 self._validate_object_templates(
                     value, context, step_ids, new_path,
                     errors, warnings, used_variables, undefined_variables,
-                    child_bindings, child_scope,
+                    child_bindings, child_scope, child_inert,
                 )
 
         elif isinstance(obj, list):
@@ -677,7 +715,7 @@ class TemplateValidator:
                 self._validate_object_templates(
                     item, context, step_ids, new_path,
                     errors, warnings, used_variables, undefined_variables,
-                    loop_bindings, loop_scope,
+                    loop_bindings, loop_scope, inert_field,
                 )
     
     def _is_step_result_reference(self, var_name: str, step_ids: List[str]) -> bool:
