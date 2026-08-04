@@ -30,6 +30,7 @@ from pathlib import Path
 
 import pytest
 
+from orchestrator.core.loop_contracts import FOR_EACH, LOOP_CONTRACTS
 from orchestrator.core.template_globals import (
     ALL_LOOP_VARIABLES,
     DOLLAR_LOOP_VARIABLES,
@@ -44,8 +45,15 @@ REPO = Path(__file__).resolve().parent.parent
 
 
 def _check(template, context=None, in_loop=False):
+    """`in_loop` means a `for_each` specifically.
+
+    Passing `True` would admit the union of every construct's bindings,
+    which is what let `{{ is_last }}` pass inside a `while` loop. Tests
+    that go through the imprecise path cannot notice when it is wrong.
+    """
+    bindings = FOR_EACH.all_bindings() if in_loop else frozenset()
     result = TemplateValidator().validate_template(
-        template, context or {}, None, [], in_loop
+        template, context or {}, None, [], bindings
     )
     return result.is_valid, [error.error_type for error in result.errors]
 
@@ -54,8 +62,11 @@ def _check(template, context=None, in_loop=False):
 # The bare spelling is the one people write
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("name", sorted(LOOP_VARIABLES))
+@pytest.mark.parametrize("name", sorted(FOR_EACH.bindings))
 def test_every_loop_variable_is_accepted_inside_a_loop(name):
+    """`FOR_EACH.bindings`, not the union: a `for_each` binds `item`, not
+    `queue_size`, and asserting over the union would pass for the wrong
+    reason."""
     valid, errors = _check("{{ %s }}" % name, in_loop=True)
     assert valid, f"{name} is bound inside a loop and was rejected: {errors}"
 
@@ -107,25 +118,31 @@ def test_the_dollar_scan_covers_only_the_dollar_spellings():
 @pytest.mark.parametrize("key", LOOP_STEP_KEYS)
 def test_every_loop_step_key_establishes_loop_context(key):
     """`foreach` is an alias the compiler accepts. A validator that knows only
-    `for_each` rejects a pipeline the compiler is happy to run."""
-    validator = TemplateValidator()
-    pipeline = {
-        "id": "p",
-        "steps": [{
-            "id": "looped",
-            key: "{{ some_source }}",
-            "parameters": {"text": "{{ item.name }}"},
-        }],
-    }
-    result = validator.validate_pipeline_templates(pipeline)
-    offending = [
-        error for error in result.errors
-        if error.error_type in ("loop_variable_outside_loop", "undefined_variable")
-        and "item" in error.message
-    ]
-    assert not offending, (
-        f"a step declaring '{key}' is a loop, but `item` was reported: "
-        f"{[e.message for e in offending]}"
+    `for_each` rejects a pipeline the compiler is happy to run.
+
+    Each construct is probed with a name it actually binds. The earlier
+    version of this test used `item` for all five, which only passed because
+    every construct saw the union -- `while` and `action_loop` bind no `item`.
+    Requiring full validity is what exposed that; the weaker "no error
+    mentions `item`" assertion had been satisfied by a pipeline that was
+    rejected for an unrelated reason.
+    """
+    contract = LOOP_CONTRACTS[key]
+    bound = sorted(contract.bindings)[0]
+    result = TemplateValidator().validate_pipeline_templates(
+        {
+            "id": "p",
+            "steps": [{
+                "id": "looped",
+                key: "{{ some_source }}",
+                "parameters": {"text": "{{ %s }}" % bound},
+            }],
+        },
+        {"some_source": [1]},
+    )
+    assert result.is_valid, (
+        f"a step declaring '{key}' binds {bound}, but the step was rejected: "
+        f"{[(e.error_type, e.message) for e in result.errors]}"
     )
 
 

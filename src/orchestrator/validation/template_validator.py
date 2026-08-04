@@ -12,16 +12,16 @@ Issue #229: Compile-time template validation
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, FrozenSet, List, Optional, Set, Union
 from dataclasses import dataclass
 from jinja2 import Environment, TemplateSyntaxError, meta
 from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.runtime_context import BARE_RUNTIME_NAMES, RUNTIME_NAMESPACE
+from ..core.loop_contracts import ALL_BINDINGS, contract_for, is_source_field
 from ..core.template_globals import (
     ALL_LOOP_VARIABLES,
     DOLLAR_LOOP_VARIABLES,
-    LOOP_STEP_KEYS,
     find_global_misuse,
 )
 from ..core.template_sandbox import pipeline_global_names
@@ -34,6 +34,22 @@ logger = logging.getLogger(__name__)
 #: `execution` -- the data-flow validator accepts that one, but the runtime
 #: does not populate it, and papering over that here would hide a real bug.
 PARAMETER_NAMESPACES = frozenset({"parameters", "inputs"})
+
+
+def _binding_set(value: Union[bool, FrozenSet[str], None]) -> FrozenSet[str]:
+    """Normalise the loop-scope argument to a set of names.
+
+    `True` and `False` are still accepted because the parameter began life as
+    a boolean. `True` means "inside some loop, construct unknown" and admits
+    the union -- the imprecision this module is moving away from, kept only so
+    an external caller that has not been updated does not start reporting
+    every loop variable as undefined.
+    """
+    if value is True:
+        return ALL_BINDINGS
+    if not value:
+        return frozenset()
+    return frozenset(value)
 
 
 @dataclass
@@ -140,20 +156,26 @@ class TemplateValidator:
         available_context: Optional[Dict[str, Any]] = None,
         context_path: Optional[str] = None,
         step_ids: Optional[List[str]] = None,
-        in_loop_context: bool = False
+        loop_bindings: Union[bool, FrozenSet[str]] = frozenset(),
     ) -> TemplateValidationResult:
         """Validate a single template string.
-        
+
         Args:
             template: Template string to validate
             available_context: Context variables available at compile time
             context_path: Path to this template (for error reporting)
             step_ids: List of step IDs in the pipeline
-            in_loop_context: Whether this template is inside a loop
-            
+            loop_bindings: The names this template's loop binds. Empty means
+                not inside a loop. `True` is accepted as "some loop, construct
+                unknown" and admits the union of every construct's bindings --
+                which cannot tell `{{ is_last }}` in a parallel queue from the
+                same text in a `while` loop, so pass the real set where the
+                construct is known.
+
         Returns:
             TemplateValidationResult with validation details
         """
+        loop_bindings = _binding_set(loop_bindings)
         if available_context is None:
             available_context = {}
         if step_ids is None:
@@ -197,7 +219,7 @@ class TemplateValidator:
         
         # 2. Extract and validate variable references
         var_results = self._validate_variables(
-            template, available_context, context_path, step_ids, in_loop_context
+            template, available_context, context_path, step_ids, loop_bindings
         )
         errors.extend(var_results['errors'])
         warnings.extend(var_results['warnings'])
@@ -327,7 +349,7 @@ class TemplateValidator:
         available_context: Dict[str, Any],
         context_path: Optional[str],
         step_ids: List[str],
-        in_loop_context: bool
+        loop_bindings: FrozenSet[str],
     ) -> Dict[str, Any]:
         """Validate variable references in template."""
         errors = []
@@ -384,14 +406,35 @@ class TemplateValidator:
                 # declared name wins -- otherwise adding these would reject
                 # the pipeline that named its parameter after a loop word.
                 if var_name in self.loop_vars and var_name not in available_context:
-                    if not in_loop_context:
+                    if var_name in loop_bindings:
+                        continue
+                    if loop_bindings:
+                        # Inside a loop, but not one that binds this name.
+                        # `while` has no `item`; only a parallel queue has
+                        # `queue`. Accepting the union here is what let
+                        # `{{ is_last }}` pass inside a `while` loop and then
+                        # fail to render.
+                        bound = ", ".join(
+                            sorted(n for n in loop_bindings if not n.startswith("$"))
+                        )
                         errors.append(TemplateValidationError(
                             template=template,
-                            error_type="loop_variable_outside_loop",
-                            message=f"Loop variable '{var_name}' used outside of loop context",
+                            error_type="loop_variable_wrong_construct",
+                            message=(
+                                f"Loop variable '{var_name}' is not bound by this "
+                                f"loop construct"
+                            ),
                             context_path=context_path,
-                            suggestions=["Move this template inside a for_each loop"]
+                            suggestions=[f"This loop binds: {bound}"],
                         ))
+                        continue
+                    errors.append(TemplateValidationError(
+                        template=template,
+                        error_type="loop_variable_outside_loop",
+                        message=f"Loop variable '{var_name}' used outside of loop context",
+                        context_path=context_path,
+                        suggestions=["Move this template inside a for_each loop"]
+                    ))
                     continue
                 
                 # Check if it's a step result reference
@@ -556,14 +599,14 @@ class TemplateValidator:
         warnings: List,
         used_variables: Set,
         undefined_variables: Set,
-        in_loop_context: bool = False
+        loop_bindings: FrozenSet[str] = frozenset(),
     ):
         """Recursively validate templates in an object."""
         if isinstance(obj, str):
             # Check if this contains templates
             if '{{' in obj or '{%' in obj:
                 result = self.validate_template(
-                    obj, context, path, step_ids, in_loop_context
+                    obj, context, path, step_ids, loop_bindings
                 )
                 errors.extend(result.errors)
                 warnings.extend(result.warnings)
@@ -571,15 +614,22 @@ class TemplateValidator:
                 undefined_variables.update(result.undefined_variables)
         
         elif isinstance(obj, dict):
-            # Check if we're entering a loop context
-            is_loop = any(key in obj for key in LOOP_STEP_KEYS)
-            
+            # A loop's source expression is evaluated before the loop exists,
+            # so it does not see the loop's own bindings. Passing one boolean
+            # down to every field accepted `for_each: "{{ item.children }}"`,
+            # which can never resolve: there is no item until the iterable
+            # has been evaluated.
+            contract = contract_for(obj)
+            body_bindings = (
+                loop_bindings | contract.all_bindings() if contract else loop_bindings
+            )
+
             for key, value in obj.items():
                 new_path = f"{path}.{key}" if path else key
                 self._validate_object_templates(
                     value, context, step_ids, new_path,
                     errors, warnings, used_variables, undefined_variables,
-                    in_loop_context or is_loop
+                    loop_bindings if is_source_field(contract, key) else body_bindings,
                 )
         
         elif isinstance(obj, list):
@@ -588,7 +638,7 @@ class TemplateValidator:
                 self._validate_object_templates(
                     item, context, step_ids, new_path,
                     errors, warnings, used_variables, undefined_variables,
-                    in_loop_context
+                    loop_bindings,
                 )
     
     def _is_step_result_reference(self, var_name: str, step_ids: List[str]) -> bool:
