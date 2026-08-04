@@ -25,7 +25,7 @@ from ..core.runtime_context import (
     RUNTIME_NAMESPACE,
 )
 from ..core.template_sandbox import create_sandboxed_environment, pipeline_global_names
-from ..core.template_scope import shadowed_name_nodes
+from ..core.template_scope import template_references
 
 logger = logging.getLogger(__name__)
 
@@ -429,105 +429,14 @@ class DataFlowValidator:
     def _extract_template_variables(self, template_str: str) -> List[str]:
         """Every variable reference in a template, as dotted paths.
 
-        This used to chop the raw text -- `split('|')[0]`, then `split(' ')[0]`
-        -- which does not survive an expression. Anything with a space or a
-        bracket in it came out mangled, and the mangled fragment was then
-        looked up as a task id:
-
-            Undefined task reference: '(row'
-            Undefined task reference: 'from_json)'
-            Undefined task reference: 'analysis_topics[loop'
-
-        None of those is a name anyone wrote. The parser knows what a
-        reference is, so it is asked instead -- the same move #451 made for
-        global calls.
+        The implementation lives in `core.template_scope` because the
+        dependency graph needs the same answer. It used to live here, while
+        the dependency validator had its own regex version recognising only
+        six hard-coded suffixes -- so the two disagreed about what a template
+        refers to, which is how a pipeline came to validate and then fail to
+        run (#465).
         """
-        from jinja2 import nodes
-
-        try:
-            ast = self.jinja_env.parse(template_str)
-        except Exception:
-            # Syntax is the template validator's business; a broken template
-            # simply has no references this validator can be sure of.
-            return []
-
-        # `{% for row in rows %}` binds `row` *inside its body*; it is not a
-        # reference to anything this validator tracks. Which uses the binding
-        # reaches is a question of scope, and getting that wrong in the
-        # permissive direction is worse than the false positive it replaced:
-        #
-        #     {{ ghost.done }}            <- undefined, and reported nothing
-        #     {% for ghost in rows %}
-        #       {{ ghost.name }}          <- the binding that silenced it
-        #     {% endfor %}
-        #
-        # A template-wide set of bound names made adding a loop anywhere in a
-        # file suppress that typo everywhere in it.
-        shadowed = shadowed_name_nodes(ast)
-
-        # `a.b.c` is one reference, not three. Only the outermost node of a
-        # chain is reported; the links inside it are skipped.
-        inner = {
-            id(node.node)
-            for node in ast.find_all((nodes.Getattr, nodes.Getitem))
-        }
-
-        # `{{ range(3) }}` names a function the environment provides, not a
-        # step. Jinja's own globals and the pipeline's both count.
-        provided = set(self.jinja_env.globals) | pipeline_global_names()
-
-        variables: List[str] = []
-        for node in ast.find_all((nodes.Name, nodes.Getattr, nodes.Getitem)):
-            if id(node) in inner:
-                continue
-            base_node = self._base_name(node)
-            if base_node is None or id(base_node) in shadowed:
-                continue
-            if base_node.name in provided:
-                continue
-            path = self._dotted_path(node)
-            if path:
-                variables.append(path)
-
-        return variables
-
-    def _base_name(self, node):
-        """The `Name` node a reference chain starts from.
-
-        `a.b['c']` is a reference to `a`; identity of that particular node is
-        what decides whether this use is shadowed, since one template can hold
-        both a shadowed and an unshadowed use of the same word.
-        """
-        from jinja2 import nodes
-
-        while isinstance(node, (nodes.Getattr, nodes.Getitem)):
-            node = node.node
-        if isinstance(node, nodes.Name) and getattr(node, "ctx", "load") == "load":
-            return node
-        return None
-
-    def _dotted_path(self, node) -> Optional[str]:
-        """`a.b`, `a['b']` and `a[0]` as the one name they refer to."""
-        from jinja2 import nodes
-
-        if isinstance(node, nodes.Name):
-            return node.name if getattr(node, "ctx", "load") == "load" else None
-
-        if isinstance(node, nodes.Getattr):
-            base = self._dotted_path(node.node)
-            return f"{base}.{node.attr}" if base else None
-
-        if isinstance(node, nodes.Getitem):
-            base = self._dotted_path(node.node)
-            if not base:
-                return None
-            key = node.arg
-            if isinstance(key, nodes.Const) and isinstance(key.value, str):
-                return f"{base}.{key.value}"
-            # An index selects an element of `base`; it is not its own name.
-            return base
-
-        return None
+        return template_references(template_str, self.jinja_env)
 
     def _validate_variable_reference(self, 
                                    var_ref: str,

@@ -39,7 +39,7 @@ template can hold both a shadowed and an unshadowed use of the same word.
 
 from __future__ import annotations
 
-from typing import Any, FrozenSet, MutableSet, Set
+from typing import Any, FrozenSet, List, MutableSet, Optional, Set
 
 from jinja2 import nodes
 
@@ -49,6 +49,91 @@ LOOP_IMPLICIT: FrozenSet[str] = frozenset({"loop"})
 #: Bound by Jinja inside a `{% macro %}` body without appearing in its
 #: argument list.
 MACRO_IMPLICIT: FrozenSet[str] = frozenset({"varargs", "kwargs", "caller"})
+
+
+def template_references(source: str, env: Any = None) -> List[str]:
+    """Every name a template reads from its context, as dotted paths.
+
+    `{{ a.b['c'] }}` is one reference to `a.b.c`, not three names. Loop
+    targets, `{% set %}` bindings and macro arguments are the template's own
+    and are excluded -- but only where their binding reaches, which is what
+    `shadowed_name_nodes` decides.
+
+    This is the one implementation. It began as a private method on the
+    data-flow validator, while the dependency validator had a second
+    regex-based one whose task-reference pattern only recognised six
+    hard-coded suffixes (`result|output|data|content|status|metadata`), so
+    `{{ make.path }}` was a dependency to one of them and invisible to the
+    other. Two answers to "what does this template refer to" is one too many.
+    """
+    from .template_sandbox import create_pipeline_environment, pipeline_global_names
+
+    if env is None:
+        env = create_pipeline_environment()
+
+    try:
+        ast = env.parse(source)
+    except Exception:
+        # Syntax is the template validator's business; a template that does
+        # not parse has no references anyone can be sure of.
+        return []
+
+    shadowed = shadowed_name_nodes(ast)
+
+    # `a.b.c` is one reference. Only the outermost node of a chain is
+    # reported; the links inside it are skipped.
+    inner = {id(node.node) for node in ast.find_all((nodes.Getattr, nodes.Getitem))}
+
+    # `{{ range(3) }}` names a function the environment provides, not a step.
+    provided = set(env.globals) | pipeline_global_names()
+
+    references: List[str] = []
+    for node in ast.find_all((nodes.Name, nodes.Getattr, nodes.Getitem)):
+        if id(node) in inner:
+            continue
+        base = base_name_node(node)
+        if base is None or id(base) in shadowed or base.name in provided:
+            continue
+        path = dotted_path(node)
+        if path:
+            references.append(path)
+    return references
+
+
+def base_name_node(node: Any) -> Optional[nodes.Name]:
+    """The `Name` node a reference chain starts from.
+
+    `a.b['c']` refers to `a`. Identity of that particular node decides
+    whether the use is shadowed, since one template can hold both a shadowed
+    and an unshadowed use of the same word.
+    """
+    while isinstance(node, (nodes.Getattr, nodes.Getitem)):
+        node = node.node
+    if isinstance(node, nodes.Name) and getattr(node, "ctx", "load") == "load":
+        return node
+    return None
+
+
+def dotted_path(node: Any) -> Optional[str]:
+    """`a.b`, `a['b']` and `a[0]` as the one name they refer to."""
+    if isinstance(node, nodes.Name):
+        return node.name if getattr(node, "ctx", "load") == "load" else None
+
+    if isinstance(node, nodes.Getattr):
+        base = dotted_path(node.node)
+        return f"{base}.{node.attr}" if base else None
+
+    if isinstance(node, nodes.Getitem):
+        base = dotted_path(node.node)
+        if not base:
+            return None
+        key = node.arg
+        if isinstance(key, nodes.Const) and isinstance(key.value, str):
+            return f"{base}.{key.value}"
+        # An index selects an element of `base`; it is not its own name.
+        return base
+
+    return None
 
 
 def shadowed_name_nodes(ast: nodes.Node) -> FrozenSet[int]:
