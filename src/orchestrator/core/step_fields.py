@@ -75,3 +75,20 @@ INERT_STEP_FIELDS: FrozenSet[str] = frozenset({
     "dependencies",  # already read, with the `declared` origin
     "depends_on",
 })
+
+#: The same distinction one level up. A pipeline's own `name` and
+#: `description` are prose about the pipeline; nothing renders them either, so
+#: `name: "{{ nosuch }}"` at the top of a document was failing validation for a
+#: pipeline that runs.
+#:
+#: Deliberately short. `outputs` *is* rendered; `parameters` declares names
+#: rather than using them; and `id` and `version` are schema-constrained --
+#: `version` must match `\d+\.\d+\.\d+`, so a template there is a real error
+#: and calling the field inert would describe it wrongly. Only fields a real
+#: run tolerates an unresolvable reference in are listed, which is what
+#: `test_a_pipeline_with_templates_in_prose_still_runs` checks.
+INERT_PIPELINE_FIELDS: FrozenSet[str] = frozenset({
+    "name",
+    "description",
+    "metadata",
+})
