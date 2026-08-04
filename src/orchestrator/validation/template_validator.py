@@ -12,13 +12,13 @@ Issue #229: Compile-time template validation
 
 import logging
 import re
-from typing import Any, Dict, FrozenSet, List, Optional, Set, Union
+from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass
-from jinja2 import Environment, TemplateSyntaxError, meta
+from jinja2 import TemplateSyntaxError, meta
 from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.runtime_context import BARE_RUNTIME_NAMES, RUNTIME_NAMESPACE
-from ..core.loop_contracts import ALL_BINDINGS, contract_for, is_source_field
+from ..core.loop_contracts import ALL_BINDINGS, LoopContract, contracts_for
 from ..core.template_globals import (
     ALL_LOOP_VARIABLES,
     DOLLAR_LOOP_VARIABLES,
@@ -34,6 +34,10 @@ logger = logging.getLogger(__name__)
 #: `execution` -- the data-flow validator accepts that one, but the runtime
 #: does not populate it, and papering over that here would hide a real bug.
 PARAMETER_NAMESPACES = frozenset({"parameters", "inputs"})
+
+#: Where a step sits in a pipeline document. A loop is declared by a step, so
+#: this is where a loop construct is looked for -- see `_validate_object_templates`.
+_STEP_PATH = re.compile(r"steps\[\d+\]$")
 
 
 def _binding_set(value: Union[bool, FrozenSet[str], None]) -> FrozenSet[str]:
@@ -600,8 +604,16 @@ class TemplateValidator:
         used_variables: Set,
         undefined_variables: Set,
         loop_bindings: FrozenSet[str] = frozenset(),
+        loop_scope: Optional[Tuple[LoopContract, str, FrozenSet[str]]] = None,
     ):
-        """Recursively validate templates in an object."""
+        """Recursively validate templates in an object.
+
+        `loop_bindings` is what the enclosing loops bind. `loop_scope` is the
+        innermost loop construct still being walked, paired with the field
+        path reached inside it, because scope is a property of the field and
+        not of the step: a `create_parallel_queue`'s `on` resolves before any
+        item exists while the action list beside it runs per item.
+        """
         if isinstance(obj, str):
             # Check if this contains templates
             if '{{' in obj or '{%' in obj:
@@ -612,33 +624,60 @@ class TemplateValidator:
                 warnings.extend(result.warnings)
                 used_variables.update(result.used_variables)
                 undefined_variables.update(result.undefined_variables)
-        
+
         elif isinstance(obj, dict):
-            # A loop's source expression is evaluated before the loop exists,
-            # so it does not see the loop's own bindings. Passing one boolean
-            # down to every field accepted `for_each: "{{ item.children }}"`,
-            # which can never resolve: there is no item until the iterable
-            # has been evaluated.
-            contract = contract_for(obj)
-            body_bindings = (
-                loop_bindings | contract.all_bindings() if contract else loop_bindings
-            )
+            # Only a *step* declares a loop. Matching any dict that happens to
+            # hold a loop key made `create_parallel_queue`'s own nested
+            # `action_loop` look like a second, separate loop, which replaced
+            # the queue's scope with the action loop's and let `{{ item }}`
+            # through in the `on` expression that generates the queue.
+            declared = contracts_for(obj) if _STEP_PATH.search(path) else ()
+            if len(declared) > 1:
+                # Which construct wins is decided by declaration order in
+                # `loop_contracts`, and no engine agreed to that order. The
+                # step binds one set of names or another depending on an
+                # implementation detail, so it has no meaning to validate.
+                errors.append(TemplateValidationError(
+                    template="",
+                    error_type="ambiguous_loop_construct",
+                    message=(
+                        "Step declares more than one loop construct: "
+                        + ", ".join(sorted(c.key for c in declared))
+                    ),
+                    context_path=path,
+                    suggestions=["Split these into separate steps"],
+                ))
+            if len(declared) == 1:
+                # Entering a loop. What the enclosing loops bind is kept
+                # separately rather than subtracted back out later: an inner
+                # `for_each` inside an outer one shares every name with it, so
+                # subtracting the inner contract's names would take the outer
+                # loop's `item` away from the inner iterable that is normally
+                # written from exactly that.
+                loop_scope = (declared[0], "", loop_bindings)
+                loop_bindings = loop_bindings | declared[0].all_bindings()
 
             for key, value in obj.items():
                 new_path = f"{path}.{key}" if path else key
+                child_bindings, child_scope = loop_bindings, loop_scope
+                if loop_scope is not None:
+                    contract, prefix, enclosing = loop_scope
+                    relative = f"{prefix}.{key}" if prefix else key
+                    child_scope = (contract, relative, enclosing)
+                    child_bindings = enclosing | contract.bindings_for(relative)
                 self._validate_object_templates(
                     value, context, step_ids, new_path,
                     errors, warnings, used_variables, undefined_variables,
-                    loop_bindings if is_source_field(contract, key) else body_bindings,
+                    child_bindings, child_scope,
                 )
-        
+
         elif isinstance(obj, list):
             for i, item in enumerate(obj):
                 new_path = f"{path}[{i}]"
                 self._validate_object_templates(
                     item, context, step_ids, new_path,
                     errors, warnings, used_variables, undefined_variables,
-                    loop_bindings,
+                    loop_bindings, loop_scope,
                 )
     
     def _is_step_result_reference(self, var_name: str, step_ids: List[str]) -> bool:
