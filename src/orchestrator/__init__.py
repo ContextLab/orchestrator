@@ -89,6 +89,11 @@ _EXPORTS: dict[str, str] = {
     "create_pipeline_api": ".api",
     "create_advanced_pipeline_compiler": ".api",
     "create_pipeline_executor": ".api",
+    # --- Validation, with its findings ---
+    "validate_pipeline_file": ".validation.pipeline_report",
+    "validate_pipeline_text": ".validation.pipeline_report",
+    "PipelineValidation": ".validation.pipeline_report",
+    "Finding": ".validation.pipeline_report",
     # --- Error hierarchy ---
     "OrchestratorError": ".core.exceptions",
     "PipelineError": ".core.exceptions",
