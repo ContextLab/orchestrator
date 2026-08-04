@@ -8,14 +8,15 @@ import warnings
 from typing import Any, Dict, List, Optional
 
 import yaml
-from jinja2 import StrictUndefined
 
 from ..core.template_sandbox import create_pipeline_environment
 
 from ..core.actions import canonical_action
 from ..core.pipeline import Pipeline
 from ..core.task import Task
+from ..core.dependency_graph import DependencyGraph, build_dependency_graph
 from ..core.template_metadata import TemplateMetadata
+from ..core.template_scope import template_references
 from ..core.exceptions import YAMLCompilerError
 from ..core.error_handling import ErrorHandler
 from ..core.file_inclusion import FileInclusionProcessor, FileInclusionError
@@ -1201,9 +1202,53 @@ class YAMLCompiler:
             if "id" in step_def:
                 available_steps.append(step_def["id"])
         
+        # The one graph: explicit `dependencies:`, template references and
+        # control-flow references together. It is what cycle validation
+        # inspects and what every Task.dependencies is built from, so the
+        # schedule cannot disagree with what was validated (#465).
+        graph = build_dependency_graph(pipeline_def)
+
+        cycles = graph.cycles()
+        if cycles:
+            described = "; ".join(" -> ".join(cycle) for cycle in cycles)
+            raise YAMLCompilerError(
+                f"Dependency cycle detected: {described}. No step in a cycle can "
+                f"ever become ready, so the pipeline would deadlock rather than "
+                f"fail. A cycle can come from a template reference as well as "
+                f"from an explicit `dependencies:` entry."
+            )
+
+        # Ordering that is implied but not written down. Reported, never
+        # enforced: an author who prefers explicit graphs gets told exactly
+        # which lines to add, and one who is happy with inference is not
+        # nagged into failure.
+        if self.validation_report is not None:
+            for edge in graph.inferred_only():
+                self.validation_report.add_issue(ValidationIssue(
+                    severity=ValidationSeverity.INFO,
+                    category="dependency",
+                    component=edge.task,
+                    message=(
+                        f"Step '{edge.task}' depends on '{edge.depends_on}' because "
+                        f"{edge.location} refers to it. The ordering is applied; add "
+                        f"'{edge.depends_on}' to its dependencies to state it."
+                    ),
+                    code="implicit_dependency",
+                    path=f"{edge.task}.{edge.location}",
+                    suggestions=[
+                        f"dependencies:\n  - {edge.depends_on}"
+                    ],
+                    metadata={
+                        "step": edge.task,
+                        "referenced_step": edge.depends_on,
+                        "parameter_path": edge.location,
+                        "origin": edge.origin,
+                    },
+                ))
+
         # Second pass: build tasks with template analysis
         for step_def in steps:
-            task = self._build_task(step_def, available_steps)
+            task = self._build_task(step_def, available_steps, graph)
             pipeline.add_task(task)
 
         return pipeline
@@ -1224,13 +1269,16 @@ class YAMLCompiler:
         dependencies = set()
         context_requirements = set()
         
-        # Extract step references (e.g., step_id.result, step_id.outputs.data)
+        # Step references, from the same extractor the dependency graph and
+        # the data-flow validator use. This was a third regex, and it matched
+        # `step_id.` anywhere in the raw text -- including inside a string
+        # literal, a comment, or a loop that rebinds the name.
         if available_steps:
-            # Build pattern to match step references
-            # Match: step_id.property, step_id.nested.property, etc.
-            step_pattern = r'\b(' + '|'.join(re.escape(step) for step in available_steps) + r')\.'
-            for match in re.finditer(step_pattern, template_str):
-                dependencies.add(match.group(1))
+            known = set(available_steps)
+            for reference in template_references(template_str, self.template_engine):
+                base = reference.split(".", 1)[0]
+                if base in known:
+                    dependencies.add(base)
         
         # Extract loop variables
         loop_vars = ['$item', '$index', '$is_first', '$is_last', '$iteration', '$loop']
@@ -1292,7 +1340,8 @@ class YAMLCompiler:
         analyze_value(params, path_prefix)
         return template_metadata
 
-    def _build_task(self, task_def: Dict[str, Any], available_steps: List[str]) -> Task:
+    def _build_task(self, task_def: Dict[str, Any], available_steps: List[str],
+                    graph: Optional[DependencyGraph] = None) -> Task:
         """
         Build Task object from definition with template analysis.
 
@@ -1328,15 +1377,21 @@ class YAMLCompiler:
 
         parameters = task_def.get("parameters", {})
 
-        # Handle dependencies which may be string or array
-        # Support both 'dependencies' and 'depends_on' for backward compatibility
-        dependencies = task_def.get("dependencies", task_def.get("depends_on", []))
-        if isinstance(dependencies, str):
-            # Handle single dependency as string or comma-separated list
-            if "," in dependencies:
-                dependencies = [dep.strip() for dep in dependencies.split(",")]
-            else:
-                dependencies = [dependencies.strip()] if dependencies.strip() else []
+        # Dependencies come from the canonical graph, which already merged the
+        # explicit `dependencies:` key with the references found in templates
+        # and control-flow expressions. Appending inferred edges here instead
+        # would build a schedule the cycle check never inspected -- which is
+        # the shape of the bug this replaced (#465).
+        if graph is not None:
+            dependencies = graph.dependencies_for(task_id)
+        else:
+            # Building one task in isolation: fall back to the declared key.
+            dependencies = task_def.get("dependencies", task_def.get("depends_on", []))
+            if isinstance(dependencies, str):
+                if "," in dependencies:
+                    dependencies = [dep.strip() for dep in dependencies.split(",")]
+                else:
+                    dependencies = [dependencies.strip()] if dependencies.strip() else []
 
         timeout = task_def.get("timeout")
         max_retries = task_def.get("max_retries", 3)
@@ -1477,7 +1532,6 @@ class YAMLCompiler:
         
         # Set output metadata if provided
         if produces or location or format_type:
-            from ..core.output_metadata import create_output_metadata
             task.set_output_metadata(
                 produces=produces,
                 location=location,

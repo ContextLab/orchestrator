@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Union, Tuple
-import re
+from typing import Any, Dict, List, Optional, Set
+
+from ..core.template_scope import template_references
 
 try:
     import networkx as nx
@@ -22,7 +23,6 @@ except ImportError:
     NETWORKX_AVAILABLE = False
     nx = None
 
-from ..core.exceptions import ValidationError
 from ..core.routing import FAILURE_POLICIES, routing_targets
 
 logger = logging.getLogger(__name__)
@@ -313,35 +313,25 @@ class DependencyValidator:
         return unique_deps
     
     def _extract_template_dependencies(self, template_str: str) -> List[str]:
-        """Extract task dependencies from template expressions."""
+        """Task references inside a template expression.
+
+        This was a regex whose task-reference pattern recognised only six
+        hard-coded suffixes -- `result|output|data|content|status|metadata` --
+        so `{{ make.path }}` was not a reference at all here, while the
+        data-flow validator counted it. Two answers to the same question is
+        how a pipeline came to validate and then fail to run (#465).
+
+        The AST extractor is now shared with the dependency graph, so the
+        edges this validator checks for cycles are the edges the scheduler
+        will use.
+        """
         if not isinstance(template_str, str):
             return []
-        
-        dependencies = set()  # Use set to avoid duplicates
-        
-        # Pattern to match task references like "task_id.result", "task_id.output", etc.
-        # This is a simplified pattern - in practice, you'd want more sophisticated parsing
-        task_ref_pattern = r'\b([a-zA-Z][a-zA-Z0-9_-]*)\.(result|output|data|content|status|metadata)'
-        
-        matches = re.finditer(task_ref_pattern, template_str)
-        for match in matches:
-            task_id = match.group(1)
-            dependencies.add(task_id)
-        
-        # Also look for simple variable references that might be task IDs
-        # Pattern for variables in templates like {{ task_id }} 
-        var_pattern = r'\{\{\s*([a-zA-Z][a-zA-Z0-9_-]*)'
-        var_matches = re.finditer(var_pattern, template_str)
-        for match in var_matches:
-            var_name = match.group(1)
-            # Only include if it looks like a task ID (not built-in variables)
-            if not var_name.startswith('$') and var_name not in ['item', 'index', 'is_first', 'is_last', 'iteration', 'loop']:
-                # Don't add if already captured by task reference pattern
-                if not any(var_name == dep for dep in dependencies):
-                    dependencies.add(var_name)
-        
-        return list(dependencies)
-    
+        return [
+            reference.split(".", 1)[0]
+            for reference in template_references(template_str)
+        ]
+
     def _validate_unique_task_ids(self, tasks: List[Dict[str, Any]]) -> List[DependencyIssue]:
         """Validate that all task IDs are unique."""
         issues = []

@@ -418,16 +418,24 @@ class ControlFlowCompiler(YAMLCompiler):
 
         return step_def
 
-    def _build_task(self, task_def: Dict[str, Any], available_steps: List[str]) -> Task:
-        """Build Task object with control flow support.
+    def _build_task(self, task_def: Dict[str, Any], available_steps: List[str],
+                    graph=None) -> Task:
+        """Build a control-flow task, ordered by the canonical graph.
 
-        Args:
-            task_def: Task definition
-            available_steps: List of all step IDs in the pipeline
-
-        Returns:
-            Task object
+        This method has many exits -- conditional, goto, for-each, action-loop
+        -- and each builds its task through a different handler that reads
+        `dependencies` straight off the definition. Applying the graph once,
+        here, is what stops a control-flow task from being the one kind of
+        step that silently keeps the old behaviour (#465).
         """
+        task = self._build_control_flow_task(task_def, available_steps, graph)
+        if graph is not None:
+            task.dependencies = graph.dependencies_for(task.id)
+        return task
+
+    def _build_control_flow_task(self, task_def: Dict[str, Any],
+                                 available_steps: List[str], graph=None) -> Task:
+        """Build the task itself; `_build_task` applies the ordering."""
         # First, ensure metadata is properly built
         # This is important for conditional tasks that also have tools
         if "metadata" not in task_def:
@@ -444,7 +452,7 @@ class ControlFlowCompiler(YAMLCompiler):
         condition = task_def.pop("condition", None) or task_def.pop("if", None)
         
         # First, let the parent build the base task with template analysis
-        base_task = super()._build_task(task_def, available_steps)
+        base_task = super()._build_task(task_def, available_steps, graph)
         
         # Restore condition to task_def
         if condition:
