@@ -411,9 +411,16 @@ class TemplateValidator:
                 if loop_var in template
             ]
             
-            # Combine both sets of variables
-            all_var_names = set(var_names) | set(loop_var_matches)
-            
+            # Combine both sets of variables.
+            #
+            # Sorted, because findings are emitted in this order and a set of
+            # strings iterates by hash. Two identical `orchestrator validate`
+            # runs on the same file produced the same 44 findings in different
+            # orders, so any caller diffing runs, pinning output, or reporting
+            # "the first problem" saw noise. `PYTHONHASHSEED` differs per
+            # process, which is why the in-process check missed it.
+            all_var_names = sorted(set(var_names) | set(loop_var_matches))
+
             for var_name in all_var_names:
                 used_variables.add(var_name)
                 
