@@ -18,7 +18,12 @@ from jinja2 import Environment, TemplateSyntaxError, meta
 from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.runtime_context import BARE_RUNTIME_NAMES, RUNTIME_NAMESPACE
-from ..core.template_globals import find_global_misuse
+from ..core.template_globals import (
+    ALL_LOOP_VARIABLES,
+    DOLLAR_LOOP_VARIABLES,
+    LOOP_STEP_KEYS,
+    find_global_misuse,
+)
 from ..core.template_sandbox import pipeline_global_names
 
 logger = logging.getLogger(__name__)
@@ -119,7 +124,12 @@ class TemplateValidator:
         self.comment_pattern = re.compile(r'{#\s*([^#]+)\s*#}')
         
         # Loop variable patterns
-        self.loop_vars = {'$item', '$index', '$is_first', '$is_last', '$iteration', '$loop'}
+        # Both spellings. The runtime registers `item` and `$item` alike, and
+        # knowing only the `$` form meant `{{ item.name }}` -- the form every
+        # example actually uses -- was reported as an undefined variable
+        # (#469). Declared in `core.template_globals` so the data-flow
+        # validator and this one cannot drift apart about them.
+        self.loop_vars = ALL_LOOP_VARIABLES
         self.step_result_pattern = re.compile(r'([a-zA-Z_][a-zA-Z0-9_]*)\.(result|results|output|outputs|content|data)')
         
         logger.info("TemplateValidator initialized")
@@ -353,11 +363,15 @@ class TemplateValidator:
             # Find all variable references
             var_names = meta.find_undeclared_variables(ast)
 
-            # Also look for loop variables manually (since they start with $)
-            loop_var_matches = []
-            for loop_var in self.loop_vars:
-                if loop_var in template:
-                    loop_var_matches.append(loop_var)
+            # `$item` is not a name Jinja can parse, so it never appears in
+            # the AST and has to be matched as raw text. That substring scan
+            # stays confined to the `$` spellings: applied to the bare names
+            # it would match `item` inside `items` and `item_count`, which is
+            # the text-matching class of bug #458 removed.
+            loop_var_matches = [
+                loop_var for loop_var in DOLLAR_LOOP_VARIABLES
+                if loop_var in template
+            ]
             
             # Combine both sets of variables
             all_var_names = set(var_names) | set(loop_var_matches)
@@ -365,8 +379,11 @@ class TemplateValidator:
             for var_name in all_var_names:
                 used_variables.add(var_name)
                 
-                # Check if it's a loop variable
-                if var_name in self.loop_vars:
+                # Check if it's a loop variable. A pipeline that declares an
+                # input of its own called `item` means that input, so a
+                # declared name wins -- otherwise adding these would reject
+                # the pipeline that named its parameter after a loop word.
+                if var_name in self.loop_vars and var_name not in available_context:
                     if not in_loop_context:
                         errors.append(TemplateValidationError(
                             template=template,
@@ -555,7 +572,7 @@ class TemplateValidator:
         
         elif isinstance(obj, dict):
             # Check if we're entering a loop context
-            is_loop = 'for_each' in obj or 'while' in obj
+            is_loop = any(key in obj for key in LOOP_STEP_KEYS)
             
             for key, value in obj.items():
                 new_path = f"{path}.{key}" if path else key

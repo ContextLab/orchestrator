@@ -172,16 +172,28 @@ def load_baseline() -> Optional[List[str]]:
     ]
 
 
+#: The whole file, header included, is generated. Editing the header by hand
+#: puts it one `--update` away from being silently discarded -- which is how
+#: the paragraph below was lost once already.
+BASELINE_HEADER = (
+    "# Examples that pass `orchestrator validate` -- and nothing more.\n"
+    "#\n"
+    "# Passing validation is not running, is not producing correct output,\n"
+    "# and is not being a supported example. examples/supported/ is the\n"
+    "# stronger contract: those are executed and their behaviour asserted.\n"
+    "#\n"
+    "# A file leaving this list is a regression and fails CI. A file\n"
+    "# joining it is an improvement; run:\n"
+    "#     python scripts/catalogue_report.py --update\n"
+    "#\n"
+    "# The count is deliberately not the contract -- see the module\n"
+    "# docstring in scripts/catalogue_report.py.\n"
+)
+
+
 def write_baseline(paths: List[str]) -> None:
     BASELINE.write_text(
-        "# Examples that pass `orchestrator validate`.\n"
-        "#\n"
-        "# A file leaving this list is a regression and fails CI. A file\n"
-        "# joining it is an improvement; run:\n"
-        "#     python scripts/catalogue_report.py --update\n"
-        "#\n"
-        "# The count is deliberately not the contract -- see the module\n"
-        "# docstring in scripts/catalogue_report.py.\n"
+        BASELINE_HEADER
         + "".join(f"{p}\n" for p in sorted(paths))
     )
 
