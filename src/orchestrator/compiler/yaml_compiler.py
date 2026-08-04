@@ -455,7 +455,8 @@ class YAMLCompiler:
                         component=error.context_path or "unknown",
                         message=error.message,
                         path=error.context_path,
-                        suggestions=error.suggestions
+                        suggestions=error.suggestions,
+                        code=error.error_type,
                     )
                     self.validation_report.add_issue(issue)
                 
@@ -466,7 +467,8 @@ class YAMLCompiler:
                         component=warning.context_path or "unknown",
                         message=warning.message,
                         path=warning.context_path,
-                        suggestions=warning.suggestions
+                        suggestions=warning.suggestions,
+                        code=warning.error_type,
                     )
                     self.validation_report.add_issue(issue)
                 
