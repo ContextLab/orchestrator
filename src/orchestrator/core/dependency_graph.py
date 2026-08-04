@@ -35,6 +35,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, List, Set, Tuple
 
+from .step_fields import NESTED_STEP_FIELDS, RENDERABLE_STEP_FIELDS
 from .template_scope import template_references
 
 #: Where an edge came from. Kept on the edge so a diagnostic can say *why*
@@ -198,6 +199,27 @@ def _strings_in(value: Any, path: str = "") -> Iterator[Tuple[str, str]]:
             yield from _strings_in(item, f"{path}[{index}]")
 
 
+def _renderable_values(
+    step: Dict[str, Any], prefix: str = ""
+) -> Iterator[Tuple[str, Any, str]]:
+    """Every renderable field of a step, and of any steps nested inside it.
+
+    A nested step is not scheduled on its own -- it runs as part of its
+    parent -- so its references are attributed to the enclosing step.
+    """
+    for key in RENDERABLE_STEP_FIELDS:
+        if key in step:
+            yield key, step[key], f"{prefix}{key}"
+
+    for key in NESTED_STEP_FIELDS:
+        children = step.get(key)
+        if not isinstance(children, (list, tuple)):
+            continue
+        for index, child in enumerate(children):
+            if isinstance(child, dict):
+                yield from _renderable_values(child, f"{prefix}{key}[{index}].")
+
+
 def _declared_dependencies(step: Dict[str, Any]) -> List[str]:
     """The `dependencies:` / `depends_on:` value, however it is written."""
     raw = step.get("dependencies", step.get("depends_on", []))
@@ -253,18 +275,16 @@ def build_dependency_graph(
                     if base in known:
                         add(task_id, base, CONTROL_FLOW, path)
 
-        # Everything else the step carries that may hold a template. `id`,
-        # `dependencies` and the control-flow keys above are excluded: the
-        # first two are not templates, and the third is already covered with
-        # a more precise origin.
-        for key, value in step.items():
-            if key in ("id", "dependencies", "depends_on") or key in CONTROL_FLOW_KEYS:
-                continue
-            for text, path in _strings_in(value, key):
+        # Only the fields the runtime actually renders. A template in `name`
+        # or `description` is copied verbatim and orders nothing; scanning it
+        # invented cycles between steps that never interact. See
+        # `core.step_fields` for why each field is on the list.
+        for key, value, path in _renderable_values(step):
+            for text, text_path in _strings_in(value, path):
                 for reference in template_references(text, env):
                     base = reference.split(".", 1)[0]
                     if base in known:
-                        add(task_id, base, TEMPLATE, path)
+                        add(task_id, base, TEMPLATE, text_path)
 
     return DependencyGraph(
         steps=tuple(step_ids),
