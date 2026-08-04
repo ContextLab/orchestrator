@@ -23,7 +23,7 @@ import pytest
 pytestmark = [pytest.mark.unit]
 
 REPO = Path(__file__).resolve().parent.parent
-SUPPORTED_LIST = REPO / "scripts" / "catalogue_validating.txt"
+BASELINE = REPO / "scripts" / "catalogue_validation_baseline.txt"
 
 
 def _module():
@@ -155,7 +155,7 @@ def test_a_swap_of_equal_size_is_still_a_regression():
 def test_every_listed_example_exists():
     """A stale entry would fail CI forever with a confusing message."""
     missing = [
-        line for line in SUPPORTED_LIST.read_text().splitlines()
+        line for line in BASELINE.read_text().splitlines()
         if line.strip() and not line.startswith("#")
         and not (REPO / line.strip()).exists()
     ]
@@ -163,6 +163,6 @@ def test_every_listed_example_exists():
 
 
 def test_the_list_is_not_empty():
-    assert report.load_supported(), (
-        "an empty supported list would make the regression gate vacuous"
+    assert report.load_baseline(), (
+        "an empty baseline would make the regression gate vacuous"
     )

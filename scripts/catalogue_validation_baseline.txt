@@ -1,4 +1,8 @@
-# Examples that pass `orchestrator validate`.
+# Examples that pass `orchestrator validate` -- and nothing more.
+#
+# Passing validation is not running, is not producing correct output,
+# and is not being a supported example. examples/supported/ is the
+# stronger contract: those are executed and their behaviour asserted.
 #
 # A file leaving this list is a regression and fails CI. A file
 # joining it is an improvement; run:

@@ -174,7 +174,8 @@ jobs:
         # it by two, retiring a legacy file moves it by one -- so gating on it
         # would punish ordinary progress and reward deleting hard examples.
         #
-        # scripts/catalogue_validating.txt names the files that validate. A
+        # scripts/catalogue_validation_baseline.txt names the files that pass
+        # validation -- which is not the same as running correctly. A
         # file LEAVING that list fails this job. A file joining it does not;
         # it prints a reminder to run --update.
         #
