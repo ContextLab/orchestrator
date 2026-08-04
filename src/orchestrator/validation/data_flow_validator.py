@@ -615,6 +615,14 @@ class DataFlowValidator:
         """Suggest similar names for typos."""
         suggestions = []
         target_lower = target.lower()
+
+        # Sorted, because callers pass names collected in a set and this
+        # function both emits in iteration order and truncates to three. Two
+        # identical `orchestrator validate` runs offered the same three
+        # suggestions in different orders, and on a longer candidate list
+        # would have offered *different* three. The tiers below still rank the
+        # result; this only makes ties break the same way every time.
+        available = sorted(available)
         
         # Exact match (case insensitive)
         for name in available:

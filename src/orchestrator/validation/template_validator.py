@@ -19,7 +19,12 @@ from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.runtime_context import BARE_RUNTIME_NAMES, RUNTIME_NAMESPACE
 from ..core.loop_contracts import ALL_BINDINGS, LoopContract, contracts_for
-from ..core.step_fields import INERT_PIPELINE_FIELDS, INERT_STEP_FIELDS
+from ..core.step_fields import (
+    INERT_PIPELINE_FIELDS,
+    INERT_PROSE_STEP_FIELDS,
+    NON_RENDERED_STRUCTURAL_STEP_FIELDS,
+    OPERATIONAL_METADATA_KEYS,
+)
 from ..core.template_globals import (
     ALL_LOOP_VARIABLES,
     DOLLAR_LOOP_VARIABLES,
@@ -50,6 +55,49 @@ _INERT_TEMPLATE_MESSAGE = (
     "'{field}' is copied verbatim, so this template is never rendered -- "
     "the braces appear literally in the output"
 )
+
+#: How a field being unrendered should be reported. "Unrendered" alone does
+#: not settle it: the first version of this treated every such field as prose
+#: and warned, which said a `goto` sending execution to a step literally named
+#: `{{ nosuch }}` was a wording problem.
+_PROSE = "prose"
+_STRUCTURAL = "structural"
+_OPERATIONAL = "operational"
+
+_INERT_ERROR_TYPE = {
+    _STRUCTURAL: "template_in_structural_field",
+    _OPERATIONAL: "template_in_operational_metadata",
+}
+
+_INERT_ERROR_MESSAGE = {
+    _STRUCTURAL: (
+        "'{field}' names a step, tool or dependency and is never rendered, so "
+        "this template cannot resolve to the name it is standing in for"
+    ),
+    _OPERATIONAL: (
+        "metadata '{field}' is read by the runtime and is never rendered, so "
+        "the literal template text is what the runtime would act on"
+    ),
+}
+
+_INERT_ERROR_SUGGESTION = {
+    _STRUCTURAL: "Write the literal name here",
+    _OPERATIONAL: "Write a literal value, or compute it in a rendered field",
+}
+
+
+def _classify(path: str, key: str, is_step: bool):
+    """How a field's unrenderedness should be reported, or None if it renders."""
+    if is_step:
+        if key in INERT_PROSE_STEP_FIELDS:
+            return (key, _PROSE)
+        if key in NON_RENDERED_STRUCTURAL_STEP_FIELDS:
+            return (key, _STRUCTURAL)
+        if key == "metadata":
+            return (key, _PROSE)
+    if not path and key in INERT_PIPELINE_FIELDS:
+        return (key, _PROSE)
+    return None
 
 
 def _binding_set(value: Union[bool, FrozenSet[str], None]) -> FrozenSet[str]:
@@ -411,9 +459,16 @@ class TemplateValidator:
                 if loop_var in template
             ]
             
-            # Combine both sets of variables
-            all_var_names = set(var_names) | set(loop_var_matches)
-            
+            # Combine both sets of variables.
+            #
+            # Sorted, because findings are emitted in this order and a set of
+            # strings iterates by hash. Two identical `orchestrator validate`
+            # runs on the same file produced the same 44 findings in different
+            # orders, so any caller diffing runs, pinning output, or reporting
+            # "the first problem" saw noise. `PYTHONHASHSEED` differs per
+            # process, which is why the in-process check missed it.
+            all_var_names = sorted(set(var_names) | set(loop_var_matches))
+
             for var_name in all_var_names:
                 used_variables.add(var_name)
                 
@@ -617,7 +672,7 @@ class TemplateValidator:
         undefined_variables: Set,
         loop_bindings: FrozenSet[str] = frozenset(),
         loop_scope: Optional[Tuple[LoopContract, str, FrozenSet[str]]] = None,
-        inert_field: Optional[str] = None,
+        inert_field: Optional[Tuple[str, str]] = None,
     ):
         """Recursively validate templates in an object.
 
@@ -627,26 +682,36 @@ class TemplateValidator:
         not of the step: a `create_parallel_queue`'s `on` resolves before any
         item exists while the action list beside it runs per item.
 
-        `inert_field` names the step field the runtime copies verbatim, if
-        this walk is inside one. Nothing substitutes into it, so a reference
-        there cannot be undefined and cannot be resolved later. The *field* is
-        carried rather than a flag so a nested value reports `metadata` -- the
-        field that is inert -- instead of whichever key it sits under.
+        `inert_field` is `(field, kind)` for the unrendered step field this
+        walk is inside, if any -- see `_classify`. It names the field rather
+        than a flag so a nested value reports `metadata` instead of whichever
+        key it sits under, and carries the kind because being unrendered is a
+        warning in prose and an error in a field the runtime acts on.
         """
         if isinstance(obj, str):
             # Check if this contains templates
             if '{{' in obj or '{%' in obj:
                 if inert_field:
-                    warnings.append(TemplateValidationError(
+                    field, kind = inert_field
+                    if kind == _PROSE:
+                        warnings.append(TemplateValidationError(
+                            template=obj,
+                            error_type="inert_field_template",
+                            message=_INERT_TEMPLATE_MESSAGE.format(field=field),
+                            context_path=path,
+                            severity="warning",
+                            suggestions=[
+                                "Move the reference to a field that is rendered "
+                                "(parameters, action, location), or remove the braces"
+                            ],
+                        ))
+                        return
+                    errors.append(TemplateValidationError(
                         template=obj,
-                        error_type="inert_field_template",
-                        message=_INERT_TEMPLATE_MESSAGE.format(field=inert_field),
+                        error_type=_INERT_ERROR_TYPE[kind],
+                        message=_INERT_ERROR_MESSAGE[kind].format(field=field),
                         context_path=path,
-                        severity="warning",
-                        suggestions=[
-                            "Move the reference to a field that is rendered "
-                            "(parameters, action, location), or remove the braces"
-                        ],
+                        suggestions=[_INERT_ERROR_SUGGESTION[kind]],
                     ))
                     return
                 result = self.validate_template(
@@ -663,7 +728,13 @@ class TemplateValidator:
             # `action_loop` look like a second, separate loop, which replaced
             # the queue's scope with the action loop's and let `{{ item }}`
             # through in the `on` expression that generates the queue.
-            is_step = bool(_STEP_PATH.search(path))
+            # Nothing inside an inert field is a step, whatever it looks like.
+            # `metadata` holds arbitrary author data, so a `metadata.steps`
+            # list carrying `for_each` and `while` keys was being read as
+            # pipeline structure and reported as an ambiguous loop -- inside a
+            # subtree this module has just declared the runtime copies
+            # verbatim.
+            is_step = inert_field is None and bool(_STEP_PATH.search(path))
             declared = contracts_for(obj) if is_step else ()
             if len(declared) > 1:
                 # Which construct wins is decided by declaration order in
@@ -692,11 +763,17 @@ class TemplateValidator:
 
             for key, value in obj.items():
                 new_path = f"{path}.{key}" if path else key
-                inert_here = (
-                    (is_step and key in INERT_STEP_FIELDS)
-                    or (not path and key in INERT_PIPELINE_FIELDS)
-                )
-                child_inert = inert_field or (key if inert_here else None)
+                child_inert = inert_field or _classify(path, key, is_step)
+                if (
+                    inert_field is not None
+                    and path.endswith(".metadata")
+                    and key in OPERATIONAL_METADATA_KEYS
+                ):
+                    # A reserved key *inside* metadata. The object itself is
+                    # arbitrary author data; these particular keys are read by
+                    # control code, so an unrendered template in one is handed
+                    # to it as a literal string.
+                    child_inert = (key, _OPERATIONAL)
                 child_bindings, child_scope = loop_bindings, loop_scope
                 if loop_scope is not None:
                     contract, prefix, enclosing = loop_scope

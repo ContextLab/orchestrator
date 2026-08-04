@@ -64,17 +64,62 @@ NESTED_STEP_FIELDS: Tuple[str, ...] = (
     "steps",
 )
 
-#: Named so a test can assert they are never scanned, and so the reason is
-#: written down rather than implied by absence.
-INERT_STEP_FIELDS: FrozenSet[str] = frozenset({
-    "id",            # the step's own name
+#: Prose. Nothing renders it and nothing acts on it, so a template here is the
+#: author's mistake to know about but not a defect in the pipeline: the braces
+#: appear in a log line and everything still runs.
+INERT_PROSE_STEP_FIELDS: FrozenSet[str] = frozenset({
     "name",          # human-readable label, copied verbatim
     "description",   # prose
-    "metadata",      # arbitrary author data
-    "tool",          # a registry key, not a template
-    "dependencies",  # already read, with the `declared` origin
+})
+
+#: Also never rendered -- and that makes a template here an error, not a note.
+#: These fields *name* things: a step, a tool in the registry, a dependency to
+#: schedule against. A literal `{{ x }}` names nothing, so the pipeline is
+#: already broken; warning about the wording and calling it valid says the
+#: opposite.
+NON_RENDERED_STRUCTURAL_STEP_FIELDS: FrozenSet[str] = frozenset({
+    "id",            # the step's own name
+    "tool",          # a registry key
+    "dependencies",  # read with the `declared` origin
     "depends_on",
 })
+
+#: `metadata` is arbitrary author data *except* for the keys the runtime
+#: reads. Those are not prose: an unrendered `{{ ... }}` is handed to control
+#: code as a literal string, so `goto: "{{ nosuch }}"` sends execution to a
+#: step named `{{ nosuch }}` and `timeout: "{{ t }}"` is a timeout of that
+#: text. Each key here has a runtime read behind it:
+#:
+#:     goto                  orchestrator.py:1074, control_flow/dynamic_flow.py:53
+#:     priority              orchestrator.py:1345
+#:     requires_model        orchestrator.py:2599
+#:     dynamic_dependencies  orchestrator.py:1166
+#:     on_failure            orchestrator.py:1111
+#:     timeout               orchestrator.py:1888
+#:     max_iterations        orchestrator.py:1001
+#:     condition             runtime/orchestrator_integration.py:123
+#:     output_schema         adapters/enhanced_langgraph_adapter.py:222
+#:     produces              auto_resolution/requirements_analyzer.py:219
+#:     required_capabilities core/control_system.py:130
+#:     validation            compiler/schema_resolver.py:149
+#:
+#: Keys the compiler *writes* to metadata (`step_type`, `retry_count`, the
+#: loop bookkeeping) are absent: an author does not supply them, so a template
+#: in one is not a case that arises.
+OPERATIONAL_METADATA_KEYS: FrozenSet[str] = frozenset({
+    "goto", "priority", "requires_model", "dynamic_dependencies",
+    "on_failure", "timeout", "max_iterations", "condition",
+    "output_schema", "produces", "required_capabilities", "validation",
+})
+
+#: Everything a step carries that the runtime does not render, whatever the
+#: consequence of writing a template in it. Dependency inference only needs
+#: "not scanned"; the distinctions above are for diagnostics.
+INERT_STEP_FIELDS: FrozenSet[str] = (
+    INERT_PROSE_STEP_FIELDS
+    | NON_RENDERED_STRUCTURAL_STEP_FIELDS
+    | frozenset({"metadata"})
+)
 
 #: The same distinction one level up. A pipeline's own `name` and
 #: `description` are prose about the pipeline; nothing renders them either, so
