@@ -1,29 +1,17 @@
-# Loop Variables in Orchestrator
+# Loop Variables
 
-## Overview
+Each loop construct binds its own names, in its own places. There is no single
+list that applies to all of them, and the same name can be bound in a step's
+body while being unavailable in the expression that starts the loop.
 
-When using `for_each` loops in Orchestrator pipelines, several variables are automatically available within the loop context for use in templates.
+The tables here are the ones in `src/orchestrator/core/loop_contracts.py`, and
+`tests/test_loop_runtime_parity.py` checks them by *executing* a pipeline for
+every name: a name listed here renders in a real run, and a name absent from a
+construct's table does not.
 
-## Available Loop Variables
+## `for_each`
 
-### Core Variables
-
-- `{{ item }}` or `{{ $item }}` - The current item being processed
-- `{{ index }}` or `{{ $index }}` - The zero-based index of the current iteration
-- `{{ is_first }}` or `{{ $is_first }}` - Boolean indicating if this is the first iteration
-- `{{ is_last }}` or `{{ $is_last }}` - Boolean indicating if this is the last iteration
-
-### Additional Variables
-
-- `{{ length }}` or `{{ $length }}` - Total number of items in the loop
-- `{{ position }}` or `{{ $position }}` - One-based position (index + 1)
-- `{{ remaining }}` or `{{ $remaining }}` - Number of items remaining after current
-- `{{ has_next }}` or `{{ $has_next }}` - Boolean indicating if there's a next item
-- `{{ has_prev }}` or `{{ $has_prev }}` - Boolean indicating if there's a previous item
-
-## Examples
-
-### Simple Loop
+Iterates a collection.
 
 ```yaml
 steps:
@@ -36,98 +24,174 @@ steps:
         parameters:
           path: "output/{{ item }}_{{ index }}.txt"
           content: |
-            Processing item {{ item }} at position {{ position }}
+            Processing {{ item }} at position {{ position }}
             This is item {{ index }} of {{ length }}
-            First item: {{ is_first }}
-            Last item: {{ is_last }}
+            First: {{ is_first }}  Last: {{ is_last }}
 ```
 
-### Loop with Dependencies
+Bound in the body:
+
+|name|meaning|
+|-|-|
+|`item`|the current item|
+|`index`|zero-based iteration number|
+|`is_first`, `is_last`|whether this is the first or last item|
+|`position`|one-based position (`index + 1`)|
+|`length`|number of items|
+|`remaining`|items after this one|
+|`has_next`, `has_prev`|whether a next or previous item exists|
+|`loop_id`|the loop's identifier|
+|`$loop_name`|the loop's name — this one has no bare spelling|
+
+**Not bound in the iterable.** `for_each: "{{ item.children }}"` cannot work:
+the collection has to be evaluated before there is an item to bind. Validation
+rejects it.
+
+## `while`
+
+Repeats until a condition goes false.
 
 ```yaml
 steps:
-  - id: process
-    for_each: "{{ data_items }}"
+  - id: retry
+    while: "{{ iteration < 3 }}"
+    max_iterations: 10
     steps:
-      - id: transform
-        action: generate_text
+      - id: attempt
         parameters:
-          prompt: "Transform: {{ item }}"
-          
-      - id: save
-        tool: filesystem
-        action: write
-        parameters:
-          path: "results/{{ item }}.txt"
-          content: |
-            Original: {{ item }}
-            Transformed: {{ transform }}
-            Index: {{ index }}
-        dependencies:
-          - transform
+          note: "attempt {{ position }} of loop {{ loop_id }}"
 ```
 
-### Named Loops (Advanced)
+Bound in the body: `iteration`, `index`, `is_first`, `position`, `loop_id`,
+`loop_name`, `loop_state`.
 
-When loops are nested or need explicit naming:
+Bound in the `while:` and `until:` conditions: **`iteration` and `loop_state`
+only**. Unlike a `for_each` iterable, a condition is re-evaluated every
+iteration, so it can see the counter — but it sees only what the loop handler
+puts in scope at that moment, which is less than the body gets.
+
+A `while` loop walks no collection, so it binds no `item`, `length` or
+`is_last`.
+
+## `action_loop`
+
+Repeats a list of actions rather than walking a collection.
+
+```yaml
+steps:
+  - id: poll
+    action_loop:
+      - action: filesystem
+        parameters:
+          action: write
+          path: "out/{{ iteration }}.txt"
+          content: "attempt {{ iteration }}"
+    until: "{{ iteration >= 3 }}"
+    max_iterations: 5
+```
+
+Bound in the body: `iteration`, `is_first`, `loop_id`, `has_previous`,
+`total_duration`, `termination_reason`. No `item`, `index` or `position` —
+there is no collection and no position in one.
+
+The `action_loop` key holds the body, so those names are available inside it.
+
+> **Known defect:** the `until:` condition is required but never evaluated, so
+> the loop always runs a single iteration. See issue #476.
+
+## `create_parallel_queue`
+
+Generates a queue and runs actions across it in parallel.
+
+```yaml
+steps:
+  - id: fan_out
+    action: create_parallel_queue
+    create_parallel_queue:
+      "on": "{{ work_items }}"
+      action_loop:
+        - action: filesystem
+          parameters:
+            action: write
+            path: "out/{{ index }}.txt"
+            content: "{{ item }} of {{ queue_size }}"
+```
+
+Bound in the actions: `item`, `index`, `is_first`, `is_last`, `queue`,
+`queue_size`, `parallel_queue_id`, `parent_task`.
+
+**Not bound in `on:`** — that expression generates the queue, so nothing
+per-item exists while it runs.
+
+Two things about this construct differ from steps elsewhere: `on` must be
+quoted (YAML 1.1 reads a bare `on` as the boolean `true`), and the nested
+actions use `action:` rather than `tool:`.
+
+## The `$` spelling
+
+`{{ $item }}` works. `{{ $position }}` is a compile error:
+
+```
+unexpected char '$' at 3
+```
+
+`$` is not Jinja syntax. It works for some names only because a preprocessing
+step rewrites them before rendering, and that rewrite covers a fixed list:
+`$item`, `$index`, `$is_first`, `$is_last`, `$iteration`, `$loop_id`,
+`$loop_name`, `$loop_state`.
+
+**Prefer the bare spelling.** It is what the runtime actually resolves and what
+every table above is written in. The one exception is `$loop_name` in a
+`for_each` body, where the bare form is not bound. The inconsistency is issue
+#474.
+
+## Nested loops
+
+An inner loop sees its own bindings and the enclosing loop's, including in the
+inner loop's own iterable:
 
 ```yaml
 steps:
   - id: outer
     for_each: "{{ categories }}"
-    as: category_loop  # Optional: give the loop a name
-    steps:
-      - id: process
-        action: generate_text
-        parameters:
-          prompt: "Process category {{ $category_loop.item }}"
-```
-
-## Template Formats
-
-Loop variables support both formats:
-- Dollar prefix: `{{ $item }}`, `{{ $index }}`
-- Without prefix: `{{ item }}`, `{{ index }}`
-
-Both formats work identically within loop contexts.
-
-## Nested Loops
-
-For nested loops, you can access parent loop variables using the loop name:
-
-```yaml
-steps:
-  - id: outer
-    for_each: "{{ categories }}"
-    as: outer_loop
+    loop_name: outer_loop
     steps:
       - id: inner
-        for_each: "{{ items }}"
+        for_each: "{{ item.entries }}"   # the outer loop's item
         steps:
           - id: process
             parameters:
-              # Access both loops
               category: "{{ $outer_loop.item }}"
-              item: "{{ item }}"  # Current (inner) loop item
+              entry: "{{ item }}"        # the inner loop's item
 ```
+
+The key for naming a loop is `loop_name:`. A named loop's variables are
+reached as `{{ $<name>.<variable> }}`.
+
+> **Known defect:** that spelling runs — the pipeline above writes `A` and `B`
+> — but `orchestrator validate` rejects it with `unexpected char '$' at 3`,
+> because validation parses the raw text while the runtime rewrites `$` first.
+> See issue #474.
+
+## One loop per step
+
+A step declares one loop construct. A step carrying two — `for_each` and
+`while` together, say — is rejected: which one would win is decided by
+declaration order inside the validator, and no engine agrees to that order.
+
+## `foreach` is not `for_each`
+
+`foreach:` is recognised by the declarative engine's spec objects but is not
+expanded by the control-flow compiler, so a `foreach` step either fails schema
+validation or runs its body exactly once with nothing bound. Use `for_each`.
+See issue #475.
 
 ## Troubleshooting
 
-### Common Issues
+**A template appears unrendered in the output.** The name is not bound where
+you used it. Check the construct's table above, and check whether you are in a
+source expression (`for_each:`, `create_parallel_queue.on`) rather than a body.
 
-1. **Unrendered Templates**: If you see `{{ item }}` in your output instead of the actual value, ensure:
-   - You're within a `for_each` loop context
-   - The variable name is spelled correctly
-   - You're using the correct template syntax
+**`index` starts at 0.** Use `position` for one-based numbering.
 
-2. **Index Starting at 0**: Remember that `index` is zero-based. Use `position` for one-based numbering.
-
-3. **Filesystem Paths**: When using loop variables in file paths, ensure the values don't contain invalid characters for filenames.
-
-## Implementation Notes
-
-As of the latest update, loop variables are properly injected into the execution context during both compile-time loop expansion and runtime ForEachTask expansion. The variables are available in:
-- Task parameters
-- Filesystem operations
-- Template rendering
-- Nested dependencies
+**`{{ $something }}` fails to compile.** Use the bare spelling; see above.

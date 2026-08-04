@@ -118,7 +118,7 @@ GLOBAL_NAMES: FrozenSet[str] = frozenset(spec.name for spec in GLOBAL_SPECS)
 #: real tables, and anything needing "a name some loop binds" -- rather than
 #: "a name *this* loop binds" -- reads the union below.
 #:
-#: Prefer `loop_contracts.contract_for(step)` wherever the construct is known.
+#: Prefer `loop_contracts.contracts_for(step)` wherever the construct is known.
 #: The union cannot tell `{{ is_last }}` in a `create_parallel_queue` from the
 #: same text in a `while` loop, and that distinction is the whole point.
 LOOP_VARIABLES: FrozenSet[str] = frozenset(
