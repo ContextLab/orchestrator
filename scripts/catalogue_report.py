@@ -10,10 +10,16 @@ one.
 
 So this reports two different things, and only one of them can fail the build:
 
-* **The supported list.** `scripts/catalogue_validating.txt` names the files
-  that validate today. A file dropping out of it is a regression and fails.
-  A file newly validating is an improvement and does not -- it just prints a
-  reminder to add it.
+* **The validation baseline.** `scripts/catalogue_validation_baseline.txt`
+  names the files that *pass `orchestrator validate`* today. A file dropping
+  out of it is a regression and fails. A file newly validating is an
+  improvement and does not -- it just prints a reminder to add it.
+
+  It says nothing more than that. Passing validation is not the same as
+  running, producing correct artifacts, or being a supported example, and
+  calling this a "supported list" conflated four different things.
+  `examples/supported/` is the stronger contract: those are executed and
+  their behaviour asserted. This file is the weaker, wider net.
 
 * **Everything else, grouped by the validator's own first error.** Counts by
   signature rather than by a taxonomy written down somewhere, because a
@@ -22,7 +28,7 @@ So this reports two different things, and only one of them can fail the build:
 
 Usage:
     python scripts/catalogue_report.py             # report; fail on regressions
-    python scripts/catalogue_report.py --update    # rewrite the supported list
+    python scripts/catalogue_report.py --update    # rewrite the baseline
     python scripts/catalogue_report.py --json      # machine-readable
 """
 
@@ -41,7 +47,7 @@ from typing import Dict, List, Optional, Tuple
 
 REPO = Path(__file__).resolve().parent.parent
 EXAMPLES = REPO / "examples"
-SUPPORTED_LIST = REPO / "scripts" / "catalogue_validating.txt"
+BASELINE = REPO / "scripts" / "catalogue_validation_baseline.txt"
 
 #: Collapses the variable parts of an error so that "Tool 'a' not found" and
 #: "Tool 'b' not found" are one signature rather than two.
@@ -156,18 +162,18 @@ def compare(
     )
 
 
-def load_supported() -> Optional[List[str]]:
-    if not SUPPORTED_LIST.exists():
+def load_baseline() -> Optional[List[str]]:
+    if not BASELINE.exists():
         return None
     return [
         line.strip()
-        for line in SUPPORTED_LIST.read_text().splitlines()
+        for line in BASELINE.read_text().splitlines()
         if line.strip() and not line.startswith("#")
     ]
 
 
-def write_supported(paths: List[str]) -> None:
-    SUPPORTED_LIST.write_text(
+def write_baseline(paths: List[str]) -> None:
+    BASELINE.write_text(
         "# Examples that pass `orchestrator validate`.\n"
         "#\n"
         "# A file leaving this list is a regression and fails CI. A file\n"
@@ -183,7 +189,7 @@ def write_supported(paths: List[str]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--update", action="store_true",
-                        help="rewrite the supported list from what validates now")
+                        help="rewrite the baseline from what validates now")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     parser.add_argument("--jobs", type=int, default=8)
     args = parser.parse_args()
@@ -206,13 +212,13 @@ def main() -> int:
             failures[rel] = first_error(output)
 
     if args.update:
-        write_supported(validating)
-        print(f"wrote {SUPPORTED_LIST.relative_to(REPO)} with {len(validating)} entries")
+        write_baseline(validating)
+        print(f"wrote {BASELINE.relative_to(REPO)} with {len(validating)} entries")
         return 0
 
     signatures = Counter(failures.values())
-    supported = load_supported()
-    regressed, gained = compare(supported or [], validating)
+    baseline = load_baseline()
+    regressed, gained = compare(baseline or [], validating)
 
     if args.json:
         # Nothing but JSON on stdout: this used to print the human report
@@ -224,9 +230,9 @@ def main() -> int:
             "by_signature": dict(signatures.most_common()),
             "failures": failures,
             "regressed": regressed,
-            "gained": gained if supported is not None else [],
+            "gained": gained if baseline is not None else [],
         }, indent=2))
-        return 1 if (supported is not None and regressed) else 0
+        return 1 if (baseline is not None and regressed) else 0
 
     print(f"catalogue: {len(validating)}/{len(files)} validate\n")
     print(f"{'count':>5}  first error")
@@ -234,8 +240,8 @@ def main() -> int:
     for signature, count in signatures.most_common():
         print(f"{count:>5}  {signature}")
 
-    if supported is None:
-        print(f"\nno {SUPPORTED_LIST.relative_to(REPO)} yet; create it with --update")
+    if baseline is None:
+        print(f"\nno {BASELINE.relative_to(REPO)} yet; create it with --update")
         return 0
 
     if gained:
@@ -252,7 +258,7 @@ def main() -> int:
               "headline count is not the contract; these named files are.")
         return 1
 
-    print(f"\nall {len(supported)} listed example(s) still validate")
+    print(f"\nall {len(baseline)} listed example(s) still validate")
     return 0
 
 
