@@ -99,9 +99,15 @@ def setup():
     subprocess.run([sys.executable, str(setup_script)])
 
 
-@keys.command()
-def list():
-    """Show configured providers (not the keys)."""
+@keys.command("list")
+def list_keys():
+    """Show configured providers (not the keys).
+
+    Named `list_keys`, not `list`: at module scope `def list()` rebinds the
+    builtin for the whole file, and a click Command is callable -- so a later
+    `list(...)` silently *invokes this command*, printed the provider list and
+    exited before its own output. The CLI name is unchanged.
+    """
     try:
         providers = get_configured_providers()
         if providers:
@@ -361,20 +367,64 @@ def _failed_steps(results) -> list:
     return failed
 
 
+def _reportable_issues(compiler):
+    """Findings a successful validation should still tell the user about.
+
+    The compiler has always collected these; nothing displayed them. A
+    pipeline could report `✓ is valid` while carrying a warning saying a
+    reference could not be checked -- and then fail at run time on exactly
+    that reference (#465). A warning that only reaches the log stream is not
+    a warning: `orchestrator validate` prints to stdout, and a script
+    capturing stdout saw nothing at all.
+
+    Informational findings are excluded: "tool is available" and "execution
+    order computed" are not things anyone needs told.
+    """
+    report = getattr(compiler, "validation_report", None)
+    if report is None:
+        return []
+    return [issue for issue in report.issues if issue.is_error or issue.is_warning]
+
+
+def _issue_payload(issue):
+    """One finding as stable, machine-readable fields.
+
+    Field names are part of the interface: anything reading this should not
+    have to parse the human message to learn which step or reference is at
+    fault.
+    """
+    metadata = issue.metadata or {}
+    return {
+        "code": issue.code,
+        "severity": issue.severity.value,
+        "category": issue.category,
+        "step": metadata.get("step", issue.component),
+        "parameter_path": metadata.get("parameter_path", issue.path),
+        "referenced_step": metadata.get("referenced_step"),
+        "referenced_field": metadata.get("referenced_field"),
+        "message": issue.message,
+        "suggestions": list(issue.suggestions or []),
+    }
+
+
 @cli.command("validate")
 @click.argument("pipeline_file", type=click.Path(exists=True, dir_okay=False))
+@click.option("--json", "as_json", is_flag=True,
+              help="Emit the result and every finding as JSON on stdout.")
 @verbose_option
-def validate_pipeline(pipeline_file: str, verbose: bool):
+def validate_pipeline(pipeline_file: str, verbose: bool, as_json: bool):
     """Compile a pipeline without running it, and report its task graph."""
     import asyncio
+    import json as _json
 
     if verbose:
         setup_logging(verbose=True)
 
     from .compiler.yaml_compiler import YAMLCompiler
 
+    compiler = YAMLCompiler()
+
     async def _compile():
-        compiler = YAMLCompiler()
         with open(pipeline_file) as fh:
             return await compiler.compile(fh.read(), {})
 
@@ -384,11 +434,38 @@ def validate_pipeline(pipeline_file: str, verbose: bool):
         click.echo("Interrupted.", err=True)
         sys.exit(EXIT_INTERRUPTED)
     except Exception as exc:
-        click.echo(f"{type(exc).__name__}: {exc}", err=True)
+        if as_json:
+            click.echo(_json.dumps({
+                "pipeline_file": pipeline_file,
+                "valid": False,
+                "error": f"{type(exc).__name__}: {exc}",
+                "findings": [_issue_payload(i) for i in _reportable_issues(compiler)],
+            }, indent=2))
+        else:
+            click.echo(f"{type(exc).__name__}: {exc}", err=True)
         sys.exit(EXIT_VALIDATION_ERROR)
 
     tasks = getattr(pipeline, "tasks", {}) or {}
-    click.echo(f"✓ {pipeline_file} is valid")
+    findings = _reportable_issues(compiler)
+
+    if as_json:
+        click.echo(_json.dumps({
+            "pipeline_file": pipeline_file,
+            "valid": True,
+            "pipeline": getattr(pipeline, "id", None),
+            "tasks": {
+                task_id: list(getattr(task, "dependencies", []) or [])
+                for task_id, task in tasks.items()
+            },
+            "findings": [_issue_payload(issue) for issue in findings],
+        }, indent=2))
+        sys.exit(EXIT_OK)
+
+    warnings = [issue for issue in findings if issue.is_warning]
+    summary = f"✓ {pipeline_file} is valid"
+    if warnings:
+        summary += f" with {len(warnings)} warning{'s' if len(warnings) > 1 else ''}"
+    click.echo(summary)
     click.echo(f"  pipeline: {getattr(pipeline, 'id', '<unnamed>')}")
     click.echo(f"  tasks: {len(tasks)}")
     for task_id in tasks:
@@ -396,6 +473,15 @@ def validate_pipeline(pipeline_file: str, verbose: bool):
         deps = getattr(task, "dependencies", []) or []
         suffix = f"  <- {', '.join(deps)}" if deps else ""
         click.echo(f"    - {task_id}{suffix}")
+
+    for issue in findings:
+        click.echo("")
+        where = issue.path or issue.component
+        click.echo(f"{issue.severity.value}[{issue.code}] {where}:")
+        click.echo(f"  {issue.message}")
+        for suggestion in issue.suggestions or []:
+            click.echo(f"  suggestion: {suggestion}")
+
     sys.exit(EXIT_OK)
 
 
