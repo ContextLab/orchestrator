@@ -152,6 +152,48 @@ jobs:
           name: coverage
           path: coverage.xml
 
+  catalogue:
+    name: Example catalogue
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install from the lockfile
+        run: uv sync --locked --no-default-groups --group test --python 3.12
+
+      - name: Report the catalogue, fail on a named regression
+        # The headline count is deliberately NOT the contract. It moves for
+        # reasons that are not regressions -- fixing an `enhanced/` twin moves
+        # it by two, retiring a legacy file moves it by one -- so gating on it
+        # would punish ordinary progress and reward deleting hard examples.
+        #
+        # scripts/catalogue_validating.txt names the files that validate. A
+        # file LEAVING that list fails this job. A file joining it does not;
+        # it prints a reminder to run --update.
+        #
+        # The grouped counts are informational: they show where the remaining
+        # work actually is, grouped by what the validator says rather than by
+        # a taxonomy that would drift from it.
+        run: uv run --no-sync python scripts/catalogue_report.py | tee catalogue.txt
+
+      - name: Publish the report to the job summary
+        if: always()
+        run: |
+          {
+            echo '## Example catalogue'
+            echo ''
+            echo '```'
+            cat catalogue.txt || echo '(the catalogue step produced no output)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   legacy-suite:
     name: Legacy suite (non-blocking backlog)
     runs-on: ubuntu-latest

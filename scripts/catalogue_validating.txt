@@ -1,0 +1,58 @@
+# Examples that pass `orchestrator validate`.
+#
+# A file leaving this list is a regression and fails CI. A file
+# joining it is an improvement; run:
+#     python scripts/catalogue_report.py --update
+#
+# The count is deliberately not the contract -- see the module
+# docstring in scripts/catalogue_report.py.
+examples/auto_tags_demo.yaml
+examples/basic/hello_world.yaml
+examples/code_optimization.yaml
+examples/control_flow_conditional.yaml
+examples/control_flow_dynamic.yaml
+examples/creative_image_pipeline.yaml
+examples/data_processing.yaml
+examples/data_processing_pipeline.yaml
+examples/enhanced/code_optimization_enhanced.yaml
+examples/enhanced/control_flow_conditional_enhanced.yaml
+examples/enhanced/control_flow_dynamic_enhanced.yaml
+examples/enhanced/data_processing_enhanced.yaml
+examples/enhanced/data_processing_pipeline_enhanced.yaml
+examples/enhanced/interactive_pipeline_enhanced.yaml
+examples/enhanced/llm_routing_pipeline_enhanced.yaml
+examples/enhanced/mcp_integration_pipeline_enhanced.yaml
+examples/enhanced/mcp_memory_workflow_enhanced.yaml
+examples/enhanced/mcp_simple_test_enhanced.yaml
+examples/enhanced/research_basic_enhanced.yaml
+examples/enhanced/research_minimal_enhanced.yaml
+examples/enhanced/simple_data_processing_enhanced.yaml
+examples/enhanced/simple_timeout_test_enhanced.yaml
+examples/enhanced/statistical_analysis_enhanced.yaml
+examples/enhanced/terminal_automation_enhanced.yaml
+examples/enhanced/validation_pipeline_enhanced.yaml
+examples/enhanced/working_web_search_enhanced.yaml
+examples/interactive_pipeline.yaml
+examples/llm_routing_pipeline.yaml
+examples/mcp_integration_pipeline.yaml
+examples/mcp_memory_workflow.yaml
+examples/mcp_simple_test.yaml
+examples/research_advanced_tools.yaml
+examples/research_basic.yaml
+examples/research_minimal.yaml
+examples/simple_data_processing.yaml
+examples/simple_timeout_test.yaml
+examples/statistical_analysis.yaml
+examples/sub_pipelines/data_preprocessing_sub.yaml
+examples/sub_pipelines/sentiment_analysis.yaml
+examples/sub_pipelines/statistical_analysis.yaml
+examples/sub_pipelines/trend_analysis.yaml
+examples/supported/01_hello_filesystem.yaml
+examples/supported/02_parallel_fanout_fanin.yaml
+examples/supported/04_conditions.yaml
+examples/supported/05_reported_failure.yaml
+examples/supported/06_failure_policy.yaml
+examples/supported/07_templates_and_outputs.yaml
+examples/terminal_automation.yaml
+examples/validation_pipeline.yaml
+examples/working_web_search.yaml
