@@ -36,6 +36,28 @@ from ..validation.validation_report import (
 logger = logging.getLogger(__name__)
 
 
+
+def _data_flow_metadata(finding) -> Dict[str, Any]:
+    """Stable, machine-readable fields for one data-flow finding.
+
+    The step, the parameter, the step referred to and the field referred to
+    are all things a consumer should be able to read directly. Leaving them
+    only in the prose message forces anything programmatic to parse English,
+    and the message is not an interface.
+    """
+    reference = finding.variable_reference or ""
+    _, _, field = reference.partition(".")
+    return {
+        "error_type": finding.error_type,
+        "variable_reference": finding.variable_reference,
+        "source_task": finding.source_task,
+        "step": finding.task_id,
+        "parameter_path": finding.parameter_name,
+        "referenced_step": finding.source_task,
+        "referenced_field": field or None,
+    }
+
+
 class AutoTagNotFoundError(YAMLCompilerError):
     """Raised when AUTO tag resolution fails."""
 
@@ -740,11 +762,7 @@ class YAMLCompiler:
                         code=f"data_flow_{error.error_type}",
                         path=error.parameter_name,
                         suggestions=error.suggestions,
-                        metadata={
-                            "error_type": error.error_type,
-                            "variable_reference": error.variable_reference,
-                            "source_task": error.source_task
-                        }
+                        metadata=_data_flow_metadata(error)
                     )
                     self.validation_report.add_issue(issue)
                 
@@ -758,11 +776,7 @@ class YAMLCompiler:
                         code=f"data_flow_{warning.error_type}",
                         path=warning.parameter_name,
                         suggestions=warning.suggestions,
-                        metadata={
-                            "error_type": warning.error_type,
-                            "variable_reference": warning.variable_reference,
-                            "source_task": warning.source_task
-                        }
+                        metadata=_data_flow_metadata(warning)
                     )
                     self.validation_report.add_issue(issue)
                 
