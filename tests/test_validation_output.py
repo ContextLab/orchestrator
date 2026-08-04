@@ -195,13 +195,35 @@ def test_the_cli_module_shadows_no_builtin_at_module_scope():
     )
 
 
+def test_keys_list_is_still_registered_under_its_cli_name():
+    """Renaming the function must not rename the command.
+
+    Asked of the click group rather than by running it: `keys list` reports
+    the user's configured providers and exits non-zero when there are none.
+    Invoking it would test whether the machine has API keys, not whether the
+    command exists. CI has none by design -- the default workflow is
+    deliberately hermetic -- and the first version of this test passed on my
+    machine and failed there for exactly that reason.
+    """
+    from orchestrator.cli import keys
+
+    assert "list" in keys.commands, sorted(keys.commands)
+    assert keys.commands["list"].callback.__name__ == "list_keys", (
+        "the command is registered, but not by the renamed function"
+    )
+
+
 @pytest.mark.e2e
-def test_keys_list_is_still_reachable_under_its_cli_name(tmp_path):
-    """Renaming the function must not rename the command."""
+def test_keys_list_is_reachable_from_the_command_line(tmp_path):
+    """End to end, without needing credentials to exist.
+
+    `--help` proves the command resolves and is invocable; whether any
+    provider is configured is the user's business, not this test's.
+    """
     env = dict(os.environ)
     env["PYTHONPATH"] = str(REPO / "src") + os.pathsep + env.get("PYTHONPATH", "")
     result = subprocess.run(
-        [sys.executable, "-m", "orchestrator.cli", "keys", "list"],
+        [sys.executable, "-m", "orchestrator.cli", "keys", "list", "--help"],
         cwd=str(tmp_path), env=env, capture_output=True, text=True, timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
