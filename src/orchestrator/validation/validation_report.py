@@ -643,8 +643,17 @@ class ValidationReport:
 # Convenience functions for creating validation issues
 
 def create_template_issue(severity: ValidationSeverity, component: str, message: str,
-                         path: Optional[str] = None, suggestions: Optional[List[str]] = None) -> ValidationIssue:
-    """Create a template validation issue."""
+                         path: Optional[str] = None, suggestions: Optional[List[str]] = None,
+                         code: str = "template_error") -> ValidationIssue:
+    """Create a template validation issue.
+
+    `code` defaults to the generic `template_error` for callers that have no
+    more specific one, but the template validator distinguishes its findings
+    -- `loop_variable_wrong_construct` is not `inert_field_template` is not
+    `template_in_operational_metadata` -- and flattening them here meant a
+    consumer had to parse the human message to tell them apart, which is
+    exactly what the structured payload exists to avoid.
+    """
     return ValidationIssue(
         severity=severity,
         category="template",
@@ -652,7 +661,7 @@ def create_template_issue(severity: ValidationSeverity, component: str, message:
         message=message,
         path=path,
         suggestions=suggestions or [],
-        code="template_error"
+        code=code
     )
 
 
