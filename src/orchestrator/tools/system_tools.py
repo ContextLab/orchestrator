@@ -22,13 +22,47 @@ async def _reap(process: Optional[asyncio.subprocess.Process]) -> None:
     teardown -- which is what surfaces as `PytestUnraisableExceptionWarning`
     once the loop is gone.
     """
-    if process is None or process.returncode is not None:
+    if process is None:
         return
     try:
-        process.kill()
-    except ProcessLookupError:
-        return  # exited between the check and the kill
-    await process.wait()
+        if process.returncode is None:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass  # exited between the check and the kill
+            else:
+                await process.wait()
+    finally:
+        _close_transport(process)
+
+
+def _close_transport(process: asyncio.subprocess.Process) -> None:
+    """Close the pipes the child was given.
+
+    `kill()` and `wait()` reap the *process*, not its pipes. A child killed for
+    outrunning its timeout comes back with `returncode=-9` while its stdout and
+    stderr transports are still open, and only `__del__` closes them -- after
+    the loop that owned them is gone, which CPython reports as
+
+        ResourceWarning: unclosed transport <_UnixReadPipeTransport fd=15 open>
+
+    The collector decides when that happens, so the failure lands on whichever
+    test is running at the time. It turned main red as seven failures in
+    `test_failure_policy` and `test_supported_examples`, neither of which had
+    anything to do with the cause; both turn a ResourceWarning into an error
+    deliberately, to catch exactly this.
+
+    A command that exits on its own is not affected -- its transport is closed
+    already -- so this matters on the timeout and cancellation paths. It runs
+    unconditionally anyway because `close()` is idempotent, and because which
+    path a child took is not worth branching on to save one no-op call.
+
+    Linux only, in practice: macOS closes these transports regardless, which is
+    why every macOS job passed while py3.13/ubuntu failed.
+    """
+    transport = getattr(process, "_transport", None)
+    if transport is not None:
+        transport.close()
 
 
 class TerminalTool(Tool):
