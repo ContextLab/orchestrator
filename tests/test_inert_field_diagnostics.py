@@ -25,7 +25,9 @@ from pathlib import Path
 import pytest
 
 from orchestrator.core.step_fields import (
-    INERT_STEP_FIELDS,
+    INERT_PROSE_STEP_FIELDS,
+    NON_RENDERED_STRUCTURAL_STEP_FIELDS,
+    OPERATIONAL_METADATA_KEYS,
     RENDERABLE_STEP_FIELDS,
 )
 from orchestrator.validation.template_validator import TemplateValidator
@@ -33,10 +35,10 @@ from tests.test_infrastructure import create_test_orchestrator
 
 pytestmark = [pytest.mark.contract]
 
-#: `id` names the step and `dependencies`/`depends_on` hold step ids. They are
-#: inert for the same reason, but a template in one is a structural error
-#: rather than prose, so they are not probed as free text here.
-PROSE_FIELDS = sorted(INERT_STEP_FIELDS - {"id", "dependencies", "depends_on", "tool"})
+#: Fields that are prose: unrendered, and harmless. `metadata` joins them
+#: because arbitrary author data is prose too -- its *reserved* keys are not,
+#: and those are covered separately below.
+PROSE_FIELDS = sorted(INERT_PROSE_STEP_FIELDS | {"metadata"})
 
 
 def _validate(step, context=None):
@@ -150,3 +152,85 @@ def test_that_same_pipeline_validates(tmp_path):
         {},
     )
     assert result.is_valid, [(e.error_type, e.context_path) for e in result.errors]
+
+
+# ---------------------------------------------------------------------------
+# Unrendered does not mean harmless
+# ---------------------------------------------------------------------------
+#
+# The first version of this module treated every unrendered field as prose and
+# warned. That said a `goto` sending execution to a step literally named
+# `{{ nosuch }}` was a wording problem, and reported a pipeline carrying it as
+# valid.
+
+
+@pytest.mark.parametrize("field", sorted(NON_RENDERED_STRUCTURAL_STEP_FIELDS))
+def test_a_template_in_a_structural_field_is_an_error(field):
+    """These fields *name* things -- a step, a tool, a dependency. A literal
+    `{{ x }}` names nothing, so the pipeline is already broken."""
+    value = ["{{ nosuch }}"] if field in ("dependencies", "depends_on") else "{{ nosuch }}"
+    result = _validate({"id": "a", field: value})
+    assert not result.is_valid, f"a template in '{field}' cannot resolve to a name"
+    assert "template_in_structural_field" in [e.error_type for e in result.errors]
+
+
+@pytest.mark.parametrize("key", sorted(OPERATIONAL_METADATA_KEYS))
+def test_a_template_in_runtime_read_metadata_is_an_error(key):
+    """Each of these keys has a runtime read behind it, so the literal
+    template text is what control code would act on."""
+    result = _validate({"id": "a", "metadata": {key: "{{ nosuch }}"}})
+    assert not result.is_valid, f"metadata '{key}' is read by the runtime"
+    assert "template_in_operational_metadata" in [e.error_type for e in result.errors]
+
+
+def test_arbitrary_metadata_is_still_prose():
+    """The split must not swallow the case it started from: a note an author
+    wrote for themselves is not a defect."""
+    result = _validate({"id": "a", "metadata": {"note": "{{ nosuch }}"}})
+    assert result.is_valid, [(e.error_type, e.message) for e in result.errors]
+    assert "inert_field_template" in [w.error_type for w in result.warnings]
+
+
+def test_an_operational_key_is_only_operational_inside_metadata():
+    """`priority` nested deeper is somebody's data structure, not the key the
+    runtime reads."""
+    result = _validate({"id": "a", "metadata": {"notes": {"priority": "{{ nosuch }}"}}})
+    assert result.is_valid, [(e.error_type, e.message) for e in result.errors]
+
+
+def test_metadata_is_not_traversed_as_pipeline_structure():
+    """`metadata` holds arbitrary author data, so a key named `steps` inside it
+    is data. It was being walked as pipeline structure, and a dict carrying
+    `for_each` and `while` reported an ambiguous loop -- from inside a subtree
+    this module had just declared the runtime copies verbatim."""
+    result = _validate({"id": "a", "metadata": {"steps": [{"for_each": "x", "while": "y"}]}})
+    assert "ambiguous_loop_construct" not in [e.error_type for e in result.errors]
+    assert result.is_valid, [(e.error_type, e.context_path) for e in result.errors]
+
+
+def test_the_three_classes_are_disjoint():
+    """A field in two of them would be reported by whichever check ran first."""
+    assert not (INERT_PROSE_STEP_FIELDS & NON_RENDERED_STRUCTURAL_STEP_FIELDS)
+    assert not (set(RENDERABLE_STEP_FIELDS) & INERT_PROSE_STEP_FIELDS)
+    assert not (set(RENDERABLE_STEP_FIELDS) & NON_RENDERED_STRUCTURAL_STEP_FIELDS)
+
+
+@pytest.mark.e2e
+def test_the_specific_diagnostic_code_survives_to_the_api(tmp_path):
+    """`create_template_issue` hardcoded `template_error`, so every template
+    finding arrived as the same code and a consumer had to read the prose to
+    tell an inert-field note from a loop-scope error."""
+    from orchestrator.validation.pipeline_report import validate_pipeline_file
+
+    document = tmp_path / "p.yaml"
+    document.write_text(
+        "id: codes\nname: codes\nsteps:\n"
+        '  - id: a\n    name: "{{ nosuch }}"\n    tool: filesystem\n'
+        "    action: write\n    parameters:\n"
+        f'      path: "{tmp_path}/x.txt"\n      content: hi\n'
+    )
+    result = validate_pipeline_file(document)
+    assert result.valid, result.error
+    assert "inert_field_template" in [f.code for f in result.findings], [
+        f.code for f in result.findings
+    ]
