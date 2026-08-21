@@ -67,23 +67,29 @@ passes.
 ## Provider policy
 
 - Core interfaces stay **provider-neutral**.
-- Two providers are being brought under live acceptance tests:
-  - **Anthropic**, matching the October refactor and the code that works.
+- The supported provider set is deliberately small, and is **Dartmouth Chat
+  and HuggingFace only** (decided 2026-08-21):
   - **Dartmouth Chat**, an OpenAI-compatible gateway that serves several
-    models at zero cost per token. It was added because unfunded real-model
-    coverage is worth more than mocked coverage, and it needs no provider
-    extra: the adapter speaks the gateway's HTTP API with `aiohttp`, already
-    a core dependency. Free/paid status is read from the live catalog, and
-    paid models are refused unless `ORCHESTRATOR_ALLOW_PAID_MODELS=1`.
+    models at zero cost per token. It needs no provider extra: the adapter
+    speaks the gateway's HTTP API with `aiohttp`, already a core dependency.
+    Free/paid status is read from the live catalog, and paid models are
+    refused unless `ORCHESTRATOR_ALLOW_PAID_MODELS=1`.
+  - **HuggingFace**, via the hosted **Inference API** — not local
+    transformers inference. The local-inference adapters in
+    `integrations/` (`huggingface_model.py`, `lazy_huggingface_model.py`)
+    are not the supported path; the Inference API adapter is new work,
+    tracked in #484.
+- **Anthropic, OpenAI, Google and Ollama are not providers of this product.**
+  Their adapters remain in the tree but are unsupported, must not be
+  advertised, and are retired under #430. The earlier plan to bring Anthropic
+  under live acceptance tests is withdrawn, and with it #432 (the
+  credit-blocked verification) and the `live-anthropic` CI job.
 - A provider earns the word **supported** only when its `live-tests` job
-  passes remotely. As of 2026-08-01:
+  passes remotely. As of 2026-08-21:
   - **Dartmouth Chat: supported.** `live-dartmouth` passed with 9 tests
-    against real free models. This is the first provider to clear the bar.
-  - **Anthropic: not supported.** Its live job is red — the account has no
-    credit, so the API returns 400 and the tests correctly refuse to pass
-    rather than reporting unverified behaviour as working. See #432.
-- OpenAI, Google, HuggingFace and Ollama adapters remain in the tree but are
-  **unsupported** until they have contract tests and live acceptance tests.
+    against real free models (2026-08-01).
+  - **HuggingFace: not yet.** It is advertised nowhere until its live job
+    passes; see #484.
 - No provider may be advertised in the README as supported before its live
   job passes. Describing it as verified-locally-but-not-gated is permitted,
   provided the README says exactly that.
@@ -313,8 +319,8 @@ collection is prohibited.
 
 ## Golden pipelines
 
-Four executable acceptance specifications. The first two are hermetic; the last
-two are `live` and skip without a credential:
+Executable acceptance specifications. The first three are hermetic; the live
+ones skip without a credential:
 
 1. **`basic`** — deterministic local tools, sequential steps, template
    interpolation, typed outputs.
@@ -323,13 +329,16 @@ two are `live` and skip without a credential:
    to verify failure propagation and exit codes. Conditional branching and
    loops are *not* covered by this fixture and are not yet part of the
    supported contract; see #333 (`on_false` / `on_success`) and #320.
-3. **`live-anthropic`** — the same shape as `basic` but with one real Anthropic
-   call. Marked `live`, skipped unless `ANTHROPIC_API_KEY` is set.
-4. **`live-dartmouth`** — the same shape, against a free Dartmouth Chat model.
-   Marked `live`, skipped unless `DARTMOUTH_CHAT_API_KEY` is set. Its job runs
-   separately from the Anthropic one: run together, a missing Dartmouth
-   credential produced skips inside a green Anthropic job, which read as
-   coverage that did not exist.
+3. **`failure`** — a step that fails, and a run that reports it honestly.
+4. **`live-dartmouth`** — the same shape as `basic`, against a free Dartmouth
+   Chat model. Marked `live`, skipped unless `DARTMOUTH_CHAT_API_KEY` is set.
+5. **`live-huggingface`** — the same shape, against the HuggingFace Inference
+   API. Does not exist yet; it lands with the provider (#484), marked `live`,
+   skipped unless `HF_TOKEN` is set.
+
+Each live provider gets its **own** CI job: run together, a missing credential
+produced skips inside another provider's green job, which read as coverage
+that did not exist.
 
 Golden pipelines run through **both** the CLI and the Python API and must agree.
 

@@ -24,13 +24,18 @@ extras installed, plus a smoke test of a golden pipeline through the
 - `orchestrator run` / `orchestrator validate` and the equivalent Python API
 
 **Present in the tree but NOT verified**, and therefore not claimed to work:
-OpenAI / Google / HuggingFace / Ollama adapters, multimodal tooling, the web
-dashboard, monitoring and analytics, MCP integration, and the deployment
-tooling. **Dartmouth Chat is the first provider to pass live acceptance
-tests** (`live-dartmouth`, 9 passed remotely on 2026-08-01) and is the one
-provider described here as supported. Anthropic's live job is currently red
-because the account has no credit, so its behaviour is unverified and it is
-not claimed to work.
+multimodal tooling, the web dashboard, monitoring and analytics, MCP
+integration, and the deployment tooling. **Dartmouth Chat is the first
+provider to pass live acceptance tests** (`live-dartmouth`, 9 passed remotely
+on 2026-08-01) and is the one provider described here as supported.
+
+**Provider policy: Dartmouth Chat and HuggingFace (Inference API) only.**
+Anthropic, OpenAI, Google and Ollama adapters remain in the tree but are
+unsupported, are not advertised, and are being retired
+([#430](https://github.com/ContextLab/orchestrator/issues/430)). HuggingFace
+support means the hosted Inference API and is in progress
+([#484](https://github.com/ContextLab/orchestrator/issues/484)); it is not
+claimed to work until its live job passes.
 
 **The wider legacy test suite is not green.** Only the marked
 `unit`/`contract`/`e2e` layer gates the build. The remainder were written
@@ -136,9 +141,6 @@ pipelines built from deterministic local tools — no API key required.
 Optional features are grouped into extras:
 
 ```bash
-pip install "py-orc[anthropic]"    # Anthropic provider
-pip install "py-orc[openai]"       # OpenAI provider (unverified)
-pip install "py-orc[google]"       # Google provider (unverified)
 pip install "py-orc[langgraph]"    # LangGraph state/checkpoint backends
 pip install "py-orc[web]"          # web search and browser tools
 pip install "py-orc[multimedia]"   # image/audio/video tools
@@ -147,6 +149,13 @@ pip install "py-orc[infra]"        # Docker, Redis, Postgres backends
 pip install "py-orc[dev]"          # development and test tooling
 pip install "py-orc[all]"          # every runtime extra
 ```
+
+Neither supported provider needs an extra: Dartmouth Chat and the HuggingFace
+Inference API are both spoken over HTTP with `aiohttp`, already a core
+dependency. The `anthropic`, `openai` and `google` extras still exist for the
+frozen adapters, which are unsupported and being retired
+([#430](https://github.com/ContextLab/orchestrator/issues/430)) — do not build
+on them.
 
 A missing extra disables only the feature that needs it; it never breaks
 `import orchestrator`.
@@ -218,31 +227,25 @@ Both surfaces are asserted to produce the same result in
 
 ### API Key Configuration
 
-Orchestrator supports multiple AI providers. Configure your API keys using the interactive setup:
+The supported providers are Dartmouth Chat and HuggingFace. Configure your API keys using the interactive setup:
 
 ```bash
 # Interactive API key setup
 python scripts/utilities/setup_api_keys.py
 
 # Or set environment variables directly
-export OPENAI_API_KEY="your-openai-key"
-export ANTHROPIC_API_KEY="your-anthropic-key"
-export GOOGLE_AI_API_KEY="your-google-ai-key"
+export DARTMOUTH_CHAT_API_KEY="your-dartmouth-chat-key"
 export HF_TOKEN="your-huggingface-token"
 ```
 
 API keys are stored securely in `~/.orchestrator/.env` with file permissions set to 600 (owner read/write only).
 
-#### Required Environment Variables
+#### Environment Variables
 
-If you prefer to set environment variables manually:
+- `DARTMOUTH_CHAT_API_KEY` - Dartmouth Chat (free models; supported today)
+- `HF_TOKEN` - Hugging Face token (for the Inference API provider, in progress — [#484](https://github.com/ContextLab/orchestrator/issues/484))
 
-- `OPENAI_API_KEY` - OpenAI API key (for GPT models)
-- `ANTHROPIC_API_KEY` - Anthropic API key (for Claude models)
-- `GOOGLE_AI_API_KEY` - Google AI API key (for Gemini models)
-- `HF_TOKEN` - Hugging Face token (for HuggingFace models)
-
-**Note**: Ollama models run locally and don't require API keys. They will be downloaded automatically on first use.
+No model is required at all to compile and run pipelines built from deterministic local tools.
 
 ### Basic Usage
 
@@ -311,52 +314,22 @@ steps:
 
 ## Model Configuration
 
-Configure available models in `models.yaml`:
+The supported providers need no configuration file:
 
-```yaml
-models:
-  # Local models (via Ollama) - downloaded on first use
-  - source: ollama
-    name: deepseek-r1:8b
-    expertise: [reasoning, code, math]
-    size: 8b
-    
-  - source: ollama
-    name: qwen2.5-coder:7b
-    expertise: [code, programming]
-    size: 7b
-    
-  - source: ollama
-    name: gemma3:12b
-    expertise: [general, reasoning, analysis]
-    size: 12b
+- **Dartmouth Chat** — set `DARTMOUTH_CHAT_API_KEY` and call
+  `orchestrator.init_models()`; the zero-cost models register automatically
+  from the live catalog. Which models are free changes upstream, so they are
+  deliberately not listed in any shipped file.
+- **HuggingFace Inference API** — lands with
+  [#484](https://github.com/ContextLab/orchestrator/issues/484); `HF_TOKEN`
+  will be the credential.
 
-  # Cloud models  
-  - source: openai
-    name: gpt-5
-    expertise: [general, reasoning, code, analysis, vision, multimodal]
-    size: 2000b  # Estimated
-    
-  - source: anthropic
-    name: claude-sonnet-4-20250514
-    expertise: [general, reasoning, efficient]
-    size: 600b  # Estimated
-    
-  - source: google
-    name: gemini-2.5-flash
-    expertise: [general, fast, efficient, thinking]
-    size: 80b  # Estimated
-
-defaults:
-  expertise_preferences:
-    code: qwen2.5-coder:32b
-    reasoning: deepseek-r1:32b
-    fast: llama3.2:1b
-    general: llama3.1:8b
-    analysis: gemma3:27b
-```
-
-Models are downloaded only when first used, saving disk space and initialization time.
+A `~/.orchestrator/models.yaml` with `source:` entries (`ollama`,
+`huggingface`, `openai`, `anthropic`, `google`) is still read, but every one
+of those sources routes through the frozen adapter layer — unsupported, and
+being retired under
+[#430](https://github.com/ContextLab/orchestrator/issues/430). New work should
+not depend on them.
 
 ## Advanced Example
 
@@ -571,11 +544,11 @@ intent:
 | Provider | Extra | Status |
 |-|-|-|
 | Dartmouth Chat | — | **Supported** (free models). `live-dartmouth` green: 9 passed, 2026-08-01 |
-| Anthropic | `anthropic` | Live job red — account has no credit, so behaviour is unverified |
-| OpenAI | `openai` | Adapter present, unverified |
-| Google | `google` | Adapter present, unverified |
-| Ollama (local) | — | Adapter present, unverified |
-| HuggingFace | — | Adapter present, unverified |
+| HuggingFace (Inference API) | — | In progress ([#484](https://github.com/ContextLab/orchestrator/issues/484)) — not claimed to work until its live job passes |
+| Anthropic | `anthropic` | Not a provider of this product — frozen adapter, retiring under [#430](https://github.com/ContextLab/orchestrator/issues/430) |
+| OpenAI | `openai` | Not a provider of this product — frozen adapter, retiring under [#430](https://github.com/ContextLab/orchestrator/issues/430) |
+| Google | `google` | Not a provider of this product — frozen adapter, retiring under [#430](https://github.com/ContextLab/orchestrator/issues/430) |
+| Ollama (local) | — | Not a provider of this product — frozen adapter, retiring under [#430](https://github.com/ContextLab/orchestrator/issues/430) |
 
 A provider is only called **supported** once the `live-tests` workflow passes
 for it remotely. "Verified locally" means its live tests were run by hand
@@ -590,8 +563,7 @@ local tools.
 ## Requirements
 
 - Python 3.11+ (tested on 3.11, 3.12 and 3.13)
-- Optional: an API key for a cloud provider, if your pipeline uses one
-- Optional: Ollama, for local model execution
+- Optional: `DARTMOUTH_CHAT_API_KEY`, if your pipeline uses a model
 
 ## Contributing
 

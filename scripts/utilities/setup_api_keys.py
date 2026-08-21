@@ -31,12 +31,15 @@ def setup_api_keys():
     
     keys = {}
     
-    # Prompt for each key
+    # Prompt for each key. The supported providers come first (ADR 0001:
+    # Dartmouth Chat and HuggingFace Inference API only); the rest configure
+    # frozen adapters that are being retired (#430).
     providers = [
-        ("Anthropic", "ANTHROPIC_API_KEY", "sk-ant-..."),
-        ("Google AI", "GOOGLE_AI_API_KEY", "AIza..."),
+        ("Dartmouth Chat", "DARTMOUTH_CHAT_API_KEY", "dc-..."),
         ("Hugging Face", "HF_TOKEN", "hf_..."),
-        ("OpenAI", "OPENAI_API_KEY", "sk-..."),
+        ("Anthropic (unsupported)", "ANTHROPIC_API_KEY", "sk-ant-..."),
+        ("Google AI (unsupported)", "GOOGLE_AI_API_KEY", "AIza..."),
+        ("OpenAI (unsupported)", "OPENAI_API_KEY", "sk-..."),
     ]
     
     for provider, env_var, example in providers:
@@ -81,6 +84,10 @@ def setup_api_keys():
             f.write("# Also set the alternative Google env var that some libraries use\n")
             f.write(f'GOOGLE_API_KEY="{keys["GOOGLE_API_KEY"]}"\n\n')
         
+        if 'DARTMOUTH_CHAT_API_KEY' in keys:
+            f.write("# Dartmouth Chat API Key\n")
+            f.write(f'DARTMOUTH_CHAT_API_KEY="{keys["DARTMOUTH_CHAT_API_KEY"]}"\n\n')
+
         if 'HF_TOKEN' in keys:
             f.write("# Hugging Face Token\n")
             f.write(f'HF_TOKEN="{keys["HF_TOKEN"]}"\n')
