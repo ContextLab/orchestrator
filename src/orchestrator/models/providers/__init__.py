@@ -18,6 +18,7 @@ _EXPORTS = {
     "ProviderConfig": ".base",
     "ProviderError": ".base",
     "DartmouthProvider": ".dartmouth_provider",
+    "HuggingFaceProvider": ".huggingface_provider",
 }
 
 __all__ = sorted(_EXPORTS)

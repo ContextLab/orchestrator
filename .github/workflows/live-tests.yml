@@ -37,8 +37,7 @@ jobs:
 
   # There is no live-anthropic job: Anthropic is not a provider of this
   # product (ADR 0001, decided 2026-08-21). The frozen adapter retires under
-  # #430. The next live job to add is live-huggingface, with the provider
-  # itself (#484).
+  # #430.
 
   live-dartmouth:
     name: Live Dartmouth provider (free models)
@@ -74,3 +73,37 @@ jobs:
           # otherwise pass having proved nothing. Require real passes.
           grep -qE "[1-9][0-9]* passed" dartmouth-live.txt \
             || { echo "No Dartmouth live test actually passed; coverage is not real."; exit 1; }
+
+  live-huggingface:
+    name: Live HuggingFace Inference API (free routes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          # No provider extra: the router is OpenAI-compatible and the
+          # adapter speaks it with aiohttp, which is already a core dependency.
+          python -m pip install -e .
+          python -m pip install pytest pytest-asyncio pytest-timeout
+
+      - name: Run live HuggingFace tests
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          ORCHESTRATOR_REQUIRE_LIVE: "1"
+        run: |
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "HF_TOKEN is not configured; cannot verify HuggingFace support."
+            exit 1
+          fi
+          python -m pytest -m live -k huggingface -v | tee huggingface-live.txt
+          # Free routes are promos and every one can legitimately be flapping
+          # at once, in which case every generation test skips and the job
+          # would otherwise pass having proved nothing. Require real passes.
+          grep -qE "[1-9][0-9]* passed" huggingface-live.txt \
+            || { echo "No HuggingFace live test actually passed; coverage is not real."; exit 1; }

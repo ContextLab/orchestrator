@@ -55,7 +55,7 @@ def pytest_collection_modifyitems(config, items):
     # Live tests are not all about the same provider, so they cannot share one
     # credential gate. Dartmouth Chat tests need a Dartmouth key -- and they
     # cost nothing to run, so gating them behind a paid provider's key would
-    # needlessly forgo free coverage.
+    # needlessly forgo free coverage. HuggingFace tests need an HF token.
     def _have_dartmouth() -> bool:
         try:
             from orchestrator.models.dartmouth_credentials import (
@@ -68,10 +68,25 @@ def pytest_collection_modifyitems(config, items):
 
     have_dartmouth = _have_dartmouth()
 
+    def _have_huggingface() -> bool:
+        try:
+            from orchestrator.models.huggingface_credentials import (
+                resolve_huggingface_api_key,
+            )
+
+            return resolve_huggingface_api_key(required=False) is not None
+        except Exception:
+            return False
+
+    have_huggingface = _have_huggingface()
+
     def _credential_for(item) -> tuple[bool, str]:
         """Which credential a live test needs, and whether we have it."""
-        if "dartmouth" in str(getattr(item, "fspath", "")).lower():
+        fspath = str(getattr(item, "fspath", "")).lower()
+        if "dartmouth" in fspath:
             return have_dartmouth, "DARTMOUTH_CHAT_API_KEY"
+        if "huggingface" in fspath:
+            return have_huggingface, "HF_TOKEN"
         return have_anthropic, "ANTHROPIC_API_KEY"
 
     # The live CI job sets ORCHESTRATOR_REQUIRE_LIVE=1. Without this guard a
@@ -79,12 +94,13 @@ def pytest_collection_modifyitems(config, items):
     # having exercised no provider at all -- indistinguishable from having no
     # live coverage, which is the state this suite is meant to leave behind.
     if os.environ.get("ORCHESTRATOR_REQUIRE_LIVE") == "1" and not (
-        have_anthropic or have_dartmouth
+        have_anthropic or have_dartmouth or have_huggingface
     ):
         raise pytest.UsageError(
             "ORCHESTRATOR_REQUIRE_LIVE=1 requires real live coverage, but "
-            "neither ANTHROPIC_API_KEY nor a Dartmouth Chat credential is "
-            "available. Provide one, or unset ORCHESTRATOR_REQUIRE_LIVE."
+            "neither ANTHROPIC_API_KEY, a Dartmouth Chat credential, nor an "
+            "HF_TOKEN is available. Provide one, or unset "
+            "ORCHESTRATOR_REQUIRE_LIVE."
         )
 
     run_integration = os.environ.get("ORCHESTRATOR_RUN_INTEGRATION") == "1"
