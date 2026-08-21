@@ -80,10 +80,16 @@ passes.
     are not the supported path; the Inference API adapter is new work,
     tracked in #484.
 - **Anthropic, OpenAI, Google and Ollama are not providers of this product.**
-  Their adapters remain in the tree but are unsupported, must not be
-  advertised, and are retired under #430. The earlier plan to bring Anthropic
-  under live acceptance tests is withdrawn, and with it #432 (the
-  credit-blocked verification) and the `live-anthropic` CI job.
+  Their adapters were removed from the tree on 2026-08-21 (the first #430
+  cut: `integrations/` adapters, `models/anthropic_model.py`,
+  `models/openai_model.py`, `models/providers/anthropic_provider.py`, the
+  skills-era `models/registry.py` + `models/config.py` that only ever
+  supported Anthropic, `tools/update_models.py`, and the packaged default
+  model pool in `config/models.yaml`, which listed only retired providers).
+  A `models.yaml` written before the retirement is skipped entry-by-entry
+  with a warning, never raised on. The earlier plan to bring Anthropic under
+  live acceptance tests is withdrawn, and with it #432 (the credit-blocked
+  verification) and the `live-anthropic` CI job.
 - A provider earns the word **supported** only when its `live-tests` job
   passes remotely. As of 2026-08-21:
   - **Dartmouth Chat: supported.** `live-dartmouth` passed with 9 tests

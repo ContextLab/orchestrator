@@ -64,9 +64,9 @@ _EXPORTS: dict[str, str] = {
     # --- Models ---
     "ModelRegistry": ".models.model_registry",
     "get_model_registry": ".models.registry_singleton",
-    # --- Model integrations (each needs its provider extra) ---
-    "HuggingFaceModel": ".integrations.huggingface_model",
-    "OllamaModel": ".integrations.ollama_model",
+    # --- Model integrations ---
+    # The retired providers (Anthropic/OpenAI/Google/Ollama/local-HF, #430)
+    # are deliberately absent here: not importable, not advertised.
     # Dartmouth Chat needs no extra: it is an OpenAI-compatible HTTP gateway
     # spoken with aiohttp (a core dep), and it serves free models.
     "DartmouthModel": ".models.dartmouth_model",
@@ -82,13 +82,10 @@ _EXPORTS: dict[str, str] = {
     "compile": "._api",
     "compile_async": "._api",
     "OrchestratorPipeline": "._api",
-    # --- Optional API layer ---
-    "PipelineAPI": ".api",
-    "AdvancedPipelineCompiler": ".api",
-    "PipelineExecutor": ".api",
-    "create_pipeline_api": ".api",
-    "create_advanced_pipeline_compiler": ".api",
-    "create_pipeline_executor": ".api",
+    # The api/ layer (PipelineAPI et al.) is frozen and was removed from the
+    # public surface with the provider retirement: it imported the competing
+    # model registry that #430 deleted, so those names could no longer
+    # resolve. Its own removal is a later #430 cut.
     # --- Validation, with its findings ---
     "validate_pipeline_file": ".validation.pipeline_report",
     "validate_pipeline_text": ".validation.pipeline_report",

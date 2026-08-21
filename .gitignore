@@ -286,3 +286,6 @@ tests/performance/results/
 tests/performance/alerts/
 tests/quality/results/
 tests/scenarios/results/
+
+# opencode/OMC session tooling state
+.omo/

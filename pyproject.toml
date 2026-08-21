@@ -48,9 +48,9 @@ dependencies = [
 
 [project.optional-dependencies]
 # --- Model providers -------------------------------------------------------
-anthropic = ["anthropic>=0.7.0"]
-openai = ["openai>=1.0.0"]
-google = ["google-generativeai>=0.3.0"]
+# None. The supported providers (Dartmouth Chat, HuggingFace Inference API)
+# are spoken over HTTP with aiohttp, a core dependency. The anthropic /
+# openai / google extras retired with their adapters (#430).
 
 # --- Graph runtime ---------------------------------------------------------
 langgraph = [
@@ -127,7 +127,7 @@ notebooks = [
 # import name (orchestrator). The previous value referenced a package that
 # does not exist on any index.
 all = [
-    "py-orc[anthropic,openai,google,langgraph,web,multimedia,viz,infra,crypto]",
+    "py-orc[langgraph,web,multimedia,viz,infra,crypto]",
 ]
 all-dev = [
     "py-orc[all,dev,docs,notebooks]",
@@ -260,8 +260,6 @@ module = [
     "docker.*",
     "redis.*",
     "psycopg2.*",
-    "openai.*",
-    "anthropic.*",
 ]
 ignore_missing_imports = true
 

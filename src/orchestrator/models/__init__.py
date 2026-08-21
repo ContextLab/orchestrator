@@ -1,8 +1,15 @@
-"""Model management and selection with unified provider abstractions."""
+"""Model management and selection.
 
-# Legacy model registry (for backwards compatibility)
+The canonical registry is :class:`ModelRegistry` from
+:mod:`orchestrator.models.model_registry`, reached through
+:func:`get_model_registry`. The skills-era "unified" registry and its
+provider-configuration system were retired under #430 -- they only ever
+supported Anthropic, which is no longer a provider of this product.
+"""
+
 from .model_registry import (
     ModelNotFoundError,
+    ModelRegistry,
     NoEligibleModelsError,
     UCBModelSelector,
 )
@@ -11,61 +18,25 @@ from .registry_singleton import (
     set_model_registry,
     reset_model_registry,
 )
-
-# New unified provider system
-from .registry import ModelRegistry as UnifiedModelRegistry
-from .config import (
-    RegistryConfiguration,
-    ModelProviderSpec,
-    create_default_configuration,
-    create_registry_from_config,
-    create_registry_from_env,
-    load_configuration_from_dict,
-    configuration_to_dict,
-    CLOUD_ONLY_CONFIG,
-    LOCAL_ONLY_CONFIG,
-    DEVELOPMENT_CONFIG,
-)
 from .providers import (
     ModelProvider,
     ProviderConfig,
     ProviderError,
-    AnthropicProvider,
 )
 
-# Keep legacy ModelRegistry for backwards compatibility
-# TODO: Eventually migrate all usage to UnifiedModelRegistry
-from .model_registry import ModelRegistry as LegacyModelRegistry
+#: Kept for backwards compatibility with code that imported the legacy name.
+LegacyModelRegistry = ModelRegistry
 
 __all__ = [
-    # Legacy registry (backwards compatibility)
+    "ModelRegistry",
     "LegacyModelRegistry",
-    "UCBModelSelector", 
+    "UCBModelSelector",
     "ModelNotFoundError",
     "NoEligibleModelsError",
     "get_model_registry",
-    "set_model_registry", 
+    "set_model_registry",
     "reset_model_registry",
-    
-    # New unified provider system
-    "UnifiedModelRegistry",
-    "RegistryConfiguration",
-    "ModelProviderSpec",
-    "create_default_configuration",
-    "create_registry_from_config",
-    "create_registry_from_env",
-    "load_configuration_from_dict",
-    "configuration_to_dict",
-    "CLOUD_ONLY_CONFIG",
-    "LOCAL_ONLY_CONFIG", 
-    "DEVELOPMENT_CONFIG",
-    
-    # Provider abstractions (Anthropic-only for Claude Skills refactor)
     "ModelProvider",
     "ProviderConfig",
     "ProviderError",
-    "AnthropicProvider",
 ]
-
-# For backwards compatibility, keep ModelRegistry pointing to legacy
-ModelRegistry = LegacyModelRegistry
