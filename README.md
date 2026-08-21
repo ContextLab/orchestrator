@@ -46,8 +46,8 @@ That job is marked `continue-on-error`, which means GitHub reports it green
 **regardless of the result** — so its check mark says nothing about the
 suite. The real numbers are in the job's run summary, in a warning
 annotation on the run page, and in its `legacy-suite-results` artifact.
-As of the most recent run: **434 failed, 248 errors, 1827 passed, 227
-skipped**. Track it in
+As of the post-retirement re-baseline (full local run, 2026-08-21):
+**500 failed, 93 errors, 1707 passed, 109 skipped**. Track it in
 [#354](https://github.com/ContextLab/orchestrator/issues/354) rather than
 trusting a number maintained by hand here, which has been wrong before.
 
