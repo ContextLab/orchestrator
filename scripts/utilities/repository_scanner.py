@@ -398,7 +398,12 @@ class RepositoryScanner:
     
     def _scan_directories(self):
         """Analyze directory structure and organization."""
-        for dir_path in self.root_path.rglob('*/'):
+        # rglob('*') filtered by is_dir(), not rglob('*/'): the trailing-slash
+        # form only means "directories only" on newer Pythons; on 3.9 it also
+        # yields files, and _analyze_directory then iterdirs a file.
+        for dir_path in self.root_path.rglob('*'):
+            if not dir_path.is_dir():
+                continue
             if self._should_ignore_directory(dir_path):
                 continue
                 
