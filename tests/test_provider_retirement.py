@@ -39,13 +39,13 @@ def test_packaged_models_yaml_offers_no_retired_providers():
 
 
 def _seal_credentials(monkeypatch, tmp_path):
-    """Cut every Dartmouth credential source, including import-time paths.
+    """Cut every provider credential source, including import-time paths.
 
-    ``dartmouth_credentials`` computes its credential-file paths from
+    The credential modules compute their credential-file paths from
     ``Path.home()`` at import time, so patching ``HOME`` afterwards changes
     nothing -- the module constants must be redirected instead.
     """
-    from orchestrator.models import dartmouth_credentials
+    from orchestrator.models import dartmouth_credentials, huggingface_credentials
 
     monkeypatch.delenv("DARTMOUTH_CHAT_API_KEY", raising=False)
     monkeypatch.setattr(
@@ -53,6 +53,13 @@ def _seal_credentials(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         dartmouth_credentials, "_LLMXIVE_CREDENTIALS_FILE", tmp_path / "nope.toml"
+    )
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.setattr(
+        huggingface_credentials, "_ORCHESTRATOR_ENV_FILE", tmp_path / "nope.env"
+    )
+    monkeypatch.setattr(
+        huggingface_credentials, "_HF_CLI_TOKEN_FILE", tmp_path / "nope-token"
     )
 
 

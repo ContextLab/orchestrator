@@ -49,6 +49,10 @@ def init_models(config_path: str = None) -> ModelRegistry:
 #: must degrade to "no Dartmouth models" rather than stall the pipeline.
 _DARTMOUTH_DISCOVERY_TIMEOUT = 10.0
 
+#: Same constraint as the Dartmouth catalog: a slow router must degrade to
+#: "no HuggingFace models" rather than stall the path to a user's first model.
+_HUGGINGFACE_DISCOVERY_TIMEOUT = 10.0
+
 
 def _register_free_dartmouth_models(registry: ModelRegistry) -> int:
     """Register the free Dartmouth Chat models, if a credential is present.
@@ -112,6 +116,76 @@ def _register_free_dartmouth_models(registry: ModelRegistry) -> int:
     return registered
 
 
+def _register_free_huggingface_models(registry: ModelRegistry) -> int:
+    """Register the HuggingFace router models that currently have a free route.
+
+    Like Dartmouth, these models are not read from ``models.yaml``: a free
+    route is a promo that starts and ends upstream, so the live catalog is the
+    only trustworthy source and **only** its zero-cost entries are registered.
+    Each registered model is pinned to its free provider -- an unpinned
+    request routes ``:fastest``, which may bill the account.
+
+    Never raises: a missing credential, an unreachable router or a slow one
+    all mean "no HuggingFace models available", exactly as a missing Ollama
+    install does.
+
+    Returns:
+        How many models were registered.
+    """
+    from .models.huggingface_credentials import resolve_huggingface_api_key
+    from .models.huggingface_model import DEFAULT_BASE_URL as HF_DEFAULT_BASE_URL
+    from .models.huggingface_model import HuggingFaceInferenceModel
+    from .models.providers.huggingface_provider import (
+        fetch_catalog_sync,
+        free_models_from_catalog,
+        free_route_from_catalog,
+    )
+
+    credential = resolve_huggingface_api_key(required=False)
+    if credential is None:
+        logger.debug("No HuggingFace token found; skipping HuggingFace models")
+        return 0
+
+    try:
+        catalog = fetch_catalog_sync(
+            HF_DEFAULT_BASE_URL, credential.key, _HUGGINGFACE_DISCOVERY_TIMEOUT
+        )
+        free = free_models_from_catalog(catalog)
+    except Exception as exc:  # noqa: BLE001 - discovery is best-effort
+        logger.info("Could not reach the HuggingFace catalog, skipping: %s", exc)
+        return 0
+
+    from .models.huggingface_model import HuggingFaceModelError
+
+    registered = 0
+    for model_id, cost in free.items():
+        try:
+            registry.register_model(
+                HuggingFaceInferenceModel(
+                    name=model_id,
+                    api_key=credential.key,
+                    cost=cost,
+                    route=free_route_from_catalog(catalog[model_id]),
+                )
+            )
+            registered += 1
+        except (HuggingFaceModelError, ValueError) as exc:
+            # Deliberately NOT `except Exception`: one unusable catalog entry
+            # must not stop the rest, but a programming error here should
+            # surface rather than be logged as a per-model hiccup.
+            logger.warning(
+                "Could not register HuggingFace model %s: %s", model_id, exc
+            )
+
+    if registered:
+        logger.info(
+            "Registered %d free-routed HuggingFace models (%d in catalog)",
+            registered,
+            len(catalog),
+        )
+    return registered
+
+
 def populate_model_registry(registry: ModelRegistry) -> ModelRegistry:
     """Register every model the current environment can actually serve.
 
@@ -130,6 +204,7 @@ def populate_model_registry(registry: ModelRegistry) -> ModelRegistry:
     logger.info("Initializing model pool")
 
     _register_free_dartmouth_models(registry)
+    _register_free_huggingface_models(registry)
 
     loader = get_model_config_loader()
     config = loader.load_config()

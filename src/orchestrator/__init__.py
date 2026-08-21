@@ -72,6 +72,12 @@ _EXPORTS: dict[str, str] = {
     "DartmouthModel": ".models.dartmouth_model",
     "DartmouthProvider": ".models.providers.dartmouth_provider",
     "resolve_dartmouth_api_key": ".models.dartmouth_credentials",
+    # The HuggingFace Inference API (#484): the hosted OpenAI-compatible
+    # router, also spoken with plain aiohttp. `HuggingFaceInferenceModel` is
+    # named to stay distinct from the retired local-transformers adapter.
+    "HuggingFaceInferenceModel": ".models.huggingface_model",
+    "HuggingFaceProvider": ".models.providers.huggingface_provider",
+    "resolve_huggingface_api_key": ".models.huggingface_credentials",
     # --- State ---
     "StateManager": ".state.state_manager",
     # --- Tools / MCP ---
