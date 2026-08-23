@@ -560,6 +560,27 @@ class Store:
             for r in rows
         ]
 
+    def get_chunks_by_doc(self, doc_id: str) -> list[dict]:
+        """All chunks of one document in ordinal order (no FTS query involved)."""
+        rows = self.conn.execute(
+            "SELECT cm.chunk_id, cm.doc_id, cm.ordinal, cm.start, cm.end, cm.sha, cf.text"
+            " FROM chunks_meta cm JOIN chunks_fts cf ON cf.chunk_id = cm.chunk_id"
+            " WHERE cm.doc_id = ? ORDER BY cm.ordinal",
+            (doc_id,),
+        ).fetchall()
+        return [
+            {
+                "chunk_id": r["chunk_id"],
+                "doc_id": r["doc_id"],
+                "ordinal": r["ordinal"],
+                "start": r["start"],
+                "end": r["end"],
+                "sha": r["sha"],
+                "text": r["text"],
+            }
+            for r in rows
+        ]
+
     def add_summary(
         self,
         summary_id: str,
