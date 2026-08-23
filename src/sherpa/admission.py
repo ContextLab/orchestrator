@@ -125,22 +125,20 @@ class AdmissionChecker:
                 decision = "escalate"
                 reasons.append(str(exc))
 
-            if decision == "admitted" or (decision == "escalate" and io_compatible):
+            if decision == "admitted":
                 # executable evidence: run the capability's probe now.
                 try:
                     evidence = cap.probe(ctx)
                     evidence_sha = self.blob.put_bytes(evidence)
                     probe_ok = True
-                    if decision == "escalate":
-                        reasons.append("probe succeeded despite earlier concern; still escalated")
                 except Exception as exc:  # noqa: BLE001 - boundary of executable evidence
                     probe_ok = False
-                    if self.policy.reclassify_on_probe_fail and decision == "admitted":
+                    if self.policy.reclassify_on_probe_fail:
                         decision = "reclassify_decompose"
                         reasons.append(
                             f"probe failed ({type(exc).__name__}: {exc}); atomic claim reclassified for decomposition"
                         )
-                    elif decision == "admitted":
+                    else:
                         decision = "escalate"
                         reasons.append(f"probe failed ({type(exc).__name__})")
 

@@ -670,6 +670,13 @@ class Store:
 
     # -- projections -----------------------------------------------------------------
 
+    def projection_node_state(self, run_id: str, node_key: str) -> str | None:
+        row = self.conn.execute(
+            "SELECT state FROM nodes WHERE run_id=? AND node_key=?",
+            (run_id, node_key),
+        ).fetchone()
+        return row["state"] if row else None
+
     def projection(self, run_id: str) -> dict:
         run = self.conn.execute("SELECT * FROM runs WHERE run_id=?", (run_id,)).fetchone()
         nodes_rows = self.conn.execute("SELECT * FROM nodes WHERE run_id=? ORDER BY node_key", (run_id,)).fetchall()
