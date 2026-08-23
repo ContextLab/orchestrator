@@ -34,6 +34,7 @@ EVENT_KINDS = frozenset(
         "finding_raised",
         "finding_disposition",
         "plan_recorded",
+        "decompose_outcome",
         "usage_checkpoint",
         "crash_detected",
         "orphan_recovered",
