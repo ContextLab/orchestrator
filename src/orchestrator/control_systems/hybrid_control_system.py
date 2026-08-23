@@ -1137,9 +1137,11 @@ Just return the optimized prompt, nothing else."""
                 # Get specific model
                 model = self.model_registry.get_model(model_spec)
         else:
-            # Fallback to creating a model directly
-            from ..models.openai_model import OpenAIModel
-            model = OpenAIModel(name="gpt-4")
+            # No registry, no model. There is no fallback provider to
+            # construct: the retired adapters used to be built here silently,
+            # which made a misconfigured run spend money on an API the user
+            # never chose (#430).
+            model = None
         
         if not model:
             return {

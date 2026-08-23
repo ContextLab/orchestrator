@@ -57,4 +57,4 @@ Contribute
 Unsupported areas
 -----------------
 
-The supported providers are Dartmouth Chat (live-tested) and the HuggingFace Inference API (in progress). Anthropic, OpenAI, Google and Ollama adapters are present but frozen, and are being retired. Multimodal tools, MCP integration, monitoring, analytics, and deployment code are present but not part of the verified product surface. See the product contract for the precise boundary.
+The supported providers are Dartmouth Chat (live-tested) and the HuggingFace Inference API (in progress). The Anthropic, OpenAI, Google and Ollama adapters were retired and are no longer shipped. Multimodal tools, MCP integration, monitoring, analytics, and deployment code are present but not part of the verified product surface. See the product contract for the precise boundary.

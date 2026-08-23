@@ -30,12 +30,11 @@ provider to pass live acceptance tests** (`live-dartmouth`, 9 passed remotely
 on 2026-08-01) and is the one provider described here as supported.
 
 **Provider policy: Dartmouth Chat and HuggingFace (Inference API) only.**
-Anthropic, OpenAI, Google and Ollama adapters remain in the tree but are
-unsupported, are not advertised, and are being retired
-([#430](https://github.com/ContextLab/orchestrator/issues/430)). HuggingFace
-support means the hosted Inference API and is in progress
-([#484](https://github.com/ContextLab/orchestrator/issues/484)); it is not
-claimed to work until its live job passes.
+The Anthropic, OpenAI, Google and Ollama adapters were retired
+([#430](https://github.com/ContextLab/orchestrator/issues/430)) and are no
+longer shipped. HuggingFace support means the hosted Inference API and is in
+progress ([#484](https://github.com/ContextLab/orchestrator/issues/484)); it
+is not claimed to work until its live job passes.
 
 **The wider legacy test suite is not green.** Only the marked
 `unit`/`contract`/`e2e` layer gates the build. The remainder were written
@@ -47,8 +46,8 @@ That job is marked `continue-on-error`, which means GitHub reports it green
 **regardless of the result** — so its check mark says nothing about the
 suite. The real numbers are in the job's run summary, in a warning
 annotation on the run page, and in its `legacy-suite-results` artifact.
-As of the most recent run: **434 failed, 248 errors, 1827 passed, 227
-skipped**. Track it in
+As of the post-retirement re-baseline (full local run, 2026-08-21):
+**500 failed, 93 errors, 1707 passed, 109 skipped**. Track it in
 [#354](https://github.com/ContextLab/orchestrator/issues/354) rather than
 trusting a number maintained by hand here, which has been wrong before.
 
@@ -152,10 +151,9 @@ pip install "py-orc[all]"          # every runtime extra
 
 Neither supported provider needs an extra: Dartmouth Chat and the HuggingFace
 Inference API are both spoken over HTTP with `aiohttp`, already a core
-dependency. The `anthropic`, `openai` and `google` extras still exist for the
-frozen adapters, which are unsupported and being retired
-([#430](https://github.com/ContextLab/orchestrator/issues/430)) — do not build
-on them.
+dependency. The `anthropic`, `openai` and `google` extras were removed with
+the retired adapters
+([#430](https://github.com/ContextLab/orchestrator/issues/430)).
 
 A missing extra disables only the feature that needs it; it never breaks
 `import orchestrator`.
@@ -324,12 +322,10 @@ The supported providers need no configuration file:
   [#484](https://github.com/ContextLab/orchestrator/issues/484); `HF_TOKEN`
   will be the credential.
 
-A `~/.orchestrator/models.yaml` with `source:` entries (`ollama`,
-`huggingface`, `openai`, `anthropic`, `google`) is still read, but every one
-of those sources routes through the frozen adapter layer — unsupported, and
-being retired under
-[#430](https://github.com/ContextLab/orchestrator/issues/430). New work should
-not depend on them.
+A `~/.orchestrator/models.yaml` written before the provider retirement may
+still name `ollama`, `huggingface`, `openai`, `anthropic` or `google`
+sources; each such entry is skipped with a warning at population time — an
+old config file is not an error, but it no longer registers anything.
 
 ## Advanced Example
 
@@ -545,10 +541,10 @@ intent:
 |-|-|-|
 | Dartmouth Chat | — | **Supported** (free models). `live-dartmouth` green: 9 passed, 2026-08-01 |
 | HuggingFace (Inference API) | — | In progress ([#484](https://github.com/ContextLab/orchestrator/issues/484)) — not claimed to work until its live job passes |
-| Anthropic | `anthropic` | Not a provider of this product — frozen adapter, retiring under [#430](https://github.com/ContextLab/orchestrator/issues/430) |
-| OpenAI | `openai` | Not a provider of this product — frozen adapter, retiring under [#430](https://github.com/ContextLab/orchestrator/issues/430) |
-| Google | `google` | Not a provider of this product — frozen adapter, retiring under [#430](https://github.com/ContextLab/orchestrator/issues/430) |
-| Ollama (local) | — | Not a provider of this product — frozen adapter, retiring under [#430](https://github.com/ContextLab/orchestrator/issues/430) |
+| Anthropic | `anthropic` | Retired under [#430](https://github.com/ContextLab/orchestrator/issues/430) — no longer shipped |
+| OpenAI | `openai` | Retired under [#430](https://github.com/ContextLab/orchestrator/issues/430) — no longer shipped |
+| Google | `google` | Retired under [#430](https://github.com/ContextLab/orchestrator/issues/430) — no longer shipped |
+| Ollama (local) | — | Retired under [#430](https://github.com/ContextLab/orchestrator/issues/430) — no longer shipped |
 
 A provider is only called **supported** once the `live-tests` workflow passes
 for it remotely. "Verified locally" means its live tests were run by hand

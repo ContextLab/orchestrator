@@ -49,6 +49,10 @@ def init_models(config_path: str = None) -> ModelRegistry:
 #: must degrade to "no Dartmouth models" rather than stall the pipeline.
 _DARTMOUTH_DISCOVERY_TIMEOUT = 10.0
 
+#: Same constraint as the Dartmouth catalog: a slow router must degrade to
+#: "no HuggingFace models" rather than stall the path to a user's first model.
+_HUGGINGFACE_DISCOVERY_TIMEOUT = 10.0
+
 
 def _register_free_dartmouth_models(registry: ModelRegistry) -> int:
     """Register the free Dartmouth Chat models, if a credential is present.
@@ -112,58 +116,100 @@ def _register_free_dartmouth_models(registry: ModelRegistry) -> int:
     return registered
 
 
+def _register_free_huggingface_models(registry: ModelRegistry) -> int:
+    """Register the HuggingFace router models that currently have a free route.
+
+    Like Dartmouth, these models are not read from ``models.yaml``: a free
+    route is a promo that starts and ends upstream, so the live catalog is the
+    only trustworthy source and **only** its zero-cost entries are registered.
+    Each registered model is pinned to its free provider -- an unpinned
+    request routes ``:fastest``, which may bill the account.
+
+    Never raises: a missing credential, an unreachable router or a slow one
+    all mean "no HuggingFace models available", exactly as a missing Ollama
+    install does.
+
+    Returns:
+        How many models were registered.
+    """
+    from .models.huggingface_credentials import resolve_huggingface_api_key
+    from .models.huggingface_model import DEFAULT_BASE_URL as HF_DEFAULT_BASE_URL
+    from .models.huggingface_model import HuggingFaceInferenceModel
+    from .models.providers.huggingface_provider import (
+        fetch_catalog_sync,
+        free_models_from_catalog,
+        free_route_from_catalog,
+    )
+
+    credential = resolve_huggingface_api_key(required=False)
+    if credential is None:
+        logger.debug("No HuggingFace token found; skipping HuggingFace models")
+        return 0
+
+    try:
+        catalog = fetch_catalog_sync(
+            HF_DEFAULT_BASE_URL, credential.key, _HUGGINGFACE_DISCOVERY_TIMEOUT
+        )
+        free = free_models_from_catalog(catalog)
+    except Exception as exc:  # noqa: BLE001 - discovery is best-effort
+        logger.info("Could not reach the HuggingFace catalog, skipping: %s", exc)
+        return 0
+
+    from .models.huggingface_model import HuggingFaceModelError
+
+    registered = 0
+    for model_id, cost in free.items():
+        try:
+            registry.register_model(
+                HuggingFaceInferenceModel(
+                    name=model_id,
+                    api_key=credential.key,
+                    cost=cost,
+                    route=free_route_from_catalog(catalog[model_id]),
+                )
+            )
+            registered += 1
+        except (HuggingFaceModelError, ValueError) as exc:
+            # Deliberately NOT `except Exception`: one unusable catalog entry
+            # must not stop the rest, but a programming error here should
+            # surface rather than be logged as a per-model hiccup.
+            logger.warning(
+                "Could not register HuggingFace model %s: %s", model_id, exc
+            )
+
+    if registered:
+        logger.info(
+            "Registered %d free-routed HuggingFace models (%d in catalog)",
+            registered,
+            len(catalog),
+        )
+    return registered
+
+
 def populate_model_registry(registry: ModelRegistry) -> ModelRegistry:
     """Register every model the current environment can actually serve.
 
-    Reads ``~/.orchestrator/.env`` for provider credentials, loads
-    ``models.yaml`` and probes for a local Ollama install. This is the step
-    that touches the user's credentials, so it must only run when a model is
-    genuinely required.
-    """
-    import os
+    The supported providers are Dartmouth Chat (registered from its live
+    catalog when a credential is present) and the HuggingFace Inference API
+    (#484). A ``models.yaml`` written before the provider retirement (#430)
+    may still name ``ollama``/``openai``/``anthropic``/``google``/
+    ``huggingface`` sources; each such entry is skipped with a warning, never
+    raised on -- an old config file is not an error.
 
-    from .integrations.anthropic_model import AnthropicModel
-    from .integrations.google_model import GoogleModel
-    from .integrations.openai_model import OpenAIModel
-    from .utils.model_utils import check_ollama_installed
+    This is the step that touches the user's credentials, so it must only run
+    when a model is genuinely required.
+    """
     from .utils.model_config_loader import get_model_config_loader
-    from .utils.api_keys_flexible import load_api_keys_optional
 
     logger.info("Initializing model pool")
 
-    # Load available API keys (doesn't require all keys to be present)
-    available_keys = load_api_keys_optional()
-    if available_keys:
-        logger.info("Found API keys for: %s", ", ".join(sorted(available_keys)))
-        # Also set them in environment for backward compatibility
-        provider_env_map = {
-            "anthropic": "ANTHROPIC_API_KEY",
-            "google": "GOOGLE_AI_API_KEY",
-            "huggingface": "HF_TOKEN",
-            "openai": "OPENAI_API_KEY",
-        }
-        for provider, api_key in available_keys.items():
-            env_var = provider_env_map.get(provider)
-            if env_var and not os.environ.get(env_var):
-                os.environ[env_var] = api_key
-    else:
-        logger.info("No API keys found - only local models will be available")
+    _register_free_dartmouth_models(registry)
+    _register_free_huggingface_models(registry)
 
-    # Load model configuration using the new loader
     loader = get_model_config_loader()
     config = loader.load_config()
     models_config = config.get("models", {})
 
-    # Check if Ollama is installed
-    ollama_available = check_ollama_installed()
-    if not ollama_available:
-        logger.info(
-            "Ollama not found - Ollama models unavailable (install from https://ollama.ai)"
-        )
-
-    _register_free_dartmouth_models(registry)
-
-    # Process each model in configuration (list format)
     if not isinstance(models_config, list):
         logger.warning(
             "Invalid models configuration format: expected a list, got %s",
@@ -171,117 +217,18 @@ def populate_model_registry(registry: ModelRegistry) -> ModelRegistry:
         )
         models_config = []
 
-    # Process each model
     for model_config in models_config:
         provider = model_config.get("source")
         name = model_config.get("name")
-
-        # Parse size
-        size_str = str(model_config.get("size", "1b"))
-        if size_str.endswith("b"):
-            size_billions = float(size_str[:-1])
-        else:
-            size_billions = float(size_str)
-
-        # Get expertise
-        expertise = model_config.get("expertise", ["general"])
-
         if not provider or not name:
             continue
-
-        try:
-            if provider == "ollama":
-                if not ollama_available:
-                    continue
-
-                # Register model for lazy loading (will be downloaded on first use)
-                # Use a lazy wrapper that doesn't check availability yet
-                from .integrations.lazy_ollama_model import LazyOllamaModel
-
-                model = LazyOllamaModel(model_name=name, timeout=60)
-                # Add dynamic attributes for model selection
-                setattr(model, "_expertise", expertise)
-                setattr(model, "_size_billions", size_billions)
-                registry.register_model(model)
-                logger.info(
-                    "Registered Ollama model %s (%sB) - downloads on first use",
-                    name,
-                    size_billions,
-                )
-
-            elif provider == "huggingface":
-                # Skip HuggingFace models if disabled via environment variable
-                if (
-                    os.environ.get("ORCHESTRATOR_SKIP_HUGGINGFACE", "").lower()
-                    == "true"
-                ):
-                    continue
-
-                # Check if transformers is available
-                try:
-                    import importlib.util
-
-                    if importlib.util.find_spec("transformers") is not None:
-                        # Register for lazy loading (will be downloaded on first use)
-                        from .integrations.lazy_huggingface_model import (
-                            LazyHuggingFaceModel,
-                        )
-
-                        hf_model = LazyHuggingFaceModel(model_name=name)
-                        # Add dynamic attributes for model selection
-                        setattr(hf_model, "_expertise", expertise)
-                        setattr(hf_model, "_size_billions", size_billions)
-                        registry.register_model(hf_model)
-                        logger.info(
-                            "Registered HuggingFace model %s (%sB) - downloads on first use",
-                            name,
-                            size_billions,
-                        )
-                except ImportError:
-                    logger.info(
-                        "HuggingFace model %s configured but transformers is not "
-                        "installed (pip install 'py-orc[multimedia]')",
-                        name,
-                    )
-                except Exception as e:
-                    logger.warning(
-                        "Could not register HuggingFace model %s: %s", name, e
-                    )
-
-            elif provider == "openai" and "openai" in available_keys:
-                # Only register if API key is available
-                model = OpenAIModel(model_name=name, api_key=available_keys["openai"])
-                # Add dynamic attributes for model selection
-                setattr(model, "_expertise", expertise)
-                setattr(model, "_size_billions", size_billions)
-                registry.register_model(model)
-                logger.info("Registered OpenAI model %s (%sB)", name, size_billions)
-
-            elif provider == "anthropic" and "anthropic" in available_keys:
-                # Only register if API key is available
-                model = AnthropicModel(
-                    model_name=name, api_key=available_keys["anthropic"]
-                )
-                # Add dynamic attributes for model selection
-                setattr(model, "_expertise", expertise)
-                setattr(model, "_size_billions", size_billions)
-                registry.register_model(model)
-                logger.info("Registered Anthropic model %s (%sB)", name, size_billions)
-
-            elif provider == "google" and "google" in available_keys:
-                # Only register if API key is available
-                model = GoogleModel(model_name=name, api_key=available_keys["google"])
-                # Add dynamic attributes for model selection
-                setattr(model, "_expertise", expertise)
-                setattr(model, "_size_billions", size_billions)
-                registry.register_model(model)
-                logger.info("Registered Google model %s (%sB)", name, size_billions)
-
-        except Exception as e:
-            # One line per provider, naming the real cause. Registering a
-            # model is best-effort: a missing provider SDK must not stop the
-            # models that *are* usable from being registered.
-            logger.warning("Could not register %s model %s: %s", provider, name, e)
+        logger.warning(
+            "Skipping models.yaml entry %r: provider %r was retired (#430). "
+            "Supported providers: dartmouth (live catalog) and the "
+            "HuggingFace Inference API (#484).",
+            name,
+            provider,
+        )
 
     registered = registry.list_models()
     if registered:
