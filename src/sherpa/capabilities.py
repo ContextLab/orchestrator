@@ -321,6 +321,14 @@ class RepoApplyPatch(Capability):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(updated, encoding="utf-8")
                 touched.append(target)
+                # Same-size patches can leave a stale bytecode cache that
+                # mtime+size validation fails to invalidate (equal length, and
+                # the write may land in the same timestamp tick). Derived
+                # caches must not outlive the patch.
+                cache_dir = target.parent / "__pycache__"
+                if cache_dir.is_dir():
+                    for pyc in cache_dir.glob(target.stem + ".*.pyc"):
+                        pyc.unlink(missing_ok=True)
         except Exception:
             raise
         return {"applied": len(touched), "files": [str(t.relative_to(cwd)) for t in touched]}
@@ -373,7 +381,7 @@ def _parse_unified_diff(diff_text: str) -> dict[str, list[tuple[list[str], list[
             continue
         if not in_hunk:
             continue
-        if not line.strip():
+        if line == "\n":
             continue
         tag, rest = line[0], line[1:]
         if tag == "-":

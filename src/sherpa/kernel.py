@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import os
 import signal
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -274,6 +275,13 @@ class Engine:
                 outs = resolve_inputs(node.outputs, scope)
                 self.store.append(Event(kind="node_state_changed", run_id=rid, node_key=node_key,
                                         payload={"new": "completed", "return_outputs": outs}))
+                if plan.id != root_plan.id:
+                    # Child-plan Return: hand outputs to the parent scope and
+                    # let the parent continue; only the ROOT Return ends the run.
+                    scope[f"_outputs_{plan.id}"] = outs
+                    journal(self.store, rid, node_key, "result",
+                            f"child plan {plan.id} returned {sorted(outs)}")
+                    continue
                 verdict = self._final_review(rid, spec, outs, author_session=session)
                 if verdict.verdict == "blocked_escalated":
                     blocking = [f.model_dump() for f in verdict.findings if f.blocking]
@@ -289,6 +297,11 @@ class Engine:
                     continue
                 if not self._begin_attempt(rid, node_key, session, depth):
                     continue
+                msgs = self.store.take_messages(rid, node_key)
+                if msgs:
+                    scope[f"{node.id}_msg"] = msgs[-1]
+                    journal(self.store, rid, node_key, "decision",
+                            f"scope-change message consumed at checkpoint: {msgs[-1]}")
                 resolved = resolve_inputs(node.inputs, scope)
                 ctx = self._ctx(rid, node_key, ctx_cache, spec.authority)
                 verdict = self.admission.check(node, resolved, spec.authority, ctx)
@@ -335,23 +348,32 @@ class Engine:
                 if state == "completed":
                     continue
                 self._ensure_node(rid, node_key, depth)
-                sig = plan_signature(node.subgoal, node.hints, spec.authority, spec.budgets)
+                hints = {**node.hints,
+                         "prior_results": {k: v.get("result") for k, v in scope.items()
+                                           if isinstance(v, dict) and "result" in v}}
+                sig = plan_signature(node.subgoal, hints, spec.authority, spec.budgets)
                 cached = self.store.cache_get(sig)
                 if cached and cached.get("status_class") == "solved" and cached.get("plan"):
                     self.store.append(Event(kind="cache_hit", run_id=rid, node_key=node_key,
                                             payload={"signature": sig}))
                     child = Plan(**cached["plan"])
                 else:
-                    child = self._author_child(rid, spec, node.subgoal, node.hints,
+                    child = self._author_child(rid, spec, node.subgoal, hints,
                                                spec.authority, spec.budgets, depth + 1)
                 pending_decompose[child.id] = (sig, node_key)
                 stack.append((child, list(child.root), 0, 0))
                 continue
 
             if isinstance(node, Branch):
+                if os.environ.get("SHERPA_DEBUG"):
+                    print("BRANCH scope keys:", sorted(scope.keys()),
+                          "| verify:", scope.get("verify"), file=sys.stderr)
                 chosen = next(
                     (c for c in node.cases if c.when is None or evaluate(c.when, scope)), None
                 )
+                if os.environ.get("SHERPA_DEBUG"):
+                    print("BRANCH chose:", "else" if chosen is None else (chosen.when or "else-last"),
+                          file=sys.stderr)
                 if chosen is not None:
                     stack.append((plan, list(chosen.body), 0, epoch))
                 continue
