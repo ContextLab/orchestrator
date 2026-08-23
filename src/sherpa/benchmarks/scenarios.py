@@ -25,7 +25,7 @@ from sherpa.benchmarks.corpus import QUESTION, make_corpus
 from sherpa.benchmarks.repair import DEFECT_CLASSES, make_repair_task, materialize_repo
 from sherpa.benchmarks.repair_planner import RepairPlanner
 from sherpa.capabilities import CapabilityContext, CapabilityRegistry, CapabilitySpec, register_builtins
-from sherpa.context import build_summary, chunk_document, retrieve
+from sherpa.context import chunk_document, retrieve
 from sherpa.ir import AcceptanceCheck, Authority, ProblemSpec
 from sherpa.kernel import FINAL_STATES, Engine
 

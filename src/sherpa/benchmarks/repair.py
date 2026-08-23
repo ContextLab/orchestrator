@@ -9,6 +9,7 @@ them is evidence the repair policy generalizes, not a scripted demo.
 from __future__ import annotations
 
 import random
+import json
 import zlib
 from dataclasses import dataclass
 from pathlib import Path

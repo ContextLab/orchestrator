@@ -1,0 +1,652 @@
+[
+  {
+    "run_id": "run_206745e2dd7c",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_113d270608c9",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_89699176f9d8",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_49fa235b9063",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_1b4966e8e3b6",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_d42d5e352ea6",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_f335c01f39e7",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_203774aedfa3",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_b25b14b76761",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_be92bffa3ea3",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_d2d2cc5a2cc1",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_ce45a57a2cf9",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_458996392aca",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_a8d0dbcc1acb",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_31771659f2e0",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_7bf1721eac8c",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_998d8c107fb8",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_ca1b78a49360",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_5efdf83d06a3",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_f5f9cfdbaf8f",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_41d41325e12d",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_53762ab1b8fb",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_455791041766",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_a8bd76217158",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  },
+  {
+    "run_id": "run_3d496e00d1ca",
+    "admission": {
+      "checked": 2,
+      "claimed_atomic": 2,
+      "rejected_or_reclassified": 0,
+      "overclaim_rate": 0.0,
+      "decisions": {
+        "admitted": 2
+      }
+    },
+    "branching": {
+      "decompositions": 2,
+      "b_declared": 1.0,
+      "f_ambiguous": 0.0,
+      "b_corrected": 1.0,
+      "m_corrected": 0.0
+    },
+    "terminal_status": "completed",
+    "usage": {
+      "tokens": 0.0,
+      "cost_usd": 0.0,
+      "nodes": 2.0,
+      "attempts": 2.0
+    }
+  }
+]

@@ -24,20 +24,15 @@ GATES = {
 }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="sherpa benchmark harness (#492)")
-    parser.add_argument("--out", type=Path, default=Path("benchmarks/artifacts"))
-    args = parser.parse_args()
-    base = args.out
+def run_all(base: Path, b_seeds: list[int], b_heldout: list[int]) -> dict:
     base.mkdir(parents=True, exist_ok=True)
-
     started = time.time()
     print("== Scenario A: durable semantics fixture ==")
     a = scenario_a(base)
     (base / "scenario_a.json").write_text(json.dumps(a, indent=2))
 
     print("== Scenario B: repository repair (seen + held-out) ==")
-    b = scenario_b(base, seeds=[11, 23], heldout_seeds=[401, 409])
+    b = scenario_b(base, seeds=b_seeds, heldout_seeds=b_heldout)
     (base / "scenario_b.json").write_text(json.dumps(b, indent=2))
 
     print("== Scenario C: evidence-grounded corpus task ==")
@@ -84,8 +79,17 @@ def main() -> None:
     report_md += "\n## Preregistered gates\n\n" + go_no_go + "\n"
     (base / "report.md").write_text(report_md, encoding="utf-8")
     (base / "suite.json").write_text(json.dumps(suite, indent=2), encoding="utf-8")
-    print(report_md)
-    print(go_no_go)
+    return {"suite": suite, "report_md": report_md, "go_no_go": go_no_go,
+            "runs": run_reports}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="sherpa benchmark harness (#492)")
+    parser.add_argument("--out", type=Path, default=Path("benchmarks/artifacts"))
+    args = parser.parse_args()
+    out = run_all(args.out, b_seeds=[11, 23], b_heldout=[401, 409])
+    print(out["report_md"])
+    print(out["go_no_go"])
 
 
 def _rate(values: list[bool]) -> float | None:
