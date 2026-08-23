@@ -1,0 +1,2020 @@
+[
+ {
+  "planner": "gpt-5.4-mini",
+  "judge": "gpt-5.5",
+  "problem_index": 1,
+  "problem": "Given a directory of YAML pipeline definitions, compile them to a typed intermed",
+  "b": 3,
+  "declared_ambiguous": 3,
+  "atomic_steps": 0,
+  "overclaimed": 0,
+  "declared_f": 1.0,
+  "corrected_f": 1.0,
+  "corrected_ambiguous": 3,
+  "plan": {
+   "id": "plan-34680141",
+   "problem": "Given a directory of YAML pipeline definitions, compile them to a typed intermediate representation and report which ones fail validation and why.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Read and enumerate the YAML pipeline definition files from the given directory/input so they can be processed one by one",
+     "inputs": [],
+     "outputs": [
+      "files"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "list<string>",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "For each YAML file, parse/compile it into the typed intermediate representation and validate it against the schema or typing rules",
+     "inputs": [],
+     "outputs": [
+      "ir_results"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "list<object>",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Aggregate validation failures across all files and produce a report explaining which pipelines failed and why",
+     "inputs": [],
+     "outputs": [
+      "report"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": []
+ },
+ {
+  "planner": "gpt-5.4-mini",
+  "judge": "gpt-5.5",
+  "problem_index": 2,
+  "problem": "Reproduce figure 3 of a published paper from the authors' released dataset and r",
+  "b": 5,
+  "declared_ambiguous": 5,
+  "atomic_steps": 0,
+  "overclaimed": 0,
+  "declared_f": 1.0,
+  "corrected_f": 1.0,
+  "corrected_ambiguous": 5,
+  "plan": {
+   "id": "plan-91001540",
+   "problem": "Reproduce figure 3 of a published paper from the authors' released dataset and report where your numbers differ from theirs.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Identify the target paper, locate the authors' released dataset and figure 3 details, and determine what data/processing is needed to reproduce the figure.",
+     "inputs": [],
+     "outputs": [
+      "paper_info",
+      "dataset_info",
+      "figure_spec"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Load and clean the released dataset, then compute the quantities needed for figure 3 reproduction using the paper's described methodology.",
+     "inputs": [],
+     "outputs": [
+      "reproduction_data"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Generate a reproduction of figure 3 from the computed data, matching the paper's visual conventions as closely as possible.",
+     "inputs": [],
+     "outputs": [
+      "reproduced_figure"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s4",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Compare reproduced numbers against the paper's reported numbers and identify any differences with likely causes.",
+     "inputs": [],
+     "outputs": [
+      "difference_report"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s5",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Compile a final report summarizing the reproduction process, the reproduced figure, and all numerical discrepancies versus the paper.",
+     "inputs": [],
+     "outputs": [
+      "report"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": []
+ },
+ {
+  "planner": "gpt-5.4-mini",
+  "judge": "gpt-5.5",
+  "problem_index": 4,
+  "problem": "Determine whether a proposed database schema change is safe to deploy against a ",
+  "b": 3,
+  "declared_ambiguous": 3,
+  "atomic_steps": 0,
+  "overclaimed": 0,
+  "declared_f": 1.0,
+  "corrected_f": 1.0,
+  "corrected_ambiguous": 3,
+  "plan": {
+   "id": "plan-36176905",
+   "problem": "Determine whether a proposed database schema change is safe to deploy against a 400M-row production table.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Inspect the proposed schema change and any supporting context to identify the exact DDL, table size, indexes, constraints, and deployment intent needed to judge safety.",
+     "inputs": [],
+     "outputs": [
+      "change_context"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Assess operational and data-migration risk of the schema change for a 400M-row table, including lock time, rewrite cost, backfill behavior, compatibility, and rollback feasibility.",
+     "inputs": [],
+     "outputs": [
+      "risk_assessment"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Conclude whether the change is safe to deploy and produce a concise report with recommendation, blockers, and any required mitigations.",
+     "inputs": [],
+     "outputs": [
+      "report"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": []
+ },
+ {
+  "planner": "gpt-5.4-mini",
+  "judge": "gpt-5.5",
+  "problem_index": 5,
+  "problem": "Summarise the last 500 commits of a repository into a changelog grouped by user-",
+  "b": 3,
+  "declared_ambiguous": 1,
+  "atomic_steps": 2,
+  "overclaimed": 1,
+  "declared_f": 0.333,
+  "corrected_f": 0.667,
+  "corrected_ambiguous": 2,
+  "plan": {
+   "id": "plan-64550883",
+   "problem": "Summarise the last 500 commits of a repository into a changelog grouped by user-visible behaviour change.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Obtain the last 500 commits from the repository with sufficient detail (e.g., messages, timestamps, diffs if available) to support changelog grouping by user-visible behavior change.",
+     "inputs": [],
+     "outputs": [
+      "commit_data"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "structured commit list",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "commit_data",
+      "task": "Cluster commits into user-visible behavior change groups, infer release-note style summaries, and produce concise changelog entries with representative commit references."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "grouped changelog entries",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "summarize@1",
+     "args": {
+      "input": "grouped changelog entries",
+      "task": "Condense into a readable changelog organized by behavior change, preserving important impacts and avoiding internal implementation details."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s2",
+    "atomic": false,
+    "why": "Requires clustering, impact inference, and release-note writing over many commits."
+   },
+   {
+    "id": "s3",
+    "atomic": true,
+    "why": "Summarize can condense provided grouped entries into a readable changelog."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.4-mini",
+  "judge": "gpt-5.5",
+  "problem_index": 6,
+  "problem": "Decide which of three candidate caching strategies to adopt for a service, with ",
+  "b": 3,
+  "declared_ambiguous": 3,
+  "atomic_steps": 0,
+  "overclaimed": 0,
+  "declared_f": 1.0,
+  "corrected_f": 1.0,
+  "corrected_ambiguous": 3,
+  "plan": {
+   "id": "plan-77289456",
+   "problem": "Decide which of three candidate caching strategies to adopt for a service, with evidence.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Identify the three candidate caching strategies and gather their evidence from the provided inputs or attached materials.",
+     "inputs": [],
+     "outputs": [
+      "candidates_and_evidence"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Compare the three candidate strategies on relevant criteria such as latency impact, hit rate, operational complexity, correctness risk, and cost, using the gathered evidence.",
+     "inputs": [],
+     "outputs": [
+      "comparison"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Decide which caching strategy to adopt based on the comparison and produce a concise evidence-backed recommendation report.",
+     "inputs": [],
+     "outputs": [
+      "report"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": []
+ },
+ {
+  "planner": "gpt-5.4-mini",
+  "judge": "gpt-5.5",
+  "problem_index": 10,
+  "problem": "Estimate the annual carbon footprint of a company's cloud infrastructure from it",
+  "b": 2,
+  "declared_ambiguous": 0,
+  "atomic_steps": 2,
+  "overclaimed": 1,
+  "declared_f": 0.0,
+  "corrected_f": 0.5,
+  "corrected_ambiguous": 1,
+  "plan": {
+   "id": "plan-97048116",
+   "problem": "Estimate the annual carbon footprint of a company's cloud infrastructure from its billing exports.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "extract_text@1",
+     "args": {
+      "input": "PROBLEM: Estimate the annual carbon footprint of a company's cloud infrastructure from its billing exports."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "text",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input_from": "s1",
+      "instruction": "Produce a concise report estimating annual carbon footprint from cloud billing exports. Include assumptions, method, any needed conversion factors or emission factors, and a clear final estimate if possible."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": true,
+    "why": "Input already contains extractable text; output is just text."
+   },
+   {
+    "id": "s2",
+    "atomic": false,
+    "why": "Requires billing export data and calculations not available from problem statement alone."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.4-mini",
+  "judge": "gpt-5.5",
+  "problem_index": 11,
+  "problem": "Given a corpus of 50,000 customer support tickets, identify the five product def",
+  "b": 3,
+  "declared_ambiguous": 0,
+  "atomic_steps": 3,
+  "overclaimed": 2,
+  "declared_f": 0.0,
+  "corrected_f": 0.667,
+  "corrected_ambiguous": 2,
+  "plan": {
+   "id": "plan-38236506",
+   "problem": "Given a corpus of 50,000 customer support tickets, identify the five product defects responsible for the most support load.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "extract_text@1",
+     "args": {
+      "input": "corpus of 50,000 customer support tickets"
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "text",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "text",
+      "instruction": "Identify mentions of product defects/issues, cluster equivalent defects, estimate support load by defect from ticket frequency or explicit effort indicators if present, and produce a ranked list of the top five defects with brief evidence."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "structured_summary",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "summarize@1",
+     "args": {
+      "input": "structured_summary",
+      "instruction": "Format as a concise report listing the five product defects responsible for the most support load, including ranking and evidence basis."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": false,
+    "why": "Corpus access/format unspecified; may require reading/parsing many records first."
+   },
+   {
+    "id": "s2",
+    "atomic": false,
+    "why": "Requires extraction, clustering, counting, and judgment over 50,000 tickets."
+   },
+   {
+    "id": "s3",
+    "atomic": true,
+    "why": "Can format an existing structured summary into a concise ranked report."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.4-mini",
+  "judge": "gpt-5.5",
+  "problem_index": 13,
+  "problem": "Design and run an experiment that determines whether a new ranking model improve",
+  "b": 2,
+  "declared_ambiguous": 0,
+  "atomic_steps": 2,
+  "overclaimed": 0,
+  "declared_f": 0.0,
+  "corrected_f": 0.0,
+  "corrected_ambiguous": 0,
+  "plan": {
+   "id": "plan-89200844",
+   "problem": "Design and run an experiment that determines whether a new ranking model improves user outcomes.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "Design an experiment to determine whether a new ranking model improves user outcomes. Produce a concise experimental plan including hypothesis, primary metrics, assignment strategy, sample size/power considerations, duration, guardrails, analysis plan, and decision criteria.",
+      "instruction": "Create a practical A/B experiment design and analysis plan for evaluating a ranking model change.",
+      "output_format": "report"
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "summarize@1",
+     "args": {
+      "input": "report",
+      "instruction": "Condense the experiment design into a final actionable report with clear sections and next steps.",
+      "output_format": "report"
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": true,
+    "why": "LLM can draft a concise experimental plan from the prompt."
+   },
+   {
+    "id": "s2",
+    "atomic": true,
+    "why": "Summarizer can condense an existing report into structured actionable sections."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.6-sol",
+  "judge": "gpt-5.5",
+  "problem_index": 1,
+  "problem": "Given a directory of YAML pipeline definitions, compile them to a typed intermed",
+  "b": 1,
+  "declared_ambiguous": 0,
+  "atomic_steps": 1,
+  "overclaimed": 1,
+  "declared_f": 0.0,
+  "corrected_f": 1.0,
+  "corrected_ambiguous": 1,
+  "plan": {
+   "id": "plan-18185610",
+   "problem": "Given a directory of YAML pipeline definitions, compile them to a typed intermediate representation and report which ones fail validation and why.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "run_python@1",
+     "args": {
+      "input": "<directory-or-request input>",
+      "task": "Recursively find .yaml and .yml files; safely parse each document; compile valid definitions into the pipeline typed intermediate representation using the supplied schema/type rules; validate required fields, field types, enum values, references, dependency cycles, and other schema constraints; isolate errors per file and return a deterministic report containing each file's status, compiled IR when valid, and structured validation failures with document paths and reasons when invalid."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": false,
+    "why": "Requires schema-specific validation and compiler logic not provided; open-ended work."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.6-sol",
+  "judge": "gpt-5.5",
+  "problem_index": 2,
+  "problem": "Reproduce figure 3 of a published paper from the authors' released dataset and r",
+  "b": 7,
+  "declared_ambiguous": 0,
+  "atomic_steps": 7,
+  "overclaimed": 2,
+  "declared_f": 0.0,
+  "corrected_f": 0.286,
+  "corrected_ambiguous": 2,
+  "plan": {
+   "id": "plan-40379116",
+   "problem": "Reproduce figure 3 of a published paper from the authors' released dataset and report where your numbers differ from theirs.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "web_search@1",
+     "args": {
+      "query": "Using the supplied paper identification/context {{input}}, locate the published paper, its Figure 3, and the authors' official released dataset or code repository."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "search_results",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "{{input}}\n{{s1}}",
+      "instruction": "Resolve the canonical paper URL and official dataset/code-release URL. Record Figure 3's caption, panel definitions, metrics, filters, aggregation rules, and reported or graphically displayed values. Return structured JSON with URLs and reproduction requirements."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "fetch_url@1",
+     "args": {
+      "url": "{{s2.paper_url}}"
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "binary",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s4",
+     "kind": "capability",
+     "ref": "extract_text@1",
+     "args": {
+      "input": "{{s3}}",
+      "instruction": "Extract the full text, emphasizing Figure 3, its caption, surrounding methodology, axis labels, legends, numerical annotations, and uncertainty definitions."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "text",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s5",
+     "kind": "capability",
+     "ref": "fetch_url@1",
+     "args": {
+      "url": "{{s2.dataset_url}}"
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "binary",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s6",
+     "kind": "capability",
+     "ref": "run_python@1",
+     "args": {
+      "inputs": {
+       "dataset": "{{s5}}",
+       "paper": "{{s3}}",
+       "paper_text": "{{s4}}",
+       "figure_spec": "{{s2}}"
+      },
+      "task": "Inspect and unpack the authors' release; identify the raw data and any relevant scripts; independently implement the Figure 3 transformations, filters, groupings, statistics, and uncertainty calculations; extract the authors' plotted numerical values where needed from the paper figure; generate a reproduction of every Figure 3 panel; and return computed values, author values, absolute and relative differences, tolerances, provenance, warnings, and paths to generated figure/data artifacts. Do not silently substitute assumptions\u2014document them."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s7",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "Paper metadata/specification: {{s2}}\nPaper text: {{s4}}\nReproduction results: {{s6}}",
+      "instruction": "Write a self-contained reproducibility report identifying the paper and dataset version, explaining the exact method, linking the reproduced Figure 3 artifact, tabulating reproduced versus published values panel-by-panel with absolute and relative differences, distinguishing rounding/digitization discrepancies from substantive mismatches, and documenting assumptions, software details, and limitations."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": true,
+    "why": "A web search can return relevant search results for the query."
+   },
+   {
+    "id": "s2",
+    "atomic": false,
+    "why": "Requires resolving and extracting details not necessarily present in search results."
+   },
+   {
+    "id": "s3",
+    "atomic": true,
+    "why": "Fetching a URL as binary is a single capability call."
+   },
+   {
+    "id": "s4",
+    "atomic": true,
+    "why": "Text extraction from the fetched paper is the named capability\u2019s purpose."
+   },
+   {
+    "id": "s5",
+    "atomic": true,
+    "why": "Fetching the dataset URL as binary is a single capability call."
+   },
+   {
+    "id": "s6",
+    "atomic": false,
+    "why": "Requires unpacking, interpretation, analysis, and reproduction; open-ended workflow."
+   },
+   {
+    "id": "s7",
+    "atomic": true,
+    "why": "Given all inputs and results, transforming them into a report is plausible."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.6-sol",
+  "judge": "gpt-5.5",
+  "problem_index": 4,
+  "problem": "Determine whether a proposed database schema change is safe to deploy against a ",
+  "b": 5,
+  "declared_ambiguous": 0,
+  "atomic_steps": 5,
+  "overclaimed": 1,
+  "declared_f": 0.0,
+  "corrected_f": 0.2,
+  "corrected_ambiguous": 1,
+  "plan": {
+   "id": "plan-41994055",
+   "problem": "Determine whether a proposed database schema change is safe to deploy against a 400M-row production table.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "$input",
+      "instruction": "Normalize the proposed schema change and all supplied context into structured facts: database engine/version, exact DDL, table structure, row/byte size, indexes and constraints, traffic/SLA, replication, deployment method, rollback plan, and database access details. Explicitly list missing facts that prevent a definitive safety determination."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "$s1",
+      "instruction": "Generate engine-specific, strictly read-only diagnostic SQL needed to assess rewrite/scan behavior, lock duration, disk headroom, transaction pressure, replication lag, conflicting sessions, and relevant table/index metadata. Do not emit or execute DDL, EXPLAIN ANALYZE, locks, or writes; if connection details are unavailable, return the queries as unexecuted diagnostics."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "sql_query@1",
+     "args": {
+      "connection": "$s1.database_access",
+      "queries": "$s2.read_only_queries",
+      "read_only": true
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s4",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": {
+       "proposal": "$s1",
+       "diagnostic_plan": "$s2",
+       "diagnostic_results": "$s3"
+      },
+      "instruction": "Assess deployment safety for a 400M-row production table. Classify the change as SAFE, SAFE_WITH_MITIGATIONS, UNSAFE, or INDETERMINATE; analyze table rewrite/scan, metadata and row locks, runtime, disk/WAL/binlog growth, replication impact, failure and rollback behavior, and version-specific online-DDL semantics. Never infer absent evidence; distinguish measured findings from assumptions and propose a safer migration sequence where needed."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s5",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "$s4",
+      "instruction": "Produce the final deployment-safety report with executive verdict, confidence, evidence, risks, blocking unknowns, required mitigations, preflight checks, staged rollout and monitoring thresholds, abort criteria, rollback procedure, and an explicit go/no-go recommendation. State that no definitive approval is possible if critical production evidence is missing."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": true,
+    "why": "Single LLM transformation can extract and normalize supplied context into structured facts."
+   },
+   {
+    "id": "s2",
+    "atomic": true,
+    "why": "Single LLM call can draft read-only diagnostic SQL from structured schema context."
+   },
+   {
+    "id": "s3",
+    "atomic": true,
+    "why": "sql_query can execute the provided read-only query list in one call."
+   },
+   {
+    "id": "s4",
+    "atomic": false,
+    "why": "Deployment safety assessment requires expert judgment beyond a simple transform capability."
+   },
+   {
+    "id": "s5",
+    "atomic": true,
+    "why": "Single LLM transformation can format an existing assessment into a final report."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.6-sol",
+  "judge": "gpt-5.5",
+  "problem_index": 5,
+  "problem": "Summarise the last 500 commits of a repository into a changelog grouped by user-",
+  "b": 3,
+  "declared_ambiguous": 0,
+  "atomic_steps": 3,
+  "overclaimed": 1,
+  "declared_f": 0.0,
+  "corrected_f": 0.333,
+  "corrected_ambiguous": 1,
+  "plan": {
+   "id": "plan-7865018",
+   "problem": "Summarise the last 500 commits of a repository into a changelog grouped by user-visible behaviour change.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "run_python@1",
+     "args": {
+      "input": "repository",
+      "task": "Inspect the supplied local repository with git and extract the last 500 commits in chronological order, including commit hash, date, author, subject, body, changed paths, and diff statistics; retain enough patch context to identify user-visible behavior while truncating generated files and oversized diffs."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "array<commit_record>",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input_from": "s1",
+      "instruction": "Analyze the commits as a history rather than independently. Identify user-visible behavior changes, combine related commits (including fixes, follow-ups, and reverts) into coherent change items, distinguish additions/changes/fixes/removals, omit purely internal work unless it affects users, and preserve representative commit hashes for traceability."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "array<grouped_behavior_change>",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input_from": "s2",
+      "instruction": "Produce a concise changelog report grouped by user-visible behavior change, organized into clear sections such as Added, Changed, Fixed, and Removed where applicable. Explain the resulting behavior in user-facing language, mention affected components, include representative short commit hashes, and add a brief note about excluded internal-only commits."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": true,
+    "why": "A script can query git and return structured last-500 commit records."
+   },
+   {
+    "id": "s2",
+    "atomic": false,
+    "why": "Requires broad judgment and clustering many commits into behavior changes."
+   },
+   {
+    "id": "s3",
+    "atomic": true,
+    "why": "Can format grouped changes into a concise changelog report."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.6-sol",
+  "judge": "gpt-5.5",
+  "problem_index": 6,
+  "problem": "Decide which of three candidate caching strategies to adopt for a service, with ",
+  "b": 4,
+  "declared_ambiguous": 0,
+  "atomic_steps": 4,
+  "overclaimed": 1,
+  "declared_f": 0.0,
+  "corrected_f": 0.25,
+  "corrected_ambiguous": 1,
+  "plan": {
+   "id": "plan-881504",
+   "problem": "Decide which of three candidate caching strategies to adopt for a service, with evidence.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "$input",
+      "instruction": "Extract the three caching strategies, service requirements, constraints, and all available quantitative or qualitative evidence. Normalize comparable metrics such as latency, hit rate, throughput, cost, consistency, availability, operational complexity, and implementation risk. Explicitly mark missing data and source each claim."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object containing candidates, criteria, constraints, normalized evidence, sources, and missing_data",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "run_python@1",
+     "args": {
+      "input": "$s1",
+      "task": "Compare the three candidates using constraint filtering, normalized criterion scores, and transparent weights inferred from the stated service priorities. Calculate totals, rankings, sensitivity analysis across plausible weight changes, and evidence-confidence scores; do not invent missing measurements."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "object containing methodology, candidate scorecards, ranking, sensitivity_results, confidence, and evidence_gaps",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "plot_chart@1",
+     "args": {
+      "data": "$s2.candidate_scorecards",
+      "chart_type": "grouped bar and weighted-score comparison",
+      "title": "Caching Strategy Evidence and Decision Scores"
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "chart artifact",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s4",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": {
+       "extracted_evidence": "$s1",
+       "analysis": "$s2",
+       "chart": "$s3"
+      },
+      "instruction": "Write a decision report recommending one of the three caching strategies. Include an executive summary, requirements, evidence table with sources, comparison methodology and weights, trade-offs, sensitivity analysis, uncertainty and missing evidence, implementation risks, and a validation or rollback plan. Clearly distinguish measured facts from assumptions and explain why the recommendation wins."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": true,
+    "why": "LLM can extract and structure evidence from provided input in one pass."
+   },
+   {
+    "id": "s2",
+    "atomic": false,
+    "why": "Requires judgment to infer weights and score criteria beyond Python computation."
+   },
+   {
+    "id": "s3",
+    "atomic": true,
+    "why": "Plotting supplied scorecard data as requested is a single charting operation."
+   },
+   {
+    "id": "s4",
+    "atomic": true,
+    "why": "LLM can draft report from supplied extraction, analysis, and chart."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.6-sol",
+  "judge": "gpt-5.5",
+  "problem_index": 10,
+  "problem": "Estimate the annual carbon footprint of a company's cloud infrastructure from it",
+  "b": 6,
+  "declared_ambiguous": 0,
+  "atomic_steps": 6,
+  "overclaimed": 3,
+  "declared_f": 0.0,
+  "corrected_f": 0.5,
+  "corrected_ambiguous": 3,
+  "plan": {
+   "id": "plan-53733981",
+   "problem": "Estimate the annual carbon footprint of a company's cloud infrastructure from its billing exports.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "run_python@1",
+     "args": {
+      "input": "$input",
+      "task": "Detect the billing-export format, load all supplied files or records, normalize line items into a common table with provider, account, service, SKU, region, usage quantity/unit, cost, currency, and billing period, and report missing or ambiguous fields."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "{records: table, coverage: object, warnings: string[]}",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "web_search@1",
+     "args": {
+      "query": "cloud carbon footprint methodology AWS Azure Google Cloud regional carbon intensity energy usage emissions factors official documentation"
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "{results: [{title: string, url: string, snippet: string}]}",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": {
+       "sources": "$s2",
+       "billing_profile": "$s1.coverage"
+      },
+      "instruction": "Produce a cited emissions-factor and estimation-method table applicable to the detected providers, services, regions, and usage units; distinguish operational electricity emissions, embodied emissions, provider-reported data, usage-based estimates, and spend-based fallback assumptions."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "{factors: table, methods: object, citations: [{claim: string, url: string}], limitations: string[]}",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s4",
+     "kind": "capability",
+     "ref": "run_python@1",
+     "args": {
+      "records": "$s1.records",
+      "factor_model": "$s3",
+      "task": "Map billing line items to factors, estimate monthly and annualized kgCO2e, avoid double counting, calculate provider/service/region breakdowns, quantify data coverage, and produce low/base/high scenarios for uncertain mappings and fallback assumptions."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "{annual_estimate: object, monthly: table, breakdowns: object, coverage: object, assumptions: string[], unmapped: table}",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s5",
+     "kind": "capability",
+     "ref": "plot_chart@1",
+     "args": {
+      "data": "$s4",
+      "charts": [
+       "monthly emissions trend",
+       "annual emissions by provider and service",
+       "emissions by region",
+       "estimate coverage and uncertainty"
+      ]
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "{charts: chart[]}",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s6",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": {
+       "results": "$s4",
+       "charts": "$s5",
+       "sources": "$s3.citations",
+       "ingestion_warnings": "$s1.warnings"
+      },
+      "instruction": "Write an executive-ready annual cloud carbon-footprint report stating the reporting period, total tCO2e and uncertainty range, methodology, operational-versus-embodied scope, key drivers, coverage, assumptions, exclusions, cited sources, limitations, and prioritized reduction recommendations. Clearly label annualized estimates when exports cover less than a full year."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": false,
+    "why": "Open-ended multi-format billing detection and normalization requires extensive custom logic."
+   },
+   {
+    "id": "s2",
+    "atomic": true,
+    "why": "A single web search can return titled URLs with snippets."
+   },
+   {
+    "id": "s3",
+    "atomic": false,
+    "why": "Requires source evaluation and factors not accessible from search snippets alone."
+   },
+   {
+    "id": "s4",
+    "atomic": false,
+    "why": "Mapping services to emissions factors and avoiding double counting requires complex judgment."
+   },
+   {
+    "id": "s5",
+    "atomic": true,
+    "why": "Charting tool can plot requested charts from prepared result data."
+   },
+   {
+    "id": "s6",
+    "atomic": true,
+    "why": "LLM transform can draft a report from supplied results, charts, and citations."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.6-sol",
+  "judge": "gpt-5.5",
+  "problem_index": 11,
+  "problem": "Given a corpus of 50,000 customer support tickets, identify the five product def",
+  "b": 5,
+  "declared_ambiguous": 0,
+  "atomic_steps": 5,
+  "overclaimed": 3,
+  "declared_f": 0.0,
+  "corrected_f": 0.6,
+  "corrected_ambiguous": 3,
+  "plan": {
+   "id": "plan-94922371",
+   "problem": "Given a corpus of 50,000 customer support tickets, identify the five product defects responsible for the most support load.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "extract_text@1",
+     "args": {
+      "input": "$input",
+      "preserve_metadata": true,
+      "record_unit": "ticket"
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "array<{ticket_id:string,text:string,metadata:object}>",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "$s1",
+      "mode": "batch_structured_extraction",
+      "instructions": "For each ticket, determine whether it concerns a genuine product defect rather than a usage question, feature request, account issue, or service inquiry. For defects, extract product/component, concise defect description, normalized candidate defect label, confidence, and any support-load fields present in metadata or text such as handling time, reopen count, contacts, or escalation. Preserve ticket_id."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "array<{ticket_id:string,is_defect:boolean,product:string|null,component:string|null,defect_description:string|null,candidate_label:string|null,confidence:number,load_signals:object}>",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "$s2",
+      "instructions": "Consolidate semantically equivalent candidate defect labels into a canonical defect taxonomy, keeping distinct root causes separate when evidence supports doing so. Return an alias-to-canonical mapping with a clear canonical name and description for each defect."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "{defects:array<{canonical_id:string,name:string,description:string,aliases:array<string>}>,alias_map:object}",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s4",
+     "kind": "capability",
+     "ref": "run_python@1",
+     "args": {
+      "inputs": {
+       "tickets": "$s2",
+       "taxonomy": "$s3"
+      },
+      "task": "Map defect tickets to canonical defects, deduplicate by ticket_id, and aggregate support load. Use total handling time as the primary metric if it is populated reliably across the corpus; otherwise use unique ticket count. Also calculate ticket count, available secondary load indicators, share of total defect load, and confidence statistics. Rank defects and return the top five with representative anonymized ticket examples."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "{metric_used:string,coverage:object,total_defect_load:number,top_five:array<{rank:integer,canonical_id:string,name:string,description:string,load:number,load_share:number,ticket_count:integer,secondary_metrics:object,confidence_stats:object,examples:array<object>}>}",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s5",
+     "kind": "capability",
+     "ref": "summarize@1",
+     "args": {
+      "input": "$s4",
+      "format": "report",
+      "instructions": "Produce a concise decision-ready report identifying the five product defects responsible for the most support load. Include the ranking, measured load and share, defect descriptions, supporting examples, methodology, metric coverage, and caveats about classification confidence or missing workload data."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": true,
+    "why": "Text extraction can split tickets and preserve available metadata."
+   },
+   {
+    "id": "s2",
+    "atomic": false,
+    "why": "Requires large-scale classification and defect judgment across 50,000 tickets."
+   },
+   {
+    "id": "s3",
+    "atomic": false,
+    "why": "Semantic taxonomy consolidation over many labels requires clustering and judgment."
+   },
+   {
+    "id": "s4",
+    "atomic": false,
+    "why": "Requires metric choice and mapping logic not fully specified."
+   },
+   {
+    "id": "s5",
+    "atomic": true,
+    "why": "Summarization can turn aggregate results into a concise report."
+   }
+  ]
+ },
+ {
+  "planner": "gpt-5.6-sol",
+  "judge": "gpt-5.5",
+  "problem_index": 13,
+  "problem": "Design and run an experiment that determines whether a new ranking model improve",
+  "b": 4,
+  "declared_ambiguous": 1,
+  "atomic_steps": 3,
+  "overclaimed": 0,
+  "declared_f": 0.25,
+  "corrected_f": 0.25,
+  "corrected_ambiguous": 1,
+  "plan": {
+   "id": "plan-32514979",
+   "problem": "Design and run an experiment that determines whether a new ranking model improves user outcomes.",
+   "steps": [
+    {
+     "id": "s1",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": "<problem input>",
+      "instruction": "Create a preregistered randomized controlled A/B test plan for the new ranking model versus the current model. Define eligibility, randomization unit, exposure logging, primary user-outcome metric, guardrails, hypotheses, minimum detectable effect, power and sample-size method, duration, contamination controls, data-quality checks, stopping rules, and analysis plan."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "experiment_plan",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s2",
+     "kind": "decompose",
+     "ref": null,
+     "args": {},
+     "problem": "Implement the approved experiment plan in the product experimentation system, validate assignment and telemetry with an A/A or staged ramp, run the control and treatment arms until the prespecified stopping criterion is reached, and export de-identified assignment, exposure, outcome, and guardrail data.",
+     "inputs": [],
+     "outputs": [
+      "experiment_data",
+      "execution_log"
+     ],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "{experiment_data: dataset, execution_log: log}",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s3",
+     "kind": "capability",
+     "ref": "run_python@1",
+     "args": {
+      "data": "<s2.experiment_data>",
+      "plan": "<s1>",
+      "task": "Validate sample ratios and telemetry; estimate intention-to-treat effects on the primary outcome and guardrails with confidence intervals and prespecified significance or multiplicity corrections; assess practical significance, heterogeneity, novelty or time trends, and sensitivity to missing data; return tables, diagnostics, and a ship/hold/reject conclusion constrained by the preregistered decision rule."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "experiment_analysis",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    },
+    {
+     "id": "s4",
+     "kind": "capability",
+     "ref": "llm_transform@1",
+     "args": {
+      "input": {
+       "plan": "<s1>",
+       "execution_log": "<s2.execution_log>",
+       "analysis": "<s3>"
+      },
+      "instruction": "Produce a decision-ready experiment report covering design, execution, data-quality checks, primary and guardrail results with uncertainty, limitations, and a clear recommendation on whether the new ranking model improves user outcomes."
+     },
+     "problem": null,
+     "inputs": [],
+     "outputs": [],
+     "guard": null,
+     "then": [],
+     "otherwise": [],
+     "branches": [],
+     "max_iterations": null,
+     "output_schema": "report",
+     "authority": {
+      "net": [],
+      "fs_write": [],
+      "subprocess": false,
+      "spend_usd": 0.0
+     }
+    }
+   ],
+   "output_schema": "any",
+   "signature": "any->report"
+  },
+  "verdicts": [
+   {
+    "id": "s1",
+    "atomic": true,
+    "why": "LLM can draft a complete A/B test preregistration plan from the problem."
+   },
+   {
+    "id": "s3",
+    "atomic": true,
+    "why": "Python can validate data and compute preregistered statistical estimates from provided inputs."
+   },
+   {
+    "id": "s4",
+    "atomic": true,
+    "why": "LLM can synthesize provided plan, log, and analysis into a report."
+   }
+  ]
+ }
+]

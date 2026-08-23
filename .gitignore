@@ -289,3 +289,6 @@ tests/scenarios/results/
 
 # opencode/OMC session tooling state
 .omo/
+
+# minikernel prototype scratch
+scripts/prototypes/**/__pycache__/
