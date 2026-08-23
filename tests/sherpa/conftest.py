@@ -2,6 +2,21 @@
 
 from __future__ import annotations
 
+import sys
+
+import pytest
+
+if sys.version_info < (3, 11):
+    # The repo declares requires-python >= 3.11; on older interpreters Pydantic
+    # cannot evaluate the IR's PEP 604 annotations and collection dies with
+    # cryptic TypeError noise. Fail visibly, with the working invocation.
+    pytest.exit(
+        f"\nsherpa tests require Python >= 3.11 (you are running {sys.version.split()[0]}).\n"
+        "Run them with the repository virtualenv instead:\n"
+        "  .venv/bin/python -m pytest tests/sherpa -q\n",
+        returncode=1,
+    )
+
 from collections.abc import Iterator
 from pathlib import Path
 

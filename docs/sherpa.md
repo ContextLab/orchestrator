@@ -64,7 +64,7 @@ API) — retired providers are never contacted.
 ## Acceptance suite and benchmarks
 
 ```bash
-.venv/bin/python -m pytest tests/sherpa -q                 # full sherpa suite
+.venv/bin/python -m pytest tests/sherpa -q    # requires Python >= 3.11 (repo requirement)
 .venv/bin/python -m pytest tests/sherpa/test_acceptance.py # three demonstrations
 .venv/bin/python -m sherpa.benchmarks.harness --out benchmarks/artifacts   # full matrix
 ```
