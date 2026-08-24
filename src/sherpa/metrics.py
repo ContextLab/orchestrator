@@ -8,6 +8,7 @@ the fraction of children whose atomic claims did not survive admission.
 
 from __future__ import annotations
 
+import math
 import random
 from typing import Any
 
@@ -82,7 +83,7 @@ def bootstrap_ci(
     for _ in range(n_boot):
         sample = [values[rng.randrange(len(values))] for _ in range(len(values))]
         if statistic == "mean":
-            stats.append(sum(sample) / len(sample))
+            stats.append(math.fsum(sample) / len(sample))
         else:
             stats.append(float(sorted(sample)[len(sample) // 2]))
     stats.sort()
@@ -104,8 +105,8 @@ def aggregate_run_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:
     ]
     tokens = [float(r.get("usage", {}).get("tokens", 0.0)) for r in reports]
     ms = [float(r["branching"]["m_corrected"]) for r in reports if "branching" in r]
-    success_rate = (sum(successes) / len(successes)) if successes else None
-    overclaim_mean = (sum(overclaims) / len(overclaims)) if overclaims else None
+    success_rate = (math.fsum(successes) / len(successes)) if successes else None
+    overclaim_mean = (math.fsum(overclaims) / len(overclaims)) if overclaims else None
     return {
         "runs_aggregated": len(reports),
         "task_success_rate": success_rate,
@@ -113,7 +114,7 @@ def aggregate_run_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:
         "mean_overclaim_rate": overclaim_mean,
         "overclaim_ci95": bootstrap_ci(overclaims),
         "median_tokens_per_run": sorted(tokens)[len(tokens) // 2] if tokens else None,
-        "total_tokens": sum(tokens),
+        "total_tokens": math.fsum(tokens),
         "m_values": ms,
         "m_upper_bound_max": max(ms) if ms else None,
     }

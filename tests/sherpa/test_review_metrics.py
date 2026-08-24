@@ -227,6 +227,10 @@ class TestMetrics:
         ci2 = bootstrap_ci([0.4] * 20)
         assert ci1 == ci2
         assert ci1[0] <= 0.4 <= ci1[1]
+        # [0.1]*10 sums to 0.9999999999999999 under naive accumulation on every
+        # CPython; exact-rounded means keep the constant-series invariant.
+        ci3 = bootstrap_ci([0.1] * 10)
+        assert ci3[0] <= 0.1 <= ci3[1]
 
     def test_render_report_md(self) -> None:
         suite = {
