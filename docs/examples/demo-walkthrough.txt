@@ -1,0 +1,122 @@
+
+========================================================================
+0. PROBLEM
+========================================================================
+workspace : /var/folders/tp/qtzc39jx5w556wl5w3dj21wr0000gn/T/tmp_swczygt/sherpa-demo-ws
+
+========================================================================
+1. TASK DECOMPOSITION — how a goal becomes a typed plan
+========================================================================
+goal      : Audit src/: list entries, read app.py, persist an audit report.
+authority : {"fs_read": ["**"], "fs_write": ["**"], "net_domains": [], "subprocess_allow": []}
+  step 1: [invoke_capability ] scan          fs.list_dir  (claimed-atomic)
+  step 2: [invoke_capability ] read_entry    fs.read_file  (claimed-atomic)
+  step 3: [invoke_capability ] write_report  fs.write_file  (claimed-atomic)
+  step 4: [return            ] fin           {"audited": true}  (terminal)
+
+========================================================================
+2. FAIL-CLOSED EXPRESSIONS — no eval(), injection rejected
+========================================================================
+evaluate('files_scanned >= threshold', {...}) -> True
+injection attempt rejected: ExpressionError: disallowed syntax: Call
+
+========================================================================
+3. DURABLE EXECUTION — event log, admission outcomes, replay equivalence
+========================================================================
+[repo-audit] terminal=completed events=39 replay_matches_live=True
+      1 run_started                                   running
+      2 plan_recorded
+      4 journal_appended                              decision
+      5 node_created                 root_repo-audit.scan
+      6 lease_acquired               root_repo-audit.scan
+      7 node_state_changed           root_repo-audit.scan
+      8 attempt_started              root_repo-audit.scan
+      9 admission_checked            root_repo-audit.scan admitted
+     10 tool_call_started            root_repo-audit.scan
+     11 artifact_written             root_repo-audit.scan
+     12 tool_call_finished           root_repo-audit.scan
+     13 usage_checkpoint
+     14 node_state_changed           root_repo-audit.scan
+     15 lease_released               root_repo-audit.scan
+     16 node_created                 root_repo-audit.read_entry
+     17 lease_acquired               root_repo-audit.read_entry
+     18 node_state_changed           root_repo-audit.read_entry
+     19 attempt_started              root_repo-audit.read_entry
+     20 admission_checked            root_repo-audit.read_entry admitted
+     21 tool_call_started            root_repo-audit.read_entry
+     22 artifact_written             root_repo-audit.read_entry
+     23 tool_call_finished           root_repo-audit.read_entry
+     24 usage_checkpoint
+     25 node_state_changed           root_repo-audit.read_entry
+     26 lease_released               root_repo-audit.read_entry
+     27 node_created                 root_repo-audit.write_report
+     28 lease_acquired               root_repo-audit.write_report
+     29 node_state_changed           root_repo-audit.write_report
+     30 attempt_started              root_repo-audit.write_report
+     31 admission_checked            root_repo-audit.write_report admitted
+     32 tool_call_started            root_repo-audit.write_report
+     33 artifact_written             root_repo-audit.write_report
+     34 tool_call_finished           root_repo-audit.write_report
+     35 usage_checkpoint
+     36 node_state_changed           root_repo-audit.write_report
+     37 lease_released               root_repo-audit.write_report
+     38 node_state_changed           root_repo-audit.fin
+     40 journal_appended             root_repo-audit.fin result
+     41 run_terminal                                  completed
+
+result.outputs = {'audited': True}
+note: capabilities declare their own required authority; admission grants only if required <= granted, then runs existence -> I/O schema -> executable probe
+
+========================================================================
+4. AUTHORITY ENFORCEMENT — an overclaiming step cannot run silently
+========================================================================
+[overclaim] terminal=escalated events=12 replay_matches_live=True
+     42 run_started                                   running
+     43 plan_recorded
+     45 journal_appended                              decision
+     46 node_created                 root_overclaim.sneaky_write
+     47 lease_acquired               root_overclaim.sneaky_write
+     48 node_state_changed           root_overclaim.sneaky_write
+     49 attempt_started              root_overclaim.sneaky_write
+     50 admission_checked            root_overclaim.sneaky_write escalate
+     51 journal_appended             root_overclaim.sneaky_write blocker
+     52 node_state_changed           root_overclaim.sneaky_write
+     53 lease_released               root_overclaim.sneaky_write
+     54 run_terminal                                  escalated
+
+terminal status = 'escalated'  (loud failure, exit code would be 1)
+
+========================================================================
+5. EVENT-DERIVED METRICS — computed from the log, never asserted
+========================================================================
+{
+  "admission": {
+    "checked": 3,
+    "claimed_atomic": 3,
+    "decisions": {
+      "admitted": 3
+    },
+    "overclaim_rate": 0.0,
+    "rejected_or_reclassified": 0
+  },
+  "branching": {
+    "b_corrected": 0.0,
+    "b_declared": 0.0,
+    "decompositions": 0,
+    "f_ambiguous": 0.0,
+    "m_corrected": 0.0
+  },
+  "run_id": null,
+  "terminal_status": "completed",
+  "usage": {
+    "attempts": 3.0,
+    "cost_usd": 0.0,
+    "nodes": 3.0,
+    "tokens": 0.0
+  }
+}
+
+========================================================================
+6. CRASH/RESUME — kill mid-run, resume-by-replay, zero repeated effects
+========================================================================
+exercised by tests/sherpa/test_kernel.py with real SIGKILL; see PR evidence comment.

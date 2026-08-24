@@ -75,3 +75,50 @@ the declared fixture distribution, not product claims; failing gates retain
 negative evidence by design.
 
 [issue #492]: https://github.com/ContextLab/orchestrator/issues/492
+
+## Component walkthrough (real output)
+
+`src/sherpa/demos.py` executes every subsystem against real fixtures and prints
+what actually happened. Regenerate it yourself:
+
+```bash
+.venv/bin/python -m sherpa.demos > /tmp/walkthrough.txt && cat /tmp/walkthrough.txt
+```
+
+The committed transcript lives at
+[docs/examples/demo-walkthrough.txt](examples/demo-walkthrough.txt). Highlights,
+verbatim from that run:
+
+```text
+1. TASK DECOMPOSITION
+  step 1: [invoke_capability ] scan          fs.list_dir    (claimed-atomic)
+  step 2: [invoke_capability ] read_entry    fs.read_file   (claimed-atomic)
+  step 3: [invoke_capability ] write_report  fs.write_file  (claimed-atomic)
+  step 4: [return            ] fin           {"audited": true}  (terminal)
+
+2. FAIL-CLOSED EXPRESSIONS
+evaluate('files_scanned >= threshold', {...}) -> True
+injection attempt rejected: ExpressionError: disallowed syntax: Call
+
+3. DURABLE EXECUTION
+[repo-audit] terminal=completed events=39 replay_matches_live=True
+
+4. AUTHORITY ENFORCEMENT
+admission_checked  root_overclaim.sneaky_write  escalate
+run_terminal                                    escalated
+terminal status = 'escalated'  (loud failure, exit code would be 1)
+```
+
+What each section proves:
+
+| section | component | demonstrated behavior |
+|-|-|-|
+| 1 | `ir` + planner contract | goal -> typed plan; every side effect is a *claimed*-atomic step |
+| 2 | `expr` | whitelist evaluator computes comparisons; call syntax (injection) is rejected before execution |
+| 3 | kernel + store + capabilities | append-only events, admission pipeline (existence -> I/O schema -> authority -> executable probe), projection == replay-by-projection |
+| 4 | admission authority | a step whose capability requires more authority than granted escalates LOUDLY - never silently skipped |
+| 5 | metrics | branching/overclaim/usage derived purely from logged events |
+
+Crash/resume under a real SIGKILL is exercised by
+`tests/sherpa/test_kernel.py::...crash...` and summarized in the PR #493
+evidence comment.
