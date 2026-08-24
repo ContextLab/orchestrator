@@ -118,7 +118,7 @@ What each section proves:
 | 3 | kernel + store + capabilities | append-only events, admission pipeline (existence -> I/O schema -> authority -> executable probe), projection == replay-by-projection |
 | 4 | admission authority | a step whose capability requires more authority than granted escalates LOUDLY - never silently skipped |
 | 5 | metrics | branching/overclaim/usage derived purely from logged events |
+| 6 | kernel durability | forked victim dies by real SIGKILL mid-run (`exit code = -9`) with `effect-1` already on disk; `engine.resume()` replays the log, finishes the remaining steps, and the effect file reads `['effect-1', 'effect-2', 'effect-3']` - each written exactly once |
 
-Crash/resume under a real SIGKILL is exercised by
-`tests/sherpa/test_kernel.py::...crash...` and summarized in the PR #493
-evidence comment.
+Crash/resume under SIGKILL is additionally exercised across randomized kill
+points by `tests/sherpa/test_kernel.py`.

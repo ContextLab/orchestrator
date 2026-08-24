@@ -2,7 +2,7 @@
 ========================================================================
 0. PROBLEM
 ========================================================================
-workspace : /var/folders/tp/qtzc39jx5w556wl5w3dj21wr0000gn/T/tmp_swczygt/sherpa-demo-ws
+workspace : /var/folders/tp/qtzc39jx5w556wl5w3dj21wr0000gn/T/tmp4tz5xu_e/sherpa-demo-ws
 
 ========================================================================
 1. TASK DECOMPOSITION — how a goal becomes a typed plan
@@ -117,6 +117,11 @@ terminal status = 'escalated'  (loud failure, exit code would be 1)
 }
 
 ========================================================================
-6. CRASH/RESUME — kill mid-run, resume-by-replay, zero repeated effects
+6. CRASH/RESUME — real SIGKILL mid-run, resume-by-replay, zero repeated effects
 ========================================================================
-exercised by tests/sherpa/test_kernel.py with real SIGKILL; see PR evidence comment.
+victim process exit code = -9 (-9 => killed by SIGKILL)
+effects on disk at death : ['effect-1']
+
+resumed run run_23efbd51f60c: terminal=completed replay_matches_live=True
+effects after resume     : ['effect-1', 'effect-2', 'effect-3']
+exactly-once             : True (no effect repeated despite the hard kill)
