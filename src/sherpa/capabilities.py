@@ -51,6 +51,12 @@ class CapabilitySpec(BaseModel):
     output_schema: dict[str, Any] = Field(default_factory=dict)
     authority_required: Authority = Field(default_factory=Authority)
     requires: tuple[str, ...] = ()
+    #: May this operation be replayed after a crash of unknown outcome?
+    #: A crash between the side effect and its completion event leaves the
+    #: attempt *in doubt*; #492 only promises that completed IDEMPOTENT nodes
+    #: are not repeated, so the runtime has to be told which is which. Defaults
+    #: to False: an undeclared capability is assumed unsafe to repeat.
+    idempotent: bool = False
 
 
 class ProbeSpec(BaseModel):
@@ -247,6 +253,7 @@ class FsReadFile(Capability):
         input_schema={"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
         output_schema={"type": "object", "properties": {"content": {"type": "string"}}},
         requires=("fs_read",),
+        idempotent=True,
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
@@ -276,6 +283,7 @@ class FsWriteFile(Capability):
         },
         output_schema={"type": "object", "properties": {"bytes_written": {"type": "integer"}}},
         requires=("fs_write",),
+        idempotent=True,
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
@@ -303,6 +311,7 @@ class FsListDir(Capability):
         input_schema={"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
         output_schema={"type": "object", "properties": {"entries": {"type": "array"}}},
         requires=("fs_read",),
+        idempotent=True,
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
@@ -340,6 +349,7 @@ class RepoRunTests(Capability):
             },
         },
         authority_required=Authority(subprocess_allow=("python", "pytest")),
+        idempotent=True,
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
@@ -537,6 +547,7 @@ class TextSearchCorpus(Capability):
             "properties": {"query": {"type": "string"}, "k": {"type": "integer"}},
         },
         output_schema={"type": "object", "properties": {"hits": {"type": "array"}}},
+        idempotent=True,
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
@@ -558,6 +569,7 @@ class TextSummarize(Capability):
             "properties": {"text": {"type": "string"}, "max_words": {"type": "integer"}},
         },
         output_schema={"type": "object", "properties": {"summary": {"type": "string"}}},
+        idempotent=True,
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:

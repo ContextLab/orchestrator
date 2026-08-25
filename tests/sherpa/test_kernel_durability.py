@@ -399,3 +399,106 @@ def test_estimated_tokens_are_flagged_not_passed_off_as_measured() -> None:
     measured = ChannelResponse(text="hi", model="m", prompt_tokens=7, completion_tokens=3)
     assert measured.tokens_estimated is False
     assert measured.total_tokens == 10
+
+
+# --------------------------------------------------------------------------
+# the crash window between a side effect and its completion event
+# --------------------------------------------------------------------------
+
+
+def test_in_doubt_non_idempotent_attempt_escalates_instead_of_repeating(tmp_path: Path) -> None:
+    """A crash between a side effect landing and its completion event leaves an
+    attempt *in doubt*: `tool_call_started` is on the log, `tool_call_finished`
+    is not, and the runtime cannot know whether the effect happened.
+
+    Replaying it blindly duplicates non-idempotent work -- the audit reproduced
+    exactly that with an append capability, which resumed to
+    ``['one', 'one', 'two']`` while reporting `completed`. #492 only promises
+    that "completed IDEMPOTENT nodes are not repeated", so the runtime has to be
+    able to tell the two apart. It could not: nothing declared idempotence.
+    """
+    from sherpa.events import Event
+
+    class Append(Capability):
+        spec = CapabilitySpec(
+            name="test.append_line",
+            description="Append a line — running it twice is NOT the same as once.",
+            input_schema={"type": "object", "required": ["line"],
+                          "properties": {"line": {"type": "string"}}},
+            output_schema={"type": "object"},
+            requires=("fs_write",),
+            idempotent=False,
+        )
+
+        def run(self, inputs: dict, ctx) -> dict:
+            target = ctx.workspace / "effect.txt"
+            with open(target, "a", encoding="utf-8") as fh:
+                fh.write(inputs["line"] + "\n")
+            return {"appended": inputs["line"]}
+
+        def probe(self, ctx) -> bytes:
+            return b"append probe ok"
+
+    engine = Engine(tmp_path / "ws")
+    engine.registry.register(Append())
+    spec = _spec(
+        "indoubt",
+        [
+            {"kind": "invoke_capability", "id": "a", "capability": "test.append_line",
+             "inputs": {"line": "one"}},
+            {"kind": "return", "id": "fin", "outputs": {"ok": True}},
+        ],
+    )
+    rid = "run_indoubt"
+    engine.store.create_run(rid, "sha")
+    engine.store.append(Event(kind="plan_recorded", run_id=rid,
+                              payload={"problem": spec.model_dump(), "spec_sha": "x"}))
+    node_key = f"root_{spec.id}.a"
+    engine.store.upsert_node(rid, node_key, "running", depth=0)
+    # The effect really landed on disk...
+    (tmp_path / "ws" / "effect.txt").write_text("one\n", encoding="utf-8")
+    # ...and the crash happened right here, before the completion event.
+    engine.store.append(Event(kind="tool_call_started", run_id=rid, node_key=node_key,
+                              payload={"capability": "test.append_line", "inputs": {}}))
+
+    result = engine.resume(rid)
+
+    assert (tmp_path / "ws" / "effect.txt").read_text(encoding="utf-8") == "one\n", (
+        "resume repeated a non-idempotent effect that may already have happened"
+    )
+    assert result.status in ("escalated", "blocked"), (
+        f"an in-doubt non-idempotent attempt must fail loudly, got {result.status!r}"
+    )
+    engine.close()
+
+
+def test_in_doubt_idempotent_attempt_may_be_retried(tmp_path: Path) -> None:
+    """The contract is about idempotence, not about refusing all resumes: a
+    capability that declares itself idempotent is safe to replay."""
+    from sherpa.events import Event
+
+    engine = Engine(tmp_path / "ws")
+    assert engine.registry.get("fs.write_file").spec.idempotent is True, (
+        "writing the same bytes twice is the same as writing them once"
+    )
+    spec = _spec(
+        "indoubt_ok",
+        [
+            {"kind": "invoke_capability", "id": "w", "capability": "fs.write_file",
+             "inputs": {"path": "out.txt", "content": "same-bytes"}},
+            {"kind": "return", "id": "fin", "outputs": {"ok": True}},
+        ],
+    )
+    rid = "run_indoubt_ok"
+    engine.store.create_run(rid, "sha")
+    engine.store.append(Event(kind="plan_recorded", run_id=rid,
+                              payload={"problem": spec.model_dump(), "spec_sha": "x"}))
+    node_key = f"root_{spec.id}.w"
+    engine.store.upsert_node(rid, node_key, "running", depth=0)
+    engine.store.append(Event(kind="tool_call_started", run_id=rid, node_key=node_key,
+                              payload={"capability": "fs.write_file", "inputs": {}}))
+
+    result = engine.resume(rid)
+    assert result.status == "completed", result.error
+    assert (tmp_path / "ws" / "out.txt").read_text(encoding="utf-8") == "same-bytes"
+    engine.close()

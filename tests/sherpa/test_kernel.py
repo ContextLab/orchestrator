@@ -343,6 +343,13 @@ class InterruptedCapability(Capability):
         name="demo.interrupted",
         input_schema={"type": "object"},
         output_schema={"type": "object"},
+        # It raises before doing anything at all, so replaying it is safe. That
+        # has to be declared: an interrupt lands between `tool_call_started` and
+        # `tool_call_finished`, which is the in-doubt window, and the kernel
+        # refuses to replay an in-doubt attempt on a capability that has not
+        # declared itself idempotent. Without this the run would escalate on the
+        # first resume and the attempt budget below would never be reached.
+        idempotent=True,
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:

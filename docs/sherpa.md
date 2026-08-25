@@ -196,6 +196,34 @@ What each section proves:
 Crash/resume under SIGKILL is additionally exercised across randomized kill
 points by `tests/sherpa/test_kernel.py`.
 
+## Crash safety: what "exactly once" actually promises
+
+`run_capability` brackets every side effect with `tool_call_started` and
+`tool_call_finished`. A crash between those two events leaves the attempt **in
+doubt**: the effect may or may not have happened, and the log cannot say which.
+
+Issue #492 promises only that "completed **idempotent** nodes are not repeated",
+so a capability has to declare which it is:
+
+```python
+CapabilitySpec(
+    name="repo.apply_patch",
+    ...
+    idempotent=False,   # applying a patch twice is not the same as once
+)
+```
+
+`idempotent` defaults to **False** — an undeclared capability is assumed unsafe
+to repeat. On resume, an in-doubt attempt is replayed only if its capability
+declares itself idempotent; otherwise the run escalates loudly rather than
+silently duplicating work. Of the built-ins, everything except
+`repo.apply_patch` is idempotent: reads have no effect, and writing the same
+bytes twice is the same as writing them once.
+
+This is a real boundary, not a formality. Before it existed, a run killed
+between an append landing on disk and its completion event resumed to
+`['one', 'one', 'two']` and reported `completed`.
+
 ## Limitations
 
 These are measured properties of the MVP as it stands, not aspirations. Every
