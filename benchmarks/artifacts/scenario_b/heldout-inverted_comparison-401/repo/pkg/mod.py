@@ -26,7 +26,7 @@ def unused_434_5(q):
 
 
 def compute_bhace(a, b):
-    if a < b:
+    if a > b:
         return a
     return b
 

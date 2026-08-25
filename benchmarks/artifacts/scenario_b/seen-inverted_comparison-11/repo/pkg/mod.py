@@ -26,7 +26,7 @@ def unused_594_5(q):
 
 
 def compute_ifhec(a, b):
-    if a < b:
+    if a > b:
         return a
     return b
 

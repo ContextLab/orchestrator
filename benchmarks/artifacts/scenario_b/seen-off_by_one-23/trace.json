@@ -9,9 +9,9 @@
         "problem_sha": "c4e25f283a40ea444ba84fd130c1765c05ab066825b93ce26b5db3671c0f07f6",
         "status": "running"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 1,
-      "ts": 1787624999.4861178
+      "run_id": "run_287461deba3f",
+      "seq": 152,
+      "ts": 1787626179.908609
     },
     {
       "causal_seq": null,
@@ -101,9 +101,38 @@
         },
         "spec_sha": "c4e25f283a40ea444ba84fd130c1765c05ab066825b93ce26b5db3671c0f07f6"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 2,
-      "ts": 1787624999.4862132
+      "run_id": "run_287461deba3f",
+      "seq": 153,
+      "ts": 1787626179.908884
+    },
+    {
+      "causal_seq": null,
+      "kind": "finding_raised",
+      "node_key": null,
+      "payload": {
+        "blocking": false,
+        "finding_id": "find_dd8fdb7fd26593512ab3",
+        "subject": "plan:root_repair-seen-off_by_one-23@1"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 154,
+      "ts": 1787626179.9091468
+    },
+    {
+      "causal_seq": null,
+      "kind": "review_round",
+      "node_key": null,
+      "payload": {
+        "n_findings": 1,
+        "problem_id": "repair-seen-off_by_one-23",
+        "reviewer_session": "reviewer::planner_deba3f",
+        "round": 0,
+        "subject": "plan:root_repair-seen-off_by_one-23@1",
+        "tokens": 0
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 155,
+      "ts": 1787626179.909195
     },
     {
       "causal_seq": null,
@@ -114,9 +143,38 @@
         "refs": [],
         "text": "plan review of root_repair-seen-off_by_one-23@1: escalated_review_incomplete"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 5,
-      "ts": 1787624999.4865448
+      "run_id": "run_287461deba3f",
+      "seq": 156,
+      "ts": 1787626179.909237
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "blocker",
+        "refs": [
+          "review"
+        ],
+        "text": "plan review incomplete for root_repair-seen-off_by_one-23@1: ChannelRequired: session 'reviewer::planner_deba3f' requested a model completion but this run has no channel configured; supply recordings or policy='live'"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 157,
+      "ts": 1787626179.909268
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-seen-off_by_one-23",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 1,
+        "parent_state": "root",
+        "reclassified": false
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 158,
+      "ts": 1787626179.909308
     },
     {
       "causal_seq": null,
@@ -127,21 +185,21 @@
         "parent_key": null,
         "state": "pending"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 6,
-      "ts": 1787624999.4866712
+      "run_id": "run_287461deba3f",
+      "seq": 159,
+      "ts": 1787626179.909447
     },
     {
       "causal_seq": null,
       "kind": "lease_acquired",
       "node_key": "root_repair-seen-off_by_one-23.capture_failures",
       "payload": {
-        "session": "worker_501dbc",
+        "session": "worker_deba3f",
         "ttl_s": 120.0
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 7,
-      "ts": 1787624999.486745
+      "run_id": "run_287461deba3f",
+      "seq": 160,
+      "ts": 1787626179.909525
     },
     {
       "causal_seq": null,
@@ -150,22 +208,22 @@
       "payload": {
         "expected": "pending",
         "new": "running",
-        "owner_session": "worker_501dbc"
+        "owner_session": "worker_deba3f"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 8,
-      "ts": 1787624999.486785
+      "run_id": "run_287461deba3f",
+      "seq": 161,
+      "ts": 1787626179.909569
     },
     {
       "causal_seq": null,
       "kind": "attempt_started",
       "node_key": "root_repair-seen-off_by_one-23.capture_failures",
       "payload": {
-        "session": "worker_501dbc"
+        "session": "worker_deba3f"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 9,
-      "ts": 1787624999.486816
+      "run_id": "run_287461deba3f",
+      "seq": 162,
+      "ts": 1787626179.9096
     },
     {
       "causal_seq": null,
@@ -180,9 +238,9 @@
         "probe_ok": true,
         "reasons": []
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 10,
-      "ts": 1787624999.581874
+      "run_id": "run_287461deba3f",
+      "seq": 163,
+      "ts": 1787626179.9951649
     },
     {
       "causal_seq": null,
@@ -199,9 +257,21 @@
           "cwd": "repo"
         }
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 11,
-      "ts": 1787624999.5820868
+      "run_id": "run_287461deba3f",
+      "seq": 164,
+      "ts": 1787626179.995373
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "root_repair-seen-off_by_one-23.capture_failures",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "70598e59830072926bb766e9fe4582c81f26fac84c8e4feeca3866d2a9140145"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 165,
+      "ts": 1787626180.145083
     },
     {
       "causal_seq": null,
@@ -209,25 +279,25 @@
       "node_key": "root_repair-seen-off_by_one-23.capture_failures",
       "payload": {
         "capability": "repo.run_tests",
-        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-off_by_one-23/repo (granted: ('**',))",
-        "ok": false
+        "duration_s": 0.1499037742614746,
+        "ok": true,
+        "output_sha": "70598e59830072926bb766e9fe4582c81f26fac84c8e4feeca3866d2a9140145"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 12,
-      "ts": 1787624999.58241
+      "run_id": "run_287461deba3f",
+      "seq": 166,
+      "ts": 1787626180.145268
     },
     {
       "causal_seq": null,
-      "kind": "journal_appended",
-      "node_key": "root_repair-seen-off_by_one-23.capture_failures",
+      "kind": "usage_checkpoint",
+      "node_key": null,
       "payload": {
-        "kind": "blocker",
-        "refs": [],
-        "text": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-off_by_one-23/repo (granted: ('**',))"
+        "attempts": 1.0,
+        "nodes": 1.0
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 13,
-      "ts": 1787624999.582457
+      "run_id": "run_287461deba3f",
+      "seq": 167,
+      "ts": 1787626180.145391
     },
     {
       "causal_seq": null,
@@ -235,122 +305,554 @@
       "node_key": "root_repair-seen-off_by_one-23.capture_failures",
       "payload": {
         "expected": "running",
-        "new": "failed",
+        "new": "completed",
         "owner_session": null
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 14,
-      "ts": 1787624999.5825012
+      "run_id": "run_287461deba3f",
+      "seq": 168,
+      "ts": 1787626180.145451
     },
     {
       "causal_seq": null,
-      "kind": "attempt_finished",
+      "kind": "lease_released",
       "node_key": "root_repair-seen-off_by_one-23.capture_failures",
       "payload": {
-        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-off_by_one-23/repo (granted: ('**',))",
-        "ok": false
+        "session": "worker_deba3f"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 15,
-      "ts": 1787624999.58254
+      "run_id": "run_287461deba3f",
+      "seq": 169,
+      "ts": 1787626180.145514
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-seen-off_by_one-23.fix",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 170,
+      "ts": 1787626180.145638
+    },
+    {
+      "causal_seq": null,
+      "kind": "cache_hit",
+      "node_key": "root_repair-seen-off_by_one-23.fix",
+      "payload": {
+        "signature": "sig_a76e5f4109d35958d7204a4a"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 171,
+      "ts": 1787626180.1457732
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-seen-off_by_one-23.fix",
+        "state": "pending"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 172,
+      "ts": 1787626180.145903
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "session": "worker_deba3f",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 173,
+      "ts": 1787626180.145966
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_deba3f"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 174,
+      "ts": 1787626180.146
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "session": "worker_deba3f"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 175,
+      "ts": 1787626180.1460302
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.apply_patch",
+        "decision": "admitted",
+        "evidence_sha": "3ca773d781b26a988ba3b4bc85b11c093d0583a3893bb75a22966f8d06e2a308",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 176,
+      "ts": 1787626180.1467462
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "inputs": {
+          "cwd": "repo",
+          "diff": "<190 chars>"
+        }
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 177,
+      "ts": 1787626180.146794
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "name": "repo.apply_patch.result.json",
+        "sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 178,
+      "ts": 1787626180.147275
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "duration_s": 0.0005249977111816406,
+        "ok": true,
+        "output_sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 179,
+      "ts": 1787626180.1473129
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 180,
+      "ts": 1787626180.1473548
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 181,
+      "ts": 1787626180.1473951
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_dfgai.apply_fix",
+      "payload": {
+        "session": "worker_deba3f"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 182,
+      "ts": 1787626180.147445
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-seen-off_by_one-23.fix",
+        "state": "pending"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 183,
+      "ts": 1787626180.147516
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "session": "worker_deba3f",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 184,
+      "ts": 1787626180.147574
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_deba3f"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 185,
+      "ts": 1787626180.147607
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "session": "worker_deba3f"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 186,
+      "ts": 1787626180.147637
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 187,
+      "ts": 1787626180.238422
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 188,
+      "ts": 1787626180.238685
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "7fa5a362528746fd940ba139002f39c2353e3d109c060797df480974fb588b60"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 189,
+      "ts": 1787626180.3787389
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "duration_s": 0.14023995399475098,
+        "ok": true,
+        "output_sha": "7fa5a362528746fd940ba139002f39c2353e3d109c060797df480974fb588b60"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 190,
+      "ts": 1787626180.378913
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 191,
+      "ts": 1787626180.378994
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 192,
+      "ts": 1787626180.37905
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_dfgai.verify",
+      "payload": {
+        "session": "worker_deba3f"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 193,
+      "ts": 1787626180.3791082
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_dfgai.ok",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "defect_class": "off_by_one",
+          "diff_sha_hint": "compute_dfgai",
+          "repaired": true,
+          "verify": {
+            "passed": true,
+            "returncode": 0,
+            "stderr": "",
+            "stdout": ".                                                                        [100%]\n1 passed in 0.00s\n"
+          }
+        }
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 194,
+      "ts": 1787626180.3793669
     },
     {
       "causal_seq": null,
       "kind": "journal_appended",
-      "node_key": null,
+      "node_key": "repair_compute_dfgai.ok",
       "payload": {
-        "kind": "blocker",
-        "refs": [
-          "kernel"
-        ],
-        "text": "fail-fast: AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-off_by_one-23/repo (granted: ('**',))"
+        "kind": "result",
+        "refs": [],
+        "text": "child plan repair_compute_dfgai returned ['defect_class', 'diff_sha_hint', 'repaired', 'verify']"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 16,
-      "ts": 1787624999.582573
+      "run_id": "run_287461deba3f",
+      "seq": 195,
+      "ts": 1787626180.379435
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-seen-off_by_one-23.fix",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 2,
+        "parent_state": "pending",
+        "reclassified": false
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 196,
+      "ts": 1787626180.379618
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-seen-off_by_one-23.fix",
+      "payload": {
+        "expected": "pending",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 197,
+      "ts": 1787626180.379655
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-seen-off_by_one-23.fin",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "variant": "seen-off_by_one-23"
+        }
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 198,
+      "ts": 1787626180.379738
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "root_repair-seen-off_by_one-23.fin",
+      "payload": {
+        "kind": "result",
+        "refs": [],
+        "text": "outputs accepted; residual risks: 1"
+      },
+      "run_id": "run_287461deba3f",
+      "seq": 201,
+      "ts": 1787626180.52285
     },
     {
       "causal_seq": null,
       "kind": "run_terminal",
       "node_key": null,
       "payload": {
-        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-off_by_one-23/repo (granted: ('**',))",
-        "status": "failed"
+        "error": null,
+        "status": "completed"
       },
-      "run_id": "run_29dd9f501dbc",
-      "seq": 17,
-      "ts": 1787624999.582647
+      "run_id": "run_287461deba3f",
+      "seq": 202,
+      "ts": 1787626180.5229208
     }
   ],
   "metrics": {
     "admission": {
-      "checked": 1,
-      "claimed_atomic": 1,
+      "checked": 3,
+      "claimed_atomic": 3,
       "decisions": {
-        "admitted": 1
+        "admitted": 3
       },
       "overclaim_rate": 0.0,
       "rejected_or_reclassified": 0
     },
     "branching": {
-      "b_corrected": 0.0,
-      "b_declared": 0.0,
-      "decompositions": 0,
+      "b_corrected": 1.5,
+      "b_declared": 1.5,
+      "children_ambiguous_corrected": 0,
+      "children_ambiguous_declared": 0,
+      "children_declared": 3,
+      "children_escalated": 0,
+      "children_reclassified": 0,
+      "children_viable": 3,
+      "decompositions": 2,
+      "decompositions_unmeasured": 0,
       "f_ambiguous": 0.0,
+      "f_declared": 0.0,
       "m_corrected": 0.0
     },
     "run_id": null,
-    "terminal_status": "failed",
+    "terminal_status": "completed",
     "usage": {
-      "attempts": 0,
-      "cost_usd": 0.0,
-      "nodes": 0,
-      "tokens": 0.0
+      "attempts": 3.0,
+      "cost_usd": null,
+      "nodes": 3.0,
+      "tokens": null
     }
   },
   "projection": {
-    "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-off_by_one-23/repo (granted: ('**',))",
+    "error": null,
     "findings": [],
     "messages_pending": 0,
     "nodes": {
+      "repair_compute_dfgai.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_deba3f",
+        "parent_key": "root_repair-seen-off_by_one-23.fix",
+        "state": "completed"
+      },
+      "repair_compute_dfgai.verify": {
+        "depth": 1,
+        "owner_session": "worker_deba3f",
+        "parent_key": "root_repair-seen-off_by_one-23.fix",
+        "state": "completed"
+      },
       "root_repair-seen-off_by_one-23.capture_failures": {
         "depth": 0,
+        "owner_session": "worker_deba3f",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-seen-off_by_one-23.fix": {
+        "depth": 0,
         "owner_session": null,
-        "state": "failed"
+        "parent_key": null,
+        "state": "completed"
       }
     },
     "parent_run_id": null,
-    "run_id": "run_29dd9f501dbc",
-    "status": "failed",
+    "run_id": "run_287461deba3f",
+    "status": "completed",
     "usage": {
-      "attempts": 0,
+      "attempts": 3,
       "cost_usd": 0.0,
-      "nodes": 0,
+      "nodes": 3,
       "tokens": 0.0,
       "wall_seconds": 0.0
     }
   },
   "replay_projection": {
-    "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-off_by_one-23/repo (granted: ('**',))",
+    "error": null,
     "findings": [],
     "messages_pending": 0,
     "nodes": {
+      "repair_compute_dfgai.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_deba3f",
+        "parent_key": "root_repair-seen-off_by_one-23.fix",
+        "state": "completed"
+      },
+      "repair_compute_dfgai.verify": {
+        "depth": 1,
+        "owner_session": "worker_deba3f",
+        "parent_key": "root_repair-seen-off_by_one-23.fix",
+        "state": "completed"
+      },
       "root_repair-seen-off_by_one-23.capture_failures": {
         "depth": 0,
+        "owner_session": "worker_deba3f",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-seen-off_by_one-23.fix": {
+        "depth": 0,
         "owner_session": null,
-        "state": "failed"
+        "parent_key": null,
+        "state": "completed"
       }
     },
     "parent_run_id": null,
-    "run_id": "run_29dd9f501dbc",
-    "status": "failed",
+    "run_id": "run_287461deba3f",
+    "status": "completed",
     "usage": {
-      "attempts": 0,
+      "attempts": 3.0,
       "cost_usd": 0.0,
-      "nodes": 0,
+      "nodes": 3.0,
       "tokens": 0.0,
       "wall_seconds": 0.0
     }
   },
-  "run_id": "run_29dd9f501dbc"
+  "run_id": "run_287461deba3f"
 }

@@ -26,6 +26,8 @@ def unused_757_5(q):
 
 
 def compute_bfbba(n):
+    if n == 0:
+        return 0
     return 120 // n
 
 

@@ -561,6 +561,10 @@ class Engine:
         if report.verdict == "blocked_escalated":
             blocking = [f.model_dump() for f in report.findings if f.blocking]
             raise _PlanRefused(f"root plan review blocked: {blocking}")
+        self.store.append(Event(
+            kind="decompose_outcome", run_id=rid, node_key=plan.id,
+            payload={**self._decompose_stats(plan), "reclassified": False,
+                     "parent_state": "root"}))
         return plan
 
     def _review_gate(self, rid: str, spec: ProblemSpec, plan: Plan, author_session: str):

@@ -27,7 +27,7 @@ def unused_43_5(q):
 
 def compute_facbf(n):
     total = 0
-    for i in range(1, n):
+    for i in range(1, n + 1):
         total += i
     return total
 

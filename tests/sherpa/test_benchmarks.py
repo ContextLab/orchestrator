@@ -327,3 +327,25 @@ def test_defect_outside_grammar_is_refused_not_guessed() -> None:
                 '    assert join_items(["a", "b"]) == "a|b"\n')
     with pytest.raises(PlanAuthoringError):
         classify_and_repair(module, "join_items", test_src)
+
+
+def test_scenario_c_is_idempotent_across_reruns(tmp_path) -> None:
+    """Re-running into an existing output directory must not degrade results.
+
+    The scenario opened `corpus.db` in place, so a second run indexed every
+    chunk again. The duplicates diluted top-k retrieval and needle recall fell
+    from 1.0 to 0.625 -- a measurement artifact that read exactly like a real
+    regression, and which #492's "one documented command" reproducibility
+    requirement cannot tolerate.
+    """
+    from sherpa.benchmarks.scenarios import scenario_c
+
+    first = scenario_c(tmp_path / "bench")
+    second = scenario_c(tmp_path / "bench")
+
+    assert first["needle_recall"] == 1.0, first
+    assert second["needle_recall"] == first["needle_recall"], (
+        f"re-run degraded recall {first['needle_recall']} -> {second['needle_recall']}"
+    )
+    assert second["docs"] == first["docs"]
+    assert second["total_chars"] == first["total_chars"]

@@ -27,7 +27,7 @@ def unused_469_5(q):
 
 def compute_afgcc(n):
     total = 0
-    for i in range(1, n):
+    for i in range(1, n + 1):
         total += i
     return total
 

@@ -26,6 +26,8 @@ def unused_959_5(q):
 
 
 def compute_gfgii(n):
+    if n == 0:
+        return 0
     return 120 // n
 
 

@@ -26,7 +26,7 @@ def unused_484_5(q):
 
 
 def compute_hachi(x):
-    return x * 3 + 1
+    return x * 2 + 1
 
 
 

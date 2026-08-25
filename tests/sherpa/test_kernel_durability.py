@@ -312,9 +312,16 @@ def test_reclassified_atomic_claim_records_a_decompose_outcome(tmp_path: Path) -
         "a reclassified atomic claim emitted no decompose_outcome, so the corrected "
         f"branching factor cannot see it; events were {sorted(set(kinds))}"
     )
-    outcome = next(e for e in events if e.kind == "decompose_outcome")
-    assert outcome.payload["reclassified"] is True, (
-        "the outcome does not record that it came from an admission correction"
+    outcomes = [e for e in events if e.kind == "decompose_outcome"]
+    # The root plan emits one too (it is itself a decomposition of the goal),
+    # so select the outcome for the node admission actually reclassified.
+    reclassified = [e for e in outcomes if e.payload.get("reclassified")]
+    assert reclassified, (
+        f"no decompose_outcome recorded the admission correction; "
+        f"outcomes were {[(e.node_key, e.payload.get('reclassified')) for e in outcomes]}"
+    )
+    assert reclassified[0].node_key.endswith(".u"), (
+        f"outcome keyed to {reclassified[0].node_key!r}, not the reclassified node"
     )
     engine.close()
 

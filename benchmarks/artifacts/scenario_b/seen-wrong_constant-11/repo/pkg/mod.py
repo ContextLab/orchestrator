@@ -26,7 +26,7 @@ def unused_88_5(q):
 
 
 def compute_ghbdf(x):
-    return x * 3 + 1
+    return x * 2 + 1
 
 
 

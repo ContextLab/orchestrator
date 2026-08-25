@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from pydantic import BaseModel, Field
 
+from sherpa.admission import check_io
 from sherpa.authority import AuthorityError
 from sherpa.events import Event
 from sherpa.ir import Authority
@@ -62,6 +63,10 @@ class AuthorityDenied(AuthorityError):
     Subclasses the shared :class:`sherpa.authority.AuthorityError` so callers
     may catch either; there is one denial hierarchy, not one per module.
     """
+
+
+class CapabilityContractError(TypeError):
+    """A capability's actual I/O did not match its declared typed schema."""
 
 
 class ProbeFailed(RuntimeError):
@@ -603,6 +608,11 @@ def run_capability(cap: Capability, inputs: dict, ctx: CapabilityContext, grante
     )
     assert_requires(cap.spec, granted, cap.spec.name)
     assert_authority(cap.spec.authority_required, granted, cap.spec.name)
+    ok_in, in_errors = check_io(inputs, cap.spec.input_schema)
+    if not ok_in:
+        raise CapabilityContractError(
+            f"{cap.spec.name} inputs do not match its declared schema: {in_errors}"
+        )
     try:
         result = cap.run(inputs, ctx)
     except Exception as exc:
@@ -615,6 +625,23 @@ def run_capability(cap: Capability, inputs: dict, ctx: CapabilityContext, grante
             )
         )
         raise
+    ok_out, out_errors = check_io(result, cap.spec.output_schema)
+    if not ok_out:
+        # A capability that returns something other than what it declares is a
+        # loud contract violation, not a silently-propagated value.
+        ctx.store.append(
+            Event(
+                kind="tool_call_finished",
+                run_id=ctx.run_id,
+                node_key=ctx.node_key,
+                payload={"capability": cap.spec.name, "ok": False,
+                         "error": f"output schema violation: {out_errors}"},
+            )
+        )
+        raise CapabilityContractError(
+            f"{cap.spec.name} returned a value that violates its declared "
+            f"output_schema: {out_errors}"
+        )
     out_sha = ctx.artifact(result, name=f"{cap.spec.name}.result.json")
     ctx.store.append(
         Event(

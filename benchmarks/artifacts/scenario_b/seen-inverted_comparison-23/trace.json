@@ -9,9 +9,9 @@
         "problem_sha": "0b77d198eb2dcd9a86e31f4968a6d545bef59b0858cb82469db339b714504b6f",
         "status": "running"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 1,
-      "ts": 1787625000.3177972
+      "run_id": "run_10c1fed01abd",
+      "seq": 156,
+      "ts": 1787626181.803623
     },
     {
       "causal_seq": null,
@@ -101,9 +101,38 @@
         },
         "spec_sha": "0b77d198eb2dcd9a86e31f4968a6d545bef59b0858cb82469db339b714504b6f"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 2,
-      "ts": 1787625000.317905
+      "run_id": "run_10c1fed01abd",
+      "seq": 157,
+      "ts": 1787626181.803961
+    },
+    {
+      "causal_seq": null,
+      "kind": "finding_raised",
+      "node_key": null,
+      "payload": {
+        "blocking": false,
+        "finding_id": "find_5f9499fcacb51ca8ceac",
+        "subject": "plan:root_repair-seen-inverted_comparison-23@1"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 158,
+      "ts": 1787626181.804265
+    },
+    {
+      "causal_seq": null,
+      "kind": "review_round",
+      "node_key": null,
+      "payload": {
+        "n_findings": 1,
+        "problem_id": "repair-seen-inverted_comparison-23",
+        "reviewer_session": "reviewer::planner_d01abd",
+        "round": 0,
+        "subject": "plan:root_repair-seen-inverted_comparison-23@1",
+        "tokens": 0
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 159,
+      "ts": 1787626181.804322
     },
     {
       "causal_seq": null,
@@ -114,9 +143,38 @@
         "refs": [],
         "text": "plan review of root_repair-seen-inverted_comparison-23@1: escalated_review_incomplete"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 5,
-      "ts": 1787625000.318285
+      "run_id": "run_10c1fed01abd",
+      "seq": 160,
+      "ts": 1787626181.80437
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "blocker",
+        "refs": [
+          "review"
+        ],
+        "text": "plan review incomplete for root_repair-seen-inverted_comparison-23@1: ChannelRequired: session 'reviewer::planner_d01abd' requested a model completion but this run has no channel configured; supply recordings or policy='live'"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 161,
+      "ts": 1787626181.804405
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-seen-inverted_comparison-23",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 1,
+        "parent_state": "root",
+        "reclassified": false
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 162,
+      "ts": 1787626181.8044631
     },
     {
       "causal_seq": null,
@@ -127,21 +185,21 @@
         "parent_key": null,
         "state": "pending"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 6,
-      "ts": 1787625000.318451
+      "run_id": "run_10c1fed01abd",
+      "seq": 163,
+      "ts": 1787626181.804658
     },
     {
       "causal_seq": null,
       "kind": "lease_acquired",
       "node_key": "root_repair-seen-inverted_comparison-23.capture_failures",
       "payload": {
-        "session": "worker_f4c082",
+        "session": "worker_d01abd",
         "ttl_s": 120.0
       },
-      "run_id": "run_545489f4c082",
-      "seq": 7,
-      "ts": 1787625000.3185542
+      "run_id": "run_10c1fed01abd",
+      "seq": 164,
+      "ts": 1787626181.804755
     },
     {
       "causal_seq": null,
@@ -150,22 +208,22 @@
       "payload": {
         "expected": "pending",
         "new": "running",
-        "owner_session": "worker_f4c082"
+        "owner_session": "worker_d01abd"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 8,
-      "ts": 1787625000.3185978
+      "run_id": "run_10c1fed01abd",
+      "seq": 165,
+      "ts": 1787626181.804806
     },
     {
       "causal_seq": null,
       "kind": "attempt_started",
       "node_key": "root_repair-seen-inverted_comparison-23.capture_failures",
       "payload": {
-        "session": "worker_f4c082"
+        "session": "worker_d01abd"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 9,
-      "ts": 1787625000.318634
+      "run_id": "run_10c1fed01abd",
+      "seq": 166,
+      "ts": 1787626181.8048441
     },
     {
       "causal_seq": null,
@@ -180,9 +238,9 @@
         "probe_ok": true,
         "reasons": []
       },
-      "run_id": "run_545489f4c082",
-      "seq": 10,
-      "ts": 1787625000.411179
+      "run_id": "run_10c1fed01abd",
+      "seq": 167,
+      "ts": 1787626181.9007628
     },
     {
       "causal_seq": null,
@@ -199,9 +257,21 @@
           "cwd": "repo"
         }
       },
-      "run_id": "run_545489f4c082",
-      "seq": 11,
-      "ts": 1787625000.4113631
+      "run_id": "run_10c1fed01abd",
+      "seq": 168,
+      "ts": 1787626181.901011
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "root_repair-seen-inverted_comparison-23.capture_failures",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "13fdd6390e85c1086aa7f25ac7e7782517142209e469f8151d50de4cbf225ce8"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 169,
+      "ts": 1787626182.068404
     },
     {
       "causal_seq": null,
@@ -209,25 +279,25 @@
       "node_key": "root_repair-seen-inverted_comparison-23.capture_failures",
       "payload": {
         "capability": "repo.run_tests",
-        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-inverted_comparison-23/repo (granted: ('**',))",
-        "ok": false
+        "duration_s": 0.1675882339477539,
+        "ok": true,
+        "output_sha": "13fdd6390e85c1086aa7f25ac7e7782517142209e469f8151d50de4cbf225ce8"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 12,
-      "ts": 1787625000.411712
+      "run_id": "run_10c1fed01abd",
+      "seq": 170,
+      "ts": 1787626182.068589
     },
     {
       "causal_seq": null,
-      "kind": "journal_appended",
-      "node_key": "root_repair-seen-inverted_comparison-23.capture_failures",
+      "kind": "usage_checkpoint",
+      "node_key": null,
       "payload": {
-        "kind": "blocker",
-        "refs": [],
-        "text": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-inverted_comparison-23/repo (granted: ('**',))"
+        "attempts": 1.0,
+        "nodes": 1.0
       },
-      "run_id": "run_545489f4c082",
-      "seq": 13,
-      "ts": 1787625000.411774
+      "run_id": "run_10c1fed01abd",
+      "seq": 171,
+      "ts": 1787626182.068714
     },
     {
       "causal_seq": null,
@@ -235,122 +305,554 @@
       "node_key": "root_repair-seen-inverted_comparison-23.capture_failures",
       "payload": {
         "expected": "running",
-        "new": "failed",
+        "new": "completed",
         "owner_session": null
       },
-      "run_id": "run_545489f4c082",
-      "seq": 14,
-      "ts": 1787625000.41182
+      "run_id": "run_10c1fed01abd",
+      "seq": 172,
+      "ts": 1787626182.0687811
     },
     {
       "causal_seq": null,
-      "kind": "attempt_finished",
+      "kind": "lease_released",
       "node_key": "root_repair-seen-inverted_comparison-23.capture_failures",
       "payload": {
-        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-inverted_comparison-23/repo (granted: ('**',))",
-        "ok": false
+        "session": "worker_d01abd"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 15,
-      "ts": 1787625000.411861
+      "run_id": "run_10c1fed01abd",
+      "seq": 173,
+      "ts": 1787626182.0688572
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-seen-inverted_comparison-23.fix",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 174,
+      "ts": 1787626182.0689988
+    },
+    {
+      "causal_seq": null,
+      "kind": "cache_hit",
+      "node_key": "root_repair-seen-inverted_comparison-23.fix",
+      "payload": {
+        "signature": "sig_9279a803f15ca2e21bd48aff"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 175,
+      "ts": 1787626182.069143
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-seen-inverted_comparison-23.fix",
+        "state": "pending"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 176,
+      "ts": 1787626182.069282
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "session": "worker_d01abd",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 177,
+      "ts": 1787626182.069355
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_d01abd"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 178,
+      "ts": 1787626182.0693939
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "session": "worker_d01abd"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 179,
+      "ts": 1787626182.069435
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.apply_patch",
+        "decision": "admitted",
+        "evidence_sha": "3ca773d781b26a988ba3b4bc85b11c093d0583a3893bb75a22966f8d06e2a308",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 180,
+      "ts": 1787626182.070135
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "inputs": {
+          "cwd": "repo",
+          "diff": "<146 chars>"
+        }
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 181,
+      "ts": 1787626182.070195
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "name": "repo.apply_patch.result.json",
+        "sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 182,
+      "ts": 1787626182.070776
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "duration_s": 0.0006389617919921875,
+        "ok": true,
+        "output_sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 183,
+      "ts": 1787626182.0708292
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 184,
+      "ts": 1787626182.070911
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 185,
+      "ts": 1787626182.070954
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_bijha.apply_fix",
+      "payload": {
+        "session": "worker_d01abd"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 186,
+      "ts": 1787626182.0710049
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-seen-inverted_comparison-23.fix",
+        "state": "pending"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 187,
+      "ts": 1787626182.071083
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "session": "worker_d01abd",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 188,
+      "ts": 1787626182.071151
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_d01abd"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 189,
+      "ts": 1787626182.0711849
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "session": "worker_d01abd"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 190,
+      "ts": 1787626182.0712168
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 191,
+      "ts": 1787626182.167779
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 192,
+      "ts": 1787626182.1680279
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "7fa5a362528746fd940ba139002f39c2353e3d109c060797df480974fb588b60"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 193,
+      "ts": 1787626182.331933
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "duration_s": 0.1641230583190918,
+        "ok": true,
+        "output_sha": "7fa5a362528746fd940ba139002f39c2353e3d109c060797df480974fb588b60"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 194,
+      "ts": 1787626182.3321412
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 195,
+      "ts": 1787626182.3322308
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 196,
+      "ts": 1787626182.332286
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_bijha.verify",
+      "payload": {
+        "session": "worker_d01abd"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 197,
+      "ts": 1787626182.3323572
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bijha.ok",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "defect_class": "inverted_comparison",
+          "diff_sha_hint": "compute_bijha",
+          "repaired": true,
+          "verify": {
+            "passed": true,
+            "returncode": 0,
+            "stderr": "",
+            "stdout": ".                                                                        [100%]\n1 passed in 0.00s\n"
+          }
+        }
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 198,
+      "ts": 1787626182.332659
     },
     {
       "causal_seq": null,
       "kind": "journal_appended",
-      "node_key": null,
+      "node_key": "repair_compute_bijha.ok",
       "payload": {
-        "kind": "blocker",
-        "refs": [
-          "kernel"
-        ],
-        "text": "fail-fast: AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-inverted_comparison-23/repo (granted: ('**',))"
+        "kind": "result",
+        "refs": [],
+        "text": "child plan repair_compute_bijha returned ['defect_class', 'diff_sha_hint', 'repaired', 'verify']"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 16,
-      "ts": 1787625000.411902
+      "run_id": "run_10c1fed01abd",
+      "seq": 199,
+      "ts": 1787626182.332744
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-seen-inverted_comparison-23.fix",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 2,
+        "parent_state": "pending",
+        "reclassified": false
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 200,
+      "ts": 1787626182.332936
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-seen-inverted_comparison-23.fix",
+      "payload": {
+        "expected": "pending",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 201,
+      "ts": 1787626182.332981
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-seen-inverted_comparison-23.fin",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "variant": "seen-inverted_comparison-23"
+        }
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 202,
+      "ts": 1787626182.333073
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "root_repair-seen-inverted_comparison-23.fin",
+      "payload": {
+        "kind": "result",
+        "refs": [],
+        "text": "outputs accepted; residual risks: 1"
+      },
+      "run_id": "run_10c1fed01abd",
+      "seq": 205,
+      "ts": 1787626182.493057
     },
     {
       "causal_seq": null,
       "kind": "run_terminal",
       "node_key": null,
       "payload": {
-        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-inverted_comparison-23/repo (granted: ('**',))",
-        "status": "failed"
+        "error": null,
+        "status": "completed"
       },
-      "run_id": "run_545489f4c082",
-      "seq": 17,
-      "ts": 1787625000.411971
+      "run_id": "run_10c1fed01abd",
+      "seq": 206,
+      "ts": 1787626182.4931352
     }
   ],
   "metrics": {
     "admission": {
-      "checked": 1,
-      "claimed_atomic": 1,
+      "checked": 3,
+      "claimed_atomic": 3,
       "decisions": {
-        "admitted": 1
+        "admitted": 3
       },
       "overclaim_rate": 0.0,
       "rejected_or_reclassified": 0
     },
     "branching": {
-      "b_corrected": 0.0,
-      "b_declared": 0.0,
-      "decompositions": 0,
+      "b_corrected": 1.5,
+      "b_declared": 1.5,
+      "children_ambiguous_corrected": 0,
+      "children_ambiguous_declared": 0,
+      "children_declared": 3,
+      "children_escalated": 0,
+      "children_reclassified": 0,
+      "children_viable": 3,
+      "decompositions": 2,
+      "decompositions_unmeasured": 0,
       "f_ambiguous": 0.0,
+      "f_declared": 0.0,
       "m_corrected": 0.0
     },
     "run_id": null,
-    "terminal_status": "failed",
+    "terminal_status": "completed",
     "usage": {
-      "attempts": 0,
-      "cost_usd": 0.0,
-      "nodes": 0,
-      "tokens": 0.0
+      "attempts": 3.0,
+      "cost_usd": null,
+      "nodes": 3.0,
+      "tokens": null
     }
   },
   "projection": {
-    "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-inverted_comparison-23/repo (granted: ('**',))",
+    "error": null,
     "findings": [],
     "messages_pending": 0,
     "nodes": {
+      "repair_compute_bijha.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_d01abd",
+        "parent_key": "root_repair-seen-inverted_comparison-23.fix",
+        "state": "completed"
+      },
+      "repair_compute_bijha.verify": {
+        "depth": 1,
+        "owner_session": "worker_d01abd",
+        "parent_key": "root_repair-seen-inverted_comparison-23.fix",
+        "state": "completed"
+      },
       "root_repair-seen-inverted_comparison-23.capture_failures": {
         "depth": 0,
+        "owner_session": "worker_d01abd",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-seen-inverted_comparison-23.fix": {
+        "depth": 0,
         "owner_session": null,
-        "state": "failed"
+        "parent_key": null,
+        "state": "completed"
       }
     },
     "parent_run_id": null,
-    "run_id": "run_545489f4c082",
-    "status": "failed",
+    "run_id": "run_10c1fed01abd",
+    "status": "completed",
     "usage": {
-      "attempts": 0,
+      "attempts": 3,
       "cost_usd": 0.0,
-      "nodes": 0,
+      "nodes": 3,
       "tokens": 0.0,
       "wall_seconds": 0.0
     }
   },
   "replay_projection": {
-    "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-inverted_comparison-23/repo (granted: ('**',))",
+    "error": null,
     "findings": [],
     "messages_pending": 0,
     "nodes": {
+      "repair_compute_bijha.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_d01abd",
+        "parent_key": "root_repair-seen-inverted_comparison-23.fix",
+        "state": "completed"
+      },
+      "repair_compute_bijha.verify": {
+        "depth": 1,
+        "owner_session": "worker_d01abd",
+        "parent_key": "root_repair-seen-inverted_comparison-23.fix",
+        "state": "completed"
+      },
       "root_repair-seen-inverted_comparison-23.capture_failures": {
         "depth": 0,
+        "owner_session": "worker_d01abd",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-seen-inverted_comparison-23.fix": {
+        "depth": 0,
         "owner_session": null,
-        "state": "failed"
+        "parent_key": null,
+        "state": "completed"
       }
     },
     "parent_run_id": null,
-    "run_id": "run_545489f4c082",
-    "status": "failed",
+    "run_id": "run_10c1fed01abd",
+    "status": "completed",
     "usage": {
-      "attempts": 0,
+      "attempts": 3.0,
       "cost_usd": 0.0,
-      "nodes": 0,
+      "nodes": 3.0,
       "tokens": 0.0,
       "wall_seconds": 0.0
     }
   },
-  "run_id": "run_545489f4c082"
+  "run_id": "run_10c1fed01abd"
 }

@@ -26,7 +26,7 @@ def unused_555_5(q):
 
 
 def compute_bijha(a, b):
-    if a < b:
+    if a > b:
         return a
     return b
 

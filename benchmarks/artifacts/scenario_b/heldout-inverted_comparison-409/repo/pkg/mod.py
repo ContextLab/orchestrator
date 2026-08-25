@@ -26,7 +26,7 @@ def unused_340_5(q):
 
 
 def compute_eaghc(a, b):
-    if a < b:
+    if a > b:
         return a
     return b
 

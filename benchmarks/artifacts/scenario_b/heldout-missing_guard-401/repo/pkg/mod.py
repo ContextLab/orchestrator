@@ -26,6 +26,8 @@ def unused_106_5(q):
 
 
 def compute_aehjg(n):
+    if n == 0:
+        return 0
     return 120 // n
 
 

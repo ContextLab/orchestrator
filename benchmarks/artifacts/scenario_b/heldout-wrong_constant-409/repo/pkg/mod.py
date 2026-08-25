@@ -26,7 +26,7 @@ def unused_86_5(q):
 
 
 def compute_dahii(x):
-    return x * 3 + 1
+    return x * 2 + 1
 
 
 

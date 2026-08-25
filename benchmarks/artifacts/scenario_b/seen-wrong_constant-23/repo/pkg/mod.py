@@ -26,7 +26,7 @@ def unused_798_5(q):
 
 
 def compute_jdjjh(x):
-    return x * 3 + 1
+    return x * 2 + 1
 
 
 

@@ -238,6 +238,23 @@ def scenario_b(base: Path, seeds: list[int], heldout_seeds: list[int]) -> list[d
             ]},
         )
         engine = Engine(ws, planner=planner)
+
+        def _classified(run_id: str) -> str | None:
+            """The defect class the plan actually named, read from the log.
+
+            Reading `planner.inferred_defect_class` misses every solution-cache
+            hit, because a cached plan is reused without calling the planner --
+            which under-reported detection even though the cached plan carried
+            the class and repaired the defect correctly. Derived from events, so
+            fresh and cached plans are measured the same way (#492: metrics are
+            projections of the event log).
+            """
+            for ev in engine.store.events(run_id=run_id, kinds=["node_state_changed"]):
+                outs = ev.payload.get("return_outputs")
+                if isinstance(outs, dict) and outs.get("defect_class"):
+                    return str(outs["defect_class"])
+            return planner.inferred_defect_class
+
         try:
             result = engine.run(problem)
         except Exception as exc:  # noqa: BLE001 - record loud harness-level failures
@@ -256,8 +273,8 @@ def scenario_b(base: Path, seeds: list[int], heldout_seeds: list[int]) -> list[d
             "status": result.status,
             # "detected" means the planner named the seeded class from the
             # sources alone -- not merely that some patch made tests pass.
-            "inferred_defect_class": planner.inferred_defect_class,
-            "defect_detected": planner.inferred_defect_class == task.defect_class,
+            "inferred_defect_class": _classified(result.run_id),
+            "defect_detected": _classified(result.run_id) == task.defect_class,
             "error": result.error,
             "externally_verified": _repo_tests_green(repo),
             "overclaim_rate": metrics["admission"]["overclaim_rate"],
@@ -277,9 +294,25 @@ def _repo_tests_green(repo: Path) -> bool:
 
 # ---------------------------------------------------------------- Scenario C
 
+def _fresh_workspace(path: Path) -> Path:
+    """Start a scenario from an empty directory.
+
+    Scenarios open their SQLite store in place, so re-running into an existing
+    output directory re-indexed every chunk on top of the previous run. The
+    duplicates diluted top-k retrieval and silently degraded measured recall --
+    a benchmark that gets worse the more often you run it is not a measurement.
+    """
+    import shutil
+
+    if path.exists():
+        shutil.rmtree(path)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def scenario_c(base: Path) -> dict:
     corpus = make_corpus()
-    ws = base / "scenario_c"
+    ws = _fresh_workspace(base / "scenario_c")
 
     from sherpa.store import Store
 

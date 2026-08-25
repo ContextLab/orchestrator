@@ -1,0 +1,14 @@
+{
+  "scenario": "C_evidence_corpus",
+  "question": "List every launch code recorded across the mission logs, citing its document.",
+  "docs": 40,
+  "total_chars": 87726,
+  "needles_seeded": 8,
+  "needle_recall": 1.0,
+  "claims": 8,
+  "supported_claims": 8,
+  "routing_cost_fts_queries": 8,
+  "summary_routed_recall": 1.0,
+  "summary_levels": 40,
+  "gate_95pct_recall_met": true
+}
