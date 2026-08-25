@@ -286,3 +286,7 @@ tests/performance/results/
 tests/performance/alerts/
 tests/quality/results/
 tests/scenarios/results/
+
+# sqlite sidecar files are transient; never commit them
+*.db-wal
+*.db-shm

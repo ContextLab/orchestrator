@@ -1,0 +1,143 @@
+
+========================================================================
+0. PROBLEM
+========================================================================
+workspace : /var/folders/tp/qtzc39jx5w556wl5w3dj21wr0000gn/T/tmp2vwjvgjr/sherpa-demo-ws
+
+========================================================================
+1. TASK DECOMPOSITION — how a goal becomes a typed plan
+========================================================================
+goal      : Audit src/: list entries, read app.py, persist an audit report.
+authority : {"fs_read": ["**"], "fs_write": ["**"], "net_domains": [], "subprocess_allow": []}
+  step 1: [invoke_capability ] scan          fs.list_dir  (claimed-atomic)
+  step 2: [invoke_capability ] read_entry    fs.read_file  (claimed-atomic)
+  step 3: [invoke_capability ] write_report  fs.write_file  (claimed-atomic)
+  step 4: [return            ] fin           {"audited": true}  (terminal)
+
+========================================================================
+2. FAIL-CLOSED EXPRESSIONS — no eval(), injection rejected
+========================================================================
+evaluate('files_scanned >= threshold', {...}) -> True
+injection attempt rejected: ExpressionError: disallowed syntax: Call
+
+========================================================================
+3. DURABLE EXECUTION — event log, admission outcomes, replay equivalence
+========================================================================
+[repo-audit] terminal=completed events=43 replay_matches_live=True
+      1 run_started                                   running
+      2 plan_recorded
+      3 finding_raised
+      4 review_round
+      5 journal_appended                              decision
+      6 journal_appended                              blocker
+      7 decompose_outcome            root_repo-audit
+      8 node_created                 root_repo-audit.scan
+      9 lease_acquired               root_repo-audit.scan
+     10 node_state_changed           root_repo-audit.scan
+     11 attempt_started              root_repo-audit.scan
+     12 admission_checked            root_repo-audit.scan admitted
+     13 tool_call_started            root_repo-audit.scan
+     14 artifact_written             root_repo-audit.scan
+     15 tool_call_finished           root_repo-audit.scan
+     16 usage_checkpoint
+     17 node_state_changed           root_repo-audit.scan
+     18 lease_released               root_repo-audit.scan
+     19 node_created                 root_repo-audit.read_entry
+     20 lease_acquired               root_repo-audit.read_entry
+     21 node_state_changed           root_repo-audit.read_entry
+     22 attempt_started              root_repo-audit.read_entry
+     23 admission_checked            root_repo-audit.read_entry admitted
+     24 tool_call_started            root_repo-audit.read_entry
+     25 artifact_written             root_repo-audit.read_entry
+     26 tool_call_finished           root_repo-audit.read_entry
+     27 usage_checkpoint
+     28 node_state_changed           root_repo-audit.read_entry
+     29 lease_released               root_repo-audit.read_entry
+     30 node_created                 root_repo-audit.write_report
+     31 lease_acquired               root_repo-audit.write_report
+     32 node_state_changed           root_repo-audit.write_report
+     33 attempt_started              root_repo-audit.write_report
+     34 admission_checked            root_repo-audit.write_report admitted
+     35 tool_call_started            root_repo-audit.write_report
+     36 artifact_written             root_repo-audit.write_report
+     37 tool_call_finished           root_repo-audit.write_report
+     38 usage_checkpoint
+     39 node_state_changed           root_repo-audit.write_report
+     40 lease_released               root_repo-audit.write_report
+     41 node_state_changed           root_repo-audit.fin
+     44 journal_appended             root_repo-audit.fin result
+     45 run_terminal                                  completed
+
+result.outputs = {'audited': True}
+note: capabilities declare their own required authority; admission grants only if required <= granted, then runs existence -> I/O schema -> executable probe
+
+========================================================================
+4. AUTHORITY ENFORCEMENT — an overclaiming step cannot run silently
+========================================================================
+[overclaim] terminal=escalated events=16 replay_matches_live=True
+     46 run_started                                   running
+     47 plan_recorded
+     48 finding_raised
+     49 review_round
+     50 journal_appended                              decision
+     51 journal_appended                              blocker
+     52 decompose_outcome            root_overclaim
+     53 node_created                 root_overclaim.sneaky_write
+     54 lease_acquired               root_overclaim.sneaky_write
+     55 node_state_changed           root_overclaim.sneaky_write
+     56 attempt_started              root_overclaim.sneaky_write
+     57 admission_checked            root_overclaim.sneaky_write escalate
+     58 journal_appended             root_overclaim.sneaky_write blocker
+     59 node_state_changed           root_overclaim.sneaky_write
+     60 lease_released               root_overclaim.sneaky_write
+     61 run_terminal                                  escalated
+
+terminal status = 'escalated'  (loud failure, exit code would be 1)
+
+========================================================================
+5. EVENT-DERIVED METRICS — computed from the log, never asserted
+========================================================================
+{
+  "admission": {
+    "checked": 3,
+    "claimed_atomic": 3,
+    "decisions": {
+      "admitted": 3
+    },
+    "overclaim_rate": 0.0,
+    "rejected_or_reclassified": 0
+  },
+  "branching": {
+    "b_corrected": 3.0,
+    "b_declared": 3.0,
+    "children_ambiguous_corrected": 0,
+    "children_ambiguous_declared": 0,
+    "children_declared": 3,
+    "children_escalated": 0,
+    "children_reclassified": 0,
+    "children_viable": 3,
+    "decompositions": 1,
+    "decompositions_unmeasured": 0,
+    "f_ambiguous": 0.0,
+    "f_declared": 0.0,
+    "m_corrected": 0.0
+  },
+  "run_id": null,
+  "terminal_status": "completed",
+  "usage": {
+    "attempts": 3.0,
+    "cost_usd": null,
+    "nodes": 3.0,
+    "tokens": null
+  }
+}
+
+========================================================================
+6. CRASH/RESUME — real SIGKILL mid-run, resume-by-replay, zero repeated effects
+========================================================================
+victim process exit code = -9 (-9 => killed by SIGKILL)
+effects on disk at death : ['effect-1']
+
+resumed run run_1b6b11083949: terminal=completed replay_matches_live=True
+effects after resume     : ['effect-1', 'effect-2', 'effect-3']
+exactly-once             : True (no effect repeated despite the hard kill)

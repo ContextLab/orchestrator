@@ -1,0 +1,858 @@
+{
+  "events": [
+    {
+      "causal_seq": null,
+      "kind": "run_started",
+      "node_key": null,
+      "payload": {
+        "parent_run_id": null,
+        "problem_sha": "d51e6aee9846efb44ec42c1b455949386c093cd5b49bf09890a055862273de66",
+        "status": "running"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 152,
+      "ts": 1787626193.552136
+    },
+    {
+      "causal_seq": null,
+      "kind": "plan_recorded",
+      "node_key": null,
+      "payload": {
+        "problem": {
+          "acceptance": [
+            {
+              "id": "suite_green",
+              "kind": "pytest",
+              "spec": {
+                "cmd": [
+                  "pytest",
+                  "-q",
+                  "tests"
+                ],
+                "cwd": "repo"
+              }
+            }
+          ],
+          "attended": false,
+          "authority": {
+            "fs_read": [
+              "**"
+            ],
+            "fs_write": [
+              "**"
+            ],
+            "net_domains": [],
+            "subprocess_allow": [
+              "**"
+            ]
+          },
+          "budgets": {
+            "max_attempts_per_node": 2,
+            "max_cost_usd": 0.0,
+            "max_depth": 6,
+            "max_fanout": 4,
+            "max_nodes": 200,
+            "max_tokens": 200000,
+            "max_wall_seconds": 900.0
+          },
+          "goal": "repair repository so tests pass (missing_guard)",
+          "id": "repair-heldout-missing_guard-409",
+          "inputs": {},
+          "metadata": {
+            "root_nodes": [
+              {
+                "capability": "repo.run_tests",
+                "id": "capture_failures",
+                "inputs": {
+                  "args": [
+                    "-q",
+                    "tests"
+                  ],
+                  "atomic_claim": false,
+                  "cwd": "repo"
+                },
+                "kind": "invoke_capability"
+              },
+              {
+                "hints": {
+                  "failing": "F.                                                                       [100%]\n=================================== FAILURES ===================================\n___________________________ test_compute_bdcfg_zero ____________________________\n\n    def test_compute_bdcfg_zero():\n>       assert compute_bdcfg(0) == 0\n               ^^^^^^^^^^^^^^^^\n\ntests/test_mod.py:4: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nn = 0\n\n    def compute_bdcfg(n):\n>       return 120 // n\n               ^^^^^^^^\nE       ZeroDivisionError: division by zero\n\npkg/mod.py:29: ZeroDivisionError\n=========================== short test summary info ============================\nFAILED tests/test_mod.py::test_compute_bdcfg_zero - ZeroDivisionError: divisi...\n1 failed, 1 passed in 0.01s\n",
+                  "files": {
+                    "pkg/__init__.py": "",
+                    "pkg/mod.py": "\"\"\"Small package under repair.\"\"\"\n\ndef unused_419_0(q):\n    return q + 0\n\n\ndef unused_101_1(q):\n    return q + 1\n\n\ndef unused_926_2(q):\n    return q + 2\n\n\ndef unused_386_3(q):\n    return q + 3\n\n\ndef unused_997_4(q):\n    return q + 4\n\n\ndef unused_483_5(q):\n    return q + 5\n\n\n\ndef compute_bdcfg(n):\n    return 120 // n\n\n\n\ndef unused_419_0(q):\n    return q + 0\n\n\ndef unused_101_1(q):\n    return q + 1\n\n\ndef unused_926_2(q):\n    return q + 2\n\n\ndef unused_386_3(q):\n    return q + 3\n\n\ndef unused_997_4(q):\n    return q + 4\n\n\ndef unused_483_5(q):\n    return q + 5\n\n",
+                    "tests/test_mod.py": "from pkg.mod import compute_bdcfg\n\ndef test_compute_bdcfg_zero():\n    assert compute_bdcfg(0) == 0\n\ndef test_compute_bdcfg_ratio():\n    assert compute_bdcfg(3) == 40\n"
+                  }
+                },
+                "id": "fix",
+                "kind": "decompose",
+                "subgoal": "repair pkg/mod.py"
+              },
+              {
+                "id": "fin",
+                "kind": "return",
+                "outputs": {
+                  "variant": "heldout-missing_guard-409"
+                }
+              }
+            ]
+          },
+          "output_schema": {
+            "type": "object"
+          }
+        },
+        "spec_sha": "d51e6aee9846efb44ec42c1b455949386c093cd5b49bf09890a055862273de66"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 153,
+      "ts": 1787626193.552449
+    },
+    {
+      "causal_seq": null,
+      "kind": "finding_raised",
+      "node_key": null,
+      "payload": {
+        "blocking": false,
+        "finding_id": "find_142a556c9163e55ea3de",
+        "subject": "plan:root_repair-heldout-missing_guard-409@1"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 154,
+      "ts": 1787626193.552767
+    },
+    {
+      "causal_seq": null,
+      "kind": "review_round",
+      "node_key": null,
+      "payload": {
+        "n_findings": 1,
+        "problem_id": "repair-heldout-missing_guard-409",
+        "reviewer_session": "reviewer::planner_4e42dd",
+        "round": 0,
+        "subject": "plan:root_repair-heldout-missing_guard-409@1",
+        "tokens": 0
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 155,
+      "ts": 1787626193.552824
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "decision",
+        "refs": [],
+        "text": "plan review of root_repair-heldout-missing_guard-409@1: escalated_review_incomplete"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 156,
+      "ts": 1787626193.552875
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "blocker",
+        "refs": [
+          "review"
+        ],
+        "text": "plan review incomplete for root_repair-heldout-missing_guard-409@1: ChannelRequired: session 'reviewer::planner_4e42dd' requested a model completion but this run has no channel configured; supply recordings or policy='live'"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 157,
+      "ts": 1787626193.552911
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-heldout-missing_guard-409",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 1,
+        "parent_state": "root",
+        "reclassified": false
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 158,
+      "ts": 1787626193.552958
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 159,
+      "ts": 1787626193.5531268
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "session": "worker_4e42dd",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 160,
+      "ts": 1787626193.55322
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 161,
+      "ts": 1787626193.553272
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 162,
+      "ts": 1787626193.553323
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 163,
+      "ts": 1787626193.648371
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "atomic_claim": false,
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 164,
+      "ts": 1787626193.648628
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "62976f30f411cbd42881c8e123356268c13c93efecfa7b36e1c041a477e86dba"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 165,
+      "ts": 1787626193.8137448
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "capability": "repo.run_tests",
+        "duration_s": 0.16532301902770996,
+        "ok": true,
+        "output_sha": "62976f30f411cbd42881c8e123356268c13c93efecfa7b36e1c041a477e86dba"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 166,
+      "ts": 1787626193.813937
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 167,
+      "ts": 1787626193.814065
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 168,
+      "ts": 1787626193.814131
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "root_repair-heldout-missing_guard-409.capture_failures",
+      "payload": {
+        "session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 169,
+      "ts": 1787626193.814207
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-heldout-missing_guard-409.fix",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 170,
+      "ts": 1787626193.8143501
+    },
+    {
+      "causal_seq": null,
+      "kind": "cache_hit",
+      "node_key": "root_repair-heldout-missing_guard-409.fix",
+      "payload": {
+        "signature": "sig_1df15bfe8098b394de3da069"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 171,
+      "ts": 1787626193.814506
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-heldout-missing_guard-409.fix",
+        "state": "pending"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 172,
+      "ts": 1787626193.814653
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "session": "worker_4e42dd",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 173,
+      "ts": 1787626193.8147252
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 174,
+      "ts": 1787626193.814765
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 175,
+      "ts": 1787626193.814803
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.apply_patch",
+        "decision": "admitted",
+        "evidence_sha": "3ca773d781b26a988ba3b4bc85b11c093d0583a3893bb75a22966f8d06e2a308",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 176,
+      "ts": 1787626193.815596
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "inputs": {
+          "cwd": "repo",
+          "diff": "<138 chars>"
+        }
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 177,
+      "ts": 1787626193.815649
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "name": "repo.apply_patch.result.json",
+        "sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 178,
+      "ts": 1787626193.81619
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "duration_s": 0.0005898475646972656,
+        "ok": true,
+        "output_sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 179,
+      "ts": 1787626193.816233
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 180,
+      "ts": 1787626193.8162801
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 181,
+      "ts": 1787626193.816322
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_bdcfg.apply_fix",
+      "payload": {
+        "session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 182,
+      "ts": 1787626193.816375
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-heldout-missing_guard-409.fix",
+        "state": "pending"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 183,
+      "ts": 1787626193.816465
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "session": "worker_4e42dd",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 184,
+      "ts": 1787626193.8165371
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 185,
+      "ts": 1787626193.81658
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 186,
+      "ts": 1787626193.8166301
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 187,
+      "ts": 1787626193.9095411
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 188,
+      "ts": 1787626193.9097412
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "986b0ece2460682347c6f678a172c92dbb1db93a868119b238db1030d6386c93"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 189,
+      "ts": 1787626194.0609548
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "duration_s": 0.15141010284423828,
+        "ok": true,
+        "output_sha": "986b0ece2460682347c6f678a172c92dbb1db93a868119b238db1030d6386c93"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 190,
+      "ts": 1787626194.061142
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 191,
+      "ts": 1787626194.061225
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 192,
+      "ts": 1787626194.061281
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_bdcfg.verify",
+      "payload": {
+        "session": "worker_4e42dd"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 193,
+      "ts": 1787626194.061368
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bdcfg.ok",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "defect_class": "missing_guard",
+          "diff_sha_hint": "compute_bdcfg",
+          "repaired": true,
+          "verify": {
+            "passed": true,
+            "returncode": 0,
+            "stderr": "",
+            "stdout": "..                                                                       [100%]\n2 passed in 0.00s\n"
+          }
+        }
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 194,
+      "ts": 1787626194.061806
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "repair_compute_bdcfg.ok",
+      "payload": {
+        "kind": "result",
+        "refs": [],
+        "text": "child plan repair_compute_bdcfg returned ['defect_class', 'diff_sha_hint', 'repaired', 'verify']"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 195,
+      "ts": 1787626194.061895
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-heldout-missing_guard-409.fix",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 2,
+        "parent_state": "pending",
+        "reclassified": false
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 196,
+      "ts": 1787626194.062089
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-missing_guard-409.fix",
+      "payload": {
+        "expected": "pending",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 197,
+      "ts": 1787626194.062133
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-missing_guard-409.fin",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "variant": "heldout-missing_guard-409"
+        }
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 198,
+      "ts": 1787626194.062228
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "root_repair-heldout-missing_guard-409.fin",
+      "payload": {
+        "kind": "result",
+        "refs": [],
+        "text": "outputs accepted; residual risks: 1"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 201,
+      "ts": 1787626194.2095628
+    },
+    {
+      "causal_seq": null,
+      "kind": "run_terminal",
+      "node_key": null,
+      "payload": {
+        "error": null,
+        "status": "completed"
+      },
+      "run_id": "run_03992d4e42dd",
+      "seq": 202,
+      "ts": 1787626194.209632
+    }
+  ],
+  "metrics": {
+    "admission": {
+      "checked": 3,
+      "claimed_atomic": 3,
+      "decisions": {
+        "admitted": 3
+      },
+      "overclaim_rate": 0.0,
+      "rejected_or_reclassified": 0
+    },
+    "branching": {
+      "b_corrected": 1.5,
+      "b_declared": 1.5,
+      "children_ambiguous_corrected": 0,
+      "children_ambiguous_declared": 0,
+      "children_declared": 3,
+      "children_escalated": 0,
+      "children_reclassified": 0,
+      "children_viable": 3,
+      "decompositions": 2,
+      "decompositions_unmeasured": 0,
+      "f_ambiguous": 0.0,
+      "f_declared": 0.0,
+      "m_corrected": 0.0
+    },
+    "run_id": null,
+    "terminal_status": "completed",
+    "usage": {
+      "attempts": 3.0,
+      "cost_usd": null,
+      "nodes": 3.0,
+      "tokens": null
+    }
+  },
+  "projection": {
+    "error": null,
+    "findings": [],
+    "messages_pending": 0,
+    "nodes": {
+      "repair_compute_bdcfg.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_4e42dd",
+        "parent_key": "root_repair-heldout-missing_guard-409.fix",
+        "state": "completed"
+      },
+      "repair_compute_bdcfg.verify": {
+        "depth": 1,
+        "owner_session": "worker_4e42dd",
+        "parent_key": "root_repair-heldout-missing_guard-409.fix",
+        "state": "completed"
+      },
+      "root_repair-heldout-missing_guard-409.capture_failures": {
+        "depth": 0,
+        "owner_session": "worker_4e42dd",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-heldout-missing_guard-409.fix": {
+        "depth": 0,
+        "owner_session": null,
+        "parent_key": null,
+        "state": "completed"
+      }
+    },
+    "parent_run_id": null,
+    "run_id": "run_03992d4e42dd",
+    "status": "completed",
+    "usage": {
+      "attempts": 3,
+      "cost_usd": 0.0,
+      "nodes": 3,
+      "tokens": 0.0,
+      "wall_seconds": 0.0
+    }
+  },
+  "replay_projection": {
+    "error": null,
+    "findings": [],
+    "messages_pending": 0,
+    "nodes": {
+      "repair_compute_bdcfg.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_4e42dd",
+        "parent_key": "root_repair-heldout-missing_guard-409.fix",
+        "state": "completed"
+      },
+      "repair_compute_bdcfg.verify": {
+        "depth": 1,
+        "owner_session": "worker_4e42dd",
+        "parent_key": "root_repair-heldout-missing_guard-409.fix",
+        "state": "completed"
+      },
+      "root_repair-heldout-missing_guard-409.capture_failures": {
+        "depth": 0,
+        "owner_session": "worker_4e42dd",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-heldout-missing_guard-409.fix": {
+        "depth": 0,
+        "owner_session": null,
+        "parent_key": null,
+        "state": "completed"
+      }
+    },
+    "parent_run_id": null,
+    "run_id": "run_03992d4e42dd",
+    "status": "completed",
+    "usage": {
+      "attempts": 3.0,
+      "cost_usd": 0.0,
+      "nodes": 3.0,
+      "tokens": 0.0,
+      "wall_seconds": 0.0
+    }
+  },
+  "run_id": "run_03992d4e42dd"
+}

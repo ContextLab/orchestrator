@@ -1,0 +1,858 @@
+{
+  "events": [
+    {
+      "causal_seq": null,
+      "kind": "run_started",
+      "node_key": null,
+      "payload": {
+        "parent_run_id": null,
+        "problem_sha": "30ae70abd21baa249c462cf22d0f6c73dce617df45407f3a9f76fd302cf03a83",
+        "status": "running"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 152,
+      "ts": 1787626186.780538
+    },
+    {
+      "causal_seq": null,
+      "kind": "plan_recorded",
+      "node_key": null,
+      "payload": {
+        "problem": {
+          "acceptance": [
+            {
+              "id": "suite_green",
+              "kind": "pytest",
+              "spec": {
+                "cmd": [
+                  "pytest",
+                  "-q",
+                  "tests"
+                ],
+                "cwd": "repo"
+              }
+            }
+          ],
+          "attended": false,
+          "authority": {
+            "fs_read": [
+              "**"
+            ],
+            "fs_write": [
+              "**"
+            ],
+            "net_domains": [],
+            "subprocess_allow": [
+              "**"
+            ]
+          },
+          "budgets": {
+            "max_attempts_per_node": 2,
+            "max_cost_usd": 0.0,
+            "max_depth": 6,
+            "max_fanout": 4,
+            "max_nodes": 200,
+            "max_tokens": 200000,
+            "max_wall_seconds": 900.0
+          },
+          "goal": "repair repository so tests pass (off_by_one)",
+          "id": "repair-heldout-off_by_one-401",
+          "inputs": {},
+          "metadata": {
+            "root_nodes": [
+              {
+                "capability": "repo.run_tests",
+                "id": "capture_failures",
+                "inputs": {
+                  "args": [
+                    "-q",
+                    "tests"
+                  ],
+                  "atomic_claim": false,
+                  "cwd": "repo"
+                },
+                "kind": "invoke_capability"
+              },
+              {
+                "hints": {
+                  "failing": "F                                                                        [100%]\n=================================== FAILURES ===================================\n______________________________ test_compute_fhbci ______________________________\n\n    def test_compute_fhbci():\n>       assert compute_fhbci(4) == 10\nE       assert 6 == 10\nE        +  where 6 = compute_fhbci(4)\n\ntests/test_mod.py:4: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_mod.py::test_compute_fhbci - assert 6 == 10\n1 failed in 0.01s\n",
+                  "files": {
+                    "pkg/__init__.py": "",
+                    "pkg/mod.py": "\"\"\"Small package under repair.\"\"\"\n\ndef unused_475_0(q):\n    return q + 0\n\n\ndef unused_35_1(q):\n    return q + 1\n\n\ndef unused_170_2(q):\n    return q + 2\n\n\ndef unused_847_3(q):\n    return q + 3\n\n\ndef unused_901_4(q):\n    return q + 4\n\n\ndef unused_674_5(q):\n    return q + 5\n\n\n\ndef compute_fhbci(n):\n    total = 0\n    for i in range(1, n):\n        total += i\n    return total\n\n\n\ndef unused_475_0(q):\n    return q + 0\n\n\ndef unused_35_1(q):\n    return q + 1\n\n\ndef unused_170_2(q):\n    return q + 2\n\n\ndef unused_847_3(q):\n    return q + 3\n\n\ndef unused_901_4(q):\n    return q + 4\n\n\ndef unused_674_5(q):\n    return q + 5\n\n",
+                    "tests/test_mod.py": "from pkg.mod import compute_fhbci\n\ndef test_compute_fhbci():\n    assert compute_fhbci(4) == 10\n"
+                  }
+                },
+                "id": "fix",
+                "kind": "decompose",
+                "subgoal": "repair pkg/mod.py"
+              },
+              {
+                "id": "fin",
+                "kind": "return",
+                "outputs": {
+                  "variant": "heldout-off_by_one-401"
+                }
+              }
+            ]
+          },
+          "output_schema": {
+            "type": "object"
+          }
+        },
+        "spec_sha": "30ae70abd21baa249c462cf22d0f6c73dce617df45407f3a9f76fd302cf03a83"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 153,
+      "ts": 1787626186.7808142
+    },
+    {
+      "causal_seq": null,
+      "kind": "finding_raised",
+      "node_key": null,
+      "payload": {
+        "blocking": false,
+        "finding_id": "find_9c9832417734cd07b8fb",
+        "subject": "plan:root_repair-heldout-off_by_one-401@1"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 154,
+      "ts": 1787626186.781098
+    },
+    {
+      "causal_seq": null,
+      "kind": "review_round",
+      "node_key": null,
+      "payload": {
+        "n_findings": 1,
+        "problem_id": "repair-heldout-off_by_one-401",
+        "reviewer_session": "reviewer::planner_c8e02c",
+        "round": 0,
+        "subject": "plan:root_repair-heldout-off_by_one-401@1",
+        "tokens": 0
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 155,
+      "ts": 1787626186.7811468
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "decision",
+        "refs": [],
+        "text": "plan review of root_repair-heldout-off_by_one-401@1: escalated_review_incomplete"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 156,
+      "ts": 1787626186.7811892
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "blocker",
+        "refs": [
+          "review"
+        ],
+        "text": "plan review incomplete for root_repair-heldout-off_by_one-401@1: ChannelRequired: session 'reviewer::planner_c8e02c' requested a model completion but this run has no channel configured; supply recordings or policy='live'"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 157,
+      "ts": 1787626186.7812228
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-heldout-off_by_one-401",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 1,
+        "parent_state": "root",
+        "reclassified": false
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 158,
+      "ts": 1787626186.781261
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 159,
+      "ts": 1787626186.781408
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "session": "worker_c8e02c",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 160,
+      "ts": 1787626186.781486
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 161,
+      "ts": 1787626186.7815292
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 162,
+      "ts": 1787626186.7815602
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 163,
+      "ts": 1787626186.872481
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "atomic_claim": false,
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 164,
+      "ts": 1787626186.872697
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "e550b4299b86e9154c8e70d37d70208346813c85d52fa97b227a471f801f6221"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 165,
+      "ts": 1787626187.026989
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "capability": "repo.run_tests",
+        "duration_s": 0.15464305877685547,
+        "ok": true,
+        "output_sha": "e550b4299b86e9154c8e70d37d70208346813c85d52fa97b227a471f801f6221"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 166,
+      "ts": 1787626187.027332
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 167,
+      "ts": 1787626187.027452
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 168,
+      "ts": 1787626187.0275142
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "root_repair-heldout-off_by_one-401.capture_failures",
+      "payload": {
+        "session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 169,
+      "ts": 1787626187.0275998
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-heldout-off_by_one-401.fix",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 170,
+      "ts": 1787626187.027734
+    },
+    {
+      "causal_seq": null,
+      "kind": "cache_hit",
+      "node_key": "root_repair-heldout-off_by_one-401.fix",
+      "payload": {
+        "signature": "sig_087f1d3694b81e73d759b7ca"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 171,
+      "ts": 1787626187.027873
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-heldout-off_by_one-401.fix",
+        "state": "pending"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 172,
+      "ts": 1787626187.0280042
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "session": "worker_c8e02c",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 173,
+      "ts": 1787626187.028136
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 174,
+      "ts": 1787626187.028191
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 175,
+      "ts": 1787626187.028231
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.apply_patch",
+        "decision": "admitted",
+        "evidence_sha": "3ca773d781b26a988ba3b4bc85b11c093d0583a3893bb75a22966f8d06e2a308",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 176,
+      "ts": 1787626187.0288892
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "inputs": {
+          "cwd": "repo",
+          "diff": "<190 chars>"
+        }
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 177,
+      "ts": 1787626187.028939
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "name": "repo.apply_patch.result.json",
+        "sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 178,
+      "ts": 1787626187.029417
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "duration_s": 0.0005238056182861328,
+        "ok": true,
+        "output_sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 179,
+      "ts": 1787626187.0294578
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 180,
+      "ts": 1787626187.029506
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 181,
+      "ts": 1787626187.0295522
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_fhbci.apply_fix",
+      "payload": {
+        "session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 182,
+      "ts": 1787626187.029613
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-heldout-off_by_one-401.fix",
+        "state": "pending"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 183,
+      "ts": 1787626187.0296981
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "session": "worker_c8e02c",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 184,
+      "ts": 1787626187.029772
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 185,
+      "ts": 1787626187.029809
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 186,
+      "ts": 1787626187.029844
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 187,
+      "ts": 1787626187.121889
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 188,
+      "ts": 1787626187.1221042
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "7fa5a362528746fd940ba139002f39c2353e3d109c060797df480974fb588b60"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 189,
+      "ts": 1787626187.274629
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "duration_s": 0.15273404121398926,
+        "ok": true,
+        "output_sha": "7fa5a362528746fd940ba139002f39c2353e3d109c060797df480974fb588b60"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 190,
+      "ts": 1787626187.2748291
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 191,
+      "ts": 1787626187.27491
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 192,
+      "ts": 1787626187.274967
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_fhbci.verify",
+      "payload": {
+        "session": "worker_c8e02c"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 193,
+      "ts": 1787626187.2750258
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_fhbci.ok",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "defect_class": "off_by_one",
+          "diff_sha_hint": "compute_fhbci",
+          "repaired": true,
+          "verify": {
+            "passed": true,
+            "returncode": 0,
+            "stderr": "",
+            "stdout": ".                                                                        [100%]\n1 passed in 0.00s\n"
+          }
+        }
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 194,
+      "ts": 1787626187.2753
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "repair_compute_fhbci.ok",
+      "payload": {
+        "kind": "result",
+        "refs": [],
+        "text": "child plan repair_compute_fhbci returned ['defect_class', 'diff_sha_hint', 'repaired', 'verify']"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 195,
+      "ts": 1787626187.275384
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-heldout-off_by_one-401.fix",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 2,
+        "parent_state": "pending",
+        "reclassified": false
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 196,
+      "ts": 1787626187.275585
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-off_by_one-401.fix",
+      "payload": {
+        "expected": "pending",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 197,
+      "ts": 1787626187.275624
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-off_by_one-401.fin",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "variant": "heldout-off_by_one-401"
+        }
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 198,
+      "ts": 1787626187.275726
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "root_repair-heldout-off_by_one-401.fin",
+      "payload": {
+        "kind": "result",
+        "refs": [],
+        "text": "outputs accepted; residual risks: 1"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 201,
+      "ts": 1787626187.423393
+    },
+    {
+      "causal_seq": null,
+      "kind": "run_terminal",
+      "node_key": null,
+      "payload": {
+        "error": null,
+        "status": "completed"
+      },
+      "run_id": "run_b2a63bc8e02c",
+      "seq": 202,
+      "ts": 1787626187.423466
+    }
+  ],
+  "metrics": {
+    "admission": {
+      "checked": 3,
+      "claimed_atomic": 3,
+      "decisions": {
+        "admitted": 3
+      },
+      "overclaim_rate": 0.0,
+      "rejected_or_reclassified": 0
+    },
+    "branching": {
+      "b_corrected": 1.5,
+      "b_declared": 1.5,
+      "children_ambiguous_corrected": 0,
+      "children_ambiguous_declared": 0,
+      "children_declared": 3,
+      "children_escalated": 0,
+      "children_reclassified": 0,
+      "children_viable": 3,
+      "decompositions": 2,
+      "decompositions_unmeasured": 0,
+      "f_ambiguous": 0.0,
+      "f_declared": 0.0,
+      "m_corrected": 0.0
+    },
+    "run_id": null,
+    "terminal_status": "completed",
+    "usage": {
+      "attempts": 3.0,
+      "cost_usd": null,
+      "nodes": 3.0,
+      "tokens": null
+    }
+  },
+  "projection": {
+    "error": null,
+    "findings": [],
+    "messages_pending": 0,
+    "nodes": {
+      "repair_compute_fhbci.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_c8e02c",
+        "parent_key": "root_repair-heldout-off_by_one-401.fix",
+        "state": "completed"
+      },
+      "repair_compute_fhbci.verify": {
+        "depth": 1,
+        "owner_session": "worker_c8e02c",
+        "parent_key": "root_repair-heldout-off_by_one-401.fix",
+        "state": "completed"
+      },
+      "root_repair-heldout-off_by_one-401.capture_failures": {
+        "depth": 0,
+        "owner_session": "worker_c8e02c",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-heldout-off_by_one-401.fix": {
+        "depth": 0,
+        "owner_session": null,
+        "parent_key": null,
+        "state": "completed"
+      }
+    },
+    "parent_run_id": null,
+    "run_id": "run_b2a63bc8e02c",
+    "status": "completed",
+    "usage": {
+      "attempts": 3,
+      "cost_usd": 0.0,
+      "nodes": 3,
+      "tokens": 0.0,
+      "wall_seconds": 0.0
+    }
+  },
+  "replay_projection": {
+    "error": null,
+    "findings": [],
+    "messages_pending": 0,
+    "nodes": {
+      "repair_compute_fhbci.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_c8e02c",
+        "parent_key": "root_repair-heldout-off_by_one-401.fix",
+        "state": "completed"
+      },
+      "repair_compute_fhbci.verify": {
+        "depth": 1,
+        "owner_session": "worker_c8e02c",
+        "parent_key": "root_repair-heldout-off_by_one-401.fix",
+        "state": "completed"
+      },
+      "root_repair-heldout-off_by_one-401.capture_failures": {
+        "depth": 0,
+        "owner_session": "worker_c8e02c",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-heldout-off_by_one-401.fix": {
+        "depth": 0,
+        "owner_session": null,
+        "parent_key": null,
+        "state": "completed"
+      }
+    },
+    "parent_run_id": null,
+    "run_id": "run_b2a63bc8e02c",
+    "status": "completed",
+    "usage": {
+      "attempts": 3.0,
+      "cost_usd": 0.0,
+      "nodes": 3.0,
+      "tokens": 0.0,
+      "wall_seconds": 0.0
+    }
+  },
+  "run_id": "run_b2a63bc8e02c"
+}

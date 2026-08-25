@@ -1,0 +1,858 @@
+{
+  "events": [
+    {
+      "causal_seq": null,
+      "kind": "run_started",
+      "node_key": null,
+      "payload": {
+        "parent_run_id": null,
+        "problem_sha": "b5ccaaa3051455ccfe76cbb1b2722de313a7fbadc934d8db8769c9ca32f95d54",
+        "status": "running"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 152,
+      "ts": 1787626188.735318
+    },
+    {
+      "causal_seq": null,
+      "kind": "plan_recorded",
+      "node_key": null,
+      "payload": {
+        "problem": {
+          "acceptance": [
+            {
+              "id": "suite_green",
+              "kind": "pytest",
+              "spec": {
+                "cmd": [
+                  "pytest",
+                  "-q",
+                  "tests"
+                ],
+                "cwd": "repo"
+              }
+            }
+          ],
+          "attended": false,
+          "authority": {
+            "fs_read": [
+              "**"
+            ],
+            "fs_write": [
+              "**"
+            ],
+            "net_domains": [],
+            "subprocess_allow": [
+              "**"
+            ]
+          },
+          "budgets": {
+            "max_attempts_per_node": 2,
+            "max_cost_usd": 0.0,
+            "max_depth": 6,
+            "max_fanout": 4,
+            "max_nodes": 200,
+            "max_tokens": 200000,
+            "max_wall_seconds": 900.0
+          },
+          "goal": "repair repository so tests pass (inverted_comparison)",
+          "id": "repair-heldout-inverted_comparison-401",
+          "inputs": {},
+          "metadata": {
+            "root_nodes": [
+              {
+                "capability": "repo.run_tests",
+                "id": "capture_failures",
+                "inputs": {
+                  "args": [
+                    "-q",
+                    "tests"
+                  ],
+                  "atomic_claim": false,
+                  "cwd": "repo"
+                },
+                "kind": "invoke_capability"
+              },
+              {
+                "hints": {
+                  "failing": "F                                                                        [100%]\n=================================== FAILURES ===================================\n______________________________ test_compute_bhace ______________________________\n\n    def test_compute_bhace():\n>       assert compute_bhace(2, 9) == 9\nE       assert 2 == 9\nE        +  where 2 = compute_bhace(2, 9)\n\ntests/test_mod.py:4: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_mod.py::test_compute_bhace - assert 2 == 9\n1 failed in 0.01s\n",
+                  "files": {
+                    "pkg/__init__.py": "",
+                    "pkg/mod.py": "\"\"\"Small package under repair.\"\"\"\n\ndef unused_846_0(q):\n    return q + 0\n\n\ndef unused_602_1(q):\n    return q + 1\n\n\ndef unused_352_2(q):\n    return q + 2\n\n\ndef unused_893_3(q):\n    return q + 3\n\n\ndef unused_33_4(q):\n    return q + 4\n\n\ndef unused_434_5(q):\n    return q + 5\n\n\n\ndef compute_bhace(a, b):\n    if a < b:\n        return a\n    return b\n\n\n\ndef unused_846_0(q):\n    return q + 0\n\n\ndef unused_602_1(q):\n    return q + 1\n\n\ndef unused_352_2(q):\n    return q + 2\n\n\ndef unused_893_3(q):\n    return q + 3\n\n\ndef unused_33_4(q):\n    return q + 4\n\n\ndef unused_434_5(q):\n    return q + 5\n\n",
+                    "tests/test_mod.py": "from pkg.mod import compute_bhace\n\ndef test_compute_bhace():\n    assert compute_bhace(2, 9) == 9\n"
+                  }
+                },
+                "id": "fix",
+                "kind": "decompose",
+                "subgoal": "repair pkg/mod.py"
+              },
+              {
+                "id": "fin",
+                "kind": "return",
+                "outputs": {
+                  "variant": "heldout-inverted_comparison-401"
+                }
+              }
+            ]
+          },
+          "output_schema": {
+            "type": "object"
+          }
+        },
+        "spec_sha": "b5ccaaa3051455ccfe76cbb1b2722de313a7fbadc934d8db8769c9ca32f95d54"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 153,
+      "ts": 1787626188.735596
+    },
+    {
+      "causal_seq": null,
+      "kind": "finding_raised",
+      "node_key": null,
+      "payload": {
+        "blocking": false,
+        "finding_id": "find_241dedc38165999755ac",
+        "subject": "plan:root_repair-heldout-inverted_comparison-401@1"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 154,
+      "ts": 1787626188.7358541
+    },
+    {
+      "causal_seq": null,
+      "kind": "review_round",
+      "node_key": null,
+      "payload": {
+        "n_findings": 1,
+        "problem_id": "repair-heldout-inverted_comparison-401",
+        "reviewer_session": "reviewer::planner_e8042f",
+        "round": 0,
+        "subject": "plan:root_repair-heldout-inverted_comparison-401@1",
+        "tokens": 0
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 155,
+      "ts": 1787626188.735903
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "decision",
+        "refs": [],
+        "text": "plan review of root_repair-heldout-inverted_comparison-401@1: escalated_review_incomplete"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 156,
+      "ts": 1787626188.735944
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "blocker",
+        "refs": [
+          "review"
+        ],
+        "text": "plan review incomplete for root_repair-heldout-inverted_comparison-401@1: ChannelRequired: session 'reviewer::planner_e8042f' requested a model completion but this run has no channel configured; supply recordings or policy='live'"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 157,
+      "ts": 1787626188.735976
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-heldout-inverted_comparison-401",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 1,
+        "parent_state": "root",
+        "reclassified": false
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 158,
+      "ts": 1787626188.7360141
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 159,
+      "ts": 1787626188.736161
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "session": "worker_e8042f",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 160,
+      "ts": 1787626188.736238
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 161,
+      "ts": 1787626188.7362812
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 162,
+      "ts": 1787626188.736338
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 163,
+      "ts": 1787626188.827924
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "atomic_claim": false,
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 164,
+      "ts": 1787626188.8281522
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "1a68dac87c5f0932de77764eb8d8ca460e7cc2bd63e21958440ada7e305cc5fd"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 165,
+      "ts": 1787626188.98735
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "capability": "repo.run_tests",
+        "duration_s": 0.15939593315124512,
+        "ok": true,
+        "output_sha": "1a68dac87c5f0932de77764eb8d8ca460e7cc2bd63e21958440ada7e305cc5fd"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 166,
+      "ts": 1787626188.9875379
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 167,
+      "ts": 1787626188.987658
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 168,
+      "ts": 1787626188.9877288
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "root_repair-heldout-inverted_comparison-401.capture_failures",
+      "payload": {
+        "session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 169,
+      "ts": 1787626188.987805
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-heldout-inverted_comparison-401.fix",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 170,
+      "ts": 1787626188.987932
+    },
+    {
+      "causal_seq": null,
+      "kind": "cache_hit",
+      "node_key": "root_repair-heldout-inverted_comparison-401.fix",
+      "payload": {
+        "signature": "sig_673d74d5b8dc567cc5d57502"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 171,
+      "ts": 1787626188.9880729
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-heldout-inverted_comparison-401.fix",
+        "state": "pending"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 172,
+      "ts": 1787626188.988203
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "session": "worker_e8042f",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 173,
+      "ts": 1787626188.9882739
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 174,
+      "ts": 1787626188.988307
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 175,
+      "ts": 1787626188.988346
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.apply_patch",
+        "decision": "admitted",
+        "evidence_sha": "3ca773d781b26a988ba3b4bc85b11c093d0583a3893bb75a22966f8d06e2a308",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 176,
+      "ts": 1787626188.989044
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "inputs": {
+          "cwd": "repo",
+          "diff": "<146 chars>"
+        }
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 177,
+      "ts": 1787626188.9891012
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "name": "repo.apply_patch.result.json",
+        "sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 178,
+      "ts": 1787626188.989622
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "capability": "repo.apply_patch",
+        "duration_s": 0.0005750656127929688,
+        "ok": true,
+        "output_sha": "8f4a4ff514a72e43804bc09ea99bca4e98f5b30f95ef4ecd11978ea22f1d344a"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 179,
+      "ts": 1787626188.989662
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 180,
+      "ts": 1787626188.989704
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 181,
+      "ts": 1787626188.989749
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_bhace.apply_fix",
+      "payload": {
+        "session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 182,
+      "ts": 1787626188.989797
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "depth": 1,
+        "parent_key": "root_repair-heldout-inverted_comparison-401.fix",
+        "state": "pending"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 183,
+      "ts": 1787626188.98987
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "session": "worker_e8042f",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 184,
+      "ts": 1787626188.989929
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 185,
+      "ts": 1787626188.989961
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 186,
+      "ts": 1787626188.9900029
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 187,
+      "ts": 1787626189.0828018
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 188,
+      "ts": 1787626189.083002
+    },
+    {
+      "causal_seq": null,
+      "kind": "artifact_written",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "name": "repo.run_tests.result.json",
+        "sha": "7fa5a362528746fd940ba139002f39c2353e3d109c060797df480974fb588b60"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 189,
+      "ts": 1787626189.2414432
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "capability": "repo.run_tests",
+        "duration_s": 0.1586589813232422,
+        "ok": true,
+        "output_sha": "7fa5a362528746fd940ba139002f39c2353e3d109c060797df480974fb588b60"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 190,
+      "ts": 1787626189.241654
+    },
+    {
+      "causal_seq": null,
+      "kind": "usage_checkpoint",
+      "node_key": null,
+      "payload": {
+        "attempts": 1.0,
+        "nodes": 1.0
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 191,
+      "ts": 1787626189.241754
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "expected": "running",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 192,
+      "ts": 1787626189.241835
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_released",
+      "node_key": "repair_compute_bhace.verify",
+      "payload": {
+        "session": "worker_e8042f"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 193,
+      "ts": 1787626189.2420218
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "repair_compute_bhace.ok",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "defect_class": "inverted_comparison",
+          "diff_sha_hint": "compute_bhace",
+          "repaired": true,
+          "verify": {
+            "passed": true,
+            "returncode": 0,
+            "stderr": "",
+            "stdout": ".                                                                        [100%]\n1 passed in 0.00s\n"
+          }
+        }
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 194,
+      "ts": 1787626189.242343
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "repair_compute_bhace.ok",
+      "payload": {
+        "kind": "result",
+        "refs": [],
+        "text": "child plan repair_compute_bhace returned ['defect_class', 'diff_sha_hint', 'repaired', 'verify']"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 195,
+      "ts": 1787626189.2424169
+    },
+    {
+      "causal_seq": null,
+      "kind": "decompose_outcome",
+      "node_key": "root_repair-heldout-inverted_comparison-401.fix",
+      "payload": {
+        "children_ambiguous": 0,
+        "children_declared": 2,
+        "parent_state": "pending",
+        "reclassified": false
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 196,
+      "ts": 1787626189.2425861
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-inverted_comparison-401.fix",
+      "payload": {
+        "expected": "pending",
+        "new": "completed",
+        "owner_session": null
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 197,
+      "ts": 1787626189.242624
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-heldout-inverted_comparison-401.fin",
+      "payload": {
+        "new": "completed",
+        "return_outputs": {
+          "variant": "heldout-inverted_comparison-401"
+        }
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 198,
+      "ts": 1787626189.242708
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "root_repair-heldout-inverted_comparison-401.fin",
+      "payload": {
+        "kind": "result",
+        "refs": [],
+        "text": "outputs accepted; residual risks: 1"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 201,
+      "ts": 1787626189.391443
+    },
+    {
+      "causal_seq": null,
+      "kind": "run_terminal",
+      "node_key": null,
+      "payload": {
+        "error": null,
+        "status": "completed"
+      },
+      "run_id": "run_3a264de8042f",
+      "seq": 202,
+      "ts": 1787626189.391519
+    }
+  ],
+  "metrics": {
+    "admission": {
+      "checked": 3,
+      "claimed_atomic": 3,
+      "decisions": {
+        "admitted": 3
+      },
+      "overclaim_rate": 0.0,
+      "rejected_or_reclassified": 0
+    },
+    "branching": {
+      "b_corrected": 1.5,
+      "b_declared": 1.5,
+      "children_ambiguous_corrected": 0,
+      "children_ambiguous_declared": 0,
+      "children_declared": 3,
+      "children_escalated": 0,
+      "children_reclassified": 0,
+      "children_viable": 3,
+      "decompositions": 2,
+      "decompositions_unmeasured": 0,
+      "f_ambiguous": 0.0,
+      "f_declared": 0.0,
+      "m_corrected": 0.0
+    },
+    "run_id": null,
+    "terminal_status": "completed",
+    "usage": {
+      "attempts": 3.0,
+      "cost_usd": null,
+      "nodes": 3.0,
+      "tokens": null
+    }
+  },
+  "projection": {
+    "error": null,
+    "findings": [],
+    "messages_pending": 0,
+    "nodes": {
+      "repair_compute_bhace.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_e8042f",
+        "parent_key": "root_repair-heldout-inverted_comparison-401.fix",
+        "state": "completed"
+      },
+      "repair_compute_bhace.verify": {
+        "depth": 1,
+        "owner_session": "worker_e8042f",
+        "parent_key": "root_repair-heldout-inverted_comparison-401.fix",
+        "state": "completed"
+      },
+      "root_repair-heldout-inverted_comparison-401.capture_failures": {
+        "depth": 0,
+        "owner_session": "worker_e8042f",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-heldout-inverted_comparison-401.fix": {
+        "depth": 0,
+        "owner_session": null,
+        "parent_key": null,
+        "state": "completed"
+      }
+    },
+    "parent_run_id": null,
+    "run_id": "run_3a264de8042f",
+    "status": "completed",
+    "usage": {
+      "attempts": 3,
+      "cost_usd": 0.0,
+      "nodes": 3,
+      "tokens": 0.0,
+      "wall_seconds": 0.0
+    }
+  },
+  "replay_projection": {
+    "error": null,
+    "findings": [],
+    "messages_pending": 0,
+    "nodes": {
+      "repair_compute_bhace.apply_fix": {
+        "depth": 1,
+        "owner_session": "worker_e8042f",
+        "parent_key": "root_repair-heldout-inverted_comparison-401.fix",
+        "state": "completed"
+      },
+      "repair_compute_bhace.verify": {
+        "depth": 1,
+        "owner_session": "worker_e8042f",
+        "parent_key": "root_repair-heldout-inverted_comparison-401.fix",
+        "state": "completed"
+      },
+      "root_repair-heldout-inverted_comparison-401.capture_failures": {
+        "depth": 0,
+        "owner_session": "worker_e8042f",
+        "parent_key": null,
+        "state": "completed"
+      },
+      "root_repair-heldout-inverted_comparison-401.fix": {
+        "depth": 0,
+        "owner_session": null,
+        "parent_key": null,
+        "state": "completed"
+      }
+    },
+    "parent_run_id": null,
+    "run_id": "run_3a264de8042f",
+    "status": "completed",
+    "usage": {
+      "attempts": 3.0,
+      "cost_usd": 0.0,
+      "nodes": 3.0,
+      "tokens": 0.0,
+      "wall_seconds": 0.0
+    }
+  },
+  "run_id": "run_3a264de8042f"
+}
