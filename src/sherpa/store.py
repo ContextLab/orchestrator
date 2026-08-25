@@ -366,7 +366,9 @@ class Store:
     ) -> bool:
         """Compare-and-swap the node state; the only writer of transitions."""
         cur = self.conn.execute(
-            "UPDATE nodes SET state=?, owner_session=?, updated_ts=?"
+            # COALESCE: callers that only change state (e.g. running ->
+            # completed) must not blank the owning session.
+            "UPDATE nodes SET state=?, owner_session=COALESCE(?, owner_session), updated_ts=?"
             " WHERE run_id=? AND node_key=? AND state=?",
             (new, owner_session, time.time(), run_id, node_key, expected),
         )
@@ -722,6 +724,7 @@ class Store:
                     "state": r["state"],
                     "owner_session": r["owner_session"],
                     "depth": r["depth"],
+                    "parent_key": r["parent_key"],
                 }
                 for r in nodes_rows
             },
@@ -752,12 +755,17 @@ class Store:
                     "state": ev.payload.get("state", "pending"),
                     "owner_session": None,
                     "depth": ev.payload.get("depth", 0),
+                    "parent_key": ev.payload.get("parent_key"),
                 }
             elif ev.kind == "node_state_changed":
                 key = ev.node_key
                 if key in nodes:
                     nodes[key]["state"] = ev.payload.get("new", nodes[key]["state"])  # type: ignore[index]
-                    nodes[key]["owner_session"] = ev.payload.get("owner_session")  # type: ignore[index]
+                    # Mirrors the live COALESCE: a transition that does not
+                    # name a session must not erase the recorded owner.
+                    owner = ev.payload.get("owner_session")
+                    if owner is not None:
+                        nodes[key]["owner_session"] = owner  # type: ignore[index]
             elif ev.kind == "usage_checkpoint":
                 for field, delta in ev.payload.items():
                     usage_totals[field] = usage_totals.get(field, 0.0) + float(delta)

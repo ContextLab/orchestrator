@@ -13,8 +13,8 @@ def build_engine_a(workspace: Path):
         CapabilityContext,
         CapabilityRegistry,
         CapabilitySpec,
+        assert_fs_access,
     )
-    from sherpa.ir import Authority
     from sherpa.kernel import Engine
 
     class Append(Capability):
@@ -24,11 +24,11 @@ def build_engine_a(workspace: Path):
                           "properties": {"file": {"type": "string"},
                                          "line": {"type": "string"}}},
             output_schema={"type": "object"},
-            authority_required=Authority(fs_write=("**",)),
+            requires=("fs_write",),
         )
 
         def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
-            p = ctx.workspace / inputs["file"]
+            p = assert_fs_access(inputs["file"], "fs_write", ctx, self.spec.name)
             with open(p, "a", encoding="utf-8") as fh:
                 fh.write(inputs["line"] + "\n")
             return {"appended": inputs["line"]}
@@ -38,7 +38,8 @@ def build_engine_a(workspace: Path):
 
     reg = CapabilityRegistry()
     reg.register(Append())
-    return Engine(workspace, registry=reg)
+    # This process exists to be SIGKILLed mid-run, so it opts in explicitly.
+    return Engine(workspace, registry=reg, fault_injection=True)
 
 
 if __name__ == "__main__":  # pragma: no cover - invoked via python -c in scenarios

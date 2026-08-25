@@ -548,12 +548,23 @@ class TextSummarize(Capability):
             ],
             session="summarizer",
         )
+        # Model spend is only enforceable if it is recorded.
+        ctx.store.add_usage(
+            ctx.run_id,
+            tokens=resp.prompt_tokens + resp.completion_tokens,
+            cost_usd=resp.cost_usd,
+        )
         return {"summary": resp.text}
 
     def probe(self, ctx: CapabilityContext) -> bytes:
         channel = ctx.channel_factory()
         try:
-            channel.complete([{"role": "user", "content": "ping"}], session="summarizer")
+            # A distinct session: admission's executable evidence must not
+            # consume the executor's recorded response. Sharing the session
+            # meant each admitted summarize burned two recordings and the step
+            # silently received the SECOND one.
+            channel.complete([{"role": "user", "content": "ping"}],
+                             session="summarizer_probe")
         except Exception as exc:
             raise ProbeFailed(f"summarize channel unavailable: {exc}") from exc
         return b"text.summarize probe ok"

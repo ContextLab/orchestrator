@@ -20,6 +20,9 @@ EVENT_KINDS = frozenset(
         "node_state_changed",
         "lease_acquired",
         "lease_released",
+        # A worker was refused a node another live session holds. Recorded so
+        # that exactly-once execution is auditable, not merely asserted.
+        "lease_denied",
         "attempt_started",
         "attempt_finished",
         "admission_checked",

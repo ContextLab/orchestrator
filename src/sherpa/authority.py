@@ -125,9 +125,18 @@ def resolve_fs_path(raw: str | Path, workspace: str | Path) -> Path:
 
 
 def _grant_root(prefix: str, workspace: str | Path) -> Path:
-    root = Path(prefix) if prefix else Path(workspace)
+    """Anchor a grant's literal prefix at the workspace.
+
+    An empty prefix (e.g. the grant ``**``) means the workspace itself. It must
+    NOT be joined onto the workspace again: with a *relative* workspace that
+    produced ``ws/ws`` and denied every path under a legitimate grant.
+    """
+    ws = Path(workspace)
+    if not prefix:
+        return ws.resolve()
+    root = Path(prefix)
     if not root.is_absolute():
-        root = Path(workspace) / root
+        root = ws / root
     return root.resolve()
 
 

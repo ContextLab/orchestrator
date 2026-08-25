@@ -41,13 +41,16 @@ NODE_STATES: tuple[str, ...] = (
 class Budgets(BaseModel):
     """Hard resource ceilings for a plan/run (issue #492 'every loop has hard ... budgets')."""
 
-    max_nodes: int = 200
-    max_attempts_per_node: int = 2
-    max_depth: int = 6
-    max_fanout: int = 4
-    max_tokens: int = 200_000
-    max_cost_usd: float = 0.0
-    max_wall_seconds: float = 900.0
+    max_nodes: int = Field(default=200, ge=1)
+    max_attempts_per_node: int = Field(default=2, ge=1)
+    max_depth: int = Field(default=6, ge=1)
+    max_fanout: int = Field(default=4, ge=1)
+    max_tokens: int = Field(default=200_000, ge=0)
+    #: 0.0 means "no paid spend permitted", NOT "unlimited". The check in
+    #: `kernel._check_budgets` used to skip this ceiling unless it was > 0,
+    #: which made the default fail-open.
+    max_cost_usd: float = Field(default=0.0, ge=0.0)
+    max_wall_seconds: float = Field(default=900.0, gt=0.0)
 
 
 class Authority(BaseModel):

@@ -520,8 +520,17 @@ class TestMetrics:
         assert m["admission"]["rejected_or_reclassified"] == 1
         assert m["admission"]["overclaim_rate"] == 0.5
         assert m["branching"]["b_declared"] == 2.5
-        assert abs(m["branching"]["f_ambiguous"] - 0.2) < 1e-9
-        assert m["branching"]["m_corrected"] < 1.0
+        # `f_declared` is the planner's self-report: 1 declared-ambiguous child
+        # out of 5 declared children.
+        assert abs(m["branching"]["f_declared"] - 0.2) < 1e-9
+        # `f_ambiguous` is the CORRECTED figure and must incorporate admission
+        # outcomes: n3 escalated so it was never a viable child (5 - 1 = 4), and
+        # n1's atomic claim was reclassified. This assertion previously pinned
+        # 0.2 -- the self-report -- which is precisely the defect that let
+        # `m_corrected` read 0.0 across every benchmark run.
+        assert abs(m["branching"]["f_ambiguous"] - 0.25) < 1e-9
+        assert m["branching"]["children_viable"] == 4
+        assert m["branching"]["m_corrected"] == 0.5
         assert m["terminal_status"] == "completed"
         assert m["usage"]["tokens"] == 120.0
 
@@ -579,7 +588,11 @@ class TestChannelFailureIsLoud:
     def test_exhausted_recordings_mid_review_escalate(self, store) -> None:
         """Round 1 lands a blocking finding, round 2 finds the tape empty."""
         blocking = _finding_json("acc_tests", "evidence: acc_tests never ran", blocking=True)
-        rev = _reviewer(store, {REVIEWER_SESSION_FOR_A: [blocking]})
+        # One shared tape across rounds (the kernel reuses a single channel), so the
+        # second round really does run out of recorded responses.
+        channel = RecordedChannel({REVIEWER_SESSION_FOR_A: [blocking]})
+        rev = Reviewer(store=store, blob=store.blob, channel_factory=lambda: channel,
+                       policy=ReviewPolicy(max_rounds=2, max_seconds=30))
         report = rev.review_plan(_problem(), _plan(), author_session="a")
         assert report.rounds == 1
         assert "RecordingExhausted" in report.channel_error

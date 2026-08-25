@@ -51,7 +51,8 @@ def build_engine(workspace: Path):
 
     reg = CapabilityRegistry()
     reg.register(AppendLine())
-    return Engine(workspace, registry=reg)
+    # The subprocess victim is the only place a real SIGKILL is wanted.
+    return Engine(workspace, registry=reg, fault_injection=True)
 
 
 def kill_self_after(n_events: int) -> None:

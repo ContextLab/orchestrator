@@ -63,7 +63,7 @@ from sherpa.ir import (
     validate_plan,
 )
 from sherpa.metrics import run_metrics
-from sherpa.planner import Planner, StubPlanner, plan_signature
+from sherpa.planner import PlanAuthoringError, Planner, StubPlanner, plan_signature
 from sherpa.review import ReviewPolicy, Reviewer
 from sherpa.store import Store
 
@@ -78,6 +78,24 @@ class RunResult(BaseModel):
     error: str | None = None
     metrics: dict[str, Any] = Field(default_factory=dict)
     workspace: str = ""
+
+
+class _PlanRefused(Exception):
+    """A plan was refused by delegation or by the review gate.
+
+    Previously these were bare ``PermissionError``/``ValueError`` raised out of
+    ``_author_child``/``_root_plan``, which escaped ``Engine.run`` and left the
+    run stranded in ``running`` with no ``run_terminal`` event.
+    """
+
+
+class _DepthExceeded(Exception):
+    """Recursive decomposition would exceed ``budgets.max_depth``.
+
+    Depth was previously a local that was never incremented, so ``max_depth``
+    constrained only the structural nesting of branch/while/parallel inside a
+    single plan and never bounded recursion at all.
+    """
 
 
 class _BudgetExhausted(Exception):
@@ -100,9 +118,14 @@ class Engine:
         registry: CapabilityRegistry | None = None,
         planner: Planner | None = None,
         db_path: Path | None = None,
+        fault_injection: bool = False,
     ) -> None:
         self.workspace = Path(workspace)
         self.workspace.mkdir(parents=True, exist_ok=True)
+        #: Crash-injection is opt-in per Engine. Reading SHERPA_KILL_AFTER_EVENTS
+        #: unconditionally meant a stray environment variable could SIGKILL a
+        #: production process mid-run.
+        self.fault_injection = fault_injection
         self.store = Store(db_path or self.workspace / "sherpa.db")
         self.registry = registry or CapabilityRegistry()
         if not self.registry.names():
@@ -190,7 +213,12 @@ class Engine:
                                     payload={"former_owner": owner}))
 
     def _maybe_kill(self) -> None:
-        """Fault-injection hook: REAL SIGKILL once the log reaches N events."""
+        """Fault-injection hook: REAL SIGKILL once the log reaches N events.
+
+        Inert unless this Engine was constructed with ``fault_injection=True``.
+        """
+        if not self.fault_injection:
+            return
         after = os.environ.get("SHERPA_KILL_AFTER_EVENTS")
         if after and self.store.head_seq() >= int(after):
             os.kill(os.getpid(), signal.SIGKILL)
@@ -206,12 +234,19 @@ class Engine:
         wall = time.time() - self._run_started_ts(rid)
         over = (
             u["tokens"] > b.max_tokens
-            or (b.max_cost_usd > 0 and u["cost_usd"] > b.max_cost_usd)
+            or u["cost_usd"] > b.max_cost_usd
             or u["nodes"] > b.max_nodes
             or wall > b.max_wall_seconds
         )
         if over:
             raise _BudgetExhausted()
+
+    def _check_depth(self, spec: ProblemSpec, next_depth: int) -> None:
+        if next_depth > spec.budgets.max_depth:
+            raise _DepthExceeded(
+                f"decomposition depth {next_depth} exceeds max_depth "
+                f"{spec.budgets.max_depth}"
+            )
 
     def _terminal(self, rid: str, status: str, error: str | None = None) -> RunResult:
         self.store.set_run_status(rid, status, error)
@@ -236,6 +271,19 @@ class Engine:
             journal(self.store, rid, None, "blocker",
                     "budget exhausted; stopping loudly", refs=["budgets"])
             return self._terminal(rid, "budget_exhausted")
+        except _DepthExceeded as exc:
+            journal(self.store, rid, None, "blocker", str(exc), refs=["budgets"])
+            return self._terminal(rid, "budget_exhausted", error=str(exc))
+        except _PlanRefused as exc:
+            journal(self.store, rid, None, "blocker", str(exc), refs=["review"])
+            return self._terminal(rid, "escalated", error=str(exc))
+        except PlanAuthoringError as exc:
+            # A planner that cannot author a plan is a loud, recorded outcome.
+            # This used to propagate out of Engine.run, leaving the run stranded
+            # in `running` with no run_terminal event and the node still pending.
+            reason = f"planner could not author a plan: {type(exc).__name__}: {exc}"
+            journal(self.store, rid, None, "blocker", reason, refs=["planner"])
+            return self._terminal(rid, "escalated", error=reason)
 
     # ------------------------------------------------------------- main loop
 
@@ -247,28 +295,35 @@ class Engine:
         pending_decompose: dict[str, tuple[str, str]] = {}
         depth = 0
 
-        stack: list[tuple[Plan, list, int, int]] = [(root_plan, list(root_plan.root), 0, 0)]
+        # (plan, nodes, index, epoch, depth, parent_key). `depth` used to be a
+        # local initialised to 0 and never incremented, and `parent_key` was
+        # held only in a transient dict, so neither survived the process.
+        stack: list[tuple[Plan, list, int, int, int, str | None]] = [
+            (root_plan, list(root_plan.root), 0, 0, 0, None)
+        ]
         while stack:
             self._check_budgets(rid, spec)
-            plan, nodes, idx, epoch = stack.pop()
+            plan, nodes, idx, epoch, depth, parent_key = stack.pop()
             if idx >= len(nodes):
                 child_sig = pending_decompose.pop(plan.id, None)
                 if child_sig is not None:
                     sig, parent_key = child_sig
                     parent_state = self.store.projection_node_state(rid, parent_key)
-                    if parent_state != "skipped":
-                        self.store.cache_put(sig, {"status_class": "solved",
-                                                   "plan": plan.model_dump()})
-                        self.store.append(Event(kind="decompose_outcome", run_id=rid,
-                                                node_key=parent_key,
-                                                payload=self._decompose_stats(plan)))
-                        if parent_state == "pending":
-                            self.store.cas_node_state(rid, parent_key, "pending", "completed")
+                    reclassified = parent_state == "skipped"
+                    self.store.cache_put(sig, {"status_class": "solved",
+                                               "plan": plan.model_dump()})
+                    self.store.append(Event(
+                        kind="decompose_outcome", run_id=rid, node_key=parent_key,
+                        payload={**self._decompose_stats(plan),
+                                 "reclassified": reclassified,
+                                 "parent_state": parent_state}))
+                    if parent_state == "pending":
+                        self.store.cas_node_state(rid, parent_key, "pending", "completed")
                 continue
 
             node = nodes[idx]
             node_key = self._node_key(plan, node, epoch)
-            stack.append((plan, nodes, idx + 1, epoch))
+            stack.append((plan, nodes, idx + 1, epoch, depth, parent_key))
             state = self.store.projection_node_state(rid, node_key)
 
             if isinstance(node, Return):
@@ -295,7 +350,7 @@ class Engine:
                 if state == "completed":
                     self._restore_node_outputs(rid, node_key, scope)
                     continue
-                if not self._begin_attempt(rid, node_key, session, depth):
+                if not self._begin_attempt(rid, node_key, session, depth, parent_key):
                     continue
                 msgs = self.store.take_messages(rid, node_key)
                 if msgs:
@@ -329,12 +384,13 @@ class Engine:
                         "original_step": node.model_dump(),
                         "admission_reasons": verdict.reasons,
                     }
+                    self._check_depth(spec, depth + 1)
                     child = self._author_child(rid, spec, goal, hints,
                                                spec.authority, spec.budgets, depth + 1)
                     sig = plan_signature(goal, hints, spec.authority, spec.budgets)
                     self.store.cas_node_state(rid, node_key, "running", "skipped")
                     pending_decompose[child.id] = (sig, node_key)
-                    stack.append((child, list(child.root), 0, 0))
+                    stack.append((child, list(child.root), 0, 0, depth + 1, node_key))
                 else:
                     journal(self.store, rid, node_key, "blocker",
                             "; ".join(verdict.reasons))
@@ -347,10 +403,11 @@ class Engine:
             if isinstance(node, Decompose):
                 if state == "completed":
                     continue
-                self._ensure_node(rid, node_key, depth)
+                self._ensure_node(rid, node_key, depth, parent_key)
                 hints = {**node.hints,
                          "prior_results": {k: v.get("result") for k, v in scope.items()
                                            if isinstance(v, dict) and "result" in v}}
+                self._check_depth(spec, depth + 1)
                 sig = plan_signature(node.subgoal, hints, spec.authority, spec.budgets)
                 cached = self.store.cache_get(sig)
                 if cached and cached.get("status_class") == "solved" and cached.get("plan"):
@@ -361,21 +418,15 @@ class Engine:
                     child = self._author_child(rid, spec, node.subgoal, hints,
                                                spec.authority, spec.budgets, depth + 1)
                 pending_decompose[child.id] = (sig, node_key)
-                stack.append((child, list(child.root), 0, 0))
+                stack.append((child, list(child.root), 0, 0, depth + 1, node_key))
                 continue
 
             if isinstance(node, Branch):
-                if os.environ.get("SHERPA_DEBUG"):
-                    print("BRANCH scope keys:", sorted(scope.keys()),
-                          "| verify:", scope.get("verify"), file=sys.stderr)
                 chosen = next(
                     (c for c in node.cases if c.when is None or evaluate(c.when, scope)), None
                 )
-                if os.environ.get("SHERPA_DEBUG"):
-                    print("BRANCH chose:", "else" if chosen is None else (chosen.when or "else-last"),
-                          file=sys.stderr)
                 if chosen is not None:
-                    stack.append((plan, list(chosen.body), 0, epoch))
+                    stack.append((plan, list(chosen.body), 0, epoch, depth, parent_key))
                 continue
 
             if isinstance(node, While):
@@ -385,19 +436,19 @@ class Engine:
                                             node_key=node_key,
                                             payload={"iterations": iters + 1}))
                     next_epoch = iters + 1
-                    stack.append((plan, [node], 0, epoch))
-                    stack.append((plan, list(node.body), 0, next_epoch))
+                    stack.append((plan, [node], 0, epoch, depth, parent_key))
+                    stack.append((plan, list(node.body), 0, next_epoch, depth, parent_key))
                 continue
 
             if isinstance(node, Parallel):
                 for branch in reversed(node.branches):
-                    stack.append((plan, list(branch), 0, epoch))
+                    stack.append((plan, list(branch), 0, epoch, depth, parent_key))
                 continue
 
             if isinstance(node, AskUser):
                 if state == "completed":
                     continue
-                self._ensure_node(rid, node_key, depth)
+                self._ensure_node(rid, node_key, depth, parent_key)
                 if spec.attended and depth == 0:
                     msgs = self.store.take_messages(rid, node_key)
                     if not msgs:
@@ -414,7 +465,7 @@ class Engine:
                 continue
 
             if isinstance(node, Fail):
-                self._ensure_node(rid, node_key, depth)
+                self._ensure_node(rid, node_key, depth, parent_key)
                 self.store.cas_node_state(rid, node_key, "pending", "failed")
                 return self._terminal(rid, "failed", error=node.reason)
 
@@ -451,18 +502,24 @@ class Engine:
         return {"children_declared": len(caps) or len(child.root),
                 "children_ambiguous": ambiguous}
 
-    def _ensure_node(self, rid: str, node_key: str, depth: int) -> None:
+    def _ensure_node(self, rid: str, node_key: str, depth: int,
+                     parent_key: str | None = None) -> None:
         if self.store.projection_node_state(rid, node_key) is None:
-            self.store.upsert_node(rid, node_key, "pending", depth=depth)
+            self.store.upsert_node(rid, node_key, "pending", depth=depth,
+                                   parent_key=parent_key)
 
-    def _begin_attempt(self, rid: str, node_key: str, session: str, depth: int) -> bool:
-        self._ensure_node(rid, node_key, depth)
+    def _begin_attempt(self, rid: str, node_key: str, session: str, depth: int,
+                       parent_key: str | None = None) -> bool:
+        self._ensure_node(rid, node_key, depth, parent_key)
         state = self.store.projection_node_state(rid, node_key)
         if state in ("failed", "cancelled", "escalated", "completed"):
             return False
         if not self.store.acquire_lease(rid, node_key, session):
-            current = self.store.projection_node_state(rid, node_key)
-            return current not in ("failed", "cancelled", "escalated")
+            # Another live session holds this node. The lease answered
+            # correctly; honouring it is what makes execution exactly-once.
+            self.store.append(Event(kind="lease_denied", run_id=rid, node_key=node_key,
+                                    payload={"session": session}))
+            return False
         self.store.cas_node_state(rid, node_key, state, "running", owner_session=session)
         self.store.append(Event(kind="attempt_started", run_id=rid, node_key=node_key,
                                 payload={"session": session}))
@@ -502,15 +559,23 @@ class Engine:
             raise ValueError(f"root plan invalid: {detail}")
         report = self._review_gate(rid, spec, plan, author_session)
         if report.verdict == "blocked_escalated":
-            raise ValueError("root plan review blocked")
+            blocking = [f.model_dump() for f in report.findings if f.blocking]
+            raise _PlanRefused(f"root plan review blocked: {blocking}")
         return plan
 
     def _review_gate(self, rid: str, spec: ProblemSpec, plan: Plan, author_session: str):
         reviewer = Reviewer(self.store, self.store.blob, lambda: self.channel,
-                            policy=ReviewPolicy(max_rounds=1))
+                            policy=ReviewPolicy(max_rounds=1), run_id=rid)
         report = reviewer.review_plan(spec, plan, author_session=author_session)
         journal(self.store, rid, None, "decision",
                 f"plan review of {plan.id}@{plan.version}: {report.verdict}")
+        if report.verdict == "escalated_review_incomplete":
+            # The deterministic checks ran, but the independent model review
+            # could not. Recorded as a blocker-level journal entry (and a
+            # deferred finding by the reviewer) so the gap is never silent.
+            journal(self.store, rid, None, "blocker",
+                    f"plan review incomplete for {plan.id}@{plan.version}: "
+                    f"{report.channel_error}", refs=["review"])
         return report
 
     def _author_child(self, rid: str, spec: ProblemSpec, goal: str, hints: dict,
@@ -518,12 +583,13 @@ class Engine:
         plan = self.planner.author_plan(goal, hints, granted, budgets,
                                         session=f"planner_{rid[-6:]}")
         if not granted.allows(plan.authority):
-            raise PermissionError("authored child plan exceeds delegated authority")
+            raise _PlanRefused("authored child plan exceeds delegated authority")
         self.store.append(Event(kind="plan_recorded", run_id=rid,
                                 payload={"child_plan": plan.model_dump(), "goal": goal}))
         report = self._review_gate(rid, spec, plan, author_session=f"planner_{rid[-6:]}")
         if report.verdict == "blocked_escalated":
-            raise PermissionError("child plan review blocked")
+            blocking = [f.model_dump() for f in report.findings if f.blocking]
+            raise _PlanRefused(f"child plan review blocked: {blocking}")
         return plan
 
     def _ctx(self, rid: str, node_key: str, cache: dict,
@@ -548,7 +614,6 @@ class Engine:
 
     def _run_acceptance(self, spec: ProblemSpec, outputs: dict) -> dict[str, bool]:
         import subprocess
-        import sys
 
         results: dict[str, bool] = {}
         out_file = self.workspace / "sherpa_outputs.json"

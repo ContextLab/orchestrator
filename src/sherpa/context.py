@@ -8,6 +8,10 @@ Documents become immutable structural chunks (exact char spans, content
 hashes) in SQLite FTS5; summaries form a DAG where every summary points to
 ALL children with exact spans/hashes. Reads are lock-free scoped snapshots;
 compare-and-swap protects only state transitions (see `sherpa.store`).
+
+Every span declares the coordinate frame its offsets belong to, so a
+consumer can never mis-resolve one frame for the other (see `SPAN_FRAMES`
+and `build_summary`).
 """
 
 from __future__ import annotations
@@ -124,9 +128,25 @@ def chunk_document(doc_id: str, text: str, strategy: str = "paragraph") -> list[
     return chunks
 
 
-DEFAULT_SUMMARY_ID: Callable[[str, int, list[str]], str] = (
-    lambda doc_id, level, children: f"sum_{doc_id}_{level}_{children[0]}..{children[-1]}"
-)
+SPAN_FRAMES = ("document", "summary")
+"""Coordinate frames a span's ``start``/``end`` may be expressed in.
+
+``document`` — offsets into the original document text named by ``source_id``.
+``summary``  — offsets into the text of the summary named by ``source_id``.
+"""
+
+
+def default_summary_id(doc_id: str, level: int, children: list[str]) -> str:
+    """Summary id that digests the FULL ordered child list.
+
+    ``store.add_summary`` is ``INSERT OR REPLACE``, so an id derived from only
+    the first and last child lets two different sibling sets overwrite each
+    other — a parent would then cite a summary whose content had been silently
+    replaced. Digesting every child (in order) makes the id collision-free.
+    """
+    from sherpa.store import content_hash
+
+    return f"sum_{doc_id}_{level}_{len(children)}x{content_hash(chr(10).join(children))[:16]}"
 
 
 def build_summary(
@@ -141,9 +161,15 @@ def build_summary(
     """Create a summary node pointing to EVERY child with exact spans.
 
     Children may be chunk ids (``doc:N``) or lower-level summary ids.
+
+    Each emitted span is ``{sha, start, end, child_id, of, source_id}`` where
+    ``of`` is one of `SPAN_FRAMES` and ``source_id`` names the text those
+    offsets index into: the document for ``of="document"``, the cited summary
+    for ``of="summary"``. Summary children contribute BOTH a direct pointer
+    (so every child is cited) and all of their own spans, so every leaf chunk
+    of the DAG stays addressable as an exact *document* span no matter how
+    many summary levels sit in between.
     """
-    texts: list[str] = []
-    spans: list[dict] = []
     texts: list[str] = []
     spans: list[dict] = []
     for cid in child_ids:
@@ -154,7 +180,10 @@ def build_summary(
                 raise KeyError(f"unknown child chunk {cid!r}")
             blob_text = blob.get_text(row["sha"])
             texts.append(blob_text)
-            spans.append({"sha": row["sha"], "start": row["start"], "end": row["end"], "child_id": cid})
+            spans.append(
+                {"sha": row["sha"], "start": row["start"], "end": row["end"],
+                 "child_id": cid, "of": "document", "source_id": row["doc_id"]}
+            )
         else:
             child = store.get_summary(cid)
             if child is None:
@@ -165,15 +194,37 @@ def build_summary(
             child_sha = content_hash(child["text"])
             if not blob.exists(child_sha):
                 blob.put_text(child["text"])
-            direct_pointer = {"sha": child_sha, "start": 0, "end": len(child["text"]), "child_id": cid}
+            direct_pointer = {
+                "sha": child_sha, "start": 0, "end": len(child["text"]),
+                "child_id": cid, "of": "summary", "source_id": cid,
+            }
             transitive_sources = [dict(sp) for sp in child["spans"]]
             spans.append(direct_pointer)
             spans.extend(transitive_sources)
     joined = "\n\n".join(texts)
     summary_text = summarize(joined)
-    sid = summary_id or DEFAULT_SUMMARY_ID(doc_id, level, child_ids)
+    sid = summary_id or default_summary_id(doc_id, level, child_ids)
     store.add_summary(sid, doc_id, level, summary_text, child_ids, spans)
     return sid
+
+
+TRUNCATION_NOTICE = "\n[sherpa: summary truncated, {dropped} of {total} characters dropped]"
+
+
+def bound_summary(text: str, max_chars: int) -> str:
+    """Bound *text* to ``max_chars`` of content, recording any loss in-band.
+
+    #492 forbids silently dropping evidence, so an over-long model summary is
+    truncated *visibly*: the notice states exactly how much was dropped. The
+    notice is appended beyond ``max_chars`` so that the retained summary
+    content is never shortened by its own bookkeeping; the result is still
+    bounded at ``max_chars + len(notice)``.
+    """
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + TRUNCATION_NOTICE.format(
+        dropped=len(text) - max_chars, total=len(text)
+    )
 
 
 def summarize_with_channel(
@@ -192,7 +243,7 @@ def summarize_with_channel(
             ],
             session=session,
         )
-        return resp.text[:max_chars]
+        return bound_summary(resp.text, max_chars)
 
     return _summarize
 

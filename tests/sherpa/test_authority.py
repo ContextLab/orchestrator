@@ -236,3 +236,29 @@ def test_workspace_relative_grant_cannot_be_widened_to_filesystem(ws: Path) -> N
     parent = Authority(fs_read=("**",))
     assert authority_covers(parent, Authority(fs_read=("/**",))) is False
     assert authority_covers(Authority(fs_read=("/**",)), Authority(fs_read=("**",))) is True
+
+
+def test_grants_work_when_the_workspace_path_is_relative(tmp_path: Path, monkeypatch) -> None:
+    """A relative workspace must behave exactly like an absolute one.
+
+    Regression: an empty grant prefix (from ``**``) was joined onto the
+    workspace a second time, yielding ``ws/ws``, so every path under a valid
+    grant was denied whenever the caller passed a relative workspace -- which
+    is what `python -m sherpa.benchmarks.harness --out benchmarks/artifacts`
+    does.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ws" / "src").mkdir(parents=True)
+    relative_ws = Path("ws")
+    absolute_ws = tmp_path / "ws"
+
+    target_rel = resolve_fs_path("src/a.txt", relative_ws)
+    target_abs = resolve_fs_path("src/a.txt", absolute_ws)
+    assert target_rel == target_abs
+
+    for grant in ("**", "src/**", "src"):
+        assert path_within_grants((grant,), target_rel, relative_ws) is True, grant
+        assert path_within_grants((grant,), target_abs, absolute_ws) is True, grant
+
+    outside = (tmp_path / "elsewhere.txt").resolve()
+    assert path_within_grants(("**",), outside, relative_ws) is False

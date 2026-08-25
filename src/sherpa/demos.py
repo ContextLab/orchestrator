@@ -114,7 +114,7 @@ def _victim(crash_ws, marker) -> None:
     os.environ["SHERPA_KILL_AFTER_EVENTS"] = "12"  # REAL SIGKILL mid-run
     reg = CapabilityRegistry()
     reg.register(_AppendLine())
-    engine = Engine(crash_ws, registry=reg)
+    engine = Engine(crash_ws, registry=reg, fault_injection=True)
     engine.run(ProblemSpec(
         id="crash-victim",
         goal="Append three audited effects; die halfway through.",
@@ -148,7 +148,7 @@ def _demo_crash_resume(ws) -> None:
 
     reg = CapabilityRegistry()
     reg.register(_AppendLine())
-    engine = Engine(crash_ws, registry=reg)
+    engine = Engine(crash_ws, registry=reg, fault_injection=True)
     run_id = marker.read_text().strip()
     resumed = engine.resume(run_id)
     trace = json.loads((engine.export_trace(run_id, crash_ws / "trace.json")).read_text())

@@ -129,7 +129,7 @@ def scenario_a(base: Path) -> dict[str, Any]:
                           env=env, timeout=180)
     killed = proc.returncode == -9
 
-    engine = Engine(ws, registry=_registry_with_append())
+    engine = Engine(ws, registry=_registry_with_append(), fault_injection=True)
     rows = engine.store.conn.execute("SELECT run_id,status FROM runs").fetchall()
     rid1 = rows[-1]["run_id"]
     if not killed:
