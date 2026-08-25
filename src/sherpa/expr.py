@@ -6,6 +6,26 @@ evaluates it against a plain mapping scope. Anything not on the whitelist —
 calls, lambdas, comprehensions, attribute access beyond shallow dotted names —
 raises :class:`ExpressionError` at compile time. A condition that cannot be
 evaluated fails closed.
+
+Deliberate semantic choices
+---------------------------
+``and`` / ``or`` follow **full Python semantics**: they short-circuit, and they
+return the deciding *operand* rather than a coerced ``bool``. This module binds
+``{{ ... }}`` input templates (:func:`sherpa.capabilities.resolve_inputs`) as
+well as guards, so ``inputs.path or 'README.md'`` must yield the string. Guard
+call sites consume the result by truthiness (or coerce with ``bool``), so the
+richer return value costs them nothing. Short-circuiting is load-bearing: the
+``Branch``/``While`` call sites in :mod:`sherpa.kernel` do not catch
+:class:`ExpressionError`, so an eagerly evaluated right-hand operand
+(``'k' in d and d['k'] > 1``) would abort an entire run.
+
+Attribute access is restricted to **plain mappings** — ``obj.attr`` is a key
+lookup on a :class:`~collections.abc.Mapping`, never a :func:`getattr`. A
+deny-list of dunder names is not sufficient: frame traversal
+(``gen.gi_frame.f_builtins``) uses names with no leading underscore and reaches
+``eval``/``exec``/``open``. Every scope the kernel builds holds plain data
+(``inputs``, ``{node_id: {"result": ...}}``), so mapping-only traversal is
+fail-closed without losing any real usage.
 """
 
 from __future__ import annotations
@@ -73,16 +93,28 @@ class ExprObj:
         return f"ExprObj({self.source!r})"
 
 
-def _validate(node: ast.AST, depth: int = 0) -> None:
+def _attr_chain_length(node: ast.Attribute) -> int:
+    """Length of the dotted chain ending at *node* (``a.b.c`` -> 3)."""
+    length = 0
+    current: ast.AST = node
+    while isinstance(current, ast.Attribute):
+        length += 1
+        current = current.value
+    return length
+
+
+def _validate(node: ast.AST) -> None:
     if not isinstance(node, _ALLOWED_NODES):
         raise ExpressionError(f"disallowed syntax: {type(node).__name__}")
     if isinstance(node, ast.Attribute):
         if not node.attr.isidentifier() or node.attr.startswith("_"):
             raise ExpressionError("invalid attribute name")
-        if depth >= _MAX_ATTR_DEPTH:
+        # Count the attribute chain itself, not the depth of whatever
+        # arithmetic or `not` happens to enclose it.
+        if _attr_chain_length(node) >= _MAX_ATTR_DEPTH:
             raise ExpressionError("attribute chain too deep")
     for child in ast.iter_child_nodes(node):
-        _validate(child, depth + 1)
+        _validate(child)
 
 
 def compile_expr(src: str) -> ExprObj:
@@ -96,19 +128,11 @@ def compile_expr(src: str) -> ExprObj:
 
 
 def _resolve_name(name: str, scope: Mapping[str, Any]) -> Any:
-    parts = name.split(".")
-    cur: Any = scope
-    for part in parts:
-        if isinstance(cur, Mapping):
-            if part not in cur:
-                raise ExpressionError(f"unknown name {name!r}")
-            cur = cur[part]
-        else:
-            try:
-                cur = getattr(cur, part)
-            except AttributeError as exc:
-                raise ExpressionError(f"unknown name {name!r}") from exc
-    return cur
+    # ``ast.Name.id`` is always a bare identifier, so this is a single lookup
+    # in the scope mapping; dotted access is handled by the Attribute branch.
+    if name not in scope:
+        raise ExpressionError(f"unknown name {name!r}")
+    return scope[name]
 
 
 def _eval(node: ast.AST, scope: Mapping[str, Any]) -> Any:
@@ -119,15 +143,18 @@ def _eval(node: ast.AST, scope: Mapping[str, Any]) -> Any:
     if isinstance(node, ast.Name):
         return _resolve_name(node.id, scope)
     if isinstance(node, ast.Attribute):
-        base = _eval(node.value, scope)
-        holder: Any = base
-        if isinstance(holder, Mapping):
-            if node.attr not in holder:
-                raise ExpressionError(f"unknown key {node.attr!r}")
-            return holder[node.attr]
-        if not hasattr(holder, node.attr):
-            raise ExpressionError(f"unknown attribute {node.attr!r}")
-        return getattr(holder, node.attr)
+        holder = _eval(node.value, scope)
+        # Fail-closed: dotted access is a mapping key lookup, never getattr.
+        # Real object attributes (gi_frame -> f_builtins -> eval/exec/open)
+        # are unreachable by construction rather than by deny-list.
+        if not isinstance(holder, Mapping):
+            raise ExpressionError(
+                f"attribute access is only allowed on mappings, not "
+                f"{type(holder).__name__}"
+            )
+        if node.attr not in holder:
+            raise ExpressionError(f"unknown key {node.attr!r}")
+        return holder[node.attr]
     if isinstance(node, ast.Subscript):
         base = _eval(node.value, scope)
         idx = node.slice
@@ -152,10 +179,19 @@ def _eval(node: ast.AST, scope: Mapping[str, Any]) -> Any:
             raise ExpressionError("unary +/- needs a number")
         return -val if isinstance(node.op, ast.USub) else +val
     if isinstance(node, ast.BoolOp):
-        results = [_eval(v, scope) for v in node.values]
+        # Python semantics: short-circuit and return the deciding OPERAND.
+        result: Any = None
         if isinstance(node.op, ast.And):
-            return all(results)
-        return any(results)
+            for value in node.values:
+                result = _eval(value, scope)
+                if not result:
+                    return result
+            return result
+        for value in node.values:
+            result = _eval(value, scope)
+            if result:
+                return result
+        return result
     if isinstance(node, ast.Compare):
         left = _eval(node.left, scope)
         for op, comp in zip(node.ops, node.comparators):

@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from pydantic import BaseModel, Field
 
+from sherpa.authority import AuthorityError
 from sherpa.events import Event
 from sherpa.ir import Authority
 
@@ -28,20 +29,39 @@ if TYPE_CHECKING:
 
 
 class CapabilitySpec(BaseModel):
+    """A capability's contract.
+
+    ``requires`` names the authority *dimensions* the capability uses; the
+    concrete resource is checked per invocation against the resolved path (see
+    :func:`assert_fs_access`). ``authority_required`` remains for grants that
+    genuinely are pattern-shaped rather than path-shaped -- currently only
+    ``subprocess_allow``.
+
+    Declaring ``authority_required=Authority(fs_read=("**",))`` -- as every fs
+    capability used to -- conflates the two questions and makes the capability
+    demand filesystem-wide power just to read one granted file, which is why
+    scoped grants were previously unusable.
+    """
+
     name: str
     version: str = "1"
     description: str = ""
     input_schema: dict[str, Any] = Field(default_factory=dict)
     output_schema: dict[str, Any] = Field(default_factory=dict)
     authority_required: Authority = Field(default_factory=Authority)
+    requires: tuple[str, ...] = ()
 
 
 class ProbeSpec(BaseModel):
     kind: str = "builtin_selfcheck"
 
 
-class AuthorityDenied(PermissionError):
-    """The granted authority does not cover the capability's requirements."""
+class AuthorityDenied(AuthorityError):
+    """The granted authority does not cover the capability's requirements.
+
+    Subclasses the shared :class:`sherpa.authority.AuthorityError` so callers
+    may catch either; there is one denial hierarchy, not one per module.
+    """
 
 
 class ProbeFailed(RuntimeError):
@@ -115,31 +135,100 @@ class CapabilityRegistry:
 
 
 def assert_authority(required: Authority, granted: Authority, what: str) -> None:
-    if not granted.allows(required):
-        missing = []
-        for fld in ("fs_read", "fs_write", "net_domains", "subprocess_allow"):
-            for pat in getattr(required, fld):
-                if not any(
-                    _grant_covers(g, pat) for g in getattr(granted, fld)
-                ):
-                    missing.append(f"{fld}:{pat}")
+    """Pattern-level delegation check (used for ``subprocess_allow``)."""
+    from sherpa.authority import authority_covers, missing_powers
+
+    if not authority_covers(granted, required):
+        missing = missing_powers(granted, required)
         raise AuthorityDenied(f"{what} requires authority not granted: {', '.join(missing)}")
 
 
-def _grant_covers(grant: str, needed_literal: str) -> bool:
-    from fnmatch import fnmatchcase
+def assert_requires(spec: "CapabilitySpec", granted: Authority, what: str) -> None:
+    """Every dimension the capability uses must be granted *something*.
 
-    return (
-        grant == needed_literal
-        or fnmatchcase(needed_literal, grant)
-        or (needed_literal.startswith(grant) if grant.endswith("/") else False)
-    )
+    This is the coarse gate. It deliberately does not inspect patterns: the
+    real check happens per resolved resource in :func:`assert_fs_access`.
+    """
+    for dimension in spec.requires:
+        if not getattr(granted, dimension, ()):
+            raise AuthorityDenied(f"{what} requires {dimension} authority, none granted")
+
+
+def assert_fs_access(
+    raw_path: "str | Path", dimension: str, ctx: "CapabilityContext", what: str
+) -> Path:
+    """Resolve *raw_path* and confirm the grant covers it. Returns the path.
+
+    Resolution happens *before* the check and matches what the capability will
+    actually open, so ``..``, absolute paths, and symlinks out of a granted
+    directory are all visible to the grant comparison rather than hidden by it.
+    """
+    from sherpa.authority import path_within_grants, resolve_fs_path
+
+    resolved = resolve_fs_path(raw_path, ctx.workspace)
+    grants = getattr(ctx.granted, dimension, ())
+    if not path_within_grants(grants, resolved, ctx.workspace):
+        raise AuthorityDenied(
+            f"{what}: {dimension} denied for {resolved} (granted: {tuple(grants)!r})"
+        )
+    return resolved
 
 
 # --------------------------------------------------------------------------
 # Built-in capabilities. All side effects are real; the model boundary is the
 # only recorded surface (text.summarize).
 # --------------------------------------------------------------------------
+
+
+#: pytest flags that cause arbitrary code to be imported or a different
+#: configuration/rootdir to be honoured. Forwarding them defeats the cwd check.
+_UNSAFE_PYTEST_FLAGS = ("-p", "-c", "--rootdir", "--confcutdir", "--import-mode", "-P")
+
+_SECRET_MARKERS = ("secret", "token", "password", "api_key", "apikey", "credential")
+
+
+def _safe_pytest_args(args: "list[str]") -> list[str]:
+    """Reject pytest arguments that load code or relocate the config root."""
+    safe = [str(a) for a in args]
+    for arg in safe:
+        head = arg.split("=", 1)[0]
+        if head in _UNSAFE_PYTEST_FLAGS:
+            raise AuthorityDenied(f"repo.run_tests refuses code-loading argument {arg!r}")
+    return safe
+
+
+def _redact(inputs: dict) -> dict:
+    """Journal the shape of a call, never bulk content or anything secret-ish.
+
+    Capability inputs used to be written verbatim into the event log, so a
+    written credential became a permanent plaintext record.
+    """
+    out: dict[str, Any] = {}
+    for key, value in inputs.items():
+        lowered = key.lower()
+        if any(marker in lowered for marker in _SECRET_MARKERS):
+            out[key] = "<redacted>"
+        elif isinstance(value, str) and len(value) > 120:
+            out[key] = f"<{len(value)} chars>"
+        elif isinstance(value, str) and any(m in value.lower() for m in _SECRET_MARKERS):
+            out[key] = "<redacted>"
+        else:
+            out[key] = value
+    return out
+
+
+def _probe_scratch(ctx: "CapabilityContext", suffix: str) -> Path:
+    """A unique, authorized scratch path for a probe that must really write.
+
+    Probes run inside admission, *before* a step is admitted, so they are real
+    side effects and are authority-bearing. A fixed canary name also risked
+    clobbering a user file, so the name is unique per probe.
+    """
+    import uuid
+
+    candidate = ctx.workspace / f".sherpa_probe_{uuid.uuid4().hex}{suffix}"
+    assert_fs_access(candidate, "fs_write", ctx, "probe")
+    return candidate
 
 
 def _read(path: Path) -> str:
@@ -152,25 +241,22 @@ class FsReadFile(Capability):
         description="Read a UTF-8 text file.",
         input_schema={"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
         output_schema={"type": "object", "properties": {"content": {"type": "string"}}},
-        authority_required=Authority(fs_read=("**",)),
+        requires=("fs_read",),
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
-        p = Path(inputs["path"])
-        if not p.is_absolute():
-            p = ctx.workspace / p
-        assert_authority(Authority(fs_read=(str(p),)), ctx.granted, self.spec.name)
+        p = assert_fs_access(inputs["path"], "fs_read", ctx, self.spec.name)
         return {"content": _read(p)}
 
     def probe(self, ctx: CapabilityContext) -> bytes:
-        canary = ctx.workspace / ".sherpa_probe_read.txt"
-        canary.write_text("probe-ok", encoding="utf-8")
+        # Read-only evidence: a read capability must never need write authority
+        # to prove itself, and must never clobber an existing file.
+        if not ctx.workspace.is_dir():
+            raise ProbeFailed(f"workspace {ctx.workspace} is not a readable directory")
         try:
-            data = canary.read_text(encoding="utf-8")
-        finally:
-            canary.unlink(missing_ok=True)
-        if data != "probe-ok":
-            raise ProbeFailed("fs.read_file probe mismatch")
+            next(iter(ctx.workspace.iterdir()), None)
+        except OSError as exc:
+            raise ProbeFailed(f"fs.read_file probe cannot read workspace: {exc}") from exc
         return b"fs.read_file probe ok"
 
 
@@ -184,21 +270,18 @@ class FsWriteFile(Capability):
             "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
         },
         output_schema={"type": "object", "properties": {"bytes_written": {"type": "integer"}}},
-        authority_required=Authority(fs_write=("**",)),
+        requires=("fs_write",),
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
-        p = Path(inputs["path"])
-        if not p.is_absolute():
-            p = ctx.workspace / p
-        assert_authority(Authority(fs_write=(str(p),)), ctx.granted, self.spec.name)
+        p = assert_fs_access(inputs["path"], "fs_write", ctx, self.spec.name)
         data = inputs["content"].encode("utf-8")
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(data)
         return {"bytes_written": len(data)}
 
     def probe(self, ctx: CapabilityContext) -> bytes:
-        canary = ctx.workspace / ".sherpa_probe_write.txt"
+        canary = _probe_scratch(ctx, ".txt")
         try:
             canary.write_text("ok", encoding="utf-8")
             if canary.read_text(encoding="utf-8") != "ok":
@@ -214,14 +297,11 @@ class FsListDir(Capability):
         description="List a directory.",
         input_schema={"type": "object", "required": ["path"], "properties": {"path": {"type": "string"}}},
         output_schema={"type": "object", "properties": {"entries": {"type": "array"}}},
-        authority_required=Authority(fs_read=("**",)),
+        requires=("fs_read",),
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
-        p = Path(inputs["path"])
-        if not p.is_absolute():
-            p = ctx.workspace / p
-        assert_authority(Authority(fs_read=(str(p),)), ctx.granted, self.spec.name)
+        p = assert_fs_access(inputs["path"], "fs_read", ctx, self.spec.name)
         entries = [
             {"name": e.name, "is_dir": e.is_dir(), "size": e.stat().st_size if e.is_file() else 0}
             for e in sorted(p.iterdir())
@@ -258,16 +338,16 @@ class RepoRunTests(Capability):
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
-        cwd = Path(inputs["cwd"])
-        if not cwd.is_absolute():
-            cwd = ctx.workspace / cwd
-        args = list(inputs.get("args", ["-q", "tests"]))
-        cmd = [sys.executable, "-m", "pytest", *args]
         assert_authority(
             Authority(subprocess_allow=(sys.executable, "python", "pytest")),
             ctx.granted,
             self.spec.name,
         )
+        # pytest executes conftest.py from its cwd, so the directory is as
+        # authority-bearing as any file this capability could read.
+        cwd = assert_fs_access(inputs["cwd"], "fs_read", ctx, self.spec.name)
+        args = _safe_pytest_args(inputs.get("args", ["-q", "tests"]))
+        cmd = [sys.executable, "-m", "pytest", *args]
         proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=inputs.get("timeout", 120))  # noqa: S603 - fixed argv
         return {
             "returncode": proc.returncode,
@@ -277,6 +357,13 @@ class RepoRunTests(Capability):
         }
 
     def probe(self, ctx: CapabilityContext) -> bytes:
+        # Spawning a process is a real side effect; it needs the same grant the
+        # capability itself needs.
+        assert_authority(
+            Authority(subprocess_allow=(sys.executable, "python", "pytest")),
+            ctx.granted,
+            self.spec.name,
+        )
         proc = subprocess.run(
             [sys.executable, "-m", "pytest", "--version"],
             capture_output=True,
@@ -302,22 +389,28 @@ class RepoApplyPatch(Capability):
             "properties": {"cwd": {"type": "string"}, "diff": {"type": "string"}},
         },
         output_schema={"type": "object", "properties": {"applied": {"type": "integer"}}},
-        authority_required=Authority(fs_write=("**",)),
+        requires=("fs_write",),
     )
 
     def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
-        cwd = Path(inputs["cwd"])
-        if not cwd.is_absolute():
-            cwd = ctx.workspace / cwd
+        cwd = assert_fs_access(inputs["cwd"], "fs_write", ctx, self.spec.name)
         diff_text = inputs["diff"]
         plan = _parse_unified_diff(diff_text)
         touched: list[Path] = []
         try:
+            # Resolve and authorize EVERY target before touching the first
+            # one: a mid-loop denial must not leave earlier files rewritten.
+            resolved = {
+                rel: assert_fs_access(cwd / rel, "fs_write", ctx, self.spec.name)
+                for rel in plan
+            }
+            for rel, target in resolved.items():
+                if not target.is_relative_to(cwd):
+                    raise PatchError(f"patch target {rel!r} escapes cwd")
             for rel, hunks in plan.items():
-                target = cwd / rel
+                target = resolved[rel]
                 original = target.read_text(encoding="utf-8") if target.exists() else ""
                 updated = _apply_hunks(original, hunks, rel)
-                assert_authority(Authority(fs_write=(str(target),)), ctx.granted, self.spec.name)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(updated, encoding="utf-8")
                 touched.append(target)
@@ -334,20 +427,20 @@ class RepoApplyPatch(Capability):
         return {"applied": len(touched), "files": [str(t.relative_to(cwd)) for t in touched]}
 
     def probe(self, ctx: CapabilityContext) -> bytes:
-        canary = ctx.workspace / ".sherpa_probe_patch.txt"
+        canary = _probe_scratch(ctx, ".txt")
         canary.write_text("alpha\nbeta\n", encoding="utf-8")
         import difflib
 
         diff = "".join(
             difflib.unified_diff(
-                ["alpha\n", "beta\n"], ["alpha\n", "gamma\n"], fromfile="a/.sherpa_probe_patch.txt",
-                tofile="b/.sherpa_probe_patch.txt",
+                ["alpha\n", "beta\n"], ["alpha\n", "gamma\n"], fromfile=f"a/{canary.name}",
+                tofile=f"b/{canary.name}",
             )
         )
         try:
             hunks = _parse_unified_diff(diff)
             original = canary.read_text(encoding="utf-8")
-            updated = _apply_hunks(original, next(iter(hunks.values())), ".sherpa_probe_patch.txt")
+            updated = _apply_hunks(original, next(iter(hunks.values())), canary.name)
             if "gamma" not in updated:
                 raise ProbeFailed("patch round-trip failed")
         finally:
@@ -494,9 +587,10 @@ def run_capability(cap: Capability, inputs: dict, ctx: CapabilityContext, grante
             kind="tool_call_started",
             run_id=ctx.run_id,
             node_key=ctx.node_key,
-            payload={"capability": cap.spec.name, "inputs": inputs},
+            payload={"capability": cap.spec.name, "inputs": _redact(inputs)},
         )
     )
+    assert_requires(cap.spec, granted, cap.spec.name)
     assert_authority(cap.spec.authority_required, granted, cap.spec.name)
     try:
         result = cap.run(inputs, ctx)

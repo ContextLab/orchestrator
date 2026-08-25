@@ -186,7 +186,10 @@ class TestToolCallJournal:
     def test_events_wrap_invocation(self, store, workspace: Path) -> None:
         store.create_run("r_test", problem_sha="p")
         ctx = _ctx(store, workspace)
-        run_capability(FsReadFile(), {"path": __file__}, ctx, ctx.granted)
+        # Read a file inside the workspace: `**` is workspace-relative, and a
+        # journalling test should not depend on reading its own source.
+        (workspace / "subject.txt").write_text("payload\n", encoding="utf-8")
+        run_capability(FsReadFile(), {"path": "subject.txt"}, ctx, ctx.granted)
         kinds = [e.kind for e in store.events(run_id="r_test") if e.kind.startswith("tool_call")]
         assert kinds == ["tool_call_started", "tool_call_finished"]
         fin = [e for e in store.events(run_id="r_test") if e.kind == "tool_call_finished"][0]

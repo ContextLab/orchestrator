@@ -21,6 +21,7 @@ GATES = {
     "min_task_success_rate": 0.80,
     "max_m_upper_bound": 1.0,
     "min_needle_recall": 0.95,
+    "min_defect_class_detection": 1.0,
 }
 
 
@@ -71,6 +72,10 @@ def run_all(base: Path, b_seeds: list[int], b_heldout: list[int]) -> dict:
                                              for r in b if r.get("held_out")]),
         "scenario_b_externally_verified": _rate([r.get("externally_verified", False)
                                                  for r in b]),
+        "scenario_b_defect_class_detected": _rate([r.get("defect_detected", False)
+                                                   for r in b]),
+        "scenario_b_undetected_classes": sorted({r["defect_class"] for r in b
+                                                 if not r.get("defect_detected")}),
         "scenario_c": c,
     })
 
@@ -98,7 +103,6 @@ def _rate(values: list[bool]) -> float | None:
 
 def _decomposition_battery(ws_base: Path) -> list[dict]:
     """50 decomposition decisions through the kernel; feeds m=b*f and overclaim."""
-    from sherpa.capabilities import register_builtins
     from sherpa.ir import ProblemSpec
     from sherpa.kernel import Engine
     from sherpa.metrics import run_metrics
@@ -192,7 +196,18 @@ def _evaluate_gates(suite: dict) -> str:
         f"{verified}" if verified is not None else "n/a",
         verified is not None and verified >= 1.0)
 
-    overall = all("FAIL" not in ln for ln in lines[3:])
+    detected = suite.get("scenario_b_defect_class_detected")
+    missing = suite.get("scenario_b_undetected_classes") or []
+    observed = "n/a" if detected is None else f"{detected}"
+    if missing:
+        observed += " (NOT DETECTED: " + ", ".join(missing) + ")"
+    row("seeded defect classes named by the planner from the sources", "100%",
+        observed,
+        detected is not None and detected >= GATES["min_defect_class_detection"])
+
+    # lines[0] is the header and lines[1] the separator; every gate row
+    # from lines[2] onward votes on the verdict.
+    overall = all("FAIL" not in ln for ln in lines[2:])
     lines.append("")
     if overall:
         lines.append("**GO**: all preregistered MVP gates met on this fixture "

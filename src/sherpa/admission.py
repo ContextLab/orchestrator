@@ -120,6 +120,13 @@ class AdmissionChecker:
                 io_compatible = True
 
             try:
+                # Both gates: the dimensions this capability uses must be
+                # granted at all, and any pattern-shaped requirement (e.g.
+                # subprocess_allow) must be covered. The per-resource check
+                # happens later, inside run_capability.
+                from sherpa.capabilities import assert_requires
+
+                assert_requires(cap.spec, granted, step.capability)
                 assert_authority_granted(cap.spec.authority_required, granted)
             except PermissionError as exc:
                 decision = "escalate"
@@ -169,13 +176,15 @@ class AdmissionChecker:
 
 
 def assert_authority_granted(required: Authority, granted: Authority) -> None:
-    from fnmatch import fnmatchcase
+    """Pattern-level delegation check, shared with delegation and execution.
 
-    missing: list[str] = []
-    for fld in ("fs_read", "fs_write", "net_domains", "subprocess_allow"):
-        have = getattr(granted, fld)
-        for pat in getattr(required, fld):
-            if not any(fnmatchcase(pat, g) or g == pat for g in have):
-                missing.append(f"{fld}:{pat}")
-    if missing:
+    This used to be a third, divergent implementation that compared the
+    capability's declared *pattern* against grants, so a properly scoped grant
+    such as ``fs_read=("src/**",)`` refused every builtin while execution would
+    have allowed it -- the gate and the executor answered different questions.
+    """
+    from sherpa.authority import authority_covers, missing_powers
+
+    if not authority_covers(granted, required):
+        missing = missing_powers(granted, required)
         raise PermissionError(f"authority not granted: {', '.join(missing)}")

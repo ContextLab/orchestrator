@@ -1,0 +1,356 @@
+{
+  "events": [
+    {
+      "causal_seq": null,
+      "kind": "run_started",
+      "node_key": null,
+      "payload": {
+        "parent_run_id": null,
+        "problem_sha": "52804f81df9fa449c5dfa8aa833004588c253761bcb90658f19fa16dbb59f0b3",
+        "status": "running"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 1,
+      "ts": 1787625001.177118
+    },
+    {
+      "causal_seq": null,
+      "kind": "plan_recorded",
+      "node_key": null,
+      "payload": {
+        "problem": {
+          "acceptance": [
+            {
+              "id": "suite_green",
+              "kind": "pytest",
+              "spec": {
+                "cmd": [
+                  "pytest",
+                  "-q",
+                  "tests"
+                ],
+                "cwd": "repo"
+              }
+            }
+          ],
+          "attended": false,
+          "authority": {
+            "fs_read": [
+              "**"
+            ],
+            "fs_write": [
+              "**"
+            ],
+            "net_domains": [],
+            "subprocess_allow": [
+              "**"
+            ]
+          },
+          "budgets": {
+            "max_attempts_per_node": 2,
+            "max_cost_usd": 0.0,
+            "max_depth": 6,
+            "max_fanout": 4,
+            "max_nodes": 200,
+            "max_tokens": 200000,
+            "max_wall_seconds": 900.0
+          },
+          "goal": "repair repository so tests pass (wrong_constant)",
+          "id": "repair-seen-wrong_constant-23",
+          "inputs": {},
+          "metadata": {
+            "root_nodes": [
+              {
+                "capability": "repo.run_tests",
+                "id": "capture_failures",
+                "inputs": {
+                  "args": [
+                    "-q",
+                    "tests"
+                  ],
+                  "atomic_claim": false,
+                  "cwd": "repo"
+                },
+                "kind": "invoke_capability"
+              },
+              {
+                "hints": {
+                  "failing": "F                                                                        [100%]\n=================================== FAILURES ===================================\n______________________________ test_compute_jdjjh ______________________________\n\n    def test_compute_jdjjh():\n>       assert compute_jdjjh(3) == 7\nE       assert 10 == 7\nE        +  where 10 = compute_jdjjh(3)\n\ntests/test_mod.py:4: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_mod.py::test_compute_jdjjh - assert 10 == 7\n1 failed in 0.01s\n",
+                  "files": {
+                    "pkg/__init__.py": "",
+                    "pkg/mod.py": "\"\"\"Small package under repair.\"\"\"\n\ndef unused_628_0(q):\n    return q + 0\n\n\ndef unused_921_1(q):\n    return q + 1\n\n\ndef unused_940_2(q):\n    return q + 2\n\n\ndef unused_332_3(q):\n    return q + 3\n\n\ndef unused_613_4(q):\n    return q + 4\n\n\ndef unused_798_5(q):\n    return q + 5\n\n\n\ndef compute_jdjjh(x):\n    return x * 3 + 1\n\n\n\ndef unused_628_0(q):\n    return q + 0\n\n\ndef unused_921_1(q):\n    return q + 1\n\n\ndef unused_940_2(q):\n    return q + 2\n\n\ndef unused_332_3(q):\n    return q + 3\n\n\ndef unused_613_4(q):\n    return q + 4\n\n\ndef unused_798_5(q):\n    return q + 5\n\n",
+                    "tests/test_mod.py": "from pkg.mod import compute_jdjjh\n\ndef test_compute_jdjjh():\n    assert compute_jdjjh(3) == 7\n    assert compute_jdjjh(9) == 19\n"
+                  }
+                },
+                "id": "fix",
+                "kind": "decompose",
+                "subgoal": "repair pkg/mod.py"
+              },
+              {
+                "id": "fin",
+                "kind": "return",
+                "outputs": {
+                  "variant": "seen-wrong_constant-23"
+                }
+              }
+            ]
+          },
+          "output_schema": {
+            "type": "object"
+          }
+        },
+        "spec_sha": "52804f81df9fa449c5dfa8aa833004588c253761bcb90658f19fa16dbb59f0b3"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 2,
+      "ts": 1787625001.177243
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "decision",
+        "refs": [],
+        "text": "plan review of root_repair-seen-wrong_constant-23@1: escalated_review_incomplete"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 5,
+      "ts": 1787625001.177663
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_created",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "depth": 0,
+        "parent_key": null,
+        "state": "pending"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 6,
+      "ts": 1787625001.1778219
+    },
+    {
+      "causal_seq": null,
+      "kind": "lease_acquired",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "session": "worker_cbbc85",
+        "ttl_s": 120.0
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 7,
+      "ts": 1787625001.177952
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "expected": "pending",
+        "new": "running",
+        "owner_session": "worker_cbbc85"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 8,
+      "ts": 1787625001.178024
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_started",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "session": "worker_cbbc85"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 9,
+      "ts": 1787625001.1780689
+    },
+    {
+      "causal_seq": null,
+      "kind": "admission_checked",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "atomic_claimed": true,
+        "capability": "repo.run_tests",
+        "decision": "admitted",
+        "evidence_sha": "ef5a4d39b097310ed885c4a4dc78e963c7ef42c92ed56ab09571200962f53779",
+        "io_compatible": true,
+        "probe_ok": true,
+        "reasons": []
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 10,
+      "ts": 1787625001.280051
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_started",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "capability": "repo.run_tests",
+        "inputs": {
+          "args": [
+            "-q",
+            "tests"
+          ],
+          "atomic_claim": false,
+          "cwd": "repo"
+        }
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 11,
+      "ts": 1787625001.2802298
+    },
+    {
+      "causal_seq": null,
+      "kind": "tool_call_finished",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "capability": "repo.run_tests",
+        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-wrong_constant-23/repo (granted: ('**',))",
+        "ok": false
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 12,
+      "ts": 1787625001.280499
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "kind": "blocker",
+        "refs": [],
+        "text": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-wrong_constant-23/repo (granted: ('**',))"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 13,
+      "ts": 1787625001.280544
+    },
+    {
+      "causal_seq": null,
+      "kind": "node_state_changed",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "expected": "running",
+        "new": "failed",
+        "owner_session": null
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 14,
+      "ts": 1787625001.280587
+    },
+    {
+      "causal_seq": null,
+      "kind": "attempt_finished",
+      "node_key": "root_repair-seen-wrong_constant-23.capture_failures",
+      "payload": {
+        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-wrong_constant-23/repo (granted: ('**',))",
+        "ok": false
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 15,
+      "ts": 1787625001.2806242
+    },
+    {
+      "causal_seq": null,
+      "kind": "journal_appended",
+      "node_key": null,
+      "payload": {
+        "kind": "blocker",
+        "refs": [
+          "kernel"
+        ],
+        "text": "fail-fast: AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-wrong_constant-23/repo (granted: ('**',))"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 16,
+      "ts": 1787625001.280662
+    },
+    {
+      "causal_seq": null,
+      "kind": "run_terminal",
+      "node_key": null,
+      "payload": {
+        "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-wrong_constant-23/repo (granted: ('**',))",
+        "status": "failed"
+      },
+      "run_id": "run_c632b3cbbc85",
+      "seq": 17,
+      "ts": 1787625001.280731
+    }
+  ],
+  "metrics": {
+    "admission": {
+      "checked": 1,
+      "claimed_atomic": 1,
+      "decisions": {
+        "admitted": 1
+      },
+      "overclaim_rate": 0.0,
+      "rejected_or_reclassified": 0
+    },
+    "branching": {
+      "b_corrected": 0.0,
+      "b_declared": 0.0,
+      "decompositions": 0,
+      "f_ambiguous": 0.0,
+      "m_corrected": 0.0
+    },
+    "run_id": null,
+    "terminal_status": "failed",
+    "usage": {
+      "attempts": 0,
+      "cost_usd": 0.0,
+      "nodes": 0,
+      "tokens": 0.0
+    }
+  },
+  "projection": {
+    "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-wrong_constant-23/repo (granted: ('**',))",
+    "findings": [],
+    "messages_pending": 0,
+    "nodes": {
+      "root_repair-seen-wrong_constant-23.capture_failures": {
+        "depth": 0,
+        "owner_session": null,
+        "state": "failed"
+      }
+    },
+    "parent_run_id": null,
+    "run_id": "run_c632b3cbbc85",
+    "status": "failed",
+    "usage": {
+      "attempts": 0,
+      "cost_usd": 0.0,
+      "nodes": 0,
+      "tokens": 0.0,
+      "wall_seconds": 0.0
+    }
+  },
+  "replay_projection": {
+    "error": "AuthorityDenied: repo.run_tests: fs_read denied for /Users/jmanning/orchestrator/benchmarks/artifacts/scenario_b/seen-wrong_constant-23/repo (granted: ('**',))",
+    "findings": [],
+    "messages_pending": 0,
+    "nodes": {
+      "root_repair-seen-wrong_constant-23.capture_failures": {
+        "depth": 0,
+        "owner_session": null,
+        "state": "failed"
+      }
+    },
+    "parent_run_id": null,
+    "run_id": "run_c632b3cbbc85",
+    "status": "failed",
+    "usage": {
+      "attempts": 0,
+      "cost_usd": 0.0,
+      "nodes": 0,
+      "tokens": 0.0,
+      "wall_seconds": 0.0
+    }
+  },
+  "run_id": "run_c632b3cbbc85"
+}

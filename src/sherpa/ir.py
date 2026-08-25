@@ -11,7 +11,6 @@ declared fan-out caps, or depth estimates, fail-closed.
 
 from __future__ import annotations
 
-import fnmatch
 from typing import Annotated, Any, Iterator, Literal, NamedTuple
 
 from pydantic import BaseModel, Field
@@ -51,42 +50,25 @@ class Budgets(BaseModel):
     max_wall_seconds: float = 900.0
 
 
-def _glob_covers(pattern: str, candidate: str) -> bool:
-    """True when *pattern* covers *candidate* under fnmatch semantics.
-
-    A bare prefix such as ``dir/`` also covers everything underneath it
-    (``dir/a/b``), which makes delegation grants readable.
-    """
-    if fnmatch.fnmatchcase(candidate, pattern):
-        return True
-    if not pattern.endswith("*") and not candidate.rstrip("/").startswith(pattern):
-        return False
-    return fnmatch.fnmatchcase(candidate, pattern.rstrip("/") + "/*") or candidate.startswith(
-        pattern if pattern.endswith("/") else ""
-    )
-
-
 class Authority(BaseModel):
-    """Delegated powers. Child plans may only narrow a parent's grants."""
+    """Delegated powers. Child plans may only narrow a parent's grants.
+
+    The containment rules live in :mod:`sherpa.authority`, which is the single
+    implementation used by delegation, admission, and capability execution
+    alike. Do not add a second matcher here: three divergent ones is what made
+    the pre-#493 model unenforceable.
+    """
 
     fs_read: tuple[str, ...] = ()
     fs_write: tuple[str, ...] = ()
     net_domains: tuple[str, ...] = ()
     subprocess_allow: tuple[str, ...] = ()
 
-    def _field(self, name: str) -> tuple[str, ...]:
-        return getattr(self, name)  # noqa: PLC2801 -- intentional dynamic access over fixed fields
-
     def allows(self, child: "Authority") -> bool:
-        for field in ("fs_read", "fs_write", "net_domains", "subprocess_allow"):
-            granted = self._field(field)
-            requested = child._field(field)
-            for cand in requested:
-                if cand == "":
-                    return False
-                if not any(_glob_covers(pat, cand) or fnmatch.fnmatchcase(cand, pat) for pat in granted):
-                    return False
-        return True
+        """True when *child* requests nothing this authority does not hold."""
+        from sherpa.authority import authority_covers
+
+        return authority_covers(self, child)
 
     def narrower(self, other: "Authority") -> bool:
         """Readability alias: True when *self* fits inside *other*."""

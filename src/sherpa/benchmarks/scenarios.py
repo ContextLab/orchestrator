@@ -24,10 +24,10 @@ from typing import Any
 from sherpa.benchmarks.corpus import QUESTION, make_corpus
 from sherpa.benchmarks.repair import DEFECT_CLASSES, make_repair_task, materialize_repo
 from sherpa.benchmarks.repair_planner import RepairPlanner
-from sherpa.capabilities import CapabilityContext, CapabilityRegistry, CapabilitySpec, register_builtins
+from sherpa.capabilities import CapabilityContext, CapabilityRegistry, CapabilitySpec
 from sherpa.context import chunk_document, retrieve
-from sherpa.ir import AcceptanceCheck, Authority, ProblemSpec
-from sherpa.kernel import FINAL_STATES, Engine
+from sherpa.ir import Authority, ProblemSpec
+from sherpa.kernel import Engine
 
 FULL_AUTH = Authority(fs_read=("**",), fs_write=("**",), subprocess_allow=("**",))
 
@@ -237,13 +237,15 @@ def scenario_b(base: Path, seeds: list[int], heldout_seeds: list[int]) -> list[d
                 {"kind": "return", "id": "fin", "outputs": {"variant": task.variant}},
             ]},
         )
-        engine = Engine(ws, planner=RepairPlanner())
+        engine = Engine(ws, planner=planner)
         try:
             result = engine.run(problem)
         except Exception as exc:  # noqa: BLE001 - record loud harness-level failures
             results.append({"variant": task.variant, "defect_class": task.defect_class,
                             "held_out": held, "status": f"harness_error:{type(exc).__name__}",
-                            "error": str(exc)[:200]})
+                            "error": str(exc)[:200],
+                            "inferred_defect_class": planner.inferred_defect_class,
+                            "defect_detected": False})
             engine.close()
             continue
         metrics = result.metrics
@@ -252,6 +254,10 @@ def scenario_b(base: Path, seeds: list[int], heldout_seeds: list[int]) -> list[d
             "defect_class": task.defect_class,
             "held_out": held,
             "status": result.status,
+            # "detected" means the planner named the seeded class from the
+            # sources alone -- not merely that some patch made tests pass.
+            "inferred_defect_class": planner.inferred_defect_class,
+            "defect_detected": planner.inferred_defect_class == task.defect_class,
             "error": result.error,
             "externally_verified": _repo_tests_green(repo),
             "overclaim_rate": metrics["admission"]["overclaim_rate"],
@@ -300,7 +306,6 @@ def scenario_c(base: Path) -> dict:
             routing_cost += 1
             hits = retrieve(store, q, k=10)
             for h in hits:
-                chunk_text = store.get_chunks_by_doc(h.doc_id)[h.ordinal]["text"]                     if h.doc_id else ""
                 blob_text = store.blob.get_text(h.sha)
                 if fact in blob_text or fact in h.snippet:
                     found = (h.doc_id, h.sha)

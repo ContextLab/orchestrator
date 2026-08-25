@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sqlite3
 import time
 from pathlib import Path
@@ -19,6 +20,9 @@ from typing import Any, Iterable
 
 from sherpa.events import EVENT_KINDS, Event
 from sherpa.ir import TERMINAL_STATES
+
+#: Runs of word characters — the only part of a user query FTS5 can tokenize.
+_FTS_TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 
 FINDING_DISPOSITIONS = ("open", "fixed", "accepted_risk", "invalid", "deferred", "superseded")
 
@@ -208,8 +212,15 @@ class Store:
         if event.kind not in EVENT_KINDS:
             raise ValueError(f"unknown event kind {event.kind!r}")
         cur = self.conn.execute(
-            "INSERT INTO events (ts, run_id, node_key, kind, payload) VALUES (?,?,?,?,?)",
-            (event.ts, event.run_id, event.node_key, event.kind, self._j(event.payload)),
+            "INSERT INTO events (ts, run_id, node_key, kind, payload, causal_seq) VALUES (?,?,?,?,?,?)",
+            (
+                event.ts,
+                event.run_id,
+                event.node_key,
+                event.kind,
+                self._j(event.payload),
+                event.causal_seq,
+            ),
         )
         event.seq = int(cur.lastrowid)
         self._project_event(event)
@@ -386,8 +397,8 @@ class Store:
                 "SELECT session, expires_ts FROM leases WHERE run_id=? AND node_key=?",
                 (run_id, node_key),
             ).fetchone()
-            if row is not None and row["expires_ts"] > now:
-                return False
+            if row is not None and row["expires_ts"] > now and row["session"] != session:
+                return False  # held by a *different* live session
             self.conn.execute(
                 "INSERT OR REPLACE INTO leases (run_id, node_key, session, expires_ts) VALUES (?,?,?,?)",
                 (run_id, node_key, session, now + ttl_s),
@@ -524,6 +535,23 @@ class Store:
         self._log("chunk_indexed", str(chunk.get("run_id", "")), payload={"chunk_id": chunk["chunk_id"]})
         self.conn.commit()
 
+    @staticmethod
+    def _fts_match(query: str) -> str | None:
+        """Render *query* as a MATCH expression of literal, quoted terms.
+
+        FTS5 MATCH is a query *language*: bare user text can carry column
+        filters (``foo:bar``), prefix/special syntax (``*``), unbalanced quotes
+        and operators, each of which raises ``sqlite3.OperationalError`` and
+        would fail the calling node. Every token is therefore quoted, which is
+        the only form FTS5 treats as data rather than syntax. Terms are joined
+        by whitespace: implicit AND, matching prior behaviour for plain text.
+        Returns ``None`` when nothing searchable remains.
+        """
+        tokens = _FTS_TOKEN_RE.findall(query)
+        if not tokens:
+            return None
+        return " ".join('"%s"' % t.replace('"', '""') for t in tokens)
+
     def fts_search(self, query: str, k: int = 5, doc_prefix: str | None = None) -> list[dict]:
         sql = (
             "SELECT cm.chunk_id, cm.doc_id, cm.ordinal, cm.start, cm.end, cm.sha,"
@@ -531,21 +559,16 @@ class Store:
             " FROM chunks_fts JOIN chunks_meta cm ON cm.chunk_id = chunks_fts.chunk_id"
             " WHERE chunks_fts MATCH ?"
         )
-        args: list[Any] = [query]
+        match = self._fts_match(query)
+        if match is None:
+            return []  # no searchable term survived tokenization
+        args: list[Any] = [match]
         if doc_prefix is not None:
             sql += " AND cm.doc_id LIKE ?"
             args.append(doc_prefix + "%")
         sql += " ORDER BY score LIMIT ?"
         args.append(k)
-        try:
-            rows = self.conn.execute(sql, args).fetchall()
-        except sqlite3.OperationalError as exc:
-            if "fts5: syntax error" in str(exc):
-                query_escaped = '"%s"' % query.replace('"', '""')
-                args[0] = query_escaped
-                rows = self.conn.execute(sql, args).fetchall()
-            else:
-                raise
+        rows = self.conn.execute(sql, args).fetchall()
         return [
             {
                 "chunk_id": r["chunk_id"],
@@ -631,7 +654,11 @@ class Store:
         self._log(
             "finding_raised",
             str(finding.get("run_id", "")),
-            payload={"finding_id": finding["id"], "blocking": bool(finding.get("blocking"))},
+            payload={
+                "finding_id": finding["id"],
+                "subject": finding["subject"],
+                "blocking": bool(finding.get("blocking")),
+            },
         )
         self.conn.commit()
 
@@ -700,8 +727,9 @@ class Store:
             },
             "usage": usage,
             "messages_pending": pending,
-            "findings": sorted(f["id"] for f in finds if f.get("subject", "").startswith(run_id))
-            or sorted(f["id"] for f in finds),
+            "findings": sorted(
+                f["id"] for f in finds if f.get("subject", "").startswith(run_id)
+            ),
         }
 
     def replay_projection(self, run_id: str) -> dict:
@@ -737,6 +765,14 @@ class Store:
                 messages_pending += 1
             elif ev.kind == "message_delivered":
                 messages_pending = max(0, messages_pending - 1)
+        # Findings are scoped by subject prefix, exactly as :meth:`projection` does;
+        # ``finding_raised`` carries both the id and the subject for this reason.
+        finding_ids = {
+            str(ev.payload["finding_id"])
+            for ev in self.events(kinds=["finding_raised"])
+            if ev.payload.get("finding_id") is not None
+            and str(ev.payload.get("subject", "")).startswith(run_id)
+        }
         return {
             "run_id": run_id,
             "status": status,
@@ -745,7 +781,7 @@ class Store:
             "nodes": nodes,
             "usage": usage_totals,
             "messages_pending": messages_pending,
-            "findings": [],
+            "findings": sorted(finding_ids),
         }
 
     def close(self) -> None:

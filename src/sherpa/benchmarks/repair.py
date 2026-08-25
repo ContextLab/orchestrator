@@ -69,28 +69,32 @@ def make_repair_task(seed: int, defect_class: str, held_out: bool = False) -> Re
             f"    return x * 2 + 1\n"
         )
         bad = good.replace("x * 2 + 1", "x * 3 + 1")
+        # Two solved examples: one alone would leave the additive and the
+        # multiplicative constant indistinguishable, and any repair that fits
+        # a single point would score as correct.
         test = (
             f"from pkg.mod import {fn}\n\n"
             f"def test_{fn}():\n"
             f"    assert {fn}({lo}) == {lo * 2 + 1}\n"
+            f"    assert {fn}({lo + 6}) == {(lo + 6) * 2 + 1}\n"
         )
     else:  # missing_guard
+        # The guard must be load-bearing: without it the body raises on the
+        # base case. A "missing" guard whose absence changes nothing would
+        # make the seeded-defect gate vacuous.
         good = (
             f"def {fn}(n):\n"
             f"    if n == 0:\n"
-            f"        return 1\n"
-            f"    out = 1\n"
-            f"    for i in range(2, n + 1):\n"
-            f"        out *= i\n"
-            f"    return out\n"
+            f"        return 0\n"
+            f"    return 120 // n\n"
         )
-        bad = good.replace("    if n == 0:\n        return 1\n", "")
+        bad = good.replace("    if n == 0:\n        return 0\n", "")
         test = (
             f"from pkg.mod import {fn}\n\n"
             f"def test_{fn}_zero():\n"
-            f"    assert {fn}(0) == 1\n\n"
-            f"def test_{fn}_fact():\n"
-            f"    assert {fn}({min(lo, 4)}) == {__import__('math').factorial(min(lo, 4))}\n"
+            f"    assert {fn}(0) == 0\n\n"
+            f"def test_{fn}_ratio():\n"
+            f"    assert {fn}({lo}) == {120 // lo}\n"
         )
 
     filler = "\n\n".join(
