@@ -69,9 +69,10 @@ product claims. Failing gates retain negative evidence by design.
 
 | module | role |
 |-|-|
-| `ir.py` | typed plan IR: nine structural node variants, budgets, authority |
+| `ir.py` | typed plan IR: nine structural node variants, budgets, authority; `validate_plan` is structural only |
 | `expr.py` | fail-closed AST-whitelist expression evaluator (no `eval`) |
 | `events.py` | closed event vocabulary for the append-only log |
+| `authority.py` | the single authority implementation: pattern delegation + resolved-path access |
 | `store.py` | SQLite WAL store + content-addressed blobs + FTS5 + leases |
 | `capabilities.py` | typed capabilities: authority, executable probes, built-ins |
 | `admission.py` | atomic-admission control (existence → I/O → authority → probe) |

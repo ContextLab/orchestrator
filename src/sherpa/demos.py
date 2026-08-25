@@ -108,7 +108,7 @@ class _AppendLine:
         return b"append probe ok"
 
 
-def _victim(crash_ws, marker) -> None:
+def _victim(crash_ws) -> None:
     import os
 
     os.environ["SHERPA_KILL_AFTER_EVENTS"] = "12"  # REAL SIGKILL mid-run
@@ -132,7 +132,7 @@ def _demo_crash_resume(ws) -> None:
     crash_ws = ws.parent / "sherpa-demo-crash-ws"
     marker = ws.parent / "victim-run-id.txt"
     proc = multiprocessing.get_context("fork").Process(
-        target=_victim, args=(crash_ws, marker))
+        target=_victim, args=(crash_ws,))
     proc.start()
     proc.join()
 

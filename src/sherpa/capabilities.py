@@ -402,33 +402,30 @@ class RepoApplyPatch(Capability):
         diff_text = inputs["diff"]
         plan = _parse_unified_diff(diff_text)
         touched: list[Path] = []
-        try:
-            # Resolve and authorize EVERY target before touching the first
-            # one: a mid-loop denial must not leave earlier files rewritten.
-            resolved = {
-                rel: assert_fs_access(cwd / rel, "fs_write", ctx, self.spec.name)
-                for rel in plan
-            }
-            for rel, target in resolved.items():
-                if not target.is_relative_to(cwd):
-                    raise PatchError(f"patch target {rel!r} escapes cwd")
-            for rel, hunks in plan.items():
-                target = resolved[rel]
-                original = target.read_text(encoding="utf-8") if target.exists() else ""
-                updated = _apply_hunks(original, hunks, rel)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(updated, encoding="utf-8")
-                touched.append(target)
-                # Same-size patches can leave a stale bytecode cache that
-                # mtime+size validation fails to invalidate (equal length, and
-                # the write may land in the same timestamp tick). Derived
-                # caches must not outlive the patch.
-                cache_dir = target.parent / "__pycache__"
-                if cache_dir.is_dir():
-                    for pyc in cache_dir.glob(target.stem + ".*.pyc"):
-                        pyc.unlink(missing_ok=True)
-        except Exception:
-            raise
+        # Resolve and authorize EVERY target before touching the first one: a
+        # mid-loop denial must not leave earlier files rewritten.
+        resolved = {
+            rel: assert_fs_access(cwd / rel, "fs_write", ctx, self.spec.name)
+            for rel in plan
+        }
+        for rel, target in resolved.items():
+            if not target.is_relative_to(cwd):
+                raise PatchError(f"patch target {rel!r} escapes cwd")
+        for rel, hunks in plan.items():
+            target = resolved[rel]
+            original = target.read_text(encoding="utf-8") if target.exists() else ""
+            updated = _apply_hunks(original, hunks, rel)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(updated, encoding="utf-8")
+            touched.append(target)
+            # Same-size patches can leave a stale bytecode cache that mtime+size
+            # validation fails to invalidate (equal length, and the write may
+            # land in the same timestamp tick). Derived caches must not outlive
+            # the patch.
+            cache_dir = target.parent / "__pycache__"
+            if cache_dir.is_dir():
+                for pyc in cache_dir.glob(target.stem + ".*.pyc"):
+                    pyc.unlink(missing_ok=True)
         return {"applied": len(touched), "files": [str(t.relative_to(cwd)) for t in touched]}
 
     def probe(self, ctx: CapabilityContext) -> bytes:
@@ -461,17 +458,34 @@ def _parse_unified_diff(diff_text: str) -> dict[str, list[tuple[list[str], list[
     start_old = 0
     in_hunk = False
 
+    def flush() -> None:
+        """File the pending hunk under the file it belongs to.
+
+        This MUST happen before ``current_file`` is rebound on the next `+++`
+        line: flushing lazily at the following `@@`/EOF filed file N's hunks
+        under file N+1, which silently wrote one file's content into another
+        whenever the two shared context lines.
+        """
+        nonlocal in_hunk
+        if in_hunk and current_file is not None:
+            files.setdefault(current_file, []).append((old, new, start_old))
+        in_hunk = False
+
     for line in diff_text.splitlines(keepends=True):
-        if line.startswith("--- "):
+        # `diff --git` arrives while the previous file's hunk is still open, so
+        # it has to end that hunk; treating it as hunk content is what made real
+        # multi-file `git diff` output unparseable.
+        if line.startswith("diff --git ") or line.startswith("--- "):
+            flush()
             continue
         if line.startswith("+++ "):
+            flush()
             current_file = line[4:].strip()
             if current_file.startswith("b/"):
                 current_file = current_file[2:]
             continue
         if line.startswith("@@"):
-            if in_hunk and current_file is not None:
-                files.setdefault(current_file, []).append((old, new, start_old))
+            flush()
             header = line.split()
             start_old = int(header[1].split(",")[0].lstrip("+").lstrip("-"))
             old, new = [], []
@@ -493,8 +507,7 @@ def _parse_unified_diff(diff_text: str) -> dict[str, list[tuple[list[str], list[
             continue
         else:
             raise PatchError(f"malformed diff line: {line!r}")
-    if in_hunk and current_file is not None:
-        files.setdefault(current_file, []).append((old, new, start_old))
+    flush()
     if not files:
         raise PatchError("no hunks found in diff")
     return files
@@ -503,8 +516,12 @@ def _parse_unified_diff(diff_text: str) -> dict[str, list[tuple[list[str], list[
 def _apply_hunks(original: str, hunks: list[tuple[list[str], list[str], int]], rel: str) -> str:
     lines = original.splitlines(keepends=True)
     for old, new, start in sorted(hunks, key=lambda h: h[2], reverse=True):
-        idx = start - 1
-        if idx < 0 or lines[idx : idx + len(old)] != old:
+        # `@@ -0,0 +1,N @@` -- file creation / pure insertion at the top -- has
+        # start == 0 and no old lines. `start - 1` made idx == -1 and raised, so
+        # a patch could never create a file even though the write path handles a
+        # non-existent target.
+        idx = max(start - 1, 0)
+        if lines[idx : idx + len(old)] != old:
             raise PatchError(f"context mismatch applying patch to {rel!r}; nothing written")
         lines[idx : idx + len(old)] = new
     return "".join(lines)

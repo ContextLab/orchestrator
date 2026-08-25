@@ -70,6 +70,10 @@ from sherpa.store import Store
 
 FINAL_STATES = frozenset({"completed", "failed", "escalated", "cancelled", "budget_exhausted"})
 
+#: Fallback per-node attempt ceiling for callers that do not carry a ProblemSpec
+#: (the driver always passes ``spec.budgets.max_attempts_per_node`` explicitly).
+_DEFAULT_MAX_ATTEMPTS_PER_NODE: int = Budgets().max_attempts_per_node
+
 
 class RunResult(BaseModel):
     run_id: str
@@ -99,7 +103,11 @@ class _DepthExceeded(Exception):
 
 
 class _BudgetExhausted(Exception):
-    pass
+    """A hard ceiling was reached: run-wide (`_check_budgets`) or per node.
+
+    Carries the specific ceiling so the terminal result names it instead of
+    reporting an anonymous "budget exhausted".
+    """
 
 
 def _new_id(prefix: str) -> str:
@@ -267,10 +275,10 @@ class Engine:
     def _execute(self, rid: str, spec: ProblemSpec, *, resumed: bool = False) -> RunResult:
         try:
             return self._drive(rid, spec, resumed=resumed)
-        except _BudgetExhausted:
-            journal(self.store, rid, None, "blocker",
-                    "budget exhausted; stopping loudly", refs=["budgets"])
-            return self._terminal(rid, "budget_exhausted")
+        except _BudgetExhausted as exc:
+            reason = str(exc) or "budget exhausted; stopping loudly"
+            journal(self.store, rid, None, "blocker", reason, refs=["budgets"])
+            return self._terminal(rid, "budget_exhausted", error=str(exc) or None)
         except _DepthExceeded as exc:
             journal(self.store, rid, None, "blocker", str(exc), refs=["budgets"])
             return self._terminal(rid, "budget_exhausted", error=str(exc))
@@ -350,7 +358,8 @@ class Engine:
                 if state == "completed":
                     self._restore_node_outputs(rid, node_key, scope)
                     continue
-                if not self._begin_attempt(rid, node_key, session, depth, parent_key):
+                if not self._begin_attempt(rid, node_key, session, depth, parent_key,
+                                           max_attempts=spec.budgets.max_attempts_per_node):
                     continue
                 msgs = self.store.take_messages(rid, node_key)
                 if msgs:
@@ -508,12 +517,29 @@ class Engine:
             self.store.upsert_node(rid, node_key, "pending", depth=depth,
                                    parent_key=parent_key)
 
+    def _attempts(self, rid: str, node_key: str) -> int:
+        """How many attempts this node has already started, across resumes."""
+        return sum(1 for e in self.store.events(run_id=rid, kinds=["attempt_started"])
+                   if e.node_key == node_key)
+
     def _begin_attempt(self, rid: str, node_key: str, session: str, depth: int,
-                       parent_key: str | None = None) -> bool:
+                       parent_key: str | None = None, *,
+                       max_attempts: int = _DEFAULT_MAX_ATTEMPTS_PER_NODE) -> bool:
         self._ensure_node(rid, node_key, depth, parent_key)
         state = self.store.projection_node_state(rid, node_key)
         if state in ("failed", "cancelled", "escalated", "completed"):
             return False
+        # `Budgets.max_attempts_per_node` was declared in the IR and enforced
+        # nowhere: a node interrupted mid-attempt is left `running`, and every
+        # resume re-attempted it forever. #492 requires a hard attempt ceiling.
+        attempts = self._attempts(rid, node_key)
+        if attempts >= max_attempts:
+            reason = (f"node {node_key} has used {attempts} attempts; "
+                      f"max_attempts_per_node is {max_attempts}")
+            journal(self.store, rid, node_key, "blocker", reason, refs=["budgets"])
+            self.store.cas_node_state(rid, node_key, state, "budget_exhausted")
+            self.store.release_lease(rid, node_key, session)
+            raise _BudgetExhausted(reason)
         if not self.store.acquire_lease(rid, node_key, session):
             # Another live session holds this node. The lease answered
             # correctly; honouring it is what makes execution exactly-once.

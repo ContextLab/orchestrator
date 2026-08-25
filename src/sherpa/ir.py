@@ -250,15 +250,15 @@ def validate_plan(plan: Plan, *, registry_names: set[str] | None = None) -> list
             seen.add(node.id)
             deepest = max(deepest, 1)
             if isinstance(node, Branch):
-                if node.cases[-1].when is not None and len(node.cases) > 1:
-                    # allowed: all-when cases are fine; only flag an else-case not last
-                    if any(c.when is None for c in node.cases[:-1]):
-                        errors.append(
-                            PlanError(npath, "else_not_last", "branch case without `when` must be last")
-                        )
+                # A `when=None` case is the else: the kernel takes the FIRST
+                # matching case, so anything after an else is dead code. The
+                # check must not be conditioned on the LAST case's `when` --
+                # that made `[None, "q > 1", None]` validate silently.
+                if any(c.when is None for c in node.cases[:-1]):
+                    errors.append(
+                        PlanError(npath, "else_not_last", "branch case without `when` must be last")
+                    )
                 for j, case in enumerate(node.cases):
-                    if not case.body:
-                        errors.append(PlanError(f"{npath}.cases[{j}]", "empty_body", "empty branch body"))
                     deepest = max(deepest, 1 + walk(case.body, f"{npath}.cases[{j}]"))
             elif isinstance(node, While):
                 if not node.guard:

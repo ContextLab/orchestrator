@@ -328,3 +328,90 @@ class TestBudgetsAndTerminals:
         )
         result = eng.run(spec)
         assert result.status == "completed"
+
+
+class InterruptedCapability(Capability):
+    """Raises KeyboardInterrupt: a REAL operator Ctrl-C during a tool call.
+
+    A BaseException is caught nowhere in `run_capability` or the kernel, so the
+    node is left in `running` holding its lease -- exactly the state an
+    interrupted process leaves behind, and the state from which `resume` retries
+    the SAME node key with the same (run-derived) session.
+    """
+
+    spec = CapabilitySpec(
+        name="demo.interrupted",
+        input_schema={"type": "object"},
+        output_schema={"type": "object"},
+    )
+
+    def run(self, inputs: dict, ctx: CapabilityContext) -> dict:
+        raise KeyboardInterrupt("operator interrupted the tool call")
+
+    def probe(self, ctx: CapabilityContext) -> bytes:
+        return b"interrupted probe ok"
+
+
+class TestPerNodeAttemptBudget:
+    """`Budgets.max_attempts_per_node` was declared in the IR and enforced nowhere.
+
+    Issue #492 requires every loop to have hard attempt budgets; without this a
+    node interrupted mid-attempt can be re-attempted forever across resumes.
+    """
+
+    def _spec(self, max_attempts: int) -> ProblemSpec:
+        return ProblemSpec(
+            id="retry-demo",
+            goal="retry a node that keeps being interrupted",
+            authority=FULL_AUTH,
+            budgets=Budgets(max_attempts_per_node=max_attempts),
+            metadata={"root_nodes": [
+                {"kind": "invoke_capability", "id": "flaky",
+                 "capability": "demo.interrupted"},
+                {"kind": "return", "id": "fin", "outputs": {}},
+            ]},
+        )
+
+    def _engine(self, tmp_path: Path) -> Engine:
+        reg = CapabilityRegistry()
+        reg.register(InterruptedCapability())
+        return Engine(tmp_path / "ws", registry=reg)
+
+    def test_node_retried_past_cap_terminates_loudly(self, tmp_path: Path) -> None:
+        eng = self._engine(tmp_path)
+        rid = "run_attemptcap"
+        with pytest.raises(KeyboardInterrupt):
+            eng.run(self._spec(2), run_id=rid)
+        with pytest.raises(KeyboardInterrupt):
+            eng.resume(rid)
+
+        try:
+            result = eng.resume(rid)
+        except KeyboardInterrupt as exc:  # pragma: no cover - regression guard
+            pytest.fail(f"node was attempted a THIRD time instead of stopping: {exc}")
+        assert result.status == "budget_exhausted", (
+            f"third attempt on the same node must stop, got {result.status!r} "
+            f"error={result.error!r}"
+        )
+        assert "max_attempts_per_node" in (result.error or ""), result.error
+
+        starts = eng.store.events(run_id=rid, kinds=["attempt_started"])
+        keys = [e.node_key for e in starts]
+        assert keys.count("root_retry-demo.flaky") == 2, (
+            f"the cap is 2 attempts; attempt_started events were {keys!r}"
+        )
+        node_state = eng.store.projection(rid)["nodes"]["root_retry-demo.flaky"]["state"]
+        assert node_state == "budget_exhausted", node_state
+
+    def test_cap_of_one_stops_after_the_first_attempt(self, tmp_path: Path) -> None:
+        eng = self._engine(tmp_path)
+        rid = "run_attemptcap1"
+        with pytest.raises(KeyboardInterrupt):
+            eng.run(self._spec(1), run_id=rid)
+        try:
+            result = eng.resume(rid)
+        except KeyboardInterrupt as exc:  # pragma: no cover - regression guard
+            pytest.fail(f"node was attempted a SECOND time with a cap of 1: {exc}")
+        assert result.status == "budget_exhausted", result.error
+        starts = [e.node_key for e in eng.store.events(run_id=rid, kinds=["attempt_started"])]
+        assert starts.count("root_retry-demo.flaky") == 1, starts
